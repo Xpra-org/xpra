@@ -80,6 +80,7 @@ class ServerSSLConnectionTest(unittest.TestCase):
         server.ssl_upgrade = True
         server.websocket_upgrade = False
         server.rdp_upgrade = False
+        server.ssh_upgrade = False
         server.subsystems = {}
         self.protocols = []
         server.make_protocol = lambda socktype, conn, *_args, **_kwargs: self.protocols.append((socktype, conn))

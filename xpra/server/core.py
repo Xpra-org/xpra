@@ -17,20 +17,19 @@ from types import FrameType
 from typing import Any, NoReturn, TYPE_CHECKING
 from collections.abc import Callable, Sequence, Iterable
 
-from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_CLOSE, CONNECTION_LOST, GIBBERISH, INVALID
+from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.util.version import XPRA_VERSION, version_str, version_compat_check, protocol_compat_check
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.server import ServerExitMode
 from xpra.server.glib_server import GLibServer
-from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
+from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import (
     is_request_allowed, pretty_socket, has_websocket_handler, HttpResponse, Packet,
     FULL_INFO, LOG_HELLO, MIN_PROTOCOL_VERSION,
 )
-from xpra.net.constants import MAX_PACKET_SIZE, HTTP_UNSUPORTED, IP_SOCKTYPES, ConnectionMessage
+from xpra.net.constants import MAX_PACKET_SIZE, IP_SOCKTYPES, ConnectionMessage
 from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.socket_util import (
-    PEEK_TIMEOUT_MS, SOCKET_PEEK_TIMEOUT_MS,
     setup_local_sockets, add_listen_socket, accept_connection, guess_packet_type,
     peek_connection, close_sockets, SocketListener, socket_fast_read,
     parse_bind_options, create_sockets, check_ssh_upgrades,
@@ -42,16 +41,20 @@ from xpra.net.bytestreams import (
 if TYPE_CHECKING:
     # imported lazily at runtime (pulls in `ssl`); only needed here for type hints:
     from xpra.net.tls.connection import SSLSocketConnection
-from xpra.net.net_util import get_network_caps, import_netifaces, get_all_ips
+from xpra.net.net_util import get_network_caps, get_all_ips
 from xpra.net.protocol.factory import get_server_protocol_class
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.net.digest import get_salt, gendigest
+from xpra.server import network_util
+from xpra.server.network_util import (
+    force_close_connection, parse_html_option, find_www_dir, get_vsock_endpoint, new_conn_err,
+    peek_new_connection, log_guess_packet_type, ssl_conn_handshake, wrap_ssl_socket,
+    ssh_password_authenticate, log_connection_timeout, get_protocol_info,
+)
 from xpra.platform import set_name, threaded_server_init
-from xpra.platform.paths import get_app_dir, get_system_conf_dirs, get_user_conf_dirs
 from xpra.platform.dotxpra import DotXpra
 from xpra.os_util import (
     force_quit, POSIX, WIN32, OSX,
-    get_username_for_uid, getuid, gi_import,
+    get_username_for_uid, gi_import,
 )
 from xpra.util.system import register_SIGUSR_signals, get_run_info, deadly_signal
 from xpra.util.io import load_binary_file, find_libexec_command
@@ -59,11 +62,10 @@ from xpra.util.background_worker import get_worker, quit_worker
 from xpra.util.thread import start_thread, check_main_thread
 from xpra.common import noop, noerr, stop_asyncio_loop
 from xpra.util.objects import merge_dicts
-from xpra.constants import DEFAULT_XDG_DATA_DIRS
 from xpra.util.pysystem import dump_all_frames
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, Ellipsizer, print_nested_dict, strtobytes, hexstr
-from xpra.util.env import envint, envbool, envfloat, first_time, restore_script_env
+from xpra.util.str_fn import csv, Ellipsizer, print_nested_dict, hexstr
+from xpra.util.env import envint, envbool, envfloat, restore_script_env
 from xpra.log import Logger
 from xpra.scripts.config import InitExit
 
@@ -88,7 +90,6 @@ UNAUTHENTICATED_HELLO_REQUESTS = tuple(
 )
 
 SYSCONFIG = envbool("XPRA_SYSCONFIG", FULL_INFO > 1)
-SHOW_NETWORK_ADDRESSES = envbool("XPRA_SHOW_NETWORK_ADDRESSES", True)
 INIT_THREAD_TIMEOUT = envint("XPRA_INIT_THREAD_TIMEOUT", 10)
 HTTP_HTTPS_REDIRECT = envbool("XPRA_HTTP_HTTPS_REDIRECT", True)
 SSL_PEEK = envbool("XPRA_SSL_PEEK", True)
@@ -102,13 +103,6 @@ ENV_BLOCKLIST = ("LS_COLORS", )
 # from useful messages we do want to pass on
 class ClientException(Exception):
     pass
-
-
-def force_close_connection(conn) -> None:
-    try:
-        conn.close()
-    except OSError:
-        netlog("close_connection()", exc_info=True)
 
 
 def get_instance_subsystem_classes() -> tuple[type, ...]:
@@ -208,7 +202,6 @@ class ServerCore(GLibServer):
         self._html: bool | None = False
         self._www_dir: str = ""
         self._http_headers_dirs: list[str] = []
-        self.socket_cleanup: list[Callable] = []
         self.socket_verify_timer: WeakKeyDictionary[SocketProtocol, int] = WeakKeyDictionary()
         self._max_connections: int = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout: float = SERVER_SOCKET_TIMEOUT
@@ -518,102 +511,10 @@ class ServerCore(GLibServer):
 
     def init_html_proxy(self, opts) -> None:
         httplog(f"init_html_proxy(..) options: html={opts.html!r}")
-        www_dir = self.parse_html_option(opts)
-        self.init_www_dir(www_dir)
-
-    # noinspection PySimplifyBooleanCheck
-    def parse_html_option(self, opts) -> str:
-        # opts.html can contain a boolean, "auto" or the path to the webroot
-        www_dir = ""
-        html = opts.html or ""
-        if html and os.path.isabs(html):
-            www_dir = html
-            self._html = True
-        elif not html or (html.lower() in FALSE_OPTIONS or html.lower() in TRUE_OPTIONS or html.lower() == "auto"):
-            self._html = parse_bool_or("html", html)
-        else:
-            # assume that the html option is a request to open a browser
-            self._html = True
-            # find a socket we can connect the browser to:
-            for mode, bind in {
-                "ws": opts.bind_ws,
-                "wss": opts.bind_wss,
-                "tcp": opts.bind_tcp,
-                "ssl": opts.bind_ssl,
-            }.items():
-                if bind:  # ie: ["0.0.0.0:10000", "127.0.0.1:20000"]
-                    from xpra.net.common import open_html_url
-                    # open via timeout_add so that the server is running by then,
-                    # plus a slight delay so that it can settle down:
-                    GLib.timeout_add(1000, open_html_url, html, mode, bind[0])
-                    break
-            else:
-                log.warn("Warning: cannot open html client in a browser")
-                log.warn(" no compatible socket found")
-        if self._html is not False:  # True or None (for "auto")
-            if not (opts.bind_tcp or opts.bind_ws or opts.bind_wss or opts.bind or opts.bind_ssl):
-                # we need a socket!
-                if self._html:
-                    # html was enabled, so log an error:
-                    httplog.error("Error: cannot use the html server without a socket")
-                self._html = False
-        httplog("init_html_proxy(..) html=%s", self._html)
+        html, www_dir = parse_html_option(opts)
         if not has_websocket_handler():
-            if self._html is None:  # auto mode
-                httplog.info("html server unavailable, cannot find websocket module")
-            elif self._html:
-                httplog.error("Error: cannot import websocket connection handler:")
-                httplog.error(" the html server will not be available")
-            self._html = False
             self.websocket_upgrade = False
-        return www_dir
-
-    # noinspection simplify-boolean-check
-    def init_www_dir(self, www_dir: str) -> None:
-        # make sure we have the web root:
-        from xpra.platform.paths import get_resources_dir
-        if self._html is False:
-            self._www_dir = ""
-        elif www_dir:
-            self._www_dir = str(www_dir)
-        else:
-            # this is the default value which will be shown in the warning if we don't find a valid one:
-            self._www_dir = os.path.abspath(os.path.join(get_resources_dir(), "www"))
-            www_dirs: list[tuple[str, ...]] = [
-                (get_resources_dir(), "html5"),
-                (get_resources_dir(), "www"),
-                (get_app_dir(), "www"),
-            ]
-            if POSIX:
-                xdg_data_dirs = os.environ.get("XDG_DATA_DIRS", DEFAULT_XDG_DATA_DIRS)
-                for d in xdg_data_dirs.split(":"):
-                    www_dirs.append((d, "www"))
-                for d in ("/usr/share/xpra", "/usr/local/share/xpra"):
-                    www_dirs.append((d, "www"))
-                www_dirs.append(("/var/www/xpra/www", ))
-            for parts in www_dirs:
-                www_dir = os.path.abspath(os.path.join(*parts))
-                if os.path.exists(www_dir):
-                    self._www_dir = www_dir
-                    httplog("found html5 client in '%s'", www_dir)
-                    break
-        if not os.path.exists(self._www_dir) and self._html is not False:
-            httplog.error("Error: cannot find the html web root")
-            httplog.error(f" {self._www_dir!r} does not exist")
-            httplog.error(" install the `xpra-html5` package")
-            httplog.error(" or turn off the builtin web server using `html=no`")
-            self._www_dir = "/usr/share/xpra/www/"
-            self._html = False
-        if self._html is not False:
-            httplog.info(f"serving html content from {self._www_dir!r}")
-            self._http_headers_dirs = []
-            for d in get_system_conf_dirs():
-                self._http_headers_dirs.append(os.path.join(d, "http-headers"))
-            if not POSIX or getuid() > 0:
-                for d in get_user_conf_dirs():
-                    self._http_headers_dirs.append(os.path.join(d, "http-headers"))
-            self._http_headers_dirs.append(os.path.abspath(os.path.join(self._www_dir, "../http-headers")))
-            self._html = True
+        self._html, self._www_dir, self._http_headers_dirs = find_www_dir(html, www_dir)
 
     def print_run_info(self) -> None:
         for run_info in get_run_info(f"{self.session_type} server"):
@@ -676,56 +577,12 @@ class ServerCore(GLibServer):
             log.warn(" non-embedded ssh connections will not be available")
 
     def can_upgrade(self, socktype: str, tosocktype: str, options: dict[str, str]) -> bool:
-        to_option_str = options.get(tosocktype, "")
-        to_option = to_option_str.lower() in TRUE_OPTIONS
-        netlog(f"can_upgrade%s {to_option_str=}, {to_option}", (socktype, tosocktype, options))
-        if tosocktype in ("ws", "wss") and not has_websocket_handler():
-            return False
-        if tosocktype == "rfb":
-            # only available with the RFBServer subsystem
-            rfb = self.get_subsystem("rfb")
-            return rfb is not None and rfb._rfb_upgrade > 0
-        if tosocktype == "rdp":
-            return self.rdp_upgrade
-        if socktype in ("tcp", "socket", "vsock", "named-pipe"):
-            if tosocktype == "ssl":
-                if to_option_str:
-                    return to_option
-                return self.ssl_upgrade
-            if tosocktype == "ws":
-                if to_option_str:
-                    return to_option
-                return self.websocket_upgrade
-            if tosocktype == "wss":
-                if to_option_str:
-                    return to_option
-                return self.websocket_upgrade and self.ssl_upgrade
-        if socktype == "ws" and tosocktype == "wss":
-            if to_option_str:
-                return to_option
-            return self.ssl_upgrade
-        if socktype == "ssl" and tosocktype == "wss":
-            if to_option_str:
-                return to_option
-            return self.websocket_upgrade
-        if tosocktype == "ssh":
-            if to_option_str:
-                return to_option
-            return self.ssh_upgrade
-        return False
-
-    @staticmethod
-    def get_vsock_endpoint(address) -> tuple:
-        cid, port = address[0], address[1]
-        try:
-            from xpra.net.vsock.vsock import CID_ANY, CID_TYPES, get_local_cid  # pylint: disable=no-name-in-module
-        except ImportError:
-            return cid, port
-        if cid == CID_ANY:
-            local_cid = get_local_cid()
-            if local_cid >= 0:
-                cid = local_cid
-        return CID_TYPES.get(cid, cid), port
+        # rfb upgrades are only available with the RFBServer subsystem:
+        rfb = self.get_subsystem("rfb")
+        return network_util.can_upgrade(socktype, tosocktype, options,
+                                        ssl=self.ssl_upgrade, websocket=self.websocket_upgrade,
+                                        ssh=self.ssh_upgrade, rdp=self.rdp_upgrade,
+                                        rfb=rfb is not None and rfb._rfb_upgrade > 0)
 
     def start_listen_sockets(self) -> None:
         # All right, we're ready to accept customers:
@@ -743,7 +600,7 @@ class ServerCore(GLibServer):
                     for ip in get_all_ips():
                         log.info("  %s://%s:%s", socktype, ip, port)
             if socktype == "vsock" and isinstance(address, (tuple, list)) and len(address) >= 2:
-                cid, port = self.get_vsock_endpoint(address)
+                cid, port = get_vsock_endpoint(address)
                 log.info("listening on %s at %s:%s", socktype, cid, port)
                 log.info("  %s://%s:%s", socktype, cid, port)
                 if VSOCK_MDNS and (mdns := self.get_subsystem("mdns")):
@@ -765,22 +622,7 @@ class ServerCore(GLibServer):
             GLib.source_remove(tt)
 
     def touch_sockets(self) -> bool:
-        netlog("touch_sockets() unix socket paths=%s", self.unix_socket_paths)
-        for sockpath in self.unix_socket_paths:
-            if sockpath.startswith("@"):
-                continue
-            if not os.path.exists(sockpath):
-                if first_time(f"missing-socket-{sockpath}"):
-                    log.warn("Warning: the unix domain socket cannot be found:")
-                    log.warn(" '%s'", sockpath)
-                    log.warn(" was it deleted by mistake?")
-                continue
-            try:
-                os.utime(sockpath, None)
-            except OSError as e:
-                if first_time(f"touch-{sockpath}"):
-                    netlog.warn(f"Warning: unable to set modified time on {sockpath!r}: {e}")
-                netlog("touch_sockets() error on %s", sockpath, exc_info=True)
+        network_util.touch_sockets(self.unix_socket_paths)
         return True
 
     def init_packet_handlers(self) -> None:
@@ -856,64 +698,6 @@ class ServerCore(GLibServer):
                      args=(listener, conn))
         return True
 
-    def new_conn_err(self, conn, sock, socktype: str, address, packet_type: str, msg="") -> None:
-        # not an xpra client
-        netlog("new_conn_err", exc_info=True)
-        log_fn = netlog.debug if packet_type == "http" else netlog.error
-        log_fn("Error: %s connection failed:", socktype)
-        if conn.remote:
-            log_fn(" packet from %s", pretty_socket(conn.remote))
-        if address:
-            log_fn(" received on %s", pretty_socket(address))
-        if packet_type:
-            log_fn(" this packet looks like a %r packet", packet_type)
-        else:
-            log_fn(" invalid packet format, not an xpra client?")
-        if msg:
-            log_fn(" %s", msg)
-
-        if packet_type == "xpra":
-            # try xpra packet format:
-            from xpra.net.packet_encoding import pack_one_packet
-            packet_data = pack_one_packet((CONNECTION_CLOSE, "invalid protocol for this port"))
-        elif packet_type == "http":
-            # HTTP 400 error:
-            packet_data = HTTP_UNSUPORTED
-        else:
-            packet_data = b"disconnect: connection setup failed"
-            if msg:
-                packet_data += b", %s?" % strtobytes(msg)
-            packet_data += b"\n"
-        try:
-            # default to plain text:
-            sock.settimeout(1)
-            conn.write(packet_data)
-        except OSError as e:
-            netlog("error sending %r: %s", packet_data, e)
-        GLib.timeout_add(500, force_close_connection, conn)
-
-    def peek_connection(self, conn) -> bytes:
-        timeout = PEEK_TIMEOUT_MS
-        if conn.socktype == "rfb":
-            # rfb does not send any data, waits for a server packet
-            # so don't bother waiting for something that should never come:
-            timeout = 0
-        elif conn.socktype == "socket":
-            timeout = SOCKET_PEEK_TIMEOUT_MS
-        peek_data = b""
-        if timeout > 0:
-            peek_data = peek_connection(conn, timeout)
-        return peek_data
-
-    def guess_packet_type(self, peek_data: bytes):
-        if peek_data:
-            line1 = peek_data.split(b"\n")[0]
-            netlog("socket peek hex=%s", hexstr(peek_data[:128]))
-            netlog("socket peek line1=%s", Ellipsizer(line1))
-        packet_type = guess_packet_type(peek_data)
-        netlog("guess_packet_type(..)=%s", packet_type)
-        return packet_type
-
     def handle_new_connection(self, listener: SocketListener, conn) -> None:
         try:
             self.do_handle_new_connection(listener, conn)
@@ -922,11 +706,11 @@ class ServerCore(GLibServer):
             force_close_connection(conn)
         except ValueError as e:
             sock = conn._socket
-            self.new_conn_err(conn, sock, conn.socktype, conn.remote, "", str(e))
+            new_conn_err(conn, sock, conn.socktype, conn.remote, "", str(e))
         except OSError as e:
             netlog("handle_new_connection(%s, %s) socket wrapping failed", listener, conn, exc_info=True)
             sock = conn._socket
-            self.new_conn_err(conn, sock, conn.socktype, conn.remote, "", str(e))
+            new_conn_err(conn, sock, conn.socktype, conn.remote, "", str(e))
 
     def do_handle_new_connection(self, listener: SocketListener, conn) -> None:
         """
@@ -946,15 +730,15 @@ class ServerCore(GLibServer):
         netlog("handle_new_connection%s sockname=%s, target=%s", (listener, conn), sockname, target)
         # peek so we can detect invalid clients early,
         # or handle non-xpra / wrapped traffic:
-        peek_data = self.peek_connection(conn)
+        peek_data = peek_new_connection(conn)
         netlog("socket peek=%s", Ellipsizer(peek_data, limit=512))
-        packet_type = self.guess_packet_type(peek_data)
+        packet_type = log_guess_packet_type(peek_data)
 
         def can_upgrade_to(to_socktype: str) -> bool:
             return self.can_upgrade(socktype, to_socktype, socket_options)
 
         def conn_err(msg: str) -> tuple[bool, Any, bytes]:
-            self.new_conn_err(conn, conn._socket, socktype, address, packet_type, msg)
+            new_conn_err(conn, conn._socket, socktype, address, packet_type, msg)
             return False, None, b""
 
         if socktype in ("ssl", "wss"):
@@ -971,7 +755,7 @@ class ServerCore(GLibServer):
             # would otherwise eat into the peek timeout budget (and with
             # TLS 1.3 can race with post-handshake writes like NewSessionTickets
             # and block the read thread):
-            self.ssl_handshake(ssl_conn)
+            ssl_conn_handshake(ssl_conn)
             http = socktype == "wss"
             can_peek = SSL_PEEK and (self.ssl_mode.lower() in TRUE_OPTIONS or self.ssl_mode == "auto")
             if can_peek and socktype == "ssl" and can_upgrade_to("wss"):
@@ -1060,7 +844,7 @@ class ServerCore(GLibServer):
         from xpra.net.tls.connection import SSLSocketConnection
         sock = conn._socket
         socktype = conn.socktype
-        ssl_sock = self._ssl_wrap_socket(socktype, sock, socket_options)
+        ssl_sock = wrap_ssl_socket(socktype, sock, socket_options, self._ssl_attributes)
         ssllog("ssl wrapped socket(%s)=%s", sock, ssl_sock)
         if ssl_sock is None:
             return None
@@ -1072,57 +856,11 @@ class ServerCore(GLibServer):
         ssllog("ssl_wrap(%s, %s)=%s", conn, socket_options, ssl_conn)
         return ssl_conn
 
-    @staticmethod
-    def ssl_handshake(ssl_conn) -> None:
-        from xpra.net.tls.socket import ssl_handshake
-        try:
-            ssl_handshake(ssl_conn._socket)
-        except BaseException:
-            # the original socket has been detached by the ssl wrapper,
-            # so closing the original connection would not close anything:
-            force_close_connection(ssl_conn)
-            raise
-
     def get_ssl_socket_options(self, socket_options: dict) -> dict[str, Any]:
-        ssllog(f"get_ssl_socket_options({socket_options})")
-        kwargs = {k.replace("-", "_"): v for k, v in self._ssl_attributes.items()}
-        for k, v in socket_options.items():
-            # options use '-' but attributes and parameters use '_':
-            k = k.replace("-", "_")
-            if k.startswith("ssl_"):
-                k = k[4:]
-                kwargs[k] = v
-        ssllog(f"get_ssl_socket_options({socket_options})={kwargs}")
-        return kwargs
-
-    def _ssl_wrap_socket(self, socktype: str, sock, socket_options):
-        ssllog("ssl_wrap_socket(%s, %s, %s)", socktype, sock, socket_options)
-        kwargs = self.get_ssl_socket_options(socket_options)
-        try:
-            from xpra.net.tls.socket import ssl_wrap_socket
-            ssl_sock = ssl_wrap_socket(sock, **kwargs)
-            ssllog("_ssl_wrap_socket(%s, %s)=%s", sock, kwargs, ssl_sock)
-            if ssl_sock is None:
-                # None means EOF! (we don't want to import ssl bits here)
-                ssllog("ignoring SSL EOF error")
-            return ssl_sock
-        except Exception as e:
-            ssllog("SSL error", exc_info=True)
-            ssl_paths = [socket_options.get(x, kwargs.get(x)) for x in ("ssl-cert", "ssl-key")]
-            cpaths = csv(f"{x!r}" for x in ssl_paths if x)
-            log_fn = log.error if first_time(f"ssl-wrap-{socktype}-{socket_options}") else log.debug
-            log_fn("Error: failed to create SSL socket")
-            log_fn(" from %s socket: %s", socktype, sock)
-            if not cpaths:
-                log_fn(" no certificate paths specified")
-            else:
-                log_fn(" check your certificate paths: %s", cpaths)
-            log_fn(" %s", e)
-            noerr(sock.close)
-            return None
+        return network_util.get_ssl_socket_options(self._ssl_attributes, socket_options)
 
     def handle_ws_socket(self, conn, socket_options: dict[str, Any], peek_data: bytes) -> None:
-        packet_type = self.guess_packet_type(peek_data)
+        packet_type = log_guess_packet_type(peek_data)
         if peek_data:
             if packet_type == "ssl" and self.can_upgrade(conn.socktype, "wss", socket_options):
                 ssllog("ws socket receiving ssl, upgrading to wss")
@@ -1141,43 +879,8 @@ class ServerCore(GLibServer):
         none_auth = not auth_classes.get(socktype)
         sshlog("handle_ssh_connection(%s, %s) socktype wrapped=%s", conn, socket_options, socktype)
 
-        def ssh_password_authenticate(username, password) -> bool:
-            if not POSIX or getuid() != 0:
-                import getpass
-                sysusername = getpass.getuser()
-                if sysusername != username:
-                    sshlog.warn("Warning: ssh password authentication failed,")
-                    sshlog.warn(" username does not match:")
-                    sshlog.warn(" expected '%s', got '%s'", sysusername, username)
-                    return False
-            if not auth_module:
-                return False
-            auth_modules = auth_module.make_authenticators(socktype, {"username": username}, conn)
-            sshlog("ssh_password_authenticate auth_modules(%s, %s)=%s", username, "*" * len(password), auth_modules)
-            for auth in auth_modules:
-                # mimic a client challenge:
-                digests = ("xor", )
-                try:
-                    salt, digest = auth.get_challenge(digests)
-                    salt_digest = auth.choose_salt_digest(digests)
-                    if digest != "xor":
-                        raise ValueError(f"unexpected digest {digest}")
-                    if salt_digest != "xor":
-                        raise ValueError(f"unexpected salt digest {salt_digest}")
-                except ValueError as e:
-                    sshlog("authentication with %s", auth, exc_info=True)
-                    sshlog.warn("Warning: ssh transport cannot use %r authentication:", auth)
-                    sshlog.warn(" %s", e)
-                    return False
-                else:
-                    client_salt = get_salt(len(salt))
-                    combined_salt = gendigest("xor", client_salt, salt)
-                    xored_password = gendigest("xor", password, combined_salt)
-                    r = auth.authenticate(xored_password, client_salt)
-                    sshlog("%s.authenticate(..)=%s", auth, r)
-                    if not r:
-                        return False
-            return True
+        def password_auth(username: str, password: str) -> bool:
+            return ssh_password_authenticate(auth_module, socktype, conn, username, password)
 
         display = self.get_subsystem("display")
         display_name = display.get_display_name() if display else os.environ.get("DISPLAY", "")
@@ -1185,7 +888,7 @@ class ServerCore(GLibServer):
         return make_ssh_server_connection(
             conn, socket_options,
             none_auth=none_auth,
-            password_auth=ssh_password_authenticate,
+            password_auth=password_auth,
             display_name=display_name,
         )
 
@@ -1236,7 +939,7 @@ class ServerCore(GLibServer):
             netlog("may_wrap_socket: no data, not wrapping")
             return True, conn, peek_data
         line1 = peek_data.split(b"\n")[0]
-        packet_type = self.guess_packet_type(peek_data)
+        packet_type = log_guess_packet_type(peek_data)
         if packet_type == "xpra":
             netlog("may_wrap_socket: xpra protocol header '%s', not wrapping", peek_data[0])
             # xpra packet header, no need to wrap this connection
@@ -1250,7 +953,7 @@ class ServerCore(GLibServer):
             return self.can_upgrade(socktype, to_socktype, socket_options)
 
         def conn_err(msg: str) -> tuple[bool, Any, bytes]:
-            self.new_conn_err(conn, conn._socket, socktype, address, packet_type, msg)
+            new_conn_err(conn, conn._socket, socktype, address, packet_type, msg)
             return False, None, b""
 
         if packet_type == "ssh":
@@ -1262,13 +965,13 @@ class ServerCore(GLibServer):
         if packet_type == "ssl":
             ssl_peek_data = peek_data
             sock, sockname, address, endpoint = conn._socket, conn.local, conn.remote, conn.endpoint
-            sock = self._ssl_wrap_socket(socktype, sock, socket_options)
+            sock = wrap_ssl_socket(socktype, sock, socket_options, self._ssl_attributes)
             if sock is None:
                 return False, None, b""
             from xpra.net.tls.connection import SSLSocketConnection
             conn = SSLSocketConnection(sock, sockname, address, endpoint, "ssl", socket_options=socket_options)
             conn.socktype_wrapped = socktype
-            self.ssl_handshake(conn)
+            ssl_conn_handshake(conn)
             # Clear the pre-upgrade encrypted peek data: after wrapping, only
             # decrypted bytes peeked from `conn` may be passed on.
             peek_data = b""
@@ -1317,7 +1020,7 @@ class ServerCore(GLibServer):
             rfb.cancel_upgrade_to_rfb_timer(proto)
             rfb.upgrade_protocol_to_rfb(proto, data)
             return
-        packet_type = self.guess_packet_type(data)
+        packet_type = log_guess_packet_type(data)
         # RFBServerProtocol doesn't support `steal_connection`:
         if packet_type == "http" and hasattr(proto, "steal_connection"):
             # try again to wrap this socket:
@@ -1441,37 +1144,7 @@ class ServerCore(GLibServer):
     def verify_connection_accepted(self, protocol: SocketProtocol) -> None:
         self.cancel_verify_connection_accepted(protocol)
         if self.is_timedout(protocol):
-            conn = getattr(protocol, "_conn", None)
-            elapsed = round(monotonic() - protocol.start_time)
-            messages = [
-                "Error: connection timed out",
-                " " + str(conn or protocol),
-                f" after {elapsed} seconds",
-            ]
-            if conn:
-                messages += [
-                    f" sent {conn.output_bytecount} bytes",
-                    f" received {conn.input_bytecount} bytes",
-                ]
-                if conn.input_bytecount == 0:
-                    try:
-                        data = conn.peek(200)
-                    except (OSError, ValueError):
-                        log("cannot peek on %s", conn)
-                        data = b""
-                    if data:
-                        messages.append(f" read buffer={data!r}")
-                        if packet_type := self.guess_packet_type(data):
-                            messages.append(f" looks like {packet_type!r}")
-                    else:
-                        # no data was ever received,
-                        # this can happen with probes or browser connections,
-                        # log at debug level only to avoid spamming the log:
-                        for msg in messages:
-                            netlog(msg)
-                        messages = []
-            for msg in messages:
-                netlog.error(msg)
+            log_connection_timeout(protocol)
             self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
 
     def cancel_verify_connection_accepted(self, protocol: SocketProtocol) -> None:
@@ -1504,17 +1177,7 @@ class ServerCore(GLibServer):
         i = str(reasons[0])
         if len(reasons) > 1:
             i += " (%s)" % csv(reasons[1:])
-        proto_info = f" {protocol}"
-        try:
-            conn = protocol._conn
-            info = conn.get_info()
-            endpoint = info.get("endpoint")
-            if endpoint:
-                proto_info = " " + pretty_socket(endpoint)
-            else:
-                proto_info = " " + pretty_socket(conn.local)
-        except (KeyError, AttributeError):
-            pass
+        proto_info = get_protocol_info(protocol)
         self.cancel_verify_connection_accepted(protocol)
         self.cancel_upgrade_to_rfb_timer(protocol)
         if not protocol.is_closed():
@@ -1689,7 +1352,7 @@ class ServerCore(GLibServer):
             return
         options = conn.options
         socktype = conn.socktype
-        ssl_sock = self._ssl_wrap_socket(socktype, conn._socket, options)
+        ssl_sock = wrap_ssl_socket(socktype, conn._socket, options, self._ssl_attributes)
         if not ssl_sock:
             self.disconnect_protocol(proto, "failed to upgrade socket to ssl")
             force_close_connection(conn)
@@ -1888,57 +1551,8 @@ class ServerCore(GLibServer):
         return {}
 
     def get_socket_info(self) -> dict[str, Any]:
-        si: dict[str, Any] = {}
-
-        def add_listener(socktype: str, info) -> None:
-            si.setdefault(socktype, {}).setdefault("listeners", []).append(info)
-
-        def add_address(socktype: str, address, port: int) -> None:
-            addresses = si.setdefault(socktype, {}).setdefault("addresses", [])
-            if (address, port) not in addresses:
-                addresses.append((address, port))
-            if socktype == "tcp":
-                if self.websocket_upgrade:
-                    add_address("ws", address, port)
-                if self._ssl_attributes:
-                    add_address("ssl", address, port)
-                if self.ssh_upgrade:
-                    add_address("ssh", address, port)
-            if socktype == "ws" and self._ssl_attributes:
-                add_address("wss", address, port)
-
-        netifaces = import_netifaces()
-        for sock in self.sockets:
-            socktype = sock.socktype
-            address = sock.address
-            if not address:
-                continue
-            add_listener(socktype, address)
-            if not SHOW_NETWORK_ADDRESSES:
-                continue
-            if socktype not in ("tcp", "ssl", "ws", "wss", "ssh"):
-                # we expose addresses only for TCP sockets
-                continue
-            upnp_address = sock.options.get("upnp-address", ())
-            if upnp_address:
-                add_address(socktype, *upnp_address)
-            if len(address) != 2 or not isinstance(address[0], str) or not isinstance(address[1], int):
-                # unsupported listener info format
-                continue
-            host, port = address
-            if host not in ("0.0.0.0", "::/0", "::"):
-                # not a wildcard address, use it as-is:
-                add_address(socktype, host, port)
-                continue
-            if not netifaces:
-                if first_time("netifaces-socket-address"):
-                    netlog("get_socket_info()", backtrace=True)
-                    netlog.warn("Warning: netifaces is missing")
-                    netlog.warn(" socket addresses cannot be queried")
-            else:
-                for ip in get_all_ips():
-                    add_address(socktype, ip, port)
-
+        si = network_util.get_socket_info(self.sockets, websocket=self.websocket_upgrade,
+                                          ssl=bool(self._ssl_attributes), ssh=self.ssh_upgrade)
         if auth := self.get_subsystem("auth"):
             auth.get_authenticator_info(si)
         return si
