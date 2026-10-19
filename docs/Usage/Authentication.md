@@ -80,6 +80,7 @@ Some of these modules require extra [dependencies](../Build/Dependencies.md).
 | [otp](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/otp.py)                             | One Time Password                                                                       | [pyotp](https://github.com/pyauth/pyotp)                                            |
 | [otpscreen](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/otpscreen.py)                 | Generates a one-time secret and shows it in a local GUI dialog for the user to type     | local secondary-channel confirmation (distinct from `otp`)                          |
 | [email](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/email.py)                         | Sends a short-lived verification code by SMTP                                          | fixed, prompted, SQL/command lookup, or username-derived destination                 |
+| [sms](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/sms.py)                             | Sends a short-lived verification code by SMS, through an HTTP API                      | fixed, prompted, or SQL/command lookup phone number; any provider (ie: Brevo)       |
 | [notify](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/notify.py)                       | Asks the current user(s) of the session to allow the connection, using a notification   | shadow servers: the desktop user, seamless servers: the connected clients, MS Windows: tray balloon |
 | [http-header](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/http_header.py)             | validate websocket http headers                                                         | [#4438](https://github.com/Xpra-org/xpra/issues/4438)                               |
 </details>
@@ -236,6 +237,82 @@ Send attempts are limited to one per mailbox per 60 seconds and five per peer IP
 Limits are shared across connections and sockets within one server process, include loopback IPs, and reset on restart.
 At most 10,000 mailbox/IP keys are retained; expired entries are pruned, and new keys are rejected when storage is full.
 These send limits complement the `ratelimit` module, which tracks authentication failures.
+</details>
+
+<details markdown="1">
+  <summary>SMS verification</summary>
+
+The `sms` module sends a one-time code by SMS and asks the client to enter it.
+It shares the challenge flow, code rules, timeouts, lookups and send limits of the `email` module:
+chain it **after** primary authentication, over a protected connection, and see the email verification section above for the details.
+The code is delivered by an HTTPS request to the SMS provider's API, which is described using generic options
+so that any provider can be used. For example, with [Brevo](https://developers.brevo.com/docs/transactional-sms-endpoints):
+
+```shell
+xpra seamless --start=xterm \
+  --bind-ssl='0.0.0.0:14500,auth=ratelimit,auth=pam,auth=sms(number=+33680065433,url=https://api.brevo.com/v3/transactionalSMS/send,headers-file=/etc/xpra/brevo-headers,from=Xpra)' \
+  --ssl-cert=/path/to/server-cert.pem --ssl-key=/path/to/server-key.pem
+xpra attach ssl://server.example.com:14500/ --challenge-handlers=prompt,prompt
+```
+
+With `/etc/xpra/brevo-headers` containing the API key, readable only by the server:
+```text
+api-key: xkeysib-...
+```
+
+Phone number selection:
+
+| Options | Destination |
+|---------|-------------|
+| `mode=fixed,number=+33680065433` | A preconfigured number; `fixed` is the default mode. |
+| `mode=prompt` | Ask for a number in international format: `+33 6 80 06 54 33` or `0033680065433`. |
+| `mode=prompt,country=+33` | Also accept national numbers: one leading `0` is removed and the country code is prepended. |
+| `mode=lookup,lookup=sql,uri=sqlite:////path/to/users.db` | Look up the login username in a database, the default query is `SELECT phone FROM users WHERE username=:username`. |
+| `mode=lookup,lookup=exec,command=/usr/local/bin/xpra-phone-lookup` | Run a helper to look up the login username. |
+
+Numbers are normalized to [E.164](https://en.wikipedia.org/wiki/E.164): spaces, dashes, dots and parentheses are removed,
+a leading `00` is replaced with `+`, and the result must be `+` followed by 7 to 15 digits.
+As with email, prompt mode only proves that the user can receive messages on the number they enter.
+
+HTTP request options:
+
+| Option | Default | Purpose |
+|--------|---------|---------|
+| `url` | required | Provider endpoint. Must use `https`, unless `http-insecure=yes` is set, ie: for a local gateway. Credentials are not allowed in the URL. |
+| `method` | `POST` | `POST`, `PUT` or `GET`. `GET` requests have no body: use placeholders in the `url` query string instead. |
+| `body-format` | `json` | `json` or `form`: sets the `Content-Type` and how values are escaped. |
+| `body-file` | Brevo JSON body | Request body template, required for `form`. The default is `{"sender": "{from}", "recipient": "{to_digits}", "content": "{message}"}`. |
+| `headers-file` | empty | Extra request headers, one `Name: value` per line; `#` starts a comment. Re-read for every message, so keys can be rotated. |
+| `from` | empty | Sender name or number, up to 15 letters, digits, spaces, `.`, `+` or `-`. Providers may restrict this further. |
+| `message` | `Your Xpra verification code is {code}` | Message text, which must include `{code}` and not exceed 160 characters. Commas would separate auth module options. |
+| `http-timeout` | `10` | Timeout in seconds for the HTTP request. |
+| `http-ssl-*` | system trust | Same options as the email module's `smtp-ssl-*` options, ie: `http-ssl-ca-certs=/path/to/ca.pem`. |
+
+These placeholders can be used in the `url` and body templates:
+
+| Placeholder | Value |
+|-------------|-------|
+| `{to}` | Phone number in E.164 format, ie: `+33680065433` |
+| `{to_digits}` | The same number without the `+`, ie: `33680065433` |
+| `{from}` | The `from` option |
+| `{message}` | The rendered `message` text |
+| `{code}` | The verification code alone |
+
+Values are escaped for where they are inserted: URL encoding in the `url`, JSON string escaping in `json` bodies
+(so placeholders belong inside JSON strings), and form encoding in `form` bodies.
+A placeholder in a value is never expanded again. The templates are rendered at startup to catch invalid JSON.
+
+Any `2xx` response status is accepted. Error statuses, timeouts and connection failures reject authentication
+and are not shown to the client. Redirects are never followed, as `urllib` would send the headers, including API keys,
+to the new location. The usual `https_proxy` environment variables are honoured.
+Keep API keys in `headers-file`, not on the command line, and restrict access to that file.
+
+For a provider which uses form encoding and basic authentication, such as Twilio:
+```text
+sms(mode=prompt,url=https://api.twilio.com/2010-04-01/Accounts/ACXXX/Messages.json,body-format=form,body-file=/etc/xpra/sms-body,headers-file=/etc/xpra/sms-headers,from=+15550100199)
+```
+With `/etc/xpra/sms-body` containing `To={to}&From={from}&Body={message}`,
+and `/etc/xpra/sms-headers` containing `Authorization: Basic <base64 of account-sid:auth-token>`.
 </details>
 
 <details markdown="1">
