@@ -325,6 +325,7 @@ class WindowServer(StubSubsystem):
             "override-redirect": window.is_OR(),
             "tray": window.is_tray(),
             "size": window.get_dimensions(),
+            "geometry": WindowServer.get_window_geometry(window),
             "xshm": window.uses_xshm(),
         })
         if wid := self._window_to_id.get(window):

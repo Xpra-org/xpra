@@ -765,6 +765,8 @@ class SeamlessWindowServer(WindowServer):
         }
         if not (window.is_OR() or window.is_tray()):
             info["shown"] = window.get_property("shown")
+            if cg := window.get_property("client-geometry"):
+                info["client-geometry"] = cg
         return info
 
     # --------------------------------------------------------------------
