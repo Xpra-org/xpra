@@ -217,3 +217,9 @@ tests/unittests/test-file*
 
 # compiled gettext translation catalogs (built from .po at build time):
 /fs/share/xpra/locales/**/*.mo
+
+# default directory created by the recorder:
+/record
+
+# a place where we can stash local files without polluting:
+/local
