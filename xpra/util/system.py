@@ -8,7 +8,7 @@ import os
 import re
 import sys
 import signal
-from typing import Any, Sequence, TYPE_CHECKING, NoReturn
+from typing import Any, Mapping, Sequence, TYPE_CHECKING, NoReturn
 
 from xpra.os_util import POSIX, LINUX, OSX, WIN32, force_quit
 
@@ -126,11 +126,11 @@ def get_platform_icon_name(platform: str) -> str:
     return ""
 
 
-def is_Wayland() -> bool:
-    return _is_Wayland(_saved_env)
+def is_Wayland(env: Mapping | None = None) -> bool:
+    return _is_Wayland(_saved_env if env is None else env)
 
 
-def _is_Wayland(env: dict) -> bool:
+def _is_Wayland(env: Mapping) -> bool:
     backend = env.get("GDK_BACKEND", "")
     if backend == "wayland":
         return True
