@@ -208,7 +208,6 @@ class ServerCore(GLibServer):
         self._html: bool | None = False
         self._www_dir: str = ""
         self._http_headers_dirs: list[str] = []
-        self.socket_cleanup: list[Callable] = []
         self.socket_verify_timer: WeakKeyDictionary[SocketProtocol, int] = WeakKeyDictionary()
         self._max_connections: int = MAX_CONCURRENT_CONNECTIONS
         self._socket_timeout: float = SERVER_SOCKET_TIMEOUT
