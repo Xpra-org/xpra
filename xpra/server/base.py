@@ -419,12 +419,6 @@ class ServerBase(ServerCore):
         log("ServerBase.get_info took %.1fms", 1000.0 * (monotonic() - start))
         return info
 
-    def _disconnect_proto_info(self, proto) -> str:
-        # only log protocol info if there is more than one client:
-        if len(self._server_sources) > 1:
-            return " %s" % proto
-        return ""
-
     def init_packet_handlers(self) -> None:
         # ServerCore.init_packet_handlers registers core handlers and dispatches
         # `init_packet_handlers` to all subsystems:

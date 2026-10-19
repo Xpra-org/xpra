@@ -329,12 +329,6 @@ class ProxyServer(ServerCore):
     def log_closing_message(self) -> None:
         log.info("Proxy Server process ended")
 
-    def verify_connection_accepted(self, protocol) -> None:
-        # if we start a proxy, the protocol will be closed
-        # (a new one is created in the proxy process)
-        if not protocol.is_closed():
-            self.send_disconnect(protocol, ConnectionMessage.LOGIN_TIMEOUT)
-
     def hello_oked(self, proto, c: typedict, auth_caps: dict) -> None:
         if super().hello_oked(proto, c, auth_caps) or c.strget("request"):
             # already handled in superclass, which also rejects the requests we don't support

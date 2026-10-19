@@ -35,11 +35,12 @@ class LandLockTest(unittest.TestCase):
         opts.landlock = mode
         server = ServerCore.__new__(ServerCore)
         server.subsystems = {}
-        server.sockets = []
         landlock = LandLock(server)
         server.subsystems[LandLock.PREFIX] = landlock
+        network = make_subsystem(server, sockets=[], start_listen_sockets=Mock())
+        server.subsystems["network"] = network
         landlock.init(opts)
-        server.start_listen_sockets = Mock()
+        server.start_listen_sockets = network.start_listen_sockets
         server.init_packet_handlers = Mock()
         server.add_core_control_commands = Mock()
         return server, landlock, opts
