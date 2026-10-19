@@ -102,6 +102,13 @@ class Authenticator(SysAuthenticator):
             log.error(f" {cmd!r}")
             log.estr(e)
             return False
+        except ValueError as e:
+            # A decoded password may contain a NUL byte, which Popen rejects.
+            # Do not include the command line in the error: it may contain the password.
+            log("invalid exec authentication command arguments", exc_info=True)
+            log.error("Error: invalid exec authentication module command arguments")
+            log.estr(e)
+            return False
         v = proc.returncode
         procinfo = self.procinfo
         if procinfo:

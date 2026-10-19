@@ -391,6 +391,19 @@ class TestAuth(unittest.TestCase):
         exec_cmd("/bin/true", True)
         exec_cmd("/bin/false", False)
 
+    def test_exec_invalid_password(self):
+        if not POSIX:
+            return
+        a = self._init_auth("exec", command="/bin/true ${password}", timeout=2, **{"require-challenge": "yes"})
+        assert a.requires_challenge()
+        salt, digest = a.get_challenge(("xor", ))
+        assert salt and digest == "xor"
+        client_salt = strtobytes(uuid.uuid4().hex + uuid.uuid4().hex)
+        salt_digest = a.choose_salt_digest(get_digests())
+        auth_salt = strtobytes(gendigest(salt_digest, client_salt, salt))
+        response = gendigest("xor", b"pass\0word", auth_salt)
+        assert not self.capsauth(a, response, client_salt)
+
     def test_keycloak(self):
         try:
             self._init_auth("keycloak")

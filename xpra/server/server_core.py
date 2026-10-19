@@ -2110,13 +2110,23 @@ class ServerCore:
             if authenticator not in remaining_authenticators:
                 authlog(f"authenticator[{index}]={authenticator} (already passed)")
                 continue
+
+            def authenticate() -> bool:
+                try:
+                    return authenticator.authenticate(c)
+                except Exception as e:
+                    authlog(f"{authenticator!r}.authenticate(..)", exc_info=True)
+                    authlog.error(f"Error: {authenticator!r} authentication module failed")
+                    authlog.estr(e)
+                    return False
+
             req = authenticator.requires_challenge()
             csent = authenticator.challenge_sent
             authlog(f"authenticator[{index}]={authenticator}, requires-challenge={req}, challenge-sent={csent}")
             if not req:
                 #this authentication module does not need a challenge
                 #(ie: "peercred", "exec" or "none")
-                if not authenticator.authenticate(c):
+                if not authenticate():
                     auth_failed(f"{authenticator} authentication failed")
                     return
                 authenticator.passed = True
@@ -2157,7 +2167,7 @@ class ServerCore:
                 authlog(f"sending challenge {authenticator.prompt!r}")
                 self.send_challenge(proto, salt, auth_caps, digest, salt_digest, authenticator.prompt)
                 return
-            if not authenticator.authenticate(c):
+            if not authenticate():
                 auth_failed(ConnectionMessage.AUTHENTICATION_FAILED)
                 return
         client_expects_challenge = c.strget("challenge") is not None
