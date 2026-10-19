@@ -358,6 +358,63 @@ class X11WindowTest(ServerTestUtil):
         wm.cleanup()
         self.assertFalse(wm.get_focus_window())
 
+    def test_focus_raises_window(self):
+        from xpra.x11.bindings.core import get_root_xid
+        from xpra.x11.bindings.window import X11WindowBindings
+        from xpra.x11.error import xsync
+
+        first = self.manage_window(self.start_window())
+        second = self.manage_window(self.start_window())
+        server = FocusStub(windows={1: first, 2: second})
+        bindings = X11WindowBindings()
+        root = get_root_xid()
+
+        for wid, focused, covering in ((1, first, second), (2, second, first)):
+            with self.subTest(wid=wid):
+                server.focus(wid)
+                self.assertEqual(bindings.get_children(root)[-1], focused.corral_xid)
+                with xsync:
+                    covering.raise_window()
+                self.assertEqual(bindings.XGetInputFocus()[0], focused.xid)
+                self.assertEqual(bindings.get_children(root)[-1], covering.corral_xid)
+                # The client can send the same focus again after another window
+                # has covered it on the server, without changing the input focus.
+                history = tuple(server._focus_history)
+                server.focus(wid)
+                self.assertEqual(bindings.get_children(root)[-1], focused.corral_xid)
+                self.assertEqual(tuple(server._focus_history), history)
+
+    def test_pointer_raises_stationary_window(self):
+        from xpra.x11.bindings.core import get_root_xid
+        from xpra.x11.bindings.window import X11WindowBindings
+        from xpra.x11.server.pointer import X11SeamlessPointerManager
+        from xpra.x11.server.xtest_pointer import XTestPointerDevice
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+
+        first = self.manage_window(self.start_window())
+        second = self.manage_window(self.start_window())
+        server = AdHocStruct()
+        server.subsystems = {}
+        server.get_server_source = lambda _proto: None
+        server.get_sources_by_type = lambda *_args: ()
+        windows = SeamlessWindowServer(server)
+        windows._id_to_window = {1: first, 2: second}
+        server.subsystems["window"] = windows
+        pointer = X11SeamlessPointerManager(server)
+        pointer.pointer_device = XTestPointerDevice()
+        pointer.pointer_device.move_pointer(20, 20, {})
+        bindings = X11WindowBindings()
+        root = get_root_xid()
+        self.assertEqual(bindings.get_children(root)[-1], second.corral_xid)
+
+        # Wayland client windows can have the same server coordinates: changing
+        # the target window must raise it even when the pointer does not move.
+        pointer.process_mouse_common(object(), 0, 1, (20, 20))
+        self.assertEqual(bindings.get_children(root)[-1], first.corral_xid)
+        for pressed in (True, False):
+            pointer.process_pointer_button(object(), 0, 2, 1, pressed, (20, 20), {})
+            self.assertEqual(bindings.get_children(root)[-1], second.corral_xid)
+
     def test_lost_active_window(self):
         """
         A transient window can become `_NET_ACTIVE_WINDOW` without taking the input focus
