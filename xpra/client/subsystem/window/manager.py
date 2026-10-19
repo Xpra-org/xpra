@@ -400,7 +400,12 @@ class WindowManagerClient(StubClientSubsystem):
         pid = metadata.intget("pid", 0)
         if watcher_pid := self.assign_signal_watcher_pid(wid, pid, metadata.strget("title")):
             metadata["watcher-pid"] = watcher_pid
-        if override_redirect and metadata.strget("role").lower() == "popup" and pid:
+        # Wayland needs a mapped parent even without a "popup" role. Qt may set
+        # WM_TRANSIENT_FOR to its unmapped group leader, which we cannot use.
+        if override_redirect and pid and (
+            metadata.strget("role").lower() == "popup"
+            or is_Wayland() and metadata.intget("transient-for", 0) not in self._id_to_window
+        ):
             self.patch_OR_popup_transient_for(metadata)
         border = self.get_border()
         window = None
