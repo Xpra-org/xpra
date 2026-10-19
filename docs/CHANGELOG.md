@@ -103,6 +103,7 @@
   * [follow changes to the system audio device on macOS](https://github.com/Xpra-org/xpra/issues/5049)
   * [use loopback for MS Windows shadow server audio capture](https://github.com/Xpra-org/xpra/issues/1205)
 * *️⃣ Keyboard:
+  * [dismiss stuck popup windows with `Control+Escape`](https://github.com/Xpra-org/xpra/commit/09b2c437be04c1822a7f80463274e7c9ac6f77cf)
   * [untranslated keyboard](https://github.com/Xpra-org/xpra/issues/1172)
   * [keymap handling improvements](https://github.com/Xpra-org/xpra/issues/4963) [and on-demand keysym mapping](https://github.com/Xpra-org/xpra/issues/5057)
   * [correct MS Windows keyboard layout mapping](https://github.com/Xpra-org/xpra/issues/2561)

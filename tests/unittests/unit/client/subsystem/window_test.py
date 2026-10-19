@@ -10,12 +10,45 @@ from unittest.mock import Mock, patch
 from xpra.os_util import WIN32, OSX
 from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_STACKING
-from xpra.util.objects import AdHocStruct
+from xpra.util.objects import AdHocStruct, typedict
 from unit.process_test_util import DisplayContext
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class WindowManagerTest(ClientMixinTest):
+
+    def test_dismiss_popups(self):
+        from xpra.client.subsystem.window import WindowClient
+
+        client = Mock(readonly=False)
+        keyboard = Mock(grabbed=True)
+        client.subsystems = {"keyboard": keyboard}
+        window_client = WindowClient(client)
+        popup = Mock()
+        popup.is_OR.return_value = True
+        popup.is_tray.return_value = False
+        regular = Mock()
+        regular.is_OR.return_value = False
+        tray = Mock()
+        tray.is_OR.return_value = True
+        tray.is_tray.return_value = True
+        window_client._id_to_window = {1: regular, 2: popup, 3: tray}
+
+        for caps, readonly, expected in (({}, False, []), ({"window": {"dismiss": True}}, True, []),
+                                         ({"window": {"dismiss": True}}, False, [("window-dismiss", 2)])):
+            with self.subTest(caps=caps, readonly=readonly):
+                client.reset_mock()
+                client.readonly = readonly
+                keyboard.grabbed = True
+                window_client._window_with_grab = 2
+                window_client.pointer_grabbed = 2
+                self.assertTrue(window_client.parse_server_capabilities(typedict(caps)))
+                window_client.dismiss_popups()
+                client.window_ungrab.assert_called_once_with()
+                self.assertIsNone(window_client._window_with_grab)
+                self.assertIsNone(window_client.pointer_grabbed)
+                self.assertFalse(keyboard.grabbed)
+                self.assertEqual([tuple(args) for args, _kwargs in client.send.call_args_list], expected)
 
     def test_missing_resize_counter_defaults_to_zero(self):
         from xpra.client.subsystem.window.manager import WindowManagerClient

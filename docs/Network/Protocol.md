@@ -445,6 +445,7 @@ structures advertised in the display capabilities.
 | C -> S | `window-unmap` | `wid:u64`, `iconified:bool?`, `state:map?` |
 | C -> S | `window-configure` | `wid:u64`, `configuration:map` |
 | C -> S | `window-close` | `wid:u64` |
+| C -> S | `window-dismiss` | `wid:u64` |
 | C -> S | `window-focus` | `wid:u64`, `modifiers:list<str>?` |
 | C -> S | `window-action` | `wid:u64`, `action:str`, `arguments:any...` |
 | C -> S | `window-stacking` | `wids:list<u64>` |
@@ -453,6 +454,8 @@ structures advertised in the display capabilities.
 | C -> S | `window-draw-ack` | `sequence:u64`, `wid:u64`, `width:u16`, `height:u16`, `decode_time_us:i32`, `message:str?` |
 
 Window IDs are allocated by the server and remain valid until `window-destroy`.
+`window-dismiss` requires the server's `window.dismiss` capability and only
+unmaps override-redirect popups. Readonly clients cannot dismiss remote windows.
 The encoding and options of `window-draw` MUST have been advertised by the
 client. A sequence acknowledgement MUST refer to the matching draw and window.
 `window-stacking` lists windows from bottom to top. Servers forward it to

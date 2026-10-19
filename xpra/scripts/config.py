@@ -970,6 +970,7 @@ def get_default_key_shortcuts() -> list[str]:
     return [shortcut for e, shortcut in (
         (True, "Control+Menu:toggle_keyboard_grab"),
         (True, "Shift+Menu:toggle_pointer_grab"),
+        (True, "Control+Escape:dismiss_popups"),
         (not OSX, "Shift+F11:toggle_fullscreen"),
         (OSX, "Control+F11:toggle_fullscreen"),
         (True, "#+F1:show_menu"),

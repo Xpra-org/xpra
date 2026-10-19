@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import Mock
 
 from xpra.common import noop
 from xpra.util.objects import AdHocStruct
@@ -13,6 +14,18 @@ from unit.process_test_util import DisplayContext
 
 
 class KeyboardHelperTest(unittest.TestCase):
+
+    def test_dismiss_popups_shortcut(self):
+        from xpra.scripts.config import get_default_key_shortcuts
+
+        kh = KeyboardHelper(noop, key_shortcuts=get_default_key_shortcuts())
+        self.addCleanup(kh.cleanup)
+        kh.parse_shortcuts()
+        window = Mock()
+        self.assertFalse(kh.key_handled_as_shortcut(window, "Escape", [], True))
+        self.assertTrue(kh.key_handled_as_shortcut(window, "Escape", ["control"], True))
+        self.assertTrue(kh.key_handled_as_shortcut(window, "Escape", ["control"], False))
+        window.dismiss_popups.assert_called_once_with()
 
     def test_modifier(self):
         kh = KeyboardHelper(noop)

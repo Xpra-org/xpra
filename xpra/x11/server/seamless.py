@@ -232,6 +232,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
                 "frame-extents": True,
                 "configure.delta": True,
                 "stacking": True,
+                "dismiss": True,
                 "signals": WINDOW_SIGNALS,
                 "dragndrop": True,
                 "states": [

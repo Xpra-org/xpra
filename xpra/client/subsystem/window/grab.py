@@ -7,6 +7,7 @@ import os
 from typing import Any
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.packet_type import WINDOW_DISMISS
 from xpra.util.objects import typedict
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
@@ -55,11 +56,16 @@ class WindowGrab(StubClientSubsystem):
     # which is the subsystem registered as `window`: declaring the prefix here
     # too keeps each mixin usable (and testable) on its own
     PREFIX = "window"
-    SLOT_NAMES = ("_window_with_grab", "pointer_grabbed")
+    SLOT_NAMES = ("_window_with_grab", "pointer_grabbed", "server_window_dismiss")
 
     def __init__(self):
         self._window_with_grab = None
         self.pointer_grabbed = None
+        self.server_window_dismiss = False
+
+    def parse_server_capabilities(self, c: typedict) -> bool:
+        self.server_window_dismiss = c.boolget("window.dismiss")
+        return True
 
     def get_info(self) -> dict[str, Any]:
         return {
@@ -79,6 +85,23 @@ class WindowGrab(StubClientSubsystem):
         log("do_force_ungrab(%#x)", wid)
         # ungrab via dedicated server packet:
         self.client.send_force_ungrab(wid)
+
+    def dismiss_popups(self) -> None:
+        # Release our local grabs immediately, even with an older server or in readonly mode.
+        self.client.window_ungrab()
+        self._window_with_grab = None
+        self.pointer_grabbed = None
+        if keyboard := self.get_subsystem("keyboard"):
+            keyboard.grabbed = False
+        if self.client.readonly:
+            return
+        if not self.server_window_dismiss:
+            log.warn("Warning: the server does not support dismissing popup windows")
+            return
+        # Use a snapshot: unmapping a popup removes its client window asynchronously.
+        for wid, window in tuple(self._id_to_window.items()):
+            if window.is_OR() and not window.is_tray():
+                self.send(WINDOW_DISMISS, wid)
 
     def _process_grab(self, packet: Packet) -> None:
         wid = packet.get_wid()

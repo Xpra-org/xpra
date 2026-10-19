@@ -47,6 +47,7 @@ WINDOW_MAP: Final[str] = compat("map-window", "window-map")
 WINDOW_UNMAP: Final[str] = compat("unmap-window", "window-unmap")
 WINDOW_CONFIGURE: Final[str] = "window-configure"
 WINDOW_CLOSE: Final[str] = compat("close-window", "window-close")
+WINDOW_DISMISS: Final[str] = "window-dismiss"
 WINDOW_FOCUS: Final[str] = compat("focus", "window-focus")
 WINDOW_ACTION: Final[str] = "window-action"
 WINDOW_STACKING: Final[str] = "window-stacking"

@@ -82,6 +82,7 @@ class WebcamMixinTest(ServerMixinTest):
         with patch.object(ServerBase, "get_server_features", return_value={}):
             features = SeamlessServer.get_server_features(server)
         self.assertTrue(typedict(features).boolget("window.stacking"))
+        self.assertTrue(typedict(features).boolget("window.dismiss"))
 
     def test_monitor_relative_geometry(self):
         from xpra.x11.subsystem.window import SeamlessWindowServer

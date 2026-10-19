@@ -18,6 +18,25 @@ Xpra utilizes keyboard shortcuts to facilitate quick access to its features.
 
 For historical reference, an older list of keyboard shortcuts exists in [#1657](https://github.com/Xpra-org/xpra/issues/1657).
 
+### Dismissing stuck popups
+
+Press `Control+Escape` to release the client's keyboard and pointer grabs and
+dismiss popup windows. This shortcut is handled locally before the key is sent
+to the remote application. It can be rebound with
+`--key-shortcut=Control+Escape:_ --key-shortcut=Control+Shift+Escape:dismiss_popups`.
+
+Dismissing remote popups requires an X11 seamless server advertising
+`window.dismiss`. The server unmaps override-redirect windows, including menus
+and tooltips. It leaves regular windows and tray icons alone. Readonly clients
+only release their local grabs, as do clients connected to older servers.
+
+An application does not have to cooperate: X11 automatically releases pointer
+and keyboard grabs when their grab window becomes unviewable. Calling
+`XUngrabPointer` or `XUngrabKeyboard` from Xpra only releases Xpra's own grabs.
+See the [Xlib grab documentation](https://www.x.org/releases/X11R7.6/doc/libX11/specs/libX11/libX11.html).
+A grab held on a different window, or an application that continually remaps and
+grabs again, may require closing the application.
+
 ### `#` in Xpra Key Bindings
 
 The `#` symbol represents one or more modifier keys (like `Control` or `Alt+Shift`) in Xpra key bindings.
