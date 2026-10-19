@@ -39,13 +39,14 @@ with touch input, a soft-keyboard bridge and a window switcher.
 
 These are not the same kind of project, and what it costs to build and ship them differs by two orders of magnitude:
 
-| Client     | Languages                        | Source               | Binaries                                                 | Build time                               |
-|------------|----------------------------------|----------------------|----------------------------------------------------------|------------------------------------------|
-| xpra       | Python 3, Cython, C, CUDA - GTK3 | 1550 files, 318 kloc | 4-9 MB packages, 106 MB `.exe`, 72-88 MB `.dmg` / `.pkg` | 4 minutes, over 10 on MS Windows / MacOS |
-| xpra-html5 | JavaScript, no framework         | 32 files, 18 kloc    | 2.0-2.2 MB package, 2.2 MB served to the browser         | 30 seconds                               |
-| vispra     | TypeScript, SolidJS, Vite        | 117 files, 24 kloc   | 2.8 MB served to the browser, no packages                | 10 seconds                               |
-| rust-xpra  | Rust, `winit` / `softbuffer`     | 32 files, 9 kloc     | 2.4-2.8 MB package, 2.6 MB executable                    | 90 seconds                               |
-| go-xpra    | Go, no `cgo`, no toolkit         | 83 files, 14 kloc    | 3.9-4.2 MB package, 7.5 MB executable, 4.5 MB `.exe`     | 35 seconds                               |
+| Client      | Languages                        | Source               | Binaries                                             | Build time                               |
+|-------------|----------------------------------|----------------------|------------------------------------------------------|------------------------------------------|
+| xpra        | Python 3, Cython, C, CUDA - GTK3 | 1550 files, 318 kloc | 4-9 MB packages, 106 MB `.exe`, 72-88 MB `.dmg` / `.pkg` | 4 minutes, over 10 on MS Windows / MacOS |
+| xpra-html5  | JavaScript, no framework         | 32 files, 18 kloc    | 2.0-2.2 MB package, 2.2 MB served to the browser     | 30 seconds                               |
+| vispra      | TypeScript, SolidJS, Vite        | 117 files, 24 kloc   | 2.8 MB served to the browser, no packages            | 10 seconds                               |
+| rust-xpra   | Rust, `winit` / `softbuffer`     | 32 files, 9 kloc     | 2.4-2.8 MB package, 2.6 MB executable                | 90 seconds                               |
+| go-xpra     | Go, no `cgo`, no toolkit         | 83 files, 14 kloc    | 3.9-4.2 MB package, 7.5 MB executable, 4.5 MB `.exe` | 35 seconds                               |
+| kotlin-xpra | Kotlin, Jetpack Compose          | 34 files, 4.5 kloc   | 1.5 MB `.apk`                                        | 100 seconds                              |
 
 Source counts tracked files in each project's own languages, tests included and vendored libraries excluded - the
 `xpra-html5` figure leaves out some 70 kloc of bundled jquery and audio decoders, whereas `vispra` gets the equivalent
