@@ -501,9 +501,10 @@ class SeamlessWindowServer(WindowServer):
         focuslog("focus wid=%#x has_focus=%#x", wid, self._has_focus)
         if self.last_raised != wid:
             self.last_raised = 0
-        if self._has_focus == wid:
+        if self._has_focus == wid == 0:
             return
-        self._focus_history.append(wid)
+        if self._has_focus != wid:
+            self._focus_history.append(wid)
         hfid = self._has_focus
         had_focus = self.get_window(hfid)
 
@@ -534,10 +535,13 @@ class SeamlessWindowServer(WindowServer):
         if not window.is_managed():
             focuslog.warn("Warning: window %s is no longer managed!", window)
             return
-        focuslog("focus: giving focus to %s", window)
         with xswallow:
             self.last_raised = wid
             window.raise_window()
+            # Another window may have covered it without changing the input focus.
+            if self._has_focus == wid:
+                return
+            focuslog("focus: giving focus to %s", window)
             window.give_client_focus()
         # EWMH: activating a window also clears its demands-attention state
         # (`get` returns the default for the models that have no such property)

@@ -13,6 +13,9 @@ log = Logger("pointer")
 class X11SeamlessPointerManager(X11PointerManager):
     """Resolve client monitor-relative pointer positions for seamless X11."""
 
+    # The target window must be raised even when the pointer position is unchanged.
+    SKIP_REDUNDANT_MOVES = False
+
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         window = self.get_subsystem("window")
         if window:
