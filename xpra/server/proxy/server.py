@@ -204,8 +204,8 @@ class ProxyServer(ServerCore):
         self._start_sessions = opts.proxy_start_sessions
         self.socket_dirs = tuple(opts.socket_dirs)
         self.session_registry_name = opts.session_registry or "auth"
-        # super().init runs ServerCore.init which handles connection setup and
-        # dispatches `init` to every subsystem registered in self.subsystems:
+        # super().init runs ServerCore.init which dispatches `init`
+        # to every subsystem registered in self.subsystems (including `network`):
         super().init(opts)
         # ensure we cache the platform info before intercepting SIGCHLD
         # as this will cause a fork and SIGCHLD to be emitted:

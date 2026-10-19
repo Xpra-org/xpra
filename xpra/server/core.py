@@ -120,25 +120,6 @@ def get_instance_subsystem_classes() -> tuple[type, ...]:
 
 INSTANCE_SUBSYSTEM_CLASSES = get_instance_subsystem_classes()
 
-
-def network_attribute(name: str) -> property:
-    """ temporary forwarder for the attributes now owned by the `network` subsystem """
-    def getter(self):
-        return getattr(self.network, name)
-
-    def setter(self, value) -> None:
-        setattr(self.network, name, value)
-    return property(getter, setter)
-
-
-def network_method(name: str) -> Callable:
-    """ temporary forwarder for the methods now owned by the `network` subsystem """
-    def forward(self, *args, **kwargs):
-        return getattr(self.network, name)(*args, **kwargs)
-    forward.__name__ = name
-    return forward
-
-
 SIGNALS: dict[str, int] = {
     "init-thread-ended": 0,
     "running": 0,
@@ -158,55 +139,6 @@ class ServerCore(GLibServer):
         the connection layer is handled by the `network` subsystem.
     """
     __signals__ = SIGNALS
-
-    # temporary forwarders to the `network` subsystem:
-    sockets = network_attribute("sockets")
-    _potential_protocols = network_attribute("_potential_protocols")
-    unix_socket_paths = network_attribute("unix_socket_paths")
-    dotxpra = network_attribute("dotxpra")
-    _accept_timeout = network_attribute("_accept_timeout")
-    _socket_timeout = network_attribute("_socket_timeout")
-    _ws_timeout = network_attribute("_ws_timeout")
-    _max_connections = network_attribute("_max_connections")
-    ssl_mode = network_attribute("ssl_mode")
-    ssl_upgrade = network_attribute("ssl_upgrade")
-    websocket_upgrade = network_attribute("websocket_upgrade")
-    ssh_upgrade = network_attribute("ssh_upgrade")
-    rdp_upgrade = network_attribute("rdp_upgrade")
-    _ssl_attributes = network_attribute("_ssl_attributes")
-    http_origin = network_attribute("http_origin")
-    _html = network_attribute("_html")
-    _www_dir = network_attribute("_www_dir")
-    _http_headers_dirs = network_attribute("_http_headers_dirs")
-    parse_socket_options = network_method("parse_socket_options")
-    init_sockets = network_method("init_sockets")
-    init_local_sockets = network_method("init_local_sockets")
-    start_listen_sockets = network_method("start_listen_sockets")
-    can_upgrade = network_method("can_upgrade")
-    get_socket_info = network_method("get_socket_info")
-    get_ssl_socket_options = network_method("get_ssl_socket_options")
-    get_http_scripts = network_method("get_http_scripts")
-    handle_new_connection = network_method("handle_new_connection")
-    handle_ssh_connection = network_method("handle_ssh_connection")
-    make_protocol = network_method("make_protocol")
-    do_make_protocol = network_method("do_make_protocol")
-    schedule_verify_connection_accepted = network_method("schedule_verify_connection_accepted")
-    cancel_verify_connection_accepted = network_method("cancel_verify_connection_accepted")
-    cancel_upgrade_to_rfb_timer = network_method("cancel_upgrade_to_rfb_timer")
-    accept_protocol = network_method("accept_protocol")
-    accept_connection = network_method("accept_connection")
-    get_all_protocols = network_method("get_all_protocols")
-    cleanup_all_protocols = network_method("cleanup_all_protocols")
-    send_disconnect = network_method("send_disconnect")
-    disconnect_client = network_method("disconnect_client")
-    disconnect_protocol = network_method("disconnect_protocol")
-    force_disconnect = network_method("force_disconnect")
-    _process_connection_lost = network_method("_process_connection_lost")
-
-    @property
-    def network(self):
-        """ the `network` subsystem, which owns the sockets and the connections """
-        return self.subsystems["network"]
 
     def __init__(self):
         log("ServerCore.__init__()")
@@ -361,6 +293,11 @@ class ServerCore(GLibServer):
     # subsystem lookup and dispatch helpers
     # `self.subsystems` stores subsystem instances, keyed by PREFIX.
     # --------------------------------------------------------------------
+
+    @property
+    def network(self):
+        """ the `network` subsystem, which owns the sockets and the connections """
+        return self.subsystems["network"]
 
     def get_subsystem(self, prefix: str):
         return self.subsystems.get(prefix)

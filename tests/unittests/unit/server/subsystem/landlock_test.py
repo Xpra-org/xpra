@@ -82,7 +82,7 @@ class LandLockTest(unittest.TestCase):
                                                    setup=lambda: events.append("dbus-setup"))
         server.subsystems["peer"] = make_subsystem(server, early_setup=lambda: events.append("peer-early"),
                                                    setup=lambda: events.append("peer"))
-        server.sockets = [
+        server.network.sockets = [
             SimpleNamespace(socktype="socket", address="/sockets/xpra", options={}),
             SimpleNamespace(socktype="socket", address="@abstract", options={}),
             SimpleNamespace(socktype="tcp", address=("127.0.0.1", 12345), options={}),
@@ -173,7 +173,7 @@ class LandLockTest(unittest.TestCase):
         server.subsystems["auth"] = make_subsystem(server, auth_classes={
             "tcp": (("file", None, None, {"filename": "password", "exec_cwd": "/credentials"}),),
         })
-        server.sockets = [SimpleNamespace(options={"ssh-host-key": "/keys/host", "ssl-key": "/keys/tls"})]
+        server.network.sockets = [SimpleNamespace(options={"ssh-host-key": "/keys/host", "ssl-key": "/keys/tls"})]
         self.assertEqual(landlock.get_auth_paths(), ("/keys/host", "/keys/tls", "/credentials/password"))
 
     def test_wayland_backend_starts_after_confinement(self):
@@ -286,7 +286,7 @@ class LandLockTest(unittest.TestCase):
 
     def test_auth_path_failure_aborts_setup_before_temp_creation(self):
         server, _landlock, _opts = self.make_landlock()
-        server.sockets = [SimpleNamespace(socktype="tcp", address=("127.0.0.1", 12345), options={"auth": "invalid"})]
+        server.network.sockets = [SimpleNamespace(socktype="tcp", address=("127.0.0.1", 12345), options={"auth": "invalid"})]
         modules = self.mock_modules([])
         security = modules["xpra.platform.posix.security"]
         with patch("xpra.server.subsystem.landlock.LINUX", True), patch.dict(sys.modules, modules), \
