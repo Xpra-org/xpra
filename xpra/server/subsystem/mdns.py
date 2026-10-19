@@ -63,7 +63,7 @@ class MdnsServer(StubSubsystem):
             return
         # find all the records we want to publish:
         mdns_recs: dict[str, list[tuple[str, int]]] = {}
-        for sock in self.server.sockets:
+        for sock in self.network.sockets:
             socktype = sock.socktype
             address = sock.address
             options = sock.options
@@ -121,14 +121,14 @@ class MdnsServer(StubSubsystem):
         if socktype == "quic":
             return "quic", "webtransport"
         socktypes = [socktype]
-        server = self.server
+        network = self.network
         if socktype == "tcp":
             for tosocktype in ("ssl", "ws", "wss", "ssh", "rfb", "rdp"):
-                if server.can_upgrade(socktype, tosocktype, options):
+                if network.can_upgrade(socktype, tosocktype, options):
                     socktypes.append(tosocktype)
-        elif socktype in ("ws", "ssl") and server.can_upgrade(socktype, "wss", options):
+        elif socktype in ("ws", "ssl") and network.can_upgrade(socktype, "wss", options):
             socktypes.append("wss")
-        elif socktype == "socket" and server.ssh_upgrade and get_ssh_port() > 0:
+        elif socktype == "socket" and network.ssh_upgrade and get_ssh_port() > 0:
             socktypes = ["ssh"]
         return tuple(socktypes)
 

@@ -111,16 +111,15 @@ class RFBServer(StubSubsystem):
             auth = None
             if len(auths) == 1:
                 auth = auths[0]
-            get_ssl_socket_options = getattr(self.server, "get_ssl_socket_options", None)
-            # noinspection calling-non-callable
-            ssl_options = get_ssl_socket_options(conn.options) if get_ssl_socket_options else {}
+            network = self.network
+            ssl_options = network.get_ssl_socket_options(conn.options) if network else {}
             log("creating RFB protocol with authentication=%s", auth)
             return RFBServerProtocol(conn, auth,
                                      self.process_rfb_packet, self.get_rfb_pixelformat,
                                      self.server.session_name or "Xpra Server",
                                      data, ssl_options)
 
-        p = self.server.do_make_protocol("rfb", conn, {}, rfb_protocol_class)
+        p = self.network.do_make_protocol("rfb", conn, {}, rfb_protocol_class)
         log("handle_rfb_connection(%s) protocol=%s", conn, p)
         p.send_protocol_handshake()
 
@@ -138,7 +137,7 @@ class RFBServer(StubSubsystem):
     def upgrade_protocol_to_rfb(self, proto: SocketProtocol, data: bytes = b"") -> None:
         conn = proto.steal_connection()
         log("upgrade_protocol_to_rfb(%s) connection=%s", proto, conn)
-        self.server._potential_protocols.remove(proto)
+        self.network._potential_protocols.remove(proto)
         proto.wait_for_io_threads_exit(1)
         conn.set_active(True)
         self.handle_rfb_connection(conn, data)
@@ -163,10 +162,10 @@ class RFBServer(StubSubsystem):
         return w, h, 32, 24, False, True, 255, 255, 255, 16, 8, 0
 
     def _process_rfb_invalid(self, proto, packet: Sequence) -> None:
-        self.server.disconnect_protocol(proto, "invalid packet: %s" % repr_ellipsized(packet[1:]))
+        self.network.disconnect_protocol(proto, "invalid packet: %s" % repr_ellipsized(packet[1:]))
 
     def _process_rfb_connection_lost(self, proto, packet: Sequence) -> None:
-        self.server._process_connection_lost(proto, packet)
+        self.network._process_connection_lost(proto, packet)
 
     def _process_rfb_authenticated(self, proto, _packet: Sequence) -> None:
         model = self._get_rfb_desktop_model()
@@ -177,9 +176,9 @@ class RFBServer(StubSubsystem):
         if sharing := self.get_subsystem("sharing"):
             if err := sharing.parse_hello(source, typedict({"share": proto.share})):
                 source.close()
-                self.server.disconnect_client(proto, *err.split(":"))
+                self.network.disconnect_client(proto, *err.split(":"))
                 return
-        self.server.accept_connection(proto)
+        self.network.accept_connection(proto)
         self.server._server_sources[proto] = source
         # continue in the UI thread:
         GLib.idle_add(self._accept_rfb_source, source)

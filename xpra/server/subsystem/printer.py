@@ -80,7 +80,7 @@ class PrinterServer(StubSubsystem):
 
     def setup(self) -> None:
         # verify we have a local socket for printing:
-        sockets = self.server.sockets
+        sockets = self.network.sockets
         unixsockets = [sock.address for sock in sockets if sock.socktype == "socket"]
         log("local unix domain sockets we can use for printing: %s", unixsockets)
         if not unixsockets and self.file_transfer.printing:
@@ -166,7 +166,7 @@ class PrinterServer(StubSubsystem):
         code, message = self.check_print_request(proto, size)
         if code != ExitCode.OK:
             self.send_print_hello(proto, {"code": int(code), "info": message})
-            self.server.send_disconnect(proto, ConnectionMessage.DONE)
+            self.network.send_disconnect(proto, ConnectionMessage.DONE)
             return True
         # make room for the file:
         proto.max_packet_size = max(proto.max_packet_size, size + PRINT_PACKET_OVERHEAD)
@@ -196,15 +196,15 @@ class PrinterServer(StubSubsystem):
         # this connection has no client source: it only made a `print` request
         if proto not in self.print_requests:
             log.warn("Warning: unexpected 'printer-file' packet from %s", proto)
-            self.server.send_disconnect(proto, ConnectionMessage.PROTOCOL_ERROR, "unexpected 'printer-file' packet")
+            self.network.send_disconnect(proto, ConnectionMessage.PROTOCOL_ERROR, "unexpected 'printer-file' packet")
             return
         self.print_requests.discard(proto)
         code, message = self.do_print_file(packet)
         if code != ExitCode.OK:
             log.warn(message)
-            self.server.send_disconnect(proto, ConnectionMessage.SERVER_ERROR, message)
+            self.network.send_disconnect(proto, ConnectionMessage.SERVER_ERROR, message)
             return
-        self.server.send_disconnect(proto, ConnectionMessage.DONE, message)
+        self.network.send_disconnect(proto, ConnectionMessage.DONE, message)
 
     def do_print_file(self, packet: Packet) -> tuple[ExitCode, str]:
         # ie: from the xpraforwarder we call this command:

@@ -35,7 +35,7 @@ def make_server():
 
     server = FakeServer()
     s = AuthenticationManager(server)
-    server.subsystems = {"auth": s}
+    server.subsystems["auth"] = s
     return s
 
 

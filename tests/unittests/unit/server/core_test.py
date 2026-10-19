@@ -56,7 +56,7 @@ class TestServerCore(unittest.TestCase):
     def test_handle_invalid_packet_from_detached_protocol(self):
         server = SimpleNamespace(
             _closing=False,
-            _network=SimpleNamespace(_potential_protocols=[]),
+            network=SimpleNamespace(_potential_protocols=[]),
             get_server_source=Mock(return_value=None),
         )
         proto = Mock()

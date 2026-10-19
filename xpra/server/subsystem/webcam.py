@@ -184,7 +184,7 @@ class WebcamServer(StubSubsystem):
             log("webcam-client connection accepted for device %i", matched)
             return
         log.warn("Warning: no webcam device available (requested device_id=%i)", device_id)
-        self.server.disconnect_client(proto, "no webcam device available")
+        self.network.disconnect_client(proto, "no webcam device available")
 
     def cleanup_protocol(self, protocol) -> None:
         for device_id, proto in tuple(self.client_connections.items()):
@@ -213,8 +213,8 @@ class WebcamServer(StubSubsystem):
 
     def _spawn_webcam_client(self, ss, device_id: int, w: int, h: int) -> None:
         socket_path = ""
-        if self.server.unix_socket_paths:
-            socket_path = self.server.unix_socket_paths[0]
+        if self.network.unix_socket_paths:
+            socket_path = self.network.unix_socket_paths[0]
         if not socket_path:
             log.warn("Warning: cannot spawn webcam-client: no unix socket path available")
             ss.send_webcam_stop(device_id, "no server socket available")

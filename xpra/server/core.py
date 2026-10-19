@@ -124,17 +124,17 @@ INSTANCE_SUBSYSTEM_CLASSES = get_instance_subsystem_classes()
 def network_attribute(name: str) -> property:
     """ temporary forwarder for the attributes now owned by the `network` subsystem """
     def getter(self):
-        return getattr(self._network, name)
+        return getattr(self.network, name)
 
     def setter(self, value) -> None:
-        setattr(self._network, name, value)
+        setattr(self.network, name, value)
     return property(getter, setter)
 
 
 def network_method(name: str) -> Callable:
     """ temporary forwarder for the methods now owned by the `network` subsystem """
     def forward(self, *args, **kwargs):
-        return getattr(self._network, name)(*args, **kwargs)
+        return getattr(self.network, name)(*args, **kwargs)
     forward.__name__ = name
     return forward
 
@@ -204,7 +204,8 @@ class ServerCore(GLibServer):
     _process_connection_lost = network_method("_process_connection_lost")
 
     @property
-    def _network(self):
+    def network(self):
+        """ the `network` subsystem, which owns the sockets and the connections """
         return self.subsystems["network"]
 
     def __init__(self):
@@ -260,7 +261,7 @@ class ServerCore(GLibServer):
         # after all the `early_setup` calls and before any other `setup`:
         self._dispatch_fire("early_setup")
         self._dispatch_fire("setup")
-        self._network.start_listen_sockets()
+        self.network.start_listen_sockets()
         self.init_packet_handlers()
         self.add_core_control_commands()
 
@@ -478,7 +479,7 @@ class ServerCore(GLibServer):
 
     def cleanup(self) -> None:
         self._dispatch_fire("cleanup", reverse=True)
-        network = self._network
+        network = self.network
         network.cancel_touch_timer()
         network.cleanup_all_protocols()
         self.do_cleanup()
@@ -492,7 +493,7 @@ class ServerCore(GLibServer):
 
     def late_cleanup(self, stop=True) -> None:
         self._dispatch_fire("late_cleanup", stop, reverse=True)
-        network = self._network
+        network = self.network
         network.cleanup_all_protocols(force=True)
         network._potential_protocols = []
         from xpra.util.child_reaper import reaper_cleanup
@@ -518,7 +519,7 @@ class ServerCore(GLibServer):
 
     def cleanup_protocol(self, protocol: SocketProtocol):
         try:
-            self._network._potential_protocols.remove(protocol)
+            self.network._potential_protocols.remove(protocol)
         except ValueError:
             pass
         source = None
@@ -533,7 +534,7 @@ class ServerCore(GLibServer):
         version = version_str() if (full and FULL_INFO) else XPRA_VERSION.split(".", 1)[0]
         proto.send_now(Packet("hello", {"version": version}))
         # client is meant to close the connection itself, but just in case:
-        GLib.timeout_add(5 * 1000, self._network.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
+        GLib.timeout_add(5 * 1000, self.network.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
 
     def _process_hello(self, proto: SocketProtocol, packet: Packet) -> None:
         capabilities = packet.get_dict(1)
@@ -547,7 +548,7 @@ class ServerCore(GLibServer):
             # this should never happen:
             # if we got here, we parsed a packet from the client!
             # (maybe the client used an encoding it claims not to support?)
-            self._network.disconnect_client(proto, ConnectionMessage.PROTOCOL_ERROR, "failed to negotiate a packet encoder")
+            self.network.disconnect_client(proto, ConnectionMessage.PROTOCOL_ERROR, "failed to negotiate a packet encoder")
             return
 
         log("process_hello: capabilities=%s", capabilities)
@@ -561,14 +562,14 @@ class ServerCore(GLibServer):
         remote_version = c.strget("version")
         verr = version_compat_check(remote_version)
         if verr is not None:
-            self._network.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {verr!r}")
+            self.network.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {verr!r}")
             proto.close()
             return
         # the client may require a more recent server version,
         # (peers that do not expose it are older than v7, the version check above rejects them)
         perr = protocol_compat_check(c.inttupleget("protocol-version"))
         if perr:
-            self._network.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {perr!r}")
+            self.network.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {perr!r}")
             proto.close()
             return
 
@@ -576,10 +577,10 @@ class ServerCore(GLibServer):
         packet_types = c.strtupleget("packet-types", ())
         encryption_caps = c.dictget("encryption")
         conn = getattr(proto, "_conn", None)
-        if self._network.ssl_upgrade and not encryption_caps and "ssl-upgrade" in packet_types and conn and conn.socktype in ("tcp",):
+        if self.network.ssl_upgrade and not encryption_caps and "ssl-upgrade" in packet_types and conn and conn.socktype in ("tcp",):
             options = conn.options
             if options.get("ssl-upgrade", "yes").lower() in TRUE_OPTIONS:
-                ssl_options = self._network.get_ssl_socket_options(options)
+                ssl_options = self.network.get_ssl_socket_options(options)
                 cert = ssl_options.get("cert", "")
                 if cert:
                     log.info(f"sending ssl upgrade for {conn}")
@@ -631,15 +632,15 @@ class ServerCore(GLibServer):
             log.error("Error setting up new connection for")
             log.error(" %s:", proto)
             log.estr(e)
-            self._network.disconnect_client(proto, ConnectionMessage.CONNECTION_ERROR, str(e))
+            self.network.disconnect_client(proto, ConnectionMessage.CONNECTION_ERROR, str(e))
         except Exception as e:
             # log exception but don't disclose internal details to the client
             log.error("server error processing new connection from %s: %s", proto, e, exc_info=True)
-            self._network.disconnect_client(proto, ConnectionMessage.CONNECTION_ERROR, "error accepting new connection")
+            self.network.disconnect_client(proto, ConnectionMessage.CONNECTION_ERROR, "error accepting new connection")
 
     def hello_oked(self, proto: SocketProtocol, c: typedict, auth_caps: dict) -> bool:
         if self._closing:
-            self._network.disconnect_client(proto, ConnectionMessage.SERVER_EXIT, "server is shutting down")
+            self.network.disconnect_client(proto, ConnectionMessage.SERVER_EXIT, "server is shutting down")
             return True
         if request := c.strget("request"):
             return self.handle_hello_request(request, proto, c)
@@ -651,7 +652,7 @@ class ServerCore(GLibServer):
         if not is_request_allowed(proto, request):
             msg = f"{request!r} requests are not enabled for this connection"
             log.error(f"Error: {msg}")
-            self._network.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, msg)
+            self.network.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, msg)
             return False
         return self.do_handle_hello_request(request, proto, caps)
 
@@ -661,10 +662,10 @@ class ServerCore(GLibServer):
         if not handler:
             msg = f"no handler for hello request {request!r}"
             log.error(f"Error: {msg}")
-            self._network.send_disconnect(proto, ConnectionMessage.PROTOCOL_ERROR, msg)
+            self.network.send_disconnect(proto, ConnectionMessage.PROTOCOL_ERROR, msg)
             return False
         if not handler(proto, caps):
-            self._network.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, f"hello request {request!r} rejected")
+            self.network.send_disconnect(proto, ConnectionMessage.PERMISSION_ERROR, f"hello request {request!r} rejected")
             return False
         return True
 
@@ -797,7 +798,7 @@ class ServerCore(GLibServer):
 
     def handle_invalid_packet(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
-        detached = ss is None and proto not in self._network._potential_protocols
+        detached = ss is None and proto not in self.network._potential_protocols
         if detached:
             netlog("packet from detached protocol %s: %s", proto, packet)
         elif not self._closing and not proto.is_closed() and (ss is None or not ss.is_closed()):

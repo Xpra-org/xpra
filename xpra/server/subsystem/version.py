@@ -46,4 +46,4 @@ class VersionServer(StubSubsystem):
         version = version_str() if (full and FULL_INFO) else XPRA_VERSION.split(".", 1)[0]
         proto.send_now(Packet("hello", {"version": version}))
         # client is meant to close the connection itself, but just in case:
-        self.timeout_add(5 * 1000, self.server.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
+        self.timeout_add(5 * 1000, self.network.send_disconnect, proto, ConnectionMessage.DONE, "version sent")

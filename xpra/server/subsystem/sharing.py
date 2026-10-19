@@ -50,7 +50,7 @@ class SharingServer(StubSubsystem):
         # noinspection PySimplifyBooleanCheck
         if self.lock is True:
             log("cannot detach: session is locked")
-            self.server.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is locked")
+            self.network.disconnect_client(proto, ConnectionMessage.SESSION_BUSY, "this session is locked")
             return True
         count = locked = 0
         for p, ss in tuple(self.server._server_sources.items()):
@@ -60,12 +60,12 @@ class SharingServer(StubSubsystem):
                     locked += 1
                 else:
                     log("handle_sharing: detaching %s", ss)
-                    self.server.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
+                    self.network.disconnect_client(p, ConnectionMessage.DETACH_REQUEST)
                     count += 1
         message = f"{count} clients have been disconnected"
         if locked:
             message += f", {locked} still have it locked"
-        self.server.disconnect_client(proto, ConnectionMessage.DONE, message)
+        self.network.disconnect_client(proto, ConnectionMessage.DONE, message)
         return True
 
     def get_sharing_info(self) -> dict[str, Any]:
@@ -96,7 +96,7 @@ class SharingServer(StubSubsystem):
                     if ss != source and ss.uuid == uuid and not p.is_closed():
                         log("uuid %s is the same as %s", uuid, ss)
                         log("existing sources: %s", existing_sources)
-                        self.server.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "new connection from the same uuid")
+                        self.network.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "new connection from the same uuid")
 
         existing_sources = set(ss for ss in self.server._server_sources.values() if (ss != source and (uuid == "" or ss.uuid != uuid)))
         is_existing_client = uuid and any(ss.uuid == uuid for ss in existing_sources)
@@ -142,7 +142,7 @@ class SharingServer(StubSubsystem):
             elif self.sharing is False:
                 log("not sharing, required by source %s: %s", source, req_sharing)
                 if req_sharing:
-                    self.server.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "this session does not allow sharing")
+                    self.network.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "this session does not allow sharing")
                     disconnected.append(ss)
                 else:
                     share_count += 1
@@ -151,11 +151,11 @@ class SharingServer(StubSubsystem):
                 assert self.sharing is None
                 if ss.requires_sharing() and req_sharing and not sharing:
                     log("auto-sharing %s.sharing=%s, %s.sharing=%s", source, req_sharing, source, sharing)
-                    self.server.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "the new client does not wish to share")
+                    self.network.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "the new client does not wish to share")
                     disconnected.append(ss)
                 elif not getattr(ss, "share", True) and req_sharing:
                     log("auto-sharing sharing required but not enabled for %s", ss)
-                    self.server.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "this client had not enabled sharing")
+                    self.network.disconnect_client(p, ConnectionMessage.NEW_CLIENT, "this client had not enabled sharing")
                     disconnected.append(ss)
                 else:
                     log("auto-sharing for %s", ss)
@@ -181,8 +181,8 @@ class SharingServer(StubSubsystem):
             # disconnect other users:
             for p, ss in tuple(self.server._server_sources.items()):
                 if p != proto:
-                    self.server.disconnect_client(p, ConnectionMessage.DETACH_REQUEST,
-                                                  f"client {ss.counter} no longer wishes to share the session")
+                    self.network.disconnect_client(p, ConnectionMessage.DETACH_REQUEST,
+                                                   f"client {ss.counter} no longer wishes to share the session")
 
     def _process_lock(self, proto, packet: Packet) -> None:
         assert self.lock is None
@@ -226,7 +226,7 @@ class SharingServer(StubSubsystem):
             n = len(sharing_clients)
             if n > 1:
                 for c in sorted(sharing_clients)[1:]:
-                    self.server.disconnect_client(sharing_clients[c], ConnectionMessage.SESSION_BUSY,
-                                                  "this session is no longer shared")
+                    self.network.disconnect_client(sharing_clients[c], ConnectionMessage.SESSION_BUSY,
+                                                   "this session is no longer shared")
                 message += f", disconnected {n - 1} clients"
         return message

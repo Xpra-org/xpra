@@ -140,6 +140,8 @@ class TestRegisterHandover(unittest.TestCase):
         server._accept_timeout = 30
         server.process_packet = MagicMock()
         server.schedule_verify_connection_accepted = MagicMock()
+        # the server also stands in for the `network` subsystem:
+        server.subsystems = {"network": server}
         sub = self._make_subsystem(server)
 
         proto = FakeProto()

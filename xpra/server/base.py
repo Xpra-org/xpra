@@ -354,7 +354,7 @@ class ServerBase(ServerCore):
     # override http scripts to expose just the current session / display
     def get_displays(self) -> dict[str, Any]:
         from xpra.scripts.display import get_displays  # pylint: disable=import-outside-toplevel
-        return get_displays(self.dotxpra, display_names=(self.get_display_name(), ))
+        return get_displays(self.network.dotxpra, display_names=(self.get_display_name(), ))
 
     def get_display_name(self) -> str:
         display = self.subsystems.get("display")
@@ -362,7 +362,7 @@ class ServerBase(ServerCore):
 
     def get_xpra_sessions(self) -> dict[str, Any]:
         from xpra.scripts.sessions import get_xpra_sessions  # pylint: disable=import-outside-toplevel
-        return get_xpra_sessions(self.dotxpra, matching_display=self.get_display_name())
+        return get_xpra_sessions(self.network.dotxpra, matching_display=self.get_display_name())
 
     def notify_setup_error(self, exception) -> None:
         log.warn("Warning: cannot forward notifications,")

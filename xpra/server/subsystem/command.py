@@ -489,7 +489,7 @@ class ChildCommandServer(StubSubsystem):
                 }
             else:
                 if request:
-                    self.server.cancel_verify_connection_accepted(proto)
+                    self.network.cancel_verify_connection_accepted(proto)
                     request.start(proc, wait_time)
                     if (WIN32 or envbool("XPRA_USE_PROCESS_POLLING")) and not self._run_poll_timer:
                         self._run_poll_timer = self.timeout_add(10, self._poll_run_commands)

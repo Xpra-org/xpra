@@ -61,6 +61,11 @@ class StubSubsystem(SubsystemPacketHandlers, SignalEmitter):
         """ look up a peer subsystem on the owning server """
         return self.server.subsystems.get(name)
 
+    @property
+    def network(self):
+        """ the `network` subsystem, which owns the sockets and the connections """
+        return self.server.subsystems.get("network")
+
     def get_sources_by_type(self, subsystem_type=object, exclude=None):
         """ delegate to the server's typed source iterator """
         from xpra.server.common import get_sources_by_type

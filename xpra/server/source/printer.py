@@ -80,7 +80,7 @@ class PrinterConnection(StubClientConnection):
     def init_from(self, _protocol, server) -> None:
         # no `init_attributes()` here: the file-transfer attributes are shared with
         # `FileConnection` (same instance), which is the subsystem that owns them
-        self.unix_socket_paths: list[str] = server.unix_socket_paths
+        self.unix_socket_paths: list[str] = server.network.unix_socket_paths
         # `PrinterServer` owns its own copy of the file-transfer attrs
         # (`setup` / `init_printing` may disable `printing` based on local sockets/auth):
         file_transfer = server.subsystems["printer"].file_transfer

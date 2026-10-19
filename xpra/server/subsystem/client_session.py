@@ -58,7 +58,7 @@ class ClientSessionServer(StubSubsystem):
             return True
 
         def drop_client(reason="unknown", *args) -> None:
-            self.server.disconnect_client(proto, reason, *args)
+            self.network.disconnect_client(proto, reason, *args)
 
         cc_class = self.get_client_connection_class(caps)
         ss = cc_class(proto, drop_client, self.server, self.server.setting_changed)
@@ -69,14 +69,14 @@ class ClientSessionServer(StubSubsystem):
             ss.close()
             raise
         self.sources[proto] = ss
-        self.server.accept_protocol(proto, caps)
+        self.network.accept_protocol(proto, caps)
         self.idle_add(self.process_hello_ui, ss, caps, auth_caps)
         return True
 
     def process_hello_ui(self, ss, caps: typedict, auth_caps: dict) -> None:
         def reject(*args) -> None:
             if proto := ss.protocol:
-                self.server.disconnect_client(proto, *args)
+                self.network.disconnect_client(proto, *args)
 
         def closing() -> None:
             reject(ConnectionMessage.CONNECTION_ERROR, "server is shutting down")
@@ -171,13 +171,13 @@ class ClientSessionServer(StubSubsystem):
             if value and not valid_uuid(value):
                 # don't echo the value back
                 log.warn(f"Warning: rejecting client with an invalid {attr!r} value")
-                self.server.send_disconnect(proto, f"invalid {attr!r} value")
+                self.network.send_disconnect(proto, f"invalid {attr!r} value")
                 return False
         server_uuid = caps.strget("server_uuid")
         if server_uuid:
             if server_uuid == self.server.subsystems["id"].uuid:
-                self.server.send_disconnect(proto, "cannot connect a client running on the same display"
-                                                   " that the server it connects to is managing - this would create a loop!")
+                self.network.send_disconnect(proto, "cannot connect a client running on the same display"
+                                             " that the server it connects to is managing - this would create a loop!")
                 return False
             log.warn("Warning: this client is running nested")
             log.warn(f" in the Xpra server session {server_uuid!r}")
@@ -191,10 +191,10 @@ class ClientSessionServer(StubSubsystem):
         self.server.emit("new-ui-driver", source)
 
     def disconnect_all(self) -> None:
-        protocols = self.server.get_all_protocols()
+        protocols = self.network.get_all_protocols()
         log("disconnect_all() all protocols=%s", protocols)
         for protocol in protocols:
-            self.server.disconnect_client(protocol, ConnectionMessage.DETACH_REQUEST)
+            self.network.disconnect_client(protocol, ConnectionMessage.DETACH_REQUEST)
 
     def get_sources_info(self, proto, server_sources=()) -> dict[str, Any]:
         log("ClientSessionServer.get_sources_info%s", (proto, server_sources))
@@ -203,13 +203,13 @@ class ClientSessionServer(StubSubsystem):
             "clients": {
                 "": sum(1 for p in self.sources if p != proto),
                 "unauthenticated": sum(
-                    1 for p in self.server._potential_protocols
+                    1 for p in self.network._potential_protocols
                     if p is not proto and p not in self.sources
                 ),
             },
         }
         log("unauthenticated protocols:")
-        for i, p in enumerate(self.server._potential_protocols):
+        for i, p in enumerate(self.network._potential_protocols):
             log(f"{i:3} : {p}={p.get_info()}")
         cinfo = {}
         for i, ss in enumerate(server_sources):

@@ -55,7 +55,7 @@ class LandLock(StubSubsystem):
                 read_paths += paths.get("read", ())
                 socket_paths += paths.get("socket", ())
             from xpra.platform.posix.security import enforce_landlock
-            socket_dirs = [os.path.dirname(sock.address) for sock in self.server.sockets
+            socket_dirs = [os.path.dirname(sock.address) for sock in self.network.sockets
                            if sock.socktype == "socket" and not sock.address.startswith("@")]
             auth_paths = self.auth_paths + self.get_auth_paths()
             if self.mode == "strict":
@@ -86,7 +86,7 @@ class LandLock(StubSubsystem):
         if auth := self.get_subsystem("auth"):
             for entries in auth.auth_classes.values():
                 definitions.extend(entries)
-        for listener in self.server.sockets:
+        for listener in self.network.sockets:
             options = listener.options
             for name in ("ssh-host-key", "ssl-cert", "ssl-key", "ssl-ca-certs"):
                 if path := options.get(name):

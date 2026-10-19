@@ -735,8 +735,8 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     log("env=%s", os.environ)
 
     progress(30, "creating network sockets")
-    app.parse_socket_options(opts)
-    app.init_sockets(retry=10 * int(upgrading))
+    app.network.parse_socket_options(opts)
+    app.network.init_sockets(retry=10 * int(upgrading))
 
     if opts.backend == "wayland":
         from xpra.wayland.server.subsystem.manager import WaylandManager
@@ -791,7 +791,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         app.original_desktop_display = desktop_display
         app.init(opts)
         progress(60, "creating local sockets")
-        app.init_local_sockets(opts, display_name, clobber)
+        app.network.init_local_sockets(opts, display_name, clobber)
         progress(90, "finalizing")
         app.setup()
         init_virtual_devices(app, vfb_result.devices)

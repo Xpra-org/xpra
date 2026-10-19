@@ -123,7 +123,7 @@ class AuthenticationManager(StubSubsystem):
     def send_challenge(self, proto: SocketProtocol, salt: bytes, auth_caps: dict, digest: str, salt_digest: str,
                        prompt: str = "password") -> None:
         proto.send_now(Packet(CHALLENGE, salt, auth_caps, digest, salt_digest, prompt))
-        self.server.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
+        self.network.schedule_verify_connection_accepted(proto, CHALLENGE_TIMEOUT)
 
     def notify_authenticators(self, proto: SocketProtocol, event: str) -> None:
         # optional hook: an authentication module only ever sees its own result,
@@ -143,7 +143,7 @@ class AuthenticationManager(StubSubsystem):
             wmsg = f"{authenticator!r}: "+wmsg
         log.warn(f" {wmsg}")
         self.notify_authenticators(proto, "auth_failed")
-        GLib.timeout_add(1000, self.server.disconnect_client, proto, msg)
+        GLib.timeout_add(1000, self.network.disconnect_client, proto, msg)
 
     def init_authenticators(self, proto: SocketProtocol, c: typedict) -> bool:
         # returns True if the connection is ready for authentication,
@@ -253,7 +253,7 @@ class AuthenticationManager(StubSubsystem):
         if not csent:
             # we'll re-schedule this when we call send_challenge()
             # as the authentication module is free to take its time
-            self.server.cancel_verify_connection_accepted(proto)
+            self.network.cancel_verify_connection_accepted(proto)
             # note: we may have received a challenge_response from a previous auth module's challenge
             try:
                 salt, digest = authenticator.get_challenge(digest_modes)
@@ -298,7 +298,7 @@ class AuthenticationManager(StubSubsystem):
                 salt_digest = authenticator.choose_salt_digest(salt_digest_modes)
                 if salt_digest in ("xor", "des"):
                     return fail(f"insecure salt digest {salt_digest!r} rejected")
-                self.server.cancel_verify_connection_accepted(proto)
+                self.network.cancel_verify_connection_accepted(proto)
                 self.send_challenge(proto, salt, auth_caps, digest, salt_digest, prompt)
                 return True
         return False

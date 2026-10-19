@@ -18,7 +18,8 @@ class Owner:
     def __init__(self):
         self.hello_request_handlers = {}
         self._default_packet_handlers = {}
-        self.subsystems = {}
+        # also stands in for the `network` subsystem:
+        self.subsystems = {"network": self}
         self.send_disconnect = MagicMock()
 
 

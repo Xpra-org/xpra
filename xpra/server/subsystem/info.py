@@ -132,7 +132,7 @@ class InfoServer(StubSubsystem):
         version = version_str() if (full and FULL_INFO) else XPRA_VERSION.split(".", 1)[0]
         proto.send_now(Packet("hello", {"version": version}))
         # client is meant to close the connection itself, but just in case:
-        self.timeout_add(5 * 1000, self.server.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
+        self.timeout_add(5 * 1000, self.network.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
 
     ######################################################################
     # info:
@@ -210,13 +210,13 @@ class InfoServer(StubSubsystem):
             info["sysconfig"] = get_sysconfig_info()
         ni = get_net_info()
         ni |= {
-            "sockets": self.server.get_socket_info(),
+            "sockets": self.network.get_socket_info(),
             **PacketDispatcher.get_info(self.server),
             "www": {
-                "": self.server._html,
-                "websocket-upgrade": self.server.websocket_upgrade,
-                "dir": self.server._www_dir or "",
-                "http-headers-dirs": self.server._http_headers_dirs or "",
+                "": self.network._html,
+                "websocket-upgrade": self.network.websocket_upgrade,
+                "dir": self.network._www_dir or "",
+                "http-headers-dirs": self.network._http_headers_dirs or "",
             },
         }
         info["network"] = ni

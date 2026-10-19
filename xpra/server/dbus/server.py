@@ -365,7 +365,7 @@ class DBUS_Server(DBUS_Server_Base):
         for source in get_sources_by_type(self.server):
             if source.uuid == s:
                 self.log("matched %s", source)
-                self.server.disconnect_client(source.protocol, ConnectionMessage.DETACH_REQUEST)
+                self.server.network.disconnect_client(source.protocol, ConnectionMessage.DETACH_REQUEST)
 
     @dbus.service.method(INTERFACE)
     def DetachAllClients(self):

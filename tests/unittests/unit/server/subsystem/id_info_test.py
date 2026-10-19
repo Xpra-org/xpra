@@ -13,6 +13,7 @@ from unittest.mock import patch
 from xpra.server.subsystem.id import IDServer
 from xpra.server.subsystem.info import InfoServer
 from xpra.net.dispatch import PacketDispatcher
+from xpra.server.subsystem.network import NetworkServer
 from unit.server.subsystem.servermixintest_util import FakeServerBase
 
 
@@ -23,15 +24,11 @@ class FakeServer(FakeServerBase, PacketDispatcher):
     def __init__(self):
         super().__init__()
         PacketDispatcher.__init__(self)
+        network = NetworkServer(self)
+        network.websocket_upgrade = False
+        self.subsystems["network"] = network
         self.hello_request_handlers = {}
         self.start_time = time()
-        self._html = False
-        self.websocket_upgrade = False
-        self._www_dir = ""
-        self._http_headers_dirs = []
-
-    def get_socket_info(self) -> dict:
-        return {}
 
 
 class FakeSessionFiles:

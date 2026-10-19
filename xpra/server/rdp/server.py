@@ -106,12 +106,10 @@ class RDPServer(StubSubsystem):
         return format_rdp_neg_failure(RDPNegFailure.SSL_REQUIRED_BY_SERVER), 0
 
     def get_ssl_options(self, conn) -> dict:
-        get_ssl_socket_options = getattr(self.server, "get_ssl_socket_options", None)
-        if not get_ssl_socket_options:
+        if not (network := self.network):
             return {}
         try:
-            # noinspection calling-non-callable
-            return get_ssl_socket_options(conn.options)
+            return network.get_ssl_socket_options(conn.options)
         except Exception:
             log("get_ssl_socket_options(%s) failed", conn.options, exc_info=True)
             return {}

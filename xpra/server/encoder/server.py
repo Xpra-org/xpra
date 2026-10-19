@@ -233,7 +233,7 @@ class EncoderServer(ServerBase):
                 coding = encoding
         except (ValueError, RuntimeError) as e:
             log("encode failed", exc_info=True)
-            self.disconnect_client(proto, ConnectionMessage.SERVER_ERROR, f"failed to encode: {e}")
+            self.network.disconnect_client(proto, ConnectionMessage.SERVER_ERROR, f"failed to encode: {e}")
             return
         finally:
             free()

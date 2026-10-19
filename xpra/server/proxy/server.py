@@ -175,12 +175,12 @@ class ProxyServer(ServerCore):
             self.subsystems[cls.PREFIX] = cls(self)
         self.hello_request_handlers["stop"] = self._handle_hello_request_stop
         self.hello_request_handlers["register"] = self._handle_hello_request_register
-        self._max_connections = MAX_CONCURRENT_CONNECTIONS
+        self.network._max_connections = MAX_CONCURRENT_CONNECTIONS
         self._start_sessions = False
         self.session_type = "proxy"
         # proxy servers may have to connect to remote servers,
         # or even start them, so allow more time before timing out:
-        self._accept_timeout += 10
+        self.network._accept_timeout += 10
         self.pings = 0
         self._start_sessions = False
         self.session_registry = None
@@ -194,8 +194,8 @@ class ProxyServer(ServerCore):
         # protocols holding live session registrations, mapped to the Session
         # they registered so we can `unregister` them on disconnect:
         self._registered_protos: dict = {}
-        self._socket_timeout = PROXY_SOCKET_TIMEOUT
-        self._ws_timeout = PROXY_WS_TIMEOUT
+        self.network._socket_timeout = PROXY_SOCKET_TIMEOUT
+        self.network._ws_timeout = PROXY_WS_TIMEOUT
         self.session_registry_name = "auth"
 
     def init(self, opts) -> None:
@@ -247,12 +247,12 @@ class ProxyServer(ServerCore):
     def get_displays(self) -> dict[str, Any]:
         # override the default implementation to expose ALL displays
         from xpra.scripts.display import get_displays_info  # pylint: disable=import-outside-toplevel
-        return get_displays_info(self.dotxpra)
+        return get_displays_info(self.network.dotxpra)
 
     def get_xpra_sessions(self) -> dict[str, Any]:
         # override the default implementation to expose sessions for ALL displays
         from xpra.scripts.sessions import get_xpra_sessions  # pylint: disable=import-outside-toplevel
-        return get_xpra_sessions(self.dotxpra)
+        return get_xpra_sessions(self.network.dotxpra)
 
     def _process_proxy_shutdown_server(self, proto, _packet: Packet) -> None:
         assert proto in self._requests
@@ -333,7 +333,7 @@ class ProxyServer(ServerCore):
         if super().hello_oked(proto, c, auth_caps) or c.strget("request"):
             # already handled in superclass, which also rejects the requests we don't support
             return
-        self.accept_protocol(proto, c)
+        self.network.accept_protocol(proto, c)
         self.proxy_auth(proto, c, auth_caps)
 
     def disconnect_all(self):
@@ -357,17 +357,17 @@ class ProxyServer(ServerCore):
             authlog.error("Error: rejecting register request from %s", proto)
             authlog.error(" the session registry is %r, register requires 'live'",
                           registry.NAME if registry else None)
-            self.send_disconnect(proto, "register requires --session-registry=live")
+            self.network.send_disconnect(proto, "register requires --session-registry=live")
             return True
         uuid = caps.strget("uuid")
         session_name = caps.strget("session-name")
         if not uuid:
             authlog.error("Error: rejecting register request: missing 'uuid'")
-            self.send_disconnect(proto, "register: missing uuid")
+            self.network.send_disconnect(proto, "register: missing uuid")
             return True
         if not valid_uuid(uuid):
             authlog.error("Error: rejecting register request: invalid 'uuid'")
-            self.send_disconnect(proto, "register: invalid uuid")
+            self.network.send_disconnect(proto, "register: invalid uuid")
             return True
         displays = list(caps.strtupleget("displays"))
         if not displays:
@@ -388,7 +388,7 @@ class ProxyServer(ServerCore):
             registry.register(session)
         except Exception as e:
             authlog("registry.register(%s) failed", session, exc_info=True)
-            self.send_disconnect(proto, f"register failed: {e}")
+            self.network.send_disconnect(proto, f"register failed: {e}")
             return True
         self._registered_protos[proto] = session
         # acknowledge — keep the connection alive (no 10s timeout)
@@ -419,7 +419,7 @@ class ProxyServer(ServerCore):
         if not is_request_allowed(proto, "stop", default_can_stop):
             msg = "`stop` requests are not enabled for this proxy server connection"
             log.warn(f"Warning: {msg}")
-            self.send_disconnect(proto, msg)
+            self.network.send_disconnect(proto, msg)
             return
 
         self._requests.add(proto)
@@ -433,14 +433,14 @@ class ProxyServer(ServerCore):
             except KeyError:
                 pass
             if not proto.is_closed():
-                self.send_disconnect(proto, "timeout")
+                self.network.send_disconnect(proto, "timeout")
 
         self.timeout_add(10 * 1000, force_exit_request_client)
 
     def proxy_auth(self, client_proto, c: typedict, auth_caps: dict) -> None:
         def disconnect(reason, *extras) -> None:
             log("disconnect(%s, %s)", reason, extras)
-            self.send_disconnect(client_proto, reason, *extras)
+            self.network.send_disconnect(client_proto, reason, *extras)
 
         def nosession(*extras) -> None:
             disconnect(ConnectionMessage.SESSION_NOT_FOUND, *extras)
@@ -489,7 +489,7 @@ class ProxyServer(ServerCore):
     def proxy_session(self, client_proto, c: typedict, auth_caps: dict, sessions: Session) -> None:
         def disconnect(reason, *extras) -> None:
             log("disconnect(%s, %s)", reason, extras)
-            self.send_disconnect(client_proto, reason, *extras)
+            self.network.send_disconnect(client_proto, reason, *extras)
 
         def nosession(*extras) -> None:
             disconnect(ConnectionMessage.SESSION_NOT_FOUND, *extras)
@@ -686,7 +686,7 @@ class ProxyServer(ServerCore):
                 log("start_proxy_process(..) client connection=%s", client_conn)
                 log("start_proxy_process(..) client state=%s", client_state)
 
-                ioe = client_proto.wait_for_io_threads_exit(5 + self._socket_timeout)
+                ioe = client_proto.wait_for_io_threads_exit(5 + self.network._socket_timeout)
                 if not ioe:
                     log.error("Error: some network IO threads have failed to terminate")
                     client_proto.close()
@@ -746,7 +746,7 @@ class ProxyServer(ServerCore):
         endpoint = session.endpoint
         if not endpoint or endpoint.is_closed():
             authlog.error("Error: live session %r has no usable endpoint", session.uuid)
-            self.send_disconnect(client_proto, ConnectionMessage.SESSION_NOT_FOUND, "registered session is gone")
+            self.network.send_disconnect(client_proto, ConnectionMessage.SESSION_NOT_FOUND, "registered session is gone")
             return
         # Pop atomically so a second client cannot grab the same session
         # while we're brokering it. The server is expected to re-register

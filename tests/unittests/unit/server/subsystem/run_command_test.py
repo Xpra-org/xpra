@@ -59,6 +59,8 @@ class RunCommandTest(unittest.TestCase):
             cancel_verify_connection_accepted=Mock(),
             idle_add=GLib.idle_add, timeout_add=GLib.timeout_add, source_remove=GLib.source_remove,
         )
+        # the server also stands in for the `network` subsystem:
+        server.subsystems = {"network": server}
         self.command = ChildCommandServer(server)
 
     def tearDown(self):
