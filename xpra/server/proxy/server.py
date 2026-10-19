@@ -242,7 +242,7 @@ class ProxyServer(ServerCore):
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         # add shutdown handler
-        self._default_packet_handlers[SHUTDOWN_SERVER] = self._process_proxy_shutdown_server
+        self._default_ui_packet_handlers[SHUTDOWN_SERVER] = self._process_proxy_shutdown_server
 
     def get_displays(self) -> dict[str, Any]:
         # override the default implementation to expose ALL displays
