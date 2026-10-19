@@ -28,7 +28,7 @@ from xpra.scripts.main import (
     nox, use_systemd_run, systemd_run_command, systemd_run_wrap,
     handle_client_encoding_option, normalize_client_encoding_option,
     isdisplaytype,
-    check_display,
+    check_display, check_gtk, check_gtk_client,
     make_client, do_run_client,
     connect_to_server,
     configure_landlock,
@@ -47,6 +47,76 @@ def _get_test_socket_dir():
 
 # `get_xpra_command()` only has to be validated once per test run:
 xpra_command_checked = False
+
+
+class TestGtkBackend(unittest.TestCase):
+
+    def test_client_and_splash_backend_selection(self):
+        cases = (
+            ({"DISPLAY": ":0", "XDG_SESSION_TYPE": "x11"}, True, False, "x11"),
+            ({"DISPLAY": ":0", "XDG_SESSION_TYPE": "x11", "WAYLAND_DISPLAY": "wayland-1"}, True, False, "wayland"),
+            ({"DISPLAY": ":1", "WAYLAND_DISPLAY": "wayland-0", "XDG_SESSION_TYPE": "wayland"}, True, True, "wayland"),
+            ({"WAYLAND_DISPLAY": "wayland-0"}, False, False, "wayland"),
+            ({"XDG_SESSION_TYPE": "wayland"}, False, False, "wayland"),
+            ({"DISPLAY": ":1"}, True, True, "wayland"),
+            ({"DISPLAY": ":0", "WAYLAND_DISPLAY": "wayland-1", "GDK_BACKEND": "x11"}, True, False, "x11"),
+            ({"DISPLAY": ":0", "GDK_BACKEND": "x11", "PYOPENGL_PLATFORM": "egl"}, True, False, "x11"),
+            ({"DISPLAY": ":0", "XDG_SESSION_TYPE": "x11", "GDK_BACKEND": "wayland"}, True, False, "wayland"),
+            ({"DISPLAY": ":0", "GDK_BACKEND": "wayland,x11"}, True, False, "wayland,x11"),
+            ({"DISPLAY": ":99"}, False, False, ""),
+            ({}, False, False, ""),
+        )
+        for env, x11, xwayland, expected in cases:
+            for mode in ("client", "splash"):
+                probes = SimpleNamespace(isX11=Mock(return_value=x11), isxwayland=Mock(return_value=xwayland))
+                platforms = {"x11": "x11", "wayland": "egl"}
+
+                def init_check():
+                    self.assertEqual(os.environ.get("GDK_BACKEND", ""), expected)
+                    self.assertEqual(os.environ.get("PYOPENGL_PLATFORM", ""), env.get("PYOPENGL_PLATFORM", platforms.get(expected, "")))
+                    return True
+
+                with self.subTest(env=env, mode=mode), patch.dict(os.environ, env, clear=True), \
+                     patch.dict(sys.modules, {"xpra.x11.bindings.xwayland": probes}), \
+                     patch("xpra.scripts.main.POSIX", True), patch("xpra.scripts.main.OSX", False), \
+                     patch("xpra.scripts.main.no_gtk"), patch("xpra.scripts.main.find_spec", return_value=Mock()), \
+                     patch("xpra.scripts.main.gtk_init_check", side_effect=init_check), \
+                     patch("xpra.scripts.main.check_display"):
+                    if mode == "client":
+                        check_gtk_client()
+                    else:
+                        check_gtk("splash")
+                    if env.get("GDK_BACKEND") or env.get("WAYLAND_DISPLAY") or env.get("XDG_SESSION_TYPE") == "wayland":
+                        probes.isX11.assert_not_called()
+
+    def test_backend_selection_without_x11_bindings(self):
+        for env, expected in (({"DISPLAY": ":0"}, ""), ({"DISPLAY": ":0", "WAYLAND_DISPLAY": "wayland-1"}, "wayland")):
+            with self.subTest(env=env), patch.dict(os.environ, env, clear=True), \
+                 patch.dict(sys.modules, {"xpra.x11.bindings.xwayland": None}), \
+                 patch("xpra.scripts.main.POSIX", True), patch("xpra.scripts.main.OSX", False), \
+                 patch("xpra.scripts.main.gtk_init_check", return_value=True), patch("xpra.scripts.main.check_display"):
+                check_gtk("splash")
+                self.assertEqual(os.environ.get("GDK_BACKEND", ""), expected)
+
+    def test_splash_preserves_saved_display_environment(self):
+        for backend in ("", "wayland", "x11", "wayland,x11"):
+            saved_env = {"DISPLAY": ":0", "WAYLAND_DISPLAY": "wayland-1", "XDG_SESSION_TYPE": "x11"}
+            if backend:
+                saved_env["GDK_BACKEND"] = backend
+            process = Mock()
+            process.poll.return_value = None
+            with self.subTest(backend=backend), \
+                 patch.dict(os.environ, {"DISPLAY": ":100", "WAYLAND_DISPLAY": "wayland-100", "GDK_BACKEND": "x11"}, clear=True), \
+                 patch("xpra.scripts.main.get_saved_env", return_value=saved_env), \
+                 patch("xpra.scripts.main.Popen", return_value=process) as popen, \
+                 patch("xpra.scripts.main.add_process"), patch("xpra.scripts.main.SPLASH_KEEPALIVE_INTERVAL", 0):
+                self.assertIs(make_progress_process("test"), process)
+                splash_env = popen.call_args.kwargs["env"]
+                self.assertEqual(splash_env["DISPLAY"], ":0")
+                self.assertEqual(splash_env["WAYLAND_DISPLAY"], "wayland-1")
+                self.assertEqual(splash_env.get("GDK_BACKEND", ""), backend)
+                self.assertEqual(os.environ["DISPLAY"], ":100")
+                self.assertEqual(os.environ["GDK_BACKEND"], "x11")
 
 
 class TestMain(unittest.TestCase):

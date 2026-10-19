@@ -127,8 +127,8 @@ def get_platform_icon_name(platform: str) -> str:
     return ""
 
 
-def is_Wayland() -> bool:
-    return _is_Wayland(_saved_env)
+def is_Wayland(env: dict | None = None) -> bool:
+    return _is_Wayland(_saved_env if env is None else env)
 
 
 def _is_Wayland(env: dict) -> bool:

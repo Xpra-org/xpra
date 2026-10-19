@@ -468,6 +468,11 @@ def isdisplaytype(args, *dtypes) -> bool:
 
 
 def set_gdk_backend() -> None:
+    if os.environ.get("GDK_BACKEND"):
+        return
+    if is_Wayland(os.environ):
+        os.environ["GDK_BACKEND"] = "wayland"
+        return
     try:
         from xpra.x11.bindings.xwayland import isX11, isxwayland
     except ImportError:
@@ -479,8 +484,6 @@ def set_gdk_backend() -> None:
                 os.environ["GDK_BACKEND"] = "wayland"
             else:
                 os.environ["GDK_BACKEND"] = "x11"
-    if is_Wayland():
-        os.environ["GDK_BACKEND"] = "wayland"
 
 
 def set_pyopengl_platform() -> None:
@@ -493,13 +496,6 @@ def set_pyopengl_platform() -> None:
 
 def check_gtk_client() -> None:
     no_gtk()
-
-    if POSIX and not OSX and not os.environ.get("GDK_BACKEND"):
-        set_gdk_backend()
-
-    if not os.environ.get("PYOPENGL_PLATFORM"):
-        set_pyopengl_platform()
-
     check_gtk("client")
 
     # `find_spec` only raises when a parent package is missing,
@@ -528,6 +524,11 @@ def gtk_init_check() -> bool:
 
 
 def check_gtk(mode: str) -> None:
+    # Clients and GTK helper subprocesses must select their backend before GTK is initialized.
+    if POSIX and not OSX:
+        set_gdk_backend()
+    if not os.environ.get("PYOPENGL_PLATFORM"):
+        set_pyopengl_platform()
     if not gtk_init_check():
         raise InitExit(ExitCode.NO_DISPLAY, f"{mode!r} failed to initialize Gtk, no display?")
     check_display()
@@ -1687,9 +1688,6 @@ def make_progress_process(title="Xpra") -> Popen | None:
     # not the new one which may point the X11 / Wayland display to our virtual one
     log = Logger("splash")
     env = filter_env(get_saved_env())
-    # prevent Gtk from choosing a Wayland display instead of our local X11 display:
-    if env.get("DISPLAY") and env.get("XDG_SESSION_TYPE") == "x11":
-        env["GDK_BACKEND"] = "x11"
     env["XPRA_LOG_PREFIX"] = "splash: "
     env["XPRA_WAIT_FOR_INPUT"] = "0"
     env["XPRA_SPLASH_KEEPALIVE_INTERVAL"] = str(SPLASH_KEEPALIVE_INTERVAL)
