@@ -7,11 +7,13 @@ import sys
 import unittest
 from collections import deque
 from contextlib import ExitStack
-from unittest.mock import call, patch
+from unittest.mock import Mock, call, patch
 
 from xpra.os_util import OSX, POSIX
 from xpra.util.io import pollwait
 from xpra.util.env import OSEnvContext
+from xpra.util.objects import AdHocStruct
+from xpra.net.common import Packet
 from unit.server_test_util import ServerTestUtil
 
 
@@ -118,6 +120,68 @@ class X11WindowTest(ServerTestUtil):
         # mapped, so that it can be given the X11 input focus:
         model.show()
         return model
+
+    def test_dismiss_grabbed_popup(self):
+        from xpra.x11.subsystem.display import x11_ungrab
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+        from xpra.x11.bindings.window import X11WindowBindings
+
+        helper = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grabbed_popup.py")
+        command = [sys.executable, helper, self.display]
+        env = self.get_default_run_env()
+        proc = self.run_command(command, env=env, stdout=subprocess.PIPE)
+        self.addCleanup(proc.terminate)
+        with proc.stdout:
+            line = proc.stdout.readline()
+        xid, pointer, keyboard = map(int, line.split())
+        self.assertEqual((pointer, keyboard), (0, 0))
+
+        def probe() -> tuple[int, ...]:
+            output = subprocess.check_output(command + ["probe"], env=env, timeout=10)
+            return tuple(map(int, output.split()))[1:]
+
+        # A second X11 client cannot grab either device, even after Xpra's ungrab.
+        self.assertEqual(probe(), (1, 1))  # AlreadyGrabbed
+        x11_ungrab()
+        self.assertEqual(probe(), (1, 1))
+        window = Mock()
+        window.is_OR.return_value = True
+        window.is_tray.return_value = False
+        window.get_property.return_value = xid
+        server = AdHocStruct()
+        server.is_readonly = lambda _proto: False
+        server.get_server_source = lambda _proto: AdHocStruct()
+        server.get_window = lambda wid: window if wid == 1 else None
+        SeamlessWindowServer._process_dismiss(server, object(), Packet("window-dismiss", 1))
+        self.assertFalse(X11WindowBindings().is_mapped(xid))
+        # The application is still running and has never called ungrab.
+        self.assertIsNone(proc.poll())
+        self.assertEqual(probe(), (0, 0))
+
+    def test_dismiss_popup_guards(self):
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+
+        for readonly, source, popup, tray, hidden, exists in (
+                (True, True, True, False, False, True),
+                (False, False, True, False, False, True),
+                (False, True, False, False, False, True),
+                (False, True, True, True, False, True),
+                (False, True, True, False, True, True),
+                (False, True, True, False, False, False),
+        ):
+            with self.subTest(readonly=readonly, source=source, popup=popup, tray=tray, hidden=hidden, exists=exists):
+                window = Mock()
+                window.is_OR.return_value = popup
+                window.is_tray.return_value = tray
+                ss = Mock()
+                ss.is_window_hidden.return_value = hidden
+                server = AdHocStruct()
+                server.is_readonly = lambda _proto: readonly
+                server.get_server_source = lambda _proto: ss if source else None
+                server.get_window = lambda _wid: window if exists else None
+                with patch("xpra.x11.subsystem.window.X11WindowBindings") as bindings:
+                    SeamlessWindowServer._process_dismiss(server, object(), Packet("window-dismiss", 1))
+                    bindings.assert_not_called()
 
     def test_window_stacking(self):
         from xpra.x11.wm import Wm

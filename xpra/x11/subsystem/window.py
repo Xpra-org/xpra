@@ -169,7 +169,7 @@ class SeamlessWindowServer(WindowServer):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packets("window-signal", main_thread=True)
+        self.add_packets("window-signal", "window-dismiss", main_thread=True)
 
     def get_visible_areas(self, screen_w: int, screen_h: int) -> list:
         """
@@ -1027,6 +1027,23 @@ class SeamlessWindowServer(WindowServer):
         pointerlog("raising %s", window)
         with xswallow:
             window.raise_window()
+
+    def _process_dismiss(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
+        ss = self.get_server_source(proto)
+        if ss is None:
+            return
+        wid = packet.get_wid()
+        window = self.get_window(wid)
+        if not window or not window.is_OR() or window.is_tray() or is_window_hidden(ss, window):
+            return
+        # XUngrabPointer / XUngrabKeyboard cannot release another X11 client's grabs.
+        # Making the grab window unviewable releases them in the X server, without
+        # relying on the application to handle Escape or WM_DELETE_WINDOW.
+        windowlog("dismissing popup %#x: %s", wid, window)
+        with xswallow:
+            X11WindowBindings().Unmap(window.get_property("xid"))
 
     def _process_close(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()

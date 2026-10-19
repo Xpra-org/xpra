@@ -727,6 +727,10 @@ class ClientWindowBase(ClientWidgetBase):
     def set_xid(self, xid) -> None:
         pass  # see gtk client window base
 
+    def dismiss_popups(self) -> None:
+        if window := self.get_subsystem("window"):
+            window.dismiss_popups()
+
     def toggle_debug(self, *_args) -> None:
         b = self._backing
         log.info("toggling debug on backing %s for window %i", b, self.wid)

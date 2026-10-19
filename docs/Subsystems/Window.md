@@ -86,6 +86,14 @@ it (a window becoming key or main, the application being activated, a window bei
 miniaturized or occluded), so the client also refreshes the order whenever it
 re-stacks a window itself.
 
+An X11 seamless server advertises `window.dismiss = true` when it accepts
+`window-dismiss` requests. This packet unmaps an override-redirect popup, which
+also releases any X11 keyboard or pointer grabs held on it. Regular windows,
+tray icons, windows hidden from the requesting client, and readonly requests
+are ignored. The popup's normal unmap handling sends `window-destroy` to clients.
+The default `Control+Escape` shortcut releases local grabs and sends this request
+for each popup known to the client.
+
 <div class="docs-section-heading" markdown="1">
 
 ## Network Packets
@@ -120,6 +128,7 @@ re-stacks a window itself.
 | `window-unmap` | `wid`, optional iconified flag and state             | The client has hidden a window                                           |
 | `window-configure` | `wid`, configuration dictionary                | The client has moved or resized a window                                 |
 | `window-close` | `wid`                                               | The user has requested to close the window                               |
+| `window-dismiss` | `wid`                                             | Unmap an override-redirect popup (`window.dismiss` capability required)  |
 | `window-focus` | `wid`, optional modifiers                           | The window has received keyboard focus                                   |
 | `window-action`| `wid`, `action`, optional arguments                 | Request a window manager action (eg: maximize, minimize)                 |
 | `window-stacking` | list of window IDs, bottom-to-top               | Report the client's current stacking order                               |
