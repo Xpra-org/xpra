@@ -372,7 +372,13 @@ class Wm(GObject.GObject):
                 log("updated window geometry for window %#x from %s to %s",
                     xid, geom[:4], (x, y, w, h))
             X11Window.configure(xid, x, y, w, h, event.value_mask)
-            X11Window.sendConfigureNotify(xid)
+            if (x, y, w, h) == tuple(geom[:4]) and geom[4] == 0:
+                # ICCCM 4.1.5: the request does not change anything,
+                # so the X server will not generate a ConfigureNotify:
+                X11Window.sendConfigureNotify(xid)
+            # otherwise the real ConfigureNotify is all the client needs,
+            # a synthetic one would arrive later and could be taken
+            # as the reply to its next request (ie: by Xt applications)
 
     def do_x11_focus_in_event(self, event: X11Event) -> None:
         # The purpose of this function is to detect when the focus mode has
