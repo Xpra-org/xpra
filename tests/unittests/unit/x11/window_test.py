@@ -393,9 +393,11 @@ class X11WindowTest(ServerTestUtil):
 
         first = self.manage_window(self.start_window())
         second = self.manage_window(self.start_window())
+        source = AdHocStruct()
+        source.get_monitor_position = lambda *_args: (400, 500)
         server = AdHocStruct()
         server.subsystems = {}
-        server.get_server_source = lambda _proto: None
+        server.get_server_source = lambda _proto: source
         server.get_sources_by_type = lambda *_args: ()
         windows = SeamlessWindowServer(server)
         windows._id_to_window = {1: first, 2: second}
@@ -409,11 +411,14 @@ class X11WindowTest(ServerTestUtil):
 
         # Wayland client windows can have the same server coordinates: changing
         # the target window must raise it even when the pointer does not move.
-        pointer.process_mouse_common(object(), 0, 1, (20, 20))
+        props = {"window-position": (20, 20), "monitor": {"index": 0, "position": (400, 500)}}
+        pointer.process_mouse_common(object(), 0, 1, (400, 500), props)
         self.assertEqual(bindings.get_children(root)[-1], first.corral_xid)
+        self.assertEqual(pointer.pointer_device.get_position(), (20, 20))
         for pressed in (True, False):
-            pointer.process_pointer_button(object(), 0, 2, 1, pressed, (20, 20), {})
+            pointer.process_pointer_button(object(), 0, 2, 1, pressed, (400, 500), props)
             self.assertEqual(bindings.get_children(root)[-1], second.corral_xid)
+            self.assertEqual(pointer.pointer_device.get_position(), (20, 20))
 
     def test_lost_active_window(self):
         """
