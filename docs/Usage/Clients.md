@@ -21,6 +21,7 @@ implement are simply not enabled for that connection.
 | [rust-xpra](https://github.com/Xpra-org/rust-xpra)     | [Xpra-org](https://github.com/Xpra-org)      | GPLv3   |
 | [go-xpra](https://github.com/Xpra-org/go-xpra)         | [Xpra-org](https://github.com/Xpra-org)      | GPLv3   |
 | [kotlin-xpra](https://github.com/Xpra-org/kotlin-xpra) | [Xpra-org](https://github.com/Xpra-org)      | GPLv3   |
+| [xpra-client](https://github.com/lukaszsobala/xpra-client) | [lukaszsobala](https://github.com/lukaszsobala) | GPLv3   |
 
 The [xpra client](./Client.md) is the default client: it is the only one that implements the complete feature set, and
 the only one available as a native package for Linux, MS Windows and MacOS.\
@@ -29,7 +30,9 @@ builtin web server will pick up `xpra-html5` automatically when it is installed.
 The `rust` and `go` clients are smaller native implementations with a deliberately limited feature set, also used
 for validating the protocol.\
 `kotlin-xpra` is an Android client in Kotlin and Jetpack Compose: it shows one top-level window at a time, fullscreen,
-with touch input, a soft-keyboard bridge and a window switcher.
+with touch input, a soft-keyboard bridge and a window switcher.\
+`xpra-client` is a Java / Kotlin Android client, with a Swing frontend also in the repository. It is a fork of
+`jksiezni/xpra-client`, updated for current Android versions and Xpra servers.
 
 <div class="docs-section-heading" markdown="1">
 
@@ -39,24 +42,30 @@ with touch input, a soft-keyboard bridge and a window switcher.
 
 These are not the same kind of project, and what it costs to build and ship them differs by two orders of magnitude:
 
-| Client      | Languages                        | Source               | Binaries                                             | Build time                               |
-|-------------|----------------------------------|----------------------|------------------------------------------------------|------------------------------------------|
+| Client      | Languages                        | Source               | Binaries                                                 | Build time                               |
+|-------------|----------------------------------|----------------------|----------------------------------------------------------|------------------------------------------|
 | xpra        | Python 3, Cython, C, CUDA - GTK3 | 1550 files, 318 kloc | 4-9 MB packages, 106 MB `.exe`, 72-88 MB `.dmg` / `.pkg` | 4 minutes, over 10 on MS Windows / MacOS |
-| xpra-html5  | JavaScript, no framework         | 32 files, 18 kloc    | 2.0-2.2 MB package, 2.2 MB served to the browser     | 30 seconds                               |
-| vispra      | TypeScript, SolidJS, Vite        | 117 files, 24 kloc   | 2.8 MB served to the browser, no packages            | 10 seconds                               |
-| rust-xpra   | Rust, `winit` / `softbuffer`     | 32 files, 9 kloc     | 2.4-2.8 MB package, 2.6 MB executable                | 90 seconds                               |
-| go-xpra     | Go, no `cgo`, no toolkit         | 83 files, 14 kloc    | 3.9-4.2 MB package, 7.5 MB executable, 4.5 MB `.exe` | 35 seconds                               |
-| kotlin-xpra | Kotlin, Jetpack Compose          | 34 files, 4.5 kloc   | 1.5 MB `.apk`                                        | 100 seconds                              |
+| xpra-html5  | JavaScript, no framework         | 32 files, 18 kloc    | 2.0-2.2 MB package, 2.2 MB served to the browser         | 30 seconds                               |
+| vispra      | TypeScript, SolidJS, Vite        | 117 files, 24 kloc   | 2.8 MB served to the browser, no packages                | 10 seconds                               |
+| rust-xpra   | Rust, `winit` / `softbuffer`     | 32 files, 9 kloc     | 2.4-2.8 MB package, 2.6 MB executable                    | 90 seconds                               |
+| go-xpra     | Go, no `cgo`, no toolkit         | 83 files, 14 kloc    | 3.9-4.2 MB package, 7.5 MB executable, 4.5 MB `.exe`     | 35 seconds                               |
+| kotlin-xpra | Kotlin, Jetpack Compose          | 34 files, 4.5 kloc   | 1.5 MB `.apk`                                            | 100 seconds                              |
+| xpra-client | Java, Kotlin, Android / Swing    | 141 files, 16.6 kloc | 2.2 MB `.apk`, 8.3 MB debug `.apk`                       | 100 seconds, 50 for a debug build        |
 
 Source counts tracked files in each project's own languages, tests included and vendored libraries excluded - the
 `xpra-html5` figure leaves out some 70 kloc of bundled jquery and audio decoders, whereas `vispra` gets the equivalent
-from `npm` and never commits it. Of xpra's 318 kloc, 259 are Python, 49 Cython and 10 C and CUDA.\
+from `npm` and never commits it. Of xpra's 318 kloc, 259 are Python, 49 Cython and 10 C and CUDA.
+The `xpra-client` count includes the Swing frontend and excludes the bundled Grafika library.\
 The package sizes are what the xpra repositories serve, and they only look small because a distribution package leans
 on the distribution's own Python, GTK and codec libraries; the MS Windows installer and the MacOS `.dmg` / `.pkg` carry
 all of that themselves, which is the whole difference between 4 MB and 106 MB.\
 Build times are wall clock, from cold, on one 8 thread x86_64 desktop, with the dependencies already installed. Only
 xpra's is long enough to matter, and it is much longer on the two platforms that also build the toolchain, the
 bundled libraries and an installer.
+
+Build `xpra-client` with `./gradlew assembleDebug`, using JDK 17 or later and the Android SDK.
+APKs are available as [CI artifacts](https://github.com/lukaszsobala/xpra-client/actions/workflows/main.yml).
+Its first size and build time in the table are for the release APK, shrunk by R8 like `kotlin-xpra`'s.
 
 <div class="docs-section-heading" markdown="1">
 
