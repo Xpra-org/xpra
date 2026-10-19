@@ -458,6 +458,21 @@ class TestAuth(unittest.TestCase):
                 self.assertFalse(auth.timeout_event)
                 source_remove.assert_called_once_with(11)
 
+    def test_exec_invalid_password(self) -> None:
+        if not POSIX:
+            return
+        # the command cannot receive a password containing a NUL byte,
+        # the authentication must fail rather than raise:
+        a = self._init_auth("exec", command="/bin/true ${password}", timeout=2, **{"require-challenge": "yes"})
+        assert a.requires_challenge()
+        salt, digest = a.get_challenge(("xor", ))
+        assert salt and digest == "xor"
+        client_salt = strtobytes(uuid.uuid4().hex + uuid.uuid4().hex)
+        salt_digest = a.choose_salt_digest(get_digests())
+        auth_salt = strtobytes(gendigest(salt_digest, client_salt, salt))
+        response = gendigest("xor", b"pass\0word", auth_salt)
+        assert not self.capsauth(a, response, client_salt)
+
     def test_keycloak(self) -> None:
         try:
             self._init_auth("keycloak")

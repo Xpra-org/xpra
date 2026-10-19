@@ -37,6 +37,7 @@
   * [paramiko ssh agent forwarding handler](https://github.com/Xpra-org/xpra/issues/4353)
   * [basic RDP handling](https://github.com/Xpra-org/xpra/issues/4476)
 * 🛡️ Security:
+  * [authentication module errors could leave clients waiting until timeout](https://github.com/Xpra-org/xpra/commit/b74e8b7943376736812563144c04a5a62f813e85)
   * [`seccomp` hardening](https://github.com/Xpra-org/xpra/issues/622)
   * [`landlock` support](https://github.com/Xpra-org/xpra/issues/4960)
   * [process level protections: prevent ptrace / core dumps](https://github.com/Xpra-org/xpra/issues/4958)
