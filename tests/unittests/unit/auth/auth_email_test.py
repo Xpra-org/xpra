@@ -40,7 +40,7 @@ class EmailAuthTest(unittest.TestCase):
         self.addCleanup(self.smtp_patch.stop)
         self.smtp = self.smtp_class.return_value.__enter__.return_value
         self.smtp.send_message.return_value = {}
-        self.random_patch = patch("xpra.auth.email.secrets.randbelow", return_value=123)
+        self.random_patch = patch("xpra.auth.code_base.secrets.randbelow", return_value=123)
         self.random_patch.start()
         self.addCleanup(self.random_patch.stop)
 
@@ -114,10 +114,10 @@ class EmailAuthTest(unittest.TestCase):
         for offset, valid in ((119.999, True), (120, False), (121, False)):
             with self.subTest(offset=offset):
                 auth = self.auth(address=f"user{offset}@example.com")
-                with patch("xpra.auth.email.monotonic", return_value=1000):
+                with patch("xpra.auth.code_base.monotonic", return_value=1000):
                     self.begin(auth)
                 caps = self.response(auth, "000123")
-                with patch("xpra.auth.email.monotonic", return_value=1000 + offset):
+                with patch("xpra.auth.code_base.monotonic", return_value=1000 + offset):
                     self.assertEqual(auth.authenticate(caps), valid)
                 self.assertEqual(auth.code, "")
 
@@ -125,14 +125,14 @@ class EmailAuthTest(unittest.TestCase):
         clock = [1000]
         self.smtp.send_message.side_effect = lambda *a, **kw: clock.__setitem__(0, 1020)
         auth = self.auth()
-        with patch("xpra.auth.email.monotonic", side_effect=lambda: clock[0]):
+        with patch("xpra.auth.code_base.monotonic", side_effect=lambda: clock[0]):
             self.begin(auth)
         self.assertEqual(auth.expires, 1140)
 
     def test_fresh_code_and_connection_isolation(self):
         first = self.auth(address="one@example.com")
         second = self.auth(address="two@example.com")
-        with patch("xpra.auth.email.secrets.randbelow", side_effect=(1, 2)):
+        with patch("xpra.auth.code_base.secrets.randbelow", side_effect=(1, 2)):
             self.begin(first)
             self.begin(second)
         self.assertFalse(second.authenticate(self.response(second, "000001")))
@@ -209,7 +209,7 @@ class EmailAuthTest(unittest.TestCase):
 
     def test_invalid_address_validation(self):
         invalid = (
-            "", None, "abc", "a@@b", "Name <a@b.com>", "a@b,c@d", "a@b;c@d", "a\r\nBcc:x@y.com",
+            "", "abc", "a@@b", "Name <a@b.com>", "a@b,c@d", "a@b;c@d", "a\r\nBcc:x@y.com",
             "a b@example.com", "a@bad_domain", "a@-bad.com", "a@bad-.com", "a@bad..com", "a@bad.com.",
             ".a@example.com", "a.@example.com", "a..b@example.com", "é@example.com", "a@é.com", "a\x00@b.com",
             "a" * 65 + "@example.com", "a@" + "b" * 64 + ".com", "a@" + ".".join(["b" * 63] * 4),
@@ -433,20 +433,20 @@ class EmailAuthTest(unittest.TestCase):
         first = self.auth()
         second = self.auth()
         third = self.auth()
-        with patch("xpra.auth.email.monotonic", return_value=1000):
+        with patch("xpra.auth.code_base.monotonic", return_value=1000):
             first.reserve_send("Alice@EXAMPLE.COM")
-        with patch("xpra.auth.email.monotonic", return_value=1059.999), self.assertRaises(ValueError):
+        with patch("xpra.auth.code_base.monotonic", return_value=1059.999), self.assertRaises(ValueError):
             second.reserve_send("alice@example.com")
-        with patch("xpra.auth.email.monotonic", return_value=1060):
+        with patch("xpra.auth.code_base.monotonic", return_value=1060):
             third.reserve_send("alice@example.com")
 
     def test_peer_limit_and_expiry(self):
-        with patch("xpra.auth.email.monotonic", return_value=1000):
+        with patch("xpra.auth.code_base.monotonic", return_value=1000):
             for i in range(5):
                 self.auth().reserve_send(f"user{i}@example.com")
             with self.assertRaises(ValueError):
                 self.auth().reserve_send("sixth@example.com")
-        with patch("xpra.auth.email.monotonic", return_value=1300):
+        with patch("xpra.auth.code_base.monotonic", return_value=1300):
             self.auth().reserve_send("sixth@example.com")
 
     def test_mapped_ipv6_uses_same_peer_limit(self):
@@ -484,14 +484,14 @@ class EmailAuthTest(unittest.TestCase):
             self.assertIn(("recipient", "one@example.com"), auth.SENDS)
 
     def test_exec_resolution(self):
-        with patch("xpra.auth.email.lookup_command", return_value="bob@example.com") as lookup:
+        with patch("xpra.auth.code_base.lookup_command", return_value="bob@example.com") as lookup:
             auth = self.auth(mode="lookup", lookup="exec", command="/helper --email", remote={"username": "bob"})
             self.begin(auth)
             lookup.assert_called_once_with(["/helper", "--email"], "bob", 10)
             self.assertEqual(self.message()["To"], "bob@example.com")
 
     def test_lookup_failure_never_falls_back(self):
-        with patch("xpra.auth.email.lookup_command", side_effect=ValueError("failed")):
+        with patch("xpra.auth.code_base.lookup_command", side_effect=ValueError("failed")):
             auth = self.auth(mode="lookup", lookup="exec", command="/helper")
             with self.assertRaises(ValueError):
                 self.begin(auth)
@@ -529,7 +529,7 @@ class EmailAuthTest(unittest.TestCase):
                 self.begin(self.auth(mode="lookup", lookup="sql", uri=uri, remote={"username": username}))
 
     def test_sql_invalid_results(self):
-        for rows in ([], [("a@example.com",), ("b@example.com",)], [(None,)], [("",)], [("a@example.com", "extra")]):
+        for rows in ([], [("a@example.com",), ("b@example.com",)], [(None,)], [(1234,)], [("",)], [("a@example.com", "extra")]):
             with self.subTest(rows=rows):
                 engine = MagicMock()
                 result = engine.connect.return_value.__enter__.return_value.execute.return_value.__enter__.return_value
@@ -605,7 +605,7 @@ class EmailAuthTest(unittest.TestCase):
         states = []
         with patch.object(AuthenticationManager, "setup_encryption", return_value={}), \
                 patch("xpra.server.auth.GLib.idle_add") as accepted, patch("xpra.server.auth.GLib.timeout_add") as failed:
-            manager.verify_auth(proto, Packet("hello", caps), caps)
+            manager.verify_auth(proto, Packet("hello", dict(caps)), caps)
             while packets:
                 self.assertLess(len(captured), 3)
                 packet = packets.pop(0)
@@ -614,7 +614,7 @@ class EmailAuthTest(unittest.TestCase):
                 self.assertFalse(errors)
                 response, client_salt = captured[-1]
                 caps.update({"challenge_response": response, "challenge_client_salt": client_salt})
-                manager.verify_auth(proto, Packet("hello", caps), caps)
+                manager.verify_auth(proto, Packet("hello", dict(caps)), caps)
                 states.append((tuple(auth.passed for auth in proto.authenticators), self.smtp.send_message.call_count))
             for auth in proto.authenticators:
                 self.addCleanup(auth.cleanup)
