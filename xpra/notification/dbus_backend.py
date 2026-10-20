@@ -100,14 +100,19 @@ class DBUSNotifier(NotifierBase):
         if not self.dbusnotify:
             return
         self.may_retry = True
-        with log.trap_error("Error: dbus notify failed"):
-            self.last_notification = (
-                dbus_id, tray, nid,
-                app_name, replaces_nid, app_icon,
-                summary, body, actions, hints, expire_timeout,
-                icon,
-            )
+        self.last_notification = (
+            dbus_id, tray, nid,
+            app_name, replaces_nid, app_icon,
+            summary, body, actions, hints, expire_timeout,
+            icon,
+        )
+        try:
             self.dbus_notify(*self.last_notification)
+        except Exception as e:
+            log("dbus_notify%s", self.last_notification, exc_info=True)
+            log.error("Error: dbus notify failed")
+            log.estr(e)
+            self.notify_failed(nid)
 
     def dbus_notify(self, dbus_id: str, tray, nid: NID,
                     app_name: str, replaces_nid: NID, app_icon: str,
@@ -203,26 +208,28 @@ class DBUSNotifier(NotifierBase):
                 dbus_error_name = dbus_error.get_dbus_name()
                 if dbus_error_name != "org.freedesktop.DBus.Error.ServiceUnknown":
                     log.error("unhandled dbus exception: %s, %s", message, dbus_error_name)
-                    self.clean_notification(nid)
+                    self.notify_failed(nid)
                     return False
 
-                if not self.may_retry:
+                # we only keep the arguments of the last notification, so we can only retry that one:
+                if not self.may_retry or not self.last_notification or self.last_notification[2] != nid:
                     log.error("Error: cannot send notification via dbus,")
                     log.error(" check that you notification service is operating properly")
-                    self.clean_notification(nid)
+                    self.notify_failed(nid)
                     return False
                 self.may_retry = False
 
                 log.info("trying to re-connect to the notification service")
                 # try to connect to the notification again (just once):
                 self.setup_dbusnotify()
-                # and retry:
+                # and retry - which will call us again if it fails:
                 self.dbus_notify(*self.last_notification)
+                return False
         except Exception:
             log("cannot filter error", exc_info=True)
         log.error("Error processing notification:")
         log.estr(dbus_error)
-        self.clean_notification(nid)
+        self.notify_failed(nid)
         return False
 
     def close_notify(self, nid: NID) -> None:

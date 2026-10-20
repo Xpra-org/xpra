@@ -39,6 +39,10 @@ ICON_NAME_RE = re.compile(r"[A-Za-z0-9._+-]{1,128}")
 # the body markup tags that make the notification daemon load a local file (`img`)
 # or open a link (`a href`) - the text of a link is kept:
 UNSAFE_MARKUP_RE = re.compile(r"<\s*/?\s*(img|a)\b[^>]*>", re.IGNORECASE)
+# dbus uses a signed 32-bit integer, -1 means the notification daemon's default:
+MAX_EXPIRE_TIMEOUT = 2**31 - 1
+# control characters, except for line breaks and tabs:
+TEXT_STRIP: dict[int, str | None] = dict.fromkeys(c for c in (*range(0x00, 0x20), *range(0x7f, 0xa0)) if chr(c) not in "\t\n")
 # larger than this is not a notification:
 MAX_APP_NAME = envint("XPRA_NOTIFICATION_MAX_APP_NAME", 64)
 MAX_SUMMARY = envint("XPRA_NOTIFICATION_MAX_SUMMARY", 256)
@@ -177,18 +181,32 @@ def limit_actions(actions: Sequence[str]) -> list[str]:
     # the keys are sent back to the application, so they cannot be truncated:
     # skip the actions whose key is too long
     limited: list[str] = []
+    # (and an odd number of strings would make the last one a key without a label)
     for i in range(0, len(actions) - 1, 2):
         key, label = actions[i], actions[i + 1]
-        if len(key) > MAX_ACTION_KEY:
+        if len(key) > MAX_ACTION_KEY or single_line(key) != key:
             continue
-        limited += [key, truncate(label, MAX_ACTION_LABEL)]
+        limited += [key, truncate(single_line(label), MAX_ACTION_LABEL)]
         if len(limited) >= MAX_ACTIONS * 2:
             break
     return limited
 
 
+def valid_text(text: str) -> str:
+    # lone surrogates cannot be encoded, and dbus would refuse the whole notification:
+    return text.encode("utf8", "replace").decode("utf8")
+
+
+def clean_text(text: str) -> str:
+    return valid_text(text).translate(TEXT_STRIP)
+
+
 def single_line(text: str) -> str:
-    return text.translate(SINGLE_LINE_STRIP)
+    return valid_text(text).translate(SINGLE_LINE_STRIP)
+
+
+def clamp_expire_timeout(expire_timeout: int) -> int:
+    return min(MAX_EXPIRE_TIMEOUT, max(-1, expire_timeout))
 
 
 def sanitize_icon_data(icon: IconData | None) -> IconData | None:
@@ -356,6 +374,8 @@ def validated_hints(h: dict) -> dict[str, int | bool | str]:
             if attr == "urgency":
                 # low, normal or critical:
                 validated = min(2, max(0, validated))
+            elif atype is str:
+                validated = single_line(validated)
             hints[attr] = validated
     return hints
 

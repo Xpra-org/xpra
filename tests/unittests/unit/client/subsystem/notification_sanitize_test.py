@@ -110,6 +110,30 @@ class NotificationSanitizeTest(unittest.TestCase):
             self.notifications.show_times.clear()
             self.assertTrue(self.show(nid=5))
 
+    def test_strings_are_cleaned(self):
+        shown = self.show(app_name="app\ud800", summary="s\udfff", body="line1\n\tline2\x00\x1b[31m\ud800",
+                          actions=("ok\x00", "bad key", "ok", "label\nwith\x00newline\ud800"))
+        self.assertEqual(shown["app_name"], "app?")
+        self.assertEqual(shown["summary"], "s?")
+        self.assertEqual(shown["body"], "line1\n\tline2[31m?")
+        self.assertEqual(shown["actions"], ["ok", "label withnewline?"])
+        for value in shown.values():
+            if isinstance(value, str):
+                value.encode("utf8")
+
+    def test_expire_timeout(self):
+        self.assertEqual(self.show(nid=1, expire_timeout=2**40)["expire_timeout"], 2**31 - 1)
+        self.assertEqual(self.show(nid=2, expire_timeout=-2**40)["expire_timeout"], -1)
+        self.assertEqual(self.show(nid=3, expire_timeout=0)["expire_timeout"], 0)
+        self.assertEqual(self.show(nid=4, expire_timeout=-1)["expire_timeout"], -1)
+
+    def test_failure_closes(self):
+        def fail(*_args):
+            raise RuntimeError("no notification service")
+        self.notifier.show_notify = fail
+        self.show(nid=7)
+        self.assertEqual(self.closed, [("notification-close", 7, 4, "failed to show the notification")])
+
 
 def main():
     unittest.main()
