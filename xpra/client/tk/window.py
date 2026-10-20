@@ -14,6 +14,7 @@ from xpra.net.packet_type import (
     WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE,
 )
 from xpra.util.objects import typedict
+from xpra.client.gui.window_title import window_title_str
 from xpra.log import Logger
 
 log = Logger("client", "window")
@@ -45,7 +46,7 @@ class ClientWindow(Toplevel):
         self.wid = wid
         self.metadata = typedict(metadata)
         self.overrideredirect(self.metadata.boolget("override-redirect", False))
-        self.title(self.metadata.strget("title", ""))
+        self.title(window_title_str(self.metadata.strget("title", "")))
         self.geometry(f"{w}x{h}+{x}+{y}")
         self.update_metadata(self.metadata)
         self.update_idletasks()
@@ -73,7 +74,7 @@ class ClientWindow(Toplevel):
     def update_metadata(self, metadata: typedict):
         self.metadata.update(metadata)
         if "title" in metadata:
-            self.title(metadata.strget("title"))
+            self.title(window_title_str(metadata.strget("title")))
         else:
             log(f"unused window metadata {self.wid:#x}: {metadata}")
 

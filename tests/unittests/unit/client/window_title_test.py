@@ -7,7 +7,7 @@
 import unittest
 from types import SimpleNamespace
 
-from xpra.client.gui.window_base import do_get_window_title, MAX_TITLE
+from xpra.client.gui.window_title import do_get_window_title, MAX_TITLE
 
 
 class FakeClient:
