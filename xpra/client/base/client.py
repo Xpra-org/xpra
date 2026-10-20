@@ -18,7 +18,7 @@ from xpra.common import noerr, noop, may_show_progress, stop_asyncio_loop
 from xpra.net.constants import ConnectionMessage
 from xpra.net.common import (
     Packet, PacketElement,
-    disconnect_is_an_error,
+    disconnect_is_an_error, connection_close_info,
     FULL_INFO, LOG_HELLO,
 )
 from xpra.net.dispatch import PacketDispatcher
@@ -37,7 +37,7 @@ from xpra.util.io import stderr_print
 from xpra.util.objects import typedict, merge_dicts
 from xpra.util.str_fn import (
     Ellipsizer, repr_ellipsized, print_nested_dict,
-    bytestostr, hexstr, single_line, truncate,
+    bytestostr, hexstr,
 )
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
@@ -50,18 +50,6 @@ netlog = Logger("network")
 sublog = Logger("subsystems")
 
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
-# the disconnection messages we accept from the server:
-MAX_DISCONNECT_MESSAGES = 8
-MAX_DISCONNECT_MESSAGE = 256
-
-
-def connection_close_info(packet: Packet) -> tuple[str, ...]:
-    """
-    The reason and messages of a `connection-close` packet, as single lines:
-    we log them and show them in a notification.
-    """
-    return tuple(truncate(single_line(str(x)), MAX_DISCONNECT_MESSAGE) for x in packet[1:1 + MAX_DISCONNECT_MESSAGES])
-
 
 sublog("Client subsystems: %s", BASE_SUBSYSTEMS)
 

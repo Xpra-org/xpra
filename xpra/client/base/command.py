@@ -19,10 +19,10 @@ from xpra.util.env import envint, first_time
 from xpra.net.constants import ConnectionMessage, MAX_PACKET_SIZE
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
 from xpra.util.io import stderr_print, load_binary_file
-from xpra.net.common import Packet, PacketElement, disconnect_is_an_error
+from xpra.net.common import Packet, PacketElement, disconnect_is_an_error, connection_close_info
 from xpra.util.stats import std_unit
 from xpra.client.base.gobject import GObjectClientAdapter
-from xpra.client.base.client import XpraClientBase, connection_close_info
+from xpra.client.base.client import XpraClientBase
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
 from xpra.log import Logger
 

@@ -14,7 +14,7 @@ from collections.abc import Callable, Sequence, Iterable
 from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.server import ServerExitMode
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.net.common import pretty_socket, has_websocket_handler, HttpResponse, Packet
+from xpra.net.common import pretty_socket, has_websocket_handler, connection_close_info, HttpResponse, Packet
 from xpra.net.constants import MAX_PACKET_SIZE, IP_SOCKTYPES, ConnectionMessage
 from xpra.net.socket_util import (
     setup_local_sockets, add_listen_socket, accept_connection, guess_packet_type,
@@ -794,9 +794,10 @@ class NetworkServer(StubSubsystem):
         self.server.cleanup_protocol(protocol)
 
     def _process_connection_close(self, proto: SocketProtocol, packet: Packet) -> None:
-        info = packet.get_str(1)
-        if len(packet) > 2:
-            info += " (%s)" % csv(str(x) for x in packet[2:])
+        reason, *extra = connection_close_info(packet) or ("", )
+        info = reason
+        if extra:
+            info += " (%s)" % csv(extra)
         # only log protocol info if there is more than one client:
         proto_info = self._disconnect_proto_info(proto)
         self._log_disconnect(proto, "client%s has requested disconnection: %s", proto_info, info)
@@ -819,7 +820,7 @@ class NetworkServer(StubSubsystem):
         if proto in self._potential_protocols:
             if not proto.is_closed():
                 self._log_disconnect(proto, "Connection lost")
-                for extra in packet[1:]:
+                for extra in connection_close_info(packet):
                     self._log_disconnect(proto, " %s", extra)
             self._potential_protocols.remove(proto)
         self.server.cleanup_protocol(proto)
