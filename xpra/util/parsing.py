@@ -12,7 +12,7 @@ from collections.abc import Sequence, Callable
 
 from xpra.constants import RESOLUTION_ALIASES
 from xpra.util.env import envfloat, envint
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, single_line, truncate
 from xpra.log import Logger
 
 
@@ -599,9 +599,17 @@ def get_default_video_max_size() -> tuple[int, int]:
     return 4096, 4096
 
 
+MAX_MONITORS = envint("XPRA_MAX_MONITORS", 16)
+MAX_MONITOR_STRING = 64
+MONITOR_STRINGS = ("manufacturer", "model", "subpixel-layout", "name", "colorspace")
+
+
 def validated_monitor_data(monitors: dict) -> dict[int, dict[str, Any]]:
     from xpra.util.objects import typedict
     validated: dict[int, dict[str, Any]] = {}
+    if len(monitors) > MAX_MONITORS:
+        Logger("screen").warn("Warning: too many monitors, only using the first %i out of %i", MAX_MONITORS, len(monitors))
+        monitors = dict(tuple(monitors.items())[:MAX_MONITORS])
     for i, mon_def in monitors.items():
         vdef = validated.setdefault(int(i), {})
         td = typedict(mon_def)
@@ -632,6 +640,9 @@ def validated_monitor_data(monitors: dict) -> dict[int, dict[str, Any]]:
         for attr, conv in aconv.items():
             v = conv(attr)
             if v is not None:
+                if attr in MONITOR_STRINGS:
+                    # the name may be used for the server's monitors:
+                    v = truncate(single_line(v), MAX_MONITOR_STRING)
                 vdef[attr] = v
         # Monitor refresh rates are represented in mHz throughout Xpra.  Some
         # clients send Hz instead, which would otherwise be interpreted as a
