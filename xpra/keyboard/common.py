@@ -11,6 +11,7 @@ from xpra.log import Logger
 DELAY_KEYBOARD_DATA = envbool("XPRA_DELAY_KEYBOARD_DATA", True)
 # the xkb names are short ascii strings, ie: "us,fr", "grp:alt_shift_toggle,ctrl:nocaps"
 MAX_KEYMAP_STRING = 256
+MAX_KEYMAP_LAYOUTS = 32
 
 # this allows platforms to inject keyname workarounds
 # the key is a tuple (keyname, keyval, keycode)
@@ -25,12 +26,29 @@ def keymap_str(d: typedict, key: str, default: str = "") -> str:
     The xkb layout, variant, options, model or rules received from a client.
     Invalid values are replaced with the default.
     """
-    value = d.strget(key, default)
+    return valid_keymap_str(key, d.strget(key, default), default)
+
+
+def valid_keymap_str(key: str, value: str, default: str = "") -> str:
     if len(value) > MAX_KEYMAP_STRING or not (value.isascii() and value.isprintable()):
         log = Logger("keyboard")
         log.warn(f"Warning: ignoring invalid keyboard {key} {value[:32]!r}")
         return default
     return value
+
+
+def keymap_strtuple(d: typedict, key: str) -> tuple[str, ...]:
+    """
+    The xkb layouts or variants received from a client.
+    Invalid values are replaced with empty strings
+    so that layouts and variants still match by position.
+    """
+    values = d.strtupleget(key)
+    if len(values) > MAX_KEYMAP_LAYOUTS:
+        log = Logger("keyboard")
+        log.warn(f"Warning: too many keyboard {key}, only using the first {MAX_KEYMAP_LAYOUTS} out of {len(values)}")
+        values = values[:MAX_KEYMAP_LAYOUTS]
+    return tuple(valid_keymap_str(key, value) for value in values)
 
 
 class KeyEvent:

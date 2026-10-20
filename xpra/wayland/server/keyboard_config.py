@@ -7,7 +7,7 @@ from typing import Any
 
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.util.objects import typedict
-from xpra.keyboard.common import keymap_str
+from xpra.keyboard.common import keymap_str, keymap_strtuple
 from xpra.log import Logger
 
 log = Logger("wayland", "keyboard")
@@ -62,8 +62,8 @@ class KeyboardConfig(KeyboardConfigBase):
         model = keymap_str(typedict(keymap.dictget("query_struct")), "model")
         mods = self.update_layout(keymap_str(keymap, "layout"), model,
                                   keymap_str(keymap, "variant"), keymap_str(keymap, "options"))
-        layouts = keymap.strtupleget("layouts")
-        variants = keymap.strtupleget("variants")
+        layouts = keymap_strtuple(keymap, "layouts")
+        variants = keymap_strtuple(keymap, "variants")
         if (layouts, variants) != (self.layouts, self.variants):
             self.layouts = layouts
             self.variants = variants

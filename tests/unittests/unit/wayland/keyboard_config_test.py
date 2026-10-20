@@ -94,6 +94,13 @@ class KeyboardConfigTest(unittest.TestCase):
         self.assertNotIn("\x1b", kc.layout)
         self.assertNotIn("\n", kc.model)
 
+    def test_parse_invalid_layouts(self):
+        kc = KeyboardConfig()
+        kc.parse(typedict({"layout": "us", "layouts": ["us", "fr\n", "de"], "variants": ["", "oss\x1b[2J", "nodeadkeys"]}))
+        self.assertEqual(kc.layouts, ("us", "", "de"))
+        self.assertEqual(kc.variants, ("", "", "nodeadkeys"))
+        self.assertEqual(kc.get_layout_groups(), (("us", ""), ("de", "nodeadkeys")))
+
     def test_layout_groups(self):
         kc = KeyboardConfig()
         kc.parse(typedict({"layout": "fr", "variant": "oss", "layouts": ["us", "fr", "de"],
