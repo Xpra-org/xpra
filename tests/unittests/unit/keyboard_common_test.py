@@ -6,7 +6,8 @@
 
 import unittest
 
-from xpra.keyboard.common import KeyEvent
+from xpra.util.objects import typedict
+from xpra.keyboard.common import KeyEvent, keymap_strtuple, MAX_KEYMAP_STRING, MAX_KEYMAP_LAYOUTS
 
 
 class TestKeyEvent(unittest.TestCase):
@@ -35,6 +36,17 @@ class TestKeyEvent(unittest.TestCase):
         assert e.keyname == "Return"
         assert e.keycode == 36
         assert not e.pressed
+
+
+class TestKeymapStrTuple(unittest.TestCase):
+
+    def test_tuple(self):
+        d = typedict({"layouts": ("us", "fr\x1b[2J", "de"), "variants": ("x" * (MAX_KEYMAP_STRING + 1), "oss")})
+        # invalid entries are blanked so the layouts and variants still match by position:
+        self.assertEqual(keymap_strtuple(d, "layouts"), ("us", "", "de"))
+        self.assertEqual(keymap_strtuple(d, "variants"), ("", "oss"))
+        d = typedict({"layouts": ("us", ) * (MAX_KEYMAP_LAYOUTS * 4)})
+        self.assertEqual(len(keymap_strtuple(d, "layouts")), MAX_KEYMAP_LAYOUTS)
 
 
 def main():
