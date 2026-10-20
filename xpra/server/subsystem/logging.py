@@ -14,7 +14,7 @@ from collections.abc import Callable
 
 from xpra.common import noop
 from xpra.net.packet_type import LOGGING_EVENT
-from xpra.util.str_fn import repr_ellipsized, memoryview_to_bytes
+from xpra.util.str_fn import repr_ellipsized, memoryview_to_bytes, single_line
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubSubsystem
@@ -239,8 +239,9 @@ class LoggingManager(StubSubsystem):
             dtime = packet.get_u64(3)
             prefix += "@%02i.%03i " % ((dtime // 1000) % 60, dtime % 1000)
         try:
+            # strip the control characters, ie: terminal escape sequences:
             for line in dmsg.splitlines():
-                self.do_log(level, prefix + line)
+                self.do_log(level, prefix + single_line(line))
         except Exception as e:
             log("log message decoding error", exc_info=True)
             log.error("Error: failed to parse logging message:")
