@@ -33,6 +33,18 @@ class PrinterConnectionTest(unittest.TestCase):
         self.assertTrue(info.isprintable())
         self.assertLessEqual(len(info), printer.MAX_PRINTER_INFO)
 
+    def test_too_many_printers(self):
+        pc = PrinterConnection()
+        pc.init_state()
+        pc.machine_id = "not-this-machine"
+        pc.uuid = "client-uuid"
+        pc.unix_socket_paths = ()
+        printers = {f"printer{i}": {} for i in range(printer.MAX_PRINTERS * 4)}
+        with patch.object(pc, "setup_printer") as setup:
+            pc.set_printers(printers, (), ())
+        names = [call.args[0] for call in setup.call_args_list]
+        self.assertEqual(names, [f"printer{i}" for i in range(printer.MAX_PRINTERS)])
+
 
 def main():
     unittest.main()
