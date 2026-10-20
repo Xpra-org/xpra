@@ -310,6 +310,10 @@ class WebcamForwarder(StubClientSubsystem):
             csc = self.csc
             if csc is not None:
                 image = csc.convert_image(image)
+                # some csc modules (ie: libyuv) return a `MemBuf`,
+                # which neither `mmap_write` nor `to_pil` can handle:
+                # (the output is always a single plane since we convert to an RGB format)
+                image.set_pixels(memoryview(image.get_pixels()))
 
             pixel_format = image.get_pixel_format()
             w, h = image.get_width(), image.get_height()
