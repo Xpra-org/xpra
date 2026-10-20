@@ -149,6 +149,27 @@ class CommandClientTest(unittest.TestCase):
             self.assertIs(InfoXpraClient.make_protocol(InfoXpraClient.__new__(InfoXpraClient), None), protocol)
         self.assertEqual(protocol.max_packet_size, MAX_PACKET_SIZE)
 
+    def test_info_output_is_printable(self):
+        # some info values come from other clients:
+        client = InfoXpraClient.__new__(InfoXpraClient)
+        client.quit = Mock()
+        out = io.StringIO()
+        with patch("sys.stdout", out):
+            client.do_command(typedict({
+                "client": {
+                    "hostname": b"host\x1b[2J",
+                    "name": "name‮",
+                    b"key\x1b[2J": "value",
+                    "ok": b"plain",
+                },
+            }))
+        client.quit.assert_called_once_with(ExitCode.OK)
+        lines = out.getvalue().splitlines()
+        self.assertIn("client.ok=plain", lines)
+        self.assertEqual(len(lines), 4)
+        for line in lines:
+            self.assertTrue(line.isprintable(), f"{line!r} is not printable")
+
     def test_image_request_allows_a_full_size_initial_response(self):
         protocol = SimpleNamespace(max_packet_size=16 * 1024)
         with patch.object(CommandConnectClient, "make_protocol", return_value=protocol):

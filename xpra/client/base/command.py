@@ -302,8 +302,9 @@ class InfoXpraClient(CommandConnectClient):
             if isinstance(v, bytes):
                 if ks.endswith(".data"):
                     return hexstr(v)
-                return bytestostr(v)
-            elif isinstance(v, (int, bool, float)):
+                # some values come from clients, so this must be printable too:
+                v = bytestostr(v)
+            if isinstance(v, (int, bool, float)):
                 return str(v)
             elif isinstance(v, (tuple, list)):
                 eltypes = set(type(x) for x in v)
