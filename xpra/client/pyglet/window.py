@@ -14,6 +14,7 @@ from xpra.net.packet_type import (
     WINDOW_MAP, WINDOW_UNMAP, WINDOW_CONFIGURE, WINDOW_CLOSE,
 )
 from xpra.client.pyglet.keys import keynames
+from xpra.client.gui.window_title import window_title_str
 from xpra.log import Logger
 
 log = Logger()
@@ -37,7 +38,7 @@ class ClientWindow(Window):
         # window.config.alpha_size = 8
         # if metadata.get("override-redirect"):
         #    how?
-        self.set_caption(metadata.get("title", ""))
+        self.set_caption(window_title_str(metadata.get("title", "")))
         self.set_location(x, y)
         self.set_size(w, h)
         self.focused = False
