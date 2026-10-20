@@ -37,7 +37,7 @@ from xpra.util.io import stderr_print
 from xpra.util.objects import typedict, merge_dicts
 from xpra.util.str_fn import (
     Ellipsizer, repr_ellipsized, print_nested_dict,
-    bytestostr, hexstr,
+    bytestostr, hexstr, single_line, truncate,
 )
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
@@ -50,6 +50,18 @@ netlog = Logger("network")
 sublog = Logger("subsystems")
 
 LOG_DISCONNECT = envbool("XPRA_LOG_DISCONNECT", True)
+# the disconnection messages we accept from the server:
+MAX_DISCONNECT_MESSAGES = 8
+MAX_DISCONNECT_MESSAGE = 256
+
+
+def connection_close_info(packet: Packet) -> tuple[str, ...]:
+    """
+    The reason and messages of a `connection-close` packet, as single lines:
+    we log them and show them in a notification.
+    """
+    return tuple(truncate(single_line(str(x)), MAX_DISCONNECT_MESSAGE) for x in packet[1:1 + MAX_DISCONNECT_MESSAGES])
+
 
 sublog("Client subsystems: %s", BASE_SUBSYSTEMS)
 
@@ -463,7 +475,7 @@ class XpraClientBase(PacketDispatcher):
         netlog("%s", packet)
         if self.exit_code is not None:
             return
-        info = tuple(str(x) for x in packet[1:])
+        info = connection_close_info(packet)
         reason = info[0]
         if not self.connection_established:
             # server never sent hello to us - so disconnect is an error
