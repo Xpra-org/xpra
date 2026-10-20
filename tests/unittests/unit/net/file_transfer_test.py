@@ -68,6 +68,16 @@ class TestBasename(unittest.TestCase):
         assert basename(f"/downloads/{filename}") == filename
         assert basename(f"C:\\downloads\\{filename}") == filename
 
+    def test_bidi_and_control_characters(self):
+        self.assertEqual(basename("invoice\u202efdp.exe"), "invoicefdp.exe")
+        self.assertEqual(basename("a\x1b[2Jb\n.txt "), "a[2Jb .txt")
+
+    def test_length(self):
+        name = basename("x" * 1000 + ".pdf")
+        self.assertEqual(len(name), file_transfer.MAX_FILENAME)
+        self.assertTrue(name.endswith("\u2026.pdf"))
+        self.assertEqual(basename(name), name)
+
 
 class TestSafeOpenDownloadFile(unittest.TestCase):
 
@@ -596,6 +606,15 @@ class TestFileTransferHandler(unittest.TestCase):
                 self.assertEqual(open_url.called, expected_open)
                 fth.cleanup()
 
+    def test_process_open_url_invalid_characters(self):
+        fth = MinimalFTH()
+        fth.open_url = True
+        fth.open_url_ask = False
+        with patch.object(fth, "_open_url") as open_url:
+            fth._process_open_url(Packet("open-url", "https://example.com/\u202egpj.exe", "sid"))
+        open_url.assert_not_called()
+        fth.cleanup()
+
     # ------------------------------------------------------------------
     # send_open_url
 
@@ -732,6 +751,25 @@ class TestFileTransferHandler(unittest.TestCase):
         fth.open_url = False
         fth.do_process_file_data_request("url", "sid", "https://x.com", 0, False, False, typedict())
         self.assertTrue(any(p[0] == "file-data-response" and p[2] is False for p in fth.sent))
+        fth.cleanup()
+
+    def test_do_process_file_data_request_invalid_url(self):
+        fth = MinimalFTH()
+        fth.open_url = True
+        fth.open_url_ask = True
+        with patch.object(fth, "ask_data_request") as ask:
+            fth.do_process_file_data_request("url", "sid", "https://x.com/\x1b[2J", 0, False, False, typedict())
+        ask.assert_not_called()
+        self.assertTrue(any(p[0] == "file-data-response" and p[2] is False for p in fth.sent))
+        fth.cleanup()
+
+    def test_do_process_file_data_request_cleans_the_filename(self):
+        fth = MinimalFTH()
+        fth.file_transfer = True
+        fth.file_transfer_ask = True
+        with patch.object(fth, "ask_data_request") as ask:
+            fth.do_process_file_data_request("file", "sid", "dir/invoice\u202efdp.exe", 100, False, False, typedict())
+        self.assertEqual(ask.call_args.args[3], "invoicefdp.exe")
         fth.cleanup()
 
     def test_do_process_file_data_request_unknown_type(self):
@@ -1934,15 +1972,14 @@ class TestMalformedFileTransferPackets(unittest.TestCase):
                 self.assertFalse(handler.receive_chunks_in_progress)
                 self.assertFalse(handler.send_chunks_in_progress)
 
-    def test_embedded_nul_filename_is_rejected_and_cleaned_up(self):
+    def test_embedded_nul_filename_is_removed(self):
         handler = _FullHandler()
         packet = Packet("file-send", "invalid\0name", "", False, False, 4, b"data", {})
         with tempfile.TemporaryDirectory() as download_dir, \
              patch("xpra.platform.paths.get_download_dir", return_value=download_dir), \
-             patch.object(handler, "process_downloaded_file") as processed:
+             patch.object(handler, "process_downloaded_file"):
             handler._process_send(packet)
-            self.assertFalse(os.listdir(download_dir))
-        processed.assert_not_called()
+            self.assertEqual(os.listdir(download_dir), ["invalidname"])
         self.assertFalse(handler.file_descriptors)
 
 
