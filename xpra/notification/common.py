@@ -7,6 +7,7 @@ import os.path
 import re
 from io import BytesIO
 from typing import TypeAlias
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.env import first_time, envint
@@ -38,6 +39,14 @@ ICON_NAME_RE = re.compile(r"[A-Za-z0-9._+-]{1,128}")
 # the body markup tags that make the notification daemon load a local file (`img`)
 # or open a link (`a href`) - the text of a link is kept:
 UNSAFE_MARKUP_RE = re.compile(r"<\s*/?\s*(img|a)\b[^>]*>", re.IGNORECASE)
+# larger than this is not a notification:
+MAX_APP_NAME = envint("XPRA_NOTIFICATION_MAX_APP_NAME", 64)
+MAX_SUMMARY = envint("XPRA_NOTIFICATION_MAX_SUMMARY", 256)
+MAX_BODY = envint("XPRA_NOTIFICATION_MAX_BODY", 4096)
+# number of actions (key and label pairs):
+MAX_ACTIONS = envint("XPRA_NOTIFICATION_MAX_ACTIONS", 8)
+MAX_ACTION_KEY = 256
+MAX_ACTION_LABEL = 64
 # control characters, line separators and bidi controls,
 # which can be used to hide or reverse the " (via Xpra)" suffix of the application name:
 SINGLE_LINE_STRIP: dict[int, str | None] = dict.fromkeys((
@@ -156,6 +165,26 @@ def strip_unsafe_markup(body: str) -> str:
         if stripped == body:
             return body
         body = stripped
+
+
+def truncate(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    return text[:max(0, limit - 1)] + "\u2026"
+
+
+def limit_actions(actions: Sequence[str]) -> list[str]:
+    # the keys are sent back to the application, so they cannot be truncated:
+    # skip the actions whose key is too long
+    limited: list[str] = []
+    for i in range(0, len(actions) - 1, 2):
+        key, label = actions[i], actions[i + 1]
+        if len(key) > MAX_ACTION_KEY:
+            continue
+        limited += [key, truncate(label, MAX_ACTION_LABEL)]
+        if len(limited) >= MAX_ACTIONS * 2:
+            break
+    return limited
 
 
 def single_line(text: str) -> str:
@@ -324,6 +353,9 @@ def validated_hints(h: dict) -> dict[str, int | bool | str]:
             log.warn("Warning: unable to parse %r as a %s: %s", value, atype, e)
             continue
         else:
+            if attr == "urgency":
+                # low, normal or critical:
+                validated = min(2, max(0, validated))
             hints[attr] = validated
     return hints
 

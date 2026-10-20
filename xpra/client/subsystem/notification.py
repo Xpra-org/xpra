@@ -4,7 +4,9 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
+from time import monotonic
 from typing import Any
+from collections import deque
 from collections.abc import Sequence, Callable
 
 from xpra.common import noop
@@ -14,7 +16,7 @@ from xpra.platform.notification import get_backends
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized, csv
-from xpra.util.env import envbool
+from xpra.util.env import envbool, envint, first_time
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
@@ -22,6 +24,12 @@ log = Logger("notify")
 
 NATIVE_NOTIFIER = envbool("XPRA_NATIVE_NOTIFIER", True)
 THREADED_NOTIFICATIONS = envbool("XPRA_THREADED_NOTIFICATIONS", True)
+# set this to 1 to prevent the server from bypassing "do not disturb" using critical notifications (urgency=2):
+MAX_URGENCY = envint("XPRA_NOTIFICATION_MAX_URGENCY", 2)
+# new notifications allowed within `RATE_WINDOW` seconds,
+# (replacing an existing notification does not count)
+RATE_LIMIT = envint("XPRA_NOTIFICATION_RATE_LIMIT", 20)
+RATE_WINDOW = 10
 
 
 notifier = None
@@ -31,7 +39,7 @@ class NotificationClient(StubClientSubsystem):
     """
     Mixin for clients that handle notifications
     """
-    __slots__ = ("callbacks", "client_supports", "enabled", "notifier", "server", "tray")
+    __slots__ = ("callbacks", "client_supports", "enabled", "notifier", "server", "tray", "shown", "show_times")
     PREFIX = "notification"
 
     def __init__(self, client=None):
@@ -42,6 +50,10 @@ class NotificationClient(StubClientSubsystem):
         self.notifier = None
         self.tray = None
         self.callbacks: dict[int, Callable] = {}
+        # the notifications we have shown (used as an ordered set),
+        # and when we have shown new ones, for rate limiting:
+        self.shown: dict[int, None] = {}
+        self.show_times: deque[float] = deque()
 
     def init(self, opts) -> None:
         self.enabled = opts.notifications
@@ -116,6 +128,7 @@ class NotificationClient(StubClientSubsystem):
 
     def notification_closed(self, nid: int, reason=3, text="") -> None:
         log("notification_closed(%i, %i, %s)", nid, reason, text)
+        self.shown.pop(nid, None)
         if callback := self.callbacks.pop(nid, None):
             callback("notification-close", nid, reason, text)
         elif self.server:
@@ -191,15 +204,18 @@ class NotificationClient(StubClientSubsystem):
             log("process_notify_show: ignoring packet, notifications are disabled")
             return
         self.client._ui_event()
-        from xpra.notification.common import strip_unsafe_markup, single_line  # pylint: disable=import-outside-toplevel
+        from xpra.notification.common import (  # pylint: disable=import-outside-toplevel
+            strip_unsafe_markup, single_line, truncate, limit_actions,
+            MAX_APP_NAME, MAX_SUMMARY, MAX_BODY,
+        )
         dbus_id = packet.get_str(1)
         nid = packet.get_u64(2)
-        app_name = single_line(packet.get_str(3))
+        app_name = truncate(single_line(packet.get_str(3)), MAX_APP_NAME)
         replaces_nid = packet.get_u64(4)
         app_icon = packet.get_str(5)
-        summary = single_line(packet.get_str(6))
+        summary = truncate(single_line(packet.get_str(6)), MAX_SUMMARY)
         # notification daemons may interpret the body as markup:
-        body = strip_unsafe_markup(packet.get_str(7))
+        body = truncate(strip_unsafe_markup(packet.get_str(7)), MAX_BODY)
         expire_timeout = packet.get_i64(8)
         icon = None
         actions: Sequence[str] = ()
@@ -208,8 +224,19 @@ class NotificationClient(StubClientSubsystem):
             # IconData or ()
             icon = packet[9]
         if len(packet) >= 12:
-            actions = packet.get_strs(10)
+            actions = limit_actions(packet.get_strs(10))
             hints = packet.get_dict(11)
+        if "urgency" in hints:
+            try:
+                hints["urgency"] = min(MAX_URGENCY, max(0, int(hints["urgency"])))
+            except (TypeError, ValueError):
+                hints.pop("urgency")
+        if not self.rate_check(nid, replaces_nid):
+            log("rate limit: dropping notification %i %r", nid, summary)
+            if first_time("notification-rate-limit"):
+                log.warn("Warning: too many notifications, some have been dropped")
+            self.notification_closed(nid, 4, "too many notifications")
+            return
         # note: if the server doesn't support notification forwarding,
         # it can still send us the messages (via xpra control or the dbus interface)
         log("_process_show(%s) notifier=%s, server=%s",
@@ -218,6 +245,22 @@ class NotificationClient(StubClientSubsystem):
         assert self.notifier
         self.add_decode_work(self._decode_notification_icons, dbus_id, nid, app_name, replaces_nid, app_icon,
                              summary, body, actions, hints, expire_timeout, icon)
+
+    def rate_check(self, nid: int, replaces_nid: int) -> bool:
+        if nid in self.shown or replaces_nid in self.shown:
+            # this only updates a notification already on screen
+            return True
+        now = monotonic()
+        while self.show_times and now - self.show_times[0] > RATE_WINDOW:
+            self.show_times.popleft()
+        if len(self.show_times) >= RATE_LIMIT:
+            return False
+        self.show_times.append(now)
+        self.shown[nid] = None
+        # in case we don't get notified when notifications are closed:
+        while len(self.shown) > 256:
+            self.shown.pop(next(iter(self.shown)))
+        return True
 
     def _decode_notification_icons(self, dbus_id: str, nid: int, app_name: str, replaces_nid: int, app_icon: str,
                                    summary: str, body: str, actions: Sequence[str], hints: dict,
@@ -273,6 +316,7 @@ class NotificationClient(StubClientSubsystem):
 
     def _close_notification(self, nid: int) -> None:
         """ this runs from the UI thread """
+        self.shown.pop(nid, None)
         if self.enabled and self.notifier:
             self.notifier.close_notify(nid)
 

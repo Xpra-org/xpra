@@ -21,6 +21,8 @@ class TestCommon(unittest.TestCase):
         })
         self.assertEqual(hints, {"urgency": 2, "resident": True, "category": "email"})
         self.assertEqual(common.validated_hints({"x": object()}), {})
+        self.assertEqual(common.validated_hints({"urgency": 7}), {"urgency": 2})
+        self.assertEqual(common.validated_hints({"urgency": -1}), {"urgency": 0})
         # a remote application must not be able to claim to be a local one:
         self.assertEqual(common.validated_hints({"desktop-entry": "org.gnome.Settings"}), {})
 

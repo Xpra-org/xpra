@@ -5,9 +5,12 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import patch
 
 from xpra.net.common import Packet
+from xpra.client.subsystem import notification
 from xpra.client.subsystem.notification import NotificationClient
+from xpra.notification.common import MAX_SUMMARY, MAX_BODY, MAX_ACTIONS, MAX_ACTION_KEY, MAX_ACTION_LABEL
 from unit.client.subsystem.notification_icons_test import FakeClient, FakeEncodings
 
 
@@ -42,6 +45,9 @@ class NotificationSanitizeTest(unittest.TestCase):
         self.notifications.enabled = True
         self.notifier = RecordingNotifier()
         self.notifications.notifier = self.notifier
+        self.closed: list = []
+        self.client.send = lambda *args: self.closed.append(args)
+        self.notifications.server = True
         self.client.subsystems = {
             "encoding": FakeEncodings(),
             "notification": self.notifications,
@@ -62,6 +68,47 @@ class NotificationSanitizeTest(unittest.TestCase):
         shown = self.show(app_name="Mail‮\n(local)", summary="line1\nline2\x00⁦")
         self.assertEqual(shown["app_name"], "Mail (local)")
         self.assertEqual(shown["summary"], "line1 line2")
+
+    def test_lengths_are_limited(self):
+        shown = self.show(summary="s" * 10000, body="b" * 100000)
+        self.assertEqual(len(shown["summary"]), MAX_SUMMARY)
+        self.assertEqual(len(shown["body"]), MAX_BODY)
+        self.assertEqual(shown["body"][-1], "\u2026")
+
+    def test_actions_are_limited(self):
+        actions = []
+        for i in range(100):
+            actions += [str(i), f"label{i}"]
+        shown = self.show(actions=actions)
+        self.assertEqual(shown["actions"], actions[:MAX_ACTIONS * 2])
+        # keys cannot be truncated: skip those which are too long
+        shown = self.show(nid=2, actions=("k" * (MAX_ACTION_KEY + 1), "too long", "ok", "l" * 1000, "odd"))
+        self.assertEqual(shown["actions"][0], "ok")
+        self.assertEqual(len(shown["actions"][1]), MAX_ACTION_LABEL)
+        self.assertEqual(len(shown["actions"]), 2)
+
+    def test_urgency(self):
+        self.assertEqual(self.show(nid=1, hints={"urgency": 2})["hints"]["urgency"], 2)
+        self.assertEqual(self.show(nid=2, hints={"urgency": 99})["hints"]["urgency"], 2)
+        self.assertEqual(self.show(nid=3, hints={"urgency": -5})["hints"]["urgency"], 0)
+        self.assertNotIn("urgency", self.show(nid=4, hints={"urgency": "high"})["hints"])
+        with patch.object(notification, "MAX_URGENCY", 1):
+            self.assertEqual(self.show(nid=5, hints={"urgency": 2})["hints"]["urgency"], 1)
+
+    def test_rate_limit(self):
+        with patch.object(notification, "RATE_LIMIT", 3):
+            for nid in range(1, 4):
+                self.assertTrue(self.show(nid=nid))
+            # replacing a notification already shown does not count:
+            self.assertTrue(self.show(nid=2, replaces_nid=2))
+            # but a new one is dropped, and the server is told it is closed:
+            self.assertFalse(self.show(nid=4))
+            self.assertEqual(self.closed, [("notification-close", 4, 4, "too many notifications")])
+            # make room by closing one:
+            self.notifications.notification_closed(1, 2)
+            self.assertFalse(self.show(nid=5), "closing a notification does not reset the rate")
+            self.notifications.show_times.clear()
+            self.assertTrue(self.show(nid=5))
 
 
 def main():
