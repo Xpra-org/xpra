@@ -222,12 +222,11 @@ class ProxyServer(ServerCore):
         )
         authlog("proxy session registry: %s", self.session_registry)
 
-    def init_control_commands(self) -> None:
-        super().init_control_commands()
-        if features.control:
-            self.add_control_command("stop", ArgsControlCommand("stop",
-                                                                "stops the proxy instance on the given display",
-                                                                self.handle_stop_command, min_args=1, max_args=1))
+    def add_core_control_commands(self) -> None:
+        super().add_core_control_commands()
+        self.add_control_command("stop", ArgsControlCommand("stop",
+                                                            "stops the proxy instance on the given display",
+                                                            self.handle_stop_command, min_args=1, max_args=1))
 
     def install_signal_handlers(self, callback: Callable[[int], None]) -> None:
         from xpra.util.glib import register_SIGUSR_signals

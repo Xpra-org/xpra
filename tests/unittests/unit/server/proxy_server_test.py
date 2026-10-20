@@ -33,6 +33,16 @@ class ProxyServerTest(ServerTestUtil):
         if POSIX:
             self.assertEqual(instance._start_method, "fork")
 
+    def test_proxy_stop_control_command(self):
+        from xpra.server.proxy.server import ProxyServer
+        server = ProxyServer()
+        control = server.subsystems.get("control")
+        if not control:
+            return
+        control.enabled = True
+        server.add_core_control_commands()
+        self.assertIn("stop", control.commands)
+
     def test_proxy_start_stop(self):
         display = self.find_free_display()
         log(f"using free display={display}")
