@@ -10,6 +10,7 @@ from socket import gethostname
 from typing import Any, Final
 from collections.abc import Callable, Sequence
 
+from xpra.common import is_x11_property_denied
 from xpra.os_util import gi_import
 from xpra.util.env import envbool, envint, first_time
 from xpra.util.io import get_proc_cmdline
@@ -109,8 +110,6 @@ PROPERTIES_DEBUG = [
     for prop_debug in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")
 ]
 X11PROPERTY_SYNC = envbool("XPRA_X11PROPERTY_SYNC", True)
-X11PROPERTY_SYNC_BLOCKLIST = os.environ.get("XPRA_X11PROPERTY_SYNC_BLOCKLIST",
-                                            "_GTK,WM_,_NET,Xdnd,XPRA_").split(",")
 SHAPE_DELAY = envint("XPRA_SHAPE_DELAY", 100)
 
 DEFAULT_ACTIONS = tuple(x for x in os.environ.get("XPRA_WINDOW_DEFAULT_ACTIONS", "").split(",") if x.strip())
@@ -693,7 +692,7 @@ class CoreX11WindowModel(WindowModelStub):
             metalog.info("%s=%s", name, self.prop_get(name, x11proptype, True, False))
         if name in PROPERTIES_IGNORED:
             return
-        if X11PROPERTY_SYNC and not any(name.startswith(x) for x in X11PROPERTY_SYNC_BLOCKLIST):
+        if X11PROPERTY_SYNC and not is_x11_property_denied(name):
             try:
                 with xsync:
                     prop_type = prop_type_get(self.xid, name)
