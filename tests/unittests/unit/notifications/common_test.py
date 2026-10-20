@@ -21,6 +21,8 @@ class TestCommon(unittest.TestCase):
         })
         self.assertEqual(hints, {"urgency": 2, "resident": True, "category": "email"})
         self.assertEqual(common.validated_hints({"x": object()}), {})
+        # a remote application must not be able to claim to be a local one:
+        self.assertEqual(common.validated_hints({"desktop-entry": "org.gnome.Settings"}), {})
 
     def test_strip_unsafe_markup(self):
         strip = common.strip_unsafe_markup
@@ -35,6 +37,11 @@ class TestCommon(unittest.TestCase):
         self.assertEqual(strip("<<a>a href=x>y"), "y")
         # not the tags we're looking for:
         self.assertEqual(strip("<abbr>x</abbr> <image>"), "<abbr>x</abbr> <image>")
+
+    def test_single_line(self):
+        self.assertEqual(common.single_line("Mail\u202e\n(local)"), "Mail (local)")
+        self.assertEqual(common.single_line("a\tb\r\nc\u2028d\x00\x1b[31m\u2066"), "a b  c d[31m")
+        self.assertEqual(common.single_line("caf\u00e9 \U0001f468\u200d\U0001f469"), "caf\u00e9 \U0001f468\u200d\U0001f469")
 
     def test_image_data_hint_precedence(self):
         hints = {"image-path": "/first", "image_data": (1, 2, 3)}

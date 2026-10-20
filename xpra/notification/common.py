@@ -38,6 +38,14 @@ ICON_NAME_RE = re.compile(r"[A-Za-z0-9._+-]{1,128}")
 # the body markup tags that make the notification daemon load a local file (`img`)
 # or open a link (`a href`) - the text of a link is kept:
 UNSAFE_MARKUP_RE = re.compile(r"<\s*/?\s*(img|a)\b[^>]*>", re.IGNORECASE)
+# control characters, line separators and bidi controls,
+# which can be used to hide or reverse the " (via Xpra)" suffix of the application name:
+SINGLE_LINE_STRIP: dict[int, str | None] = dict.fromkeys((
+    *range(0x00, 0x20), *range(0x7f, 0xa0),
+    0x061c, 0x200e, 0x200f, *range(0x202a, 0x202f), *range(0x2066, 0x206a),
+))
+# line breaks and tabs become spaces:
+SINGLE_LINE_STRIP |= dict.fromkeys(map(ord, "\t\n\v\f\r\x85\u2028\u2029"), " ")
 
 
 def PIL_Image():
@@ -148,6 +156,10 @@ def strip_unsafe_markup(body: str) -> str:
         if stripped == body:
             return body
         body = stripped
+
+
+def single_line(text: str) -> str:
+    return text.translate(SINGLE_LINE_STRIP)
 
 
 def sanitize_icon_data(icon: IconData | None) -> IconData | None:
@@ -296,7 +308,7 @@ def validated_hints(h: dict) -> dict[str, int | bool | str]:
     for attr, atype in {
         "action-icons": bool,
         "category": str,
-        "desktop-entry": str,
+        # not "desktop-entry": that would let the remote application claim to be a local one
         "resident": bool,
         "transient": bool,
         "x": int,

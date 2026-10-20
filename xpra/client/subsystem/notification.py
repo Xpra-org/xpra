@@ -191,13 +191,13 @@ class NotificationClient(StubClientSubsystem):
             log("process_notify_show: ignoring packet, notifications are disabled")
             return
         self.client._ui_event()
-        from xpra.notification.common import strip_unsafe_markup  # pylint: disable=import-outside-toplevel
+        from xpra.notification.common import strip_unsafe_markup, single_line  # pylint: disable=import-outside-toplevel
         dbus_id = packet.get_str(1)
         nid = packet.get_u64(2)
-        app_name = packet.get_str(3)
+        app_name = single_line(packet.get_str(3))
         replaces_nid = packet.get_u64(4)
         app_icon = packet.get_str(5)
-        summary = packet.get_str(6)
+        summary = single_line(packet.get_str(6))
         # notification daemons may interpret the body as markup:
         body = strip_unsafe_markup(packet.get_str(7))
         expire_timeout = packet.get_i64(8)
