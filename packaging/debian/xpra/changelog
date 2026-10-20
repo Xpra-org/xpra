@@ -1,3 +1,8 @@
+xpra (6.5.6-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 20 Oct 2026 18:17:05 +0700
+
 xpra (6.5.5-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:
     Debian dropped clang-19

@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.5.6] 2026-10-20
+* TODO
+
 ## [6.5.5] 2026-10-11
 * 🔧 Platforms, build and packaging:
   * [Debian dropped clang-19](https://github.com/Xpra-org/xpra/commit/24ef1341455d09e480aa8a2d1870ad606ac8c31f)

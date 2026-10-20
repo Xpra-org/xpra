@@ -79,7 +79,7 @@ autoprov: no
 %endif
 
 Name:				%{package_prefix}
-Version:			6.5.5
+Version:			6.5.6
 # this problematic flag is forced upon us by Fedora:
 # https://github.com/Xpra-org/xpra/issues/4706
 Epoch:				1
@@ -1115,6 +1115,8 @@ fi
 
 
 %changelog
+* Tue Oct 20 2026 Antoine Martin <antoine@xpra.org> 6.5.6-10
+- TODO
 * Sun Oct 11 2026 Antoine Martin <antoine@xpra.org> 6.5.5-10
 - 🔧 Platforms, build and packaging:
    Debian dropped clang-19
