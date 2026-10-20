@@ -153,7 +153,7 @@ class PrinterConnection(StubClientConnection):
         attrs["remote-device-uri"] = props.strget("device-uri")
         location = PRINTER_LOCATION_STRING
         if self.hostname:
-            location = "on %s"
+            location = f"on {self.hostname}"
             if PRINTER_LOCATION_STRING:
                 # ie: on FOO (via xpra)
                 location = f"on {self.hostname} ({PRINTER_LOCATION_STRING})"
