@@ -5,7 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from xpra.client.mixins.notifications import NotificationClient
 
@@ -33,6 +33,14 @@ class NotificationSanitizationTest(unittest.TestCase):
                 self.assertEqual(args[5], "mail-unread")
                 self.assertEqual(args[6], "title")
                 self.assertEqual(args[7], "<b>bold</b> link")
+
+    def test_local_notification(self):
+        client = self.make_client()
+        with patch("xpra.client.mixins.notifications.get_icon_filename", return_value=""):
+            client.do_notify(1, "Disconnected", '<b>reason</b><img src="/tmp/x"><a href="file:///tmp/x">text</a>')
+        args = client.notifier.show_notify.call_args[0]
+        self.assertEqual(args[6], "Disconnected")
+        self.assertEqual(args[7], "<b>reason</b>text")
 
 
 if __name__ == '__main__':
