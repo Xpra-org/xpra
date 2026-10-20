@@ -167,7 +167,7 @@ class PointerManager(StubSubsystem):
             uinput_device = pointer.get("uinput")
             device_path = pointer.get("device")
             if uinput_device:
-                from xpra.x11.uinput.device import UInputPointerDevice
+                from xpra.uinput.device import UInputPointerDevice
                 self.input_devices = "uinput"
                 self.pointer_device = UInputPointerDevice(uinput_device, device_path)
                 self.verify_uinput_pointer_device()
@@ -175,7 +175,7 @@ class PointerManager(StubSubsystem):
             uinput_device = touchpad.get("uinput")
             device_path = touchpad.get("device")
             if uinput_device:
-                from xpra.x11.uinput.device import UInputTouchpadDevice
+                from xpra.uinput.device import UInputTouchpadDevice
                 root_w, root_h = display.get_display_size()
                 self.touchpad_device = UInputTouchpadDevice(uinput_device, device_path, root_w, root_h)
                 # `display-geometry-changed` is a subsystem-local signal
