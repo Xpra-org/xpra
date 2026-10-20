@@ -12,7 +12,7 @@ from typing import Dict, Tuple, Any
 from xpra.log import Logger
 log = Logger("decoder", "vpx")
 
-from xpra.codecs.codec_constants import get_subsampling_divs
+from xpra.codecs.codec_constants import get_subsampling_divs, check_image_size, MAX_IMAGE_DIMENSION
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.util import envint, envbool
 
@@ -187,6 +187,7 @@ cdef class Decoder:
         log("vpx decoder init_context%s", (encoding, width, height, colorspace))
         assert encoding in CODECS
         assert colorspace in get_input_colorspaces(encoding)
+        check_image_size(width, height, f"{encoding} decoder")
         cdef int flags = 0
         cdef const vpx_codec_iface_t *codec_iface = make_codec_dx(encoding)
         self.encoding = encoding
@@ -294,6 +295,12 @@ cdef class Decoder:
         if img==NULL:
             log.error("Error: vpx_codec_get_frame: %s", self.codec_error_str())
             return None
+        # libvpx allocates planes for the dimensions in the bitstream, but
+        # the copy below uses the dimensions configured for this decoder.
+        if img.d_w < self.width or img.d_h < self.height:
+            log.error("Error: %s image is too small: %ix%i, expected at least %ix%i",
+                      self.encoding, img.d_w, img.d_h, self.width, self.height)
+            return None
         strides = []
         pixels = []
         divs = get_subsampling_divs(self.get_colorspace())
@@ -307,9 +314,11 @@ cdef class Decoder:
             else:
                 raise ValueError(f"invalid height divisor {dy} for {self.get_colorspace()}")
             stride = img.stride[i]
+            if stride <= 0 or stride > MAX_IMAGE_DIMENSION * 4:
+                raise ValueError(f"invalid stride {stride} for plane {i}")
             strides.append(stride)
 
-            plane_len = height * stride
+            plane_len = <Py_ssize_t> height * stride
             #add one extra line of padding:
             output_buf = padbuf(plane_len, stride)
             output = <void *>output_buf.get_mem()

@@ -83,6 +83,19 @@ PIXEL_SUBSAMPLING : Dict[str,Tuple] = {
     "YUV444P10" : ((1, 1), (1, 1), (1, 1)),
     "YUV444P16" : ((1, 1), (1, 1), (1, 1)),
 }
+
+# Dimensions decoded from compressed streams are untrusted and must be
+# bounded before they are used to size or index a buffer.
+MAX_IMAGE_DIMENSION : int = envint("XPRA_MAX_IMAGE_DIMENSION", 16384)
+
+
+def check_image_size(width:int, height:int, what:str="image") -> None:
+    if width <= 0 or height <= 0:
+        raise ValueError(f"invalid {what} size {width}x{height}")
+    if width > MAX_IMAGE_DIMENSION or height > MAX_IMAGE_DIMENSION:
+        raise ValueError(f"{what} size {width}x{height} exceeds the {MAX_IMAGE_DIMENSION} pixel limit")
+
+
 def get_subsampling_divs(pixel_format:str) -> Tuple[Tuple[int,int],...]:
     # Return size dividers for the given pixel format
     #  (Y_w, Y_h), (U_w, U_h), (V_w, V_h)

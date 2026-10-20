@@ -11,6 +11,7 @@ from xpra.log import Logger
 log = Logger("decoder", "jpeg")
 
 from xpra.util import envbool, reverse_dict
+from xpra.codecs.codec_constants import check_image_size
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf #pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t, uint8_t
@@ -157,6 +158,12 @@ def decompress_to_yuv(data, unsigned char nplanes=3) -> ImageWrapper:
         close()
         raise RuntimeError(f"failed to decompress JPEG header: {err!r}")
 
+    try:
+        check_image_size(w, h, "jpeg image")
+    except ValueError:
+        close()
+        raise
+
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
     assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420, TJSAMP_GRAY), "unsupported JPEG colour subsampling: %s" % subsamp_str
     log("jpeg.decompress_to_yuv size: %4ix%-4i, subsampling=%-4s, colorspace=%s",
@@ -190,7 +197,7 @@ def decompress_to_yuv(data, unsigned char nplanes=3) -> ImageWrapper:
                 if subsamp!=TJSAMP_GRAY or i==0:
                     raise ValueError("cannot get size for plane %r for mode %r" % ("YUV"[i], subsamp_str))
                 stride = roundup(w//2, ALIGN)
-                plane_size = stride * roundup(h, 2)//2
+                plane_size = <size_t> stride * roundup(h, 2)//2
                 if i==1:
                     #allocate empty U and V planes:
                     empty = getbuf(plane_size)
@@ -258,6 +265,11 @@ def decompress_to_rgb(rgb_format:str, data:bytes, unsigned long alpha_offset=0) 
         err = get_error_str()
         close()
         raise RuntimeError(f"failed to decompress JPEG header: {err!r}")
+    try:
+        check_image_size(w, h, "jpeg image")
+    except ValueError:
+        close()
+        raise
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
     log("jpeg.decompress_to_rgb: size=%4ix%-4i, subsampling=%3s, colorspace=%s",
         w, h, subsamp_str, TJCS_STR.get(cs, cs))
@@ -266,7 +278,11 @@ def decompress_to_rgb(rgb_format:str, data:bytes, unsigned long alpha_offset=0) 
     #TODO: add padding and rounding?
     cdef double start = monotonic()
     cdef int stride = w*4
-    cdef unsigned long size = stride*h
+    # Multiply at allocation width rather than at int width.
+    cdef size_t size = <size_t> stride * h
+    if size // stride != <size_t> h:
+        close()
+        raise ValueError(f"jpeg image size {w}x{h} overflows the output buffer size")
     cdef MemBuf membuf = getbuf(size)
     cdef unsigned char *dst_buf = <unsigned char*> membuf.get_mem()
     with nogil:
