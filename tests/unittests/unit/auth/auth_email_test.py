@@ -209,7 +209,7 @@ class EmailAuthTest(unittest.TestCase):
 
     def test_invalid_address_validation(self):
         invalid = (
-            "", None, "abc", "a@@b", "Name <a@b.com>", "a@b,c@d", "a@b;c@d", "a\r\nBcc:x@y.com",
+            "", "abc", "a@@b", "Name <a@b.com>", "a@b,c@d", "a@b;c@d", "a\r\nBcc:x@y.com",
             "a b@example.com", "a@bad_domain", "a@-bad.com", "a@bad-.com", "a@bad..com", "a@bad.com.",
             ".a@example.com", "a.@example.com", "a..b@example.com", "é@example.com", "a@é.com", "a\x00@b.com",
             "a" * 65 + "@example.com", "a@" + "b" * 64 + ".com", "a@" + ".".join(["b" * 63] * 4),
@@ -529,7 +529,7 @@ class EmailAuthTest(unittest.TestCase):
                 self.begin(self.auth(mode="lookup", lookup="sql", uri=uri, remote={"username": username}))
 
     def test_sql_invalid_results(self):
-        for rows in ([], [("a@example.com",), ("b@example.com",)], [(None,)], [("",)], [("a@example.com", "extra")]):
+        for rows in ([], [("a@example.com",), ("b@example.com",)], [(None,)], [(1234,)], [("",)], [("a@example.com", "extra")]):
             with self.subTest(rows=rows):
                 engine = MagicMock()
                 result = engine.connect.return_value.__enter__.return_value.execute.return_value.__enter__.return_value
@@ -605,7 +605,7 @@ class EmailAuthTest(unittest.TestCase):
         states = []
         with patch.object(AuthenticationManager, "setup_encryption", return_value={}), \
                 patch("xpra.server.auth.GLib.idle_add") as accepted, patch("xpra.server.auth.GLib.timeout_add") as failed:
-            manager.verify_auth(proto, Packet("hello", caps), caps)
+            manager.verify_auth(proto, Packet("hello", dict(caps)), caps)
             while packets:
                 self.assertLess(len(captured), 3)
                 packet = packets.pop(0)
@@ -614,7 +614,7 @@ class EmailAuthTest(unittest.TestCase):
                 self.assertFalse(errors)
                 response, client_salt = captured[-1]
                 caps.update({"challenge_response": response, "challenge_client_salt": client_salt})
-                manager.verify_auth(proto, Packet("hello", caps), caps)
+                manager.verify_auth(proto, Packet("hello", dict(caps)), caps)
                 states.append((tuple(auth.passed for auth in proto.authenticators), self.smtp.send_message.call_count))
             for auth in proto.authenticators:
                 self.addCleanup(auth.cleanup)

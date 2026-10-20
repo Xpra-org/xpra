@@ -210,7 +210,10 @@ class Authenticator(SysAuthenticator):
                     rows = result.fetchmany(2)
                     if len(rows) != 1 or len(rows[0]) != 1:
                         raise ValueError("SQL lookup must return one row with one address")
-                    return validate_address(rows[0][0])
+                    value = rows[0][0]
+                    if not isinstance(value, str):
+                        raise ValueError("SQL lookup must return a string")
+                    return validate_address(value)
         finally:
             engine.dispose()
 
