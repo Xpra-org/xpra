@@ -115,6 +115,14 @@ class Authenticator(SysAuthenticator):
             log.error(f" {cmd!r}")
             log.estr(e)
             return False
+        except ValueError as e:
+            # an argument that cannot be passed to a command,
+            # ie: a `${password}` decoded from the client's response which contains a NUL byte,
+            # don't log the command line here since it may contain that password:
+            log(f"error running {cmd!r}", exc_info=True)
+            log.error("Error: invalid exec authentication module command arguments")
+            log.estr(e)
+            return False
         v = proc.returncode
         procinfo = self.procinfo
         if procinfo:
