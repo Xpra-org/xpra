@@ -1331,6 +1331,24 @@ class TestPrintFile(unittest.TestCase):
                           typedict({"printer": "MyPrinter", "title": "My Doc"}))
             m_print.assert_called_once()
 
+    def test_print_title_is_single_line(self):
+        h = _FullHandler()
+        tmp_fd, path = tempfile.mkstemp(suffix=".pdf")
+        os.close(tmp_fd)
+        with patch("xpra.net.file_transfer.GLib") as mock_glib, \
+             patch("xpra.platform.printing.get_printers", return_value={"MyPrinter": {}}), \
+             patch("xpra.platform.printing.print_files", return_value=1) as m_print, \
+             patch("xpra.platform.printing.printing_finished", return_value=True):
+            mock_glib.timeout_add.return_value = 0
+            h._print_file(path, "application/pdf",
+                          typedict({"printer": "MyPrinter", "title": "Doc\x1b[2J\n\u202e" + "x" * 1000}))
+            title = m_print.call_args.args[2]
+        self.assertTrue(title.startswith("Doc[2J "))
+        self.assertTrue(title.isprintable())
+        self.assertLessEqual(len(title), file_transfer.MAX_PRINT_TITLE)
+        if os.path.exists(path):
+            os.unlink(path)
+
     def test_print_submission_exception_deletes_file(self):
         h = _FullHandler()
         fd, path = tempfile.mkstemp(suffix=".pdf")

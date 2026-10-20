@@ -25,7 +25,7 @@ from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import POSIX, WIN32, gi_import
 from xpra.util.io import umask_context, osclose
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, single_line, truncate
 from xpra.util.env import envint, envbool
 from xpra.util.parsing import str_to_bool, parse_with_unit
 from xpra.common import SizedBuffer
@@ -45,6 +45,7 @@ MAX_CONCURRENT_FILES = max(1, envint("XPRA_MAX_CONCURRENT_FILES", 10))
 PRINT_JOB_TIMEOUT = max(60, envint("XPRA_PRINT_JOB_TIMEOUT", 3600))
 SEND_REQUEST_TIMEOUT = max(300, envint("XPRA_SEND_REQUEST_TIMEOUT", 3600))
 CHUNK_TIMEOUT = 10 * 1000
+MAX_PRINT_TITLE = 256
 # file transfers do their disk I/O (writing received files, reading files to send)
 # and CPU-heavy work (compression, hashing) on a dedicated daemon thread, so that
 # it is all kept off the network parse thread:
@@ -847,12 +848,13 @@ class FileTransferHandler(FileTransferAttributes):
     def _print_file(self, filename: str, mimetype: str, options: typedict) -> None:
         printlog("print_file%s", (filename, mimetype, options))
         printer = options.strget("printer")
-        title = options.strget("title")
+        # the job title comes from the peer, it is logged and shown in the print queue:
+        title = truncate(single_line(options.strget("title")), MAX_PRINT_TITLE)
         copies = options.intget("copies", 1)
         if title:
-            printlog.info(" sending '%s' to printer '%s'", title, printer)
+            printlog.info(f" sending {title!r} to printer {printer!r}")
         else:
-            printlog.info(" sending to printer '%s'", printer)
+            printlog.info(f" sending to printer {printer!r}")
         from xpra.platform.printing import print_files, printing_finished, get_printers
         printers = get_printers()
 
