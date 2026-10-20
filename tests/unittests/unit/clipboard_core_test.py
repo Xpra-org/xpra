@@ -258,6 +258,20 @@ class ClipboardCoreTest(unittest.TestCase):
         )])
         self.assertTrue(proxy._greedy_client)
 
+    def test_too_many_targets(self):
+        helper, proxy, _packets = self.make_helper(False)
+        count = core.MAX_CLIPBOARD_TARGETS * 4
+        targets = tuple(f"text/x-{i}" for i in range(count))
+        helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {
+            "targets": targets,
+            "data": {target: ("STRING", 8, "bytes", b"x") for target in targets},
+        }))
+        local_targets, target_data, _claim, _sync = proxy.tokens[0]
+        self.assertEqual(local_targets, targets[:core.MAX_CLIPBOARD_TARGETS])
+        self.assertEqual(tuple(target_data.keys()), targets[:core.MAX_CLIPBOARD_TARGETS])
+        # the targets can also be sent as clipboard contents:
+        self.assertEqual(helper.local_targets(targets), targets[:core.MAX_CLIPBOARD_TARGETS])
+
     def test_selection_capabilities_backwards_compatibility(self):
         caps = typedict({"greedy": ("CLIPBOARD",)})
         self.assertTrue(caps.boolget("greedy"))
