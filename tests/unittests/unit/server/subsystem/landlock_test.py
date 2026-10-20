@@ -43,7 +43,6 @@ class LandLockTest(unittest.TestCase):
         landlock.init(opts)
         server.start_listen_sockets = network.start_listen_sockets
         server.init_packet_handlers = Mock()
-        server.add_core_control_commands = Mock()
         return server, landlock, opts
 
     @staticmethod

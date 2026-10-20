@@ -195,31 +195,6 @@ class ServerCore(GLibServer):
         dispatch.call(self.subsystems, "setup")
         self.network.start_listen_sockets()
         self.init_packet_handlers()
-        self.add_core_control_commands()
-
-    def add_core_control_commands(self) -> None:
-        from xpra.net.control.common import parse_boolean_value
-        self.args_control("readonly", "set global readonly state", min_args=1, max_args=1,
-                          validation=[parse_boolean_value])
-        self.args_control("client-readonly", "set readonly state for client(s)", min_args=2, max_args=2,
-                          validation=[str, parse_boolean_value])
-
-    def args_control(self, name: str, descr: str, **kwargs) -> None:
-        control = self.subsystems.get("control")
-        if not control:
-            return
-        run = getattr(self, "control_command_%s" % name.replace("-", "_"), noop)
-        if run == noop:
-            log.warn("Warning: control command %r not found on %s", name, self)
-            return
-        kwargs["run"] = run
-        from xpra.net.control.common import add_args_control_command
-        add_args_control_command(control, name, descr, **kwargs)
-
-    def add_control_command(self, name: str, control) -> None:
-        control_subsystem = self.subsystems.get("control")
-        if control_subsystem:
-            control_subsystem.add_control_command(name, control)
 
     ######################################################################
     # run / stop:
@@ -700,33 +675,3 @@ class ServerCore(GLibServer):
             netlog.error(f" received from {proto}")
         if not ss:
             proto.close()
-
-    #########################################
-    # Control Commands
-    #########################################
-
-    def control_command_readonly(self, onoff) -> str:
-        log("control_command_readonly(%s)", onoff)
-        self.readonly = onoff
-        self.setting_changed("readonly", onoff)
-        msg = f"server readonly: {onoff}"
-        log.info(msg)
-        return msg
-
-    def control_command_client_readonly(self, client_uuids: str, onoff) -> str:
-        log("control_command_client_readonly(%s, %s)", client_uuids, onoff)
-        sources = self.get_sources_by_type()
-        if client_uuids != "*":
-            uuids = tuple(x.strip() for x in client_uuids.split(",") if x.strip())
-            sources = tuple(ss for ss in sources if getattr(ss, "uuid", "") in uuids)
-        count = 0
-        for ss in sources:
-            if not hasattr(ss, "set_control_readonly"):
-                continue
-            ss.set_control_readonly(onoff)
-            ss.send_setting_change("readonly", ss.server_enforced_readonly())
-            self.emit("setting-changed", "readonly", ss.effective_readonly(), ss)
-            count += 1
-        msg = f"set client readonly={onoff} for {count} client(s)"
-        log.info(msg)
-        return msg

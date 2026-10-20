@@ -100,7 +100,7 @@ class XpraClientBase(PacketDispatcher):
         return self.subsystems.get(name)
 
     def add_control_command(self, name: str, control) -> None:
-        # delegate to the `control` subsystem (mirror of `ServerCore.add_control_command`),
+        # delegate to the `control` subsystem,
         # so other subsystems can register a command without depending on the MRO:
         control_subsystem = self.subsystems.get("control")
         if control_subsystem:
