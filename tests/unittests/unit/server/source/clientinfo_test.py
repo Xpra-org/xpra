@@ -34,6 +34,28 @@ class ClientInfoTest(unittest.TestCase):
         for msg in ci.get_connect_info():
             self.assertTrue(msg.isprintable(), f"{msg!r} is not printable")
 
+    def test_platform_is_single_line(self):
+        ci = parse({
+            "name": "test",
+            "username": "test",
+            "platform": "linux",
+            "platform.sysrelease": "6.0\x1b]0;title\x07",
+            "platform.linux_distribution": ("Fedora\n", "44‮", "x" * 1000) + ("y", ) * 100,
+            "session-type": "wayland\r\nFAKE",
+            "proxy": True,
+            "proxy.hostname": "proxy⁦",
+            "proxy.platform": "linux",
+            "proxy.platform.sysrelease": "\x1b[2J",
+            "opengl": {"enabled": True, "backend": "GLX\x1b[2J", "renderer": "fake\n"},
+        })
+        self.assertEqual(ci.client_session_type, "wayland  FAKE")
+        self.assertEqual(len(ci.client_linux_distribution), 4)
+        self.assertTrue(all(len(x) <= MAX_CLIENT_STRING for x in ci.client_linux_distribution))
+        info = ci.get_connect_info()
+        self.assertEqual(len(info), 4)
+        for msg in info:
+            self.assertTrue(msg.isprintable(), f"{msg!r} is not printable")
+
 
 def main():
     unittest.main()
