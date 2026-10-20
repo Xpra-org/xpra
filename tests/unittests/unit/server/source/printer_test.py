@@ -62,6 +62,13 @@ class PrinterConnectionTest(unittest.TestCase):
                 remove_printers.assert_not_called()
                 idle_add.assert_called_once_with(remove_printers)
 
+    def test_location(self):
+        args = setup_printer("printer", {})
+        self.assertEqual(args[3], f"on host ({printer.PRINTER_LOCATION_STRING})")
+        with patch.object(printer, "PRINTER_LOCATION_STRING", ""):
+            args = setup_printer("printer", {})
+        self.assertEqual(args[3], "on host")
+
 
 def main():
     unittest.main()
