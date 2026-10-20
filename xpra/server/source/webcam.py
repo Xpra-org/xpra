@@ -288,7 +288,7 @@ class WebcamConnection(StubClientConnection):
                 img = open_only(data, (encoding,))
                 if img.mode != "RGBA":
                     img = img.convert("RGBA")
-                pixels = img.tobytes("raw", "RGBA")
+                pixels = img.tobytes("raw", "BGRA")
                 rgb_pixel_format = "BGRX"
 
             from xpra.codecs.image import ImageWrapper
