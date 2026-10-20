@@ -39,6 +39,37 @@ DEBUG_REGEXES: Sequence[str] = tuple(
 logging.basicConfig(format=LOG_FORMAT)
 logging.root.setLevel(logging.INFO)
 
+
+# the values we log may come from the peer:
+# escape the control characters (ie: terminal escape sequences) and bidi controls,
+# so they cannot change the terminal, or hide or reverse the text that follows:
+LOG_ESCAPE = os.environ.get("XPRA_LOG_ESCAPE", "1") == "1"
+UNSAFE_LOG_CHARS = re.compile("[\x00-\x08\x0b-\x1f\x7f-\x9f\u061c\u200e\u200f\u2028\u2029\u202a-\u202e\u2066-\u2069]")
+
+
+def escape_char(match: re.Match) -> str:
+    o = ord(match.group(0))
+    return f"\\x{o:02x}" if o < 0x100 else f"\\u{o:04x}"
+
+
+def escape_log_message(msg, message: str) -> str:
+    if UNSAFE_LOG_CHARS.search(message):
+        message = UNSAFE_LOG_CHARS.sub(escape_char, message)
+    # line breaks that do not come from the format string could be used to forge log lines:
+    if "\n" in message and "\n" not in str(msg):
+        message = message.replace("\n", "\\n")
+    return message
+
+
+class EscapedLogRecord(logging.LogRecord):
+    def getMessage(self) -> str:
+        return escape_log_message(self.msg, super().getMessage())
+
+
+if LOG_ESCAPE and logging.getLogRecordFactory() is logging.LogRecord:
+    logging.setLogRecordFactory(EscapedLogRecord)
+
+
 debug_enabled_categories: set[str] = set()
 debug_disabled_categories: set[str] = set()
 backtrace_expressions: set[re.Pattern] = set()
