@@ -4,8 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import unittest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 
 from xpra.server.source import printer
 from xpra.server.source.printer import PrinterConnection
@@ -15,8 +16,11 @@ def setup_printer(name: str, props: dict, hostname="host") -> tuple:
     pc = PrinterConnection()
     pc.init_state()
     pc.hostname = hostname
-    with patch("xpra.platform.pycups_printing.add_printer") as add_printer:
+    # a stand-in module, so this does not require pycups:
+    pycups_printing = MagicMock()
+    with patch.dict(sys.modules, {"xpra.platform.pycups_printing": pycups_printing}):
         pc.setup_printer(name, props, {})
+    add_printer = pycups_printing.add_printer
     add_printer.assert_called_once()
     return add_printer.call_args.args
 
