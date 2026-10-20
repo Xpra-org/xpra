@@ -184,7 +184,8 @@ def limit_actions(actions: Sequence[str]) -> list[str]:
     # (and an odd number of strings would make the last one a key without a label)
     for i in range(0, len(actions) - 1, 2):
         key, label = actions[i], actions[i + 1]
-        if len(key) > MAX_ACTION_KEY or single_line(key) != key:
+        # (the server refuses the keys that are not printable)
+        if len(key) > MAX_ACTION_KEY or not key.isprintable():
             continue
         limited += [key, truncate(single_line(label), MAX_ACTION_LABEL)]
         if len(limited) >= MAX_ACTIONS * 2:

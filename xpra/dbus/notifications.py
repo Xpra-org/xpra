@@ -57,7 +57,8 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         self.bus = bus
         self.notify_callback = notify_callback
         self.close_callback = close_callback
-        self.active_notifications = set()
+        # the active notifications, and the action keys they offer:
+        self.active_notifications: dict[int, tuple[str, ...]] = {}
         self.counter = 0
         # identify the bus we are actually connected to,
         # (not just `DBUS_SESSION_BUS_ADDRESS`) so that clients sharing this bus
@@ -90,10 +91,10 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         log("Notify%s nid=%s, counter=%i, callback=%s",
             (app_name, replaces_nid, app_icon, summary, body, actions, hints, expire_timeout),
             nid, self.counter, self.notify_callback)
-        self.active_notifications.add(nid)
+        actions = tuple(str(x) for x in actions)
+        self.active_notifications[nid] = actions[0::2]
         if self.notify_callback:
             try:
-                actions = tuple(str(x) for x in actions)
                 hints = parse_dbus_hints(hints)
                 # forward app_icon image data using hints,
                 # because clients expect this value to be a string
@@ -143,7 +144,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
     def CloseNotification(self, nid) -> None:
         log("CloseNotification(%s) callback=%s", nid, self.close_callback)
         try:
-            self.active_notifications.remove(int(nid))
+            del self.active_notifications[int(nid)]
         except KeyError:
             return
         else:
@@ -151,8 +152,8 @@ class DBUSNotificationsForwarder(dbus.service.Object):
                 self.close_callback(nid)
             self.NotificationClosed(nid, 3)  # 3="The notification was closed by a call to CloseNotification"
 
-    def is_notification_active(self, nid) -> bool:
-        return int(nid) in self.active_notifications
+    def is_action_offered(self, nid, action_key: str) -> bool:
+        return action_key in self.active_notifications.get(int(nid), ())
 
     def notification_closed(self, nid, reason) -> bool:
         """
@@ -162,7 +163,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
         """
         if int(nid) not in self.active_notifications:
             return False
-        self.active_notifications.discard(int(nid))
+        self.active_notifications.pop(int(nid), None)
         self.NotificationClosed(nid, reason)
         return True
 
