@@ -20,7 +20,7 @@ from xpra.util.colourspace import Colourspace, SRGB
 from xpra.util.parsing import scaleup_value, scaledown_value
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
-from xpra.util.str_fn import std
+from xpra.util.str_fn import std, single_line, truncate
 from xpra.util.env import envint, envbool, ignorewarnings
 from xpra.log import Logger
 
@@ -39,6 +39,8 @@ SET_SIZE_CONSTRAINTS = envbool("XPRA_SET_SIZE_CONSTRAINTS", True)
 DEFAULT_GRAVITY = envint("XPRA_DEFAULT_GRAVITY", 0)
 OVERRIDE_GRAVITY = envint("XPRA_OVERRIDE_GRAVITY", 0)
 FORCE_FLUSH = envbool("XPRA_FORCE_FLUSH", False)
+# the window title and icon title we accept from the server:
+MAX_TITLE = envint("XPRA_MAX_WINDOW_TITLE", 512)
 
 SHOW_SPINNER_WINDOW_TYPES = set(os.environ.get("XPRA_SHOW_SPINNER_WINDOW_TYPES", "DIALOG,NORMAL,SPLASH").split(","))
 
@@ -62,6 +64,12 @@ def validhostname(value):
     ):
         return None
     return value
+
+
+def window_title_str(value) -> str:
+    # bidi controls could hide or reverse the parts of the title that do not come from the server,
+    # ie: the default title is "@title@ on @hostinfo@"
+    return truncate(single_line(str(value)), MAX_TITLE)
 
 
 def do_get_window_title(client, wid: int, metadata: dict) -> str:
@@ -122,7 +130,7 @@ def do_get_window_title(client, wid: int, metadata: dict) -> str:
         value = metadata.get(var)
         if value is None:
             return default_values.get(var, "<unknown %s>" % var)
-        return str(value)
+        return window_title_str(value)
 
     def metadata_replace(match) -> str:
         atvar = match.group(0)  # ie: '@title@'
@@ -409,7 +417,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_title(title)
 
         if "icon-title" in metadata:
-            icon_title = metadata.strget("icon-title")
+            icon_title = window_title_str(metadata.strget("icon-title"))
             self.set_icon_name(icon_title)
             # the DE may have reset the icon now,
             # force it to use the one we really want:
