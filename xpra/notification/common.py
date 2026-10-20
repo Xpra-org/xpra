@@ -11,6 +11,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.env import first_time, envint
+from xpra.util.str_fn import single_line, truncate
 from xpra.util.io import load_binary_file
 from xpra.log import Logger
 
@@ -41,8 +42,6 @@ ICON_NAME_RE = re.compile(r"[A-Za-z0-9._+-]{1,128}")
 UNSAFE_MARKUP_RE = re.compile(r"<\s*/?\s*(img|a)\b[^>]*>", re.IGNORECASE)
 # dbus uses a signed 32-bit integer, -1 means the notification daemon's default:
 MAX_EXPIRE_TIMEOUT = 2**31 - 1
-# control characters, except for line breaks and tabs:
-TEXT_STRIP: dict[int, str | None] = dict.fromkeys(c for c in (*range(0x00, 0x20), *range(0x7f, 0xa0)) if chr(c) not in "\t\n")
 # larger than this is not a notification:
 MAX_APP_NAME = envint("XPRA_NOTIFICATION_MAX_APP_NAME", 64)
 MAX_SUMMARY = envint("XPRA_NOTIFICATION_MAX_SUMMARY", 256)
@@ -51,14 +50,6 @@ MAX_BODY = envint("XPRA_NOTIFICATION_MAX_BODY", 4096)
 MAX_ACTIONS = envint("XPRA_NOTIFICATION_MAX_ACTIONS", 8)
 MAX_ACTION_KEY = 256
 MAX_ACTION_LABEL = 64
-# control characters, line separators and bidi controls,
-# which can be used to hide or reverse the " (via Xpra)" suffix of the application name:
-SINGLE_LINE_STRIP: dict[int, str | None] = dict.fromkeys((
-    *range(0x00, 0x20), *range(0x7f, 0xa0),
-    0x061c, 0x200e, 0x200f, *range(0x202a, 0x202f), *range(0x2066, 0x206a),
-))
-# line breaks and tabs become spaces:
-SINGLE_LINE_STRIP |= dict.fromkeys(map(ord, "\t\n\v\f\r\x85\u2028\u2029"), " ")
 
 
 def PIL_Image():
@@ -171,12 +162,6 @@ def strip_unsafe_markup(body: str) -> str:
         body = stripped
 
 
-def truncate(text: str, limit: int) -> str:
-    if len(text) <= limit:
-        return text
-    return text[:max(0, limit - 1)] + "\u2026"
-
-
 def limit_actions(actions: Sequence[str]) -> list[str]:
     # the keys are sent back to the application, so they cannot be truncated:
     # skip the actions whose key is too long
@@ -191,19 +176,6 @@ def limit_actions(actions: Sequence[str]) -> list[str]:
         if len(limited) >= MAX_ACTIONS * 2:
             break
     return limited
-
-
-def valid_text(text: str) -> str:
-    # lone surrogates cannot be encoded, and dbus would refuse the whole notification:
-    return text.encode("utf8", "replace").decode("utf8")
-
-
-def clean_text(text: str) -> str:
-    return valid_text(text).translate(TEXT_STRIP)
-
-
-def single_line(text: str) -> str:
-    return valid_text(text).translate(SINGLE_LINE_STRIP)
 
 
 def clamp_expire_timeout(expire_timeout: int) -> int:

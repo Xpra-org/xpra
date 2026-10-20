@@ -10,6 +10,7 @@ from xpra.util.objects import AtomicInteger, MutableInteger, typedict
 from xpra.util.screen import log_screen_sizes, MonitorLayout, combine_monitor_layouts, monitors_bounding_box
 from xpra.util.str_fn import (
     std, alnum, nonl, pver,
+    single_line, clean_text, truncate,
     obsc, csv, is_valid_hostname,
     ellipsize, repr_ellipsized, Ellipsizer,
     decode_str, nicestr,
@@ -267,6 +268,19 @@ class TestModuleFunctions(unittest.TestCase):
     def test_nonl(self):
         self.assertEqual(nonl("\n\r"), "\\n\\r")
         self.assertEqual(nonl("A\nB\rC"), "A\\nB\\rC")
+
+    def test_single_line(self):
+        self.assertEqual(single_line("Mail\u202e\n(local)"), "Mail (local)")
+        self.assertEqual(single_line("a\tb\r\nc\u2028d\x00\x1b[31m\u2066"), "a b  c d[31m")
+        self.assertEqual(single_line("caf\u00e9 \U0001f468\u200d\U0001f469"), "caf\u00e9 \U0001f468\u200d\U0001f469")
+        self.assertEqual(single_line("lone\ud800"), "lone?")
+
+    def test_clean_text(self):
+        self.assertEqual(clean_text("line1\n\tline2\x00\x1b[31m\ud800"), "line1\n\tline2[31m?")
+
+    def test_truncate(self):
+        self.assertEqual(truncate("abc", 3), "abc")
+        self.assertEqual(truncate("abcd", 3), "ab\u2026")
 
 
 class TestObsc(unittest.TestCase):
