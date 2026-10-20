@@ -31,6 +31,9 @@ PROXY_NAME = "xpra-notification-proxy"
 # anything else (a path, or a URI like `file://`) would have the daemon load a local file
 # through its own image loaders:
 ICON_NAME_RE = re.compile(r"[A-Za-z0-9._+-]{1,128}")
+# the body markup tags that make the notification daemon load a local file (`img`)
+# or open a link (`a href`) - the text of a link is kept:
+UNSAFE_MARKUP_RE = re.compile(r"<\s*/?\s*(img|a)\b[^>]*>", re.IGNORECASE)
 
 
 def PIL_Image():
@@ -131,6 +134,16 @@ def image_data(img) -> IconData:
 
 def is_icon_name(icon_string: str) -> bool:
     return bool(ICON_NAME_RE.fullmatch(icon_string))
+
+
+def strip_unsafe_markup(body: str) -> str:
+    # repeat until nothing is left to strip,
+    # so that removing one tag cannot reveal another: `<im<img>g src=...>`
+    while True:
+        stripped = UNSAFE_MARKUP_RE.sub("", body)
+        if stripped == body:
+            return body
+        body = stripped
 
 
 def get_notification_icon(icon_string: str) -> IconData | None:
