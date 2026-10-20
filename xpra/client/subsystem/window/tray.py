@@ -8,6 +8,7 @@ from typing import Any
 from xpra.os_util import OSX
 from xpra.util.system import is_Ubuntu
 from xpra.util.objects import typedict, make_instance
+from xpra.util.str_fn import single_line, truncate
 from xpra.util.env import envint, envbool
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
@@ -131,7 +132,8 @@ class WindowTray(StubClientSubsystem):
         def tray_exit(*args):
             log("tray_exit(%s)", args)
 
-        title = metadata.strget("title")
+        # used as tooltip:
+        title = truncate(single_line(metadata.strget("title")), 256)
         tray_widget = self.make_system_tray(app_id, None, title, "",
                                             tray_geometry, tray_click, tray_mouseover, tray_exit)
         log("setup_system_tray%s tray_widget=%s", (client, app_id, wid, w, h, title), tray_widget)
