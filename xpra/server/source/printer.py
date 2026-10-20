@@ -8,7 +8,7 @@ from typing import Any
 from collections.abc import Sequence
 from xpra.util.objects import typedict
 from xpra.util.str_fn import single_line, truncate
-from xpra.util.env import envbool
+from xpra.util.env import envbool, envint
 from xpra.os_util import get_machine_id
 from xpra.auth.auth_helper import AuthDef
 from xpra.server.source.stub import StubClientConnection
@@ -19,6 +19,7 @@ log = Logger("printing")
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
 MAX_PRINTER_INFO = 128
+MAX_PRINTERS = envint("XPRA_MAX_PRINTERS", 10)
 
 
 def makeabs(filename: str) -> str:
@@ -93,6 +94,10 @@ class PrinterConnection(StubClientConnection):
     # printing:
     def set_printers(self, printers: dict, password_file: Sequence[str], auth_defs: Sequence[AuthDef]) -> None:
         log("set_printers%s for %s", (printers, password_file, auth_defs), self)
+        if len(printers) > MAX_PRINTERS:
+            # each printer we add runs `lpadmin`:
+            log.warn("Warning: too many printers, only forwarding the first %i out of %i", MAX_PRINTERS, len(printers))
+            printers = dict(tuple(printers.items())[:MAX_PRINTERS])
         if self.machine_id == get_machine_id() and not ADD_LOCAL_PRINTERS:
             self.printers = printers
             log("local client with identical machine id,")
