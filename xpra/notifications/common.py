@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os.path
+import re
 from io import BytesIO
 from typing import Tuple, Optional
 
@@ -18,6 +19,14 @@ try:
     IconData : TypeAlias = Tuple[str,int,int,bytes]
 except ImportError:
     IconData = Tuple
+
+
+# Only theme names may be handed to the daemon without loading an icon here.
+ICON_NAME_RE = re.compile(r"[A-Za-z0-9._+-]{1,128}")
+
+
+def is_icon_name(icon_string:str) -> bool:
+    return bool(ICON_NAME_RE.fullmatch(icon_string))
 
 
 def PIL_Image():

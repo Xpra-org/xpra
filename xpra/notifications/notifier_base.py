@@ -7,6 +7,7 @@ import os
 import tempfile
 
 from xpra.os_util import osexpand
+from xpra.notifications.common import is_icon_name
 from xpra.log import Logger
 
 log = Logger("notify")
@@ -35,8 +36,8 @@ class NotifierBase:
         raise NotImplementedError()
 
     def get_icon_string(self, nid : int, app_icon, icon) -> str:
-        if app_icon and not os.path.isabs(app_icon):
-            #safe to use
+        if app_icon and is_icon_name(app_icon):
+            # An icon theme name, safe to use.
             return app_icon
         if not icon:
             return ""

@@ -159,7 +159,7 @@ class NotificationClient(StubClientMixin):
         nid = int(packet[2])
         app_name = net_utf8(packet[3])
         replaces_nid = int(packet[4])
-        app_icon = packet[5]
+        app_icon = net_utf8(packet[5])
         summary = net_utf8(packet[6])
         body = net_utf8(packet[7])
         expire_timeout = int(packet[8])
