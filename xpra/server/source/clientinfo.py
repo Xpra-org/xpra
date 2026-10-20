@@ -7,7 +7,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.util.objects import typedict
-from xpra.util.str_fn import std
+from xpra.util.str_fn import std, single_line, truncate
 from xpra.net.common import FULL_INFO
 from xpra.util.version import vparts
 from xpra.server.source.stub import StubClientConnection
@@ -15,6 +15,13 @@ from xpra.util.system import platform_name
 from xpra.log import Logger
 
 log = Logger("server")
+
+# the client strings we log and show in notifications:
+MAX_CLIENT_STRING = 128
+
+
+def client_str(c: typedict, key: str) -> str:
+    return truncate(single_line(c.strget(key)), MAX_CLIENT_STRING)
 
 
 def get_glinfo_message(opengl: typedict) -> str:
@@ -75,10 +82,10 @@ class ClientInfoConnection(StubClientConnection):
 
     def parse_client_caps(self, c: typedict) -> None:
         self.machine_id = c.strget("machine_id")
-        self.hostname = c.strget("hostname")
-        self.username = c.strget("username")
-        self.user = c.strget("user")
-        self.name = c.strget("name")
+        self.hostname = client_str(c, "hostname")
+        self.username = client_str(c, "username")
+        self.user = client_str(c, "user")
+        self.name = client_str(c, "name")
         self.argv = c.strtupleget("argv")
         self.client_type = c.strget("client_type")
         self.client_platform = c.strget("platform")

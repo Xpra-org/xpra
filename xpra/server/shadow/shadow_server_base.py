@@ -19,7 +19,7 @@ from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.exit_codes import ExitValue
 from xpra.util.env import envint, envbool
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, std
 from xpra.util.parsing import DEFAULT_REFRESH_RATE, clamp_refresh_delay, str_to_bool
 from xpra.constants import NotificationID
 from xpra.log import Logger
@@ -227,7 +227,8 @@ class ShadowServerBase(ServerBase):
         if self.notifier:
             tray = self.get_notification_tray()  # pylint: disable=assignment-from-none
             nid = NotificationID.NEW_USER
-            title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
+            name = ss.name or ss.username or std(ss.uuid)
+            title = f"User {name!r} connected to the session"
             body = "\n".join(ss.get_connect_info())
             actions: Sequence[str] = ()
             hints: dict[str, Any] = {}
