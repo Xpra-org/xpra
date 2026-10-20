@@ -201,9 +201,10 @@ class NotificationClient(StubClientSubsystem):
             return
         self.client._ui_event()
         from xpra.notification.common import (  # pylint: disable=import-outside-toplevel
-            strip_unsafe_markup, single_line, clean_text, truncate, limit_actions, clamp_expire_timeout,
+            strip_unsafe_markup, limit_actions, clamp_expire_timeout,
             MAX_APP_NAME, MAX_SUMMARY, MAX_BODY,
         )
+        from xpra.util.str_fn import single_line, clean_text, truncate  # pylint: disable=import-outside-toplevel
         dbus_id = packet.get_str(1)
         nid = packet.get_u64(2)
         app_name = truncate(single_line(packet.get_str(3)), MAX_APP_NAME)
