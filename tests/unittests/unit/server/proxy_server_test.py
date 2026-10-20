@@ -10,6 +10,16 @@ from xpra.util.io import pollwait
 from unit.server_test_util import ServerTestUtil, log
 
 
+class ProxyControlTest(unittest.TestCase):
+
+    def test_proxy_stop_control_command(self):
+        from xpra.server.proxy.server import ProxyServer
+        server = ProxyServer()
+        server.control_enabled = True
+        server.add_core_control_commands()
+        self.assertIn("stop", server.control_commands)
+
+
 class ProxyServerTest(ServerTestUtil):
 
     def test_proxy_start_stop(self):

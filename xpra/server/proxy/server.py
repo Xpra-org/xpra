@@ -194,8 +194,8 @@ class ProxyServer(ProxyServerBaseClass, SignalEmitter):
         get_platform_info()
         create_system_dir(opts.system_proxy_socket)
 
-    def init_control_commands(self) -> None:
-        super().init_control_commands()
+    def add_core_control_commands(self) -> None:
+        super().add_core_control_commands()
         if features.control:
             self.add_control_command("stop", ArgsControlCommand("stop",
                                                                 "stops the proxy instance on the given display",
