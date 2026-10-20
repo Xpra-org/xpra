@@ -1,6 +1,6 @@
 # Changelog
 
-## [7.0] 2026-10-16
+## [7.0] 2026-10-21
 * 🔧 Platforms, build and packaging:
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
   * [new macOS screen capture backend](https://github.com/Xpra-org/xpra/issues/1872)
@@ -37,27 +37,9 @@
   * [paramiko ssh agent forwarding handler](https://github.com/Xpra-org/xpra/issues/4353)
   * [basic RDP handling](https://github.com/Xpra-org/xpra/issues/4476)
 * 🛡️ Security:
-  * [clients could invoke notification actions not offered by applications](https://github.com/Xpra-org/xpra/commit/a154b6a7bd4e791f06c32b975f5e767765abbe89)
-  * [remote window and icon titles could hide the host suffix using control characters](https://github.com/Xpra-org/xpra/commit/60b7d3d25e12bff6a6f084b2559f7bdd6c9eee1b)
-  * [Qt6, Tk and pyglet clients accepted unsafe window titles](https://github.com/Xpra-org/xpra/commit/28fecddec7a3a28a7f45c4f82ebb2e97a9b60ecf)
-  * [unsafe server session names were shown in menus and dialogs](https://github.com/Xpra-org/xpra/commit/27a567a62c5293c676c766f6fa55f77a4756a504)
-  * [forwarded system tray tooltips accepted unsafe titles](https://github.com/Xpra-org/xpra/commit/d9e0e42e9efdd7bfbc7b951907ad1230bd6b1f08)
-  * [server disconnect messages could inject control characters into client logs and notifications](https://github.com/Xpra-org/xpra/commit/129b921d8c2537c1e7cf851eaa9099ae9ca868f4)
-  * [server messages could add images and links to local notifications](https://github.com/Xpra-org/xpra/commit/c57f81a4ab0a910599ff8435882abe7ea1d8509a)
-  * [client names could spoof connection notifications](https://github.com/Xpra-org/xpra/commit/f1b81c608e7189f4f73aa49db8995c3e433ac7cf)
-  * [client platform and session strings accepted control characters](https://github.com/Xpra-org/xpra/commit/cab9acd0bb55267bf9d6128e7d0e01c0f802eed2)
-  * [client desktop names could inject entries into the desktop-name list](https://github.com/Xpra-org/xpra/commit/533af43b96ba73c3efd97d8d7c8fe871e20528cc)
-  * [forwarded printer descriptions accepted unsafe text](https://github.com/Xpra-org/xpra/commit/6d50a2be85a52b1d1067381050eb40abbd88e5ac)
-  * [remote log messages could inject terminal escape sequences](https://github.com/Xpra-org/xpra/commit/c10da7b1953cf9dfca2856744bccd403ae14f4ab)
-  * [print job titles accepted unsafe text](https://github.com/Xpra-org/xpra/commit/9f698e937d8803762fbf7af34725ed328f1b1437)
-  * [`xpra info` byte values could inject terminal escape sequences](https://github.com/Xpra-org/xpra/commit/fa3910beb1b619d1803e53b49ffba815c952045a)
-  * [monitor data accepted unsafe names and unbounded monitor lists](https://github.com/Xpra-org/xpra/commit/dc1aa30e4130075c0819f163dddcb2b7a0702aed)
-  * [unbounded forwarded printer lists could launch excessive printer configuration commands](https://github.com/Xpra-org/xpra/commit/f7ddc68b636ff03d953bc29b8c84858e2af268a5)
-  * [unbounded clipboard target lists could create excessive X11 atoms](https://github.com/Xpra-org/xpra/commit/5b18c964ed0aac41e4b98cf711594812ba24136a)
-  * [received filenames could disguise file extensions and URLs accepted unsafe characters](https://github.com/Xpra-org/xpra/commit/7141418e0d4b09aebac310c6153286eb93d76498)
-  * [usernames could inject control characters into authentication logs](https://github.com/Xpra-org/xpra/commit/b8e37392c647e2becbd4499bb5c2b7d494c5933f)
-  * [logged values could inject terminal escape sequences and misleading log lines](https://github.com/Xpra-org/xpra/commit/0ec4795e4074b82ede9428db9b9207f0a86de478)
-  * [authentication module errors could leave clients waiting until timeout](https://github.com/Xpra-org/xpra/commit/b74e8b7943376736812563144c04a5a62f813e85)
+  * [stricter peer data validation](https://github.com/Xpra-org/xpra/issues/5084)
+  * [validate notifications](https://github.com/Xpra-org/xpra/issues/5085)
+  * [SMS 2FA](https://github.com/Xpra-org/xpra/issues/5078), [email 2FA](https://github.com/Xpra-org/xpra/issues/5076)
   * [`seccomp` hardening](https://github.com/Xpra-org/xpra/issues/622)
   * [`landlock` support](https://github.com/Xpra-org/xpra/issues/4960)
   * [process level protections: prevent ptrace / core dumps](https://github.com/Xpra-org/xpra/issues/4958)
@@ -171,10 +153,6 @@
   * [full size cursors on MS Windows](https://github.com/Xpra-org/xpra/issues/3104)
   * [macOS shadow cursor](https://github.com/Xpra-org/xpra/commit/7555b606bd701a451932a6fe617959cbb67f76f7), [RFB cursor](https://github.com/Xpra-org/xpra/commit/c289c7d0c62d6afd5471c3b6b6ce53c84df7136b)
 * Fixes:
-  * [proxy stop control command was not registered](https://github.com/Xpra-org/xpra/commit/2ae8e52e3e29f69f536627ac10a2d7a01a980b52)
-  * [restarting libcamera capture could reuse stale camera requests](https://github.com/Xpra-org/xpra/commit/d81bd9b356a564d189f70b14353be34e3162bac2)
-  * [forwarded webcam frames had red and blue channels swapped](https://github.com/Xpra-org/xpra/commit/1798b85a3c03b93d66717ca796550f902dbe839d)
-  * [webcam colour conversion could return buffers that frame encoders could not read](https://github.com/Xpra-org/xpra/commit/42fe91e2aff74d470e9ade1b29426851fdb2c46f)
   * [avoid repeated pointer position updates when the pointer is unchanged](https://github.com/snyh/xpra/commit/9796f5f672c7)
   * [prevent stale focus and mapped state after server-requested minimization](https://github.com/snyh/xpra/commit/c70414f3fbc9)
   * [ordered `conf.d` files](https://github.com/Xpra-org/xpra/issues/5032)

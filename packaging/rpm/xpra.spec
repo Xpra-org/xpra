@@ -1169,7 +1169,7 @@ fi
 
 
 %changelog
-* Fri Oct 16 2026 Antoine Martin <antoine@xpra.org> 7.0-10
+* Wed Oct 21 2026 Antoine Martin <antoine@xpra.org> 7.0-10
 - 🔧 Platforms, build and packaging:
    new macOS event API
    new macOS screen capture backend
@@ -1206,6 +1206,9 @@ fi
    paramiko ssh agent forwarding handler
    basic RDP handling
 - 🛡️ Security:
+   stricter peer data validation
+   validate notifications
+   SMS 2FA, email 2FA
    `seccomp` hardening
    `landlock` support
    process level protections: prevent ptrace / core dumps
@@ -1271,12 +1274,14 @@ fi
    follow changes to the system audio device on macOS
    use loopback for MS Windows shadow server audio capture
 - *️⃣ Keyboard:
+   dismiss stuck popup windows with `Control+Escape`
    untranslated keyboard
    keymap handling improvements and on-demand keysym mapping
    correct MS Windows keyboard layout mapping
    MS Windows native client: keyboard shortcuts, system menu, grabs, dark title bar
    tray menu entries for key combinations intercepted locally
 - Wayland:
+   client keyboard layout and variant lists accepted invalid or excessive entries
    `dmabuf` image wrapper and GPU support for applications
    scaled subsurfaces
    per-window and per-monitor colourspace metadata
