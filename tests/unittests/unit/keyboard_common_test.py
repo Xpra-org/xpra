@@ -6,7 +6,8 @@
 
 import unittest
 
-from xpra.keyboard.common import KeyEvent
+from xpra.util.objects import typedict
+from xpra.keyboard.common import KeyEvent, keymap_str, MAX_KEYMAP_STRING
 
 
 class TestKeyEvent(unittest.TestCase):
@@ -35,6 +36,19 @@ class TestKeyEvent(unittest.TestCase):
         assert e.keyname == "Return"
         assert e.keycode == 36
         assert not e.pressed
+
+
+class TestKeymapStr(unittest.TestCase):
+
+    def test_valid(self):
+        d = typedict({"layout": "us,fr", "options": "grp:alt_shift_toggle,ctrl:nocaps"})
+        self.assertEqual(keymap_str(d, "layout"), "us,fr")
+        self.assertEqual(keymap_str(d, "options"), "grp:alt_shift_toggle,ctrl:nocaps")
+        self.assertEqual(keymap_str(d, "variant", "intl"), "intl")
+
+    def test_invalid(self):
+        for value in ("us\nfr", "us\x1b[2J", "\u0434\u0435", "us\u202e", "x" * (MAX_KEYMAP_STRING + 1)):
+            self.assertEqual(keymap_str(typedict({"layout": value}), "layout", "us"), "us", f"{value!r} was accepted")
 
 
 def main():

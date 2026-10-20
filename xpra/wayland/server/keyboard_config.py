@@ -7,6 +7,7 @@ from typing import Any
 
 from xpra.server.keyboard_config_base import KeyboardConfigBase
 from xpra.util.objects import typedict
+from xpra.keyboard.common import keymap_str
 from xpra.log import Logger
 
 log = Logger("wayland", "keyboard")
@@ -58,9 +59,9 @@ class KeyboardConfig(KeyboardConfigBase):
         """ used by both the hello packet and the `keyboard-config` packet """
         keymap = typedict(props.dictget("keymap")) or props
         # the keyboard model is only ever sent as part of `query_struct`:
-        model = typedict(keymap.dictget("query_struct")).strget("model")
-        mods = self.update_layout(keymap.strget("layout"), model,
-                                  keymap.strget("variant"), keymap.strget("options"))
+        model = keymap_str(typedict(keymap.dictget("query_struct")), "model")
+        mods = self.update_layout(keymap_str(keymap, "layout"), model,
+                                  keymap_str(keymap, "variant"), keymap_str(keymap, "options"))
         layouts = keymap.strtupleget("layouts")
         variants = keymap.strtupleget("variants")
         if (layouts, variants) != (self.layouts, self.variants):

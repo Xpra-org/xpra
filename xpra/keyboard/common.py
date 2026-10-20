@@ -3,10 +3,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool
+from xpra.log import Logger
 
 DELAY_KEYBOARD_DATA = envbool("XPRA_DELAY_KEYBOARD_DATA", True)
+# the xkb names are short ascii strings, ie: "us,fr", "grp:alt_shift_toggle,ctrl:nocaps"
+MAX_KEYMAP_STRING = 256
 
 # this allows platforms to inject keyname workarounds
 # the key is a tuple (keyname, keyval, keycode)
@@ -14,6 +18,19 @@ DELAY_KEYBOARD_DATA = envbool("XPRA_DELAY_KEYBOARD_DATA", True)
 # (this lives here rather than in `xpra.gtk.keymap` so that
 # toolkit-free clients - ie: win32 - can populate it without importing any gtk bits)
 KEY_TRANSLATIONS: dict[tuple[str, int, int], str] = {}
+
+
+def keymap_str(d: typedict, key: str, default: str = "") -> str:
+    """
+    The xkb layout, variant, options, model or rules received from a client.
+    Invalid values are replaced with the default.
+    """
+    value = d.strget(key, default)
+    if len(value) > MAX_KEYMAP_STRING or not (value.isascii() and value.isprintable()):
+        log = Logger("keyboard")
+        log.warn(f"Warning: ignoring invalid keyboard {key} {value[:32]!r}")
+        return default
+    return value
 
 
 class KeyEvent:
