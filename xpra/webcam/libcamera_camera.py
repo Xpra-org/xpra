@@ -164,6 +164,9 @@ class LibcameraCamera(CameraDevice):
             # completed requests from the camera manager's queue.
             reqs = self._cm.get_ready_requests()
             log("get_ready_requests() -> %i requests", len(reqs) if reqs else 0)
+            # the CameraManager is a singleton: skip requests that belong to another camera instance,
+            # and the ones cancelled by `camera.stop()`
+            reqs = [r for r in (reqs or ()) if r in self._requests and r.status == r.Status.Complete]
             if not reqs:
                 # drain anyway so we don't spin on a stuck-readable fd
                 try:
@@ -208,9 +211,14 @@ class LibcameraCamera(CameraDevice):
     def release(self) -> None:
         try:
             self._camera.stop()
+            # `stop()` cancels the queued requests, which end up in the CameraManager's ready queue:
+            # drain them now, or the next capture session would receive them
+            stale = self._cm.get_ready_requests()
+            log("discarding %i stale requests", len(stale or ()))
             self._camera.release()
         except Exception as e:
             log("LibcameraCamera.release() error: %s", e)
+        self._requests.clear()
         for mm, _, _ in self._buffer_maps.values():
             try:
                 mm.close()
