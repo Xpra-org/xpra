@@ -12,6 +12,7 @@ log = Logger("decoder", "jpeg")
 
 from xpra.util.env import envbool
 from xpra.util.objects import reverse_dict, typedict
+from xpra.codecs.constants import check_image_size
 from xpra.codecs.image import ImageWrapper
 from xpra.buffers.membuf cimport getbuf, MemBuf  # pylint: disable=syntax-error
 from libc.stdint cimport uintptr_t, uint8_t
@@ -196,6 +197,13 @@ def decompress_to_yuv(data: bytes, options: typedict) -> ImageWrapper:
                                 <const unsigned char *> buf, buf_len,
                                 &w, &h, &subsamp, &cs)
     tj_check(r, "failed to decompress JPEG main header")
+    try:
+        # the dimensions come straight from the JPEG header, where they are 16-bit fields:
+        # bound them before they are used to size the plane buffers below
+        check_image_size(w, h, "jpeg image")
+    except ValueError:
+        close()
+        raise
 
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
     assert subsamp in (TJSAMP_444, TJSAMP_422, TJSAMP_420, TJSAMP_GRAY), "unsupported JPEG colour subsampling: %s" % subsamp_str
@@ -234,7 +242,7 @@ def decompress_to_yuv(data: bytes, options: typedict) -> ImageWrapper:
             if subsamp != TJSAMP_GRAY or (i % 3) == 0:
                 raise ValueError("cannot get size for plane %r for mode %r" % ("YUVA"[i], subsamp_str))
             stride = roundup(w//2, ALIGN)
-            plane_size = stride * roundup(h, 2)//2
+            plane_size = <unsigned long> stride * roundup(h, 2)//2
             if i==1:
                 #allocate empty U and V planes:
                 empty = getbuf(plane_size, 0)
@@ -336,6 +344,13 @@ def decompress_to_rgb(data: bytes, options: typedict) -> ImageWrapper:
                             <const unsigned char *> buf, buf_size,
                             &w, &h, &subsamp, &cs)
     tj_check(r, "failed to decompress JPEG header")
+    try:
+        # the dimensions come straight from the JPEG header, where they are 16-bit fields:
+        # bound them before they are used to size the output buffer below
+        check_image_size(w, h, "jpeg image")
+    except ValueError:
+        close()
+        raise
     subsamp_str = TJSAMP_STR.get(subsamp, subsamp)
     log("jpeg.decompress_to_rgb: size=%4ix%-4i, subsampling=%3s, colorspace=%s",
         w, h, subsamp_str, TJCS_STR.get(cs, cs))
@@ -343,7 +358,8 @@ def decompress_to_rgb(data: bytes, options: typedict) -> ImageWrapper:
     cdef double elapsed
     cdef double start = monotonic()
     cdef int stride = w*4
-    cdef unsigned long size = stride*h
+    # cast so the multiplication is done at 64-bit width and cannot wrap:
+    cdef unsigned long size = <unsigned long> stride * h
     cdef MemBuf membuf = getbuf(size, 0)
     cdef unsigned char *dst_buf = <unsigned char*> membuf.get_mem()
     with nogil:
