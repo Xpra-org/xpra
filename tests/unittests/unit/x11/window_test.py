@@ -250,6 +250,18 @@ class X11WindowTest(ServerTestUtil):
         finally:
             x11window.DestroyWindow(window)
 
+    def test_x11_property_denylist(self):
+        from xpra.x11.error import xsync
+        from xpra.x11.prop import prop_set
+        model = self.manage_window(self.start_window())
+        changed = []
+        model.connect("x11-property-changed", lambda _model, event: changed.append(event[0]))
+        for name in ("_MY_APP_PROPERTY", "_KDE_NET_WM_BLUR_BEHIND_REGION", "_NET_STARTUP_ID", "WM_LOCALE_NAME"):
+            with xsync:
+                prop_set(model.xid, name, "latin1", "value")
+            model._handle_property_change(name)
+        self.assertEqual(changed, ["_MY_APP_PROPERTY"])
+
     @staticmethod
     def set_wm_hints(xid: int, flags: int) -> None:
         from xpra.x11.prop import raw_prop_set

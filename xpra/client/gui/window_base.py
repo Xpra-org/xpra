@@ -14,7 +14,7 @@ from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window.backing import fire_paint_callbacks, get_backing_client_properties
 from xpra.client.gui.window_border import WindowBorder
 from xpra.net.common import PacketElement
-from xpra.common import gravity_str, force_size_constraint
+from xpra.common import gravity_str, force_size_constraint, is_x11_property_denied
 from xpra.util.colourspace import Colourspace, SRGB
 from xpra.util.parsing import scaleup_value, scaledown_value
 from xpra.util.system import is_Wayland
@@ -44,10 +44,6 @@ SHOW_SPINNER_WINDOW_TYPES = set(os.environ.get("XPRA_SHOW_SPINNER_WINDOW_TYPES",
 # sentinel for "requested-position" metadata: a position no window can ever occupy
 # (0, 0) and negative coordinates are all valid positions, so we need an out-of-range value:
 NOT_REQUESTED: Final[tuple[int, int]] = (-2 ** 32, -2 ** 32)
-
-
-def is_wm_property(name: str) -> bool:
-    return any(name.startswith(prefix) for prefix in ("_MOTIF", "WM_", "_NET_WM", "_GTK_"))
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -361,7 +357,7 @@ class ClientWindowBase(ClientWidgetBase):
             attr = metadata.tupleget("x11-property")
             if len(attr) >= 4:
                 name, ptype, _, value = attr[:4]
-                if not is_wm_property(name):
+                if not is_x11_property_denied(name):
                     self.set_x11_property(name, ptype, value)
 
         standard_properties: dict[str, type] = {
