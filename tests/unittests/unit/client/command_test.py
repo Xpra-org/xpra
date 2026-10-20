@@ -10,6 +10,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from xpra.client.base.client import connection_close_info, MAX_DISCONNECT_MESSAGES
 from xpra.client.base.command import AbstractImageXpraClient, CommandConnectClient, InfoXpraClient, RunClient, StopXpraClient
 from xpra.net.common import Packet
 from xpra.net.packet_type import SHUTDOWN_SERVER
@@ -153,6 +154,14 @@ class CommandClientTest(unittest.TestCase):
         with patch.object(CommandConnectClient, "make_protocol", return_value=protocol):
             self.assertIs(AbstractImageXpraClient.make_protocol(AbstractImageXpraClient.__new__(AbstractImageXpraClient), None), protocol)
         self.assertEqual(protocol.max_packet_size, MAX_PACKET_SIZE)
+
+    def test_connection_close_info(self):
+        # the messages end up in the terminal and in a notification:
+        info = connection_close_info(Packet("connection-close", "reason\x1b[2J", "line1\nline2\u202e", 1))
+        self.assertEqual(info, ("reason[2J", "line1 line2", "1"))
+        many = connection_close_info(Packet("connection-close", *(["x" * 10000] * 100)))
+        self.assertEqual(len(many), MAX_DISCONNECT_MESSAGES)
+        self.assertTrue(all(len(x) <= 256 for x in many))
 
 
 def main():

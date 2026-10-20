@@ -22,7 +22,7 @@ from xpra.util.io import stderr_print, load_binary_file
 from xpra.net.common import Packet, PacketElement, disconnect_is_an_error, BACKWARDS_COMPATIBLE
 from xpra.util.stats import std_unit
 from xpra.client.base.gobject import GObjectClientAdapter
-from xpra.client.base.client import XpraClientBase
+from xpra.client.base.client import XpraClientBase, connection_close_info
 from xpra.exit_codes import ExitCode, ExitValue, exit_str
 from xpra.log import Logger
 
@@ -165,7 +165,7 @@ class HelloRequestClient(SendCommandConnectClient):
         # overridden method, so we can avoid printing a warning,
         # we haven't received the hello back from the server
         # but that's fine for a request client
-        info = tuple(str(x) for x in packet[1:])
+        info = connection_close_info(packet)
         reason = info[0]
         if disconnect_is_an_error(reason):
             self.server_disconnect_warning(*info)
