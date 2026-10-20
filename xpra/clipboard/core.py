@@ -39,6 +39,8 @@ MAX_CLIPBOARD_RECEIVE_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE
 MAX_CLIPBOARD_SEND_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 MAX_CLIPBOARD_ORIGINS: Final[int] = 16
 MAX_CLIPBOARD_ORIGIN_SIZE: Final[int] = 64
+# each target may become an X11 atom, and those are never freed:
+MAX_CLIPBOARD_TARGETS: Final[int] = envint("XPRA_MAX_CLIPBOARD_TARGETS", 100)
 
 DEFAULT_PREFERRED_TARGETS = ",".join(
     PLAIN_TEXT_TARGETS + HTML_TARGETS + URI_TARGETS + RTF_TARGETS
@@ -371,6 +373,10 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
             if "targets" in options:
                 targets = self.local_targets(options.strtupleget("targets"))
             wire_items = options.dictget("data")
+            if len(wire_items) > MAX_CLIPBOARD_TARGETS:
+                log.warn("Warning: too much clipboard data for %r, only using %i out of %i targets",
+                         selection, MAX_CLIPBOARD_TARGETS, len(wire_items))
+                wire_items = dict(tuple(wire_items.items())[:MAX_CLIPBOARD_TARGETS])
             if wire_items:
                 target_data = {}
                 for target, item in wire_items.items():
@@ -395,7 +401,12 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
 
     def local_targets(self, remote_targets: Iterable[str]) -> Sequence[str]:
         """ filter remote targets to values that can be used locally """
-        return _filter_targets(remote_targets)
+        targets = _filter_targets(remote_targets)
+        if len(targets) > MAX_CLIPBOARD_TARGETS:
+            log.warn("Warning: too many clipboard targets, only using the first %i out of %i",
+                     MAX_CLIPBOARD_TARGETS, len(targets))
+            targets = targets[:MAX_CLIPBOARD_TARGETS]
+        return targets
 
     def remote_targets(self, local_targets: Iterable[str]) -> Sequence[str]:
         """ export local targets """
