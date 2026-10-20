@@ -189,6 +189,7 @@ class ServerCore(GLibServer):
         dispatch.call(self.subsystems, "init", opts)
 
     def setup(self) -> None:
+        log("starting component init")
         # the `landlock` subsystem comes first, so its `setup` confines the server
         # after all the `early_setup` calls and before any other `setup`:
         dispatch.call(self.subsystems, "early_setup")
@@ -563,8 +564,10 @@ class ServerCore(GLibServer):
         return capabilities
 
     def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
+        """Collect information that must be queried from the UI thread."""
         info: dict[str, Any] = {}
         subsystems = kwargs.get("subsystems", ())
+        log("ServerCore.get_ui_info(%s, %s) subsystems=%s", proto, kwargs, subsystems)
         for prefix, sub in self.subsystems.items():
             if subsystems and prefix not in subsystems:
                 continue
@@ -574,10 +577,10 @@ class ServerCore(GLibServer):
             try:
                 # noinspection calling-non-callable
                 mixin_info = fn(proto, **kwargs)
+                log("%s.get_ui_info(%s, ..)=%r", prefix, proto, Ellipsizer(mixin_info))
+                merge_dicts(info, mixin_info)
             except Exception:
-                log.warn(f"Error: in {sub}.get_ui_info", exc_info=True)
-                continue
-            merge_dicts(info, mixin_info)
+                log.warn("Error collecting UI info from %s", prefix, exc_info=True)
         return info
 
     def get_server_features(self, source=None) -> dict[str, Any]:

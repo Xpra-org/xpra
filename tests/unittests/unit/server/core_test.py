@@ -7,15 +7,79 @@
 import unittest
 import sys
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 from xpra.net.common import Packet
 from xpra.net.socket_util import SocketListener
+from xpra.server.base import ServerBase
 from xpra.server.core import ServerCore
 from xpra.server.subsystem.network import NetworkServer
 
 
 class TestServerCore(unittest.TestCase):
+
+    def test_ui_info_filtering_and_merge(self):
+        proto = object()
+        kwargs = {"subsystems": ("first", "second"), "client_uuids": ("one",)}
+        for cls in (ServerCore, ServerBase):
+            with self.subTest(server=cls.__name__):
+                server = cls.__new__(cls)
+                first = Mock(return_value={"display": {"size": (640, 480)}})
+                second = Mock(return_value={"display": {"dpi": 96}})
+                excluded = Mock()
+                server.subsystems = {
+                    "first": SimpleNamespace(get_ui_info=first),
+                    "second": SimpleNamespace(get_ui_info=second),
+                    "excluded": SimpleNamespace(get_ui_info=excluded),
+                }
+                with patch.dict("os.environ", {"XPRA_DICTMERGE_WARNINGS": "0"}):
+                    info = server.get_ui_info(proto, **kwargs)
+                self.assertEqual(info, {"display": {"size": (640, 480), "dpi": 96}})
+                first.assert_called_once_with(proto, **kwargs)
+                second.assert_called_once_with(proto, **kwargs)
+                excluded.assert_not_called()
+
+    def test_ui_info_failures_do_not_stop_collection(self):
+        proto = object()
+        for cls in (ServerCore, ServerBase):
+            with self.subTest(server=cls.__name__):
+                server = cls.__new__(cls)
+                following = Mock(return_value={"dpi": 96})
+                server.subsystems = {
+                    "first": SimpleNamespace(get_ui_info=Mock(return_value={"size": (640, 480)})),
+                    "conflict": SimpleNamespace(get_ui_info=Mock(return_value={"size": (800, 600)})),
+                    "broken": SimpleNamespace(get_ui_info=Mock(side_effect=ValueError("failed"))),
+                    "missing": SimpleNamespace(),
+                    "non-callable": SimpleNamespace(get_ui_info=1),
+                    "following": SimpleNamespace(get_ui_info=following),
+                }
+                with patch("xpra.server.core.log") as log:
+                    info = server.get_ui_info(proto)
+                self.assertEqual(info, {"size": (640, 480), "dpi": 96})
+                following.assert_called_once_with(proto)
+                self.assertEqual(log.warn.call_count, 2)
+
+    def test_base_lifecycle_events_and_cleanup_order(self):
+        server = ServerBase.__new__(ServerBase)
+        calls = Mock()
+        network = Mock(spec=("cleanup", "late_cleanup", "cancel_touch_timer", "cleanup_all_protocols", "cleanup_sockets"))
+        calls.attach_mock(network, "network")
+        server.subsystems = {"network": network}
+        server.emit = calls.emit
+        server.server_event = calls.server_event
+        server.server_is_ready()
+        with patch("xpra.server.core.stop_asyncio_loop") as stop_asyncio_loop, \
+             patch("xpra.util.child_reaper.reaper_cleanup") as reaper_cleanup:
+            server.cleanup()
+            server.late_cleanup(stop=False)
+        self.assertEqual(calls.mock_calls, [
+            call.emit("running"), call.server_event("ready"), call.network.cleanup(),
+            call.network.cancel_touch_timer(), call.network.cleanup_all_protocols(), call.server_event("exit"),
+            call.network.cleanup_sockets(), call.network.late_cleanup(False), call.network.cleanup_all_protocols(force=True),
+        ])
+        self.assertEqual(network._potential_protocols, [])
+        stop_asyncio_loop.assert_called_once_with()
+        reaper_cleanup.assert_called_once_with()
 
     def test_client_lifecycle_hooks_without_subsystems(self):
         server = ServerCore.__new__(ServerCore)

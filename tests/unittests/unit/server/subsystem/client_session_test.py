@@ -145,7 +145,9 @@ class ClientSessionTest(unittest.TestCase):
         session.ui_driver = "two"
         for client_uuids, selected in (((), ("one", "two")), (("two",), ("two",)), (("missing",), ())):
             with self.subTest(client_uuids=client_uuids), patch.object(ServerCore, "get_threaded_info", return_value={}):
-                info = server.get_threaded_info(None, client_uuids=client_uuids)
+                # Client details remain present when other subsystem info is filtered.
+                info = server.get_threaded_info(None, client_uuids=client_uuids, subsystems=("display",))
+            self.assertEqual(info, session.get_sources_info(None, client_uuids=client_uuids))
             self.assertEqual(info["clients"], {"": 2, "unauthenticated": 0})
             self.assertEqual(info["client"], {
                 i: {"uuid": uuid, "ui-driver": uuid == "two"} for i, uuid in enumerate(selected)

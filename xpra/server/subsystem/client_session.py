@@ -187,9 +187,12 @@ class ClientSessionServer(StubSubsystem):
         for protocol in protocols:
             self.network.disconnect_client(protocol, ConnectionMessage.DETACH_REQUEST)
 
-    def get_sources_info(self, proto, server_sources=()) -> dict[str, Any]:
-        log("ClientSessionServer.get_sources_info%s", (proto, server_sources))
+    def get_sources_info(self, proto, client_uuids: Sequence[str] = ()) -> dict[str, Any]:
+        log("ClientSessionServer.get_sources_info%s", (proto, client_uuids))
         start = monotonic()
+        server_sources = tuple(self.sources.values())
+        if client_uuids:
+            server_sources = tuple(ss for ss in server_sources if ss.uuid in client_uuids)
         info: dict[str, Any] = {
             "clients": {
                 "": sum(1 for p in self.sources if p != proto),

@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import os
-from time import monotonic
 from typing import Any
 
 from xpra.server.common import get_sources_by_type
@@ -14,8 +13,6 @@ from xpra.server.core import ServerCore, SIGNALS as CORE_SIGNALS
 from xpra.server.source.events import EventConnection
 from xpra.net.common import PacketElement
 from xpra.util import subsystem as dispatch
-from xpra.util.objects import merge_dicts
-from xpra.util.str_fn import Ellipsizer
 from xpra.log import Logger
 
 log = Logger("server")
@@ -141,11 +138,6 @@ class ServerBase(ServerCore):
         # including the `network` subsystem which handles the connection layer
         super().init(opts)
 
-    def setup(self) -> None:
-        log("starting component init")
-        # ServerCore.setup dispatches `setup` to all subsystems:
-        super().setup()
-
     def server_is_ready(self) -> None:
         super().server_is_ready()
         self.server_event("ready")
@@ -155,11 +147,6 @@ class ServerBase(ServerCore):
         # before invoking do_cleanup; we just emit the server event here.
         self.server_event("exit")
         log("do_cleanup()")
-
-    def late_cleanup(self, stop=True) -> None:
-        # ServerCore.late_cleanup dispatches `late_cleanup` to all subsystems
-        # then cleans up potential protocols and the child reaper:
-        super().late_cleanup(stop)
 
     # Display-subsystem hooks that variant servers may override. The
     # DisplayManager subsystem calls these via `self.server.X(...)` so
@@ -246,37 +233,8 @@ class ServerBase(ServerCore):
 
     ######################################################################
     # info:
-    def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
-        """ info that must be collected from the UI thread
-            (ie: things that query the display)
-        """
-        info: dict[str, Any] = {}
-        subsystems = kwargs.get("subsystems", ())
-        log("ServerBase.get_ui_info(%s, %s) subsystems=%s", proto, kwargs, subsystems)
-        for prefix, sub in self.subsystems.items():
-            if subsystems and prefix not in subsystems:
-                continue
-            with log.trap_error("Error collecting UI info from %s", prefix):
-                mixin_info = sub.get_ui_info(proto, **kwargs)
-                log("%s.get_ui_info(%s, ..)=%r", prefix, proto, Ellipsizer(mixin_info))
-                merge_dicts(info, mixin_info)
-        return info
-
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
-        log("ServerBase.get_threaded_info%s", (proto, kwargs))
-        start = monotonic()
-        info: dict[str, Any] = ServerCore.get_threaded_info(self, proto, **kwargs)
-        sources = tuple(self._server_sources.values())
-        client_uuids = kwargs.get("client_uuids", ())
-        if client_uuids:
-            sources = tuple(ss for ss in sources if ss.uuid in client_uuids)
-        log("threaded info sources(%i)=%s", client_uuids, sources)
+        info = super().get_threaded_info(proto, **kwargs)
         if client_session := self.get_subsystem("client-session"):
-            info.update(client_session.get_sources_info(proto, sources))
-        log("ServerBase.get_info took %.1fms", 1000.0 * (monotonic() - start))
+            info.update(client_session.get_sources_info(proto, client_uuids=kwargs.get("client_uuids", ())))
         return info
-
-    def init_packet_handlers(self) -> None:
-        # ServerCore.init_packet_handlers registers core handlers and dispatches
-        # `init_packet_handlers` to all subsystems:
-        super().init_packet_handlers()
