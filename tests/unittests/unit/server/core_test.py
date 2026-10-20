@@ -17,6 +17,14 @@ from xpra.server.subsystem.network import NetworkServer
 
 class TestServerCore(unittest.TestCase):
 
+    def test_client_lifecycle_hooks_without_subsystems(self):
+        server = ServerCore.__new__(ServerCore)
+        server.subsystems = {}
+        source = object()
+        self.assertEqual(server.parse_hello(source, {}), "")
+        self.assertIsNone(server.add_new_client(source, {}))
+        self.assertIsNone(server.send_initial_data(source))
+
     def test_handle_invalid_packet_from_detached_protocol(self):
         server = SimpleNamespace(
             _closing=False,

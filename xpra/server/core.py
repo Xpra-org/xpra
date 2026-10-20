@@ -306,17 +306,13 @@ class ServerCore(GLibServer):
             settings.setting_changed(setting, value)
 
     def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
-        if client_session := self.get_subsystem("client-session"):
-            return client_session.dispatch_parse_hello(ss, caps)
-        return ""
+        return dispatch.first_truthy(self.subsystems, "parse_hello", ss, caps) or ""
 
     def add_new_client(self, ss, caps: typedict) -> None:
-        if client_session := self.get_subsystem("client-session"):
-            client_session.dispatch_add_new_client(ss, caps)
+        dispatch.call(self.subsystems, "add_new_client", ss, caps)
 
     def send_initial_data(self, ss) -> None:
-        if client_session := self.get_subsystem("client-session"):
-            client_session.dispatch_send_initial_data(ss)
+        dispatch.call(self.subsystems, "send_initial_data", ss)
 
     def client_startup_complete(self, ss) -> None:
         if client_session := self.get_subsystem("client-session"):
@@ -338,11 +334,6 @@ class ServerCore(GLibServer):
     def last_client_exited(self) -> None:
         if client_session := self.get_subsystem("client-session"):
             client_session.last_client_exited()
-
-    def get_sources_info(self, proto, server_sources=()) -> dict[str, Any]:
-        if client_session := self.get_subsystem("client-session"):
-            return client_session.get_sources_info(proto, server_sources)
-        return {}
 
     def cleanup(self) -> None:
         dispatch.call(self.subsystems, "cleanup", reverse=True)

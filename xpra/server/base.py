@@ -416,7 +416,8 @@ class ServerBase(ServerCore):
         if client_uuids:
             sources = tuple(ss for ss in sources if ss.uuid in client_uuids)
         log("threaded info sources(%i)=%s", client_uuids, sources)
-        info.update(self.get_sources_info(proto, sources))
+        if client_session := self.get_subsystem("client-session"):
+            info.update(client_session.get_sources_info(proto, sources))
         log("ServerBase.get_info took %.1fms", 1000.0 * (monotonic() - start))
         return info
 
