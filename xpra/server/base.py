@@ -13,6 +13,7 @@ from xpra.server.common import get_sources_by_type
 from xpra.server.core import ServerCore, SIGNALS as CORE_SIGNALS
 from xpra.server.source.events import EventConnection
 from xpra.net.common import PacketElement, FULL_INFO
+from xpra.util import subsystem as dispatch
 from xpra.util.objects import merge_dicts
 from xpra.util.str_fn import Ellipsizer
 from xpra.os_util import POSIX
@@ -380,7 +381,7 @@ class ServerBase(ServerCore):
     def get_server_features(self, server_source=None) -> dict[str, Any]:
         # these are flags that have been added over time with new versions
         # to expose new server features:
-        return self._dispatch_merge("get_server_features", server_source)
+        return dispatch.merge(self.subsystems, "get_server_features", server_source)
 
     def send_hello(self, server_source, server_cipher: dict) -> None:
         capabilities = self.make_hello(server_source)

@@ -197,8 +197,7 @@ class StubSubsystem(SubsystemPacketHandlers, SignalEmitter):
     def get_child_env(self) -> dict[str, str]:
         # Subsystems contribute *additions* to the child env. The base
         # implementation in `ServerCore` seeds the result with a filtered
-        # `os.environ`; `ServerBase.get_child_env` then merges subsystem
-        # contributions on top via `_dispatch_merge`.
+        # `os.environ`, then merges subsystem contributions via `dispatch.merge`.
         return {}
 
     def get_full_child_command(self, cmd, _use_wrapper: bool = True) -> list[str]:

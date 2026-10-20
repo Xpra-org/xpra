@@ -19,6 +19,7 @@ from xpra.util.version import XPRA_VERSION, version_str, version_compat_check, p
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.server import ServerExitMode
 from xpra.server.glib_server import GLibServer
+from xpra.util import subsystem as dispatch
 from xpra.util.parsing import TRUE_OPTIONS
 from xpra.net.common import (
     is_request_allowed, Packet,
@@ -41,7 +42,6 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import Ellipsizer, print_nested_dict
 from xpra.util.env import envint, envbool, restore_script_env
 from xpra.log import Logger
-from xpra.scripts.config import InitExit
 
 # pylint: disable=import-outside-toplevel
 
@@ -186,13 +186,13 @@ class ServerCore(GLibServer):
         set_name("Xpra", self.session_name or "Xpra")
         self.compression_level = opts.compression_level
         self.readonly = opts.readonly
-        self._dispatch_fire("init", opts)
+        dispatch.call(self.subsystems, "init", opts)
 
     def setup(self) -> None:
         # the `landlock` subsystem comes first, so its `setup` confines the server
         # after all the `early_setup` calls and before any other `setup`:
-        self._dispatch_fire("early_setup")
-        self._dispatch_fire("setup")
+        dispatch.call(self.subsystems, "early_setup")
+        dispatch.call(self.subsystems, "setup")
         self.network.start_listen_sockets()
         self.init_packet_handlers()
         self.add_core_control_commands()
@@ -281,12 +281,12 @@ class ServerCore(GLibServer):
         self.emit("init-thread-ended")
 
     def get_child_env(self) -> dict[str, str]:
-        # base child env: filtered os.environ with script-launcher overrides reverted.
-        # `ServerBase.get_child_env` merges subsystem contributions on top of this.
+        # base child env: filtered os.environ with script-launcher overrides reverted,
+        # followed by subsystem contributions.
         env = {k: v for k, v in os.environ.items() if k not in ENV_BLOCKLIST}
         if OSX:
             env = restore_script_env(env)
-        env.update(self._dispatch_merge("get_child_env"))
+        env.update(dispatch.merge(self.subsystems, "get_child_env"))
         return env
 
     # --------------------------------------------------------------------
@@ -369,53 +369,8 @@ class ServerCore(GLibServer):
             return client_session.get_sources_info(proto, server_sources)
         return {}
 
-    def _dispatch_fire(self, method: str, *args, reverse: bool = False) -> None:
-        subs = list(self.subsystems.values())
-        if reverse:
-            subs.reverse()
-        for sub in subs:
-            fn = getattr(sub, method, None)
-            if not callable(fn):
-                log.warn("Warning: no %r callable on %s", method, sub)
-                continue
-            try:
-                # noinspection calling-non-callable
-                fn(*args)
-            except InitExit:
-                raise
-            except Exception:
-                log.warn(f"Error: in {sub}.{method}", exc_info=True)
-
-    def _dispatch_merge(self, method: str, *args) -> dict:
-        info: dict = {}
-        for sub in self.subsystems.values():
-            fn = getattr(sub, method, None)
-            try:
-                # noinspection calling-non-callable
-                d = fn(*args)
-                log("dispatch-merge: %s()=%s", fn, d)
-            except InitExit:
-                raise
-            except Exception:
-                log.warn(f"Error: in {sub}.{method}", exc_info=True)
-                continue
-            if d:
-                merge_dicts(info, d)
-        return info
-
-    def _dispatch_first_truthy(self, method: str, *args):
-        for sub in self.subsystems.values():
-            fn = getattr(sub, method, None)
-            if not callable(fn):
-                continue
-            # noinspection calling-non-callable
-            r = fn(*args)
-            if r:
-                return r
-        return None
-
     def cleanup(self) -> None:
-        self._dispatch_fire("cleanup", reverse=True)
+        dispatch.call(self.subsystems, "cleanup", reverse=True)
         network = self.network
         network.cancel_touch_timer()
         network.cleanup_all_protocols()
@@ -429,7 +384,7 @@ class ServerCore(GLibServer):
         sleep(0.1)
 
     def late_cleanup(self, stop=True) -> None:
-        self._dispatch_fire("late_cleanup", stop, reverse=True)
+        dispatch.call(self.subsystems, "late_cleanup", stop, reverse=True)
         network = self.network
         network.cleanup_all_protocols(force=True)
         network._potential_protocols = []
@@ -452,7 +407,7 @@ class ServerCore(GLibServer):
             "hello": self._process_hello,
         }
         netlog("initializing packet handlers for %s", list(self.subsystems))
-        self._dispatch_fire("init_packet_handlers")
+        dispatch.call(self.subsystems, "init_packet_handlers")
 
     def cleanup_protocol(self, protocol: SocketProtocol):
         try:
@@ -462,7 +417,7 @@ class ServerCore(GLibServer):
         source = None
         if client_session := self.get_subsystem("client-session"):
             source = client_session.cleanup_client_protocol(protocol)
-        self._dispatch_fire("cleanup_protocol", protocol)
+        dispatch.call(self.subsystems, "cleanup_protocol", protocol)
         return source
 
     # #####################################################################
@@ -613,7 +568,7 @@ class ServerCore(GLibServer):
         return True
 
     def get_caps(self, source) -> dict:
-        return self._dispatch_merge("get_caps", source)
+        return dispatch.merge(self.subsystems, "get_caps", source)
 
     def make_hello(self, source) -> dict[str, Any]:
         now = time()

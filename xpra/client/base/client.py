@@ -27,6 +27,7 @@ from xpra.net.packet_type import (
     CONNECTION_LOST, GIBBERISH, INVALID, SHUTDOWN_SERVER, POINTER_DEVICES, KEYBOARD_CONFIG, LOGGING_EVENT,
 )
 from xpra.util.thread import is_main_thread
+from xpra.util import subsystem as dispatch
 from xpra.util.version import get_version_info
 from xpra.net.digest import get_salt
 from xpra.client.base.factory import get_client_subsystems
@@ -110,43 +111,6 @@ class XpraClientBase(PacketDispatcher):
         instance = self.subsystems[cls.PREFIX]
         return getattr(instance, method)(*args)
 
-    def _dispatch_fire(self, method: str, *args, reverse: bool = False) -> None:
-        # fan a lifecycle call out to every composed subsystem (mirror of `ServerCore._dispatch_fire`).
-        # every `PREFIX`-bearing subsystem is composed now, so `subsystems.values()` are real,
-        # distinct instances - safe to call directly (no risk of re-entering `self`'s own method).
-        subs = list(self.subsystems.values())
-        if reverse:
-            subs.reverse()
-        for sub in subs:
-            fn = getattr(sub, method, None)
-            if not callable(fn):
-                sublog.warn("Warning: no %r callable on %s", method, sub)
-                continue
-            try:
-                # noinspection calling-non-callable
-                fn(*args)
-            except InitExit:
-                raise
-            except Exception:
-                sublog.warn(f"Error: in {sub}.{method}", exc_info=True)
-
-    def _dispatch_merge(self, method: str, *args) -> dict:
-        # merge a dict-returning call across every composed subsystem (mirror of `ServerCore._dispatch_merge`).
-        info: dict = {}
-        for sub in self.subsystems.values():
-            fn = getattr(sub, method, None)
-            try:
-                # noinspection calling-non-callable
-                d = fn(*args)
-            except InitExit:
-                raise
-            except Exception:
-                sublog.warn(f"Error: in {sub}.{method}", exc_info=True)
-                continue
-            if d:
-                merge_dicts(info, d)
-        return info
-
     def idle_add(self, fn: Callable, *args, **kwargs) -> int:
         ...
 
@@ -189,18 +153,18 @@ class XpraClientBase(PacketDispatcher):
         self.have_more = noop
 
     def init(self, opts) -> None:
-        self._dispatch_fire("init", opts)
+        dispatch.call(self.subsystems, "init", opts)
         self.display = opts.display
         self.install_signal_handlers()
 
     def init_ui(self, opts) -> None:
-        self._dispatch_fire("init_ui", opts)
+        dispatch.call(self.subsystems, "init_ui", opts)
 
     def load(self) -> None:
-        self._dispatch_fire("load")
+        dispatch.call(self.subsystems, "load")
 
     def run(self) -> ExitValue:
-        self._dispatch_fire("run")
+        dispatch.call(self.subsystems, "run")
         return ExitCode.OK
 
     @staticmethod
@@ -287,7 +251,7 @@ class XpraClientBase(PacketDispatcher):
     def get_info(self) -> dict[str, Any]:
         info: dict[str, Any] = {"pid": os.getpid()}
         info.update(PacketDispatcher.get_info(self))
-        merge_dicts(info, self._dispatch_merge("get_info"))
+        merge_dicts(info, dispatch.merge(self.subsystems, "get_info"))
         return info
 
     @staticmethod
@@ -337,7 +301,7 @@ class XpraClientBase(PacketDispatcher):
         self.verify_connected_timer = self.timeout_add(round(conn.timeout + conn.connection_delay) * 1000, self.verify_connected)
 
     def setup_connection(self, conn) -> None:
-        self._dispatch_fire("setup_connection", conn)
+        dispatch.call(self.subsystems, "setup_connection", conn)
 
     def send_hello(self, challenge_response=b"", client_salt=b"") -> None:
         if not self._protocol:
@@ -430,7 +394,7 @@ class XpraClientBase(PacketDispatcher):
         and the UI subsystems (see `get_subsystem_classes`), so this one call
         covers both.
         """
-        capabilities = self._dispatch_merge("get_caps")
+        capabilities = dispatch.merge(self.subsystems, "get_caps")
         capabilities = self._add_common_hello(capabilities)
         return capabilities
 
@@ -467,7 +431,7 @@ class XpraClientBase(PacketDispatcher):
         return packet, synchronous, has_more
 
     def cleanup(self) -> None:
-        self._dispatch_fire("cleanup")
+        dispatch.call(self.subsystems, "cleanup")
         self.cancel_verify_connected_timer()
         p = self._protocol
         log("XpraClientBase.cleanup() protocol=%s", p)
@@ -477,7 +441,7 @@ class XpraClientBase(PacketDispatcher):
             p.close()
         stop_asyncio_loop()
         reaper_cleanup()
-        self._dispatch_fire("late_cleanup")
+        dispatch.call(self.subsystems, "late_cleanup")
         log("cleanup done")
 
     def quit(self, exit_code: ExitValue = 0) -> None:
@@ -708,10 +672,10 @@ class XpraClientBase(PacketDispatcher):
         self._default_ui_packet_handlers[CONNECTION_LOST] = self._process_connection_lost
         self._default_ui_packet_handlers[GIBBERISH] = self._process_gibberish
         self._default_ui_packet_handlers[INVALID] = self._process_invalid
-        self._dispatch_fire("init_packet_handlers")
+        dispatch.call(self.subsystems, "init_packet_handlers")
 
     def init_authenticated_packet_handlers(self) -> None:
-        self._dispatch_fire("init_authenticated_packet_handlers")
+        dispatch.call(self.subsystems, "init_authenticated_packet_handlers")
 
     @staticmethod
     def packet_handler_args(_proto, packet: Packet) -> tuple:

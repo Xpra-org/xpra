@@ -5,7 +5,8 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import Mock, call, patch
 
 from xpra.os_util import get_hex_uuid
 from xpra.server.subsystem.client_session import ClientSessionServer
@@ -40,7 +41,6 @@ class FakeServer(FakeServerBase):
 
     def __init__(self):
         super().__init__()
-        self.dispatched = []
         self.cleaned = []
         self.emitted = []
         self.accepted = []
@@ -56,13 +56,6 @@ class FakeServer(FakeServerBase):
 
     def send_disconnect(self, proto, *messages) -> None:
         self.disconnected.append((proto, messages))
-
-    def _dispatch_first_truthy(self, method: str, *args):
-        self.dispatched.append((method, args))
-        return ""
-
-    def _dispatch_fire(self, method: str, *args) -> None:
-        self.dispatched.append((method, args))
 
     def cleanup_source(self, source) -> None:
         self.cleaned.append(source)
@@ -89,11 +82,20 @@ class ClientSessionTest(unittest.TestCase):
 
     def test_dispatch_hooks(self) -> None:
         source = FakeSource("source")
-        self.assertEqual(self.session.dispatch_parse_hello(source, {}), "")
-        self.session.dispatch_add_new_client(source, {})
+        caps = typedict()
+        calls = Mock()
+        peer = SimpleNamespace(parse_hello=calls.parse_hello, add_new_client=calls.add_new_client,
+                               send_initial_data=calls.send_initial_data)
+        calls.parse_hello.return_value = ""
+        # The network normally implements the stub hooks; this test's network
+        # stand-in does not, so include only the session and its peer here.
+        self.server.subsystems = {"peer": peer, self.session.PREFIX: self.session}
+        self.assertEqual(self.session.dispatch_parse_hello(source, caps), "")
+        self.session.dispatch_add_new_client(source, caps)
         self.session.dispatch_send_initial_data(source)
-        self.assertEqual([x[0] for x in self.server.dispatched],
-                         ["parse_hello", "add_new_client", "send_initial_data"])
+        self.assertEqual(calls.mock_calls, [
+            call.parse_hello(source, caps), call.add_new_client(source, caps), call.send_initial_data(source),
+        ])
 
     def test_sanity_checks_uuids(self) -> None:
         proto = object()

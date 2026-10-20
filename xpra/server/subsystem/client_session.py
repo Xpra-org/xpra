@@ -11,6 +11,7 @@ from xpra.net.common import FULL_INFO
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import valid_uuid
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.util import subsystem as dispatch
 from xpra.util.background_worker import add_work_item
 from xpra.util.objects import typedict, merge_dicts
 from xpra.log import Logger
@@ -104,13 +105,13 @@ class ClientSessionServer(StubSubsystem):
             reject("error accepting new connection")
 
     def dispatch_parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
-        return self.server._dispatch_first_truthy("parse_hello", ss, caps) or ""
+        return dispatch.first_truthy(self.server.subsystems, "parse_hello", ss, caps) or ""
 
     def dispatch_add_new_client(self, ss, caps: typedict) -> None:
-        self.server._dispatch_fire("add_new_client", ss, caps)
+        dispatch.call(self.server.subsystems, "add_new_client", ss, caps)
 
     def dispatch_send_initial_data(self, ss) -> None:
-        self.server._dispatch_fire("send_initial_data", ss)
+        dispatch.call(self.server.subsystems, "send_initial_data", ss)
 
     def client_startup_complete(self, ss) -> None:
         ss.startup_complete()

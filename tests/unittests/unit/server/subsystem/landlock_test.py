@@ -12,6 +12,7 @@ from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock, patch
 
 from xpra.exit_codes import ExitCode
+from xpra.util import subsystem as dispatch
 from xpra.scripts.config import InitException, InitExit, make_defaults_struct
 from xpra.server import features
 from xpra.server.core import ServerCore, get_instance_subsystem_classes
@@ -233,7 +234,7 @@ class LandLockTest(unittest.TestCase):
         with patch("xpra.server.subsystem.landlock.LINUX", True), \
              patch("xpra.platform.posix.security.get_landlock_auth_paths", side_effect=ImportError("missing dependency")), \
              self.assertRaisesRegex(InitExit, "failed to initialize server Landlock"):
-            server._dispatch_fire("init", opts)
+            dispatch.call(server.subsystems, "init", opts)
         peer_init.assert_not_called()
 
     def test_temp_cleanup_before_session_removal(self):
@@ -260,8 +261,8 @@ class LandLockTest(unittest.TestCase):
 
             server.subsystems["session-files"] = make_subsystem(server, cleanup=lambda: None, late_cleanup=remove_session)
             server.subsystems["peer"] = make_subsystem(server, cleanup=release, late_cleanup=lambda _stop: None)
-            server._dispatch_fire("cleanup", reverse=True)
-            server._dispatch_fire("late_cleanup", True, reverse=True)
+            dispatch.call(server.subsystems, "cleanup", reverse=True)
+            dispatch.call(server.subsystems, "late_cleanup", True, reverse=True)
             self.assertEqual(events, ["peer", "session"])
             self.assertFalse(os.path.exists(session_dir))
 
