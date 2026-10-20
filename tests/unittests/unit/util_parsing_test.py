@@ -28,6 +28,8 @@ from xpra.util.parsing import (
     adjust_monitor_refresh_rate,
     get_default_video_max_size,
     validated_monitor_data,
+    MAX_MONITORS,
+    MAX_MONITOR_STRING,
     TRUE_OPTIONS,
     FALSE_OPTIONS,
 )
@@ -570,6 +572,25 @@ class TestValidatedMonitorData(unittest.TestCase):
 
     def test_empty(self):
         self.assertEqual(validated_monitor_data({}), {})
+
+    def test_strings_are_cleaned(self):
+        # monitor names may be used for the server's monitors:
+        result = validated_monitor_data({0: {
+            "manufacturer": "ACME\x1b[2J",
+            "model": "line1\nline2‮",
+            "name": "x" * 1000,
+        }})
+        m = result[0]
+        self.assertEqual(m["manufacturer"], "ACME[2J")
+        self.assertEqual(m["model"], "line1 line2")
+        self.assertEqual(len(m["name"]), MAX_MONITOR_STRING)
+        # the generated name is cleaned too:
+        m = validated_monitor_data({0: {"manufacturer": "\x00ACME", "model": "View\x07"}})[0]
+        self.assertEqual(m["name"], "ACME View")
+
+    def test_too_many_monitors(self):
+        result = validated_monitor_data({i: {"name": f"M{i}"} for i in range(MAX_MONITORS * 4)})
+        self.assertEqual(tuple(result.keys()), tuple(range(MAX_MONITORS)))
 
     def test_cooked_refresh_rate_preserved(self):
         monitors = {0: {"refresh-rate": 60000, "refresh-rate.cooked": 30000}}
