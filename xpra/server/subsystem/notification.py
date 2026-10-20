@@ -10,7 +10,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import OSX, POSIX
 from xpra.server.source.notification import NotificationConnection
-from xpra.util.str_fn import Ellipsizer
+from xpra.util.str_fn import Ellipsizer, std
 from xpra.net.common import Packet
 from xpra.util.thread import start_thread
 from xpra.server.subsystem.stub import StubSubsystem
@@ -98,7 +98,7 @@ class NotificationForwarder(StubSubsystem):
             from xpra.notification.common import parse_image_path
             from xpra.platform.paths import get_icon_filename
             icon = parse_image_path(get_icon_filename("user"))
-            name = ss.name or ss.username or ss.uuid
+            name = ss.name or ss.username or std(ss.uuid)
             title = f"User {name!r} connected to the session"
             body = "\n".join(ss.get_connect_info())
             # tell the clients which bus this notification comes from,
