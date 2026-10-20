@@ -14,6 +14,18 @@ from unit.test_util import silence_error
 
 class TestCommon(unittest.TestCase):
 
+    def test_strip_unsafe_markup(self):
+        strip = common.strip_unsafe_markup
+        self.assertEqual(strip("plain text, 1 < 2"), "plain text, 1 < 2")
+        self.assertEqual(strip("<b>bold</b> <i>it</i> <u>u</u>"), "<b>bold</b> <i>it</i> <u>u</u>")
+        self.assertEqual(strip('see <a href="https://example.com">this</a>'), "see this")
+        self.assertEqual(strip("<A HREF='file:///etc'>x</A >"), "x")
+        self.assertEqual(strip('<img src="/etc/passwd" alt="x"/>after'), "after")
+        self.assertEqual(strip("< img\nsrc=x>"), "")
+        self.assertEqual(strip("<im<img>g src=x>"), "")
+        self.assertEqual(strip("<<a>a href=x>y"), "y")
+        self.assertEqual(strip("<abbr>x</abbr> <image>"), "<abbr>x</abbr> <image>")
+
     def test_parse_image_data(self):
         p = common.parse_image_data
         with silence_error(common):

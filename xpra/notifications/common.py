@@ -23,10 +23,20 @@ except ImportError:
 
 # Only theme names may be handed to the daemon without loading an icon here.
 ICON_NAME_RE = re.compile(r"[A-Za-z0-9._+-]{1,128}")
+UNSAFE_MARKUP_RE = re.compile(r"<\s*/?\s*(img|a)\b[^>]*>", re.IGNORECASE)
 
 
 def is_icon_name(icon_string:str) -> bool:
     return bool(ICON_NAME_RE.fullmatch(icon_string))
+
+
+def strip_unsafe_markup(body:str) -> str:
+    # Removing a tag must not reveal another: `<im<img>g src=...>`.
+    while True:
+        stripped = UNSAFE_MARKUP_RE.sub("", body)
+        if stripped == body:
+            return body
+        body = stripped
 
 
 def PIL_Image():

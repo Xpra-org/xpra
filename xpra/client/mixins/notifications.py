@@ -155,13 +155,14 @@ class NotificationClient(StubClientMixin):
             log("process_notify_show: ignoring packet, notifications are disabled")
             return
         self._ui_event()
+        from xpra.notifications.common import strip_unsafe_markup  # pylint: disable=import-outside-toplevel
         dbus_id = packet[1]
         nid = int(packet[2])
         app_name = net_utf8(packet[3])
         replaces_nid = int(packet[4])
         app_icon = net_utf8(packet[5])
         summary = net_utf8(packet[6])
-        body = net_utf8(packet[7])
+        body = strip_unsafe_markup(net_utf8(packet[7]))
         expire_timeout = int(packet[8])
         icon = None
         actions, hints = [], {}
