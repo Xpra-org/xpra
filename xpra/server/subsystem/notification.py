@@ -18,6 +18,10 @@ from xpra.log import Logger
 
 log = Logger("notify")
 
+# action keys are chosen by the applications, but we never offer anything larger than this:
+# (see `xpra.notification.common.MAX_ACTION_KEY`)
+MAX_ACTION_KEY = 256
+
 
 class NotificationForwarder(StubSubsystem):
     """
@@ -182,6 +186,9 @@ class NotificationForwarder(StubSubsystem):
         assert self.enabled
         nid = packet.get_u64(1)
         action_key = packet.get_str(2)
+        if len(action_key) > MAX_ACTION_KEY or not action_key.isprintable():
+            log.warn("Warning: invalid notification action key %r", Ellipsizer(action_key))
+            return
         ss = self.get_server_source(proto)
         assert ss
         ss.user_event("notification-action")
@@ -191,9 +198,10 @@ class NotificationForwarder(StubSubsystem):
         except KeyError:
             if self.forwarder:
                 # regular notification forwarding:
-                active = self.forwarder.is_notification_active(nid)
-                log("notification-action nid=%i, action key=%s, active=%s", nid, action_key, active)
-                if active:
+                # only forward the actions the (still active) notification offered:
+                offered = self.forwarder.is_action_offered(nid, action_key)
+                log("notification-action nid=%i, action key=%s, offered=%s", nid, action_key, offered)
+                if offered:
                     self.forwarder.ActionInvoked(nid, action_key)
         else:
             log("notification callback for %s: %s", (nid, action_key), client_callback)
