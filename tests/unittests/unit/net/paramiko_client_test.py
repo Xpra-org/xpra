@@ -176,6 +176,45 @@ class TestSafeLookup(unittest.TestCase):
 
 
 @unittest.skipUnless(HAVE_PARAMIKO, "paramiko not available")
+class TestAuthenticationManager(unittest.TestCase):
+
+    def test_agent_authentication_with_publickey_allowed(self):
+        from xpra.net.ssh.paramiko import client
+        key = paramiko.RSAKey.generate(1024)
+        for allowed_types in (["publickey"], ["publickey", "password"]):
+            with self.subTest(allowed_types=allowed_types):
+                transport = MagicMock()
+                transport.get_remote_server_key.return_value = key
+                transport.get_banner.return_value = b""
+                transport.auth_none.side_effect = paramiko.BadAuthenticationType("unsupported", allowed_types)
+                transport.is_authenticated.side_effect = lambda: transport.auth_publickey.called
+                manager = client.AuthenticationManager(
+                    transport, "example.com", 22, "user", "", {}, (), {"verify-hostkey": False},
+                    auth_modes=("none", "agent", "publickey"),
+                )
+                with patch.object(client, "FILTER_AUTH", True), patch("paramiko.agent.Agent") as agent:
+                    agent.return_value.get_keys.return_value = (key,)
+                    manager.run()
+                transport.auth_none.assert_called_once_with("user")
+                transport.auth_publickey.assert_called_once_with("user", key)
+                transport.close.assert_not_called()
+
+    def test_agent_requires_publickey(self):
+        from xpra.net.ssh.paramiko import client
+        for allowed_types in (["password"], ["gssapi-with-mic", "password"], ["gssapi-keyex", "password"]):
+            with self.subTest(allowed_types=allowed_types):
+                transport = MagicMock()
+                transport.auth_none.side_effect = paramiko.BadAuthenticationType("unsupported", allowed_types)
+                manager = client.AuthenticationManager(
+                    transport, "example.com", 22, "user", "", {}, (), {},
+                    auth_modes=("agent", "publickey", "password"),
+                )
+                with patch.object(client, "FILTER_AUTH", True):
+                    manager.auth_none()
+                assert manager.valid_auth_modes == ["password"]
+
+
+@unittest.skipUnless(HAVE_PARAMIKO, "paramiko not available")
 class TestConnectToErrors(unittest.TestCase):
 
     def test_missing_host_raises(self):
