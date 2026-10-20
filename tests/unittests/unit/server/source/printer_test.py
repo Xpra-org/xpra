@@ -30,6 +30,13 @@ class PrinterConnectionTest(unittest.TestCase):
             args = setup_printer("printer", {})
         self.assertEqual(args[3], "on host")
 
+    def test_info_is_single_line(self):
+        args = setup_printer("printer", {"printer-info": "Laser\x1b[2J\nDescription\u202e" + "x" * 1000})
+        info = args[2]
+        self.assertTrue(info.startswith("Laser[2J Description"))
+        self.assertTrue(info.isprintable())
+        self.assertLessEqual(len(info), printer.MAX_PRINTER_INFO)
+
 
 def main():
     unittest.main()
