@@ -205,7 +205,7 @@ class NotificationClient(StubClientSubsystem):
             return
         self.client._ui_event()
         from xpra.notification.common import (  # pylint: disable=import-outside-toplevel
-            strip_unsafe_markup, single_line, truncate, limit_actions,
+            strip_unsafe_markup, single_line, clean_text, truncate, limit_actions, clamp_expire_timeout,
             MAX_APP_NAME, MAX_SUMMARY, MAX_BODY,
         )
         dbus_id = packet.get_str(1)
@@ -215,8 +215,8 @@ class NotificationClient(StubClientSubsystem):
         app_icon = packet.get_str(5)
         summary = truncate(single_line(packet.get_str(6)), MAX_SUMMARY)
         # notification daemons may interpret the body as markup:
-        body = truncate(strip_unsafe_markup(packet.get_str(7)), MAX_BODY)
-        expire_timeout = packet.get_i64(8)
+        body = truncate(strip_unsafe_markup(clean_text(packet.get_str(7))), MAX_BODY)
+        expire_timeout = clamp_expire_timeout(packet.get_i64(8))
         icon = None
         actions: Sequence[str] = ()
         hints: dict = {}
@@ -295,9 +295,16 @@ class NotificationClient(StubClientSubsystem):
         window = self.get_subsystem("window")
         tray = window.get_tray_window(app_name, hints) if window else None
         log("get_tray_window(%s)=%s", app_name, tray)
-        self.notifier.show_notify(dbus_id, tray, nid,
-                                  app_name, replaces_nid, app_icon,
-                                  summary, body, actions, hints, expire_timeout, icon)
+        try:
+            self.notifier.show_notify(dbus_id, tray, nid,
+                                      app_name, replaces_nid, app_icon,
+                                      summary, body, actions, hints, expire_timeout, icon)
+        except Exception as e:
+            log("show_notify(..)", exc_info=True)
+            log.error("Error: failed to show notification %r", summary)
+            log.estr(e)
+            # so the server doesn't think it is still on screen:
+            self.notification_closed(nid, 4, "failed to show the notification")
 
     def _process_close(self, packet: Packet) -> None:
         if not self.enabled:

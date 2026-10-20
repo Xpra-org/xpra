@@ -7,6 +7,8 @@
 import unittest
 from unittest.mock import Mock
 
+from dbus.exceptions import DBusException
+
 from xpra.notification.dbus_backend import DBUSNotifier
 
 
@@ -28,6 +30,59 @@ class DBUSBackendTest(unittest.TestCase):
         self.assertEqual(notify(7), 42)
         self.assertEqual(notify(8), 0)
         self.assertEqual(notify(0), 0)
+
+    @staticmethod
+    def make_notifier() -> tuple[DBUSNotifier, list]:
+        closed = []
+        notifier = object.__new__(DBUSNotifier)
+        notifier.temp_files = {}
+        notifier.closed_cb = lambda *args: closed.append(args)
+        notifier.dbus_check = lambda dbus_id: True
+        notifier.dbusnotify = Mock()
+        notifier.last_notification = ()
+        return notifier, closed
+
+    def show(self, notifier: DBUSNotifier, nid=1) -> None:
+        notifier.show_notify("", None, nid, "app", 0, "", "summary", "body", (), {}, 1000, None)
+
+    def test_notify_exception_closes(self):
+        notifier, closed = self.make_notifier()
+        notifier.dbus_notify = Mock(side_effect=TypeError("invalid argument"))
+        self.show(notifier)
+        self.assertEqual(len(closed), 1)
+        self.assertEqual(closed[0][:2], (1, 4))
+
+    def test_notify_error_closes(self):
+        notifier, closed = self.make_notifier()
+        notifier.dbus_notify = Mock()
+        self.show(notifier)
+        notifier.NotifyError(1, DBusException("no", name="org.freedesktop.DBus.Error.InvalidArgs"))
+        self.assertEqual([c[:2] for c in closed], [(1, 4)])
+
+    def test_notify_error_retries_once(self):
+        notifier, closed = self.make_notifier()
+        notifier.dbus_notify = Mock()
+        notifier.setup_dbusnotify = Mock()
+        self.show(notifier)
+        unknown = DBusException("gone", name="org.freedesktop.DBus.Error.ServiceUnknown")
+        notifier.NotifyError(1, unknown)
+        # we retried, and the retry may still succeed:
+        self.assertEqual(notifier.dbus_notify.call_count, 2)
+        self.assertEqual(closed, [])
+        # the retry failed too:
+        notifier.NotifyError(1, unknown)
+        self.assertEqual(notifier.dbus_notify.call_count, 2)
+        self.assertEqual([c[:2] for c in closed], [(1, 4)])
+
+    def test_notify_error_other_notification(self):
+        # we can only retry the last notification:
+        notifier, closed = self.make_notifier()
+        notifier.dbus_notify = Mock()
+        notifier.setup_dbusnotify = Mock()
+        self.show(notifier, nid=1)
+        self.show(notifier, nid=2)
+        notifier.NotifyError(1, DBusException("gone", name="org.freedesktop.DBus.Error.ServiceUnknown"))
+        self.assertEqual([c[:2] for c in closed], [(1, 4)])
 
 
 def main():

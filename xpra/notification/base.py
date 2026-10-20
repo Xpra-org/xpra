@@ -89,6 +89,11 @@ class NotifierBase(ABC):
             GLib.timeout_add(AUTO_DELETE_DELAY, self.clean_notification, nid)
         return temp.name
 
+    def notify_failed(self, nid: NID, reason: str = "failed to show the notification") -> None:
+        # the notification is not on screen: tell the server it is closed
+        self.clean_notification(nid)
+        self.closed_cb(int(nid), 4, reason)
+
     def clean_notification(self, nid: NID) -> None:
         temp_file = self.temp_files.pop(int(nid), "")
         log("clean_notification(%s) temp_file=%s", nid, temp_file)
