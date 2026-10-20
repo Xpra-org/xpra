@@ -246,7 +246,7 @@ class Popup(Gtk.Window):
         add_close_accel(self, self.user_closed)
 
     def set_content(self, title, message, actions: Sequence[str] = (), image=None) -> None:
-        self.header.set_markup("<b>%s</b>" % title)
+        self.header.set_markup("<b>%s</b>" % GLib.markup_escape_text(title))
         self.message.set_text(message)
         # remove any existing actions:
         for w in tuple(self.buttons_box.get_children()):
