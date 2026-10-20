@@ -81,7 +81,7 @@ class Authenticator(SysAuthenticatorBase):
             log("ldap3 Server(%s)=%s", (self.host, self.port, self.tls), server)
             conn = Connection(server, user=self.username, password=password,
                               authentication=self.authentication, receive_timeout=10)
-            log("ldap3 Connection(%s, %s, %s)=%s", server, self.username, self.authentication, conn)
+            log("ldap3 Connection(%s, %r, %s)=%s", server, self.username, self.authentication, conn)
             if self.tls:
                 conn.start_tls()
             r = conn.bind()

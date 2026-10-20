@@ -52,11 +52,11 @@ class Authenticator(FileAuthenticatorBase):
             log.warn("Warning: authentication failed")
             log.warn(f" no password for {self.username!r} in {self.password_filename!r}")
             return False
-        log("authenticate: auth-info(%s)=%s", self.username, entry)
+        log("authenticate: auth-info(%r)=%s", self.username, entry)
         fpassword, uid, gid, displays, env_options, session_options = entry[1:]
         log("multifile authenticate_hmac password='%r', hex(salt)=%s", fpassword, hexstr(salt))
         if not verify_digest(self.digest, fpassword, salt, challenge_response):
-            log.warn("Warning: %s challenge for '%s' does not match", self.digest, self.username)
+            log.warn("Warning: %s challenge for %r does not match", self.digest, self.username)
             return False
         self.sessions = uid, gid, displays, env_options, session_options
         return True
