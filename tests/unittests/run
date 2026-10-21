@@ -20,6 +20,9 @@ export NO_AT_BRIDGE=1
 UNITTESTS_DIR=`dirname $(readlink -f $0)`
 TESTS_DIR=`dirname $UNITTESTS_DIR`
 SRC_DIR=`dirname $TESTS_DIR`
+export XPRA_SOURCE_DIR="$SRC_DIR"
+export COVERAGE_RCFILE="${COVERAGE_RCFILE:-$UNITTESTS_DIR/.coveragerc}"
+export COVERAGE_FILE="${COVERAGE_FILE:-$UNITTESTS_DIR/.coverage}"
 
 PYTHON_VERSION=`$PYTHON --version | awk '{print $2}' | awk -F. '{print $1"."$2}'`
 

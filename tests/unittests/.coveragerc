@@ -1,0 +1,4 @@
+[paths]
+xpra =
+    ${XPRA_SOURCE_DIR}/xpra
+    */site-packages/xpra

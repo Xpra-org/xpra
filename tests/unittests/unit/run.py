@@ -7,6 +7,7 @@
 import sys
 import time
 import shutil
+import shlex
 import os.path
 import subprocess
 from argparse import ArgumentParser
@@ -24,29 +25,36 @@ def getargs() -> ArgumentParser:
     return P
 
 
+def get_coverage_command(unittests_dir: str) -> list[str]:
+    import xpra
+    source_dir = os.path.dirname(os.path.dirname(unittests_dir))
+    os.environ["XPRA_SOURCE_DIR"] = source_dir
+    xpra_mod_dir = os.environ.get("XPRA_MODULE_DIR", "") or os.path.dirname(xpra.__file__)
+    data_file = os.path.abspath(os.environ.get("COVERAGE_FILE", os.path.join(unittests_dir, ".coverage")))
+    rcfile = os.path.abspath(os.environ.get("COVERAGE_RCFILE", os.path.join(unittests_dir, ".coveragerc")))
+    # Children may change directory, and their temporary cwd may be removed before `coverage combine`.
+    return [COVERAGE, "run", "--parallel-mode", f"--data-file={data_file}", f"--rcfile={rcfile}",
+            f"--include={xpra_mod_dir}/*,{source_dir}/xpra/*"]
+
+
 def main(args) -> int:
+    unit_dir = os.path.abspath(os.path.dirname(__file__))
+    unittests_dir = os.path.dirname(unit_dir)
     if TEST_COVERAGE:
-        # pylint: disable=import-outside-toplevel
-        #only include xpra in the report,
-        #and to do that, we need the path to the module (weird):
-        import xpra
-        xpra_mod_dir = os.environ.get("XPRA_MODULE_DIR", "") or os.path.dirname(xpra.__file__)
-        run_cmd = [COVERAGE, "run", "--parallel-mode", "--include=%s/*" % xpra_mod_dir]
+        run_cmd = get_coverage_command(unittests_dir)
         #make sure we continue to use coverage to run sub-commands:
         xpra_cmd = os.environ.get("XPRA_COMMAND", shutil.which("xpra")) or "xpra"
         if xpra_cmd.find("coverage") < 0:
-            os.environ["XPRA_COMMAND"] = " ".join(run_cmd + [xpra_cmd])
+            os.environ["XPRA_COMMAND"] = shlex.join(run_cmd + shlex.split(xpra_cmd))
     else:
         run_cmd = [os.environ.get("PYTHON", "python3")]
 
     #ie: unit_dir = "/path/to/Xpra/trunk/src/unittests/unit"
-    unit_dir = os.path.abspath(os.path.dirname(__file__))
     paths = args.test or [unit_dir]
     skip_fail = set(args.skip_fail)
     skip_slow = set(args.skip_slow)
 
     #ie: unittests_dir = "/path/to/Xpra/trunk/src/unittests"
-    unittests_dir = os.path.dirname(unit_dir)
     sys.path.append(unittests_dir)
 
     #now look for tests to run
