@@ -13,14 +13,9 @@ from xpra.util.objects import typedict
 # `load_window_server_class` restores `sys.modules` wholesale, which drops every
 # module imported inside it - including `gi.repository.GObject`, which cannot be
 # imported a second time. So anything needing it has to be imported before that:
-try:
-    from xpra.wayland.server.models.subsurface_window import SubsurfaceWindow
-    from xpra.wayland.server.models import window as window_model
-    from xpra.wayland.server.models import frame as frame_model
-except ImportError:
-    if __name__ == "__main__":
-        raise SystemExit(0)
-    raise unittest.SkipTest("wayland server is not available")
+from xpra.wayland.server.models.subsurface_window import SubsurfaceWindow
+from xpra.wayland.server.models import window as window_model
+from xpra.wayland.server.models import frame as frame_model
 from xpra.server.window.compress import WindowSource
 
 

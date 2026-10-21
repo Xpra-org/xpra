@@ -8,11 +8,24 @@ import sys
 import time
 import shutil
 import os.path
+import importlib.util
 import subprocess
 from argparse import ArgumentParser
 
 TEST_COVERAGE = os.environ.get("XPRA_TEST_COVERAGE", "1") == "1"
 COVERAGE = os.environ.get("COVERAGE", shutil.which("coverage") or shutil.which("python3-coverage"))
+
+# tests in these packages are only run if the module they test was built:
+REQUIRED_MODULES = {
+    "unit.wayland.": "xpra.wayland.server",
+}
+
+
+def has_module(module: str) -> bool:
+    try:
+        return importlib.util.find_spec(module) is not None
+    except ModuleNotFoundError:
+        return False
 
 
 def getargs() -> ArgumentParser:
@@ -93,6 +106,11 @@ def main(args) -> int:
             write(f"skipped slow test as requested: {p}")
             skipped.append(name)
             return 0
+        for prefix, module in REQUIRED_MODULES.items():
+            if name.startswith(prefix) and not has_module(module):
+                write(f"skipped test, {module!r} is not available: {p}")
+                skipped.append(name)
+                return 0
         write(f"running {name} from {tfile}\n")
         cmd = run_cmd + [p]
         T0 = time.monotonic()

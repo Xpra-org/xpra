@@ -10,13 +10,6 @@ import sys
 import unittest
 from pathlib import Path
 
-try:
-    import xpra.wayland.server
-except ImportError:
-    if __name__ == "__main__":
-        raise SystemExit(0)
-    raise unittest.SkipTest("wayland server is not available")
-
 
 WAYLAND_MODULES = (
     "xpra.wayland.server.events",
