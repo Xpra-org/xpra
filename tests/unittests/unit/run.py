@@ -126,8 +126,7 @@ def main(args) -> int:
             if os.path.isfile(p) and p.endswith("test.py"):
                 v = run_file(p)
             elif os.path.isdir(p):
-                fp = os.path.join(d, p)
-                v = add_recursive(fp)
+                v = add_recursive(p)
             if v != 0:
                 ret = v
         return ret
