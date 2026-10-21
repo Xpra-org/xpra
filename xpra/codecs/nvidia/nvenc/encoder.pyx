@@ -1102,7 +1102,8 @@ def init_nvencode_library():
         #assert os.name=="posix"
         load = cdll.LoadLibrary
         nvenc_libname = "libnvidia-encode.so.1"
-        cuda_libname = "libcuda.so"
+        # the runtime soname, `libcuda.so` is only installed with the development files:
+        cuda_libname = "libcuda.so.1"
     #CUDA:
     log("init_nvencode_library() will try to load %s", cuda_libname)
     try:
