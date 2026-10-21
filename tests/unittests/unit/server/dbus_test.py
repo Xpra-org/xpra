@@ -6,7 +6,10 @@
 
 import os
 import signal
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
 
 from xpra.os_util import OSX, POSIX
 from xpra.util.env import OSEnvContext
@@ -81,6 +84,32 @@ class DBUSTest(unittest.TestCase):
             w("echo set DBUS_SESSION_BUS_PID=150;")
             w("echo setenv DBUS_SESSION_BUS_PID 200")
             w("printf \"export DBUS_SESSION_BUS_PID\nset DBUS_SESSION_BUS_PID=250\n\"")
+
+    def test_reload_dbus_environment(self):
+        from xpra.dbus.common import find_session_bus_address
+        from xpra.server.subsystem.dbus import DbusManager
+
+        dbus_env = {
+            "DBUS_SESSION_BUS_ADDRESS": "unix:path=/xpra/bus",
+            "DBUS_SESSION_BUS_PID": str(os.getpid()),
+            "DBUS_SESSION_BUS_WINDOWID": "42",
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "dbus.pid").write_text(dbus_env["DBUS_SESSION_BUS_PID"])
+            Path(directory, "dbus.env").write_text("\n".join(f"{k}={v}" for k, v in dbus_env.items()))
+            for inherited_address in ("", "unix:path=/desktop/bus"):
+                with self.subTest(inherited_address=inherited_address), patch.dict(os.environ, {
+                    "DISPLAY": ":100",
+                    "XPRA_SESSION_DIR": directory,
+                    "DBUS_SESSION_BUS_ADDRESS": inherited_address,
+                }, clear=True), patch("xpra.server.dbus.start.start_dbus") as launch:
+                    manager = DbusManager()
+                    manager.init_dbus_env()
+                    # An upgraded server and its children must discover the saved private bus.
+                    self.assertEqual(find_session_bus_address(), dbus_env["DBUS_SESSION_BUS_ADDRESS"])
+                    self.assertEqual({k: os.environ.get(k) for k in dbus_env}, dbus_env)
+                    self.assertEqual(manager.pid, os.getpid())
+                    launch.assert_not_called()
 
     def test_session_bus_follows_address(self):
         try:
