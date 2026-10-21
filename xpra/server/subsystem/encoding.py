@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
+import os
 from typing import Any
 from collections.abc import Sequence
 
@@ -59,7 +60,7 @@ class EncodingServer(StubSubsystem):
         "allowed_encodings", "core_encodings", "default_encoding", "default_min_quality",
         "default_min_speed", "default_quality", "default_speed", "encoding", "encodings",
         "lossless_encodings", "lossless_mode_encodings", "scaling_control", "threaded_encoding_done",
-        "video",
+        "video", "video_encoders",
     )
     PREFIX = "encoding"
 
@@ -78,6 +79,7 @@ class EncodingServer(StubSubsystem):
         self.default_encoding: str = ""
         self.scaling_control = None
         self.video = True
+        self.video_encoders: Sequence[str] = ()
         self.threaded_encoding_done = False
 
     def init(self, opts) -> None:
@@ -92,6 +94,27 @@ class EncodingServer(StubSubsystem):
             if opts.video_scaling.lower() not in ("auto", "on"):
                 self.scaling_control = parse_bool_or_int("video-scaling", opts.video_scaling)
             getVideoHelper().set_modules(video_encoders=opts.video_encoders, csc_modules=opts.csc_modules)
+            self.video_encoders = opts.video_encoders
+
+    def get_landlock_paths(self) -> dict[str, Sequence[str]]:
+        # the `remote` video encoder connects to its encoder server and creates its mmap files
+        # every time it (re)connects, which can happen after the server has been confined,
+        # ie: `--video-encoders=remote:uri=socket:///run/encoder/socket,mmap=/run/encoder/mmap:/run/encoder/mmap`
+        from xpra.codecs.video import parse_video_option
+        from xpra.platform.posix.security import get_landlock_mmap_paths
+        write_paths: list[str] = []
+        socket_dirs: list[str] = []
+        for entry in self.video_encoders:
+            name, options = parse_video_option(entry)
+            if name not in ("remote", "enc_remote"):
+                continue
+            write_paths += get_landlock_mmap_paths(str(options.get("mmap", "")))
+            uri = str(options.get("uri", ""))
+            if uri.startswith("socket://"):
+                # use the directory: the socket is a new file whenever the encoder server is restarted,
+                # and Landlock rules are attached to the file that exists when the server is confined:
+                socket_dirs.append(os.path.dirname(uri[len("socket://"):]))
+        return {"write": tuple(write_paths), "socket": tuple(socket_dirs)}
 
     def setup(self) -> None:
         # essential codecs, load them early:
