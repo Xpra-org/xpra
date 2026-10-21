@@ -5,6 +5,7 @@
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -20,6 +21,44 @@ except ImportError:
 
 @unittest.skipUnless(coverage and runner.COVERAGE, "coverage.py is not installed")
 class CoverageTest(unittest.TestCase):
+
+    def test_direct_python_child_is_measured(self):
+        with tempfile.TemporaryDirectory(prefix="xpra-coverage-child-") as directory:
+            root = Path(directory)
+            unittests = root / "tests" / "unittests"
+            unittests.mkdir(parents=True)
+            rcfile = unittests / ".coveragerc"
+            shutil.copy(Path(__file__).parents[1] / ".coveragerc", rcfile)
+            source = root / "xpra"
+            source.mkdir()
+            (source / "__init__.py").write_text("")
+            module = source / "probe.py"
+            module.write_text("def child_only():\n    return 42\n")
+            script = unittests / "parent.py"
+            script.write_text(
+                "import subprocess, sys\n"
+                "subprocess.run([sys.executable, '-c', "
+                "'from xpra.probe import child_only; assert child_only() == 42'], check=True)\n"
+            )
+            with patch.dict(os.environ, {"XPRA_MODULE_DIR": str(source), "COVERAGE_RCFILE": str(rcfile),
+                                         "COVERAGE_FILE": str(unittests / ".coverage")}):
+                command = runner.get_coverage_command(str(unittests))
+                env = dict(os.environ, PYTHONPATH=str(root))
+                # Use the same interpreter for coverage and for the unwrapped Python child.
+                command[:1] = [sys.executable, "-m", "coverage"]
+                subprocess.run(command + [str(script)], cwd=unittests, env=env, check=True, capture_output=True)
+                cov = coverage.Coverage(config_file=str(rcfile), data_file=str(unittests / ".coverage"))
+                cov.combine(data_paths=[str(unittests)], strict=True)
+                self.assertEqual(cov.get_data().lines(str(module)), [1, 2])
+
+    def test_process_environment_preserves_coverage_settings(self):
+        from unit.process_test_util import ProcessTestUtil
+        settings = {"COVERAGE_PROCESS_CONFIG": "serialized configuration", "COVERAGE_FILE": "/tmp/test.coverage"}
+        with patch.object(ProcessTestUtil, "default_env", dict(settings, UNRELATED="discard"), create=True):
+            env = ProcessTestUtil.get_default_run_env()
+        for key, value in settings.items():
+            self.assertEqual(env[key], value)
+        self.assertNotIn("UNRELATED", env)
 
     def test_children_keep_data_and_combine_source_and_install_paths(self):
         with tempfile.TemporaryDirectory(prefix="xpra-coverage-") as directory:

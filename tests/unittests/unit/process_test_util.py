@@ -219,7 +219,7 @@ class ProcessTestUtil(unittest.TestCase):
 
     @classmethod
     def get_default_run_env(cls):
-        env = dict((k, v) for k, v in cls.default_env.items() if k.startswith("XPRA") or k in (
+        env = dict((k, v) for k, v in cls.default_env.items() if k.startswith(("XPRA", "COVERAGE_")) or k in (
             "HOME", "HOSTNAME", "SHELL", "TERM",
             "USER", "USERNAME", "PATH",
             "XAUTHORITY", "PWD",
