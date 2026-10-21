@@ -28,8 +28,7 @@ doas python3 setup.py install --without-nvidia --without-printing --prefix=/usr/
 `Xvfb`, `xauth` and `xkbcomp` are part of the base system in `/usr/X11R6/bin`.
 Xdummy is not supported on OpenBSD, so Xpra uses `Xvfb` for virtual displays.
 
-When `XDG_RUNTIME_DIR` is not set, Xpra uses `~/.xpra` for its sockets
-(the default on OpenBSD). Install `xdg-utils` for `xpra open` support.
+Install `xdg-utils` for `xpra open` support.
 
 <div class="docs-section-heading" markdown="1">
 
