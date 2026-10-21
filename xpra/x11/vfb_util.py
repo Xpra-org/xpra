@@ -174,6 +174,17 @@ def get_xauthority_path(display_name) -> str:
         filename = ".Xauthority"
     return os.path.join(d, filename)
 
+def check_xorg_config(xvfb_cmd:List[str]) -> None:
+    # Without its dummy driver config, Xorg may probe hardware and take over a VT.
+    try:
+        xorg_conf = xvfb_cmd[xvfb_cmd.index("-config") + 1]
+    except (ValueError, IndexError):
+        return
+    # Relative paths are resolved by Xorg using its own search path.
+    if os.path.isabs(xorg_conf) and not os.path.exists(xorg_conf):
+        raise InitException(f"Xorg configuration file {xorg_conf!r} not found")
+
+
 def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, uid:int, gid:int, username:str, uinput_uuid=None):
     if not POSIX:
         raise InitException(f"starting an Xvfb is not supported on {os.name}")
@@ -272,6 +283,8 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
             #(we have to assume that Xorg is configured to use this path..)
             xorg_conf_dir = pathexpand(get_Xdummy_confdir())
             create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
+
+    check_xorg_config(xvfb_cmd)
 
     xvfb_executable = xvfb_cmd[0]
     if (xvfb_executable.endswith("Xorg") or xvfb_executable.endswith("Xdummy")) and pixel_depth>0:
