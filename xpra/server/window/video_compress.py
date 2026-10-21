@@ -32,6 +32,10 @@ from xpra.net.packet_type import WINDOW_EOS
 from xpra.util.rectangle import rectangle, merge_all
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_scoring import get_pipeline_score
+from xpra.server.window.scaling import (
+    DEFAULT_SCALING_OPTIONS, ScalingSettings, ScalingState,
+    get_scaling_override, calculate_scaling as calculate_video_scaling,
+)
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder, CSCSpec
 from xpra.codecs.protocols import VideoEncoder
 from xpra.codecs.loader import has_codec
@@ -76,7 +80,6 @@ SCALING = envbool("XPRA_SCALING", True)
 SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED", ""))
 SCALING_PPS_TARGET = envint("XPRA_SCALING_PPS_TARGET", 25*1920*1080)
 SCALING_MIN_PPS = envint("XPRA_SCALING_MIN_PPS", 25*320*240)
-DEFAULT_SCALING_OPTIONS = (1, 10), (1, 5), (1, 4), (1, 3), (1, 2), (2, 3), (1, 1)
 
 ALWAYS_FREEZE = envbool("XPRA_IMAGE_ALWAYS_FREEZE", False)
 
@@ -1537,200 +1540,43 @@ class WindowVideoSource(WindowSource):
     def calculate_scaling(self, width: int, height: int, max_w: int = 4096, max_h: int = 4096) -> tuple[int, int]:
         if width == 0 or height == 0:
             return 1, 1
-        now = monotonic()
-        crs = (0, 0)
-        if DOWNSCALE:
-            crs = self.client_render_size
-
-        def get_min_required_scaling(default_value=(1, 1)) -> tuple[int, int]:
-            mw = max_w
-            mh = max_h
-            if crs != (0, 0):
-                # if the client is going to downscale things anyway,
-                # then there is no need to send at a higher resolution than that:
-                crsw, crsh = crs
-                if crsw < max_w:
-                    mw = crsw
-                if crsh < max_h:
-                    mh = crsh
-            if width <= mw and height <= mh:
-                return default_value    # no problem
-            # most encoders can't deal with that!
-            # sort them from the smallest scaling value to the highest:
-            sopts = {}
-            for num, den in SCALING_OPTIONS:
-                sopts[num/den] = num, den
-            for ratio in reversed(sorted(sopts.keys())):
-                num, den = sopts[ratio]
-                if num == 1 and den == 1:
-                    continue
-                if width*num/den <= mw and height*num/den <= mh:
-                    return num, den
-            raise ValueError(f"BUG: failed to find a scaling value for window size {width}x{height}")
-
-        def mrs(v=(1, 1), info="using minimum required scaling") -> tuple[int, int]:
-            sv = get_min_required_scaling(v)
-            if info:
-                scalinglog("%s: %s", info, sv)
-            return sv
         if not SCALING:
             if (width > max_w or height > max_h) and first_time("scaling-required"):
-                if not SCALING:
-                    scalinglog.warn("Warning: video scaling is disabled")
-                else:
-                    scalinglog.warn("Warning: video scaling is not supported by the client")
+                scalinglog.warn("Warning: video scaling is disabled")
                 scalinglog.warn(f" but the video size is too large: {width}x{height}")
                 scalinglog.warn(f" the maximum supported is {max_w}x{max_h}")
             return 1, 1
-        if SCALING_HARDCODED:
-            return mrs(tuple(SCALING_HARDCODED), "using hardcoded scaling value")
-        if self.scaling_control == 0:
-            # video-scaling is disabled, only use scaling if we really have to:
-            return mrs(info="scaling is disabled, using minimum")
-        if self.scaling:
-            # honour value requested for this window, unless we must scale more:
-            return mrs(self.scaling, info="using scaling specified")
-        if now-self.statistics.last_resized < 0.5:
-            return mrs(self.actual_scaling, "unchanged scaling during resizing")
-        if now-self.last_scroll_time < 5:
-            return mrs(self.actual_scaling, "unchanged scaling during scrolling")
-        if self.statistics.damage_events_count <= 50:
-            # not enough data yet:
-            return mrs(info="waiting for more events, using minimum")
-        if "text" in self.content_types and TEXT_QUALITY > 90:
-            return mrs(info="not downscaling text")
-
-        # use heuristics to choose the best scaling ratio:
-        mvsub = self.matches_video_subregion(width, height)
-        video = "video" in self.content_types or (bool(mvsub) and self.subregion_is_video())
-        ffps = self.get_video_fps(width, height)
-        q = self._current_quality
-        s = self._current_speed
-        if self.scaling_control is None:
-            # None == auto mode, derive from quality and speed only:
-            # increase threshold when handling video
-            q_noscaling = 65 + int(video)*30
-            if q >= q_noscaling or ffps == 0:
-                scaling = get_min_required_scaling()
-            else:
-                pps = ffps*width*height                 # Pixels/s
-                if self.bandwidth_limit > 0:
-                    # assume video compresses pixel data by ~95% (size is 20 times smaller)
-                    # (and convert to bytes per second)
-                    # ie: 240p minimum target
-                    target = max(SCALING_MIN_PPS, self.bandwidth_limit//8*20)
-                else:
-                    target = SCALING_PPS_TARGET             # ie: 1080p
-                if self.is_shadow:
-                    # shadow servers look ugly when scaled:
-                    target *= 16
-                elif "text" in self.content_types:
-                    # try to avoid scaling:
-                    target *= 4
-                elif not video:
-                    # downscale non-video content less:
-                    target *= 2
-                if self.image_depth == 30:
-                    # high bit depth is normally used for high quality
-                    target *= 10
-                # high quality means less scaling:
-                target = target * (100+max(0, q-video*30))**2 // 200**2
-                # high speed means more scaling:
-                target = target * 60**2 // (s+20)**2
-                sscaling = {}
-                mrs_num, mrs_den = get_min_required_scaling()
-                min_ratio = mrs_num/mrs_den
-                denom_mult = 1
-                if crs:
-                    # if the client will be downscaling to paint the window
-                    # use this downscaling as minimum value:
-                    crsw, crsh = crs
-                    if crsw > 0 and crsh > 0 and width-crsw > DOWNSCALE_THRESHOLD and height-crsh > DOWNSCALE_THRESHOLD:
-                        if width/crsw > height/crsh:
-                            denom_mult = width/crsw
-                        else:
-                            denom_mult = height/crsh
-                for num, denom in SCALING_OPTIONS:
-                    # noinspection PyChainedComparisons
-                    if denom_mult > 1.0 and 0.5 < (num/denom) < 1.0:
-                        # skip ratios like 2/3
-                        # since we want a whole multiple of the client scaling value
-                        continue
-                    # scaled pixels per second value:
-                    denom *= denom_mult
-                    spps = pps*(num**2)/(denom**2)
-                    ratio = target/spps
-                    # ideal ratio is 1, measure distance from 1:
-                    score = round(abs(1-ratio)*100)
-                    if self.actual_scaling == (num, denom):
-                        # try to stick to the same settings longer:
-                        # give it a score boost (lowest score wins):
-                        elapsed = min(16.0, max(0.0, now - self.last_pipeline_time))
-                        # gain will range from 4 (after 0 seconds) to 1 (after 9 seconds)
-                        gain = sqrt(17 - elapsed)
-                        score = round(score / gain)
-                    if num/denom > min_ratio:
-                        # higher than minimum, should not be used unless we have no choice:
-                        score = round(score*100)
-                    sscaling[score] = (num, denom)
-                scalinglog("scaling scores%s wid=%#x, current=%s, pps=%s, target=%s, fps=%s, denom_mult=%s, scores=%s",
-                           (width, height, max_w, max_h),
-                           self.wid, self.actual_scaling, pps, target, ffps, denom_mult, sscaling)
-                if sscaling:
-                    highscore = sorted(sscaling.keys())[0]
-                    scaling = sscaling[highscore]
-                else:
-                    scaling = get_min_required_scaling()
-        else:
-            # calculate scaling based on the "video-scaling" command line option,
-            # which is named "scaling_control" here.
-            # (from 1 to 100, from least to most aggressive)
-            if mvsub:
-                if video:
-                    # enable scaling more aggressively
-                    sc = (self.scaling_control+50)*2
-                else:
-                    sc = (self.scaling_control+25)
-            else:
-                # not the video region, so much less aggressive scaling:
-                sc = max(0, (self.scaling_control-50)//2)
-
-            # if scaling_control is high (scaling_control=100 -> er=2)
-            # then we will match the heuristics more quickly:
-            er = sc/50.0
-            if self.actual_scaling != (1, 1):
-                # if we are already downscaling, boost the score so we will stick with it a bit longer:
-                # more so if we are downscaling a lot (1/3 -> er=1.5 + ..)
-                er += (0.5 * self.actual_scaling[1] / self.actual_scaling[0])
-            qs = s > (q-er*10) and q < (50+er*15)
-            # scalinglog("calculate_scaling: er=%.1f, qs=%s, ffps=%s", er, qs, ffps)
-            if self.fullscreen and (qs or ffps >= max(2, round(10-er*3))):
-                scaling = 1, 3
-            elif self.maximized and (qs or ffps >= max(2, round(10-er*3))):
-                scaling = 1, 2
-            elif width*height >= (2560-er*768)*1600 and (qs or ffps >= max(4, round(25-er*5))):
-                scaling = 1, 3
-            elif width*height >= (1920-er*384)*1200 and (qs or ffps >= max(5, round(30-er*10))):
-                scaling = 2, 3
-            elif width*height >= (1200-er*256)*1024 and (qs or ffps >= max(10, round(50-er*15))):
-                scaling = 2, 3
-            else:
-                scaling = 1, 1
-            if scaling:
-                scalinglog("calculate_scaling value %s enabled by heuristics for %ix%i q=%i, s=%i, er=%.1f, qs=%s, ffps=%i, scaling-control(%i)=%i",   # noqa: E501
-                           scaling, width, height, q, s, er, qs, ffps, self.scaling_control, sc)
-        # sanity checks:
+        now = monotonic()
+        state = ScalingState(
+            width=width, height=height, max_width=max_w, max_height=max_h,
+            client_render_size=self.client_render_size,
+            control=self.scaling_control, requested_scaling=self.scaling,
+            actual_scaling=self.actual_scaling,
+            time_since_resize=now-self.statistics.last_resized,
+            time_since_scroll=now-self.last_scroll_time,
+            time_since_pipeline=now-self.last_pipeline_time,
+            damage_events_count=self.statistics.damage_events_count,
+            content_types=tuple(self.content_types),
+            quality=self._current_quality, speed=self._current_speed,
+            bandwidth_limit=self.bandwidth_limit, is_shadow=self.is_shadow,
+            image_depth=self.image_depth, fullscreen=self.fullscreen, maximized=self.maximized,
+        )
+        settings = ScalingSettings(
+            forced_scaling=SCALING_HARDCODED, options=SCALING_OPTIONS,
+            pps_target=SCALING_PPS_TARGET, min_pps=SCALING_MIN_PPS,
+            downscale=DOWNSCALE, downscale_threshold=DOWNSCALE_THRESHOLD, text_quality=TEXT_QUALITY,
+        )
+        scaling = get_scaling_override(state, settings)
         if scaling is None:
-            scaling = 1, 1
-        v, u = scaling
-        if v/u > 1.0:
-            # never upscale before encoding!
-            scaling = 1, 1
-        elif v/u < 0.1:
-            # don't downscale more than 10 times! (for each dimension - that's 100 times!)
-            scaling = 1, 10
+            # FPS measurements can walk the damage history. Keep them off the fast paths.
+            matches_subregion = bool(self.matches_video_subregion(width, height))
+            subregion_is_video = "video" not in state.content_types and matches_subregion and self.subregion_is_video()
+            scaling = calculate_video_scaling(
+                state, settings, fps=self.get_video_fps(width, height),
+                matches_subregion=matches_subregion, subregion_is_video=subregion_is_video,
+            )
         scalinglog("calculate_scaling%s=%s (q=%s, s=%s, scaling_control=%s)",
-                   (width, height, max_w, max_h), scaling, q, s, self.scaling_control)
+                   (width, height, max_w, max_h), scaling, state.quality, state.speed, state.control)
         return scaling
 
     def check_pipeline(self, encodings: Sequence[str], width: int, height: int, src_format: str) -> bool:
