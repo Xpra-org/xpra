@@ -42,6 +42,15 @@ if [ -d "$INSTALL_ROOT/usr/local" ]; then
     find "$INSTALL_ROOT/usr/local" -depth -type d -empty -delete
 fi
 
+# the xvfb command in the generated config uses the runtime path of xorg.conf,
+# which does not exist when testing from the install root (or was moved from usr/local above):
+XORG_CONF=`find "$INSTALL_ROOT" -path "*/etc/xpra/xorg.conf" | head -n 1`
+if [ -n "$XORG_CONF" ]; then
+    XORG_CONF_DIR=`dirname "$XORG_CONF"`
+    find "$INSTALL_ROOT" -name "55_server_x11.conf" -exec \
+        sed -i -E 's+\$\{XORG_CONFIG_PREFIX\}(/usr/local)?/etc/xpra/+'"${XORG_CONF_DIR}"'/+g' {} +
+fi
+
 if [ `uname` == "Linux" ]; then
 	export "GDK_BACKEND=x11"
 fi
