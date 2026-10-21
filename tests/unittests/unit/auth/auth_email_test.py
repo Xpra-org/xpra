@@ -759,8 +759,10 @@ class EmailSSLContextTest(unittest.TestCase):
 
     def test_ca_directory(self):
         with tempfile.TemporaryDirectory(prefix="xpra-email-ca-") as directory:
-            shutil.copy(self.cert, os.path.join(directory, "cert.pem"))
-            subprocess.run([shutil.which("openssl"), "rehash", directory], check=True, capture_output=True)
+            # name the file after its subject hash ourselves: LibreSSL has no `openssl rehash`
+            proc = subprocess.run([shutil.which("openssl"), "x509", "-hash", "-noout", "-in", self.cert],
+                                  check=True, capture_output=True, text=True)
+            shutil.copy(self.cert, os.path.join(directory, proc.stdout.strip() + ".0"))
             self.handshake(self.auth(**{"smtp-ssl-ca-certs": directory}).make_ssl_context())
 
     def test_inline_ca_data(self):
