@@ -424,9 +424,13 @@ def resolve_server_display_name(opts, extra_args: list[str], desktop_display: st
                                 upgrading: bool, proxying: bool, encoder: bool,
                                 use_display: bool | None) -> tuple[str, str]:
     display_options = ""
-    if (shadowing or expanding or runner) and not extra_args:
+    if (shadowing or expanding or runner or encoder) and not extra_args:
         if runner:
             display_name = "runner-%i" % os.getpid()
+        elif encoder:
+            # the encoder does not have a display,
+            # and it may not create a socket in the socket directories (`--bind=none`):
+            display_name = "encoder-%i" % os.getpid()
         elif WIN32 or OSX:
             # just a virtual name for the only display available:
             display_name = "Main"
@@ -447,7 +451,7 @@ def resolve_server_display_name(opts, extra_args: list[str], desktop_display: st
             if not shadowing and not upgrading and not use_display:
                 display_name_check(display_name)
         else:
-            if proxying or encoder or runner:
+            if proxying:
                 # find a free display number:
                 dotxpra = DotXpra(opts.socket_dirs)
                 all_displays = dotxpra.sockets()

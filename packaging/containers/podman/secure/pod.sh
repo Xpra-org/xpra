@@ -196,11 +196,9 @@ if [ "${ACCEL}" == "encoder" ]; then
   rm -fr "${ENCODER_DIR}"
   mkdir -m 0700 "${ENCODER_DIR}" "${ENCODER_DIR}/mmap"
   # the encoder server only accepts connections from the current user (`auth=peercred`),
-  # it does not listen anywhere else, and it is sandboxed like the xpra server in the container.
-  # it does not create a socket in the socket directories (`--bind=none`), so its display name must be specified,
-  # otherwise it would share its session directory with other encoder servers:
+  # it does not listen anywhere else, and it is sandboxed like the xpra server in the container:
   ENCODER_CMD=(
-    xpra encoder "${ENCODER_DISPLAY:-:19010}" --daemon=no
+    xpra encoder --daemon=no
     --bind=none "--bind=${ENCODER_DIR}/socket,auth=peercred" --socket-permissions=600
     --mdns=no --html=no --websocket-upgrade=no --ssl-upgrade=no --ssh-upgrade=no
     "--mmap=${ENCODER_DIR}/mmap"

@@ -184,6 +184,10 @@ class TestNormalizeLocalDisplayName(unittest.TestCase):
     def test_absolute_path(self):
         assert normalize_local_display_name("/tmp/mysocket") == "/tmp/mysocket"
 
+    def test_runner_and_encoder(self):
+        assert normalize_local_display_name("runner-123") == "runner-123"
+        assert normalize_local_display_name("encoder-123") == "encoder-123"
+
     def test_invalid_char(self):
         try:
             normalize_local_display_name(":abc")
