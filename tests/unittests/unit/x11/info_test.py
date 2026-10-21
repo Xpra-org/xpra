@@ -5,9 +5,23 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import Mock, patch
 
 
 class TestX11Info(unittest.TestCase):
+
+    def test_destroyed_parent_stops_lookup(self):
+        from xpra.x11 import info
+        from xpra.x11.error import XError
+        window = Mock()
+        # A second result bounds the regression on the old, retrying code.
+        window.getParent.side_effect = [XError("window destroyed"), 0]
+        with patch.object(info, "X11WindowBindings", return_value=window), \
+                patch.object(info, "get_wintitle", return_value=""), \
+                patch.dict("sys.modules", {"xpra.x11.bindings.res": None}), \
+                patch("xpra.x11.error.Xenter"), patch("xpra.x11.error.Xexit", return_value=0):
+            self.assertEqual(info.get_wininfo(123), "xid=7b")
+        window.getParent.assert_called_once_with(123)
 
     def test_no_window_is_not_looked_up(self):
         # `XNone` must not reach the server: no display is opened here,

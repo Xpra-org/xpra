@@ -49,9 +49,11 @@ def get_wininfo(xid: int) -> str:
         if title:
             wininfo.append(f"child of {title!r}")
             return csv(wininfo)
+        parent = 0
         with xswallow:
             X11Window = X11WindowBindings()
-            xid = X11Window.getParent(xid)
+            parent = X11Window.getParent(xid)
+        xid = parent
     return csv(wininfo)
 
 
