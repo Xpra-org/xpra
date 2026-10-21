@@ -328,7 +328,8 @@ class EmailAuthTest(unittest.TestCase):
         self.assertEqual(context.verify_flags, ssl.VERIFY_X509_STRICT)
         self.assertEqual(context.options & ssl.OP_NO_COMPRESSION, ssl.OP_NO_COMPRESSION)
         self.assertTrue(context.check_hostname)
-        ciphers = [cipher["name"] for cipher in context.get_ciphers() if cipher["protocol"] != "TLSv1.3"]
+        # TLS 1.3 suites are not affected by set_ciphers(), and LibreSSL does not label them as "TLSv1.3"
+        ciphers = [cipher["name"] for cipher in context.get_ciphers() if not cipher["name"].startswith("TLS_")]
         self.assertEqual(ciphers, ["ECDHE-RSA-AES256-GCM-SHA384"])
 
     def test_ssl_flag_lists_through_auth_options(self):
