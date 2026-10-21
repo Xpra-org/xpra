@@ -2305,7 +2305,7 @@ class WindowSource(WindowIconSource):
             self.min_auto_refresh_delay,
             int(self.base_auto_refresh_delay * pct // 100),
             )
-        max_time = self.refresh_event_time + 5*self.base_auto_refresh_delay
+        max_time = self.refresh_event_time + 5*self.base_auto_refresh_delay/1000.0
         target_time = self.refresh_target_time
         self.refresh_target_time = min(max_time, max(target_time, now + sched_delay/1000.0))
         added_ms = int(1000*(self.refresh_target_time-target_time))
