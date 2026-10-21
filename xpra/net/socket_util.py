@@ -138,22 +138,20 @@ def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) ->
         inode = os.stat(sockpath).st_ino
     except OSError:
         inode = -1
-    # set to the "xpra" group if we are a member of it, or if running as root:
-    uid = getuid()
-    username = get_username_for_uid(uid)
-    groups = get_groups(username)
+    # set to the "xpra" group if this process is a member of it, or if running as root:
+    # (the user database may list groups which this process does not have,
+    # ie: before logging in again, or in a container started with `--user=uid:gid`)
     xpra_group = get_xpra_group()
-    if uid == 0 or xpra_group in groups:
-        group_id = get_group_id(xpra_group)
-        if group_id >= 0:
-            try:
-                os.lchown(sockpath, -1, group_id)
-            except Exception as e:
-                log.warn("Warning: failed to set '%s' group ownership", xpra_group)
-                log.warn(" on socket '%s':", sockpath)
-                log.warn(" %s", e)
-            # don't know why this doesn't work:
-            # os.fchown(listener.fileno(), -1, group_id)
+    group_id = get_group_id(xpra_group)
+    if group_id >= 0 and (getuid() == 0 or group_id == os.getegid() or group_id in os.getgroups()):
+        try:
+            os.lchown(sockpath, -1, group_id)
+        except Exception as e:
+            log.warn("Warning: failed to set '%s' group ownership", xpra_group)
+            log.warn(" on socket '%s':", sockpath)
+            log.warn(" %s", e)
+        # don't know why this doesn't work:
+        # os.fchown(listener.fileno(), -1, group_id)
 
     def cleanup_socket() -> None:
         close_socket_listener(sock)
