@@ -2,8 +2,6 @@
 
 ## [7.0] 2026-10-21
 * 🔧 Platforms, build and packaging:
-  * [fix OpenBSD dependency and CUPS paths, and omit systemd files on BSD](https://github.com/Xpra-org/xpra/commit/73342171c4401b4666ddbc799fdf43f775663856)
-  * [recognize OpenBSD in operating system names and platform icons](https://github.com/Xpra-org/xpra/commit/73342171c4401b4666ddbc799fdf43f775663856)
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
   * [new macOS screen capture backend](https://github.com/Xpra-org/xpra/issues/1872)
   * [setup scripts for pycuda](https://github.com/Xpra-org/xpra/issues/2400)
@@ -155,10 +153,6 @@
   * [full size cursors on MS Windows](https://github.com/Xpra-org/xpra/issues/3104)
   * [macOS shadow cursor](https://github.com/Xpra-org/xpra/commit/7555b606bd701a451932a6fe617959cbb67f76f7), [RFB cursor](https://github.com/Xpra-org/xpra/commit/c289c7d0c62d6afd5471c3b6b6ce53c84df7136b)
 * Fixes:
-  * [prevent an endless window info lookup when a parent window disappears](https://github.com/Xpra-org/xpra/commit/44da3d0fd0cdaa48b8f010ba552c663e88865a22)
-  * [numeric list options could return a single integer instead of the converted list](https://github.com/Xpra-org/xpra/commit/9677fd266c8181e08657636f26413a8b84a16ce5)
-  * [remote codec connections did not reject incompatible peers or report disconnection reasons](https://github.com/Xpra-org/xpra/commit/29f66dc1858b6747158a579160051c85a6aa29f6)
-  * [session cleanup could remove files for running processes on systems without `/proc`](https://github.com/Xpra-org/xpra/commit/73342171c4401b4666ddbc799fdf43f775663856)
   * [avoid repeated pointer position updates when the pointer is unchanged](https://github.com/snyh/xpra/commit/9796f5f672c7)
   * [prevent stale focus and mapped state after server-requested minimization](https://github.com/snyh/xpra/commit/c70414f3fbc9)
   * [ordered `conf.d` files](https://github.com/Xpra-org/xpra/issues/5032)
