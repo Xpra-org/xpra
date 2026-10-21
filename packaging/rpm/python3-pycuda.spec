@@ -30,7 +30,7 @@
 
 Name:           %{py3rpmname}-pycuda
 Version:        2026.1
-Release:        1
+Release:        2
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
@@ -48,18 +48,15 @@ BuildRequires:  %{py3rpmname}-numpy
 BuildRequires:  boost-python3-devel
 BuildRequires:  libglvnd-devel
 BuildRequires:  cuda
-
-%description
-PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
-
-
 Requires:       %{py3rpmname}
 Requires:       %{py3rpmname}-decorator
 Requires:       %{py3rpmname}-numpy
 Requires:       %{py3rpmname}-pytools
 Requires:       %{py3rpmname}-six
-
 Suggests:       nvidia-driver-cuda-libs
+
+%description
+PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
@@ -104,6 +101,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
+* Wed Oct 21 2026 Antoine Martin <antoine@xpra.org> - 2026.1-2
+- the package dependencies were part of the description
+
 * Fri Jan 16 2026 Antoine Martin <antoine@xpra.org> - 2026.1-1
 - new upstream release
 
