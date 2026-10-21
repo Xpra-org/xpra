@@ -1,7 +1,8 @@
 # Changelog
 
 ## [6.5.6] 2026-10-20
-* TODO
+* Minor:
+  * [numeric list values can fail to parse](https://github.com/Xpra-org/xpra/commit/b9d8f90022dbcfc0094b4cd779ef05387cb8edb9)
 
 ## [6.5.5] 2026-10-11
 * 🔧 Platforms, build and packaging:
