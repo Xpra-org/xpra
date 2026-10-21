@@ -34,6 +34,9 @@ BACKWARDS_COMPATIBLE = envbool("XPRA_BACKWARDS_COMPATIBLE", True)
 MIN_PROTOCOL_VERSION: tuple[int, ...] = (7, 0) if BACKWARDS_COMPATIBLE else (8, 0)
 # peers that don't expose their minimum protocol version are treated as:
 DEFAULT_PROTOCOL_VERSION: tuple[int, ...] = (7, 0)
+# the remote codec clients and the encoder server only use the modern packet type names,
+# so they cannot talk to v7 peers, even when we are `BACKWARDS_COMPATIBLE`:
+REMOTE_CODEC_PROTOCOL_VERSION: tuple[int, ...] = (8, 0)
 FULL_INFO: int = envint("XPRA_FULL_INFO", 1)
 assert FULL_INFO >= 0
 

@@ -8,8 +8,13 @@ import os
 import shutil
 import tempfile
 import unittest
+from unittest.mock import Mock, patch
 
+from xpra.net.common import Packet
 from xpra.codecs.remote.encoder import EncoderClient, safe_dict
+from xpra.client.base.adapter import check_server_version
+
+PARSE_CAPS = "xpra.client.subsystem.mmap.MmapClient.parse_server_capabilities"
 
 
 class FakeProtocol:
@@ -72,6 +77,48 @@ class RemoteEncoderClientTest(unittest.TestCase):
         self.assertTrue(caps.get("encoders"))
         self.assertIn("compressors", caps)
         self.assertEqual(caps.get("client_type"), "encode")
+        # we only use the modern packet type names:
+        self.assertEqual(caps.get("protocol-version"), (8, 0))
+
+    def test_incompatible_server(self) -> None:
+        client = EncoderClient({"uri": "socket:///nonexistent", "mmap": "no"})
+        client.disconnect = Mock()
+        hello = Packet("hello", {"version": "7.0", "protocol-version": (7, 0)})
+        with patch("xpra.client.base.adapter.log") as log, patch(PARSE_CAPS, return_value=True) as parse_caps:
+            # we reconnect, but the error is only logged once:
+            for _ in range(2):
+                client._process_hello(hello)
+        self.assertEqual(client.disconnect.call_count, 2)
+        parse_caps.assert_not_called()
+        self.assertEqual(log.error.call_count, 2)
+        self.assertIn("'7.0'", log.error.call_args_list[0].args[1])
+
+    def test_compatible_server(self) -> None:
+        client = EncoderClient({"uri": "socket:///nonexistent", "mmap": "no"})
+        client.disconnect = Mock()
+        with patch(PARSE_CAPS, return_value=True) as parse_caps:
+            client._process_hello(Packet("hello", {"version": "8.0", "protocol-version": (7, 0)}))
+        client.disconnect.assert_not_called()
+        parse_caps.assert_called_once()
+
+
+class CheckServerVersionTest(unittest.TestCase):
+
+    def test_compatible(self) -> None:
+        self.assertEqual(check_server_version("8.0", (7, 0)), "")
+        self.assertEqual(check_server_version("8.1.2", (8, 0)), "")
+        self.assertEqual(check_server_version("9.0", ()), "")
+        # truncated versions:
+        self.assertEqual(check_server_version("8", (7, 0)), "")
+
+    def test_server_too_old(self) -> None:
+        # v7 servers are backwards compatible, but they would send us the legacy packet type names:
+        self.assertTrue(check_server_version("7.0", (7, 0)))
+        self.assertTrue(check_server_version("6.4.3", ()))
+        self.assertTrue(check_server_version("", ()))
+
+    def test_server_requires_newer_client(self) -> None:
+        self.assertTrue(check_server_version("99.0", (99, 0)))
 
 
 class SafeDictTest(unittest.TestCase):

@@ -166,6 +166,30 @@ class EncoderServerCleanupTest(unittest.TestCase):
         self.assertIsNone(ss.cuda_device_context)
 
 
+class EncoderServerHelloTest(unittest.TestCase):
+
+    def parse_hello(self, caps: dict):
+        from xpra.util.objects import typedict
+        from xpra.server.encoder.server import EncoderServer
+        from xpra.server.source.encoding import EncodingsConnection
+        server = EncoderServer.__new__(EncoderServer)
+        server.subsystems = {}
+        return server.parse_hello(Mock(spec=EncodingsConnection), typedict(caps))
+
+    def test_modern_client(self):
+        self.assertFalse(self.parse_hello({"version": "8.0", "protocol-version": (8, 0)}))
+        # ie: the `encode` client, which is willing to talk to v7 servers:
+        self.assertFalse(self.parse_hello({"version": "8.0", "protocol-version": (7, 0)}))
+        # truncated version strings:
+        self.assertFalse(self.parse_hello({"version": "8"}))
+
+    def test_v7_client(self):
+        # v7 clients use the legacy packet type names:
+        self.assertIn("8.0", self.parse_hello({"version": "7.0"}))
+        self.assertTrue(self.parse_hello({"version": "7.0.1", "protocol-version": (7, 0)}))
+        self.assertTrue(self.parse_hello({}))
+
+
 class FakeEncoder:
     """
     An encoder which finishes its initialization asynchronously, like nvenc,
