@@ -1295,7 +1295,7 @@ def get_defaults() -> dict[str, Any]:
         "mmap-group"        : "auto",
         "video"             : True,
         "audio"             : True,
-        "speaker"           : ["disabled", "on"][has_audio_support() and not is_arm()],
+        "speaker"           : ["disabled", "on"][has_audio_support()],
         "microphone"        : ["disabled", "off"][has_audio_support()],
         "video-scaling"     : "auto",
         "readonly"          : False,
