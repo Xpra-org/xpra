@@ -8,7 +8,7 @@
 import unittest
 
 try:
-    from xpra.rectangle import rectangle        #@UnresolvedImport
+    from xpra.util.rectangle import rectangle
 
     R1 = rectangle(0, 0, 20, 20)
     R2 = rectangle(0, 0, 20, 20)
@@ -20,6 +20,7 @@ except ImportError:
 
 
 # noinspection PyCallingNonCallable
+@unittest.skipUnless(rectangle, "rectangle module was not built")
 class TestRegion(unittest.TestCase):
 
     def test_eq(self):
@@ -95,11 +96,7 @@ class TestRegion(unittest.TestCase):
 
 
 def main():
-    #skip test if import failed (ie: not a server build)
-    if rectangle is not None:
-        unittest.main()
-    else:
-        print("no rectangle class, test skipped")
+    unittest.main()
 
 
 if __name__ == '__main__':
