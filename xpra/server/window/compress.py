@@ -25,6 +25,10 @@ from xpra.net.packet_type import WINDOW_DRAW
 from xpra.constants import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.common import is_covered_by_opaque_region
 from xpra.server.window.windowicon import WindowIconSource
+from xpra.server.window.encoding_policy import (
+    DEFAULT_TRANSPARENCY_ENCODINGS, EncodingState, EncodingStrategy, EncodingStrategyState,
+    select_encoding_strategy, select_auto_encoding, select_transparent_encoding,
+)
 from xpra.server.window.perfstats import WindowPerformanceStatistics
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.cystats import time_weighted_average, logp
@@ -120,12 +124,25 @@ def get_env_encodings(etype: str, valid_options: Iterable[str] = ()) -> Sequence
     return encodings
 
 
-TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", ("webp", "png", "rgb32", "jpega"))
+TRANSPARENCY_ENCODINGS = get_env_encodings("TRANSPARENCY", DEFAULT_TRANSPARENCY_ENCODINGS)
 LOSSLESS_ENCODINGS = PSEUDO_LOSSLESS_ENCODINGS
 if TRUE_LOSSLESS:
     LOSSLESS_ENCODINGS = TRUE_LOSSLESS_ENCODINGS
 LOSSLESS_ENCODINGS = get_env_encodings("LOSSLESS", LOSSLESS_ENCODINGS)
 REFRESH_ENCODINGS = get_env_encodings("REFRESH", LOSSLESS_ENCODINGS)
+
+_ENCODING_STRATEGY_METHODS = {
+    EncodingStrategy.HARDCODED: "hardcoded_encoding",
+    EncodingStrategy.HINT: "encoding_is_hint",
+    EncodingStrategy.MMAP: "encoding_is_mmap",
+    EncodingStrategy.PNG_L: "encoding_is_pngL",
+    EncodingStrategy.PNG_P: "encoding_is_pngP",
+    EncodingStrategy.RGB32: "encoding_is_rgb32",
+    EncodingStrategy.RGB24: "encoding_is_rgb24",
+    EncodingStrategy.STRICT: "get_strict_encoding",
+    EncodingStrategy.GRAYSCALE: "encoding_is_grayscale",
+    EncodingStrategy.TRANSPARENT: "get_transparent_encoding",
+}
 
 LOSSLESS_WINDOW_TYPES = set(os.environ.get(
     "XPRA_LOSSLESS_WINDOW_TYPES",
@@ -1068,70 +1085,17 @@ class WindowSource(WindowIconSource):
         self.get_best_encoding = self.get_best_encoding_impl()
 
     def get_best_encoding_impl(self) -> Callable[..., str]:
-        log("get_best_encoding_impl() hint=%r, encoding=%r, depth=%s, alpha=%s",
-            self._encoding_hint, self.encoding, self.image_depth, self._want_alpha)
-        if HARDCODED_ENCODING:
-            log(f"using {HARDCODED_ENCODING=}")
-            return self.hardcoded_encoding
-        if self._encoding_hint and self._encoding_hint in self._encoders:
-            log("using encoding hint: %r", self._encoding_hint)
-            return self.encoding_is_hint
-        # choose which method to use for selecting an encoding
-        # first the easy ones (when there is no choice):
-        if self._mmap and self.encoding != "grayscale":
-            log("using mmap")
-            return self.encoding_is_mmap
-        if self.encoding == "png/L":
-            # (png/L would look awful if we mixed it with something else)
-            log("using png/L")
-            return self.encoding_is_pngL
-        if self.image_depth == 8 or self.encoding == "png/P":
-            # limited options:
-            if self.encoding == "grayscale":
-                assert "png/L" in self.common_encodings
-                log("using png/L")
-                return self.encoding_is_pngL
-            log("using png/P")
-            assert "png/P" in self.common_encodings
-            return self.encoding_is_pngP
-        if self.strict and self.encoding not in ("auto", "stream"):
-            # honour strict flag
-            if self.encoding == "rgb":
-                # choose between rgb32 and rgb24 already
-                # as alpha support does not change without going through this method
-                if self._want_alpha and "rgb32" in self.common_encodings:
-                    log("using rgb32 for strict mode alpha")
-                    return self.encoding_is_rgb32
-                assert "rgb24" in self.common_encodings
-                log("using rgb24 for strict mode")
-                return self.encoding_is_rgb24
-            return self.get_strict_encoding
-        if self._want_alpha or self.is_tray:
-            if self.encoding in ("rgb", "rgb32") and "rgb32" in self.common_encodings:
-                log("using rgb32 for tray")
-                return self.encoding_is_rgb32
-            if self.encoding in ("png", "png/P", "png/L"):
-                # chosen encoding does alpha, stick to it:
-                # (prevents alpha bleeding artifacts,
-                # as different encoders may encode alpha differently)
-                log("using %s for tray", self.encoding)
-                return self.get_strict_encoding
-            if self.encoding == "grayscale":
-                log("using grayscale")
-                return self.encoding_is_grayscale
-            # choose an alpha encoding and keep it?
-            log("using transparent encoding")
-            return self.get_transparent_encoding
-        if self.encoding == "rgb" and not self.has_shape:
-            # if we're here we don't need alpha, so try rgb24 first:
-            if "rgb24" in self.common_encodings:
-                log("using rgb24 for rgb encoding")
-                return self.encoding_is_rgb24
-            if "rgb32" in self.common_encodings:
-                log("using rgb32 for rgb encoding")
-                return self.encoding_is_rgb32
-        log("using default auto best encoding")
-        return self.get_best_encoding_impl_default()
+        state = EncodingStrategyState(
+            encoding=self.encoding, common_encodings=tuple(self.common_encodings), image_depth=self.image_depth,
+            want_alpha=self._want_alpha, is_tray=self.is_tray, has_shape=self.has_shape, strict=self.strict,
+            using_mmap=bool(self._mmap), hint_available=bool(self._encoding_hint and self._encoding_hint in self._encoders),
+            hardcoded=bool(HARDCODED_ENCODING),
+        )
+        strategy = select_encoding_strategy(state)
+        log("get_best_encoding_impl() state=%s, strategy=%s", state, strategy.name)
+        if strategy is EncodingStrategy.DEFAULT:
+            return self.get_best_encoding_impl_default()
+        return getattr(self, _ENCODING_STRATEGY_METHODS[strategy])
 
     def get_best_encoding_impl_default(self) -> Callable:
         # stick to what is specified or use rgb for small regions:
@@ -1181,92 +1145,36 @@ class WindowSource(WindowIconSource):
         return e
 
     def get_transparent_encoding(self, w: int, h: int, options: dict, current_encoding: str) -> str:
-        # small areas prefer rgb, also when high speed and high quality
         if current_encoding in TRANSPARENCY_ENCODINGS:
             return current_encoding
-        pixel_count = w*h
-        depth = self.image_depth
-        co = tuple(e for e in self.common_encodings if e in TRANSPARENCY_ENCODINGS)
-        if not co and current_encoding:
-            return current_encoding
-        quality = options.get("quality", self._current_quality)
-        lossy = quality < 100
-        if "rgb32" in co and not self.has_shape:
-            if pixel_count < self._rgb_auto_threshold:
-                return "rgb32"
-            if not lossy and depth > 24 and self.client_bit_depth > 24:
-                return "rgb32"
-        grayscale = self.encoding == "grayscale"
-        webp = "webp" in co and 16383 >= w >= 2 and 16383 >= h >= 2 and not grayscale
-        if webp and depth in (24, 32) and (not lossy or pixel_count <= WEBP_EFFICIENCY_CUTOFF):
-            return "webp"
-        if "jpega" in co and w >= 2 and h >= 2 and lossy:
-            return "jpega"
-        if webp:
-            return "webp"
-        for e in ("png", "rgb32"):
-            if e in co:
-                return e
-        # so we don't have an encoding that does transparency... any will do:
+        encoding = select_transparent_encoding(
+            self._get_encoding_state(), w, h, self.common_encodings,
+            quality=options.get("quality", self._current_quality), current_encoding=current_encoding,
+            transparency_encodings=TRANSPARENCY_ENCODINGS, webp_efficiency_cutoff=WEBP_EFFICIENCY_CUTOFF,
+        )
+        if encoding is not None:
+            return encoding
         return self.get_auto_encoding(w, h, options, current_encoding)
 
     def get_auto_encoding(self, w: int, h: int, options: dict, current_encoding="") -> str:
         return self.do_get_auto_encoding(w, h, options, current_encoding, self.common_encodings)
 
+    def _get_encoding_state(self) -> EncodingState:
+        return EncodingState(
+            encoding=self.encoding, image_depth=self.image_depth, client_bit_depth=self.client_bit_depth,
+            want_alpha=self._want_alpha, is_tray=self.is_tray, has_shape=self.has_shape,
+            rgb_auto_threshold=self._rgb_auto_threshold, natural_content=is_video_content(self.content_types),
+        )
+
     def do_get_auto_encoding(self, w: int, h: int, options: dict,
                              current_encoding: str, encoding_options: Sequence[str]) -> str:
-        co = encoding_options
-        if not co:
+        if not encoding_options:
             raise ValueError("no options to choose from")
-        depth = self.image_depth
-        grayscale = self.encoding == "grayscale"
-        alpha = self._want_alpha or self.is_tray
-        quality = options.get("quality", 0)
-        speed = options.get("speed", 50)
-        natural_content = is_video_content(self.content_types)
-        if w*h < self._rgb_auto_threshold and not grayscale and not self.has_shape:
-            if depth > 24 and self.client_bit_depth > 24 and "rgb32" in co:
-                return "rgb32"
-            if "rgb24" in co:
-                return "rgb24"
-        jpeg = "jpeg" in co and w >= 2 and h >= 2
-        jpega = "jpega" in co and w >= 2 and h >= 2
-        webp = "webp" in co and 16383 >= w >= 2 and 16383 >= h >= 2 and not grayscale
-        jph = "jph" in co and not grayscale
-        avif = "avif" in co
-        lossy = quality < 100
-        if depth in (24, 32) and (jpeg or jpega or webp or avif or jph):
-            if natural_content and quality <= 50 and jph and not alpha and speed < 50:
-                return "jph"
-            if webp and (not lossy or w*h <= WEBP_EFFICIENCY_CUTOFF):
-                return "webp"
-            if lossy:
-                if jpeg and not alpha:
-                    return "jpeg"
-                if jpega and alpha:
-                    return "jpega"
-            if webp:
-                return "webp"
-            if avif:
-                return "avif"
-            if jph:
-                return "jph"
-        elif depth > 24 and "rgb32" in co and self.client_bit_depth > 24 and self.client_bit_depth != 32:
-            # the only encoding that can do higher bit depth at present
-            # (typically r210 which is actually rgb30+2)
-            return "rgb32"
-        if "png" in co and (not lossy or depth <= 16):
-            return "png"
-        if jpeg and lossy:
-            return "jpeg"
-        if avif:
-            return "avif"
-        if current_encoding in co:
-            return current_encoding
-        try:
-            return next(x for x in co if x != "rgb")
-        except StopIteration:
-            return co[0]
+        return select_auto_encoding(
+            self._get_encoding_state(), w, h, encoding_options,
+            quality=options.get("quality", 0), speed=options.get("speed", 50), current_encoding=current_encoding,
+            webp_efficiency_cutoff=WEBP_EFFICIENCY_CUTOFF,
+        )
 
     def get_current_or_rgb(self, pixel_count: int, *_args) -> str:
         if pixel_count < self._rgb_auto_threshold and not self.has_shape:
