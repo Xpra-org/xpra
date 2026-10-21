@@ -11,17 +11,12 @@ import textwrap
 import unittest
 from unittest.mock import patch
 
-try:
-    from xpra import seccomp
-    from xpra.client.subsystem import encoding
-    from xpra.seccomp import draw as seccomp_decode
-    from xpra.seccomp import menu as seccomp_menu
-    from xpra.seccomp import parse as seccomp_parse
-    from xpra.seccomp import rfb as seccomp_rfb
-except ImportError:
-    if __name__ == "__main__":
-        raise SystemExit(0)
-    raise unittest.SkipTest("seccomp is not available")
+from xpra import seccomp
+from xpra.client.subsystem import encoding
+from xpra.seccomp import draw as seccomp_decode
+from xpra.seccomp import menu as seccomp_menu
+from xpra.seccomp import parse as seccomp_parse
+from xpra.seccomp import rfb as seccomp_rfb
 
 
 class SeccompTest(unittest.TestCase):

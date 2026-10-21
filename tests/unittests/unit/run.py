@@ -15,9 +15,13 @@ from argparse import ArgumentParser
 TEST_COVERAGE = os.environ.get("XPRA_TEST_COVERAGE", "1") == "1"
 COVERAGE = os.environ.get("COVERAGE", shutil.which("coverage") or shutil.which("python3-coverage"))
 
-# tests in these packages are only run if the module they test was built:
+# tests whose name starts with one of these prefixes are only run if the module they test was built:
 REQUIRED_MODULES = {
     "unit.wayland.": "xpra.wayland.server",
+    "unit.seccomp.": "xpra.seccomp",
+    "unit.uinput_test": "xpra.uinput",
+    "unit.codecs.pipewire_capture_test": "xpra.codecs.pipewire",
+    "unit.server.portal_shadow_capture_test": "xpra.codecs.pipewire",
 }
 
 

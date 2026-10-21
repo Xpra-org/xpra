@@ -9,13 +9,6 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-try:
-    import xpra.uinput
-except ImportError:
-    if __name__ == "__main__":
-        raise SystemExit(0)
-    raise unittest.SkipTest("uinput is not available")
-
 
 class TestUInputSetup(unittest.TestCase):
 

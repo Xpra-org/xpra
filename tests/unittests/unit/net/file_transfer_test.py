@@ -31,7 +31,7 @@ def setUpModule() -> None:
     # run the file-transfer handlers inline (synchronously) instead of handing off
     # to the file worker thread, so these logic tests can assert their results
     # directly, without a running main loop to start and drain that thread.
-    # The worker hand-off itself is covered by `unit/seccomp_test.py`.
+    # The worker hand-off itself is covered by `unit/seccomp/seccomp_test.py`.
     file_transfer.FILE_IO_THREAD = False
 
 
