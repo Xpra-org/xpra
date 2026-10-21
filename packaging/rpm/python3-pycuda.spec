@@ -26,7 +26,7 @@ Version:        2022.1
 Version:        2026.1
 %define systemboost 1
 %endif
-Release:        1
+Release:        2
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
@@ -44,17 +44,15 @@ BuildRequires:  python3-numpy
 BuildRequires:  boost-python3-devel
 BuildRequires:  libglvnd-devel
 BuildRequires:  cuda
-
-%description
-PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
-
 Requires:       python3
 Requires:       python3-decorator
 Requires:       python3-numpy
 Requires:       python3-pytools
 Requires:       python3-six
-
 Suggests:       nvidia-driver-cuda-libs
+
+%description
+PyCUDA lets you access Nvidia‘s CUDA parallel computation API from Python.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
@@ -107,6 +105,9 @@ rm -rf %{buildroot}
 
 %changelog
 %if !0%{?el8}
+* Wed Oct 21 2026 Antoine Martin <antoine@xpra.org> - 2026.1-2
+- the package dependencies were part of the description
+
 * Fri Jan 16 2026 Antoine Martin <antoine@xpra.org> - 2026.1-1
 - new upstream release
 
@@ -138,6 +139,10 @@ rm -rf %{buildroot}
 * Tue Nov 22 2022 Antoine Martin <antoine@xpra.org> - 2022.2-1
 - new upstream release
 - remove context cleanup failures patch (merged)
+%else
+* Wed Oct 21 2026 Antoine Martin <antoine@xpra.org> - 2022.1-2
+- the package dependencies were part of the description
+
 %endif
 * Tue Aug 16 2022 Antoine Martin <antoine@xpra.org> - 2022.1-2
 - add patch to show context cleanup failures
