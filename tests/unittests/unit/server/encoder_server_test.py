@@ -10,7 +10,7 @@ import tempfile
 import unittest
 from time import monotonic, sleep
 from threading import Event, current_thread
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from xpra.os_util import POSIX
 from xpra.util.io import pollwait
@@ -164,6 +164,79 @@ class EncoderServerCleanupTest(unittest.TestCase):
         for name, thread_name in events:
             self.assertEqual(thread_name, "encode", f"{name!r} did not run in the encode thread")
         self.assertIsNone(ss.cuda_device_context)
+
+
+class FakeEncoder:
+    """
+    An encoder which finishes its initialization asynchronously, like nvenc,
+    after `ready_after` calls to `is_ready`
+    """
+
+    def __init__(self, ready_after=0, closed=False):
+        self.ready_after = ready_after
+        self.closed = closed
+        self.checks = 0
+
+    def init_context(self, *_args) -> None:
+        pass
+
+    def is_closed(self) -> bool:
+        return self.closed
+
+    def is_ready(self) -> bool:
+        self.checks += 1
+        return self.checks > self.ready_after
+
+    def get_info(self) -> dict:
+        return {"type": "fake"}
+
+
+class EncoderContextResponseTest(unittest.TestCase):
+    """
+    The client must not be told that the encoder is ready until it really is.
+    """
+
+    def request_context(self, encoder, timeout=10):
+        from xpra.net.common import Packet
+        from xpra.server.encoder import server as encoder_server
+        server = encoder_server.EncoderServer.__new__(encoder_server.EncoderServer)
+        server.encoders = {}
+        ss = Mock(uuid="test-uuid")
+        sent = []
+        ss.send = lambda *packet: sent.append(packet)
+        timers = []
+        packet = Packet("context-request", 1, "fake", "h264", 640, 480, "BGRX", {})
+        with patch.object(encoder_server, "_make_video_encoder", return_value=encoder), \
+             patch.object(encoder_server, "add_device_context"), \
+             patch.object(encoder_server, "CONTEXT_READY_TIMEOUT", timeout), \
+             patch.object(encoder_server.GLib, "timeout_add", side_effect=lambda _delay, fn: timers.append(fn)):
+            server.do_process_context_request(ss, packet)
+            # run the timer until it stops itself:
+            while timers:
+                if not timers[0]():
+                    timers.pop(0)
+        self.assertEqual(server.encoders, {"test-uuid": {1: encoder}})
+        return sent
+
+    def test_ready(self):
+        sent = self.request_context(FakeEncoder())
+        self.assertEqual(sent, [("context-response", 1, True, "", {"type": "fake"})])
+
+    def test_threaded_init(self):
+        encoder = FakeEncoder(ready_after=3)
+        sent = self.request_context(encoder)
+        self.assertEqual(sent, [("context-response", 1, True, "", {"type": "fake"})])
+        self.assertEqual(encoder.checks, 4)
+
+    def test_init_failure(self):
+        sent = self.request_context(FakeEncoder(closed=True))
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(sent[0][:3], ("context-response", 1, False))
+
+    def test_timeout(self):
+        sent = self.request_context(FakeEncoder(ready_after=1000), timeout=-1)
+        self.assertEqual(len(sent), 1)
+        self.assertEqual(sent[0][:4], ("context-response", 1, False, "initialization timeout"))
 
 
 def main():
