@@ -30,25 +30,17 @@ PYTHON_VERSION=`$PYTHON --version | awk '{print $2}' | awk -F. '{print $1"."$2}'
 INSTALL_ROOT="$SRC_DIR/dist/python${PYTHON_VERSION}"
 rm -fr $INSTALL_ROOT
 pushd $SRC_DIR
-$PYTHON ./setup.py install --without-nvidia --without-printing --without-docs --with-scripts --without-cython_tracing --${CYTHONIZE_MORE:-without}-cythonize_more --prefix=/usr --root=$INSTALL_ROOT $EXTRA_ARGS || die "failed to build"
+# Debian's Python installs to `/usr/local` (`posix_local` scheme) unless we opt out:
+DEB_PYTHON_INSTALL_LAYOUT=deb $PYTHON ./setup.py install --without-nvidia --without-printing --without-docs --with-scripts --without-cython_tracing --${CYTHONIZE_MORE:-without}-cythonize_more --prefix=/usr --root=$INSTALL_ROOT $EXTRA_ARGS || die "failed to build"
 popd
 
-# workaround for the prefix not being honoured:
-if [ -d "$INSTALL_ROOT/usr/local" ]; then
-    # install_data may already have created directories under usr (for example
-    # usr/lib for the Wireshark dissector), so merge rather than move entries
-    # at the top level.
-    rsync -a --remove-source-files "$INSTALL_ROOT/usr/local/" "$INSTALL_ROOT/usr/"
-    find "$INSTALL_ROOT/usr/local" -depth -type d -empty -delete
-fi
-
 # the xvfb command in the generated config uses the runtime path of xorg.conf,
-# which does not exist when testing from the install root (or was moved from usr/local above):
+# which does not exist when testing from the install root:
 XORG_CONF=`find "$INSTALL_ROOT" -path "*/etc/xpra/xorg.conf" | head -n 1`
 if [ -n "$XORG_CONF" ]; then
     XORG_CONF_DIR=`dirname "$XORG_CONF"`
     find "$INSTALL_ROOT" -name "55_server_x11.conf" -exec \
-        sed -i -E 's+\$\{XORG_CONFIG_PREFIX\}(/usr/local)?/etc/xpra/+'"${XORG_CONF_DIR}"'/+g' {} +
+        sed -i 's+\${XORG_CONFIG_PREFIX}/etc/xpra/+'"${XORG_CONF_DIR}"'/+g' {} +
 fi
 
 if [ `uname` == "Linux" ]; then
@@ -56,7 +48,7 @@ if [ `uname` == "Linux" ]; then
 fi
 #why is every workaround for setuptools so cumbersome?
 
-export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d -path "*/site-packages/xpra"`
+export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d -path "*/site-packages/xpra" -o -name xpra -type d -path "*/dist-packages/xpra"`
 if [ -z "${XPRA_MODULE_DIR}" ]; then
 	export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d | egrep -v "etc/xpra|libexec/xpra|share/xpra" | head -n 1 | tr -d '\n'`
 fi
