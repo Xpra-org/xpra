@@ -9,6 +9,7 @@
 import unittest
 
 from xpra.util.objects import AdHocStruct
+from xpra.server.window.video_compress import WindowVideoSource
 
 
 def make_encoder_spec(codec_type="nvenc"):
@@ -29,7 +30,7 @@ def make_video_encoder(codec_type="nvenc", src_format="BGRX", width=2560, height
 
 def make_score_tuple(encoder_scaling=(1, 1), enc_in_format="BGRX",
                      enc_width=2560, enc_height=1440, encoder_spec=None, score=423):
-    """Build a pipeline score tuple matching video_scoring.py:226-229."""
+    """Build a pipeline candidate consumed by WindowVideoSource."""
     if encoder_spec is None:
         encoder_spec = make_encoder_spec()
     scaling = encoder_scaling
@@ -42,37 +43,12 @@ def make_score_tuple(encoder_scaling=(1, 1), enc_in_format="BGRX",
 
 
 def verify_csc_and_encoder(video_encoder, csc_encoder, actual_scaling, scores):
-    """
-    Mirrors the logic from WindowVideoSource.verify_csc_and_encoder
-    in xpra/server/window/video_compress.py.
-    """
-    if not scores:
-        return False
-    (_, _, _, csc_width, csc_height, csc_spec, enc_in_format,
-     encoder_scaling, enc_width, enc_height, encoder_spec) = scores[0]
-    csce = csc_encoder
-    if csce:
-        if csce.is_closed():
-            return False
-        if csce.get_dst_format() != enc_in_format:
-            return False
-        if csce.get_src_width() != csc_width or csce.get_src_height() != csc_height:
-            return False
-        if csce.get_dst_width() != enc_width or csce.get_dst_height() != enc_height:
-            return False
-    ve = video_encoder
-    if ve:
-        if ve.is_closed():
-            return False
-        if ve.get_src_format() != enc_in_format:
-            return False
-        if ve.get_width() != enc_width or ve.get_height() != enc_height:
-            return False
-        if ve.get_type() != encoder_spec.codec_type:
-            return False
-    if actual_scaling != encoder_scaling:
-        return False
-    return True
+    source = WindowVideoSource.__new__(WindowVideoSource)
+    source._video_encoder = video_encoder
+    source._csc_encoder = csc_encoder
+    source.actual_scaling = actual_scaling
+    source.last_pipeline_scores = scores
+    return source.verify_csc_and_encoder()
 
 
 class TestVerifyScaling(unittest.TestCase):
