@@ -266,13 +266,6 @@ def force_quit(status=1) -> NoReturn:
     os._exit(int(status))  # pylint: disable=protected-access
 
 
-def is_arm() -> bool:
-    import platform
-    machine = platform.uname()[4]
-    # ie: "armv7l", "aarch64" or "arm64" (MacOS)
-    return machine.startswith("arm") or machine.startswith("aarch")
-
-
 def crash() -> NoReturn:
     import ctypes  # pylint: disable=import-outside-toplevel
     ctypes.string_at(0)

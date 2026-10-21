@@ -17,7 +17,7 @@ from xpra.util.parsing import (
 )
 from xpra.util.str_fn import csv
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid, is_arm
+from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid
 from xpra.util.env import osexpand
 from xpra.util.io import stderr_print, which
 from xpra.util.system import is_DEB, is_DEB_Xdummy_safe, can_use_fakescreenfps
@@ -119,24 +119,11 @@ def valid_html_path(*path_options: str) -> str:
     return ""
 
 
-def is_suid(path: str) -> bool:
-    import stat
-    try:
-        return (os.stat(path).st_mode & stat.S_ISUID) != 0
-    except OSError:
-        return False
-
-
 def get_xorg_bin() -> str:
     xorg = os.environ.get("XPRA_XORG_BIN")
     if xorg:
         return xorg
     # Detect Xorg Binary
-    # `/usr/bin/Xorg` is a script which runs the setuid `Xorg.wrap` when it is installed (`xserver-xorg-legacy`),
-    # we can't use that:
-    if is_arm() and is_DEB() and os.path.exists("/usr/bin/Xorg") and not is_suid("/usr/lib/xorg/Xorg.wrap"):
-        # Raspbian breaks if we use a different binary..
-        return "/usr/bin/Xorg"
     for p in (
         "/usr/libexec/Xorg",              # fedora 22+
         "/usr/lib/xorg/Xorg",             # ubuntu 16.10

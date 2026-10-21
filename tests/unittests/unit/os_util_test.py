@@ -5,13 +5,11 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from unittest.mock import patch
 
 from xpra.os_util import (
     POSIX,
     getuid, getgid, get_shell_for_uid, get_username_for_uid, get_home_for_uid,
     get_hex_uuid, get_int_uuid, get_user_uuid, valid_uuid, MAX_UUID_LENGTH,
-    is_arm,
 )
 from xpra.util.env import OSEnvContext
 from xpra.util.thread import is_main_thread
@@ -47,12 +45,6 @@ class TestOSUtil(unittest.TestCase):
         is_Debian()
         is_Arch()
         is_WSL()
-
-    def test_is_arm(self):
-        for machine, expected in (("armv7l", True), ("aarch64", True), ("arm64", True), ("x86_64", False), ("riscv64", False)):
-            with self.subTest(machine=machine), patch("platform.uname") as uname:
-                uname.return_value = ("Linux", "host", "1", "1", machine, "")
-                self.assertEqual(is_arm(), expected)
 
     def test_de(self):
         is_unity()
