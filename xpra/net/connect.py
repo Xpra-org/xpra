@@ -252,6 +252,9 @@ def connect_to_socket(display_desc: dict[str, Any]):
     try:
         sock.settimeout(None)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, "socket")
+        # the peer's address is the path the server bound to, which may not exist in our mount namespace,
+        # ie: a socket bind mounted in a container:
+        conn.filename = sockpath
         conn.timeout = timeout
         target = "socket://"
         username = display_desc.get("username")
