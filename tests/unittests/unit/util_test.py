@@ -100,6 +100,16 @@ class TestTypeDict(unittest.TestCase):
                       996           : 3.14})
         self._test_values_type(d, d.intget, [int], [1, 2, 3])
 
+    def test_numeric_list_conversion(self):
+        original = ["1", b"2", 3]
+        values = typedict({"items": original, "pair": ["4", "5"]})
+        self.assertEqual(values.inttupleget("items"), (1, 2, 3))
+        self.assertEqual(values.intpair("pair"), (4, 5))
+        self.assertEqual(original, ["1", b"2", 3])
+        # Conversion must validate later elements, too.
+        invalid = typedict({"items": ["1", "invalid"]})
+        self.assertEqual(invalid.inttupleget("items", (9,)), (9,))
+
     def test_boolget(self):
         d = typedict({b"empty-string-is-false"          : b"",
                       b"False boolean stays as it is"   : False,

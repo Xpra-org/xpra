@@ -51,6 +51,7 @@
   * [limit is actually 4GB](https://github.com/Xpra-org/xpra/commit/0377ba073f3ead0b6d69505e74c9faee2504f8ba)
   * [validate the token location and size](https://github.com/Xpra-org/xpra/commit/ddec4ce4fcef68ba4a3f395a916007838b53ff4e)
 * Major:
+  * [numeric list options could return a single integer instead of the converted list](https://github.com/Xpra-org/xpra/commit/9677fd266c8181e08657636f26413a8b84a16ce5)
   * [clients failed to connect to shadow servers because the server's hello packet could not be encoded](https://github.com/Xpra-org/xpra/commit/50ae567c93b9156fcfe70e8bdb9e2195d375e008)
   * [keyboard layout group could be wrong after a keymap or keyboard state reset](https://github.com/Xpra-org/xpra/commit/a85da624603ce72a6d9adec935cd845fc29f5268)
   * [drag-and-drop can get wedged and stop working](https://github.com/Xpra-org/xpra/commit/0d25acfcd80e56e6561f5e5d96e41514ca10079d)
