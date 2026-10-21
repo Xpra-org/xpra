@@ -1053,10 +1053,10 @@ def get_default_start_env() -> Sequence[str]:
         "GTK_A11Y=none",
         "#force Qt applications to use X11 so we can intercept them:",
         "QT_QPA_PLATFORM=xcb",
-        "#disable Qt scaling:"
+        "#disable Qt scaling:",
         "QT_AUTO_SCREEN_SET_FACTOR=0",
         "QT_SCALE_FACTOR=1",
-        "#overlay scrollbars complicate things:"
+        "#overlay scrollbars complicate things:",
         "GTK_OVERLAY_SCROLLING=0",
         "#some versions of GTK3 honour this option, sadly not all:",
         "GTK_CSD=0",

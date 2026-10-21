@@ -15,7 +15,7 @@ from unittest.mock import patch
 
 from xpra.scripts.config import (
     read_xpra_conf, fixup_keyboard, fixup_options, dict_to_validated_config, get_defaults,
-    detect_xvfb_command, detect_xdummy_command,
+    detect_xvfb_command, detect_xdummy_command, get_default_start_env,
 )
 from xpra.util.parsing import FALSE_OPTIONS, TRUE_OPTIONS
 
@@ -66,6 +66,16 @@ class VFBParametersTest(unittest.TestCase):
             command = detect_xdummy_command(depth=8, dpi=144, fps=30)
         self.assertEqual(command[0], "Xvfb")
         self.assertEqual(command[command.index("-screen") + 2], "8192x4096x8")
+
+
+class StartEnvironmentTest(unittest.TestCase):
+
+    def test_settings_are_separate_from_comments(self):
+        from xpra.scripts.parsing import parse_env
+        with patch("xpra.scripts.config.WIN32", False), patch("xpra.scripts.config.OSX", False):
+            environment = parse_env(get_default_start_env())
+        self.assertEqual(environment.get("QT_AUTO_SCREEN_SET_FACTOR"), "0")
+        self.assertEqual(environment.get("GTK_OVERLAY_SCROLLING"), "0")
 
 
 class ReadConfTest(unittest.TestCase):
