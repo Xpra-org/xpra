@@ -22,8 +22,7 @@ Build and install:
 ```shell
 git clone https://github.com/Xpra-org/xpra
 cd xpra
-python3 setup.py build --without-nvidia --without-printing
-doas python3 setup.py install --prefix=/usr/local
+doas python3 setup.py install --without-nvidia --without-printing --prefix=/usr/local
 ```
 
 `Xvfb`, `xauth` and `xkbcomp` are part of the base system in `/usr/X11R6/bin`.
