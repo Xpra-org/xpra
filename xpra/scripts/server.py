@@ -26,7 +26,7 @@ from xpra.scripts.config import (
     fixup_options,
 )
 from xpra.common import noerr
-from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY
+from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY, is_virtual_session
 from xpra.net.constants import SocketState, ConnectionMessage
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import POSIX, WIN32, OSX, LINUX, getuid, get_hex_uuid
@@ -408,8 +408,8 @@ def has_child_arg(opts) -> bool:
     ))
 
 
-def sanitize_dbus_env(dbus: str) -> None:
-    if str(dbus).lower() in ("keep", "wait"):
+def sanitize_dbus_env(dbus: str, mode: str = "seamless") -> None:
+    if not is_virtual_session(mode) or str(dbus).lower() in ("keep", "wait"):
         return
     # remove anything pointing to dbus from the current env
     # (so we only detect a dbus instance started by pam,
@@ -571,7 +571,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     save_env.update(parse_env(opts.env))
     env_script = xpra_env_shell_script(opts.socket_dirs, save_env)
 
-    sanitize_dbus_env(opts.dbus)
+    sanitize_dbus_env(opts.dbus, mode)
     if (upgrading or shadowing) and opts.pulseaudio is None:
         # there should already be one running
         # so change None ('auto') to False
@@ -627,7 +627,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     if runner_display:
         protected_env["DISPLAY"] = runner_display
 
-    if str_to_bool(opts.dbus):
+    if str_to_bool(opts.dbus) and is_virtual_session(mode):
         start_dbus()
         os.environ["DBUS_SYSTEM_BUS_ADDRESS"] = f"unix:path={SYSTEM_DBUS_SOCKET}"
         protected_env["DBUS_SYSTEM_BUS_ADDRESS"] = f"unix:path={SYSTEM_DBUS_SOCKET}"

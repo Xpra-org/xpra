@@ -13,6 +13,7 @@ from xpra.server.window import batch_config
 from xpra.server.base import ServerBase
 from xpra.scripts.config import InitExit
 from xpra.platform.paths import get_icon_dir
+from xpra.os_util import POSIX, OSX
 from xpra.server import features
 from xpra.exit_codes import ExitCode
 from xpra.codecs.constants import TransientCodecException, CodecStateException
@@ -206,7 +207,12 @@ class ShadowServerBase(ServerBase):
         if not NATIVE_NOTIFIER:
             return []
         from xpra.platform.notification import get_backends
-        ncs: list[Callable] = list(get_backends())
+        native = not POSIX or OSX
+        if POSIX and not OSX and features.dbus:
+            from xpra.dbus.common import find_session_bus_address
+            native = bool(find_session_bus_address())
+        # Native D-Bus backends would autolaunch a bus if the desktop has none.
+        ncs: list[Callable] = list(get_backends()) if native else []
         if self.get_subsystem("gtk"):
             # if the gtk subsystem is already loaded, we can load GTKNotifier safely:
             try:

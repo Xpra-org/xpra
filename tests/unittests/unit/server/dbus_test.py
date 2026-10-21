@@ -9,7 +9,8 @@ import signal
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 from xpra.os_util import OSX, POSIX
 from xpra.util.env import OSEnvContext
@@ -34,6 +35,79 @@ class FakeLogger:
 
 
 class DBUSTest(unittest.TestCase):
+
+    @staticmethod
+    def make_manager(mode, dbus="yes"):
+        from xpra.server.subsystem.dbus import DbusManager
+        manager = DbusManager(SimpleNamespace(subsystems={}))
+        manager.init(SimpleNamespace(mode=mode, dbus=dbus, dbus_launch="dbus-launch", dbus_control=True))
+        return manager
+
+    def test_existing_session_bus(self):
+        from xpra.server import features
+        from xpra.server.subsystem.dbus import DbusManager
+
+        for mode in ("shadow", "shadow-screen", "shadow-device", "expand", "proxy", "encoder", "runner"):
+            for inherited, fallback, address in (("desktop-bus", "user-bus", "desktop-bus"), ("", "user-bus", "user-bus"), ("", "", "")):
+                with self.subTest(mode=mode, inherited=inherited, fallback=fallback), \
+                        patch.dict(os.environ, {"DBUS_SESSION_BUS_ADDRESS": inherited, "DBUS_SESSION_BUS_PID": "123"}, clear=True), \
+                        patch("xpra.dbus.common.get_user_bus_address", return_value=fallback), \
+                        patch("xpra.server.subsystem.dbus.reload_dbus_attributes") as reload, \
+                        patch("xpra.server.dbus.start.start_dbus") as launch, \
+                        patch("xpra.server.dbus.start.wait_for_dbus") as wait, \
+                        patch("xpra.server.subsystem.dbus.save_dbus_x11_properties") as save, \
+                        patch.object(features, "x11", True), \
+                        patch.object(DbusManager, "init_dbus_server") as control, \
+                        patch("xpra.server.subsystem.dbus.os.kill") as kill:
+                    session_files = SimpleNamespace(write_session_file=Mock(), session_files=[])
+                    manager = self.make_manager(mode)
+                    manager.server.subsystems["session-files"] = session_files
+                    manager.early_setup()
+                    manager.setup()
+                    manager.late_cleanup()
+                    self.assertEqual(manager.env, {"DBUS_SESSION_BUS_ADDRESS": address} if address else {})
+                    self.assertEqual(os.environ["DBUS_SESSION_BUS_ADDRESS"], address)
+                    self.assertEqual(manager.pid, 0)
+                    self.assertEqual(control.call_count, int(bool(address)))
+                    reload.assert_not_called()
+                    launch.assert_not_called()
+                    wait.assert_not_called()
+                    save.assert_not_called()
+                    kill.assert_not_called()
+                    session_files.write_session_file.assert_not_called()
+
+    def test_existing_session_waits_for_bus(self):
+        dbus_env = {"DBUS_SESSION_BUS_ADDRESS": "desktop-bus"}
+        for mode in ("shadow", "expand"):
+            with self.subTest(mode=mode), patch.dict(os.environ, {}, clear=True), \
+                    patch("xpra.server.subsystem.dbus.reload_dbus_attributes") as reload, \
+                    patch("xpra.server.dbus.start.start_dbus") as launch, \
+                    patch("xpra.server.dbus.start.wait_for_dbus", return_value=dbus_env) as wait, \
+                    patch("xpra.server.subsystem.dbus.os.kill") as kill:
+                manager = self.make_manager(mode, "wait")
+                manager.early_setup()
+                manager.late_cleanup()
+                self.assertEqual(manager.env, dbus_env)
+                self.assertEqual(os.environ["DBUS_SESSION_BUS_ADDRESS"], "desktop-bus")
+                wait.assert_called_once()
+                reload.assert_not_called()
+                launch.assert_not_called()
+                kill.assert_not_called()
+
+    def test_virtual_session_starts_bus(self):
+        dbus_env = {"DBUS_SESSION_BUS_ADDRESS": "private-bus", "DBUS_SESSION_BUS_PID": "456"}
+        for mode in ("seamless", "desktop", "monitor", "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor"):
+            with self.subTest(mode=mode), patch.dict(os.environ, {}, clear=True), \
+                    patch("xpra.server.subsystem.dbus.reload_dbus_attributes", return_value=(0, {})), \
+                    patch("xpra.server.dbus.start.start_dbus", return_value=(456, dbus_env)) as launch, \
+                    patch("xpra.server.subsystem.dbus.os.kill") as kill:
+                manager = self.make_manager(mode)
+                manager.early_setup()
+                self.assertEqual(manager.env, dbus_env)
+                self.assertEqual(os.environ["DBUS_SESSION_BUS_ADDRESS"], "private-bus")
+                launch.assert_called_once_with("dbus-launch")
+                manager.late_cleanup()
+                kill.assert_called_once_with(456, signal.SIGINT)
 
     def test_exception_wrap(self):
         from xpra.server.dbus import common

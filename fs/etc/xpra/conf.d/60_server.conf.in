@@ -64,7 +64,8 @@ exit-with-children = no
 #start-child-on-last-client-exit = xterm
 
 
-# Start a dbus-daemon:
+# Start a private dbus-daemon for a virtual session (seamless, desktop or monitor).
+# Servers attaching to an existing session, including shadow and expand, reuse its bus if available.
 # dbus-launch =
 # dbus-launch = /usr/bin/dbus-launch --close-stderr
 dbus-launch = dbus-launch --sh-syntax --close-stderr

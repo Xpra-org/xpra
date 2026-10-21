@@ -297,6 +297,17 @@ class TestMain(unittest.TestCase):
             sanitize_dbus_env("yes")
             assert os.environ == {"OTHER": "1"}
 
+    def test_sanitize_dbus_env_for_server_modes(self):
+        env = {"DBUS_SESSION_BUS_ADDRESS": "desktop-bus", "DBUS_SESSION_BUS_PID": "123", "OTHER": "1"}
+        for mode in ("seamless", "desktop", "monitor", "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor"):
+            with self.subTest(mode=mode), patch.dict(os.environ, env, clear=True):
+                sanitize_dbus_env("yes", mode)
+                self.assertEqual(dict(os.environ), {"OTHER": "1"})
+        for mode in ("shadow", "shadow-screen", "shadow-device", "expand", "proxy", "encoder", "runner"):
+            with self.subTest(mode=mode), patch.dict(os.environ, env, clear=True):
+                sanitize_dbus_env("yes", mode)
+                self.assertEqual(dict(os.environ), env)
+
     def test_resolve_server_display_name_with_options(self):
         opts = SimpleNamespace(sessions_dir="/sessions", socket_dir="/socket", socket_dirs=())
         with patch("xpra.scripts.server.display_name_check") as display_name_check:
