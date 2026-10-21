@@ -1033,6 +1033,13 @@ do
 	    %{_datadir}/selinux/${selinuxvariant}/${mod}.pp &> /dev/null || :
 	done
 done
+# the 'xpra' module used to be called 'xpra_socketactivation',
+# remove it after installing the new one, which declares the same types:
+# (this can be removed once the packages from before 2026-01 are no longer in use, ie: in 2027)
+for selinuxvariant in %{selinux_variants}
+do
+	/usr/sbin/semodule -s ${selinuxvariant} -r xpra_socketactivation &> /dev/null || :
+done
 semanage port -a -t xpra_port_t -p tcp 14500 2>&1 | grep -v "already defined" || :
 restorecon -R /etc/xpra /usr/lib/systemd/system/xpra* /usr/bin/xpra* || :
 restorecon -R /run/xpra* /run/user/*/xpra 2> /dev/null || :
