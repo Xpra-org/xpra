@@ -149,7 +149,7 @@ USERNS_ARGS=()
 ENCODER_RUNCON=()
 ENCODER_VOLUME="rw"
 if [ "${ACCEL}" == "encoder" ]; then
-  USERNS_ARGS=(--userns=keep-id:uid=1000,gid=1000)
+  USERNS_ARGS=("--userns=keep-id:uid=1000,gid=1000")
   if selinuxenabled &> /dev/null; then
     if runcon -t xpra_encoder_t -l s0 xpra --version &> /dev/null; then
       # the encoder server uses the lowest level, which the level of the containers dominates,
@@ -227,7 +227,7 @@ if [ "${ACCEL}" == "encoder" ]; then
     echo $! > "${ENCODER_DIR}/pid"
   fi
   echo "Waiting for the encoder server"
-  for i in $(seq 300); do test -S "${ENCODER_DIR}/socket" && break; sleep 0.1; done
+  for _ in $(seq 300); do test -S "${ENCODER_DIR}/socket" && break; sleep 0.1; done
   if [ ! -S "${ENCODER_DIR}/socket" ]; then
     echo "the encoder server failed to start" >&2
     exit 1
