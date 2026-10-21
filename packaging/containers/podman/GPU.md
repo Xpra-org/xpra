@@ -44,12 +44,12 @@ It does not have access to the GPU.
 ```mermaid
 flowchart LR
     app["<b>app</b><br/>hostile application<br/>own userns, SELinux label, ipc"]
-    subgraph pod["xvfb + xpra: label=disable, keep-id (current user)"]
+    subgraph pod["xvfb + xpra: shared SELinux level, keep-id (current user)"]
         xvfb["<b>xvfb</b><br/>X server"]
         xpra["<b>xpra</b><br/>remote encoder<br/>no GPU devices"]
     end
     subgraph host["host: current user"]
-        encoder["<b>xpra encoder</b><br/>auth=peercred<br/>seccomp strict, landlock strict+gpu"]
+        encoder["<b>xpra encoder</b><br/>SELinux xpra_encoder_t (unconfined)<br/>auth=peercred<br/>seccomp strict, landlock strict+gpu"]
     end
     driver{{"GPU kernel driver"}}
     client(["client"])
@@ -74,12 +74,17 @@ The GPU driver is only reachable from the encoder server, which only parses the 
 and the pixel data: it never sees the X11 requests, the window metadata or the client connections.
 
 The price is paid by the `xvfb` and `xpra` containers:
-* they run as the current user (`--userns=keep-id`), because the mmap files and the socket are shared with the encoder server
-* they are not confined by SELinux (`--security-opt=label=disable`): SELinux does not allow a container to connect
-  to a socket owned by an unconfined process
+they run as the current user (`--userns=keep-id`), because the mmap files and the socket are shared with the encoder server.
 
-So a compromised xpra server runs as the current user, without SELinux confinement,
-still without capabilities, with a read-only root filesystem and without access to the user's files:
+SELinux does not allow a container to connect to a socket owned by an unconfined process,
+so the encoder server runs in the `xpra_encoder_t` domain from xpra's SELinux policy, which containers are allowed to connect to,
+and the `xvfb` and `xpra` containers keep their SELinux label.
+This domain is not confined yet ([#5087](https://github.com/Xpra-org/xpra/issues/5087)):
+the encoder server has the same privileges as the current user.
+Without xpra's SELinux policy, `xvfb` and `xpra` are not confined by SELinux (`--security-opt=label=disable`).
+
+So a compromised xpra server runs as the current user, still confined by SELinux, without capabilities,
+with a read-only root filesystem and without access to the user's files:
 escaping from the container would then give access to the current user's account.
 
 ## `gpu`: GPU devices in the container
@@ -121,7 +126,7 @@ a compromised xpra server can attack the driver, which runs in the host's kernel
 | | none | `encoder` | `gpu` |
 |---|---|---|---|
 | `xpra` container uid | subordinate | current user | subordinate |
-| `xvfb` and `xpra` SELinux confinement | yes | no | DRI: yes, NVIDIA: no |
+| `xvfb` and `xpra` SELinux confinement | yes | with xpra's SELinux policy | DRI: yes, NVIDIA: no |
 | GPU driver reachable from | - | the host encoder server | the `xpra` container |
 | what the host encoder server parses | - | encoding requests and pixels | - |
 | a compromised xpra server can reach | its container | its container as the current user, the encoder server | its container, the GPU kernel driver |

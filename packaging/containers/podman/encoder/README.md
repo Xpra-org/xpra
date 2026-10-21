@@ -17,7 +17,7 @@ flowchart LR
     client(["browser / xpra client"])
 
     subgraph host["host, current user"]
-        encoder["<b>xpra encoder</b><br/>GPU encoders (ie: nvenc)<br/>auth=peercred<br/>--seccomp=strict, --landlock=strict+gpu"]
+        encoder["<b>xpra encoder</b><br/>GPU encoders (ie: nvenc)<br/>SELinux domain xpra_encoder_t<br/>auth=peercred<br/>--seccomp=strict, --landlock=strict+gpu"]
         gpu[("GPU")]
         dir[("$XDG_RUNTIME_DIR/xpra-secure-encoder<br/>socket + mmap areas")]
     end
@@ -66,11 +66,15 @@ But the files and the socket are shared with a process running as the current us
   instead of an unprivileged subordinate uid. \
   `xvfb` must use the same mapping, the X server can only use the `XShm` segments of the same user.
 * SELinux does not allow containers to connect to a socket owned by an unconfined process,
-  so the `xpra` and `xvfb` containers are not confined by SELinux (`--security-opt=label=disable`),
+  so the encoder server is started in the `xpra_encoder_t` domain (`runcon -t xpra_encoder_t -l s0`),
+  which containers are allowed to connect to. This domain is defined by xpra's SELinux policy, installed with the RPM packages,
+  it is not confined yet: the encoder server has the same privileges as the current user,
+  see [#5087](https://github.com/Xpra-org/xpra/issues/5087). \
+  Without this policy, the `xpra` and `xvfb` containers are not confined by SELinux (`--security-opt=label=disable`),
   they must use the same label to share the `XShm` segments.
 
 So a vulnerability exploited in the X server or in xpra gives access to the current user's account,
-limited only by the other container restrictions: no capabilities, read-only root filesystem,
+limited by SELinux and by the other container restrictions: no capabilities, read-only root filesystem,
 no access to the user's files, no network access for `xvfb`, etc.
 
 The `app` container is not affected: it still uses its own user namespace, SELinux label and ipc namespace,

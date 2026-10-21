@@ -141,13 +141,27 @@ XPRA_LABEL="--security-opt=label=level:s0:c${C1},c${C2}"
 # with `ACCEL=encoder`, the 'xpra' container shares files with the encoder server running as the current user,
 # so its uid 1000 must be the current user (`keep-id`),
 # and the 'xvfb' container must use the same mapping: the X server can only use the `XShm` segments of the same user.
-# SELinux does not allow containers to connect to the encoder server's socket,
-# which belongs to an unconfined process, so 'xvfb' and 'xpra' are not confined by SELinux either,
+# SELinux does not allow containers to connect to a socket which belongs to an unconfined process,
+# so the encoder server runs in the `xpra_encoder_t` domain from xpra's SELinux policy, which containers can connect to.
+# Without this policy, 'xvfb' and 'xpra' are not confined by SELinux either,
 # they must use the same label to share `XShm` segments. The 'app' container is still confined.
 USERNS_ARGS=()
+ENCODER_RUNCON=()
+ENCODER_VOLUME="rw"
 if [ "${ACCEL}" == "encoder" ]; then
   USERNS_ARGS=(--userns=keep-id:uid=1000,gid=1000)
-  XPRA_LABEL="--security-opt=label=disable"
+  if selinuxenabled &> /dev/null; then
+    if runcon -t xpra_encoder_t -l s0 xpra --version &> /dev/null; then
+      # the encoder server uses the lowest level, which the level of the containers dominates,
+      # its directory is relabelled so that they can use it, without any categories (`z`):
+      ENCODER_RUNCON=(runcon -t xpra_encoder_t -l s0)
+      ENCODER_VOLUME="rw,z"
+    else
+      echo "Warning: the 'xpra_encoder_t' SELinux domain is not available, install xpra's SELinux policy" >&2
+      echo " the 'xvfb' and 'xpra' containers will not be confined by SELinux" >&2
+      XPRA_LABEL="--security-opt=label=disable"
+    fi
+  fi
 elif [ "${ACCEL}" == "gpu" ] && [ "${GPU}" == "nvidia" ] && selinuxenabled &> /dev/null && ! getsebool container_use_devices 2> /dev/null | grep -q " on$"; then
   # likewise, SELinux does not allow containers to use the NVIDIA devices,
   # unless the `container_use_devices` boolean is enabled - for all the containers and all the devices:
@@ -198,6 +212,7 @@ if [ "${ACCEL}" == "encoder" ]; then
   # the encoder server only accepts connections from the current user (`auth=peercred`),
   # it does not listen anywhere else, and it is sandboxed like the xpra server in the container:
   ENCODER_CMD=(
+    "${ENCODER_RUNCON[@]}"
     xpra encoder --daemon=no
     --bind=none "--bind=${ENCODER_DIR}/socket,auth=peercred" --socket-permissions=600
     --mdns=no --html=no --websocket-upgrade=no --ssl-upgrade=no --ssh-upgrade=no
@@ -217,7 +232,7 @@ if [ "${ACCEL}" == "encoder" ]; then
     echo "the encoder server failed to start" >&2
     exit 1
   fi
-  ACCEL_ARGS=(--volume "${ENCODER_DIR}:/run/xpra-encoder:rw")
+  ACCEL_ARGS=(--volume "${ENCODER_DIR}:/run/xpra-encoder:${ENCODER_VOLUME}")
   VIDEO_ARGS=("--video-encoders=remote:uri=socket:///run/xpra-encoder/socket,mmap=/run/xpra-encoder/mmap:/run/xpra-encoder/mmap")
 elif [ "${ACCEL}" == "gpu" ]; then
   # the GPU devices are not accessible with Landlock unless the `gpu` flag is used:
