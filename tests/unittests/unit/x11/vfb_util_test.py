@@ -166,6 +166,25 @@ class TestVfbUtil(unittest.TestCase):
         with self.assertRaises(InitException):
             check_xorg_config(["Xorg", "-config", f.name])
 
+    def test_start_xvfb_checks_expanded_xorg_config(self):
+        # the default command uses "${XORG_CONFIG_PREFIX}", which must be expanded before checking:
+        from xpra.x11.vfb_util import start_Xvfb
+        from xpra.scripts.config import InitException
+        cmd = ["Xorg", "-config", "${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf"]
+        with tempfile.TemporaryDirectory() as prefix:
+            xorg_conf = os.path.join(prefix, "etc", "xpra", "xorg.conf")
+            with patch.dict(os.environ, {"XORG_CONFIG_PREFIX": prefix}), \
+                    patch("xpra.x11.vfb_util.get_xvfb_env", return_value={}), \
+                    patch("xpra.x11.vfb_util.Popen", return_value=Mock(pid=1234)) as popen:
+                with self.assertRaises(InitException):
+                    start_Xvfb(cmd, (), 0, 0, ":42", "/tmp", os.getuid(), os.getgid(), "")
+                popen.assert_not_called()
+                os.makedirs(os.path.dirname(xorg_conf))
+                with open(xorg_conf, "w", encoding="utf8"):
+                    pass
+                start_Xvfb(cmd, (), 0, 0, ":42", "/tmp", os.getuid(), os.getgid(), "")
+                self.assertIn(xorg_conf, popen.call_args[0][0])
+
     def test_start_xvfb_prepares_uinput_before_launch(self):
         from xpra.x11.vfb_util import start_Xvfb
         events = []
