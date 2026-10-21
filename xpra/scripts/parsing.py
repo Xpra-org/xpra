@@ -1351,13 +1351,13 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     legacy_bool_parse("file-transfer")
     legacy_bool_parse("open-files")
     legacy_bool_parse("open-url")
-    group.add_option("--file-transfer", action="store", metavar="yes|no|ask",
+    group.add_option("--file-transfer", action="store", metavar="yes|no|ask|auto",
                      dest="file_transfer", default=defaults.file_transfer,
-                     help="Support file transfers. Default: %s." % enabled_str(defaults.file_transfer))
-    group.add_option("--open-files", action="store", metavar="yes|no|ask",
+                     help="Support file transfers. Default: '%default'.")
+    group.add_option("--open-files", action="store", metavar="yes|no|ask|auto",
                      dest="open_files", default=defaults.open_files,
                      help="Automatically open uploaded files (potentially dangerous). Default: '%default'.")
-    group.add_option("--open-url", action="store", metavar="yes|no|ask",
+    group.add_option("--open-url", action="store", metavar="yes|no|ask|auto",
                      dest="open_url", default=defaults.open_url,
                      help="Automatically open URL (potentially dangerous). Default: '%default'.")
     group.add_option("--printing", action="store", metavar="yes|no|ask",
