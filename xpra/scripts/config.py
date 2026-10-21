@@ -1096,7 +1096,7 @@ def get_defaults():
                     "mmap"              : "yes",
                     "mmap-group"        : "auto",
                     "audio"             : True,
-                    "speaker"           : ["disabled", "on"][has_audio_support() and not is_arm()],
+                    "speaker"           : ["disabled", "on"][has_audio_support()],
                     "microphone"        : ["disabled", "off"][has_audio_support()],
                     "video-scaling"     : "auto",
                     "readonly"          : False,
