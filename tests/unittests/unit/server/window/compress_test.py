@@ -12,6 +12,7 @@ from unittest.mock import Mock, patch
 
 from xpra.server.window import compress
 from xpra.server.window.compress import WindowSource
+from xpra.server.window.refresh import RefreshController
 
 
 class CompressTest(unittest.TestCase):
@@ -104,9 +105,10 @@ class CompressTest(unittest.TestCase):
         source._damage_cancelled = 0
         source._damage_delayed = None
         source.encode_queue = []
-        source.refresh_regions = []
-        source.refresh_event_time = 0
-        for timer in ("expire_timer", "may_send_timer", "soft_timer", "refresh_timer",
+        source.refresh_controller = RefreshController(
+            compress.GLib, compress.monotonic, can_refresh=source.can_refresh, on_refresh=source.timer_full_refresh,
+        )
+        for timer in ("expire_timer", "may_send_timer", "soft_timer",
                       "timeout_timer", "av_sync_timer", "decode_error_refresh_timer"):
             setattr(source, timer, 0)
         source.statistics = SimpleNamespace(encoding_pending={})

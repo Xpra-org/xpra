@@ -1196,14 +1196,14 @@ class WindowVideoSource(WindowSource):
             if old is None or old != newrect:
                 refreshlog("identified new video region: %s", newrect)
                 # figure out if the new region had pending regular refreshes:
-                subregion_needs_refresh = any(newrect.intersects_rect(x) for x in self.refresh_regions)
+                subregion_needs_refresh = any(newrect.intersects_rect(x) for x in self.refresh_controller.regions)
                 if old:
                     # we don't bother subtracting new and old (too complicated)
                     refreshlog("scheduling refresh of old region: %s", old)
                     # this may also schedule a refresh:
                     super().add_refresh_region(old)
                 super().remove_refresh_region(newrect)
-                if not self.refresh_regions:
+                if not self.refresh_controller.regions:
                     self.cancel_refresh_timer()
                 if subregion_needs_refresh:
                     vs.add_video_refresh(newrect)
@@ -2145,27 +2145,27 @@ class WindowVideoSource(WindowSource):
     def do_schedule_auto_refresh(self, encoding: str, region, client_options: dict, options: typedict) -> None:
         # for scroll encoding, data is a LargeStructure wrapper:
         if scroll_data := client_options.get("scroll", ()):
-            if not self.refresh_regions:
+            if not self.refresh_controller.regions:
                 return
             # check if any pending refreshes intersect the area containing the scroll data:
-            if not any(region.intersects_rect(r) for r in self.refresh_regions):
+            if not any(region.intersects_rect(r) for r in self.refresh_controller.regions):
                 # nothing to do!
                 return
             pixels_added = 0
             for x, y, w, h, dx, dy in scroll_data:
                 # the region that moved
                 src_rect = rectangle(x, y, w, h)
-                for rect in self.refresh_regions:
+                for rect in self.refresh_controller.regions:
                     if inter := src_rect.intersection_rect(rect):
                         dst_rect = rectangle(inter.x+dx, inter.y+dy, inter.width, inter.height)
                         pixels_added += self.add_refresh_region(dst_rect)
             if pixels_added:
                 # if we end up with too many rectangles,
                 # bail out and simplify:
-                if len(self.refresh_regions) >= 200:
-                    self.refresh_regions = [merge_all(self.refresh_regions)]
+                if len(self.refresh_controller.regions) >= 200:
+                    self.refresh_controller.regions = [merge_all(self.refresh_controller.regions)]
                 refreshlog("updated refresh regions with scroll data: %i pixels added", pixels_added)
-                refreshlog(" refresh_regions=%s", self.refresh_regions)
+                refreshlog(" refresh_regions=%s", self.refresh_controller.regions)
             # we don't change any of the refresh scheduling
             # if there are non-scroll packets following this one, they will
             # and if not then we're OK anyway

@@ -29,11 +29,12 @@ from xpra.server.window.encoding_policy import (
     DEFAULT_TRANSPARENCY_ENCODINGS, EncodingState, EncodingStrategy, EncodingStrategyState,
     select_encoding_strategy, select_auto_encoding, select_transparent_encoding,
 )
+from xpra.server.window.refresh import RefreshController, RefreshSettings, classify_refresh
 from xpra.server.window.perfstats import WindowPerformanceStatistics
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
 from xpra.server.cystats import time_weighted_average, logp
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
-from xpra.util.rectangle import rectangle, add_rectangle, remove_rectangle, merge_all
+from xpra.util.rectangle import rectangle, add_rectangle, merge_all
 from xpra.util.stats import get_list_stats
 from xpra.codecs.rgb_transform import rgb_reformat
 from xpra.codecs.loader import get_codec
@@ -290,7 +291,6 @@ class WindowSource(WindowIconSource):
         # auto-refresh:
         self.auto_refresh_delay = auto_refresh_delay
         self.base_auto_refresh_delay = auto_refresh_delay
-        self.last_auto_refresh_message = None
         self.video_helper = video_helper
         self.cuda_device_context = cuda_device_context
         self.screen_updates_directory = ""
@@ -501,10 +501,11 @@ class WindowSource(WindowIconSource):
         self.video_helper = None
         self.refresh_quality = AUTO_REFRESH_QUALITY
         self.refresh_speed = AUTO_REFRESH_SPEED
-        self.refresh_event_time: float = 0.0
-        self.refresh_target_time: float = 0.0
-        self.refresh_timer: int = 0
-        self.refresh_regions: list[rectangle] = []
+        self.refresh_controller = RefreshController(
+            GLib, monotonic, can_refresh=lambda: self.can_refresh(), on_refresh=lambda: self.timer_full_refresh(),
+            add_region=lambda region: self.add_refresh_region(region),
+            remove_region=lambda region: self.remove_refresh_region(region),
+        )
         self.timeout_timer: int = 0
         self.expire_timer: int = 0
         self.soft_timer: int = 0
@@ -600,7 +601,7 @@ class WindowSource(WindowIconSource):
             "csc_modes"       : dict(self.full_csc_modes or {}),
             "decoder-speed"   : dict(self.decoder_speed),
         }
-        if larm := self.last_auto_refresh_message:
+        if larm := self.refresh_controller.last_message:
             esinfo.update(
                 {
                     "auto-refresh"    : {
@@ -1210,7 +1211,7 @@ class WindowSource(WindowIconSource):
         self.cancel_av_sync_timer()
         self.cancel_decode_error_refresh_timer()
         # if a region was delayed, we can just drop it now:
-        self.refresh_regions = []
+        self.refresh_controller.clear_regions()
         dropped = self._damage_delayed
         self._damage_delayed = None
         # make sure we don't account for those as they will get dropped
@@ -1246,11 +1247,7 @@ class WindowSource(WindowIconSource):
             GLib.source_remove(st)
 
     def cancel_refresh_timer(self) -> None:
-        if rt := self.refresh_timer:
-            self.refresh_timer = 0
-            GLib.source_remove(rt)
-            self.refresh_event_time = 0
-            self.refresh_target_time = 0
+        self.refresh_controller.cancel()
 
     def cancel_timeout_timer(self) -> None:
         if tt := self.timeout_timer:
@@ -1590,15 +1587,8 @@ class WindowSource(WindowIconSource):
 
     def do_damage(self, ww: int, wh: int, x: int, y: int, w: int, h: int, options: dict) -> None:
         now = monotonic()
-        if self.refresh_timer and options.get("quality", self._current_quality) < self.refresh_quality:
-            if rr := tuple(self.refresh_regions):
-                # does this screen update intersect with
-                # the areas that are due to be refreshed?
-                overlap = sum(rect.width*rect.height for rect in rr)
-                if overlap > 0:
-                    pct = int(min(100, 100*overlap//(ww*wh)) * (1+self.global_statistics.congestion_value))
-                    sched_delay = max(self.min_auto_refresh_delay, int(self.base_auto_refresh_delay * pct // 100))
-                    self.refresh_target_time = max(self.refresh_target_time, now + sched_delay/1000.0)
+        if self.refresh_controller.timer and options.get("quality", self._current_quality) < self.refresh_quality:
+            self.refresh_controller.postpone_for_damage(self._get_refresh_settings((ww, wh)), now)
 
         if delayed := self._damage_delayed:
             # use existing delayed region:
@@ -2259,131 +2249,37 @@ class WindowSource(WindowIconSource):
         client_options = packet.get_dict(10)         # info about this packet from the encoder
         self.do_schedule_auto_refresh(encoding, region, client_options, options)
 
+    def _get_refresh_settings(self, window_size: tuple[int, int] | None = None) -> RefreshSettings:
+        width, height = window_size or self.window_dimensions
+        if width <= 0 or height <= 0:
+            return RefreshSettings(width, height, self.base_auto_refresh_delay, self.min_auto_refresh_delay)
+        return RefreshSettings(width, height, self.base_auto_refresh_delay, self.min_auto_refresh_delay,
+                               self.batch_config.delay, self.global_statistics.congestion_value)
+
     def do_schedule_auto_refresh(self, encoding: str, region, client_options: dict, options: typedict) -> None:
         if self.encoding == "stream":
-            # streaming mode doesn't use refresh
             return
-        # scroll_data = client_options.get("scroll", ())
-        if encoding.startswith("png"):
-            actual_quality = 100
-            lossy = self.image_depth > 32 or self.image_depth == 30
-        elif encoding.startswith("rgb") or encoding == "mmap":
-            actual_quality = 100
-            lossy = False
-        else:
-            actual_quality = client_options.get("quality", 0)
-            lossy = any((
-                actual_quality < self.refresh_quality,
-                client_options.get("csc") in LOSSY_PIXEL_FORMATS,
-                client_options.get("scaled_size") is not None,
-            ))
-            if encoding == "jpeg" and TRUE_LOSSLESS:
-                lossy = True
-        refresh_exclude = self.get_refresh_exclude()  # pylint: disable=assignment-from-none
-        now = monotonic()
-
-        def rec(msg) -> None:
-            self.last_auto_refresh_message = now, msg
-            refreshlog("auto refresh: %5s screen update (actual quality=%3i, lossy=%5s),"
-                       " %s (region=%s, refresh regions=%s, exclude=%s)",
-                       encoding, actual_quality, lossy, msg,
-                       region, self.refresh_regions, refresh_exclude)
-        if not lossy or options.boolget("auto_refresh"):
-            # subtract this region from the list of refresh regions:
-            # (window video source may remove it from the video subregion)
-            self.remove_refresh_region(region)
-            if not self.refresh_timer:
-                # nothing due for refresh, still nothing to do
-                rec("lossless - nothing to do")
-                return
-            if not self.refresh_regions:
-                self.cancel_refresh_timer()
-                rec("covered all regions that needed a refresh, cancelling refresh timer")
-                return
-            rec("removed rectangle from regions, keeping existing refresh timer")
-            return
-        # if we're here: the window is still valid and this was a lossy update,
-        # of some form (lossy encoding with low enough quality, or using CSC subsampling, or using scaling)
-        # so we probably need an auto-refresh (re-schedule it if one was due already)
-        # try to add the rectangle to the refresh list:
-        ww, wh = self.window_dimensions
-        if ww <= 0 or wh <= 0:
-            self.cancel_refresh_timer()
-            rec("cancelling refresh - window cleaned up?")
-            return
-        # we may have modified some pixels that were already due to be refreshed,
-        # or added new ones to the list:
-        window_pixcount = ww*wh
-        region_pixcount = region.width*region.height
-        if refresh_exclude:
-            # there's a video region to exclude
-            # (it is handled separately with its own timer)
-            window_pixcount -= refresh_exclude.width*refresh_exclude.height
-            if region_excluded := region.intersection_rect(refresh_exclude):
-                region_pixcount -= region_excluded.width*region_excluded.height
-        added_pixcount = self.add_refresh_region(region)
-        if window_pixcount <= 0:
-            # if everything was excluded window_pixcount can be 0
-            pct = 100
-        else:
-            pct = 100*region_pixcount//window_pixcount
-        if pct == 100:
-            # everything was updated, start again as new:
-            self.cancel_refresh_timer()
-        if not self.refresh_timer:
-            # timer was not due yet, or we've just updated everything
-            if region_pixcount <= 0 or not self.refresh_regions:
-                rec("nothing to refresh")
-                return
-            self.refresh_event_time = now
-            # slow down refresh when there is congestion:
-            mult = sqrt(pct * (1+self.global_statistics.congestion_value))//10
-            sched_delay = max(
-                self.batch_config.delay*5,
-                self.min_auto_refresh_delay,
-                int(self.base_auto_refresh_delay * mult),
-            )
-            self.refresh_target_time = now + sched_delay/1000.0
-            self.refresh_timer = GLib.timeout_add(sched_delay, self.refresh_timer_function, options)
-            rec(f"scheduling refresh in {sched_delay}ms (pct={pct}, batch={self.batch_config.delay})")
-            return
-        # some of those rectangles may overlap,
-        # so the value may be greater than the size of the window:
-        due_pixcount = sum(rect.width*rect.height for rect in self.refresh_regions)
-        # a refresh is already due
-        if added_pixcount >= due_pixcount//2:
-            # we have more than doubled the number of pixels to refresh
-            # use the total due
-            pct = 100*due_pixcount//window_pixcount
-        # don't use sqrt() on pct,
-        # so this will not move it forwards for small updates following bigger ones:
-        sched_delay = max(
-            self.batch_config.delay*5,
-            self.min_auto_refresh_delay,
-            int(self.base_auto_refresh_delay * pct // 100),
+        actual_quality, lossy = classify_refresh(
+            encoding, self.image_depth, client_options, refresh_quality=self.refresh_quality,
+            true_lossless=TRUE_LOSSLESS, lossy_formats=LOSSY_PIXEL_FORMATS,
         )
-        max_time = self.refresh_event_time + 5*self.base_auto_refresh_delay/1000.0
-        target_time = self.refresh_target_time
-        self.refresh_target_time = min(max_time, max(target_time, now + sched_delay/1000.0))
-        added_ms = int(1000*(self.refresh_target_time-target_time))
-        due_ms = int(1000*(self.refresh_target_time-now))
-        if self.refresh_target_time == target_time:
-            rec(f"unchanged refresh: due in {due_ms}ms, pct={pct}")
-        else:
-            rec("re-scheduling refresh: due in %ims, %ims added - sched_delay=%s, pct=%i, batch=%i)" % (
-                due_ms, added_ms, sched_delay, pct, self.batch_config.delay))
+        exclude = self.get_refresh_exclude()
+        auto_refresh = lossy and options.boolget("auto_refresh")
+        settings = self._get_refresh_settings() if lossy and not auto_refresh else None
+        message = self.refresh_controller.update(
+            region, settings, lossy=lossy, auto_refresh=auto_refresh, exclude=exclude,
+        )
+        refreshlog("auto refresh: %5s screen update (actual quality=%3i, lossy=%5s),"
+                   " %s (region=%s, refresh regions=%s, exclude=%s)",
+                   encoding, actual_quality, lossy, message, region, self.refresh_controller.regions, exclude)
 
     def remove_refresh_region(self, region: rectangle) -> None:
-        # removes the given region from the refresh list
-        # (also overridden in window video source)
-        remove_rectangle(self.refresh_regions, region)
+        # Also overridden in the video source to update its separate refresh state.
+        self.refresh_controller.remove_region(region)
 
     def add_refresh_region(self, region: rectangle) -> int:
-        # adds the given region to the refresh list
-        # returns the number of pixels in the region update
-        # (overridden in window video source to exclude the video region)
-        # Note: this does not run in the UI thread!
-        return add_rectangle(self.refresh_regions, region)
+        # The video source splits updates before forwarding the non-video regions here.
+        return self.refresh_controller.add_region(region)
 
     def can_refresh(self) -> bool:
         if not AUTO_REFRESH:
@@ -2398,39 +2294,9 @@ class WindowSource(WindowIconSource):
             return False
         return True
 
-    def refresh_timer_function(self, damage_options: typedict) -> bool:
-        """ Must be called from the UI thread:
-            this makes it easier to prevent races,
-            and we're also allowed to use the window object.
-            And for that reason, it may re-schedule itself safely here too.
-            We figure out if now is the right time to do the refresh,
-            and if not re-schedule.
-        """
-        self.refresh_timer = 0
-        # timer is running now, clear it so that we don't try to cancel it somewhere else:
-        # re-do some checks that may have changed:
-        if not self.can_refresh():
-            self.refresh_event_time = 0
-            return False
-        ret = self.refresh_event_time
-        if ret == 0:
-            return False
-        delta = self.refresh_target_time - monotonic()
-        if delta < 0.050:
-            # this is about right (due already or due shortly)
-            self.timer_full_refresh()
-            return False
-        # re-schedule ourselves:
-        self.refresh_timer = GLib.timeout_add(int(delta*1000), self.refresh_timer_function, damage_options)
-        refreshlog("refresh_timer_function: rescheduling auto refresh timer with extra delay %ims", int(1000*delta))
-        return False
-
     def timer_full_refresh(self) -> bool:
         # copy event time and list of regions (which may get modified by another thread)
-        ret = self.refresh_event_time
-        self.refresh_event_time = 0
-        regions = self.refresh_regions
-        self.refresh_regions = []
+        ret, regions = self.refresh_controller.take_regions()
         if self.can_refresh() and regions and ret > 0:
             now = monotonic()
             options = self.get_refresh_options()
@@ -2462,10 +2328,8 @@ class WindowSource(WindowIconSource):
         if not self.auto_refresh_encodings or self.is_cancelled():
             # can happen during cleanup
             return
-        refresh_regions = self.refresh_regions
-        # since we're going to refresh the whole window,
-        # we don't need to track what needs refreshing:
-        self.refresh_regions = []
+        refresh_regions = self.refresh_controller.clear_regions()
+        # The full-window update supersedes the pending refresh regions.
         w, h = self.window_dimensions
         refreshlog("full_quality_refresh() for %sx%s window with pending refresh regions: %s", w, h, refresh_regions)
         new_options = damage_options.copy()
@@ -2641,9 +2505,8 @@ class WindowSource(WindowIconSource):
                     send_speed = avg_send_speed
         bandwidthlog("networksend_congestion_event(%s, %i, %i) %iKbps (average=%iKbps) for wid=%#x",
                      source, late_pct, cur_send_speed, send_speed//1024, avg_send_speed//1024, self.wid)
-        if rtt := self.refresh_target_time:
-            # a refresh now would really hurt us!
-            self.refresh_target_time = max(rtt, now+2)
+        # A refresh now would really hurt us.
+        self.refresh_controller.postpone(2, now)
         self.record_congestion_event(source, late_pct, send_speed)
 
     def estimate_send_delay(self, bytecount: int) -> int:
