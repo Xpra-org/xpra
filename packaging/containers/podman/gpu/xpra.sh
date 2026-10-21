@@ -32,9 +32,6 @@ fi
 buildah rm "$CONTAINER" &> /dev/null || true
 buildah rmi -f "${IMAGE_NAME}" &> /dev/null || true
 buildah from --name "$CONTAINER" "${BASE_IMAGE}"
-# the GPU codecs must be the same version as the other codecs already installed,
-# the repository may already have newer builds:
-XPRA_EVR=$(run rpm -q --qf '%{epoch}:%{version}-%{release}' xpra-codecs)
 # the base image already has the RPM Fusion free repositories:
 RPMFUSION_DIR=$(run sh -c '. /etc/os-release; if [ "${ID}" == "fedora" ]; then echo fedora; else echo el; fi')
 VERSION_ID=$(run sh -c '. /etc/os-release; echo ${VERSION_ID%%.*}')
@@ -42,8 +39,7 @@ VERSION_ID=$(run sh -c '. /etc/os-release; echo ${VERSION_ID%%.*}')
 for codec in ${GPU_CODECS}; do
   case "${codec}" in
     nvidia)
-      # `python3-pycuda` builds older than 2026.1-2 are missing their dependencies:
-      install "xpra-codecs-nvidia-${XPRA_EVR}" python3-numpy
+      install xpra-codecs-nvidia
       ;;
     intel)
       # Fedora's 'libva-intel-media-driver' is built without the H.264 and HEVC codecs, which oneVPL also uses,
@@ -55,21 +51,24 @@ for codec in ${GPU_CODECS}; do
       # Fedora's mesa does not include the patent encumbered codecs,
       # RPM Fusion's 'mesa-va-drivers-freeworld' must be the same version as mesa,
       # and it is sometimes built before Fedora's mesa update is released:
-      # only install it if this does not downgrade mesa, and if this mesa version is available
+      # only install it if this does not downgrade mesa,
+      # and take the matching mesa packages from Fedora's 'updates-testing' if they are not released yet
       MESA_VERSION=$(run sh -c "rpm -q mesa-filesystem > /dev/null && rpm -q --qf '%{version}\n' mesa-filesystem || true" | head -n 1)
       FREEWORLD_VERSION=$(run dnf repoquery -q --latest-limit=1 --qf '%{version}\n' mesa-va-drivers-freeworld | head -n 1)
       if [ -n "${MESA_VERSION}" ] && [ "$(printf '%s\n' "${MESA_VERSION}" "${FREEWORLD_VERSION}" | sort -V | head -n 1)" != "${MESA_VERSION}" ]; then
         echo "Warning: 'mesa-va-drivers-freeworld' ${FREEWORLD_VERSION} would downgrade mesa ${MESA_VERSION}" >&2
         echo " the VA-API drivers will not support H.264 and HEVC" >&2
       elif ! install "mesa-va-drivers-freeworld-${FREEWORLD_VERSION}"; then
-        echo "Warning: 'mesa-va-drivers-freeworld' ${FREEWORLD_VERSION} cannot be installed, mesa ${FREEWORLD_VERSION} may not be released yet" >&2
-        echo " the VA-API drivers will not support H.264 and HEVC" >&2
+        if [ "${RPMFUSION_DIR}" != "fedora" ] || ! install --enablerepo=updates-testing "--setopt=updates-testing.includepkgs=mesa-*" "mesa-va-drivers-freeworld-${FREEWORLD_VERSION}"; then
+          echo "Warning: 'mesa-va-drivers-freeworld' ${FREEWORLD_VERSION} cannot be installed, mesa ${FREEWORLD_VERSION} is not available" >&2
+          echo " the VA-API drivers will not support H.264 and HEVC" >&2
+        fi
       fi
       ;;
     amd)
       # this requires a custom xpra build with AMF support,
       # `xpra-codecs-amd` is not available from the xpra repositories:
-      install "xpra-codecs-amd-${XPRA_EVR}"
+      install xpra-codecs-amd
       ;;
     *)
       echo "unknown GPU codec '${codec}'" >&2
