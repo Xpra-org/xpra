@@ -118,13 +118,18 @@ class RemoteServerAdapter(baseclass):
         self.reconnect_delay = to.intget("reconnect-delay", RECONNECT_DELAY)
         self.connect_poll_delay = to.intget("connect-poll-delay", CONNECT_POLL_DELAY)
         self.system_socket_path = to.strget("system-socket", self.SYSTEM_SOCKET_PATH)   # NOSONAR @SuppressWarnings("python:S1845")
-        self.sessions_dir = osexpand(to.strget("sessions-dir", options.sessions_dir))
+        # `options` only contains the codec options, ie: "remote:uri=...,mmap=...",
+        # everything else comes from the defaults:
+        opts = make_defaults_struct()
+        self.sessions_dir = osexpand(to.strget("sessions-dir", opts.sessions_dir))
+        opts.mmap = to.strget("mmap", opts.mmap)
+        opts.mmap_group = to.strget("mmap-group", opts.mmap_group)
         self.connect_timer = 0
         self.connecting = False
         self.protocol = None
         self._ordinary_packets = []
         self.connect_event = Event()
-        super().init(options)
+        self.init(opts)
 
     def cleanup(self) -> None:
         self.cancel_schedule_connect()
@@ -186,6 +191,8 @@ class RemoteServerAdapter(baseclass):
             desc["quiet"] = True
             log(f"EncoderClient.do_connect() server desc={desc!r}")
             conn = connect_to(desc)
+            # the mmap areas are freed when we lose the connection, so create new ones for each connection:
+            self.load()
             super().setup_connection(conn)
             self.protocol = self.make_protocol(conn)
             self.send_hello()
@@ -243,10 +250,8 @@ class RemoteServerAdapter(baseclass):
     def send_hello(self) -> None:
         caps = self.make_hello()
         caps.update(super().get_caps())
-        from xpra.net.packet_encoding import get_packet_encoding_caps
-        caps.update(get_packet_encoding_caps(0))
-        from xpra.net.compression import get_compression_caps
-        caps.update(get_compression_caps(0))
+        from xpra.net.net_util import get_network_caps
+        caps.update(get_network_caps(0))
         log(f"sending hello={caps!r}")
         self.send("hello", caps)
         self.connect_event.clear()
