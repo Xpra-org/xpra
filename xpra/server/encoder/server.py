@@ -19,7 +19,7 @@ from xpra.net.common import Packet, MmapPointerError
 from xpra.net.compression import Compressed
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.codecs.image import ImageWrapper, PlanarFormat
-from xpra.codecs.constants import COMPRESS_RATIO, COMPRESS_FMT_SUFFIX
+from xpra.codecs.constants import COMPRESS_RATIO, COMPRESS_FMT_SUFFIX, TransientCodecException
 from xpra.server.base import ServerBase
 from xpra.codecs.video import getVideoHelper
 from xpra.log import Logger
@@ -141,6 +141,11 @@ class EncoderServer(ServerBase):
     def add_new_client(self, ss, *args) -> None:
         super().add_new_client(ss, *args)
         ss.protocol.large_packets.append("encode-response")
+        # the packet handlers run on the network parse thread,
+        # so the encode thread they would start would inherit its seccomp filter,
+        # which does not allow the video encoders to initialize, ie: `eventfd2` for CUDA:
+        # start it now instead (see `docs/Usage/Seccomp.md`)
+        ss.call_in_encode_thread(noop)
 
     def _process_encode(self, proto: SocketProtocol, packet: Packet) -> None:
         # this function is only used by the `encode` client,
@@ -280,7 +285,7 @@ class EncoderServer(ServerBase):
             self.encoders.setdefault(ss.uuid, {})[seq] = encoder
             log(f"new encoder: {encoder}")
             ss.send("context-response", seq, True, "", encoder.get_info())
-        except RuntimeError as e:
+        except (RuntimeError, ValueError) as e:
             log("context request failed", exc_info=True)
             ss.send("context-response", seq, False, f"initialization error: {e}", {})
 
@@ -340,6 +345,11 @@ class EncoderServer(ServerBase):
             log(f"{encoder=} {image=}")
             add_device_context(ss, options)
             bdata, client_options = encoder.compress_image(image, typedict(options))
+        except TransientCodecException as e:
+            # ie: nvenc "failed to acquire cuda device lock", the client can try again:
+            log("compress_image(%s, ..)", image, exc_info=True)
+            ss.send("context-data", seq, b"", {"error": str(e)}, {})
+            return
         finally:
             free_all()
 
