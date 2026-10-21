@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import patch
 
 from xpra.util.parsing import (
     str_to_bool,
@@ -291,6 +292,12 @@ class TestParseSimpleDict(unittest.TestCase):
         d = parse_simple_dict("a=b=c", nested=True)
         self.assertIsInstance(d["a"], dict)
         self.assertEqual(d["a"]["b"], "c")
+
+    def test_nested_dictionary_merges_and_rejects_scalar_values(self):
+        with patch("xpra.util.parsing.Logger"):
+            self.assertEqual(parse_simple_dict("a=x=1,a=y=2,a=bad,b=ok", nested=True),
+                             {"a": {"x": "1", "y": "2"}, "b": "ok"})
+        self.assertEqual(parse_simple_dict("a=exec(x=1)", nested=True), {"a": "exec(x=1)"})
 
     def test_values_with_equal_signs_kept_as_strings(self):
         # by default, a '=' in the value must not turn it into a dictionary,
