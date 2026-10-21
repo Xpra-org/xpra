@@ -211,6 +211,18 @@ def patch_uinput(xvfb_cmd: list[str]) -> bool:
     return True
 
 
+def check_xorg_config(xvfb_cmd: list[str]) -> None:
+    # without its config file, Xorg probes the real hardware instead of using the dummy driver,
+    # and tries to take over a VT - which may interfere with other sessions (see #2834)
+    try:
+        xorg_conf = xvfb_cmd[xvfb_cmd.index("-config") + 1]
+    except (ValueError, IndexError):
+        return
+    # relative paths are resolved by Xorg using its own search path:
+    if os.path.isabs(xorg_conf) and not os.path.exists(xorg_conf):
+        raise InitException(f"Xorg configuration file {xorg_conf!r} not found")
+
+
 def patch_pixel_depth(xvfb_cmd: list[str], depth: int) -> None:
     try:
         config_argindex = xvfb_cmd.index("-depth")
@@ -337,6 +349,7 @@ def start_Xvfb(xvfb_cmd: Sequence[str], vfb_geom, pixel_depth: int, fps: int, di
         create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
         if prepare_uinput:
             prepare_uinput()
+    check_xorg_config(xvfb_cmd)
 
     xvfb_executable = xvfb_cmd[0]
     env = get_xvfb_env(xvfb_executable)

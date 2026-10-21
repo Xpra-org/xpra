@@ -157,6 +157,15 @@ class TestVfbUtil(unittest.TestCase):
         with self.assertRaises(InitException):
             patch_uinput(cmd)
 
+    def test_check_xorg_config(self):
+        from xpra.x11.vfb_util import check_xorg_config
+        from xpra.scripts.config import InitException
+        with tempfile.NamedTemporaryFile(suffix=".conf") as f:
+            for cmd in (["Xvfb"], ["Xorg", "-config"], ["Xorg", "-config", "xorg.conf"], ["Xorg", "-config", f.name]):
+                check_xorg_config(cmd)
+        with self.assertRaises(InitException):
+            check_xorg_config(["Xorg", "-config", f.name])
+
     def test_start_xvfb_prepares_uinput_before_launch(self):
         from xpra.x11.vfb_util import start_Xvfb
         events = []
