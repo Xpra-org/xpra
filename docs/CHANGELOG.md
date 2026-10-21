@@ -5,7 +5,7 @@
 * 🖧 Network:
 * 🛡️ Security:
   * [authentication errors leave clients waiting until they time out](https://github.com/Xpra-org/xpra/commit/b74e8b7943376736812563144c04a5a62f813e85)
-  * [GPU security and containers](https://github.com/Xpra-org/xpra/issues/5088): [GPU accelerated secure pods](https://github.com/Xpra-org/xpra/blob/master/packaging/containers/podman/GPU.md), [landlock `+gpu`](https://github.com/Xpra-org/xpra/issues/5086)
+  * [GPU security and containers](https://github.com/Xpra-org/xpra/issues/5088): [GPU accelerated secure pods](https://github.com/Xpra-org/xpra/blob/master/packaging/containers/podman/GPU.md), [landlock `+gpu`](https://github.com/Xpra-org/xpra/issues/5086), [SELinux domain for the encoder server](https://github.com/Xpra-org/xpra/issues/5087)
 * 🌈 Encodings:
 * ✨ Features:
   * [remove backwards compatibility](https://github.com/Xpra-org/xpra/issues/4496)
