@@ -17,6 +17,7 @@ from xpra.os_util import (
     strtobytes, bytestostr, memoryview_to_bytes, hexstr,
     OSEnvContext,
     POSIX,
+    is_arm,
     is_main_thread,
     getuid, getgid, get_shell_for_uid, get_username_for_uid, get_home_for_uid,
     get_hex_uuid, get_int_uuid, get_user_uuid,
@@ -95,6 +96,12 @@ class TestOSUtil(unittest.TestCase):
         is_CentOS()
         is_RedHat()
         is_WSL()
+
+    def test_is_arm(self):
+        for machine, expected in (("armv7l", True), ("aarch64", True), ("arm64", True), ("x86_64", False), ("riscv64", False)):
+            with self.subTest(machine=machine), patch("platform.uname") as uname:
+                uname.return_value = ("Linux", "host", "1", "1", machine, "")
+                self.assertEqual(is_arm(), expected)
 
     def test_de(self):
         is_unity()
