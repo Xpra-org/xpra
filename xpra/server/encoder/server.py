@@ -16,7 +16,8 @@ from xpra.os_util import gi_import
 from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
-from xpra.net.common import Packet, MmapPointerError
+from xpra.net.common import Packet, MmapPointerError, REMOTE_CODEC_PROTOCOL_VERSION
+from xpra.util.version import min_version_check
 from xpra.net.compression import Compressed
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.codecs.image import ImageWrapper, PlanarFormat
@@ -134,7 +135,11 @@ class EncoderServer(ServerBase):
         self.add_packets("encode", "context-request", "context-compress", "context-close")
 
     def parse_hello(self, ss, c: typedict) -> str | ConnectionMessage:
-        super().parse_hello(ss, c)
+        if err := super().parse_hello(ss, c):
+            return err
+        # clients older than v7 use the legacy packet type names, which we don't use:
+        if err := min_version_check(c.strget("version"), REMOTE_CODEC_PROTOCOL_VERSION):
+            return f"incompatible version: {err}"
         from xpra.server.source.encoding import EncodingsConnection
         if not isinstance(ss, EncodingsConnection):
             return "client did not enable encoding"

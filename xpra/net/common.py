@@ -32,6 +32,9 @@ MIN_PROTOCOL_VERSION: tuple[int, ...] = (5, 1) if BACKWARDS_COMPATIBLE else (7, 
 DEFAULT_PROTOCOL_VERSION: tuple[int, ...] = (5, 1)
 # peers that only accept this protocol version (or later) only use the modern packets and capabilities:
 MODERN_PROTOCOL_VERSION: tuple[int, ...] = (7, 0)
+# the remote codec clients and the encoder server only use the modern packet type names,
+# so they cannot talk to peers older than v7, even when we are `BACKWARDS_COMPATIBLE`:
+REMOTE_CODEC_PROTOCOL_VERSION: tuple[int, ...] = (7, 0)
 
 
 def legacy_peer(protocol_version: Sequence[int]) -> bool:

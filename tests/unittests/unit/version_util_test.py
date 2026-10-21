@@ -9,7 +9,7 @@ import unittest
 from xpra.os_util import POSIX
 from xpra.net.common import FULL_INFO
 from xpra.util.version import (
-    version_compat_check, protocol_compat_check,
+    version_compat_check, protocol_compat_check, min_version_check,
     get_host_info, get_version_info, get_platform_info,
 )
 
@@ -42,6 +42,12 @@ class TestVersionUtilModule(unittest.TestCase):
         self.assertTrue(protocol_compat_check(tuple(__version_info__) + (1, )))
         # invalid versions are rejected rather than causing errors:
         self.assertTrue(protocol_compat_check("%i.%ibeta" % __version_info__[:2]))
+
+    def test_min_version_check(self):
+        for version in ("8.0", "8.0.1", "8.1", "9", "8"):
+            self.assertFalse(min_version_check(version, (8, 0)), f"{version!r} should satisfy 8.0")
+        for version in ("7.0", "7.9.9", "7", "", "invalid", "8.0beta"):
+            self.assertTrue(min_version_check(version, (8, 0)), f"{version!r} should not satisfy 8.0")
 
     def test_get_host_info(self):
         attrs = []

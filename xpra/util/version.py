@@ -145,6 +145,22 @@ def protocol_compat_check(remote_protocol_version) -> str:
     return ""
 
 
+def min_version_check(remote_version: str, min_version: tuple[int, ...]) -> str:
+    """
+    Verify that the peer's version is at least `min_version`,
+    the version may be truncated, ie: "8" for "8.0.1".
+    Returns an error message, or an empty string if it is recent enough.
+    """
+    mstr = ".".join(str(part) for part in min_version)
+    rv = parse_version(remote_version)
+    try:
+        if not rv or (rv + (0, ) * len(min_version))[:len(min_version)] < min_version:
+            return f"version {mstr} or later is required, not {remote_version!r}"
+    except TypeError:
+        return f"invalid version {remote_version!r}"
+    return ""
+
+
 def version_compat_check(remote_version) -> str | None:
     if not remote_version:
         msg = "remote version is not available"
