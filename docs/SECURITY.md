@@ -10,6 +10,8 @@ For a general overview, please first read [security considerations](./docs/Usage
 
 To isolate applications which may be hostile, see the [secure pod](https://github.com/Xpra-org/xpra/tree/master/packaging/containers/podman/secure):
 the application runs in its own container, which only shares the X11 display with the X server and the xpra server.
+It can use the GPU for video encoding, see [GPU acceleration and the secure pod](https://github.com/Xpra-org/xpra/blob/master/packaging/containers/podman/GPU.md)
+for the security implications of each approach.
 
 
 ## Reporting a Vulnerability
