@@ -146,6 +146,7 @@ class DbusManager(StubSubsystem):
             display_name = os.environ.get("DISPLAY", "")
             self.pid, self.env = reload_dbus_attributes(display_name)
             if self.pid and self.env:
+                os.environ.update(self.env)
                 return
         try:
             from xpra.server.dbus.start import start_dbus, wait_for_dbus
