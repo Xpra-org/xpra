@@ -428,13 +428,6 @@ def is_openSUSE() -> bool:
     return is_distribution_variant(b"openSUSE")
 
 
-def is_arm() -> bool:
-    import platform
-    machine = platform.uname()[4]
-    # ie: "armv7l", "aarch64" or "arm64" (MacOS)
-    return machine.startswith("arm") or machine.startswith("aarch")
-
-
 _linux_distribution = ("", "", "")
 def get_linux_distribution() -> Tuple[str,str,str]:
     global _linux_distribution

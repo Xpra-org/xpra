@@ -15,7 +15,7 @@ from xpra.util import csv, stderr_print, sorted_nicely, remove_dupes
 from xpra.os_util import (
     WIN32, OSX, POSIX,
     osexpand, getuid, getgid, get_username_for_uid,
-    is_Debian, is_Ubuntu, is_arm,
+    is_Debian, is_Ubuntu,
     which,
     )
 
@@ -70,9 +70,6 @@ def get_xorg_bin() -> Optional[str]:
     if xorg:
         return xorg
     # Detect Xorg Binary
-    if is_arm() and is_Debian() and os.path.exists("/usr/bin/Xorg"):
-        #Raspbian breaks if we use a different binary..
-        return "/usr/bin/Xorg"
     for p in (
               "/usr/libexec/Xorg",              #fedora 22+
               "/usr/lib/xorg/Xorg",             #ubuntu 16.10
