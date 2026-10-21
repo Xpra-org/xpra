@@ -184,6 +184,13 @@ class TestMain(unittest.TestCase):
                     self.assertEqual(configure_landlock(str(value).upper()), expected)
                     # the commands started from the session must not inherit the mode:
                     self.assertNotIn("XPRA_LANDLOCK", os.environ)
+        for value, expected in (("strict+gpu", "strict+gpu"), ("Default+GPU", "default+gpu"),
+                                ("yes+gpu", "default+gpu"), (" strict + gpu ", "strict+gpu")):
+            with self.subTest(value=value):
+                self.assertEqual(configure_landlock(value), expected)
+        for value in ("no+gpu", "strict+foo", "strict+", "+gpu"):
+            with self.subTest(value=value), self.assertRaises(InitException):
+                configure_landlock(value)
 
     def test_landlock_unsupported_backends(self):
         for backend in ("qt", "pyglet", "tk"):

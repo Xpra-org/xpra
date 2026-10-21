@@ -1079,15 +1079,30 @@ def get_default_seccomp() -> str:
     return "no"
 
 
-def parse_landlock_option(value: str | bool) -> str:
-    mode = str(value or "no").strip().lower()
+def split_landlock_option(value: str | bool) -> tuple[str, bool]:
+    """
+        Parses a landlock option value, ie: "strict+gpu",
+        and returns the mode and whether the GPU devices are accessible.
+    """
+    mode, plus, flag = str(value or "no").strip().lower().partition("+")
+    mode = mode.strip()
     if mode in FALSE_OPTIONS:
         mode = "no"
     elif mode in TRUE_OPTIONS:
         mode = "default"
     if mode not in ("no", "default", "strict"):
         raise InitException(f"invalid landlock option {value!r}, must be 'no', 'default' or 'strict'")
-    return mode
+    gpu = False
+    if plus:
+        if flag.strip() != "gpu" or mode == "no":
+            raise InitException(f"invalid landlock option {value!r}, only 'default+gpu' and 'strict+gpu' are supported")
+        gpu = True
+    return mode, gpu
+
+
+def parse_landlock_option(value: str | bool) -> str:
+    mode, gpu = split_landlock_option(value)
+    return f"{mode}+gpu" if gpu else mode
 
 
 def get_defaults() -> dict[str, Any]:

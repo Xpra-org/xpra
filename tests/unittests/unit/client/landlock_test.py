@@ -60,7 +60,7 @@ class LandLockTest(unittest.TestCase):
         security.enforce_landlock.assert_called_once_with("default", ("/downloads",), read_paths=[],
                                                           required_paths=[], socket_paths=[], socket_dirs=[],
                                                           temp_dir="",
-                                                          allow_socket_creation=True)
+                                                          allow_socket_creation=True, gpu=False)
 
     def test_listener_order_and_single_installation(self):
         from xpra.client.subsystem.socket import NetworkListener
@@ -253,7 +253,7 @@ class LandLockTest(unittest.TestCase):
                                                           read_paths=["/known-hosts", "/cert"], required_paths=["/cert"],
                                                           socket_paths=["/server/socket"], socket_dirs=[],
                                                           temp_dir="/private",
-                                                          allow_socket_creation=False)
+                                                          allow_socket_creation=False, gpu=False)
 
     def test_missing_target_does_not_create_temp_storage(self):
         client, landlock, _opts = self.make_landlock("strict")

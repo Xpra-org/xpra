@@ -1937,6 +1937,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Restrict client and server filesystem access with Linux Landlock"
                           " (Linux only, no effect elsewhere). Values: 'no', 'default' (broad reads),"
                           " 'strict' (required resources and dedicated writable directories)."
+                          " Append '+gpu' to allow access to the GPU devices, ie: 'strict+gpu'."
                           " Values are case insensitive; boolean values select 'no' or 'default'."
                           " Both enabled modes require Landlock ABI 9 or newer. Default: '%default'.")
     group.add_option("--seccomp", action="store",

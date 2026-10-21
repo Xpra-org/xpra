@@ -64,7 +64,7 @@ class LandLockTest(unittest.TestCase):
     def test_feature_uses_current_option(self):
         saved = {name: value for name, value in vars(features).items() if isinstance(value, bool)}
         for linux, mode, expected in ((True, "no", False), (True, "default", True), (True, "strict", True),
-                                      (False, "strict", False)):
+                                      (True, "strict+gpu", True), (False, "strict", False)):
             opts = make_defaults_struct()
             opts.landlock = mode
             with self.subTest(linux=linux, mode=mode), patch.dict(vars(features), saved), \
@@ -73,6 +73,15 @@ class LandLockTest(unittest.TestCase):
                 features.set_server_features(opts, "encoder")
                 self.assertEqual(features.landlock, expected)
                 self.assertEqual(LandLock in get_instance_subsystem_classes(), expected)
+
+    def test_gpu_flag(self):
+        for mode, expected_mode, gpu in (("strict", "strict", False), ("strict+gpu", "strict", True),
+                                         ("default+gpu", "default", True)):
+            with self.subTest(mode=mode), patch("xpra.server.subsystem.landlock.LINUX", True):
+                _server, landlock, _opts = self.make_landlock(mode)
+                self.assertEqual(landlock.mode, expected_mode)
+                self.assertEqual(landlock.gpu, gpu)
+                self.assertEqual(landlock.get_info(None)["landlock"]["gpu"], gpu)
 
     def test_setup_order_and_single_installation(self):
         server, landlock, opts = self.make_landlock()
@@ -99,7 +108,7 @@ class LandLockTest(unittest.TestCase):
         modules["xpra.platform.posix.security"].enforce_landlock.assert_called_once_with(
             "strict", ("/sessions/100", ), read_paths=(), required_paths=(),
             socket_paths=(), socket_dirs=["/sockets"], cleanup_dirs=("/sessions",), temp_dir="/private",
-            allow_socket_creation=False,
+            allow_socket_creation=False, gpu=False,
         )
 
     def test_pulseaudio_starts_before_confinement(self):

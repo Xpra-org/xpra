@@ -46,7 +46,7 @@ from xpra.scripts.config import (
     CLIENT_OPTIONS,
     START_COMMAND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS,
     InitException, InitInfo, InitExit,
-    fixup_options, parse_landlock_option,
+    fixup_options, parse_landlock_option, split_landlock_option,
     find_docs_path, find_html5_path,
     get_defaults,
     make_defaults_struct, has_audio_support,
@@ -412,7 +412,7 @@ def configure_seccomp(value: str) -> None:
 
 def configure_landlock(value: str) -> str:
     value = parse_landlock_option(value)
-    if value == "strict" and LINUX:
+    if split_landlock_option(value)[0] == "strict" and LINUX:
         # dconf otherwise tries to create shared desktop state in the runtime
         # directory, including during GTK theme and menu initialization.
         os.environ.setdefault("GSETTINGS_BACKEND", "memory")
