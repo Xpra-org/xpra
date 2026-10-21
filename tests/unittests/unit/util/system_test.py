@@ -54,6 +54,22 @@ class DistributionTest(unittest.TestCase):
                 patch.object(system, "is_distribution_variant", side_effect=lambda name: name == "Manjaro"):
             self.assertTrue(system.is_Arch())
 
+    def test_deb_xdummy_version_gate(self):
+        with patch.object(system, "POSIX", True), patch.object(system, "load_os_release_file") as load:
+            for data, expected in (
+                ('NAME="Debian GNU/Linux"\nVERSION_ID="12"', False),
+                ('NAME="Debian GNU/Linux"\nVERSION_ID="13"', True),
+                ('NAME="Debian GNU/Linux"\n', True),
+                ('NAME="Ubuntu"\nVERSION_ID="25.10"', False),
+                ('NAME="Ubuntu"\nVERSION_ID="26.04"', True),
+                ('NAME="Ubuntu"\n', False),
+                ('NAME="Linux Mint"\nVERSION_ID="23"', False),
+                ('NAME="Fedora Linux"\nVERSION_ID="44"', False),
+            ):
+                with self.subTest(data=data):
+                    load.return_value = data
+                    self.assertEqual(system.is_DEB_Xdummy_safe(), expected)
+
     def test_lsb_release_parsing_and_caching(self):
         proc = Mock(returncode=0)
         proc.communicate.return_value = ('Distributor ID:\tExample\nRelease: 1.2\nCodename: test\ninvalid\n', "")

@@ -20,7 +20,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid, is_arm
 from xpra.util.env import osexpand
 from xpra.util.io import stderr_print, which
-from xpra.util.system import is_DEB, can_use_fakescreenfps
+from xpra.util.system import is_DEB, is_DEB_Xdummy_safe, can_use_fakescreenfps
 
 
 def warn(msg: str) -> None:
@@ -119,12 +119,22 @@ def valid_html_path(*path_options: str) -> str:
     return ""
 
 
+def is_suid(path: str) -> bool:
+    import stat
+    try:
+        return (os.stat(path).st_mode & stat.S_ISUID) != 0
+    except OSError:
+        return False
+
+
 def get_xorg_bin() -> str:
     xorg = os.environ.get("XPRA_XORG_BIN")
     if xorg:
         return xorg
     # Detect Xorg Binary
-    if is_arm() and is_DEB() and os.path.exists("/usr/bin/Xorg"):
+    # `/usr/bin/Xorg` is a script which runs the setuid `Xorg.wrap` when it is installed (`xserver-xorg-legacy`),
+    # we can't use that:
+    if is_arm() and is_DEB() and os.path.exists("/usr/bin/Xorg") and not is_suid("/usr/lib/xorg/Xorg.wrap"):
         # Raspbian breaks if we use a different binary..
         return "/usr/bin/Xorg"
     for p in (
@@ -261,8 +271,8 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
     if sys.platform.find("bsd") >= 0 and Xdummy_ENABLED is None:  # pragma: no cover
         warn_fn(f"Warning: sorry, no support for Xdummy on {sys.platform}")
         return vfb_default()
-    if is_DEB():
-        # These distros do weird things and this can cause the real X11 server to crash
+    if is_DEB() and not is_DEB_Xdummy_safe():
+        # Older versions of these distros do weird things and this can cause the real X11 server to crash
         # see ticket #2834
         return vfb_default()
 

@@ -202,6 +202,28 @@ def is_DEB() -> bool:
     return is_Debian() or is_Ubuntu() or is_LinuxMint()
 
 
+def is_DEB_Xdummy_safe() -> bool:
+    """
+    Older Debian and Ubuntu releases could interfere with other X11 sessions when using Xdummy,
+    see ticket #2834. This is assumed to be fixed from Debian trixie and Ubuntu resolute onwards.
+    Derivatives (ie: Linux Mint) are not detected and keep using Xvfb.
+    """
+    version_id = get_distribution_version_id()
+    if is_Ubuntu():
+        min_version = (26, 4)
+    elif is_Debian():
+        if not version_id:
+            # testing and sid do not set `VERSION_ID`:
+            return True
+        min_version = (13, )
+    else:
+        return False
+    try:
+        return tuple(int(x) for x in version_id.split(".")) >= min_version
+    except ValueError:
+        return False
+
+
 def is_RPM() -> bool:
     return any(is_distribution_variant(x) for x in (
         "Fedora", "RedHat", "AlmaLinux", "Rocky Linux", "CentOS", "openSUSE", "Oracle Linux",

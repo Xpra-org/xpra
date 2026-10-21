@@ -189,8 +189,17 @@ Depends: xpra-common (= ${binary:Version})
 # ssl (generate cert), wss:
         ,openssl
 # we need a vfb: either Xdummy or Xvfb
-# (but Xdummy is broken on Debian, so stick with Xvfb)
-#        ,xserver-xorg-video-dummy
+# (Xdummy is only used by default from Debian trixie and Ubuntu resolute onwards, see #2834)
+#resolute:        ,xserver-xorg-core
+#stonking:        ,xserver-xorg-core
+#trixie:        ,xserver-xorg-core
+#forky:        ,xserver-xorg-core
+#sid:        ,xserver-xorg-core
+#resolute:        ,xserver-xorg-video-dummy
+#stonking:        ,xserver-xorg-video-dummy
+#trixie:        ,xserver-xorg-video-dummy
+#forky:        ,xserver-xorg-video-dummy
+#sid:        ,xserver-xorg-video-dummy
         ,xvfb
         ,keyboard-configuration
 # addgroup:
