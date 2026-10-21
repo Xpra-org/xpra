@@ -326,7 +326,7 @@ class EmailAuthTest(unittest.TestCase):
         }).make_ssl_context()
         self.assertEqual(context.protocol, ssl.PROTOCOL_TLS_CLIENT)
         self.assertEqual(context.verify_flags, ssl.VERIFY_X509_STRICT)
-        self.assertTrue(context.options & ssl.OP_NO_COMPRESSION)
+        self.assertEqual(context.options & ssl.OP_NO_COMPRESSION, ssl.OP_NO_COMPRESSION)
         self.assertTrue(context.check_hostname)
         ciphers = [cipher["name"] for cipher in context.get_ciphers() if cipher["protocol"] != "TLSv1.3"]
         self.assertEqual(ciphers, ["ECDHE-RSA-AES256-GCM-SHA384"])
@@ -341,8 +341,8 @@ class EmailAuthTest(unittest.TestCase):
         self.addCleanup(auth.cleanup)
         context = auth.make_ssl_context()
         self.assertEqual(context.verify_flags, ssl.VERIFY_X509_STRICT | ssl.VERIFY_X509_PARTIAL_CHAIN)
-        self.assertTrue(context.options & ssl.OP_NO_RENEGOTIATION)
-        self.assertTrue(context.options & ssl.OP_NO_COMPRESSION)
+        self.assertEqual(context.options & ssl.OP_NO_RENEGOTIATION, ssl.OP_NO_RENEGOTIATION)
+        self.assertEqual(context.options & ssl.OP_NO_COMPRESSION, ssl.OP_NO_COMPRESSION)
 
     def test_invalid_ssl_options_do_not_connect(self):
         invalid = (
