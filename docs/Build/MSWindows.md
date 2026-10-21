@@ -6,6 +6,7 @@
 
 </div>
 * install [MSYS2](https://www.msys2.org/) and update the system: run `pacman -Syu` until all the updates are applied
+* use the `UCRT64` or `CLANG64` shell: the old `MINGW64` environment is [deprecated](https://www.msys2.org/docs/environments/), and packages it used to ship have already been removed from it
 * from a MinGW shell, run this setup script: [SETUP.sh](https://github.com/Xpra-org/xpra/tree/master/packaging/MSWindows/SETUP.sh)
 
 
