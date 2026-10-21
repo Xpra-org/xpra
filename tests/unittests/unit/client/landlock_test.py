@@ -16,10 +16,12 @@ from xpra.client.base.client import XpraClientBase
 from xpra.client.base.factory import get_client_subsystems
 from xpra.client.base.landlock import LandLock
 from xpra.exit_codes import ExitCode
+from xpra.os_util import LINUX
 from xpra.util import subsystem as dispatch
 from xpra.scripts.config import InitExit, make_defaults_struct
 
 
+@unittest.skipUnless(LINUX, "Landlock is Linux only")
 class LandLockTest(unittest.TestCase):
 
     @staticmethod

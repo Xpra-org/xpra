@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 set -e
 
 die() { echo "$*" 1>&2 ; exit 1; }
@@ -44,7 +44,7 @@ if [ `uname` == "Linux" ]; then
 fi
 #why is every workaround for setuptools so cumbersome?
 
-export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d -wholename "*/site-packages/xpra"`
+export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d -path "*/site-packages/xpra"`
 if [ -z "${XPRA_MODULE_DIR}" ]; then
 	export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d | egrep -v "etc/xpra|libexec/xpra|share/xpra" | head -n 1 | tr -d '\n'`
 fi

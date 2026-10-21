@@ -406,8 +406,9 @@ class TestAuth(unittest.TestCase):
             expected = ["failed", "succeeded"][success]
             assert self.capsauth(a) == success, f"{a} should have {expected} using cmd={cmd}"
 
-        exec_cmd("/bin/true", True)
-        exec_cmd("/bin/false", False)
+        import shutil
+        exec_cmd(shutil.which("true"), True)
+        exec_cmd(shutil.which("false"), False)
 
     @unittest.skipUnless(POSIX and hasattr(os, "waitid"), "requires POSIX waitid for synchronization")
     def test_exec_reaper_fallback(self) -> None:

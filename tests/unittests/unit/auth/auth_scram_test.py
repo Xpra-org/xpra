@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import base64
+import importlib.util
 import os
 import tempfile
 import unittest
@@ -37,6 +38,7 @@ def stored_record(mechanism: str, password: str) -> str:
     return f"SCRAM${mechanism}${iterations}${b64(salt)}${b64(stored_key)}${b64(server_key)}"
 
 
+@unittest.skipUnless(importlib.util.find_spec("scramp"), "scramp is not installed")
 class ScramAuthTest(unittest.TestCase):
 
     def temp_password_file(self, data: str):

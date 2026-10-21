@@ -10,8 +10,13 @@ from unittest.mock import Mock
 from xpra.util.objects import typedict
 from xpra.keyboard.nokeyboard import NoKeyboardDevice
 from xpra.server.source.keyboard import KeyboardConnection
-from xpra.wayland.server.keyboard_config import KeyboardConfig
-from xpra.wayland.server.subsystem.keyboard import WaylandKeyboardManager
+try:
+    from xpra.wayland.server.keyboard_config import KeyboardConfig
+    from xpra.wayland.server.subsystem.keyboard import WaylandKeyboardManager
+except ImportError:
+    if __name__ == "__main__":
+        raise SystemExit(0)
+    raise unittest.SkipTest("wayland server is not available")
 
 
 class FakeDevice(NoKeyboardDevice):

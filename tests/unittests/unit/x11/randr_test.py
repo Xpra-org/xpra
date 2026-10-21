@@ -8,7 +8,7 @@ import os
 import time
 import unittest
 
-from xpra.os_util import OSX, POSIX
+from xpra.os_util import OSX, POSIX, OPENBSD
 from unit.server_test_util import ServerTestUtil
 from xpra.log import Logger
 from xpra.util.env import OSEnvContext
@@ -16,7 +16,7 @@ from xpra.util.system import is_Debian, is_Ubuntu
 
 log = Logger("randr")
 
-FULL_TEST = not (is_Debian() or is_Ubuntu())
+FULL_TEST = not (is_Debian() or is_Ubuntu() or OPENBSD)
 
 
 class RandrTest(ServerTestUtil):

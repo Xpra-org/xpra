@@ -14,7 +14,7 @@ from subprocess import Popen
 
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint
-from xpra.os_util import OSX, POSIX
+from xpra.os_util import OSX, POSIX, OPENBSD
 from xpra.util.io import load_binary_file, pollwait
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.platform.dotxpra import DISPLAY_PREFIX
@@ -237,6 +237,7 @@ class ServerSocketsTest(ServerTestUtil):
         if actual != expected:
             raise RuntimeError(f"expected {client} to return %s but got %s" % (estr(expected), estr(actual)))
 
+    @unittest.skipIf(OPENBSD, "QUIC is not supported on OpenBSD")
     def test_quic_socket(self):
         port = get_free_tcp_port()
         try:

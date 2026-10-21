@@ -13,6 +13,9 @@ cdef extern from "unistd.h":
     ctypedef unsigned int gid_t
     int getpeereid(int s, uid_t *euid, gid_t *egid)
 
+cdef extern from "sys/socket.h":
+    int getpeereid(int s, uid_t *euid, gid_t *egid)
+
 
 def get_peer_cred(sock: int) -> tuple[int ,int]:
     """
