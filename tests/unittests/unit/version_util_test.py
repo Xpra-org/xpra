@@ -5,7 +5,14 @@
 # later version. See the file COPYING for details.
 
 import unittest
+import os
+import sys
+from types import SimpleNamespace
+from unittest.mock import patch
+from urllib.error import HTTPError
 
+import xpra
+from xpra.util import version
 from xpra.os_util import POSIX
 from xpra.net.common import FULL_INFO
 from xpra.util.version import (
@@ -48,10 +55,10 @@ class TestVersionUtilModule(unittest.TestCase):
         self.assertTrue(protocol_compat_check("%i.%ibeta" % __version_info__[:2]))
 
     def test_min_version_check(self):
-        for version in ("8.0", "8.0.1", "8.1", "9", "8"):
-            self.assertFalse(min_version_check(version, (8, 0)), f"{version!r} should satisfy 8.0")
-        for version in ("7.0", "7.9.9", "7", "", "invalid", "8.0beta"):
-            self.assertTrue(min_version_check(version, (8, 0)), f"{version!r} should not satisfy 8.0")
+        for remote_version in ("8.0", "8.0.1", "8.1", "9", "8"):
+            self.assertFalse(min_version_check(remote_version, (8, 0)), f"{remote_version!r} should satisfy 8.0")
+        for remote_version in ("7.0", "7.9.9", "7", "", "invalid", "8.0beta"):
+            self.assertTrue(min_version_check(remote_version, (8, 0)), f"{remote_version!r} should not satisfy 8.0")
 
     def test_get_host_info(self):
         attrs = []
@@ -67,6 +74,118 @@ class TestVersionUtilModule(unittest.TestCase):
     def test_get_platform_info(self):
         for x in ("release", "name"):
             self.assertTrue(x in get_platform_info(), "%s not found in platform info" % x)
+
+
+class TestVersionUpdates(unittest.TestCase):
+
+    def test_version_response_decoding_and_failures(self):
+        context = object()
+        with patch("ssl.create_default_context", return_value=context) as create_context, \
+                patch("urllib.request.urlopen") as urlopen, patch.object(version, "get_util_logger"):
+            for response, expected in ((b"8.1.2\r\n", (8, 1, 2)), (b"bad", ()), (b"", ())):
+                with self.subTest(response=response):
+                    urlopen.return_value.read.return_value = response
+                    self.assertEqual(version.get_version_from_url("https://example.test/version"), expected)
+            urlopen.assert_called_with("https://example.test/version", context=context)
+            create_context.assert_called_with(cafile=version.SSL_CAFILE)
+            for error in (HTTPError("url", 404, "missing", {}, None), HTTPError("url", 500, "failed", {}, None), OSError("offline")):
+                with self.subTest(error=error):
+                    urlopen.side_effect = error
+                    self.assertEqual(version.get_version_from_url("https://example.test/version"), ())
+        with patch.dict(sys.modules, {"urllib.request": None}):
+            self.assertEqual(version.get_version_from_url("https://example.test/version"), ())
+
+    def test_branch_platform_and_architecture_fallback_order(self):
+        with patch.multiple(version, CHECK_SSL=True, XPRA_VERSION="8.0"), \
+                patch.object(version, "get_branch", return_value="v8.0.x"), \
+                patch.object(version, "get_platform_info", return_value={"machine": "x86_64"}), \
+                patch.object(version.sys, "platform", "linux"), \
+                patch.object(version, "get_version_from_url", return_value=()) as fetch:
+            self.assertEqual(version.get_latest_version(), ())
+            self.assertEqual([call.args[0] for call in fetch.call_args_list], [
+                "https://xpra.org/CURRENT_VERSION_v8_0_linux_x86_64?8.0",
+                "https://xpra.org/CURRENT_VERSION_v8_0_linux?8.0",
+                "https://xpra.org/CURRENT_VERSION_v8_0?8.0",
+                "https://xpra.org/CURRENT_VERSION_v8_linux_x86_64?8.0",
+                "https://xpra.org/CURRENT_VERSION_v8_linux?8.0",
+                "https://xpra.org/CURRENT_VERSION_v8?8.0",
+                "https://xpra.org/CURRENT_VERSION_linux_x86_64?8.0",
+                "https://xpra.org/CURRENT_VERSION_linux?8.0",
+                "https://xpra.org/CURRENT_VERSION?8.0",
+            ])
+            fetch.reset_mock()
+            fetch.side_effect = [(), (8, 1)]
+            self.assertEqual(version.get_latest_version(), (8, 1))
+            self.assertEqual(fetch.call_count, 2)
+
+    def test_master_branch_and_http_override(self):
+        with patch.multiple(version, CHECK_SSL=False, XPRA_VERSION="8.0"), \
+                patch.object(version, "get_branch", return_value="master"), \
+                patch.object(version, "get_platform_info", return_value={"machine": "arm64"}), \
+                patch.object(version.sys, "platform", "darwin"), \
+                patch.object(version, "get_version_from_url", return_value=(8, 1)) as fetch:
+            self.assertEqual(version.get_latest_version(), (8, 1))
+            fetch.assert_called_once_with("http://xpra.org/CURRENT_VERSION_OSX_arm64?8.0")
+
+    def test_update_results_and_forced_update(self):
+        with patch.object(version, "XPRA_NUMERIC_VERSION", (8, 0)), \
+                patch.dict(os.environ, {"XPRA_FAKE_NEW_VERSION": "0"}), \
+                patch.object(version, "get_latest_version") as latest:
+            for remote, expected in (((), None), ((7, 9), False), ((8, 0), False), ((8, 1), (8, 1))):
+                with self.subTest(remote=remote):
+                    latest.return_value = remote
+                    self.assertEqual(version.version_update_check(), expected)
+            latest.return_value = (8, 0)
+            os.environ["XPRA_FAKE_NEW_VERSION"] = "1"
+            self.assertEqual(version.version_update_check(), (8, 0))
+
+
+class TestVersionMetadata(unittest.TestCase):
+
+    def test_revision_and_build_formatting(self):
+        source = SimpleNamespace(REVISION=123, LOCAL_MODIFICATIONS=2, BRANCH="master", COMMIT="abcd")
+        build = SimpleNamespace(build={"type": "light", "python": "3.14.8", "date": "2026-10-21"}, lib_test="1.2")
+        with patch.dict(sys.modules, {"xpra.src_info": source, "xpra.build_info": build}), \
+                patch.object(xpra, "build_info", build, create=True), \
+                patch.dict(os.environ, {"XPRA_CURRENT_VERSION_BRANCH": ""}):
+            self.assertEqual(version.get_branch(), "master")
+            self.assertEqual(version.revision_str(), "r123M (abcd)")
+            self.assertEqual(version.caps_to_revision(version.typedict({"revision": 123, "local_modifications": 2,
+                                                                       "branch": "master", "commit": "abcd"})), "r123M (abcd)")
+            self.assertIn("beta (light build)", version.full_version_str())
+            info = version.get_build_info(2)
+            self.assertEqual(info["python"], (3, 14, 8))
+            self.assertEqual(info["lib"], {"test": (1, 2)})
+            self.assertEqual(version.get_build_info(0), {"date": "2026-10-21"})
+            os.environ["XPRA_CURRENT_VERSION_BRANCH"] = "v8.0.x"
+            self.assertEqual(version.get_branch(), "v8.0.x")
+        with patch.dict(sys.modules, {"xpra.src_info": None}), patch.dict(os.environ, {"XPRA_CURRENT_VERSION_BRANCH": ""}):
+            self.assertEqual(version.revision_str(), "")
+            self.assertEqual(version.get_branch(), "")
+        self.assertEqual(version.make_revision_str(12, 0, "v8.0.x", "abcd"), "r12")
+
+    def test_platform_info_is_cached(self):
+        info = {"machine": "test"}
+        with patch.object(version, "platform_info_cache", None), patch.object(version, "do_get_platform_info", return_value=info) as collect:
+            self.assertIs(version.get_platform_info(), info)
+            self.assertIs(version.get_platform_info(), info)
+            collect.assert_called_once_with()
+
+    def test_host_info_privacy_and_hostname_failure(self):
+        self.assertEqual(version.get_host_info(0), {})
+        with patch("socket.gethostname", side_effect=OSError("unavailable")):
+            info = version.get_host_info(2)
+        self.assertNotIn("hostname", info)
+        self.assertIn("python", info)
+
+    def test_nested_version_trimming_and_compatibility_errors(self):
+        with patch("xpra.net.common.FULL_INFO", 1):
+            self.assertEqual(version.dict_version_trim({"nested": {"version": (8, 0, 1)}, "name": "test"}),
+                             {"nested": {"version": (8, 0)}, "name": "test"})
+        with patch.object(version, "CHECK_PROTOCOL_VERSION", False):
+            self.assertEqual(version.protocol_compat_check("invalid"), "")
+        self.assertIsNotNone(version.version_compat_check(""))
+        self.assertIsNotNone(version.version_compat_check(("bad",)))
 
 
 def main():
