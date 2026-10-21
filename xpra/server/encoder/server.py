@@ -13,6 +13,7 @@ from collections.abc import Sequence
 from xpra.common import noop
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import gi_import
+from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.net.common import Packet, MmapPointerError
@@ -37,6 +38,7 @@ sys.modules[codec_key] = None
 
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
+CONTEXT_READY_TIMEOUT = envint("XPRA_ENCODER_CONTEXT_READY_TIMEOUT", 10)
 SAVE_TO_FILE_FORMAT = os.environ.get("XPRA_SAVE_TO_FILE_FORMAT", "png")
 assert (not SAVE_TO_FILE) and SAVE_TO_FILE_FORMAT in ("jpeg", "png", "webp")
 
@@ -284,10 +286,31 @@ class EncoderServer(ServerBase):
             encoder.init_context(encoding, width, height, src_format, typedict(options))
             self.encoders.setdefault(ss.uuid, {})[seq] = encoder
             log(f"new encoder: {encoder}")
-            ss.send("context-response", seq, True, "", encoder.get_info())
         except (RuntimeError, ValueError) as e:
             log("context request failed", exc_info=True)
             ss.send("context-response", seq, False, f"initialization error: {e}", {})
+            return
+        # some encoders finish their initialization in a thread, ie: nvenc,
+        # and they cannot compress anything until then:
+        # the client must not use the encoder before we send the response
+        start = monotonic()
+
+        def send_response_when_ready() -> bool:
+            if encoder.is_closed():
+                ss.send("context-response", seq, False, "initialization failed", {})
+            elif encoder.is_ready():
+                log("%s ready after %ims", encoder, (monotonic() - start) * 1000)
+                ss.send("context-response", seq, True, "", encoder.get_info())
+            elif monotonic() - start > CONTEXT_READY_TIMEOUT:
+                log.warn(f"Warning: encoder {encoder} is still not ready after {CONTEXT_READY_TIMEOUT} seconds")
+                ss.send("context-response", seq, False, "initialization timeout", {})
+            else:
+                # check again later:
+                return True
+            return False
+
+        if send_response_when_ready():
+            GLib.timeout_add(10, send_response_when_ready)
 
     def _process_context_compress(self, proto: SocketProtocol, packet: Packet) -> None:
         ss = self.get_server_source(proto)
