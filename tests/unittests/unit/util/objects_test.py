@@ -12,12 +12,12 @@ from xpra.util.objects import AtomicInteger, MutableInteger, typedict
 class TypedictTest(unittest.TestCase):
 
     def test_nested_lookup_and_literal_key_precedence(self):
-        values = typedict({"display": {"size": {"width": "1920"}}, "display.size.width": "800", 7: "3"})
+        values = typedict({"display": {"size": {"width": "1920"}}, "display.size.width": "800", "7": "3"})
         self.assertEqual(values.intget("display.size.width"), 800)
         del values["display.size.width"]
         self.assertEqual(values.intget("display.size.width"), 1920)
         self.assertEqual(values.get("display.size.width"), "1920")
-        self.assertEqual(values.intget(7), 3)
+        self.assertEqual(values.intget("7"), 3)
         self.assertEqual(values.intget("display.size.height", 12), 12)
         self.assertEqual(values.intget("display.size.width.extra", 12), 12)
         self.assertEqual(values.setdefault("new", 4), 4)

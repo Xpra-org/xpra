@@ -12,6 +12,26 @@ from unittest.mock import Mock, mock_open, patch
 import xpra
 from xpra.util import system
 
+# when compiled with Cython, the module caches the builtins it uses,
+# so patching `builtins.open` has no effect on it:
+COMPILED = not system.__file__.endswith(".py")
+OPEN_PATCH_SKIP = "cannot patch 'open' in a compiled module"
+
+
+class ImportBlocker:
+    """
+    Makes importing a module fail, even from compiled code:
+    Cython's fast import path returns the `None` placeholder from `sys.modules` instead of raising `ImportError`
+    """
+
+    def __init__(self, name: str):
+        self.name = name
+
+    def find_spec(self, fullname: str, path=None, target=None):
+        if fullname == self.name:
+            raise ModuleNotFoundError(f"No module named {fullname!r}", name=fullname)
+        return None
+
 
 class DistributionTest(unittest.TestCase):
 
@@ -141,6 +161,8 @@ class SystemProbeTest(unittest.TestCase):
             self.assertFalse(system.is_VirtualBox())
         with patch("ctypes.cdll.LoadLibrary", return_value=object()), patch.object(os, "name", "nt"):
             self.assertTrue(system.is_VirtualBox())
+        if COMPILED:
+            self.skipTest(OPEN_PATCH_SKIP)
         with patch("ctypes.cdll.LoadLibrary", side_effect=OSError("missing")), patch.object(os, "name", "nt"):
             with patch("builtins.open", mock_open()):
                 self.assertTrue(system.is_VirtualBox())
@@ -174,7 +196,9 @@ class SystemProbeTest(unittest.TestCase):
             self.assertEqual(system.getloadavg(), (1, 2, 3))
         with patch.multiple(system, POSIX=False, WIN32=False):
             self.assertEqual(system.getloadavg(), (0, 0, 0))
-        with patch.multiple(system, POSIX=False, WIN32=True), patch.dict(sys.modules, {"psutil": None}):
+        with patch.multiple(system, POSIX=False, WIN32=True), patch.dict(sys.modules), \
+                patch.object(sys, "meta_path", [ImportBlocker("psutil")] + sys.meta_path):
+            sys.modules.pop("psutil", None)
             self.assertEqual(system.getloadavg(), (0, 0, 0))
 
     def test_free_threaded_configuration_and_runtime(self):
@@ -188,6 +212,8 @@ class SystemProbeTest(unittest.TestCase):
     def test_platform_release_probes(self):
         with patch.object(system, "WIN32", True), patch.dict(sys.modules, {"xpra.platform.win32": SimpleNamespace(os_name="Windows test")}):
             self.assertEqual(system.platform_release("Server"), "Windows test")
+        if COMPILED:
+            self.skipTest(OPEN_PATCH_SKIP)
         with patch.multiple(system, WIN32=False, OSX=True), patch("builtins.open", mock_open()), \
                 patch("plistlib.load", return_value={"ProductUserVisibleVersion": "15.1"}):
             self.assertEqual(system.platform_release("Darwin"), "15.1")
@@ -196,6 +222,8 @@ class SystemProbeTest(unittest.TestCase):
             self.assertEqual(system.platform_release("Darwin"), "Darwin")
 
     def test_processor_names(self):
+        if COMPILED:
+            self.skipTest(OPEN_PATCH_SKIP)
         with patch("platform.system", return_value="Linux"), patch("builtins.open", mock_open(read_data="other\nmodel name : Test CPU\n")):
             self.assertEqual(system.get_processor_name(), "Test CPU")
         with patch("platform.system", return_value="Darwin"), patch("subprocess.check_output", return_value=" Apple CPU\n"), \

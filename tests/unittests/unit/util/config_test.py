@@ -67,9 +67,10 @@ class ConfigTest(unittest.TestCase):
         with self.config_dirs([self.user_dir]), patch.object(config, "log"):
             with patch.object(config.os, "makedirs", side_effect=PermissionError("cannot create")):
                 self.assertEqual(config.update_config_attribute("xvfb", "Xdummy"), "")
-            os.makedirs(os.path.join(self.user_dir, "conf.d"))
-            with patch("builtins.open", side_effect=PermissionError("cannot write")):
-                self.assertEqual(config.save_user_config_file({"xvfb": "Xdummy"}), "")
+            # a directory where the file should be makes `open` fail, even for root,
+            # and unlike patching `builtins.open`, this also works when the module is compiled:
+            os.makedirs(self.user_config_file())
+            self.assertEqual(config.save_user_config_file({"xvfb": "Xdummy"}), "")
 
     def test_config_env(self):
         with self.config_dirs([self.user_dir]):
