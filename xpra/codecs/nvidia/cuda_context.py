@@ -541,14 +541,15 @@ class cuda_device_context:
         self.free()
 
     def free(self) -> None:
-        c = self.context
-        if log:
-            log("free() context=%s", c)
-        if c:
-            self.device_id = 0
-            self.device = None
-            self.context = None
-            with self.lock:
+        # Keep the context available until its current user has popped it.
+        with self.lock:
+            c = self.context
+            if log:
+                log("free() context=%s", c)
+            if c:
+                self.device_id = 0
+                self.device = None
+                self.context = None
                 c.detach()
 
 
