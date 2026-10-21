@@ -274,7 +274,7 @@ def detect_xvfb_command(conf_dir="/etc/xpra/", bin_dir="",
         ))
         if rhel10:
             debug(" using `xpra_weston_xvfb` on RHEL 10")
-            return get_weston_Xwayland_command(dpi)
+            return get_weston_Xwayland_command(depth=depth, dpi=dpi, fps=fps)
     return detect_xdummy_command(conf_dir, bin_dir, Xdummy_wrapper_ENABLED, warn_fn, depth=depth, dpi=dpi, fps=fps)
 
 
@@ -298,7 +298,7 @@ def detect_xdummy_command(conf_dir="/etc/xpra/", bin_dir="",
         if (xorg_stat.st_mode & stat.S_ISUID) != 0:
             if (xorg_stat.st_mode & stat.S_IROTH) == 0:
                 warn_fn(f"{xorg_bin} is suid and not readable, Xdummy support unavailable")
-                return get_Xvfb_command(dpi=dpi, fps=fps)
+                return get_Xvfb_command(depth=depth, dpi=dpi, fps=fps)
             debug(f"{xorg_bin} is suid and readable, using the xpra_Xdummy wrapper")
             use_wrapper = True
         else:

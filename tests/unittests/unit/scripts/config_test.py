@@ -8,11 +8,14 @@ import os
 import shutil
 import tempfile
 import unittest
+import stat
+from types import SimpleNamespace
 
 from unittest.mock import patch
 
 from xpra.scripts.config import (
     read_xpra_conf, fixup_keyboard, fixup_options, dict_to_validated_config, get_defaults,
+    detect_xvfb_command, detect_xdummy_command,
 )
 from xpra.util.parsing import FALSE_OPTIONS, TRUE_OPTIONS
 
@@ -40,6 +43,29 @@ class LandlockConfigTest(unittest.TestCase):
             options = dict_to_validated_config(read_xpra_conf(directory))
             fixup_options(options)
             self.assertEqual(options.landlock, "strict")
+
+
+class VFBParametersTest(unittest.TestCase):
+
+    def test_rhel_weston_parameters(self):
+        with patch("xpra.scripts.config.WIN32", False), patch("xpra.scripts.config.OSX", False), \
+             patch("xpra.scripts.config.POSIX", True), patch("xpra.scripts.config.is_DEB", return_value=False), \
+             patch("xpra.scripts.config.can_use_fakescreenfps", return_value=True), \
+             patch("xpra.util.system.get_distribution_version_id", return_value="10"), \
+             patch("xpra.util.system.is_distribution_variant", return_value=True):
+            command = detect_xvfb_command(depth=8, dpi=144, fps=30)
+        self.assertEqual(command[0], "/usr/libexec/xpra/xpra_weston_xvfb")
+        self.assertNotIn("Composite", command)
+        self.assertEqual(command[command.index("-dpi") + 1], "144x144")
+        self.assertEqual(command[command.index("-fakescreenfps") + 1], "30")
+
+    def test_unreadable_xorg_fallback_depth(self):
+        with patch("xpra.scripts.config.POSIX", True), patch("xpra.scripts.config.OSX", False), \
+             patch("xpra.scripts.config.get_xorg_bin", return_value="/test/Xorg"), \
+             patch("xpra.scripts.config.os.stat", return_value=SimpleNamespace(st_mode=stat.S_ISUID)):
+            command = detect_xdummy_command(depth=8, dpi=144, fps=30)
+        self.assertEqual(command[0], "Xvfb")
+        self.assertEqual(command[command.index("-screen") + 2], "8192x4096x8")
 
 
 class ReadConfTest(unittest.TestCase):
