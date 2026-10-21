@@ -106,10 +106,16 @@ def get_xpra_sessions(dotxpra, ignore_state=(SocketState.UNKNOWN,), matching_dis
         for state, display, sockpath in values:
             if state in ignore_state:
                 continue
+            existing = sessions.get(display)
+            if existing:
+                # the same session can be reachable via multiple sockets:
+                existing.setdefault("socket-paths", []).append(sockpath)
+                continue
             session = {
                 "state": state,
                 "socket-dir": socket_dir,
                 "socket-path": sockpath,
+                "socket-paths": [sockpath],
             }
             try:
                 s = os.stat(sockpath)
@@ -142,6 +148,47 @@ def get_xpra_sessions(dotxpra, ignore_state=(SocketState.UNKNOWN,), matching_dis
     return sessions
 
 
+def find_session_dir(sessions_dir: str, display: str, attrs: dict[str, Any]) -> str:
+    # sockets named 'socket' live in the session directory, ie: /run/user/1000/xpra/10/socket
+    for sockpath in attrs.get("socket-paths", ()):
+        if os.path.basename(sockpath) == "socket":
+            return os.path.dirname(sockpath)
+    if not sessions_dir:
+        return ""
+    from xpra.scripts.session import get_session_dir
+    session_dir = get_session_dir("list", sessions_dir, display, attrs.get("uid", getuid()))
+    return session_dir if os.path.isdir(session_dir) else ""
+
+
+def read_session_file(session_dir: str, filename: str) -> str:
+    try:
+        with open(os.path.join(session_dir, filename), encoding="utf8") as f:
+            return f.read().strip()
+    except (OSError, UnicodeDecodeError):
+        return ""
+
+
+def get_session_details(session_dir: str, attrs: dict[str, Any]) -> dict[str, str]:
+    import shlex
+    from xpra.util.io import get_proc_cmdline
+    details = {
+        "pid": attrs.get("pid", ""),
+        "uuid": attrs.get("uuid", ""),
+    }
+    if session_dir:
+        details["pid"] = read_session_file(session_dir, "server.pid") or details["pid"]
+        details["uuid"] = read_session_file(session_dir, "server.uuid") or details["uuid"]
+        cmdline = read_session_file(session_dir, "cmdline")
+        if cmdline:
+            details["command"] = shlex.join(cmdline.splitlines())
+        xvfb_pid = read_session_file(session_dir, "xvfb.pid")
+        if xvfb_pid.isdigit():
+            display_cmd = get_proc_cmdline(int(xvfb_pid))
+            if display_cmd:
+                details["display-command"] = shlex.join(display_cmd)
+    return details
+
+
 def run_list_sessions(args, options) -> ExitValue:
     if args:
         raise InitInfo("too many arguments for 'list-sessions' mode")
@@ -149,6 +196,7 @@ def run_list_sessions(args, options) -> ExitValue:
     dotxpra = DotXpra(options.socket_dirs)
     sessions = get_xpra_sessions(dotxpra)
     print(f"Found {len(sessions)} xpra sessions:")
+    indent = " " * 8
     for display, attrs in sessions.items():
         print("%4s    %-8s    %-12s    %-16s    %s" % (
             display,
@@ -156,6 +204,19 @@ def run_list_sessions(args, options) -> ExitValue:
             attrs.get("session-type", ""),
             attrs.get("username") or attrs.get("uid") or "",
             attrs.get("session-name", "")))
+        for i, sockpath in enumerate(attrs.get("socket-paths", ())):
+            print(indent + ("sockets:     " if i == 0 else " " * 13) + sockpath)
+        session_dir = find_session_dir(options.sessions_dir, display, attrs)
+        if session_dir:
+            print(f"{indent}session-dir: {session_dir}")
+        details = get_session_details(session_dir, attrs)
+        server = csv(f"{k} {v}" for k, v in details.items() if k in ("pid", "uuid") and v)
+        if server:
+            print(f"{indent}server:      {server}")
+        if details.get("command"):
+            print(f"{indent}command:     {details['command']}")
+        if details.get("display-command"):
+            print(f"{indent}display:     {details['display-command']}")
     return 0
 
 

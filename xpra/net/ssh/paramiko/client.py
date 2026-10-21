@@ -825,7 +825,8 @@ class AuthenticationManager:
                     if mode in allowed_types:
                         return True
                     if mode == "agent":
-                        return any(am.startswith("gssapi-") for am in allowed_types)
+                        # Agent keys use the publickey authentication method.
+                        return "publickey" in allowed_types
                     return False
                 allowed = list(filter(is_allowed, self.valid_auth_modes))
                 log("filtered allowed types=%s from %s", allowed, self.valid_auth_modes)

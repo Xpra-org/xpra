@@ -11,7 +11,10 @@ log = Logger("pointer")
 
 
 class X11SeamlessPointerManager(X11PointerManager):
-    """Resolve client monitor-relative pointer positions for seamless X11."""
+    """Resolve seamless X11 pointer positions, preferring window-relative coordinates."""
+
+    # The target window must be raised even when the pointer position is unchanged.
+    SKIP_REDUNDANT_MOVES = False
 
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
         window = self.get_subsystem("window")
@@ -20,6 +23,12 @@ class X11SeamlessPointerManager(X11PointerManager):
         super()._move_pointer(device_id, wid, pos, props)
 
     def get_pointer_target(self, proto, wid: int, pos, props=None) -> tuple[int, int]:
+        if self.get_pointer_window_position(pos, props) is not None:
+            windows = self.get_subsystem("window")
+            if windows and windows.get_window(wid):
+                # Wayland root coordinates are not reliable desktop positions.
+                # Use the server window's origin plus the position inside it.
+                return super().get_pointer_target(proto, wid, pos, props)
         ss = self.get_server_source(proto)
         monitor_value = (props or {}).get("monitor", {})
         monitor = typedict(monitor_value if isinstance(monitor_value, dict) else {})

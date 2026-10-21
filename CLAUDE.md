@@ -57,7 +57,8 @@ Xpra is a remote display system with a client-server architecture. Both sides ar
 `xpra/scripts/main.py` — parses CLI args and dispatches to server, client, or utility modes.
 
 ### Server (`xpra/server/`)
-- `core.py` — `ServerCore`: base class handling sockets, connections, authentication, and the packet dispatch loop.
+- `core.py` — `ServerCore`: base class handling the hello handshake, authentication, subsystem dispatch and the packet dispatch loop.
+- `subsystem/network.py` — `NetworkServer`: the connection layer (listening sockets, new connections, ssl / websocket / ssh / http / rfb / rdp upgrades, protocol creation, accept timeouts and disconnections), reached via `server.network` or `self.network` from subsystems.
 - `base.py` — `ServerBase`: extends `ServerCore` with per-client source management.
 - `subsystem/` — one file per feature (clipboard, audio, encoding, keyboard, pointer, display, mmap, etc.). Each subsystem is mixed into the server class via `features.py`.
 - `source/` — per-connected-client state objects, mirroring the subsystem structure.

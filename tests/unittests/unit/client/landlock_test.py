@@ -17,6 +17,7 @@ from xpra.client.base.factory import get_client_subsystems
 from xpra.client.base.landlock import LandLock
 from xpra.exit_codes import ExitCode
 from xpra.os_util import LINUX
+from xpra.util import subsystem as dispatch
 from xpra.scripts.config import InitExit, make_defaults_struct
 
 
@@ -61,7 +62,7 @@ class LandLockTest(unittest.TestCase):
         security.enforce_landlock.assert_called_once_with("default", ("/downloads",), read_paths=[],
                                                           required_paths=[], socket_paths=[], socket_dirs=[],
                                                           temp_dir="",
-                                                          allow_socket_creation=True)
+                                                          allow_socket_creation=True, gpu=False)
 
     def test_listener_order_and_single_installation(self):
         from xpra.client.subsystem.socket import NetworkListener
@@ -194,7 +195,7 @@ class LandLockTest(unittest.TestCase):
         with patch("xpra.client.base.landlock.LINUX", True), \
              patch("xpra.platform.posix.security.get_landlock_auth_paths", side_effect=ImportError("missing dependency")), \
              self.assertRaisesRegex(InitExit, "failed to initialize client Landlock"):
-            client._dispatch_fire("init", opts)
+            dispatch.call(client.subsystems, "init", opts)
         peer_init.assert_not_called()
 
     def test_temp_cleanup_after_subsystems_and_connection(self):
@@ -254,7 +255,7 @@ class LandLockTest(unittest.TestCase):
                                                           read_paths=["/known-hosts", "/cert"], required_paths=["/cert"],
                                                           socket_paths=["/server/socket"], socket_dirs=[],
                                                           temp_dir="/private",
-                                                          allow_socket_creation=False)
+                                                          allow_socket_creation=False, gpu=False)
 
     def test_missing_target_does_not_create_temp_storage(self):
         client, landlock, _opts = self.make_landlock("strict")

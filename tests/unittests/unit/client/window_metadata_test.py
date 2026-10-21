@@ -20,6 +20,14 @@ class WindowMetadataTest(unittest.TestCase):
         window._metadata = typedict()
         return window
 
+    def test_x11_property_denylist(self):
+        window = self.make_window()
+        props = []
+        window.set_x11_property = lambda *args: props.append(args)
+        for name in ("_MY_APP_PROPERTY", "_NET_WM_STATE", "_KDE_NET_WM_BLUR_BEHIND_REGION", "WM_COMMAND", "BAD\x1b"):
+            window.set_metadata(typedict({"x11-property": (name, "latin1", 8, "value")}))
+        self.assertEqual(props, [("_MY_APP_PROPERTY", "latin1", "value")])
+
     def test_content_types_update_window_and_backing(self):
         window = self.make_window()
         window.set_metadata(typedict({"content-types": ("browser", "video")}))

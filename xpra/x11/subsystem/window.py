@@ -169,7 +169,7 @@ class SeamlessWindowServer(WindowServer):
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
-        self.add_packets("window-signal", main_thread=True)
+        self.add_packets("window-signal", "window-dismiss", main_thread=True)
 
     def get_visible_areas(self, screen_w: int, screen_h: int) -> list:
         """
@@ -501,9 +501,10 @@ class SeamlessWindowServer(WindowServer):
         focuslog("focus wid=%#x has_focus=%#x", wid, self._has_focus)
         if self.last_raised != wid:
             self.last_raised = 0
-        if self._has_focus == wid:
+        if self._has_focus == wid == 0:
             return
-        self._focus_history.append(wid)
+        if self._has_focus != wid:
+            self._focus_history.append(wid)
         hfid = self._has_focus
         had_focus = self.get_window(hfid)
 
@@ -534,10 +535,13 @@ class SeamlessWindowServer(WindowServer):
         if not window.is_managed():
             focuslog.warn("Warning: window %s is no longer managed!", window)
             return
-        focuslog("focus: giving focus to %s", window)
         with xswallow:
             self.last_raised = wid
             window.raise_window()
+            # Another window may have covered it without changing the input focus.
+            if self._has_focus == wid:
+                return
+            focuslog("focus: giving focus to %s", window)
             window.give_client_focus()
         # EWMH: activating a window also clears its demands-attention state
         # (`get` returns the default for the models that have no such property)
@@ -775,6 +779,8 @@ class SeamlessWindowServer(WindowServer):
         }
         if not (window.is_OR() or window.is_tray()):
             info["shown"] = window.get_property("shown")
+            if cg := window.get_property("client-geometry"):
+                info["client-geometry"] = cg
         return info
 
     # --------------------------------------------------------------------
@@ -1027,6 +1033,23 @@ class SeamlessWindowServer(WindowServer):
         pointerlog("raising %s", window)
         with xswallow:
             window.raise_window()
+
+    def _process_dismiss(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
+        ss = self.get_server_source(proto)
+        if ss is None:
+            return
+        wid = packet.get_wid()
+        window = self.get_window(wid)
+        if not window or not window.is_OR() or window.is_tray() or is_window_hidden(ss, window):
+            return
+        # XUngrabPointer / XUngrabKeyboard cannot release another X11 client's grabs.
+        # Making the grab window unviewable releases them in the X server, without
+        # relying on the application to handle Escape or WM_DELETE_WINDOW.
+        windowlog("dismissing popup %#x: %s", wid, window)
+        with xswallow:
+            X11WindowBindings().Unmap(window.get_property("xid"))
 
     def _process_close(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()

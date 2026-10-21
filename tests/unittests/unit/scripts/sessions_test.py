@@ -229,6 +229,16 @@ class TestGetXpraSessions(unittest.TestCase):
             finally:
                 srv.close()
 
+    def test_multiple_sockets_same_display(self):
+        dotxpra = _mock_dotxpra(socket_details={
+            "/run/user/1000/xpra/1": [(SocketState.LIVE, ":1", "/run/user/1000/xpra/1/socket")],
+            "/run/xpra": [(SocketState.LIVE, ":1", "/run/xpra/host-1")],
+        })
+        result = get_xpra_sessions(dotxpra, ignore_state=(), query=False)
+        assert list(result.keys()) == [":1"]
+        assert result[":1"]["socket-path"] == "/run/user/1000/xpra/1/socket"
+        assert result[":1"]["socket-paths"] == ["/run/user/1000/xpra/1/socket", "/run/xpra/host-1"]
+
     def test_multiple_displays_multiple_socket_dirs(self):
         dotxpra = _mock_dotxpra(socket_details={
             "/run/xpra": [
@@ -431,6 +441,7 @@ class TestRunListSessions(unittest.TestCase):
 
     def test_empty_sessions_prints_found_zero(self):
         opts = MagicMock()
+        opts.sessions_dir = ""
         with patch("xpra.scripts.sessions.get_xpra_sessions", return_value={}), \
              patch("xpra.platform.dotxpra.DotXpra"):
             _, out = _capture(run_list_sessions, [], opts)
@@ -438,6 +449,7 @@ class TestRunListSessions(unittest.TestCase):
 
     def test_session_row_printed(self):
         opts = MagicMock()
+        opts.sessions_dir = ""
         sessions = {
             ":5": {
                 "state": SocketState.LIVE,
@@ -452,6 +464,37 @@ class TestRunListSessions(unittest.TestCase):
         assert ":5" in out
         assert "alice" in out
         assert "mywork" in out
+
+    def test_session_details_printed(self):
+        opts = MagicMock()
+        opts.sessions_dir = ""
+        with tempfile.TemporaryDirectory() as session_dir:
+            sockpath = os.path.join(session_dir, "socket")
+            files = {
+                "server.pid": "1234\n",
+                "server.uuid": "abcdef\n",
+                "cmdline": "/usr/bin/xpra\nstart\n:5\n--start=xterm -ls\n",
+                "xvfb.pid": str(os.getpid()),
+            }
+            for filename, contents in files.items():
+                with open(os.path.join(session_dir, filename), "w", encoding="utf8") as f:
+                    f.write(contents)
+            sessions = {
+                ":5": {
+                    "state": SocketState.LIVE,
+                    "socket-paths": [sockpath, "/run/xpra/host-5"],
+                }
+            }
+            with patch("xpra.scripts.sessions.get_xpra_sessions", return_value=sessions), \
+                 patch("xpra.platform.dotxpra.DotXpra"), \
+                 patch("xpra.util.io.get_proc_cmdline", return_value=("Xvfb", ":5")):
+                _, out = _capture(run_list_sessions, [], opts)
+        assert sockpath in out
+        assert "/run/xpra/host-5" in out
+        assert f"session-dir: {session_dir}" in out
+        assert "pid 1234, uuid abcdef" in out
+        assert "/usr/bin/xpra start :5 '--start=xterm -ls'" in out
+        assert "display:     Xvfb :5" in out
 
 
 def main():

@@ -23,10 +23,17 @@ log = Logger("encoder", "remote")
 ENCODINGS = tuple(x for x in os.environ.get("XPRA_REMOTE_ENCODINGS", "h264,vp8,vp9").split(",") if x)
 
 
+def safe_value(v) -> bool:
+    if isinstance(v, (int, str, bool)):
+        return True
+    # ie: "dst-formats", which the video encoders require
+    return isinstance(v, (tuple, list)) and all(isinstance(x, (int, str, bool)) for x in v)
+
+
 def safe_dict(opts: dict | typedict) -> dict:
     # a simple dictionary suitable for sending via rencodeplus
     # (removes floats and other illegal values - floats are not strictly illegal, but we don't use them)
-    return dict((k, v) for k, v in opts.items() if isinstance(k, str) and isinstance(v, (int, str, bool)))
+    return dict((k, v) for k, v in opts.items() if isinstance(k, str) and safe_value(v))
 
 
 class EncoderClient(RemoteCodecClient):

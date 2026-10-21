@@ -105,4 +105,4 @@ class ShadowWindowServer(WindowServer):
         # FIXME: with multiple windows / clients,
         # we have to keep track of mappings!
         if len(self.models()) == 1:
-            self.server.disconnect_client(proto, ConnectionMessage.DONE, "closed the only window")
+            self.network.disconnect_client(proto, ConnectionMessage.DONE, "closed the only window")

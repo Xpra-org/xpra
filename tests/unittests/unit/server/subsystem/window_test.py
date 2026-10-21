@@ -62,6 +62,7 @@ class WebcamMixinTest(ServerMixinTest):
         with patch.object(ServerBase, "get_server_features", return_value={}):
             features = SeamlessServer.get_server_features(server)
         self.assertTrue(typedict(features).boolget("window.stacking"))
+        self.assertTrue(typedict(features).boolget("window.dismiss"))
 
     def test_monitor_relative_geometry(self):
         from xpra.x11.subsystem.window import SeamlessWindowServer
@@ -160,6 +161,38 @@ class WebcamMixinTest(ServerMixinTest):
             ),
             (32000, 50),
         )
+
+    def test_window_relative_pointer(self):
+        from xpra.x11.server.pointer import X11SeamlessPointerManager
+
+        source = AdHocStruct()
+        source.get_monitor_position = lambda *_args: (400, 500)
+        model = Mock()
+        windows = AdHocStruct()
+        windows.get_window = lambda wid: model if wid == 1 else None
+        server = AdHocStruct()
+        server.subsystems = {"window": windows}
+        server.get_server_source = lambda _proto: source
+        manager = X11SeamlessPointerManager(server)
+        monitor = {"index": 0, "position": (400, 500)}
+
+        # A Wayland client's root coordinates can disagree with the position
+        # inside the window. The window position must win, including at (0, 0).
+        for origin in ((0, 0), (26, 55)):
+            model.get_geometry.return_value = (*origin, 800, 600)
+            for relative in ((0, 0), (20, 30)):
+                for position, props in (
+                        ((400, 500), {"window-position": relative, "monitor": monitor}),
+                        ((400, 500, *relative), {"monitor": monitor}),
+                ):
+                    with self.subTest(origin=origin, position=position, props=props):
+                        self.assertEqual(
+                            manager.get_pointer_target(object(), 1, position, props),
+                            (origin[0] + relative[0], origin[1] + relative[1]),
+                        )
+        # Global events and events without relative coordinates still use the monitor.
+        self.assertEqual(manager.get_pointer_target(object(), 0, (10, 20, 1, 2), {"monitor": monitor}), (400, 500))
+        self.assertEqual(manager.get_pointer_target(object(), 1, (10, 20), {"monitor": monitor}), (400, 500))
 
     def test_windowserver(self):
         from xpra.server.subsystem.window import WindowServer

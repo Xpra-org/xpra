@@ -174,7 +174,12 @@ class TrayMenu(StubSubsystem):
     def make_tray_widget(self):
         # pylint: disable=import-outside-toplevel
         from xpra.platform.systray import get_backends
-        classes = get_backends()
+        native = not POSIX or OSX
+        if POSIX and not OSX and features.dbus:
+            from xpra.dbus.common import find_session_bus_address
+            native = bool(find_session_bus_address())
+        # AppIndicator uses D-Bus; prefer the X11 status icon when there is no bus.
+        classes = get_backends() if native else []
         try:
             from xpra.gtk.statusicon_tray import GTKStatusIconTray
             classes.append(GTKStatusIconTray)

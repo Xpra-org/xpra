@@ -13,7 +13,7 @@ from typing import Any
 from xpra.common import noop
 from xpra.net.packet_type import LOGGING_CONTROL, LOGGING_EVENT
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, repr_ellipsized
+from xpra.util.str_fn import csv, repr_ellipsized, single_line
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.net.common import Packet, LOG_PACKET_TYPE, FULL_INFO
 from xpra.log import Logger, set_global_logging_handler, get_info
@@ -105,8 +105,9 @@ class LoggingClient(StubClientSubsystem):
             dtime = packet.get_u64(3)
             prefix += "@%02i.%03i " % ((dtime // 1000) % 60, dtime % 1000)
         try:
+            # strip the control characters, ie: terminal escape sequences:
             for line in msg.splitlines():
-                self.do_log(level, prefix + line)
+                self.do_log(level, prefix + single_line(line))
         except Exception as e:
             log("log message decoding error", exc_info=True)
             log.error("Error: failed to parse logging message:")

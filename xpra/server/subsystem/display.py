@@ -562,13 +562,13 @@ class DisplayManager(StubSubsystem):
         try:
             packet = self.make_screenshot_packet()
             if not packet:
-                self.server.send_disconnect(proto, "screenshot failed")
+                self.network.send_disconnect(proto, "screenshot failed")
                 return
             proto.send_now(packet)
-            self.timeout_add(5 * 1000, self.server.send_disconnect, proto, "screenshot sent")
+            self.timeout_add(5 * 1000, self.network.send_disconnect, proto, "screenshot sent")
         except Exception as e:
             log.error("failed to capture screenshot", exc_info=True)
-            self.server.send_disconnect(proto, "screenshot failed: %s" % e)
+            self.network.send_disconnect(proto, "screenshot failed: %s" % e)
 
     def init_packet_handlers(self) -> None:
         self.add_packets("display-configure", "display-request-screenshot", "display-request-icon", main_thread=True)

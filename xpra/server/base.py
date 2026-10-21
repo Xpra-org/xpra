@@ -6,16 +6,13 @@
 # later version. See the file COPYING for details.
 
 import os
-from time import monotonic
 from typing import Any
 
 from xpra.server.common import get_sources_by_type
 from xpra.server.core import ServerCore, SIGNALS as CORE_SIGNALS
 from xpra.server.source.events import EventConnection
-from xpra.net.common import PacketElement, FULL_INFO
-from xpra.util.objects import merge_dicts
-from xpra.util.str_fn import Ellipsizer
-from xpra.os_util import POSIX
+from xpra.net.common import PacketElement
+from xpra.util import subsystem as dispatch
 from xpra.log import Logger
 
 log = Logger("server")
@@ -46,153 +43,9 @@ class ServerBase(ServerCore):
             self.add_subsystem(cls)
 
     def get_subsystem_classes(self) -> tuple[type, ...]:
-        """
-        Return the ordered tuple of instance-based subsystem classes to
-        construct for this server. Variants (seamless, desktop, monitor,
-        shadow, ...) override the per-subsystem hooks below to swap in their
-        own subclasses.
-        """
-        from xpra.server import features
-        classes: list[type] = []
-        if features.gtk:
-            if gtk_class := self.get_gtk_subsystem_class():
-                classes.append(gtk_class)
-        elif features.x11:
-            from xpra.x11.subsystem.x11init import X11Init
-            classes.append(X11Init)
-        if features.dbus:
-            # the dbus subsystem must come first:
-            # it starts the dbus instance for this session and updates the environment,
-            # any subsystem connecting to the session bus before that point
-            # would be connected to the bus we inherited from the environment
-            # (ie: the user's desktop session bus) - see `init_session_bus`
-            from xpra.server.subsystem.dbus import DbusManager
-            classes.append(DbusManager)
-        # SharingServer must come before any subsystem whose `parse_hello` looks at the other clients
-        # (ie: display sizing, keyboard): it may reject the new connection,
-        # or disconnect older ones (ie: from the same uuid) which must not be taken into account:
-        from xpra.server.subsystem.sharing import SharingServer
-        classes.append(SharingServer)
-        if features.ping:
-            from xpra.server.subsystem.ping import PingServer
-            classes.append(PingServer)
-        if features.gsettings:
-            from xpra.server.subsystem.gsettings import GSettingsServer
-            classes.append(GSettingsServer)
-        if features.register:
-            from xpra.server.subsystem.register import RegisterSubsystem
-            classes.append(RegisterSubsystem)
-        if features.bandwidth:
-            from xpra.server.subsystem.bandwidth import BandwidthManager
-            classes.append(BandwidthManager)
-        if features.debug:
-            from xpra.server.subsystem.debug import DebugServer
-            classes.append(DebugServer)
-        if features.shell:
-            from xpra.server.subsystem.shell import ShellServer
-            classes.append(ShellServer)
-        if features.power:
-            from xpra.server.subsystem.power import PowerEventServer
-            classes.append(PowerEventServer)
-        if features.watcher:
-            from xpra.server.subsystem.watcher import UIWatcher
-            classes.append(UIWatcher)
-        if features.suspend:
-            from xpra.server.subsystem.suspend import SuspendServer
-            classes.append(SuspendServer)
-        if features.idle:
-            from xpra.server.subsystem.idle import IdleTimeoutManager
-            classes.append(IdleTimeoutManager)
-        if POSIX and FULL_INFO >= 1:
-            from xpra.server.subsystem.drm import DRMInfo
-            classes.append(DRMInfo)
-        if features.http:
-            from xpra.server.subsystem.http import HttpServer
-            classes.append(HttpServer)
-        if features.ssh:
-            from xpra.server.subsystem.ssh_agent import SshAgent
-            classes.append(SshAgent)
-        # EncryptionServer is unconditional - it gracefully no-ops when no
-        # encryption is configured on a given socket.
-        from xpra.server.subsystem.encryption import EncryptionServer
-        classes.append(EncryptionServer)
-        if features.menu:
-            from xpra.server.subsystem.menu import MenuServer
-            classes.append(MenuServer)
-        if features.logging:
-            from xpra.server.subsystem.logging import LoggingManager
-            classes.append(LoggingManager)
-        if features.tray:
-            from xpra.server.subsystem.tray import TrayMenu
-            classes.append(TrayMenu)
-        if features.opengl:
-            from xpra.server.subsystem.opengl import OpenGLInfo
-            classes.append(OpenGLInfo)
-        if features.mmap:
-            from xpra.server.subsystem.mmap import MMAP_Server
-            classes.append(MMAP_Server)
-        if features.notification:
-            from xpra.server.subsystem.notification import NotificationForwarder
-            classes.append(NotificationForwarder)
-        if features.webcam:
-            from xpra.server.subsystem.webcam import WebcamServer
-            classes.append(WebcamServer)
-        if features.clipboard:
-            classes.append(self.get_clipboard_subsystem_class())
-        if features.pulseaudio:
-            from xpra.server.subsystem.pulseaudio import PulseaudioServer
-            classes.append(PulseaudioServer)
-        if features.audio:
-            from xpra.server.subsystem.audio import AudioServer
-            classes.append(AudioServer)
-        if features.encoding:
-            from xpra.server.subsystem.encoding import EncodingServer
-            classes.append(EncodingServer)
-        if features.display:
-            classes.append(self.get_display_subsystem_class())
-        if features.rfb:
-            from xpra.server.rfb.server import RFBServer
-            classes.append(RFBServer)
-        if features.rdp:
-            from xpra.server.rdp.server import RDPServer
-            classes.append(RDPServer)
-        if features.window:
-            classes.append(self.get_window_subsystem_class())
-        if features.keyboard:
-            classes.append(self.get_keyboard_subsystem_class())
-        if features.pointer:
-            classes.append(self.get_pointer_subsystem_class())
-        # ChildCommandServer should be last so that the environment is fully prepared:
-        if features.command:
-            from xpra.server.subsystem.command import ChildCommandServer
-            classes.append(ChildCommandServer)
-        if features.file:
-            from xpra.server.subsystem.file import FileServer
-            classes.append(FileServer)
-        if features.printer:
-            from xpra.server.subsystem.printer import PrinterServer
-            classes.append(PrinterServer)
-        if features.x11 and features.display:
-            from xpra.x11.subsystem.icc import ICCServer
-            classes.append(ICCServer)
-        if features.bell:
-            if bell_class := self.get_bell_subsystem_class():
-                classes.append(bell_class)
-        if features.x11 and features.systray:
-            from xpra.x11.subsystem.systray import SystemTrayServer
-            classes.append(SystemTrayServer)
-        from xpra.server.subsystem.client_session import ClientSessionServer
-        classes.append(ClientSessionServer)
-        from xpra.server.subsystem.settings import SettingsServer
-        classes.append(SettingsServer)
-        from xpra.server.subsystem.shutdown import ShutdownServer
-        classes.append(ShutdownServer)
-        if features.cursor:
-            classes.append(self.get_cursor_subsystem_class())
-        if features.x11 and features.display:
-            from xpra.x11.subsystem.xsettings import XSettingsServer
-            classes.append(XSettingsServer)
-        return tuple(classes)
+        """Return the ordered subsystem classes, using this server's backend selectors."""
+        from xpra.server.factory import get_server_subsystems
+        return get_server_subsystems(self)
 
     @staticmethod
     def get_gtk_subsystem_class() -> type | None:
@@ -281,14 +134,9 @@ class ServerBase(ServerCore):
         # from now on, use the logger for parsing errors:
         from xpra.scripts import config  # pylint: disable=import-outside-toplevel
         config.warn = log.warn
-        # ServerCore.init handles connection-layer setup and dispatches `init`
-        # to every entry in self.subsystems
+        # ServerCore.init dispatches `init` to every entry in self.subsystems,
+        # including the `network` subsystem which handles the connection layer
         super().init(opts)
-
-    def setup(self) -> None:
-        log("starting component init")
-        # ServerCore.setup dispatches `setup` to all subsystems:
-        super().setup()
 
     def server_is_ready(self) -> None:
         super().server_is_ready()
@@ -299,11 +147,6 @@ class ServerBase(ServerCore):
         # before invoking do_cleanup; we just emit the server event here.
         self.server_event("exit")
         log("do_cleanup()")
-
-    def late_cleanup(self, stop=True) -> None:
-        # ServerCore.late_cleanup dispatches `late_cleanup` to all subsystems
-        # then cleans up potential protocols and the child reaper:
-        super().late_cleanup(stop)
 
     # Display-subsystem hooks that variant servers may override. The
     # DisplayManager subsystem calls these via `self.server.X(...)` so
@@ -354,7 +197,7 @@ class ServerBase(ServerCore):
     # override http scripts to expose just the current session / display
     def get_displays(self) -> dict[str, Any]:
         from xpra.scripts.display import get_displays  # pylint: disable=import-outside-toplevel
-        return get_displays(self.dotxpra, display_names=(self.get_display_name(), ))
+        return get_displays(self.network.dotxpra, display_names=(self.get_display_name(), ))
 
     def get_display_name(self) -> str:
         display = self.subsystems.get("display")
@@ -362,7 +205,7 @@ class ServerBase(ServerCore):
 
     def get_xpra_sessions(self) -> dict[str, Any]:
         from xpra.scripts.sessions import get_xpra_sessions  # pylint: disable=import-outside-toplevel
-        return get_xpra_sessions(self.dotxpra, matching_display=self.get_display_name())
+        return get_xpra_sessions(self.network.dotxpra, matching_display=self.get_display_name())
 
     def notify_setup_error(self, exception) -> None:
         log.warn("Warning: cannot forward notifications,")
@@ -380,7 +223,7 @@ class ServerBase(ServerCore):
     def get_server_features(self, server_source=None) -> dict[str, Any]:
         # these are flags that have been added over time with new versions
         # to expose new server features:
-        return self._dispatch_merge("get_server_features", server_source)
+        return dispatch.merge(self.subsystems, "get_server_features", server_source)
 
     def send_hello(self, server_source, server_cipher: dict) -> None:
         capabilities = self.make_hello(server_source)
@@ -390,42 +233,8 @@ class ServerBase(ServerCore):
 
     ######################################################################
     # info:
-    def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
-        """ info that must be collected from the UI thread
-            (ie: things that query the display)
-        """
-        info: dict[str, Any] = {}
-        subsystems = kwargs.get("subsystems", ())
-        log("ServerBase.get_ui_info(%s, %s) subsystems=%s", proto, kwargs, subsystems)
-        for prefix, sub in self.subsystems.items():
-            if subsystems and prefix not in subsystems:
-                continue
-            with log.trap_error("Error collecting UI info from %s", prefix):
-                mixin_info = sub.get_ui_info(proto, **kwargs)
-                log("%s.get_ui_info(%s, ..)=%r", prefix, proto, Ellipsizer(mixin_info))
-                merge_dicts(info, mixin_info)
-        return info
-
     def get_threaded_info(self, proto, **kwargs) -> dict[str, Any]:
-        log("ServerBase.get_threaded_info%s", (proto, kwargs))
-        start = monotonic()
-        info: dict[str, Any] = ServerCore.get_threaded_info(self, proto, **kwargs)
-        sources = tuple(self._server_sources.values())
-        client_uuids = kwargs.get("client_uuids", ())
-        if client_uuids:
-            sources = tuple(ss for ss in sources if ss.uuid in client_uuids)
-        log("threaded info sources(%i)=%s", client_uuids, sources)
-        info.update(self.get_sources_info(proto, sources))
-        log("ServerBase.get_info took %.1fms", 1000.0 * (monotonic() - start))
+        info = super().get_threaded_info(proto, **kwargs)
+        if client_session := self.get_subsystem("client-session"):
+            info.update(client_session.get_sources_info(proto, client_uuids=kwargs.get("client_uuids", ())))
         return info
-
-    def _disconnect_proto_info(self, proto) -> str:
-        # only log protocol info if there is more than one client:
-        if len(self._server_sources) > 1:
-            return " %s" % proto
-        return ""
-
-    def init_packet_handlers(self) -> None:
-        # ServerCore.init_packet_handlers registers core handlers and dispatches
-        # `init_packet_handlers` to all subsystems:
-        super().init_packet_handlers()

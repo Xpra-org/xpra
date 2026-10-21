@@ -14,22 +14,22 @@
 
 Name:    pybind11
 Version: 3.1.0
-Release: 1%{?dist}
+Release: 2%{?dist}
 Summary: Seamless operability between C++11 and Python
 License: BSD-3-Clause
 URL:	 https://github.com/pybind/pybind11
 Source0: https://github.com/pybind/pybind11/archive/v%{version}/%{name}-%{version}.tar.gz
 # Patch out header path
 Patch1:  pybind11-2.10.1-hpath.patch
-%description
-pybind11
-
 BuildRequires: make
 BuildRequires: %{py3rpmname}-devel
 BuildRequires: %{py3rpmname}-setuptools
 BuildRequires: eigen3-devel
 BuildRequires: gcc-c++
 BuildRequires: cmake
+
+%description
+pybind11
 
 %package devel
 Summary:  Development headers for pybind11
@@ -89,6 +89,9 @@ chmod +x %{buildroot}%{_bindir}/pybind11-config
 %{python3_sitearch}/%{name}/
 
 %changelog
+* Wed Oct 21 2026 Antoine Martin <antoine@xpra.org> - 3.1.0-2
+- the package dependencies were part of the description
+
 * Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 3.1.0-1
 - new upstream release, verify the source checksum
 - build with cmake directly, as the cmake macros may use Ninja

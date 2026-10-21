@@ -8,7 +8,7 @@ import signal
 from typing import Any
 from collections.abc import Callable
 
-from xpra.server import features
+from xpra.server import features, is_virtual_session
 from xpra.util.pid import load_pid
 from xpra.util.env import envint
 from xpra.util.parsing import str_to_bool
@@ -101,7 +101,7 @@ class DbusManager(StubSubsystem):
     """
     Mixin for servers that have a dbus server associated with them
     """
-    __slots__ = ("control", "enabled", "env", "launch", "pid", "service", "wait")
+    __slots__ = ("control", "enabled", "env", "launch", "pid", "reuse", "service", "wait")
     PREFIX = "dbus"
 
     def __init__(self, server=None):
@@ -111,11 +111,13 @@ class DbusManager(StubSubsystem):
         self.pid: int = 0
         self.env: dict[str, str] = {}
         self.control: bool = False
+        self.reuse = False
         self.service = None
         self.wait = False
 
     def init(self, opts) -> None:
         self.enabled = str_to_bool(opts.dbus)
+        self.reuse = not is_virtual_session(opts.mode)
         # use a session bus started by someone else, don't launch one:
         self.wait = str(opts.dbus).lower() == "wait"
         self.launch = opts.dbus_launch
@@ -131,7 +133,7 @@ class DbusManager(StubSubsystem):
             # save the properties here rather than in `init_dbus_env`:
             # the X11 display connection is only opened by the preceding X11 subsystem's `setup`,
             # and this also updates them when the environment was reloaded from the session files
-            if features.x11 and self.env:
+            if features.x11 and self.env and not self.reuse:
                 save_dbus_x11_properties(self.env)
             if self.control:
                 from xpra.dbus.common import find_session_bus_address, DBUS_AUTOLAUNCH
@@ -142,10 +144,19 @@ class DbusManager(StubSubsystem):
 
     def init_dbus_env(self) -> None:
         log("init_dbus_env()")
+        if self.reuse and not self.wait:
+            # This server attaches to an existing session: never adopt or start its daemon.
+            from xpra.dbus.common import find_session_bus_address
+            self.pid = 0
+            address = find_session_bus_address()
+            self.env = {"DBUS_SESSION_BUS_ADDRESS": address} if address else {}
+            os.environ.update(self.env)
+            return
         if not self.wait:
             display_name = os.environ.get("DISPLAY", "")
             self.pid, self.env = reload_dbus_attributes(display_name)
             if self.pid and self.env:
+                os.environ.update(self.env)
                 return
         try:
             from xpra.server.dbus.start import start_dbus, wait_for_dbus

@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 from typing import TypeAlias
 
-from xpra.notification.common import IconData
+from xpra.notification.common import IconData, is_icon_name
 from xpra.util.env import envint, first_time
 from xpra.log import Logger
 from xpra.common import noop
@@ -56,8 +56,8 @@ class NotifierBase(ABC):
         app_icon_data: IconData | None = hints.pop("app-icon-data", None)
         if app_icon_data:
             return self.temp_icon_file(int(nid), app_icon_data)
-        if app_icon and not os.path.isabs(app_icon):
-            # safe to use
+        if app_icon and is_icon_name(app_icon):
+            # an icon theme name, safe to use
             return app_icon
         if icon:
             return self.temp_icon_file(int(nid), icon)
@@ -88,6 +88,11 @@ class NotifierBase(ABC):
             GLib = gi_import("GLib")
             GLib.timeout_add(AUTO_DELETE_DELAY, self.clean_notification, nid)
         return temp.name
+
+    def notify_failed(self, nid: NID, reason: str = "failed to show the notification") -> None:
+        # the notification is not on screen: tell the server it is closed
+        self.clean_notification(nid)
+        self.closed_cb(int(nid), 4, reason)
 
     def clean_notification(self, nid: NID) -> None:
         temp_file = self.temp_files.pop(int(nid), "")

@@ -25,7 +25,7 @@ from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import POSIX, WIN32, gi_import
 from xpra.util.io import umask_context, osclose
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, single_line, truncate
 from xpra.util.env import envint, envbool
 from xpra.util.parsing import str_to_bool, parse_with_unit
 from xpra.common import SizedBuffer
@@ -45,6 +45,8 @@ MAX_CONCURRENT_FILES = max(1, envint("XPRA_MAX_CONCURRENT_FILES", 10))
 PRINT_JOB_TIMEOUT = max(60, envint("XPRA_PRINT_JOB_TIMEOUT", 3600))
 SEND_REQUEST_TIMEOUT = max(300, envint("XPRA_SEND_REQUEST_TIMEOUT", 3600))
 CHUNK_TIMEOUT = 10 * 1000
+MAX_PRINT_TITLE = 256
+MAX_FILENAME = 128
 # file transfers do their disk I/O (writing received files, reading files to send)
 # and CPU-heavy work (compression, hashing) on a dedicated daemon thread, so that
 # it is all kept off the network parse thread:
@@ -72,7 +74,14 @@ def basename(filename: str) -> str:
     for sep in ("\\", "/", os.sep):
         i = tmp.rfind(sep) + 1
         tmp = tmp[i:]
-    filename = tmp
+    # bidi controls can be used to disguise the file extension, ie: "invoice\u202efdp.exe" shows as "invoiceexe.pdf":
+    filename = single_line(tmp).strip()
+    if len(filename) > MAX_FILENAME:
+        root, ext = os.path.splitext(filename)
+        if len(ext) > 16:
+            ext = ""
+        filename = truncate(root, MAX_FILENAME - len(ext)) + ext
+    tmp = filename
     if WIN32:  # pragma: no cover
         # many characters aren't allowed at all on win32:
         tmp = ""
@@ -81,6 +90,11 @@ def basename(filename: str) -> str:
                 char = "_"
             tmp += char
     return tmp
+
+
+def valid_url(url: str) -> bool:
+    # the url is shown to the user before we open it:
+    return single_line(url) == url
 
 
 def safe_open_download_file(basefilename: str, mimetype: str) -> tuple[str, int]:
@@ -679,7 +693,7 @@ class FileTransferHandler(FileTransferAttributes):
     def do_process_file_send(self, packet: Packet) -> None:
         # the remote end is sending us a file
         start = monotonic()
-        basefilename = packet.get_str(1)
+        basefilename = basename(packet.get_str(1))
         mimetype = packet.get_str(2)
         printit = packet.get_bool(3)
         openit = packet.get_bool(4)
@@ -847,12 +861,13 @@ class FileTransferHandler(FileTransferAttributes):
     def _print_file(self, filename: str, mimetype: str, options: typedict) -> None:
         printlog("print_file%s", (filename, mimetype, options))
         printer = options.strget("printer")
-        title = options.strget("title")
+        # the job title comes from the peer, it is logged and shown in the print queue:
+        title = truncate(single_line(options.strget("title")), MAX_PRINT_TITLE)
         copies = options.intget("copies", 1)
         if title:
-            printlog.info(" sending '%s' to printer '%s'", title, printer)
+            printlog.info(f" sending {title!r} to printer {printer!r}")
         else:
-            printlog.info(" sending to printer '%s'", printer)
+            printlog.info(f" sending to printer {printer!r}")
         from xpra.platform.printing import print_files, printing_finished, get_printers
         printers = get_printers()
 
@@ -1003,6 +1018,10 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.warn(" but this does not match any of the allowed prefixes")
             filelog.warn(" %s", csv(URL_PREFIXES))
             return
+        if not valid_url(url):
+            filelog.warn("Warning: received a request to open URL %r", url)
+            filelog.warn(" but it contains invalid characters")
+            return
         if self.open_url_ask:
             acceptit, _printit, _openit = self.accept_data(send_id, "url", url, False, True)
             if not acceptit:
@@ -1114,14 +1133,14 @@ class FileTransferHandler(FileTransferAttributes):
         if send_id and (request := self.files_requested.get(send_id)):
             if self.request_file_match(request, url, options):
                 self.files_requested.pop(send_id, None)
-                accepted_url = os.path.basename(url) if dtype == "file" else url
+                accepted_url = basename(url) if dtype == "file" else url
                 self.record_data_request_acceptance(send_id, dtype, accepted_url, mimetype, filesize,
                                                     printit, request.openit, options)
                 cb_answer(True)
                 return
             filelog.warn("Warning: received mismatched requested file approval for send-id %r", send_id)
         if dtype == "file":
-            url = os.path.basename(url)
+            url = basename(url)
             if printit:
                 if not self.printing:
                     cb_answer(False)
@@ -1139,7 +1158,7 @@ class FileTransferHandler(FileTransferAttributes):
                 else:
                     ask = self.file_transfer_ask
         elif dtype == "url":
-            if not self.open_url:
+            if not self.open_url or not valid_url(url):
                 cb_answer(False)
                 return
             ask = self.open_url_ask

@@ -6,7 +6,6 @@
 # later version. See the file COPYING for details.
 
 import os
-import re
 from typing import Any, Final
 from collections.abc import Callable, MutableSequence, Sequence
 
@@ -15,12 +14,12 @@ from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window.backing import fire_paint_callbacks, get_backing_client_properties
 from xpra.client.gui.window_border import WindowBorder
 from xpra.net.common import PacketElement
-from xpra.common import gravity_str, force_size_constraint
+from xpra.common import gravity_str, force_size_constraint, is_x11_property_denied
 from xpra.util.colourspace import Colourspace, SRGB
 from xpra.util.parsing import scaleup_value, scaledown_value
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
-from xpra.util.str_fn import std
+from xpra.client.gui.window_title import do_get_window_title, window_title_str
 from xpra.util.env import envint, envbool, ignorewarnings
 from xpra.log import Logger
 
@@ -42,100 +41,9 @@ FORCE_FLUSH = envbool("XPRA_FORCE_FLUSH", False)
 
 SHOW_SPINNER_WINDOW_TYPES = set(os.environ.get("XPRA_SHOW_SPINNER_WINDOW_TYPES", "DIALOG,NORMAL,SPLASH").split(","))
 
-UNKNOWN_MACHINE: Final[str] = "<unknown machine>"
-
 # sentinel for "requested-position" metadata: a position no window can ever occupy
 # (0, 0) and negative coordinates are all valid positions, so we need an out-of-range value:
 NOT_REQUESTED: Final[tuple[int, int]] = (-2 ** 32, -2 ** 32)
-
-
-def is_wm_property(name: str) -> bool:
-    return any(name.startswith(prefix) for prefix in ("_MOTIF", "WM_", "_NET_WM", "_GTK_"))
-
-
-def validhostname(value):
-    if value in (
-            "localhost",
-            "localhost.localdomain",
-            "",
-            None,
-    ):
-        return None
-    return value
-
-
-def do_get_window_title(client, wid: int, metadata: dict) -> str:
-    title = client.title.replace("\0", "")
-    if title.find("@") < 0:
-        return title
-    # perform metadata variable substitutions:
-    remote_info = client.get_subsystem("remote-info")
-    display_info = client.get_subsystem("display")
-    mmap_info = client.get_subsystem("mmap")
-    remote_hostname = remote_info._remote_hostname if remote_info else None
-    remote_display = remote_info._remote_display if remote_info else None
-    if remote_display:
-        # ie: "1\\WinSta0\\Default" -> 1-WinSta0-Default
-        remote_display = remote_display.replace("\\", "-")
-    default_values: dict[str, str] = {
-        "title": "<untitled window>",
-        "client-machine": UNKNOWN_MACHINE,
-        "windowid": str(wid),
-        "server-machine": std(remote_hostname) or UNKNOWN_MACHINE,
-        "server-display": std(remote_display) or "<unknown display>",
-    }
-    metalog(f"default values: {default_values}")
-
-    def getvar(var) -> str:
-        # "hostname" is magic:
-        # we try harder to find a useful value to show:
-        if var in ("hostname", "hostinfo"):
-            server_display = display_info.server_display if display_info else None
-            mmap_read_area = mmap_info.mmap_read_area if mmap_info else None
-            mmap_enabled = bool(mmap_read_area and mmap_read_area.enabled)
-            if var == "hostinfo" and mmap_enabled and server_display:
-                # this is a local connection for sure and we can specify the display directly:
-                return server_display
-            import socket
-            local_hostname = validhostname(socket.gethostname())
-            # try to find the hostname:
-            proto = getattr(client, "_protocol", None)
-            target = None
-            if proto:
-                conn = getattr(proto, "_conn", None)
-                if conn:
-                    hostname = conn.info.get("host")
-                    target = str(conn.target)
-                    if hostname:
-                        if local_hostname == hostname and server_display:
-                            return server_display
-                        return hostname
-            for m in ("client-machine", "server-machine"):
-                value = validhostname(getvar(m))
-                if value and value != local_hostname:
-                    return value
-            if server_display:
-                return server_display
-            if target:
-                return target
-            return UNKNOWN_MACHINE
-        value = metadata.get(var)
-        if value is None:
-            return default_values.get(var, "<unknown %s>" % var)
-        return str(value)
-
-    def metadata_replace(match) -> str:
-        atvar = match.group(0)  # ie: '@title@'
-        var = atvar[1:len(atvar) - 1]  # ie: 'title'
-        if not var:
-            # atvar = "@@"
-            return "@"
-        return getvar(var)
-
-    sub = r"@[\w\-]*@"
-    replaced = re.sub(sub, metadata_replace, title)
-    metalog("re.sub%s=%s", (sub, metadata_replace, title), replaced)
-    return replaced
 
 
 class ClientWindowBase(ClientWidgetBase):
@@ -409,7 +317,7 @@ class ClientWindowBase(ClientWidgetBase):
             self.set_title(title)
 
         if "icon-title" in metadata:
-            icon_title = metadata.strget("icon-title")
+            icon_title = window_title_str(metadata.strget("icon-title"))
             self.set_icon_name(icon_title)
             # the DE may have reset the icon now,
             # force it to use the one we really want:
@@ -449,7 +357,7 @@ class ClientWindowBase(ClientWidgetBase):
             attr = metadata.tupleget("x11-property")
             if len(attr) >= 4:
                 name, ptype, _, value = attr[:4]
-                if not is_wm_property(name):
+                if not is_x11_property_denied(name):
                     self.set_x11_property(name, ptype, value)
 
         standard_properties: dict[str, type] = {
@@ -726,6 +634,10 @@ class ClientWindowBase(ClientWidgetBase):
 
     def set_xid(self, xid) -> None:
         pass  # see gtk client window base
+
+    def dismiss_popups(self) -> None:
+        if window := self.get_subsystem("window"):
+            window.dismiss_popups()
 
     def toggle_debug(self, *_args) -> None:
         b = self._backing

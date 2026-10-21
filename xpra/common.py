@@ -3,6 +3,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+import re
+from functools import cache
 from typing import Protocol, Any, Final, TypeAlias
 from collections.abc import Buffer, Callable, Sized, Iterable, Sequence, MutableSequence
 
@@ -32,6 +35,33 @@ def get_invalid_content_types(content_types: Iterable[str]) -> tuple[str, ...]:
 def valid_content_types(content_types: Iterable[str]) -> tuple[str, ...]:
     """Return only the recognized Xpra window-content hints."""
     return tuple(x for x in content_types if x in CONTENT_TYPES)
+
+
+# X11 window properties which are never forwarded to the peer, as regular expressions:
+# the window manager properties (ICCCM, EWMH, KDE, Motif, GTK, XEmbed and XDND) are handled separately,
+# and would let the peer control how the window manager treats the window:
+X11_PROPERTIES_DENYLIST: Final[tuple[str, ...]] = (
+    "WM_.*", "SM_CLIENT_ID", "_NET_.*", "_KDE_.*", "_MOTIF_.*", "_GTK_.*", "_XEMBED.*", "Xdnd.*", "XPRA_.*",
+)
+MAX_X11_PROPERTY_NAME: Final[int] = 256
+
+
+@cache
+def get_x11_properties_denylist() -> re.Pattern:
+    env_value = os.environ.get("XPRA_X11_PROPERTIES_DENYLIST")
+    patterns = X11_PROPERTIES_DENYLIST if env_value is None else tuple(x for x in env_value.split(",") if x)
+    try:
+        return re.compile("|".join(f"(?:{pattern})" for pattern in patterns) or "(?!)")
+    except re.error as e:
+        from xpra.log import Logger
+        Logger("x11", "metadata").warn("Warning: invalid 'XPRA_X11_PROPERTIES_DENYLIST': %s", e)
+        return re.compile("|".join(f"(?:{pattern})" for pattern in X11_PROPERTIES_DENYLIST))
+
+
+def is_x11_property_denied(name: str) -> bool:
+    if not name or len(name) > MAX_X11_PROPERTY_NAME or not name.isascii() or not name.isprintable():
+        return True
+    return bool(get_x11_properties_denylist().fullmatch(name))
 
 
 class SizedBuffer(Buffer, Sized, Protocol):

@@ -7,11 +7,13 @@ import sys
 import unittest
 from collections import deque
 from contextlib import ExitStack
-from unittest.mock import call, patch
+from unittest.mock import Mock, call, patch
 
 from xpra.os_util import OSX, POSIX
 from xpra.util.io import pollwait
 from xpra.util.env import OSEnvContext
+from xpra.util.objects import AdHocStruct
+from xpra.net.common import Packet
 from unit.server_test_util import ServerTestUtil
 
 
@@ -119,6 +121,68 @@ class X11WindowTest(ServerTestUtil):
         model.show()
         return model
 
+    def test_dismiss_grabbed_popup(self):
+        from xpra.x11.subsystem.display import x11_ungrab
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+        from xpra.x11.bindings.window import X11WindowBindings
+
+        helper = os.path.join(os.path.dirname(os.path.abspath(__file__)), "grabbed_popup.py")
+        command = [sys.executable, helper, self.display]
+        env = self.get_default_run_env()
+        proc = self.run_command(command, env=env, stdout=subprocess.PIPE)
+        self.addCleanup(proc.terminate)
+        with proc.stdout:
+            line = proc.stdout.readline()
+        xid, pointer, keyboard = map(int, line.split())
+        self.assertEqual((pointer, keyboard), (0, 0))
+
+        def probe() -> tuple[int, ...]:
+            output = subprocess.check_output(command + ["probe"], env=env, timeout=10)
+            return tuple(map(int, output.split()))[1:]
+
+        # A second X11 client cannot grab either device, even after Xpra's ungrab.
+        self.assertEqual(probe(), (1, 1))  # AlreadyGrabbed
+        x11_ungrab()
+        self.assertEqual(probe(), (1, 1))
+        window = Mock()
+        window.is_OR.return_value = True
+        window.is_tray.return_value = False
+        window.get_property.return_value = xid
+        server = AdHocStruct()
+        server.is_readonly = lambda _proto: False
+        server.get_server_source = lambda _proto: AdHocStruct()
+        server.get_window = lambda wid: window if wid == 1 else None
+        SeamlessWindowServer._process_dismiss(server, object(), Packet("window-dismiss", 1))
+        self.assertFalse(X11WindowBindings().is_mapped(xid))
+        # The application is still running and has never called ungrab.
+        self.assertIsNone(proc.poll())
+        self.assertEqual(probe(), (0, 0))
+
+    def test_dismiss_popup_guards(self):
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+
+        for readonly, source, popup, tray, hidden, exists in (
+                (True, True, True, False, False, True),
+                (False, False, True, False, False, True),
+                (False, True, False, False, False, True),
+                (False, True, True, True, False, True),
+                (False, True, True, False, True, True),
+                (False, True, True, False, False, False),
+        ):
+            with self.subTest(readonly=readonly, source=source, popup=popup, tray=tray, hidden=hidden, exists=exists):
+                window = Mock()
+                window.is_OR.return_value = popup
+                window.is_tray.return_value = tray
+                ss = Mock()
+                ss.is_window_hidden.return_value = hidden
+                server = AdHocStruct()
+                server.is_readonly = lambda _proto: readonly
+                server.get_server_source = lambda _proto: ss if source else None
+                server.get_window = lambda _wid: window if exists else None
+                with patch("xpra.x11.subsystem.window.X11WindowBindings") as bindings:
+                    SeamlessWindowServer._process_dismiss(server, object(), Packet("window-dismiss", 1))
+                    bindings.assert_not_called()
+
     def test_window_stacking(self):
         from xpra.x11.wm import Wm
 
@@ -185,6 +249,18 @@ class X11WindowTest(ServerTestUtil):
             self.assertEqual(get_pid(window), os.getpid())
         finally:
             x11window.DestroyWindow(window)
+
+    def test_x11_property_denylist(self):
+        from xpra.x11.error import xsync
+        from xpra.x11.prop import prop_set
+        model = self.manage_window(self.start_window())
+        changed = []
+        model.connect("x11-property-changed", lambda _model, event: changed.append(event[0]))
+        for name in ("_MY_APP_PROPERTY", "_KDE_NET_WM_BLUR_BEHIND_REGION", "_NET_STARTUP_ID", "WM_LOCALE_NAME"):
+            with xsync:
+                prop_set(model.xid, name, "latin1", "value")
+            model._handle_property_change(name)
+        self.assertEqual(changed, ["_MY_APP_PROPERTY"])
 
     @staticmethod
     def set_wm_hints(xid: int, flags: int) -> None:
@@ -293,6 +369,68 @@ class X11WindowTest(ServerTestUtil):
         # and the sink goes away with the window manager:
         wm.cleanup()
         self.assertFalse(wm.get_focus_window())
+
+    def test_focus_raises_window(self):
+        from xpra.x11.bindings.core import get_root_xid
+        from xpra.x11.bindings.window import X11WindowBindings
+        from xpra.x11.error import xsync
+
+        first = self.manage_window(self.start_window())
+        second = self.manage_window(self.start_window())
+        server = FocusStub(windows={1: first, 2: second})
+        bindings = X11WindowBindings()
+        root = get_root_xid()
+
+        for wid, focused, covering in ((1, first, second), (2, second, first)):
+            with self.subTest(wid=wid):
+                server.focus(wid)
+                self.assertEqual(bindings.get_children(root)[-1], focused.corral_xid)
+                with xsync:
+                    covering.raise_window()
+                self.assertEqual(bindings.XGetInputFocus()[0], focused.xid)
+                self.assertEqual(bindings.get_children(root)[-1], covering.corral_xid)
+                # The client can send the same focus again after another window
+                # has covered it on the server, without changing the input focus.
+                history = tuple(server._focus_history)
+                server.focus(wid)
+                self.assertEqual(bindings.get_children(root)[-1], focused.corral_xid)
+                self.assertEqual(tuple(server._focus_history), history)
+
+    def test_pointer_raises_stationary_window(self):
+        from xpra.x11.bindings.core import get_root_xid
+        from xpra.x11.bindings.window import X11WindowBindings
+        from xpra.x11.server.pointer import X11SeamlessPointerManager
+        from xpra.x11.server.xtest_pointer import XTestPointerDevice
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+
+        first = self.manage_window(self.start_window())
+        second = self.manage_window(self.start_window())
+        source = AdHocStruct()
+        source.get_monitor_position = lambda *_args: (400, 500)
+        server = AdHocStruct()
+        server.subsystems = {}
+        server.get_server_source = lambda _proto: source
+        server.get_sources_by_type = lambda *_args: ()
+        windows = SeamlessWindowServer(server)
+        windows._id_to_window = {1: first, 2: second}
+        server.subsystems["window"] = windows
+        pointer = X11SeamlessPointerManager(server)
+        pointer.pointer_device = XTestPointerDevice()
+        pointer.pointer_device.move_pointer(20, 20, {})
+        bindings = X11WindowBindings()
+        root = get_root_xid()
+        self.assertEqual(bindings.get_children(root)[-1], second.corral_xid)
+
+        # Wayland client windows can have the same server coordinates: changing
+        # the target window must raise it even when the pointer does not move.
+        props = {"window-position": (20, 20), "monitor": {"index": 0, "position": (400, 500)}}
+        pointer.process_mouse_common(object(), 0, 1, (400, 500), props)
+        self.assertEqual(bindings.get_children(root)[-1], first.corral_xid)
+        self.assertEqual(pointer.pointer_device.get_position(), (20, 20))
+        for pressed in (True, False):
+            pointer.process_pointer_button(object(), 0, 2, 1, pressed, (400, 500), props)
+            self.assertEqual(bindings.get_children(root)[-1], second.corral_xid)
+            self.assertEqual(pointer.pointer_device.get_position(), (20, 20))
 
     def test_lost_active_window(self):
         """

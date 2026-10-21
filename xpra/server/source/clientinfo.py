@@ -7,7 +7,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.util.objects import typedict
-from xpra.util.str_fn import std
+from xpra.util.str_fn import std, single_line, truncate
 from xpra.net.common import FULL_INFO
 from xpra.util.version import vparts
 from xpra.server.source.stub import StubClientConnection
@@ -16,6 +16,13 @@ from xpra.log import Logger
 
 log = Logger("server")
 
+# the client strings we log and show in notifications:
+MAX_CLIENT_STRING = 128
+
+
+def client_str(c: typedict, key: str) -> str:
+    return truncate(single_line(c.strget(key)), MAX_CLIENT_STRING)
+
 
 def get_glinfo_message(opengl: typedict) -> str:
     msg = "OpenGL is "
@@ -23,7 +30,7 @@ def get_glinfo_message(opengl: typedict) -> str:
         msg += "disabled"
     else:
         msg += "enabled"
-        backend = opengl.strget("backend")
+        backend = std(opengl.strget("backend"))
         if backend:
             msg += f" using {backend} backend"
         driver_info = opengl.strget("renderer") or opengl.strget("vendor")
@@ -75,31 +82,31 @@ class ClientInfoConnection(StubClientConnection):
 
     def parse_client_caps(self, c: typedict) -> None:
         self.machine_id = c.strget("machine_id")
-        self.hostname = c.strget("hostname")
-        self.username = c.strget("username")
-        self.user = c.strget("user")
-        self.name = c.strget("name")
+        self.hostname = client_str(c, "hostname")
+        self.username = client_str(c, "username")
+        self.user = client_str(c, "user")
+        self.name = client_str(c, "name")
         self.argv = c.strtupleget("argv")
-        self.client_type = c.strget("client_type")
-        self.client_platform = c.strget("platform")
-        self.client_machine = c.strget("platform.machine")
-        self.client_processor = c.strget("platform.processor")
-        self.client_release = c.strget("platform.sysrelease")
-        self.client_linux_distribution = c.strtupleget("platform.linux_distribution")
-        self.client_version = c.strget("version")
+        self.client_type = client_str(c, "client_type")
+        self.client_platform = client_str(c, "platform")
+        self.client_machine = client_str(c, "platform.machine")
+        self.client_processor = client_str(c, "platform.processor")
+        self.client_release = client_str(c, "platform.sysrelease")
+        self.client_linux_distribution = tuple(truncate(single_line(x), MAX_CLIENT_STRING) for x in c.strtupleget("platform.linux_distribution")[:4])
+        self.client_version = client_str(c, "version")
         self.client_protocol_version = c.inttupleget("protocol-version")
-        self.client_revision = c.strget("build.revision")
+        self.client_revision = client_str(c, "build.revision")
         self.client_bits = c.intget("python.bits")
         self.client_proxy = c.boolget("proxy")
-        self.client_wm_name = c.strget("wm_name")
-        self.client_session_type = c.strget("session-type")
-        self.client_session_type_full = c.strget("session-type.full")
+        self.client_wm_name = client_str(c, "wm_name")
+        self.client_session_type = client_str(c, "session-type")
+        self.client_session_type_full = client_str(c, "session-type.full")
         self.client_opengl = typedict(c.dictget("opengl"))
-        self.proxy_hostname = c.strget("proxy.hostname")
-        self.proxy_platform = c.strget("proxy.platform")
-        self.proxy_release = c.strget("proxy.platform.sysrelease")
-        self.proxy_version = c.strget("proxy.version")
-        self.proxy_version = c.strget("proxy.build.version", self.proxy_version)
+        self.proxy_hostname = client_str(c, "proxy.hostname")
+        self.proxy_platform = client_str(c, "proxy.platform")
+        self.proxy_release = client_str(c, "proxy.platform.sysrelease")
+        self.proxy_version = client_str(c, "proxy.version")
+        self.proxy_version = client_str(c, "proxy.build.version") or self.proxy_version
         self.log_client_info()
 
     def log_client_info(self):

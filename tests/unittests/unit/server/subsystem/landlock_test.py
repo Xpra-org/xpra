@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 
 from xpra.exit_codes import ExitCode
 from xpra.os_util import LINUX
+from xpra.util import subsystem as dispatch
 from xpra.scripts.config import InitException, InitExit, make_defaults_struct
 from xpra.server import features
 from xpra.server.core import ServerCore, get_instance_subsystem_classes
@@ -37,13 +38,13 @@ class LandLockTest(unittest.TestCase):
         opts.landlock = mode
         server = ServerCore.__new__(ServerCore)
         server.subsystems = {}
-        server.sockets = []
         landlock = LandLock(server)
         server.subsystems[LandLock.PREFIX] = landlock
+        network = make_subsystem(server, sockets=[], start_listen_sockets=Mock())
+        server.subsystems["network"] = network
         landlock.init(opts)
-        server.start_listen_sockets = Mock()
+        server.start_listen_sockets = network.start_listen_sockets
         server.init_packet_handlers = Mock()
-        server.add_core_control_commands = Mock()
         return server, landlock, opts
 
     @staticmethod
@@ -65,7 +66,7 @@ class LandLockTest(unittest.TestCase):
     def test_feature_uses_current_option(self):
         saved = {name: value for name, value in vars(features).items() if isinstance(value, bool)}
         for linux, mode, expected in ((True, "no", False), (True, "default", True), (True, "strict", True),
-                                      (False, "strict", False)):
+                                      (True, "strict+gpu", True), (False, "strict", False)):
             opts = make_defaults_struct()
             opts.landlock = mode
             with self.subTest(linux=linux, mode=mode), patch.dict(vars(features), saved), \
@@ -75,6 +76,15 @@ class LandLockTest(unittest.TestCase):
                 self.assertEqual(features.landlock, expected)
                 self.assertEqual(LandLock in get_instance_subsystem_classes(), expected)
 
+    def test_gpu_flag(self):
+        for mode, expected_mode, gpu in (("strict", "strict", False), ("strict+gpu", "strict", True),
+                                         ("default+gpu", "default", True)):
+            with self.subTest(mode=mode), patch("xpra.server.subsystem.landlock.LINUX", True):
+                _server, landlock, _opts = self.make_landlock(mode)
+                self.assertEqual(landlock.mode, expected_mode)
+                self.assertEqual(landlock.gpu, gpu)
+                self.assertEqual(landlock.get_info(None)["landlock"]["gpu"], gpu)
+
     def test_setup_order_and_single_installation(self):
         server, landlock, opts = self.make_landlock()
         events = []
@@ -83,7 +93,7 @@ class LandLockTest(unittest.TestCase):
                                                    setup=lambda: events.append("dbus-setup"))
         server.subsystems["peer"] = make_subsystem(server, early_setup=lambda: events.append("peer-early"),
                                                    setup=lambda: events.append("peer"))
-        server.sockets = [
+        server.network.sockets = [
             SimpleNamespace(socktype="socket", address="/sockets/xpra", options={}),
             SimpleNamespace(socktype="socket", address="@abstract", options={}),
             SimpleNamespace(socktype="tcp", address=("127.0.0.1", 12345), options={}),
@@ -100,7 +110,7 @@ class LandLockTest(unittest.TestCase):
         modules["xpra.platform.posix.security"].enforce_landlock.assert_called_once_with(
             "strict", ("/sessions/100", ), read_paths=(), required_paths=(),
             socket_paths=(), socket_dirs=["/sockets"], cleanup_dirs=("/sessions",), temp_dir="/private",
-            allow_socket_creation=False,
+            allow_socket_creation=False, gpu=False,
         )
 
     def test_pulseaudio_starts_before_confinement(self):
@@ -174,7 +184,7 @@ class LandLockTest(unittest.TestCase):
         server.subsystems["auth"] = make_subsystem(server, auth_classes={
             "tcp": (("file", None, None, {"filename": "password", "exec_cwd": "/credentials"}),),
         })
-        server.sockets = [SimpleNamespace(options={"ssh-host-key": "/keys/host", "ssl-key": "/keys/tls"})]
+        server.network.sockets = [SimpleNamespace(options={"ssh-host-key": "/keys/host", "ssl-key": "/keys/tls"})]
         self.assertEqual(landlock.get_auth_paths(), ("/keys/host", "/keys/tls", "/credentials/password"))
 
     def test_wayland_backend_starts_after_confinement(self):
@@ -234,7 +244,7 @@ class LandLockTest(unittest.TestCase):
         with patch("xpra.server.subsystem.landlock.LINUX", True), \
              patch("xpra.platform.posix.security.get_landlock_auth_paths", side_effect=ImportError("missing dependency")), \
              self.assertRaisesRegex(InitExit, "failed to initialize server Landlock"):
-            server._dispatch_fire("init", opts)
+            dispatch.call(server.subsystems, "init", opts)
         peer_init.assert_not_called()
 
     def test_temp_cleanup_before_session_removal(self):
@@ -261,8 +271,8 @@ class LandLockTest(unittest.TestCase):
 
             server.subsystems["session-files"] = make_subsystem(server, cleanup=lambda: None, late_cleanup=remove_session)
             server.subsystems["peer"] = make_subsystem(server, cleanup=release, late_cleanup=lambda _stop: None)
-            server._dispatch_fire("cleanup", reverse=True)
-            server._dispatch_fire("late_cleanup", True, reverse=True)
+            dispatch.call(server.subsystems, "cleanup", reverse=True)
+            dispatch.call(server.subsystems, "late_cleanup", True, reverse=True)
             self.assertEqual(events, ["peer", "session"])
             self.assertFalse(os.path.exists(session_dir))
 
@@ -287,7 +297,7 @@ class LandLockTest(unittest.TestCase):
 
     def test_auth_path_failure_aborts_setup_before_temp_creation(self):
         server, _landlock, _opts = self.make_landlock()
-        server.sockets = [SimpleNamespace(socktype="tcp", address=("127.0.0.1", 12345), options={"auth": "invalid"})]
+        server.network.sockets = [SimpleNamespace(socktype="tcp", address=("127.0.0.1", 12345), options={"auth": "invalid"})]
         modules = self.mock_modules([])
         security = modules["xpra.platform.posix.security"]
         with patch("xpra.server.subsystem.landlock.LINUX", True), patch.dict(sys.modules, modules), \

@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import ctypes
+import glob
 import os
 import resource
 import shutil
@@ -144,9 +145,20 @@ def get_landlock_temp_paths() -> tuple[str, ...]:
     return tempfile.gettempdir(), get_xpra_tmp_dir()
 
 
-def get_landlock_device_paths() -> tuple[str, ...]:
-    """Return graphics and terminal devices, without granting node creation."""
-    return "/dev/dri", "/dev/accel", "/dev/pts", "/dev/ptmx", "/dev/tty"
+def get_landlock_gpu_device_paths() -> tuple[str, ...]:
+    """Return the GPU devices, which are only accessible with the `gpu` flag, ie: `--landlock=strict+gpu`."""
+    # the NVIDIA device nodes are not in a directory of their own,
+    # one for each GPU: '/dev/nvidia0', '/dev/nvidia1', etc
+    nvidia = tuple(sorted(glob.glob("/dev/nvidia[0-9]*")))
+    return ("/dev/dri", "/dev/accel", "/dev/nvidiactl", "/dev/nvidia-uvm") + nvidia
+
+
+def get_landlock_device_paths(gpu: bool = False) -> tuple[str, ...]:
+    """Return terminal devices, and the GPU devices if requested, without granting node creation."""
+    paths = ("/dev/pts", "/dev/ptmx", "/dev/tty")
+    if gpu:
+        paths += get_landlock_gpu_device_paths()
+    return paths
 
 
 def check_landlock_directory(path: str) -> None:
@@ -317,7 +329,8 @@ def prepare_landlock_temp_dir(parent: str) -> tuple[str, int]:
 
 
 def enforce_landlock(mode: str, write_paths=(), *, read_paths=(), socket_paths=(), socket_dirs=(),
-                     cleanup_dirs=(), required_paths=(), temp_dir: str = "", allow_socket_creation: bool) -> int:
+                     cleanup_dirs=(), required_paths=(), temp_dir: str = "", allow_socket_creation: bool,
+                     gpu: bool = False) -> int:
     """Install Xpra's opt-in process-wide Landlock filesystem policy."""
     if mode == "no":
         return 0
@@ -354,10 +367,15 @@ def enforce_landlock(mode: str, write_paths=(), *, read_paths=(), socket_paths=(
         for path in write_paths + temp_paths:
             if not os.path.isfile(path):
                 os.makedirs(path, mode=0o700, exist_ok=True)
-    Logger("landlock").info("installing %s Landlock policy", mode)
+    log = Logger("landlock")
+    log.info("installing %s%s Landlock policy", mode, "+gpu" if gpu else "")
+    if not gpu and any(os.path.exists(path) for path in get_landlock_gpu_device_paths()):
+        # otherwise the failures do not mention Landlock, ie: CUDA's "no CUDA-capable device is detected"
+        log.info(f" the GPU devices are not accessible, use '--landlock={mode}+gpu' to enable them,")
+        log.info(" ie: for hardware accelerated video encoders and OpenGL")
     return restrict_paths(
         read_paths, write_paths + temp_paths,
-        device_paths=get_landlock_device_paths() + ("/dev/null", "/dev/zero", "/dev/random", "/dev/urandom"),
+        device_paths=get_landlock_device_paths(gpu) + ("/dev/null", "/dev/zero", "/dev/random", "/dev/urandom"),
         socket_paths=socket_paths, socket_dirs=socket_dirs, cleanup_dirs=cleanup_dirs,
         required_paths=required_paths + write_paths + temp_paths + tuple(socket_dirs), read_access=access,
         allow_socket_creation=allow_socket_creation,

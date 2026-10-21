@@ -27,7 +27,7 @@ from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
 from xpra.util.parsing import parse_sharing
 from xpra.util.system import get_run_info
-from xpra.util.str_fn import Ellipsizer, repr_ellipsized
+from xpra.util.str_fn import Ellipsizer, repr_ellipsized, single_line, truncate
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base import features
@@ -42,6 +42,12 @@ sharinglog = Logger("sharing")
 
 NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 FORCE_ALERT = envbool("XPRA_FORCE_ALERT", False)
+MAX_SESSION_NAME = 128
+
+
+def session_name_str(name) -> str:
+    # the server's session name is shown in the tray, menus and dialogs:
+    return truncate(single_line(str(name)), MAX_SESSION_NAME)
 
 
 class UIXpraClient(XpraClientBase):
@@ -352,7 +358,7 @@ class UIXpraClient(XpraClientBase):
         # v7 servers running in backwards compatible mode switch to the modern packets for us)
         if not XpraClientBase.parse_server_capabilities(self, c):
             return False
-        self.server_session_name = c.strget("session_name")
+        self.server_session_name = session_name_str(c.strget("session_name"))
         set_name("Xpra", self.session_name or self.server_session_name or "Xpra")
         self.server_sharing = c.boolget("sharing")
         self.server_sharing_toggle = c.boolget("sharing-toggle")
@@ -450,7 +456,7 @@ class UIXpraClient(XpraClientBase):
                                        min_args=1, max_args=1))
 
     def set_server_session_name(self, name: str):
-        self.server_session_name = name
+        self.server_session_name = session_name_str(name)
         log.info("session name updated from server: %s", self.server_session_name)
 
     ######################################################################

@@ -22,7 +22,7 @@
 
 Name:           python3-gobject
 Version:        3.58.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        Python bindings for GObject Introspection
 
 License:        LGPL-2.1-or-later
@@ -56,6 +56,8 @@ for use in Python 3 programs.
 %package     -n %{py3rpmname}-gobject-base
 Summary:        Python 3 bindings for GObject Introspection base package
 Requires:       gobject-introspection%{?_isa} >= %{gobject_introspection_version}
+# older builds split the pure-python files into a noarch subpackage:
+Obsoletes:      %{py3rpmname}-gobject-base-noarch < %{version}-%{release}
 Requires:       %{py3rpmname}
 
 %description -n %{py3rpmname}-gobject-base
@@ -105,6 +107,9 @@ fi
 %{_libdir}/pkgconfig/pygobject-3.0.pc
 
 %changelog
+* Mon Oct 19 2026 Antoine Martin <antoine@xpra.org> - 3.58.1-2
+- obsolete the old -gobject-base-noarch subpackage
+
 * Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 3.58.1-1
 - new upstream release
 

@@ -7,55 +7,92 @@
 import unittest
 import sys
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 from xpra.net.common import Packet
 from xpra.net.socket_util import SocketListener
-from xpra.scripts.config import InitExit
+from xpra.server.base import ServerBase
 from xpra.server.core import ServerCore
+from xpra.server.subsystem.network import NetworkServer
 
 
 class TestServerCore(unittest.TestCase):
 
-    def test_fatal_subsystem_errors_propagate(self):
-        for merge in (False, True):
-            with self.subTest(merge=merge):
-                server = ServerCore.__new__(ServerCore)
-                error = InitExit(1, "startup failed")
-                following = Mock()
+    def test_ui_info_filtering_and_merge(self):
+        proto = object()
+        kwargs = {"subsystems": ("first", "second"), "client_uuids": ("one",)}
+        for cls in (ServerCore, ServerBase):
+            with self.subTest(server=cls.__name__):
+                server = cls.__new__(cls)
+                first = Mock(return_value={"display": {"size": (640, 480)}})
+                second = Mock(return_value={"display": {"dpi": 96}})
+                excluded = Mock()
                 server.subsystems = {
-                    "failing": SimpleNamespace(setup=Mock(side_effect=error), get_info=Mock(side_effect=error)),
-                    "following": SimpleNamespace(setup=following, get_info=following),
+                    "first": SimpleNamespace(get_ui_info=first),
+                    "second": SimpleNamespace(get_ui_info=second),
+                    "excluded": SimpleNamespace(get_ui_info=excluded),
                 }
-                with self.assertRaises(InitExit) as raised:
-                    if merge:
-                        server._dispatch_merge("get_info")
-                    else:
-                        server._dispatch_fire("setup")
-                self.assertIs(raised.exception, error)
-                following.assert_not_called()
+                with patch.dict("os.environ", {"XPRA_DICTMERGE_WARNINGS": "0"}):
+                    info = server.get_ui_info(proto, **kwargs)
+                self.assertEqual(info, {"display": {"size": (640, 480), "dpi": 96}})
+                first.assert_called_once_with(proto, **kwargs)
+                second.assert_called_once_with(proto, **kwargs)
+                excluded.assert_not_called()
 
-    def test_other_subsystem_errors_warn_and_continue(self):
-        for merge in (False, True):
-            with self.subTest(merge=merge):
-                server = ServerCore.__new__(ServerCore)
-                following = Mock(return_value={"ready": True})
+    def test_ui_info_failures_do_not_stop_collection(self):
+        proto = object()
+        for cls in (ServerCore, ServerBase):
+            with self.subTest(server=cls.__name__):
+                server = cls.__new__(cls)
+                following = Mock(return_value={"dpi": 96})
                 server.subsystems = {
-                    "failing": SimpleNamespace(setup=Mock(side_effect=ValueError), get_info=Mock(side_effect=ValueError)),
-                    "following": SimpleNamespace(setup=following, get_info=following),
+                    "first": SimpleNamespace(get_ui_info=Mock(return_value={"size": (640, 480)})),
+                    "conflict": SimpleNamespace(get_ui_info=Mock(return_value={"size": (800, 600)})),
+                    "broken": SimpleNamespace(get_ui_info=Mock(side_effect=ValueError("failed"))),
+                    "missing": SimpleNamespace(),
+                    "non-callable": SimpleNamespace(get_ui_info=1),
+                    "following": SimpleNamespace(get_ui_info=following),
                 }
                 with patch("xpra.server.core.log") as log:
-                    if merge:
-                        self.assertEqual(server._dispatch_merge("get_info"), {"ready": True})
-                    else:
-                        server._dispatch_fire("setup")
-                following.assert_called_once_with()
-                log.warn.assert_called_once()
+                    info = server.get_ui_info(proto)
+                self.assertEqual(info, {"size": (640, 480), "dpi": 96})
+                following.assert_called_once_with(proto)
+                self.assertEqual(log.warn.call_count, 2)
+
+    def test_base_lifecycle_events_and_cleanup_order(self):
+        server = ServerBase.__new__(ServerBase)
+        calls = Mock()
+        network = Mock(spec=("cleanup", "late_cleanup", "cancel_touch_timer", "cleanup_all_protocols", "cleanup_sockets"))
+        calls.attach_mock(network, "network")
+        server.subsystems = {"network": network}
+        server.emit = calls.emit
+        server.server_event = calls.server_event
+        server.server_is_ready()
+        with patch("xpra.server.core.stop_asyncio_loop") as stop_asyncio_loop, \
+             patch("xpra.util.child_reaper.reaper_cleanup") as reaper_cleanup:
+            server.cleanup()
+            server.late_cleanup(stop=False)
+        self.assertEqual(calls.mock_calls, [
+            call.emit("running"), call.server_event("ready"), call.network.cleanup(),
+            call.network.cancel_touch_timer(), call.network.cleanup_all_protocols(), call.server_event("exit"),
+            call.network.cleanup_sockets(), call.network.late_cleanup(False), call.network.cleanup_all_protocols(force=True),
+        ])
+        self.assertEqual(network._potential_protocols, [])
+        stop_asyncio_loop.assert_called_once_with()
+        reaper_cleanup.assert_called_once_with()
+
+    def test_client_lifecycle_hooks_without_subsystems(self):
+        server = ServerCore.__new__(ServerCore)
+        server.subsystems = {}
+        source = object()
+        self.assertEqual(server.parse_hello(source, {}), "")
+        self.assertIsNone(server.add_new_client(source, {}))
+        self.assertIsNone(server.send_initial_data(source))
 
     def test_handle_invalid_packet_from_detached_protocol(self):
         server = SimpleNamespace(
             _closing=False,
-            _potential_protocols=[],
+            network=SimpleNamespace(_potential_protocols=[]),
             get_server_source=Mock(return_value=None),
         )
         proto = Mock()
@@ -80,25 +117,22 @@ class TestServerCore(unittest.TestCase):
         get_worker.assert_called_once_with()
 
     def test_handle_ssh_connection_uses_display_name_api(self):
-        server = ServerCore.__new__(ServerCore)
         display = SimpleNamespace(get_display_name=lambda: ":42")
-        server.subsystems = {"display": display}
+        network = NetworkServer(SimpleNamespace(subsystems={"display": display}))
         conn = SimpleNamespace(socktype_wrapped="tcp")
         with patch("xpra.server.ssh.make_ssh_server_connection", return_value="ssh-conn") as make_ssh:
-            result = server.handle_ssh_connection(conn, {})
+            result = network.handle_ssh_connection(conn, {})
 
         assert result == "ssh-conn"
         make_ssh.assert_called_once()
         assert make_ssh.call_args.kwargs["display_name"] == ":42"
 
     def test_start_listen_sockets_shows_vsock_endpoint(self):
-        server = ServerCore.__new__(ServerCore)
-        server.sockets = [
+        mdns = SimpleNamespace(extra_info={})
+        network = NetworkServer(SimpleNamespace(subsystems={"mdns": mdns}))
+        network.sockets = [
             SocketListener("vsock", object(), (0xffffffff, 10000), {}, lambda: None, lambda: None),
         ]
-        server.unix_socket_paths = []
-        mdns = SimpleNamespace(extra_info={})
-        server.subsystems = {"mdns": mdns}
         vsock_mod = SimpleNamespace(
             CID_ANY=0xffffffff,
             CID_TYPES={0xffffffff: "ANY"},
@@ -106,12 +140,12 @@ class TestServerCore(unittest.TestCase):
         )
 
         with patch.dict(sys.modules, {"xpra.net.vsock.vsock": vsock_mod}):
-            with patch("xpra.server.core.GLib.idle_add") as idle_add:
+            with patch("xpra.server.subsystem.network.GLib.idle_add") as idle_add:
                 log = SimpleNamespace(info=Mock())
-                with patch("xpra.server.core.log", log):
-                    server.start_listen_sockets()
+                with patch("xpra.server.subsystem.network.log", log):
+                    network.start_listen_sockets()
 
-        idle_add.assert_called_once_with(server.add_listen_socket, server.sockets[0])
+        idle_add.assert_called_once_with(network.add_listen_socket, network.sockets[0])
         log.info.assert_any_call("listening on %s at %s:%s", "vsock", 7, 10000)
         log.info.assert_any_call("  %s://%s:%s", "vsock", 7, 10000)
         self.assertEqual(mdns.extra_info["vsock"], "7:10000")

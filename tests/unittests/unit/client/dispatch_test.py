@@ -34,7 +34,7 @@ class SubsystemDispatchTest(unittest.TestCase):
                 error = InitExit(ExitCode.FAILURE, "cannot initialize subsystem")
                 client, failing, following = self.make_client(method, error)
                 args = (SimpleNamespace(display=":1"),) if method in ("init", "init_ui") else ()
-                with patch("xpra.client.base.client.sublog") as log, self.assertRaises(InitExit) as raised:
+                with patch("xpra.util.subsystem.log") as log, self.assertRaises(InitExit) as raised:
                     getattr(client, method)(*args)
                 self.assertIs(raised.exception, error)
                 failing.assert_called_once_with(*args)
@@ -43,7 +43,7 @@ class SubsystemDispatchTest(unittest.TestCase):
 
     def test_lifecycle_other_errors_warn_and_continue(self):
         client, failing, following = self.make_client("load", ValueError("optional component failed"))
-        with patch("xpra.client.base.client.sublog") as log:
+        with patch("xpra.util.subsystem.log") as log:
             client.load()
         failing.assert_called_once_with()
         following.assert_called_once_with()
@@ -65,26 +65,25 @@ class SubsystemDispatchTest(unittest.TestCase):
                 self.assertIs(raised.exception, error)
                 run_loop.assert_not_called()
 
-    def test_merge_init_exit_propagates(self):
-        for method in ("get_caps", "get_info"):
-            with self.subTest(method=method):
-                error = InitExit(ExitCode.FAILURE, "cannot query subsystem")
-                client, failing, following = self.make_client(method, error)
-                with patch("xpra.client.base.client.sublog") as log, self.assertRaises(InitExit) as raised:
-                    client._dispatch_merge(method)
-                self.assertIs(raised.exception, error)
-                failing.assert_called_once_with()
-                following.assert_not_called()
-                log.warn.assert_not_called()
-
-    def test_merge_other_errors_warn_and_continue(self):
+    def test_hello_merges_subsystem_caps(self):
         expected = {"following": {"enabled": True}}
         client, failing, following = self.make_client("get_caps", ValueError("optional component failed"), expected)
-        with patch("xpra.client.base.client.sublog") as log:
-            self.assertEqual(client._dispatch_merge("get_caps"), expected)
+        with patch.object(client, "_add_common_hello", side_effect=lambda caps: caps), \
+             patch("xpra.util.subsystem.log") as log:
+            self.assertEqual(client.make_hello(), expected)
         failing.assert_called_once_with()
         following.assert_called_once_with()
         log.warn.assert_called_once()
+
+    def test_hello_init_exit_propagates(self):
+        error = InitExit(ExitCode.FAILURE, "cannot query subsystem")
+        client, failing, following = self.make_client("get_caps", error)
+        with patch.object(client, "_add_common_hello") as add_common_hello, self.assertRaises(InitExit) as raised:
+            client.make_hello()
+        self.assertIs(raised.exception, error)
+        failing.assert_called_once_with()
+        following.assert_not_called()
+        add_common_hello.assert_not_called()
 
 
 if __name__ == "__main__":

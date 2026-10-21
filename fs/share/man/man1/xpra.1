@@ -1848,6 +1848,12 @@ Force all windows to be refreshed.
 The keyboard will be grabbed / ungrabbed by the current window.
 .IP \fBtoggle_pointer_grab\fP
 The pointer will be grabbed and confined to the current window.
+.IP \fBdismiss_popups\fP
+Release the client's keyboard and pointer grabs and dismiss popup windows.
+The default shortcut is \fIControl+Escape\fP.
+Dismissing remote popups requires an X11 seamless server supporting this action.
+The server unmaps override-redirect windows, releasing grabs held on those windows
+even if the application ignores keyboard input.
 .IP \fBtoggle_fullscreen\fP
 Make the current window fullscreen / unfullscreen.
 .IP \fBtoggle_debug\fP

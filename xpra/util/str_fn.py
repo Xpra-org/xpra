@@ -34,6 +34,40 @@ def nonl(x) -> str:
     return str(x).replace("\n", "\\n").replace("\r", "\\r")
 
 
+# control characters, except for line breaks and tabs:
+TEXT_STRIP: dict[int, str | None] = dict.fromkeys(c for c in (*range(0x00, 0x20), *range(0x7f, 0xa0)) if chr(c) not in "\t\n")
+# control characters, line separators and bidi controls,
+# which can be used to hide or reverse the text that follows, ie: the " (via Xpra)" suffix of a notification
+# or the " on @hostinfo@" suffix of a window title:
+SINGLE_LINE_STRIP: dict[int, str | None] = dict.fromkeys((
+    *range(0x00, 0x20), *range(0x7f, 0xa0),
+    0x061c, 0x200e, 0x200f, *range(0x202a, 0x202f), *range(0x2066, 0x206a),
+))
+# line breaks and tabs become spaces:
+SINGLE_LINE_STRIP |= dict.fromkeys(map(ord, "\t\n\v\f\r\x85\u2028\u2029"), " ")
+
+
+def valid_text(text: str) -> str:
+    # lone surrogates cannot be encoded, and dbus or the toolkits would refuse the whole string:
+    return text.encode("utf8", "replace").decode("utf8")
+
+
+def clean_text(text: str) -> str:
+    """ for untrusted text we show: remove the control characters, except for line breaks and tabs """
+    return valid_text(text).translate(TEXT_STRIP)
+
+
+def single_line(text: str) -> str:
+    """ for untrusted text we show as a label or title """
+    return valid_text(text).translate(SINGLE_LINE_STRIP)
+
+
+def truncate(text: str, limit: int) -> str:
+    if len(text) <= limit:
+        return text
+    return text[:max(0, limit - 1)] + "\u2026"
+
+
 def obsc(v) -> str:
     OBSCURE_PASSWORDS = envbool("XPRA_OBSCURE_PASSWORDS", True)
     if OBSCURE_PASSWORDS:

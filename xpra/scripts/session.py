@@ -18,7 +18,7 @@ CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 # the session directory name is derived from the display name,
 # so restrict it to a conservative character set to prevent path traversal
 # or otherwise unexpected paths. All the display names we generate fit within
-# this set: X11 ":N" / ":N.S", wayland "wayland-N", "runner-PID", "SPID",
+# this set: X11 ":N" / ":N.S", wayland "wayland-N", "runner-PID", "encoder-PID", "SPID",
 # "Main", shadow-device "vdd:0" (-> "vdd_0"), ...
 # (matches `VALID_DISPLAY` in `xpra.net.session_discovery` and `UUID_CHARS`)
 UNSAFE_DISPLAY_CHARS = re.compile(r"[^A-Za-z0-9._-]")

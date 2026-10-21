@@ -50,6 +50,9 @@ What the containers share:
 
 Nothing else is shared: there is no shared `/run` volume, session bus, audio server, runner socket or menu.
 
+The video encoders can be accelerated using the GPU with `ACCEL=encoder` or `ACCEL=gpu`,
+see the [encoder](../encoder/) and [gpu](../gpu/) variants and their [security implications](../GPU.md).
+
 ## Containers
 
 All the containers run with a read-only root filesystem,

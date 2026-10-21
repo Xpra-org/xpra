@@ -10,12 +10,84 @@ from unittest.mock import Mock, patch
 from xpra.os_util import WIN32, OSX
 from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_STACKING
-from xpra.util.objects import AdHocStruct
+from xpra.util.objects import AdHocStruct, typedict
 from unit.process_test_util import DisplayContext
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class WindowManagerTest(ClientMixinTest):
+
+    def test_wayland_orphan_popups_use_a_mapped_parent(self):
+        from xpra.client.subsystem.window import WindowClient
+        from xpra.client.subsystem.window import manager as manager_module
+
+        # Qt can name an unmapped group leader (99) as its transient parent.
+        # The menu and a plain Qt.Popup both lack WM_WINDOW_ROLE="popup".
+        cases = (
+            (True, 99, 1, 1),
+            (True, 0, 1, 1),
+            (True, 2, 1, 2),
+            (True, 99, None, 99),
+            (False, 99, 1, 99),
+        )
+        for window_type in ("POPUP_MENU", "NORMAL"):
+            for wayland, transient_for, focused, expected_parent in cases:
+                with self.subTest(window_type=window_type, wayland=wayland, transient_for=transient_for, focused=focused):
+                    window_class = Mock()
+                    client = Mock(subsystems={})
+                    client.get_client_window_classes.return_value = (window_class,)
+                    manager = WindowClient(client)
+                    manager._focused = focused
+                    for wid in (1, 2):
+                        parent = Mock(_metadata=typedict({"pid": 123}))
+                        parent.is_OR.return_value = False
+                        parent.is_tray.return_value = False
+                        manager._id_to_window[wid] = parent
+                    metadata = typedict({
+                        "pid": 123, "transient-for": transient_for, "window-type": (window_type,),
+                    })
+                    geometry = (141, 94, 120, 52)
+                    with (
+                        patch.object(manager_module, "is_Wayland", return_value=wayland),
+                        patch.object(WindowClient, "assign_signal_watcher_pid", return_value=0),
+                    ):
+                        window = manager.make_new_window(3, geometry, geometry[2:], metadata, True, typedict())
+                    self.assertIs(window, window_class.return_value)
+                    self.assertEqual(window_class.call_args.args[5]["transient-for"], expected_parent)
+                    self.assertEqual(window_class.call_args.args[3], geometry)
+
+    def test_dismiss_popups(self):
+        from xpra.client.subsystem.window import WindowClient
+
+        client = Mock(readonly=False)
+        keyboard = Mock(grabbed=True)
+        client.subsystems = {"keyboard": keyboard}
+        window_client = WindowClient(client)
+        popup = Mock()
+        popup.is_OR.return_value = True
+        popup.is_tray.return_value = False
+        regular = Mock()
+        regular.is_OR.return_value = False
+        tray = Mock()
+        tray.is_OR.return_value = True
+        tray.is_tray.return_value = True
+        window_client._id_to_window = {1: regular, 2: popup, 3: tray}
+
+        for caps, readonly, expected in (({}, False, []), ({"window": {"dismiss": True}}, True, []),
+                                         ({"window": {"dismiss": True}}, False, [("window-dismiss", 2)])):
+            with self.subTest(caps=caps, readonly=readonly):
+                client.reset_mock()
+                client.readonly = readonly
+                keyboard.grabbed = True
+                window_client._window_with_grab = 2
+                window_client.pointer_grabbed = 2
+                self.assertTrue(window_client.parse_server_capabilities(typedict(caps)))
+                window_client.dismiss_popups()
+                client.window_ungrab.assert_called_once_with()
+                self.assertIsNone(window_client._window_with_grab)
+                self.assertIsNone(window_client.pointer_grabbed)
+                self.assertFalse(keyboard.grabbed)
+                self.assertEqual([tuple(args) for args, _kwargs in client.send.call_args_list], expected)
 
     def test_missing_resize_counter_defaults_to_zero(self):
         from xpra.client.subsystem.window.manager import WindowManagerClient

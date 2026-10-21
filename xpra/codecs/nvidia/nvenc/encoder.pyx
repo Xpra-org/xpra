@@ -1358,13 +1358,15 @@ cdef class Encoder:
                 log.warn("Warning: still waiting %is for CUDA device lock during encoder cleanup", cleanup_lock_wait)
                 cleanup_lock_wait = min(cleanup_lock_wait * 2, 60)
             try:
-                if cdc.context:
-                    cdc.context.push()
+                # pop the same context we pushed, even if it has been freed since:
+                context = cdc.context
+                if context:
+                    context.push()
                 try:
                     self.cuda_clean()
                 finally:
-                    if cdc.context:
-                        cdc.context.pop()
+                    if context:
+                        context.pop()
                 self.cuda_device_context = None
             finally:
                 cdc.lock.release()

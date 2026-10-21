@@ -18,7 +18,7 @@ from xpra.os_util import LINUX, WIN32, OSX
 from xpra.scripts.config import InitExit
 from xpra.util.parsing import str_to_bool
 from xpra.util.system import platform_name
-from xpra.util.str_fn import std, csv
+from xpra.util.str_fn import std, csv, single_line, truncate
 from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
@@ -577,6 +577,19 @@ def print_proxy_caps(caps: typedict) -> None:
 def disconnect_is_an_error(reason) -> bool:
     rstr = str(reason)
     return rstr.find("error") >= 0 or (rstr.find("timeout") >= 0 and rstr != ConnectionMessage.IDLE_TIMEOUT.value)
+
+
+# the disconnection messages we accept from the peer:
+MAX_DISCONNECT_MESSAGES = 8
+MAX_DISCONNECT_MESSAGE = 256
+
+
+def connection_close_info(packet: Packet) -> tuple[str, ...]:
+    """
+    The reason and messages of a `connection-close` packet, as single lines:
+    we log them and the client shows them in a notification.
+    """
+    return tuple(truncate(single_line(str(x)), MAX_DISCONNECT_MESSAGE) for x in packet[1:1 + MAX_DISCONNECT_MESSAGES])
 
 
 def pretty_socket(s) -> str:

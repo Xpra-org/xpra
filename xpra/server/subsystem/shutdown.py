@@ -49,7 +49,7 @@ class ShutdownServer(StubSubsystem):
         if reason:
             message += f": {reason}"
         log.info(message)
-        self.server.cleanup_all_protocols(reason=reason)
+        self.network.cleanup_all_protocols(reason=reason)
         self.timeout_add(500, self.server.clean_quit, ServerExitMode.EXIT)
 
     def _process_server(self, _proto, packet: Packet = Packet(SHUTDOWN_SERVER)) -> None:
@@ -70,7 +70,7 @@ class ShutdownServer(StubSubsystem):
             log.warn("Warning: ignoring shutdown request")
             return False
         log.info("Shutting down in response to client request")
-        self.server.cleanup_all_protocols(reason=ConnectionMessage.SERVER_SHUTDOWN)
+        self.network.cleanup_all_protocols(reason=ConnectionMessage.SERVER_SHUTDOWN)
         self.timeout_add(500, self.server.clean_quit)
         return True
 

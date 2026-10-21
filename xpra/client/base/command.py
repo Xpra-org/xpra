@@ -19,7 +19,7 @@ from xpra.util.env import envint, first_time
 from xpra.net.constants import ConnectionMessage, MAX_PACKET_SIZE
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
 from xpra.util.io import stderr_print, load_binary_file
-from xpra.net.common import Packet, PacketElement, disconnect_is_an_error
+from xpra.net.common import Packet, PacketElement, disconnect_is_an_error, connection_close_info
 from xpra.util.stats import std_unit
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.base.client import XpraClientBase
@@ -162,7 +162,7 @@ class HelloRequestClient(SendCommandConnectClient):
         # overridden method, so we can avoid printing a warning,
         # we haven't received the hello back from the server
         # but that's fine for a request client
-        info = tuple(str(x) for x in packet[1:])
+        info = connection_close_info(packet)
         reason = info[0]
         if disconnect_is_an_error(reason):
             self.server_disconnect_warning(*info)
@@ -294,8 +294,9 @@ class InfoXpraClient(CommandConnectClient):
             if isinstance(v, bytes):
                 if ks.endswith(".data"):
                     return hexstr(v)
-                return bytestostr(v)
-            elif isinstance(v, (int, bool, float)):
+                # some values come from clients, so this must be printable too:
+                v = bytestostr(v)
+            if isinstance(v, (int, bool, float)):
                 return str(v)
             elif isinstance(v, (tuple, list)):
                 eltypes = set(type(x) for x in v)

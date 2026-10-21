@@ -61,6 +61,11 @@ class StubSubsystem(SubsystemPacketHandlers, SignalEmitter):
         """ look up a peer subsystem on the owning server """
         return self.server.subsystems.get(name)
 
+    @property
+    def network(self):
+        """ the `network` subsystem, which owns the sockets and the connections """
+        return self.server.subsystems.get("network")
+
     def get_sources_by_type(self, subsystem_type=object, exclude=None):
         """ delegate to the server's typed source iterator """
         from xpra.server.common import get_sources_by_type
@@ -192,8 +197,7 @@ class StubSubsystem(SubsystemPacketHandlers, SignalEmitter):
     def get_child_env(self) -> dict[str, str]:
         # Subsystems contribute *additions* to the child env. The base
         # implementation in `ServerCore` seeds the result with a filtered
-        # `os.environ`; `ServerBase.get_child_env` then merges subsystem
-        # contributions on top via `_dispatch_merge`.
+        # `os.environ`, then merges subsystem contributions via `dispatch.merge`.
         return {}
 
     def get_full_child_command(self, cmd, _use_wrapper: bool = True) -> list[str]:

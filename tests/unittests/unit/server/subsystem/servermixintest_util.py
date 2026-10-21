@@ -32,7 +32,8 @@ class FakeServerBase(GLibScheduler, SignalEmitter):
 
     def __init__(self):
         SignalEmitter.__init__(self)
-        self.subsystems: dict = {}
+        # the server also stands in for the `network` subsystem:
+        self.subsystems: dict = {"network": self}
 
     def get_subsystem(self, prefix: str):
         return self.subsystems.get(prefix)
@@ -59,7 +60,8 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter, GLibScheduler):
         self.protocol = None
         self.packet_handlers = {}
         self.legacy_alias = {}
-        self.subsystems: dict = {}
+        # the test also stands in for the `network` subsystem:
+        self.subsystems: dict = {"network": self}
 
     def tearDown(self):
         unittest.TestCase.tearDown(self)
@@ -174,7 +176,8 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter, GLibScheduler):
         self._socket_info = ()
         self._server_sources = {}   # pylint: disable=protected-access
         self.sockets = self.create_test_sockets()
-        self.subsystems: dict = {}
+        # the test also stands in for the `network` subsystem:
+        self.subsystems: dict = {"network": self}
         self.get_sources_by_type = lambda st, exclude=None: [
             ss for ss in self._server_sources.values() if isinstance(ss, st) and ss != exclude
         ]

@@ -56,6 +56,8 @@ class SourceMixinsTest(unittest.TestCase):
         server = FakeServer()
         server.session_name = "foo"
         server.unix_socket_paths = ["/some/path"]
+        # the fake server also stands in for the `network` subsystem:
+        server.network = server
         server.limit = 0
         server.detection = False
         if server_props:

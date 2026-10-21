@@ -25,6 +25,8 @@ class FakeServer(GLibScheduler):
 
     def __init__(self):
         self.hello_request_handlers = {}
+        # the server also stands in for the `network` subsystem:
+        self.subsystems = {"network": self}
         self.cleanup_reasons = []
         self.quit_modes = []
 

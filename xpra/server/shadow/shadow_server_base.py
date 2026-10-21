@@ -13,12 +13,13 @@ from xpra.server.window import batch_config
 from xpra.server.base import ServerBase
 from xpra.scripts.config import InitExit
 from xpra.platform.paths import get_icon_dir
+from xpra.os_util import POSIX, OSX
 from xpra.server import features
 from xpra.exit_codes import ExitCode
 from xpra.codecs.constants import TransientCodecException, CodecStateException
 from xpra.exit_codes import ExitValue
 from xpra.util.env import envint, envbool
-from xpra.util.str_fn import csv
+from xpra.util.str_fn import csv, std
 from xpra.util.parsing import DEFAULT_REFRESH_RATE, clamp_refresh_delay, str_to_bool
 from xpra.constants import NotificationID
 from xpra.log import Logger
@@ -206,7 +207,12 @@ class ShadowServerBase(ServerBase):
         if not NATIVE_NOTIFIER:
             return []
         from xpra.platform.notification import get_backends
-        ncs: list[Callable] = list(get_backends())
+        native = not POSIX or OSX
+        if POSIX and not OSX and features.dbus:
+            from xpra.dbus.common import find_session_bus_address
+            native = bool(find_session_bus_address())
+        # Native D-Bus backends would autolaunch a bus if the desktop has none.
+        ncs: list[Callable] = list(get_backends()) if native else []
         if self.get_subsystem("gtk"):
             # if the gtk subsystem is already loaded, we can load GTKNotifier safely:
             try:
@@ -226,7 +232,8 @@ class ShadowServerBase(ServerBase):
         if self.notifier:
             tray = self.get_notification_tray()  # pylint: disable=assignment-from-none
             nid = NotificationID.NEW_USER
-            title = "User '%s' connected to the session" % (ss.name or ss.username or ss.uuid)
+            name = ss.name or ss.username or std(ss.uuid)
+            title = f"User {name!r} connected to the session"
             body = "\n".join(ss.get_connect_info())
             actions: Sequence[str] = ()
             hints: dict[str, Any] = {}

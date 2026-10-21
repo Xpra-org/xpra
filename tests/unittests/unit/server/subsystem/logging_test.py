@@ -45,6 +45,11 @@ class InputMixinTest(ServerMixinTest):
         message = log_messages[0]
         assert message[0] == 10
         assert message[1].endswith("hello")
+        # control characters and escape sequences are stripped:
+        self.handle_packet(Packet(LOGGING_EVENT, 20, "line1\x1b[2J\nline2\u202e", int(monotonic())))
+        self.assertTrue(log_messages[1][1].endswith("line1[2J"))
+        self.assertTrue(log_messages[2][1].endswith("line2"))
+        self.assertTrue(all(line.isprintable() for _, line in log_messages))
         # invalid:
         try:
             self.handle_packet(Packet(LOGGING_EVENT, 20, nostr(), int(monotonic())))

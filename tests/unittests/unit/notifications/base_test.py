@@ -46,6 +46,17 @@ class NotifierBaseTest(unittest.TestCase):
         notifier = self.make_notifier("")
         self.assertTrue(notifier.dbus_check("unix:path=/tmp/dbus-other"))
 
+    def test_icon_string(self):
+        notifier = TestNotifier()
+        self.assertEqual(notifier.get_icon_string(1, "mail-unread", None, {}), "mail-unread")
+        self.assertEqual(notifier.get_icon_string(1, "org.gnome.Evolution", None, {}), "org.gnome.Evolution")
+        # anything the daemon would load as a file instead of looking it up in the theme:
+        for app_icon in (
+            "/etc/passwd", "file:///home/user/Downloads/x.png", "../x.png", "~/x.png",
+            "resource:///x.png", "a b", "x" * 200,
+        ):
+            self.assertEqual(notifier.get_icon_string(1, app_icon, None, {}), "", f"{app_icon!r} should be rejected")
+
 
 def main():
     unittest.main()

@@ -717,7 +717,7 @@ def setup_sd_listen_socket(stype: str, sock, addr) -> SocketListener:
 def normalize_local_display_name(local_display_name: str) -> str:
     if local_display_name.startswith("wayland-") or os.path.isabs(local_display_name):
         return local_display_name
-    if local_display_name.startswith("runner"):
+    if local_display_name.startswith(("runner", "encoder-")):
         return local_display_name
     pos = local_display_name.find(":")
     if pos < 0:

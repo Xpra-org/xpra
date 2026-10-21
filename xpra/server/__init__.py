@@ -16,3 +16,8 @@ class ServerExitMode(IntEnum):
 
 CLOBBER_UPGRADE: int = 0x1
 CLOBBER_USE_DISPLAY: int = 0x2
+
+
+def is_virtual_session(mode: str) -> bool:
+    """Whether the server mode manages its own virtual session."""
+    return mode == "upgrade" or mode.removeprefix("upgrade-") in ("seamless", "desktop", "monitor")

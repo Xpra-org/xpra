@@ -5,8 +5,11 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from types import SimpleNamespace
 
+from xpra.common import noop
 from xpra.util.objects import AdHocStruct
+from xpra.net.common import Packet
 from xpra.client.subsystem import logging
 from xpra.net.packet_type import LOGGING_EVENT
 from unit.test_util import silence_info
@@ -49,6 +52,13 @@ class MixinsTest(ClientMixinTest):
         with silence_info(logging):
             logger.info("foo")
         assert len(self.packets) == 0
+
+    def test_receive_strips_control_characters(self) -> None:
+        lines = []
+        client = SimpleNamespace(local_logging=noop, do_log=lambda level, line: lines.append((level, line)))
+        packet = Packet(LOGGING_EVENT, 20, "line1\x1b[2J\nline2\u202e", 1000)
+        logging.LoggingClient._process_event(client, packet)  # pylint: disable=protected-access
+        self.assertEqual(lines, [(20, "server: @01.000 line1[2J"), (20, "server: @01.000 line2")])
 
 
 def main():

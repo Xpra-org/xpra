@@ -69,7 +69,7 @@ CYTHONIZE_MORE_PACKAGES = {
     "xpra.server.source", "xpra.server.subsystem", "xpra.server.window",
     "xpra.uinput", "xpra.util", "xpra.wayland.client", "xpra.wayland.server",
     "xpra.x11", "xpra.x11.desktop", "xpra.x11.gtk",
-    "xpra.x11.models", "xpra.x11.server", "xpra.x11.subsystem", "xpra.x11.uinput",
+    "xpra.x11.models", "xpra.x11.server", "xpra.x11.subsystem",
 }
 CYTHONIZE_MORE_MODULES = {
     "xpra.common", "xpra.exit_codes", "xpra.gtk.dialogs.qrcode", "xpra.log",

@@ -8,7 +8,7 @@ import os
 from xpra.exit_codes import ExitCode
 from xpra.log import Logger
 from xpra.os_util import LINUX
-from xpra.scripts.config import InitException, InitExit
+from xpra.scripts.config import InitException, InitExit, split_landlock_option
 from xpra.server.subsystem.stub import StubSubsystem
 
 log = Logger("landlock")
@@ -16,12 +16,13 @@ log = Logger("landlock")
 
 class LandLock(StubSubsystem):
     """Confine the server after its sockets and authentication resources are ready."""
-    __slots__ = ("abi", "enforced", "mode", "mmap_paths", "auth_paths", "temp_dir", "temp_dir_owner")
+    __slots__ = ("abi", "enforced", "gpu", "mode", "mmap_paths", "auth_paths", "temp_dir", "temp_dir_owner")
     PREFIX = "landlock"
 
     def __init__(self, server=None):
         super().__init__(server)
         self.mode = "no"
+        self.gpu = False
         self.mmap_paths: tuple[str, ...] = ()
         self.auth_paths: tuple[str, ...] = ()
         self.abi = 0
@@ -30,7 +31,8 @@ class LandLock(StubSubsystem):
         self.temp_dir_owner = 0
 
     def init(self, opts) -> None:
-        self.mode = opts.landlock or "no"
+        # ie: "strict+gpu" -> "strict", True
+        self.mode, self.gpu = split_landlock_option(opts.landlock or "no")
         if LINUX and self.mode != "no":
             try:
                 from xpra.platform.posix.security import get_landlock_auth_paths, get_landlock_mmap_paths
@@ -55,7 +57,7 @@ class LandLock(StubSubsystem):
                 read_paths += paths.get("read", ())
                 socket_paths += paths.get("socket", ())
             from xpra.platform.posix.security import enforce_landlock
-            socket_dirs = [os.path.dirname(sock.address) for sock in self.server.sockets
+            socket_dirs = [os.path.dirname(sock.address) for sock in self.network.sockets
                            if sock.socktype == "socket" and not sock.address.startswith("@")]
             auth_paths = self.auth_paths + self.get_auth_paths()
             if self.mode == "strict":
@@ -65,7 +67,7 @@ class LandLock(StubSubsystem):
                                         required_paths=auth_paths,
                                         socket_paths=tuple(socket_paths), socket_dirs=socket_dirs,
                                         cleanup_dirs=(os.path.dirname(session_dir),),
-                                        temp_dir=self.temp_dir, allow_socket_creation=False)
+                                        temp_dir=self.temp_dir, allow_socket_creation=False, gpu=self.gpu)
             self.enforced = True
         except (ImportError, OSError, ValueError, InitException) as e:
             with log.trap_error("Error cleaning up after failed Landlock enforcement"):
@@ -74,7 +76,7 @@ class LandLock(StubSubsystem):
 
     def get_info(self, _proto) -> dict:
         return {LandLock.PREFIX: {
-            "mode": self.mode, "enforced": self.enforced, "abi": self.abi,
+            "mode": self.mode, "gpu": self.gpu, "enforced": self.enforced, "abi": self.abi,
             "temp-dir": self.temp_dir,
         }}
 
@@ -86,7 +88,7 @@ class LandLock(StubSubsystem):
         if auth := self.get_subsystem("auth"):
             for entries in auth.auth_classes.values():
                 definitions.extend(entries)
-        for listener in self.server.sockets:
+        for listener in self.network.sockets:
             options = listener.options
             for name in ("ssh-host-key", "ssl-cert", "ssl-key", "ssl-ca-certs"):
                 if path := options.get(name):

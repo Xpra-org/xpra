@@ -7,7 +7,7 @@
 import unittest
 from types import SimpleNamespace
 
-from xpra.client.gui.window_base import do_get_window_title
+from xpra.client.gui.window_title import do_get_window_title, MAX_TITLE
 
 
 class FakeClient:
@@ -124,6 +124,16 @@ class WindowTitleTest(unittest.TestCase):
     def test_non_string_metadata_value(self):
         out = self._title("wid=@foo@", {"foo": 123})
         self.assertEqual(out, "wid=123")
+
+    def test_server_values_are_single_line(self):
+        # a right-to-left override would show " on host" as "tsoh no ", hiding where the window comes from:
+        out = self._title("@title@ on @server-machine@", {"title": "Login\u202e\n\x1b[2J"}, _remote_hostname="host")
+        self.assertEqual(out, "Login [2J on host")
+
+    def test_server_values_are_truncated(self):
+        out = self._title("[@title@]", {"title": "x" * (MAX_TITLE * 2)})
+        self.assertEqual(len(out), MAX_TITLE + 2)
+        self.assertTrue(out.endswith("\u2026]"))
 
 
 def main():

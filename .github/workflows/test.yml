@@ -74,7 +74,7 @@ jobs:
                 python3-netifaces python3-scramp \
                 python3-opengl \
                 openssh-client sshpass python3-asyncssh python3-paramiko \
-                python3-setproctitle python3-xdg \
+                python3-setproctitle python3-xdg python3-cups \
                 libpam-dev xserver-xorg-dev xutils-dev xserver-xorg-video-dummy xvfb keyboard-configuration \
                 python3-kerberos python3-gssapi python3-aioquic \
                 python3-gst-1.0 \

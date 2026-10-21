@@ -3477,7 +3477,6 @@ toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 toggle_packages(x11_ENABLED, "xpra.x11.selection")
 toggle_packages(x11_ENABLED and dbus_ENABLED, "xpra.x11.dbus")
 toggle_packages(uinput_ENABLED, "xpra.uinput")
-toggle_packages(uinput_ENABLED and x11_ENABLED, "xpra.x11.uinput")
 toggle_packages(notifications_ENABLED, "xpra.notification")
 
 # cannot use toggle here as cx_Freeze will complain if we try to exclude this module:
@@ -4015,8 +4014,6 @@ if cythonize_more_ENABLED:
             ax("xpra.x11.subsystem")
             if server_ENABLED:
                 ax("xpra.x11.server")
-        if uinput_ENABLED:
-            ax("xpra.x11.uinput")
     if uinput_ENABLED:
         ax("xpra.uinput")
     if wayland_client_ENABLED:

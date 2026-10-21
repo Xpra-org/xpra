@@ -8,13 +8,54 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.client.base.stub import StubClientSubsystem
-from xpra.common import noop
+from xpra.common import noop, may_notify_client
+from xpra.constants import NotificationID
 from xpra.net.packet_type import COMMAND_START
+from xpra.util.env import envint, first_time
 from xpra.util.parsing import str_to_bool
 from xpra.util.objects import typedict
+from xpra.util.str_fn import bytestostr, single_line, truncate
 from xpra.log import Logger
 
 log = Logger("exec")
+
+MAX_MENU_CATEGORIES = envint("XPRA_MAX_MENU_CATEGORIES", 16)
+MAX_MENU_ENTRIES = envint("XPRA_MAX_MENU_ENTRIES", 32)
+MAX_MENU_NAME = 64
+
+
+def menu_name(name) -> str:
+    return truncate(single_line(bytestostr(name)).strip(), MAX_MENU_NAME)
+
+
+def validated_menu(menu) -> tuple[dict, bool]:
+    """
+    the start menu data comes from the server:
+    clean the names, and limit the number of categories and of entries in each category
+    returns the menu, and whether we had to drop anything
+    """
+    if not isinstance(menu, dict):
+        return {}, False
+    trimmed = False
+    categories = sorted((menu_name(category), props) for category, props in menu.items() if isinstance(props, dict))
+    if len(categories) > MAX_MENU_CATEGORIES:
+        log.warn("Warning: the server's start menu has too many categories")
+        log.warn(" only using the first %i out of %i", MAX_MENU_CATEGORIES, len(categories))
+        categories = categories[:MAX_MENU_CATEGORIES]
+        trimmed = True
+    validated = {}
+    for category, props in categories:
+        entries = props.get("Entries")
+        if isinstance(entries, dict):
+            entries = sorted((menu_name(name), cp) for name, cp in entries.items() if isinstance(cp, dict))
+            if len(entries) > MAX_MENU_ENTRIES:
+                log.warn("Warning: the server's start menu category %r has too many entries", category)
+                log.warn(" only using the first %i out of %i", MAX_MENU_ENTRIES, len(entries))
+                entries = entries[:MAX_MENU_ENTRIES]
+                trimmed = True
+            props = dict(props) | {"Entries": dict(entries)}
+        validated[category] = props
+    return validated, trimmed
 
 
 class CommandClient(StubClientSubsystem):
@@ -63,7 +104,11 @@ class CommandClient(StubClientSubsystem):
             onchange = getattr(self.client, "on_server_setting_changed", noop)
 
             def update_menu_value(_setting, menu) -> None:
-                self.server_menu = menu
+                self.server_menu, trimmed = validated_menu(menu)
+                if trimmed and first_time("start-menu-trimmed"):
+                    may_notify_client(self.client, NotificationID.MENU, "Start menu is incomplete",
+                                      "The server's start menu is too big, some of its entries are not shown",
+                                      icon_name="start")
             onchange("menu", update_menu_value)
 
         if self.request_start or self.request_start_child:

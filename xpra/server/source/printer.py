@@ -7,7 +7,8 @@ import os
 from typing import Any
 from collections.abc import Sequence
 from xpra.util.objects import typedict
-from xpra.util.env import envbool
+from xpra.util.str_fn import single_line, truncate
+from xpra.util.env import envbool, envint
 from xpra.os_util import get_machine_id
 from xpra.auth.auth_helper import AuthDef
 from xpra.server.source.stub import StubClientConnection
@@ -17,6 +18,8 @@ log = Logger("printing")
 
 ADD_LOCAL_PRINTERS = envbool("XPRA_ADD_LOCAL_PRINTERS", False)
 PRINTER_LOCATION_STRING = os.environ.get("XPRA_PRINTER_LOCATION_STRING", "via xpra")
+MAX_PRINTER_INFO = 128
+MAX_PRINTERS = envint("XPRA_MAX_PRINTERS", 10)
 
 
 def makeabs(filename: str) -> str:
@@ -80,7 +83,7 @@ class PrinterConnection(StubClientConnection):
     def init_from(self, _protocol, server) -> None:
         # no `init_attributes()` here: the file-transfer attributes are shared with
         # `FileConnection` (same instance), which is the subsystem that owns them
-        self.unix_socket_paths: list[str] = server.unix_socket_paths
+        self.unix_socket_paths: list[str] = server.network.unix_socket_paths
         # `PrinterServer` owns its own copy of the file-transfer attrs
         # (`setup` / `init_printing` may disable `printing` based on local sockets/auth):
         file_transfer = server.subsystems["printer"].file_transfer
@@ -91,6 +94,10 @@ class PrinterConnection(StubClientConnection):
     # printing:
     def set_printers(self, printers: dict, password_file: Sequence[str], auth_defs: Sequence[AuthDef]) -> None:
         log("set_printers%s for %s", (printers, password_file, auth_defs), self)
+        if len(printers) > MAX_PRINTERS:
+            # each printer we add runs `lpadmin`:
+            log.warn("Warning: too many printers, only forwarding the first %i out of %i", MAX_PRINTERS, len(printers))
+            printers = dict(tuple(printers.items())[:MAX_PRINTERS])
         if self.machine_id == get_machine_id() and not ADD_LOCAL_PRINTERS:
             self.printers = printers
             log("local client with identical machine id,")
@@ -147,13 +154,14 @@ class PrinterConnection(StubClientConnection):
     def setup_printer(self, printer: str, props_dict: dict, attributes: dict) -> None:
         from xpra.platform.pycups_printing import add_printer  # pylint: disable=import-outside-toplevel
         props = typedict(props_dict)
-        info = props.strget("printer-info")
+        # the description is visible to all the users of the server's printing system:
+        info = truncate(single_line(props.strget("printer-info")), MAX_PRINTER_INFO)
         attrs = attributes.copy()
         attrs["remote-printer"] = printer
         attrs["remote-device-uri"] = props.strget("device-uri")
         location = PRINTER_LOCATION_STRING
         if self.hostname:
-            location = "on %s"
+            location = f"on {self.hostname}"
             if PRINTER_LOCATION_STRING:
                 # ie: on FOO (via xpra)
                 location = f"on {self.hostname} ({PRINTER_LOCATION_STRING})"
@@ -161,13 +169,13 @@ class PrinterConnection(StubClientConnection):
             def printer_added() -> None:
                 # once the printer has been added, register it in the list
                 # (so it will be removed on exit)
-                log.info("the remote printer '%s' has been configured", printer)
+                log.info(f"the remote printer {printer!r} has been configured")
                 self.printers[printer] = props_dict
                 self.printers_added.add(printer)
 
             add_printer(printer, props, info, location, attrs, success_cb=printer_added)
         except Exception as e:
-            log.warn("Warning: failed to add virtual printer '%s'", printer)
+            log.warn(f"Warning: failed to add virtual printer {printer!r}")
             log.warn(" %s", e)
             log("setup_printer(%s, %s, %s)", printer, props, attributes, exc_info=True)
 

@@ -8,7 +8,10 @@ import unittest
 from unittest.mock import MagicMock
 from unittest.mock import patch
 
+from xpra.net.common import Packet
+from xpra.net.constants import ConnectionMessage
 from xpra.server.auth import get_auth_modules
+from xpra.util.objects import typedict
 from unit.server.subsystem.servermixintest_util import FakeServerBase
 
 
@@ -35,7 +38,7 @@ def make_server():
 
     server = FakeServer()
     s = AuthenticationManager(server)
-    server.subsystems = {"auth": s}
+    server.subsystems["auth"] = s
     return s
 
 
@@ -146,6 +149,39 @@ class TestMakeAuthenticators(unittest.TestCase):
         with patch("xpra.auth.option.log") as log:
             s.make_authenticators("tcp", {}, conn)
         log.warn.assert_not_called()
+
+
+class TestVerifyAuth(unittest.TestCase):
+
+    def test_authenticate_exception_stops_verification(self):
+        for requires_challenge in (False, True):
+            with self.subTest(requires_challenge=requires_challenge):
+                s = make_server()
+                auth = MagicMock()
+                auth.passed = False
+                auth.requires_challenge.return_value = requires_challenge
+                auth.challenge_sent = requires_challenge
+                auth.authenticate.side_effect = RuntimeError("test authentication error")
+                following = MagicMock(passed=False)
+                proto = MagicMock()
+                proto.is_closed.return_value = False
+                proto.authenticators = (auth, following)
+                caps = typedict()
+                with patch.object(type(s), "setup_encryption", return_value={}), \
+                        patch("xpra.server.auth.GLib.timeout_add") as timeout_add, \
+                        patch("xpra.server.auth.GLib.idle_add") as idle_add:
+                    s.verify_auth(proto, Packet("hello", caps), caps)
+                message = ConnectionMessage.AUTHENTICATION_FAILED if requires_challenge else "authentication failed"
+                timeout_add.assert_called_once_with(1000, s.network.disconnect_client, proto, message)
+                auth.authenticate.assert_called_once_with(caps)
+                auth.auth_failed.assert_called_once_with()
+                following.auth_failed.assert_called_once_with()
+                auth.auth_succeeded.assert_not_called()
+                following.authenticate.assert_not_called()
+                auth.get_next_challenge.assert_not_called()
+                proto.clean_authenticators.assert_not_called()
+                idle_add.assert_not_called()
+                self.assertFalse(auth.passed)
 
 
 class Recorder:

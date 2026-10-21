@@ -5,9 +5,12 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import Mock, call, patch
 
 from xpra.os_util import get_hex_uuid
+from xpra.server.base import ServerBase
+from xpra.server.core import ServerCore
 from xpra.server.subsystem.client_session import ClientSessionServer
 from xpra.util.objects import typedict
 from unit.server.subsystem.servermixintest_util import FakeServerBase
@@ -40,7 +43,6 @@ class FakeServer(FakeServerBase):
 
     def __init__(self):
         super().__init__()
-        self.dispatched = []
         self.cleaned = []
         self.emitted = []
         self.accepted = []
@@ -56,13 +58,6 @@ class FakeServer(FakeServerBase):
 
     def send_disconnect(self, proto, *messages) -> None:
         self.disconnected.append((proto, messages))
-
-    def _dispatch_first_truthy(self, method: str, *args):
-        self.dispatched.append((method, args))
-        return ""
-
-    def _dispatch_fire(self, method: str, *args) -> None:
-        self.dispatched.append((method, args))
 
     def cleanup_source(self, source) -> None:
         self.cleaned.append(source)
@@ -80,6 +75,26 @@ class FakeServer(FakeServerBase):
         self.emitted.append((signal, args))
 
 
+class VariantServer(ServerCore):
+
+    def parse_hello(self, ss, caps: typedict):
+        result = super().parse_hello(ss, caps)
+        self.calls.variant_parse_hello(ss, caps)
+        return result
+
+    def add_new_client(self, ss, caps: typedict) -> None:
+        super().add_new_client(ss, caps)
+        self.calls.variant_add_new_client(ss, caps)
+
+    def send_initial_data(self, ss) -> None:
+        super().send_initial_data(ss)
+        self.calls.variant_send_initial_data(ss)
+
+    def client_startup_complete(self, ss) -> None:
+        super().client_startup_complete(ss)
+        self.calls.variant_client_startup_complete(ss)
+
+
 class ClientSessionTest(unittest.TestCase):
 
     def setUp(self) -> None:
@@ -87,13 +102,59 @@ class ClientSessionTest(unittest.TestCase):
         self.session = ClientSessionServer(self.server)
         self.server.subsystems[self.session.PREFIX] = self.session
 
-    def test_dispatch_hooks(self) -> None:
-        source = FakeSource("source")
-        self.assertEqual(self.session.dispatch_parse_hello(source, {}), "")
-        self.session.dispatch_add_new_client(source, {})
-        self.session.dispatch_send_initial_data(source)
-        self.assertEqual([x[0] for x in self.server.dispatched],
-                         ["parse_hello", "add_new_client", "send_initial_data"])
+    def test_handshake_calls_variant_hooks_in_order(self) -> None:
+        for rejection in ("", "denied:reason"):
+            with self.subTest(rejection=rejection):
+                calls = Mock()
+                calls.parse_hello.return_value = rejection
+                server = VariantServer.__new__(VariantServer)
+                server.calls = calls
+                server._closing = False
+                server.send_hello = calls.send_hello
+                server.server_event = calls.server_event
+                server.notify_new_user = calls.notify_new_user
+                session = ClientSessionServer(server)
+                peer = SimpleNamespace(parse_hello=calls.parse_hello, add_new_client=calls.add_new_client,
+                                       send_initial_data=calls.send_initial_data)
+                server.subsystems = {"peer": peer, session.PREFIX: session}
+                proto = object()
+                source = SimpleNamespace(uuid="source", protocol=proto, startup_complete=calls.startup_complete)
+                caps = typedict({"client_type": "test"})
+                auth_caps = {"cipher": "test"}
+                expected = [call.parse_hello(source, caps), call.variant_parse_hello(source, caps)]
+                if rejection:
+                    server.subsystems["network"] = SimpleNamespace(disconnect_client=calls.disconnect_client)
+                    expected.append(call.disconnect_client(proto, "denied", "reason"))
+                else:
+                    expected += [
+                        call.send_hello(source, auth_caps), call.server_event("handshake-complete"), call.notify_new_user(source),
+                        call.add_new_client(source, caps), call.variant_add_new_client(source, caps),
+                        call.send_initial_data(source), call.variant_send_initial_data(source),
+                        call.startup_complete(), call.server_event("startup-complete", source.uuid),
+                        call.variant_client_startup_complete(source),
+                    ]
+                session.process_hello_ui(source, caps, auth_caps)
+                self.assertEqual(calls.mock_calls, expected)
+
+    def test_client_info_filtering(self) -> None:
+        server = ServerBase.__new__(ServerBase)
+        session = ClientSessionServer(server)
+        server.subsystems = {session.PREFIX: session, "network": SimpleNamespace(_potential_protocols=[])}
+        for uuid in ("one", "two"):
+            session.sources[uuid] = SimpleNamespace(uuid=uuid, get_info=lambda uuid=uuid: {"uuid": uuid})
+        session.ui_driver = "two"
+        for client_uuids, selected in (((), ("one", "two")), (("two",), ("two",)), (("missing",), ())):
+            with self.subTest(client_uuids=client_uuids), patch.object(ServerCore, "get_threaded_info", return_value={}):
+                # Client details remain present when other subsystem info is filtered.
+                info = server.get_threaded_info(None, client_uuids=client_uuids, subsystems=("display",))
+            self.assertEqual(info, session.get_sources_info(None, client_uuids=client_uuids))
+            self.assertEqual(info["clients"], {"": 2, "unauthenticated": 0})
+            self.assertEqual(info["client"], {
+                i: {"uuid": uuid, "ui-driver": uuid == "two"} for i, uuid in enumerate(selected)
+            })
+        server.subsystems.pop(session.PREFIX)
+        with patch.object(ServerCore, "get_threaded_info", return_value={}):
+            self.assertEqual(server.get_threaded_info(None), {})
 
     def test_sanity_checks_uuids(self) -> None:
         proto = object()

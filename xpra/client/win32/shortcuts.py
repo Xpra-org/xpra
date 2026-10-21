@@ -119,6 +119,10 @@ class ShortcutTarget:
             kb.grabbed = not kb.grabbed
             log("toggle_keyboard_grab() grabbed=%s", kb.grabbed)
 
+    def dismiss_popups(self) -> None:
+        if window := self.client.get_subsystem("window"):
+            window.dismiss_popups()
+
     def toggle_pointer_grab(self, *_args) -> None:
         wm = self.client.get_subsystem("window")
         if not wm:

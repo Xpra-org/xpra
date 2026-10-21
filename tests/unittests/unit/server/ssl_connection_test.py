@@ -6,7 +6,7 @@
 
 """
     Drive the real server connection handling code with real sockets and real TLS:
-    `accept_connection` then `ServerCore.handle_new_connection`,
+    `accept_connection` then `NetworkServer.handle_new_connection`,
     both for `ssl` sockets and for `tcp` sockets upgraded to `ssl`.
 """
 
@@ -19,12 +19,13 @@ import subprocess
 import unittest
 from functools import partial
 from threading import Thread
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from xpra.net.socket_util import SocketListener, accept_connection
 from xpra.net.tls import socket as tls_socket
 from xpra.net.tls.connection import SSLSocketConnection
-from xpra.server.core import ServerCore
+from xpra.server.subsystem.network import NetworkServer
 
 OPENSSL = shutil.which("openssl")
 # don't wait 20 seconds for clients that never complete the handshake:
@@ -68,7 +69,14 @@ class ServerSSLConnectionTest(unittest.TestCase):
         shutil.rmtree(cls.tmpdir, ignore_errors=True)
 
     def setUp(self) -> None:
-        server = ServerCore.__new__(ServerCore)
+        self.protocols = []
+        protocols = self.protocols
+
+        class TestNetworkServer(NetworkServer):
+            def make_protocol(self, socktype: str, conn, *_args, **_kwargs):
+                protocols.append((socktype, conn))
+
+        server = TestNetworkServer(SimpleNamespace(subsystems={}))
         server._socket_timeout = 5
         server._ssl_attributes = {
             "cert": self.cert,
@@ -80,9 +88,7 @@ class ServerSSLConnectionTest(unittest.TestCase):
         server.ssl_upgrade = True
         server.websocket_upgrade = False
         server.rdp_upgrade = False
-        server.subsystems = {}
-        self.protocols = []
-        server.make_protocol = lambda socktype, conn, *_args, **_kwargs: self.protocols.append((socktype, conn))
+        server.ssh_upgrade = False
         self.server = server
         # keep track of all the server side ssl sockets:
         self.ssl_sockets = []

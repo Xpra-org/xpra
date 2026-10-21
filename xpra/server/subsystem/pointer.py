@@ -152,42 +152,6 @@ class PointerManager(StubSubsystem):
             self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
         log("double-click time=%s, distance=%s", self.double_click_time, self.double_click_distance)
 
-    def init_virtual_devices(self, devices: dict[str, Any]) -> None:
-        # pylint: disable=import-outside-toplevel
-        # (this runs in the main thread - before the main loop starts)
-        # for the time being, we only use the pointer if there is one:
-        display = self.get_subsystem("display")
-        if display is None:
-            log.warn("cannot enable virtual devices without a display")
-            return
-        pointer = devices.get("pointer")
-        touchpad = devices.get("touchpad")
-        log("init_virtual_devices(%s) got pointer=%s, touchpad=%s", devices, pointer, touchpad)
-        if pointer:
-            uinput_device = pointer.get("uinput")
-            device_path = pointer.get("device")
-            if uinput_device:
-                from xpra.x11.uinput.device import UInputPointerDevice
-                self.input_devices = "uinput"
-                self.pointer_device = UInputPointerDevice(uinput_device, device_path)
-                self.verify_uinput_pointer_device()
-        if self.input_devices == "uinput" and touchpad:
-            uinput_device = touchpad.get("uinput")
-            device_path = touchpad.get("device")
-            if uinput_device:
-                from xpra.x11.uinput.device import UInputTouchpadDevice
-                root_w, root_h = display.get_display_size()
-                self.touchpad_device = UInputTouchpadDevice(uinput_device, device_path, root_w, root_h)
-                # `display-geometry-changed` is a subsystem-local signal
-                # owned by `DisplayManager` (via `SignalEmitter`):
-                if display := self.get_subsystem("display"):
-                    display.connect("display-geometry-changed", self.update_touchpad_size)
-        if self.pointer_device:
-            try:
-                log.info("pointer device emulation using %r", str(self.pointer_device).replace("PointerDevice", ""))
-            except Exception as e:
-                log("cannot get pointer device class from %s: %s", self.pointer_device, e)
-
     def update_touchpad_size(self, *_args) -> None:
         if td := self.touchpad_device:
             # the DisplayManager subsystem is what emits this signal:
@@ -197,31 +161,6 @@ class PointerManager(StubSubsystem):
             root_w, root_h = display.get_display_size()
             td.root_w = root_w
             td.root_h = root_h
-
-    def verify_uinput_pointer_device(self) -> None:
-        from xpra.x11.server.xtest_pointer import XTestPointerDevice
-        xtest = XTestPointerDevice()
-        ox, oy = 100, 100
-        from xpra.x11.error import xlog, xswallow
-        with xlog:
-            xtest.move_pointer(ox, oy, {})
-        nx, ny = 200, 200
-        self.pointer_device.move_pointer(nx, ny, {})
-
-        def verify_uinput_moved() -> None:
-            pos = (ox, oy)
-            with xswallow:
-                from xpra.x11.bindings.core import X11CoreBindings
-                pos = X11CoreBindings().query_pointer()
-                log("X11Keyboard.query_pointer=%s", pos)
-            if pos == (ox, oy):
-                log.warn("Warning: %s failed verification", self.pointer_device)
-                log.warn(" expected pointer at %s, now at %s", (nx, ny), pos)
-                log.warn(" using XTest fallback")
-                self.pointer_device = xtest
-                self.input_devices = "xtest"
-
-        self.timeout_add(1000, verify_uinput_moved)
 
     def get_server_features(self, _source=None) -> dict[str, Any]:
         return {

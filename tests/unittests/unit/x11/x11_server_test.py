@@ -9,8 +9,9 @@ import unittest
 
 from xpra.util.objects import typedict
 from xpra.os_util import OSX, POSIX
+from xpra.exit_codes import ExitCode
 from xpra.util.io import pollwait, which
-from unit.server_test_util import ServerTestUtil, log
+from unit.server_test_util import ServerTestUtil, SERVER_TIMEOUT, log
 
 
 class X11ServerTest(ServerTestUtil):
@@ -35,21 +36,12 @@ class X11ServerTest(ServerTestUtil):
 	def test_display_reuse(self):
 		display, server = self.start_test_server()
 		#make sure we cannot start another server on the same display:
-		saved_spe = self.show_proc_error
-		def raise_exception_no_log(*args):
-			raise Exception("%s" % args)
-		#suspend process error logging:
-		self.show_proc_error = raise_exception_no_log
-		try:
-			try:
-				log("should not be able to start another test server on %s", display)
-				self.check_fast_start_server(display)
-			except Exception:
-				pass
-			else:
-				raise Exception("server using the same display should have failed to start")
-		finally:
-			self.show_proc_error = saved_spe
+		#the existing server can answer readiness checks for the new process,
+		#so wait for the duplicate process to fail instead:
+		duplicate = self.run_command(server.command)
+		returncode = pollwait(duplicate, SERVER_TIMEOUT)
+		if returncode != ExitCode.SERVER_ALREADY_EXISTS:
+			self.show_proc_error(duplicate, f"duplicate server startup returned {returncode!r}")
 		assert server.poll() is None, "server should not have terminated"
 		#tell the server to exit and leave the display behind:
 		log("asking the server to exit")

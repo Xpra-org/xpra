@@ -83,7 +83,7 @@ class PortalShadow(ShadowServerBase):
     def disconnect_authenticating_client(self, reason: ConnectionMessage, message: str) -> None:
         if ac := self.authenticating_client:
             self.authenticating_client = None
-            self.disconnect_protocol(ac.protocol, reason, message)
+            self.network.disconnect_protocol(ac.protocol, reason, message)
             self.cleanup_source(ac)
 
     def make_capture_window_models(self) -> list:

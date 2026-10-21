@@ -7,6 +7,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.util.objects import typedict
+from xpra.util.str_fn import single_line, truncate
 from xpra.util.rectangle import rectangle
 from xpra.util.screen import MonitorLayout
 from xpra.net.packet_type import DISPLAY_RESIZED, DISPLAY_SHOW_DESKTOP
@@ -16,6 +17,9 @@ from xpra.log import Logger
 
 log = Logger("display")
 sharinglog = Logger("sharing")
+
+MAX_DESKTOP_NAMES = 64
+MAX_DESKTOP_NAME = 64
 
 
 class DisplayConnection(StubClientConnection):
@@ -139,7 +143,9 @@ class DisplayConnection(StubClientConnection):
 
     def set_desktops(self, desktops: int, desktop_names) -> None:
         self.desktops = desktops or 1
-        self.desktop_names = tuple(str(d) for d in (desktop_names or ()))
+        # these end up in the `_NET_DESKTOP_NAMES` of the session:
+        names = tuple(desktop_names or ())[:MAX_DESKTOP_NAMES]
+        self.desktop_names = tuple(truncate(single_line(str(d)), MAX_DESKTOP_NAME) for d in names)
 
     def updated_desktop_size(self, root_w: int, root_h: int, max_w: int, max_h: int) -> bool:
         log("updated_desktop_size%s desktop_size=%s", (root_w, root_h, max_w, max_h), self.desktop_size)

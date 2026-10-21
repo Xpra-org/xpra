@@ -58,6 +58,48 @@ class NotificationForwarderMixinTest(ServerMixinTest):
         NotificationForwarder.send_initial_data(None, ss)
         self.assertEqual(sent, [True])
 
+    def test_action_key(self):
+        from xpra.net.common import Packet
+        from xpra.dbus.notifications import DBUSNotificationsForwarder
+        from xpra.server.subsystem.notification import NotificationForwarder, MAX_ACTION_KEY
+        # a forwarder that is not registered on any bus:
+        forwarder = object.__new__(DBUSNotificationsForwarder)
+        forwarder.active_notifications = {}
+        forwarder.notify_callback = None
+        forwarder.counter = 0
+        invoked = []
+        forwarder.ActionInvoked = lambda nid, key: invoked.append((nid, key))
+        forwarder.NotificationClosed = lambda nid, reason: None
+        nid = forwarder.Notify("app", 0, "", "summary", "body", ["reply", "Reply", "default", "Open"], {}, 1000)
+
+        source = AdHocStruct()
+        source.notification_callbacks = {}
+        source.user_event = lambda *_args: None
+        server = AdHocStruct()
+        server.get_server_source = lambda _proto: source
+        nf = NotificationForwarder(server)
+        nf.enabled = True
+        nf.forwarder = forwarder
+
+        def action(key: str, action_nid=nid) -> bool:
+            invoked.clear()
+            nf._process_action(None, Packet("notification-action", action_nid, key))
+            return invoked == [(action_nid, key)]
+
+        self.assertTrue(action("reply"))
+        self.assertTrue(action("default"))
+        # not offered by the application:
+        self.assertFalse(action("Reply"))
+        self.assertFalse(action("delete"))
+        self.assertFalse(action("reply", nid + 1))
+        # not something an application would offer:
+        self.assertFalse(action("x" * (MAX_ACTION_KEY + 1)))
+        self.assertFalse(action("reply\x00"))
+        self.assertFalse(action("re\u202eply"))
+        # no longer active:
+        forwarder.notification_closed(nid, 2)
+        self.assertFalse(action("reply"))
+
 
 def main():
     if WIN32 or OSX:

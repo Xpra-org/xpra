@@ -70,7 +70,7 @@ class DesktopWindowServer(WindowServer):
     def _set_window_state(self, wid: int, window, new_window_state: dict) -> list[str]:
         if not new_window_state:
             return []
-        metadatalog("set_window_state%s", (wid, window, new_window_state))
+        metadatalog("set_window_state(%#x, %s, %s)", wid, window, new_window_state)
         changes = []
         # boolean: but not a wm_state and renamed in the model (iconic vs iconified)
         iconified = new_window_state.get("iconified")

@@ -30,6 +30,6 @@ class RunnerServer(SERVER_BASE):
             # TBD:
             proto.send_now(Packet("hello", {"command": True}))
             # client is meant to close the connection itself, but just in case:
-            self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.DONE, "command started")
+            self.timeout_add(5 * 1000, self.network.send_disconnect, proto, ConnectionMessage.DONE, "command started")
             return True
         return super().do_handle_hello_request(request, proto, caps)

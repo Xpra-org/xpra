@@ -4,11 +4,14 @@
 # later version. See the file COPYING for details.
 
 import os.path
+import re
 from io import BytesIO
 from typing import TypeAlias
+from collections.abc import Sequence
 
 from xpra.os_util import gi_import, POSIX, OSX
 from xpra.util.env import first_time, envint
+from xpra.util.str_fn import single_line, truncate
 from xpra.util.io import load_binary_file
 from xpra.log import Logger
 
@@ -30,6 +33,23 @@ PROXY_NAME = "xpra-notification-proxy"
 ICON_ENCODINGS = ("png", "jpeg", "webp")
 # larger than this is not an icon, it's a payload:
 ICON_MAX_SIZE = envint("XPRA_NOTIFICATION_ICON_MAX_SIZE", 256)
+# an icon name we can safely hand to the notification daemon, which looks it up in the icon theme:
+# anything else (a path, or a URI like `file://`) would have the daemon load a local file
+# through its own image loaders, bypassing `sanitize_icon_data`:
+ICON_NAME_RE = re.compile(r"[A-Za-z0-9._+-]{1,128}")
+# the body markup tags that make the notification daemon load a local file (`img`)
+# or open a link (`a href`) - the text of a link is kept:
+UNSAFE_MARKUP_RE = re.compile(r"<\s*/?\s*(img|a)\b[^>]*>", re.IGNORECASE)
+# dbus uses a signed 32-bit integer, -1 means the notification daemon's default:
+MAX_EXPIRE_TIMEOUT = 2**31 - 1
+# larger than this is not a notification:
+MAX_APP_NAME = envint("XPRA_NOTIFICATION_MAX_APP_NAME", 64)
+MAX_SUMMARY = envint("XPRA_NOTIFICATION_MAX_SUMMARY", 256)
+MAX_BODY = envint("XPRA_NOTIFICATION_MAX_BODY", 4096)
+# number of actions (key and label pairs):
+MAX_ACTIONS = envint("XPRA_NOTIFICATION_MAX_ACTIONS", 8)
+MAX_ACTION_KEY = 256
+MAX_ACTION_LABEL = 64
 
 
 def PIL_Image():
@@ -126,6 +146,40 @@ def image_data(img) -> IconData:
     from xpra.codecs.image import to_png
     w, h = img.size
     return "png", w, h, to_png(img)
+
+
+def is_icon_name(icon_string: str) -> bool:
+    return bool(ICON_NAME_RE.fullmatch(icon_string))
+
+
+def strip_unsafe_markup(body: str) -> str:
+    # repeat until nothing is left to strip,
+    # so that removing one tag cannot reveal another: `<im<img>g src=...>`
+    while True:
+        stripped = UNSAFE_MARKUP_RE.sub("", body)
+        if stripped == body:
+            return body
+        body = stripped
+
+
+def limit_actions(actions: Sequence[str]) -> list[str]:
+    # the keys are sent back to the application, so they cannot be truncated:
+    # skip the actions whose key is too long
+    limited: list[str] = []
+    # (and an odd number of strings would make the last one a key without a label)
+    for i in range(0, len(actions) - 1, 2):
+        key, label = actions[i], actions[i + 1]
+        # (the server refuses the keys that are not printable)
+        if len(key) > MAX_ACTION_KEY or not key.isprintable():
+            continue
+        limited += [key, truncate(single_line(label), MAX_ACTION_LABEL)]
+        if len(limited) >= MAX_ACTIONS * 2:
+            break
+    return limited
+
+
+def clamp_expire_timeout(expire_timeout: int) -> int:
+    return min(MAX_EXPIRE_TIMEOUT, max(-1, expire_timeout))
 
 
 def sanitize_icon_data(icon: IconData | None) -> IconData | None:
@@ -274,7 +328,7 @@ def validated_hints(h: dict) -> dict[str, int | bool | str]:
     for attr, atype in {
         "action-icons": bool,
         "category": str,
-        "desktop-entry": str,
+        # not "desktop-entry": that would let the remote application claim to be a local one
         "resident": bool,
         "transient": bool,
         "x": int,
@@ -290,6 +344,11 @@ def validated_hints(h: dict) -> dict[str, int | bool | str]:
             log.warn("Warning: unable to parse %r as a %s: %s", value, atype, e)
             continue
         else:
+            if attr == "urgency":
+                # low, normal or critical:
+                validated = min(2, max(0, validated))
+            elif atype is str:
+                validated = single_line(validated)
             hints[attr] = validated
     return hints
 

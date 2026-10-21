@@ -279,11 +279,11 @@ class RegisterSubsystem(StubSubsystem):
         — this method only takes care of the bookkeeping the server's
         accept code depends on.
         """
-        srv = self.server
+        network = self.network
         try:
-            if proto not in srv._potential_protocols:
-                srv._potential_protocols.append(proto)
-            srv.schedule_verify_connection_accepted(proto, srv._accept_timeout)
+            if proto not in network._potential_protocols:
+                network._potential_protocols.append(proto)
+            network.schedule_verify_connection_accepted(proto, network._accept_timeout)
             log.info("registration with %s handed off to local server",
                      getattr(proto._conn, "target", proto))
         except Exception as e:

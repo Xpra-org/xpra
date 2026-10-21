@@ -21,6 +21,25 @@ class TestCommon(unittest.TestCase):
         })
         self.assertEqual(hints, {"urgency": 2, "resident": True, "category": "email"})
         self.assertEqual(common.validated_hints({"x": object()}), {})
+        self.assertEqual(common.validated_hints({"urgency": 7}), {"urgency": 2})
+        self.assertEqual(common.validated_hints({"urgency": -1}), {"urgency": 0})
+        self.assertEqual(common.validated_hints({"category": "im\x00.received\ud800"}), {"category": "im.received?"})
+        # a remote application must not be able to claim to be a local one:
+        self.assertEqual(common.validated_hints({"desktop-entry": "org.gnome.Settings"}), {})
+
+    def test_strip_unsafe_markup(self):
+        strip = common.strip_unsafe_markup
+        self.assertEqual(strip("plain text, 1 < 2"), "plain text, 1 < 2")
+        self.assertEqual(strip("<b>bold</b> <i>it</i> <u>u</u>"), "<b>bold</b> <i>it</i> <u>u</u>")
+        self.assertEqual(strip('see <a href="https://example.com">this</a>'), "see this")
+        self.assertEqual(strip("<A HREF='file:///etc'>x</A >"), "x")
+        self.assertEqual(strip('<img src="/etc/passwd" alt="x"/>after'), "after")
+        self.assertEqual(strip("< img\nsrc=x>"), "")
+        # removing a tag must not reveal another one:
+        self.assertEqual(strip("<im<img>g src=x>"), "")
+        self.assertEqual(strip("<<a>a href=x>y"), "y")
+        # not the tags we're looking for:
+        self.assertEqual(strip("<abbr>x</abbr> <image>"), "<abbr>x</abbr> <image>")
 
     def test_image_data_hint_precedence(self):
         hints = {"image-path": "/first", "image_data": (1, 2, 3)}

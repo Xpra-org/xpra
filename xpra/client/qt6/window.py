@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import QMainWindow, QLabel, QSizePolicy
 from xpra.constants import MoveResize
 from xpra.net.packet_type import POINTER_BUTTON, WINDOW_MAP, WINDOW_CLOSE, WINDOW_CONFIGURE, POINTER_MOTION
 from xpra.client.qt6.keys import key_names
+from xpra.client.gui.window_title import window_title_str
 from xpra.log import Logger
 
 log = Logger()
@@ -108,7 +109,7 @@ class ClientWindow(QMainWindow):
         self.metadata = metadata
         if metadata.get("override-redirect"):
             self.setWindowFlags(Qt.WindowType.FramelessWindowHint | Qt.WindowType.Window | Qt.WindowType.X11BypassWindowManagerHint)
-        self.setWindowTitle(metadata.get("title", ""))
+        self.setWindowTitle(window_title_str(metadata.get("title", "")))
         self.label = DrawingArea(client, wid)
         self.label.setSizePolicy(QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding))
         self.label.setMinimumSize(1, 1)
