@@ -277,8 +277,7 @@ class FullRangeDecoderTest(unittest.TestCase):
         for dec_name in loader.DECODER_VIDEO_CODECS:
             if dec_name in NO_RANGE_CODECS:
                 continue
-            dec_mod = loader.load_codec(dec_name)
-            if dec_mod:
+            if dec_mod := loader.load_codec(dec_name):
                 yield dec_name, dec_mod
 
     def _samples(self, dec_mod):
@@ -734,8 +733,7 @@ class BitstreamRangeChangeTest(unittest.TestCase):
             for full_range in (True, False, False, True):
                 image = make_test_image(in_cs, w, h)
                 image.set_full_range(full_range)
-                out = encoder.compress_image(image, typedict())
-                if out:
+                if out := encoder.compress_image(image, typedict()):
                     frames.append(out)
             return frames
         except Exception as e:

@@ -207,8 +207,7 @@ class GLXContext:
         fbconfig = fbc[0]
         log(f"using {fbconfig=}")
         # the X11 visual for this framebuffer config:
-        xvinfo = GLX.glXGetVisualFromFBConfig(self.xdisplay, fbconfig)
-        if xvinfo:
+        if xvinfo := GLX.glXGetVisualFromFBConfig(self.xdisplay, fbconfig):
             # so that `set_visual()` can assign the exact same visual to the GTK window,
             # instead of guessing one independently and risking a mismatched BadMatch:
             self.visual_id = xvinfo.contents.visualid
@@ -220,8 +219,7 @@ class GLXContext:
 
         def getconfig(attr: int) -> int:
             value = c_int()
-            r = GLX.glXGetConfig(self.xdisplay, xvinfo, attr, byref(value))
-            if r:
+            if r := GLX.glXGetConfig(self.xdisplay, xvinfo, attr, byref(value)):
                 raise RuntimeError(f"glXGetConfig({attr}) returned {r}")
             return value.value
 

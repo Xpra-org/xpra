@@ -68,8 +68,7 @@ class MdnsServer(StubSubsystem):
             address = sock.address
             options = sock.options
             socktypes = self.get_mdns_socktypes(socktype, options)
-            mdns_option = options.get("mdns")
-            if mdns_option:
+            if mdns_option := options.get("mdns"):
                 v = str_to_bool(mdns_option, False)
                 if not v:
                     log("mdns_publish() mdns(%s)=%s, skipped", address, mdns_option)
@@ -176,7 +175,6 @@ class MdnsServer(StubSubsystem):
 
     def get_info(self, proto) -> dict[str, Any]:
         authenticated = bool(proto and proto.authenticators)
-        full = FULL_INFO > 0 or authenticated
-        if full:
+        if FULL_INFO > 0 or authenticated:
             return {MdnsServer.PREFIX: self.enabled}
         return {}

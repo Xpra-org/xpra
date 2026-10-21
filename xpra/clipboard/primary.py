@@ -83,8 +83,7 @@ class PrimaryProxyMixin:
         # we don't ask for the data with the token, but use it if we get it anyway:
         self.cancel_request()
         for target in PLAIN_TEXT_TARGETS:
-            td_def = target_data.get(target)
-            if td_def:
+            if td_def := target_data.get(target):
                 dtype, dformat, data = td_def
                 self.save_text(target, bytestostr(dtype), dformat, data)
                 return

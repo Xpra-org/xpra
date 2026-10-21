@@ -80,8 +80,7 @@ def find_server_uri(sessions_dir: str, mode="encoder", system_socket_path="") ->
         path = os.path.join(sessions_dir, sdir)
         if path == session_dir:
             continue
-        encoder_socket = get_server_socket_path(path, mode, system_socket_path)
-        if encoder_socket:
+        if encoder_socket := get_server_socket_path(path, mode, system_socket_path):
             encoder_sockets.append(encoder_socket)
     if not encoder_sockets:
         return ""
@@ -277,8 +276,7 @@ class RemoteServerAdapter(baseclass):
         log("got hello: %s", Ellipsizer(caps))
         tcaps = typedict(caps)
         version = tcaps.strget("version")
-        err = check_server_version(version, tcaps.inttupleget("protocol-version"))
-        if err:
+        if err := check_server_version(version, tcaps.inttupleget("protocol-version")):
             self.log_once(log.error, f"Error: incompatible encoder server version {version!r}", err)
             self.disconnect()
             # don't wait for `startup-complete`:

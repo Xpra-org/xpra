@@ -47,8 +47,7 @@ class SplashTest(ProcessTestUtil):
         self.stop_vfb()
 
     def stop_vfb(self):
-        xvfb = self.xvfb
-        if xvfb:
+        if xvfb := self.xvfb:
             self.xvfb = None
             xvfb.terminate()
 

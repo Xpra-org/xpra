@@ -38,8 +38,7 @@ class FontWindow(Gtk.Window):
         self.set_default_size(800, 600)
         self.set_app_paintable(True)
         self.set_title("Font Rendering")
-        icon = get_icon_pixbuf("font.png")
-        if icon:
+        if icon := get_icon_pixbuf("font.png"):
             self.set_icon(icon)
         drawing_area = Gtk.DrawingArea()
         drawing_area.connect("draw", self.area_draw)

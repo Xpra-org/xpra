@@ -88,8 +88,7 @@ class GLClientWindowBase(ClientWindow):
         self.enable_paint_screen()
 
     def enable_paint_screen(self) -> None:
-        backing = self._backing
-        if backing:
+        if backing := self._backing:
             backing.paint_screen = True
 
     def destroy(self) -> None:

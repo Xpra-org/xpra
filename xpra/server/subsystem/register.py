@@ -342,8 +342,7 @@ class RegisterSubsystem(StubSubsystem):
             "displays": [display] if display else [],
             "client_type": "xpra-register",
         }
-        id_sub = srv.subsystems.get("id")
-        if id_sub:
+        if id_sub := srv.subsystems.get("id"):
             hello["uuid"] = id_sub.uuid
         hello.update(get_version_info(0))
         hello.update(get_network_caps())

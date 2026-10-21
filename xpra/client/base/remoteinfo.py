@@ -141,8 +141,7 @@ class RemoteInfo(StubClientSubsystem):
             return False
         # the server may require a more recent client version,
         # (peers that do not expose it are older than v7, the version check above rejects them)
-        perr = protocol_compat_check(c.inttupleget("protocol-version"))
-        if perr:
+        if perr := protocol_compat_check(c.inttupleget("protocol-version")):
             self.client.warn_and_quit(ExitCode.INCOMPATIBLE_VERSION, f"incompatible client version: {perr}")
             return False
 

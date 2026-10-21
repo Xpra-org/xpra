@@ -266,8 +266,7 @@ def get_connection_landlock_auth_paths(display_desc) -> tuple[tuple[str, ...], t
 def get_landlock_socket_paths() -> tuple[str, ...]:
     paths = [os.environ.get("SSH_AUTH_SOCK", ""), os.environ.get("XPRA_SERVER_SOCKET", ""),
              "/run/dbus/system_bus_socket"]
-    runtime = os.environ.get("XDG_RUNTIME_DIR", "")
-    if runtime:
+    if runtime := os.environ.get("XDG_RUNTIME_DIR", ""):
         paths += [os.path.join(runtime, "bus"), os.path.join(runtime, "pulse", "native")]
         if wayland := os.environ.get("WAYLAND_DISPLAY", ""):
             paths.append(os.path.join(runtime, wayland))

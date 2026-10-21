@@ -74,7 +74,6 @@ def protocols_str(value: int) -> str:
     for flag in SecurityProtocol:
         if flag != SecurityProtocol.RDP and value & flag:
             names.append(flag.name)
-    leftover = value & ~int(sum(SecurityProtocol))
-    if leftover:
+    if leftover := value & ~int(sum(SecurityProtocol)):
         names.append(f"{leftover:#x}")
     return "|".join(names) if names else f"{value:#x}"

@@ -218,8 +218,7 @@ class EncoderServer(ServerBase):
                     input_cs_options = ()
                     if especs:
                         input_cs_options = tuple(especs.keys())
-                        image = csc_image(image, input_cs_options)
-                        if image:
+                        if image := csc_image(image, input_cs_options):
                             pixel_format = image.get_pixel_format()
                             encoder = _make_video_encoder(encoding, pixel_format)
                     if not encoder:

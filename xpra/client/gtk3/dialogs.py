@@ -93,8 +93,7 @@ class GTKDialogClient(StubClientSubsystem):
         self.pinentry_proc = proc
         q = f"Enter {prompt}"
         if p := self.client._protocol:
-            conn = getattr(p, "_conn", None)
-            if conn:
+            if conn := getattr(p, "_conn", None):
                 cinfo = conn.get_info()
                 endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
                 q += f"\n at {endpoint}"
@@ -425,8 +424,7 @@ class GTKDialogClient(StubClientSubsystem):
         self.sub_dialogs["session-info"] = dialog
 
     def show_bug_report(self, *_args) -> None:
-        info_request = self.get_subsystem("info")
-        if info_request:
+        if info_request := self.get_subsystem("info"):
             info_request.send_info_request()
 
         if dialog := self.sub_dialogs.get("bug-report"):

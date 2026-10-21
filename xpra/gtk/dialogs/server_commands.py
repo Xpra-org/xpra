@@ -78,8 +78,7 @@ class ServerCommandsWindow:
         self.window.set_default_size(400, 150)
         self.window.set_title("Server Commands")
 
-        icon_pixbuf = get_icon_pixbuf("list.png")
-        if icon_pixbuf:
+        if icon_pixbuf := get_icon_pixbuf("list.png"):
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(Gtk.WindowPosition.CENTER)
 
@@ -115,8 +114,7 @@ class ServerCommandsWindow:
     def get_client_server_last_info(self) -> dict:
         # `last_info` is owned by the `info` subsystem;
         # the standalone test harness fakes it directly on the client instead:
-        si = self.get_client_subsystem("info")
-        if si:
+        if si := self.get_client_subsystem("info"):
             return si.last_info
         return getattr(self.client, "server_last_info", {}) or {}
 
@@ -133,8 +131,7 @@ class ServerCommandsWindow:
         settings.set_property('gtk-button-images', True)
         btn.set_tooltip_text(tooltip)
         btn.connect("clicked", callback)
-        icon = get_icon_pixbuf(icon_name)
-        if icon:
+        if icon := get_icon_pixbuf(icon_name):
             btn.set_image(scaled_image(icon, 24))
         return btn
 
@@ -150,8 +147,7 @@ class ServerCommandsWindow:
             grid.set_row_spacing(4)
             add_style_class(grid, "xpra-card", "xpra-table")
             headers = ["", "PID", "Command", "Exit Code"]
-            server_commands_signals = self.get_server_commands_signals()
-            if server_commands_signals:
+            if server_commands_signals := self.get_server_commands_signals():
                 headers.append("Send Signal")
             for i, text in enumerate(headers):
                 heading = l5(text)
@@ -174,8 +170,7 @@ class ServerCommandsWindow:
                     windows = ()
                     from xpra.client.base import features
                     if features.window:
-                        window = self.get_client_subsystem("window")
-                        if window:
+                        if window := self.get_client_subsystem("window"):
                             windows = tuple(w for w in window._id_to_window.values()
                                             if w._metadata.get("pid") == pid)
                             log(f"windows matching pid={pid}: {windows}")

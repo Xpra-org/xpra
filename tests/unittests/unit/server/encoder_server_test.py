@@ -101,8 +101,7 @@ class EncoderServerTest(ProcessTestUtil):
 
 def stop_encode_thread(ss, gate: Event) -> None:
     gate.set()
-    thread = ss.encode_thread
-    if thread:
+    if thread := ss.encode_thread:
         # an end of queue marker may already have been posted, one more is harmless:
         ss.queue_encode(None)
         thread.join(10)

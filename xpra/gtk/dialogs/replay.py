@@ -507,8 +507,7 @@ class ControlWindow:
         win.connect("delete-event", lambda *_: replay.quit(ExitCode.OK))
         self.window = win
 
-        icon = get_icon_pixbuf("gears")
-        if icon:
+        if icon := get_icon_pixbuf("gears"):
             self.window.set_icon(icon)
 
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)

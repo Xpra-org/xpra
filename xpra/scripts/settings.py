@@ -50,8 +50,7 @@ def run_showconfig(options, args) -> ExitValue:
         try:
             from xpra.platform.pycups_printing import get_printer_definition
             for mimetype in ("pdf", "postscript"):
-                pdef = get_printer_definition(mimetype)
-                if pdef:
+                if pdef := get_printer_definition(mimetype):
                     # ie: d.pdf_printer = "/usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd"
                     setattr(d, f"{mimetype}_printer", pdef)
         except Exception:

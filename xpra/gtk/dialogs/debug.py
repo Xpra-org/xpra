@@ -33,8 +33,7 @@ def make_category_widgets(groups: dict[str, dict[str, str]], enabled: set[str], 
     widgets = {}
 
     def eact(expander, *_args):
-        expanded = expander.get_expanded()
-        if expanded:
+        if expander.get_expanded():
             return
         for exp in expanders:
             if exp != expander:
@@ -56,8 +55,7 @@ def make_category_widgets(groups: dict[str, dict[str, str]], enabled: set[str], 
             cb.connect("toggled", toggled, category)
             cb.set_sensitive(sensitive)
             grid.attach(cb, 0, row, 1, 1)
-            descr = CATEGORY_INFO.get(category, "")
-            if descr:
+            if descr := CATEGORY_INFO.get(category, ""):
                 lbl = label(descr, font="sans 14")
                 lbl.set_halign(Gtk.Align.START)
                 lbl.set_margin_start(32)
@@ -97,8 +95,7 @@ class DebugConfig:
         add_close_accel(self.window, window_deleted)
         self.window.connect("delete_event", window_deleted)
 
-        icon_pixbuf = get_icon_pixbuf("bugs.png")
-        if icon_pixbuf:
+        if icon_pixbuf := get_icon_pixbuf("bugs.png"):
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(Gtk.WindowPosition.CENTER)
 

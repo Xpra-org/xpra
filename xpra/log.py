@@ -723,8 +723,7 @@ def get_all_loggers() -> set[Logger]:
     for loggers_set in all_loggers.values():
         for logger in tuple(loggers_set):
             # weakref:
-            instance = logger()
-            if instance:
+            if instance := logger():
                 a.add(instance)
     return a
 

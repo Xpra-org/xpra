@@ -365,8 +365,7 @@ def codecs_from_files(files: Iterable[str], source: FileSource) -> dict[str, Any
                 implementation_modules.append(".".join(("xpra", *relative[: -len(ftype)].split("/"))))
 
     loader_codec_names = []
-    loader_path = next((path for path in files if xpra_module_base(path) == "codecs/loader.py"), "")
-    if loader_path:
+    if loader_path := next((path for path in files if xpra_module_base(path) == "codecs/loader.py"), ""):
         try:
             loader_codec_names = codec_names_from_loader(decode_source(source.read_file(loader_path)))
         except Exception as e:
@@ -481,16 +480,14 @@ def branch_for_ref(repo: Path, ref: str) -> str:
 
 def infer_base(repo: Path, ref: str, base: str = "") -> tuple[str, str, str]:
     if base:
-        commit = git_optional(repo, ("merge-base", base, ref))
-        if commit:
+        if commit := git_optional(repo, ("merge-base", base, ref)):
             return base, commit, "explicit"
         return base, "", "explicit"
 
     candidates = []
     for candidate in ("origin/master", "origin/main", "upstream/master", "upstream/main", "master", "main"):
         candidates.append((candidate, "candidate"))
-    branch = branch_for_ref(repo, ref)
-    if branch:
+    if branch := branch_for_ref(repo, ref):
         upstream = git_optional(repo, ("rev-parse", "--abbrev-ref", "--symbolic-full-name", f"{branch}@{{upstream}}"))
         if upstream and upstream not in {x[0] for x in candidates}:
             candidates.append((upstream, "upstream"))
@@ -511,8 +508,7 @@ def infer_base(repo: Path, ref: str, base: str = "") -> tuple[str, str, str]:
 def infer_branch_creation(repo: Path, ref: str, base_commit: str) -> tuple[str, str]:
     if not base_commit:
         return "", ""
-    first_unique_commit = git_optional(repo, ("rev-list", "--reverse", "--max-count=1", f"{base_commit}..{ref}"))
-    if first_unique_commit:
+    if first_unique_commit := git_optional(repo, ("rev-list", "--reverse", "--max-count=1", f"{base_commit}..{ref}")):
         return first_unique_commit, git_optional(repo, ("show", "-s", "--format=%cI", first_unique_commit))
     return base_commit, git_optional(repo, ("show", "-s", "--format=%cI", base_commit))
 

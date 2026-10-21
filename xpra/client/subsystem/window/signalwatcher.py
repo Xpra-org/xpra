@@ -42,8 +42,7 @@ def kill_signalwatcher(proc) -> None:
     if exit_code is not None:
         return
     try:
-        stdin = proc.stdin
-        if stdin:
+        if stdin := proc.stdin:
             stdin.write(b"exit\n")
             stdin.flush()
             stdin.close()
@@ -63,16 +62,13 @@ def kill_signalwatcher(proc) -> None:
 
 
 def clean_signalwatcher(proc) -> None:
-    stdout_io_watch = proc.stdout_io_watch
-    if stdout_io_watch:
+    if stdout_io_watch := proc.stdout_io_watch:
         proc.stdout_io_watch = 0
         GLib.source_remove(stdout_io_watch)
-    stdout = proc.stdout
-    if stdout:
+    if stdout := proc.stdout:
         log(f"stdout={stdout}")
         noerr(stdout.close)
-    stderr = proc.stderr
-    if stderr:
+    if stderr := proc.stderr:
         noerr(stderr.close)
 
 

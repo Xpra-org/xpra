@@ -639,8 +639,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         if ss:
             info = typedict(ss.info or {})
             try:
-                qdict = info.dictget("queue")
-                if qdict:
+                if qdict := info.dictget("queue"):
                     q = typedict(qdict).intget("cur", 0)
                     log("server side queue level: %s", q)
                 # get the latency from the source info, if it has it:

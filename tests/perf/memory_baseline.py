@@ -125,12 +125,10 @@ def find_child_pids(info: dict[str, Any]) -> dict[str, int]:
         label = prefix
         if cmd:
             # `command` values are tuple-ish strings: '/usr/bin/foo', '...'
-            first = cmd.split(",", 1)[0].strip().strip("'\"")
-            if first:
+            if first := cmd.split(",", 1)[0].strip().strip("'\""):
                 base = first.rsplit("/", 1)[-1]
                 if base.startswith("python") and "," in cmd:
-                    second = cmd.split(",", 2)[1].strip().strip(" '\"")
-                    if second:
+                    if second := cmd.split(",", 2)[1].strip().strip(" '\""):
                         base = second.rsplit("/", 1)[-1]
                 label = f"{prefix}:{base}"
         out[label] = pid

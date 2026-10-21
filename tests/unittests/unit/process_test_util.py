@@ -51,8 +51,7 @@ def proc_pipes_str(proc) -> str:
     out = ""
     for filetype in ("stdout", "stderr"):
         fileobj = getattr(proc, f"{filetype}_file", None)
-        text = read_proc_pipe(fileobj, filetype)
-        if text:
+        if text := read_proc_pipe(fileobj, filetype):
             out += f"\n----- {filetype} ({fileobj.name}) -----\n{text}"
         else:
             out += f"\n----- no {filetype} -----"
@@ -186,14 +185,12 @@ class ProcessTestUtil(unittest.TestCase):
             try:
                 if x.poll() is None:
                     x.terminate()
-                stdout_file = getattr(x, "stdout_file", None)
-                if stdout_file:
+                if stdout_file := getattr(x, "stdout_file", None):
                     try:
                         stdout_file.close()
                     except OSError:
                         pass
-                stderr_file = getattr(x, "stderr_file", None)
-                if stderr_file:
+                if stderr_file := getattr(x, "stderr_file", None):
                     try:
                         stderr_file.close()
                     except OSError:

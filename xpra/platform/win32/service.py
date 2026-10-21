@@ -55,8 +55,7 @@ def main(argv: list[str]) -> int:
         # public named pipe (needs auth):
         os.environ["XPRA_NAMED_PIPE_UNRESTRICTED"] = "1"
         args.append(f"--bind={PIPE_NAME},auth=sys")
-    commonappdata = get_commonappdata_dir()
-    if commonappdata:
+    if commonappdata := get_commonappdata_dir():
         ssl_cert = os.path.join(commonappdata, "Xpra", "ssl-cert.pem")
         if os.path.exists(ssl_cert):
             args.append(f"--ssl-cert={ssl_cert}")

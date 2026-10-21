@@ -120,8 +120,7 @@ def valid_html_path(*path_options: str) -> str:
 
 
 def get_xorg_bin() -> str:
-    xorg = os.environ.get("XPRA_XORG_BIN")
-    if xorg:
+    if xorg := os.environ.get("XPRA_XORG_BIN"):
         return xorg
     # Detect Xorg Binary
     for p in (
@@ -143,8 +142,7 @@ def get_xorg_bin() -> str:
 
 def get_Xdummy_confdir() -> str:
     from xpra.platform.posix.paths import get_runtime_dir
-    xrd = get_runtime_dir()
-    if xrd:
+    if get_runtime_dir():
         base = "${XPRA_SESSION_DIR}"
     else:   # pragma: no cover
         base = "${HOME}/.xpra"
@@ -362,12 +360,10 @@ def get_build_info() -> list[str]:
     info.append(build.get("type", "") + " build")
     info.insert(0, "")
     einfo = "Python " + ".".join(str(v) for v in sys.version_info[:2])
-    machine = build.get("machine", "")
-    if machine:
+    if machine := build.get("machine", ""):
         einfo += ", "+machine
     else:
-        bit = build.get("bit")
-        if bit:
+        if bit := build.get("bit"):
             einfo += f", {bit}"
     info.insert(0, einfo)
     by = build.get("by", "")
@@ -457,8 +453,7 @@ def read_config(conf_file: str) -> dict[str, Any]:
         assert len(props) == 2
         name = props[0].strip()
         value = props[1].strip()
-        current_value = d.get(name)
-        if current_value:
+        if current_value := d.get(name):
             if isinstance(current_value, list):
                 d[name] = current_value + [value]
             else:
@@ -1112,8 +1107,7 @@ def get_defaults() -> dict[str, Any]:
         get_sessions_dir, get_socket_dirs, get_client_socket_dirs,
     )
     conf_dirs = [os.environ.get("XPRA_CONF_DIR", "")]
-    build_root = os.environ.get("RPM_BUILD_ROOT", "")
-    if build_root:
+    if build_root := os.environ.get("RPM_BUILD_ROOT", ""):
         conf_dirs.append(os.path.join(build_root, "etc", "xpra"))
     bin_dir = ""
     if sys.argv:
@@ -1470,8 +1464,7 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
             warn(f"Error: unknown option type for {k!r}: {vt}")
         validation = validations.get(k)
         if validation and v is not None:
-            msg = validation(v)
-            if msg:
+            if msg := validation(v):
                 warn(f"Warning: invalid value for {k!r}: {v}, {msg}")
                 continue
         nd[k] = v
@@ -1561,8 +1554,7 @@ def fixup_socketdirs(options) -> None:
             assert isinstance(getattr(options, option_name), (list, tuple))
             value = [v for x in value for v in x.split(os.path.pathsep)]
         setattr(options, option_name, value)
-    socket_dir = getattr(options, "socket_dir", "")
-    if socket_dir:
+    if socket_dir := getattr(options, "socket_dir", ""):
         warnings.warn(
             "the 'socket-dir' option is deprecated, use 'socket-dirs' instead",
             DeprecationWarning,
@@ -1629,8 +1621,7 @@ def fixup_encodings(options) -> None:
         if "rgb32" not in encodings:
             encodings.append("rgb32")
     encodings = remove_dupes(encodings)
-    invalid = [stripneg(e) for e in encodings if stripneg(e) not in PREFERRED_ENCODING_ORDER]
-    if invalid:
+    if invalid := [stripneg(e) for e in encodings if stripneg(e) not in PREFERRED_ENCODING_ORDER]:
         raise InitExit(ExitCode.UNSUPPORTED, "invalid encodings specified: " + csv(invalid))
     # remove the negated encodings:
     for rm in tuple(stripneg(e) for e in encodings if isneg(e)):
@@ -1670,8 +1661,7 @@ def fixup_compression(options) -> None:
         compressors = ()
     else:
         compressors = nodupes(cstr)
-        unknown = tuple(x for x in compressors if x and x not in compression.ALL_COMPRESSORS)
-        if unknown:
+        if unknown := tuple(x for x in compressors if x and x not in compression.ALL_COMPRESSORS):
             warn("Warning: invalid compressor(s) specified: " + csv(unknown))
         # keep only valid ones
         # (ignores `lzo` and `zlib` which have been removed but may still exist in config files)
@@ -1686,8 +1676,7 @@ def fixup_packetencoding(options) -> None:
         packet_encoders = packet_encoding.PERFORMANCE_ORDER
     else:
         packet_encoders = nodupes(pestr)
-        unknown = [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS]
-        if unknown:
+        if unknown := [x for x in packet_encoders if x and x not in packet_encoding.ALL_ENCODERS]:
             warn("Warning: invalid packet encoder(s) specified: " + csv(unknown))
         # keep only valid ones
         # (ignores `rencode`, `bencode` and `yaml` which have been removed but may still exist in config files)
@@ -1745,13 +1734,11 @@ def fixup_clipboard(options) -> None:
 
 
 def abs_paths(options) -> None:
-    ew = options.exec_wrapper
-    if ew:
+    if ew := options.exec_wrapper:
         import shlex
         ewp = shlex.split(ew)
         if ewp and not os.path.isabs(ewp[0]):
-            abscmd = which(ewp[0])
-            if abscmd:
+            if abscmd := which(ewp[0]):
                 ewp[0] = abscmd
                 options.exec_wrapper = shlex.join(ewp)
     # convert to absolute paths before we daemonize

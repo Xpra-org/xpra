@@ -71,8 +71,7 @@ class AuthenticationManager(StubSubsystem):
     def make_authenticators(self, socktype: str, remote: dict[str, Any], conn) -> Sequence[Any]:
         log("make_authenticators%s socket options=%s", (socktype, remote, conn), conn.options)
         sock_options = conn.options
-        sock_auth = sock_options.get("auth", "")
-        if sock_auth:
+        if sock_auth := sock_options.get("auth", ""):
             # per socket authentication option:
             # ie: --bind-tcp=0.0.0.0:10000,auth=hosts,auth=file(filename=pass.txt)
             # -> sock_auth = ["hosts", "file(filename=pass.txt)"]
@@ -150,8 +149,7 @@ class AuthenticationManager(StubSubsystem):
         # False if verify_auth should stop (connection closed or authenticator setup failed)
         remote = {}
         for key in ("hostname", "uuid", "session-id", "username", "name"):
-            v = c.strget(key)
-            if v:
+            if v := c.strget(key):
                 remote[key] = v
         conn = proto._conn
         if not conn or proto.is_closed():
@@ -297,8 +295,7 @@ class AuthenticationManager(StubSubsystem):
             return True
         if not authenticate():
             return fail(ConnectionMessage.AUTHENTICATION_FAILED)
-        next_challenge = authenticator.get_next_challenge()
-        if next_challenge:
+        if next_challenge := authenticator.get_next_challenge():
             salt, digest, prompt = next_challenge
             if salt and digest:
                 actual_digest = digest.split(":", 1)[0]

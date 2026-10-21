@@ -131,8 +131,7 @@ class ICCServer(StubSubsystem):
         icc_client = display_clients[0]
         icc = typedict(icc_client.icc)
         for x in ("data", "icc-data", "icc-profile"):
-            data = icc.bytesget(x)
-            if data:
+            if data := icc.bytesget(x):
                 log("set_icc_profile() icc data for %s: %s (%i bytes)", icc_client, hexstr(data), len(data))
                 log("overriding the session colourspace %s with the client's profile", self.colourspace)
                 self.icc_profile = data

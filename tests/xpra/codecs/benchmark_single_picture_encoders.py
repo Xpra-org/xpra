@@ -637,8 +637,7 @@ def main(argv: list[str]) -> int:
 
     compression.init_all()
     fixtures = load_fixtures()
-    fixture_filter = {item for item in args.fixtures.split(",") if item}
-    if fixture_filter:
+    if fixture_filter := {item for item in args.fixtures.split(",") if item}:
         fixtures = [fixture for fixture in fixtures if fixture.name in fixture_filter]
     if args.limit:
         fixtures = fixtures[:args.limit]

@@ -57,8 +57,7 @@ def get_interfaces() -> Sequence[str]:
 
 def get_interfaces_addresses() -> dict[str, dict]:
     d = {}
-    netifaces = import_netifaces()
-    if netifaces:
+    if netifaces := import_netifaces():
         for iface in get_interfaces():
             d[iface] = netifaces.ifaddresses(iface)  # @UndefinedVariable pylint: disable=no-member
     return d
@@ -123,8 +122,7 @@ def get_gateways() -> dict[str, dict]:
 def get_bind_IPs() -> Sequence[str]:
     global bind_IPs
     if not bind_IPs:
-        netifaces = import_netifaces()
-        if netifaces:
+        if import_netifaces():
             with lock:
                 bind_IPs = do_get_bind_IPs()
         else:
@@ -400,8 +398,7 @@ def get_ssl_info(show_constants=False) -> dict[str, Any]:
         if v is not None:
             info[name] = v
 
-    vnum = getattr(ssl, "OPENSSL_VERSION_NUMBER", 0)
-    if vnum:
+    if vnum := getattr(ssl, "OPENSSL_VERSION_NUMBER", 0):
         vparts = []
         for _ in range(4):
             vparts.append((vnum & 0xff) >> 4)
@@ -433,8 +430,7 @@ def get_paramiko_info() -> dict[str, Sequence[int]]:
 
 
 def get_bcrypt_info() -> dict[str, str]:
-    bcrypt = sys.modules.get("bcrypt")
-    if bcrypt:
+    if bcrypt := sys.modules.get("bcrypt"):
         return {
             "version": bcrypt.__version__,
         }
@@ -445,8 +441,7 @@ def get_info() -> dict[str, Any]:
     i = get_network_caps()
     # the minimum version we are willing to talk to:
     i["protocol-version"] = MIN_PROTOCOL_VERSION
-    netifaces = import_netifaces()
-    if netifaces:
+    if import_netifaces():
         i["interfaces"] = get_interfaces()
         i["gateways"] = get_gateways()
     if "ssl" in sys.modules:
@@ -454,8 +449,7 @@ def get_info() -> dict[str, Any]:
         ssli[""] = True
         i["ssl"] = ssli
     if FULL_INFO > 1:
-        s = get_net_sys_config()
-        if s:
+        if s := get_net_sys_config():
             i["system"] = s
     i["config"] = get_socket_config()
     i["paramiko"] = get_paramiko_info()
@@ -475,8 +469,7 @@ def print_interface_info(iface: str) -> None:
     for addr, defs in addresses.items():
         if addr in (socket.AF_INET, socket.AF_INET6):
             for d in defs:
-                ip = d.get("addr")
-                if ip:
+                if ip := d.get("addr"):
                     stype = {
                         socket.AF_INET: "IPv4",
                         socket.AF_INET6: "IPv6",
@@ -488,15 +481,13 @@ def print_interface_info(iface: str) -> None:
                         try:
                             sock = create_tcp_socket(ip, 0)
                             sockfd = sock.fileno()
-                            info = get_interface_info(sockfd, iface)
-                            if info:
+                            if info := get_interface_info(sockfd, iface):
                                 print("  %s" % info)
                         finally:
                             if sock:
                                 sock.close()
     info = get_interface_info(0, iface)
-    dtype = get_NM_adapter_type(iface, ignore_inactive=False)
-    if dtype:
+    if dtype := get_NM_adapter_type(iface, ignore_inactive=False):
         info["type"] = dtype
     if info:
         print(f"  {info}")
@@ -559,8 +550,7 @@ def main(argv: list[str]) -> int:  # pragma: no cover
         print("Network Config:")
         print_nested_dict(get_socket_config())
 
-        net_sys = get_net_sys_config()
-        if net_sys:
+        if net_sys := get_net_sys_config():
             print("")
             print("Network System Config:")
             print_nested_dict(net_sys)
@@ -588,8 +578,7 @@ def main(argv: list[str]) -> int:  # pragma: no cover
         try:
             from xpra.net.crypto import crypto_backend_init, get_crypto_caps
             crypto_backend_init()
-            ccaps = get_crypto_caps()
-            if ccaps:
+            if ccaps := get_crypto_caps():
                 print("")
                 print("Crypto Capabilities:")
                 print_nested_dict(ccaps)

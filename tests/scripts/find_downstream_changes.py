@@ -229,8 +229,7 @@ class Repo:
         # tags live in their own namespace: a working clone's refs/tags is shared by
         # every remote it has ever fetched, fork tags included, and one fork tag in
         # the upstream set hides that fork's whole branch
-        stale = self.git("for-each-ref", "refs/tags/", "--format=delete %(refname)")
-        if stale:
+        if stale := self.git("for-each-ref", "refs/tags/", "--format=delete %(refname)"):
             self.git("update-ref", "--stdin", stdin=stale)
         branches = "+refs/heads/*:refs/remotes/upstream/*"
         tag_spec = "+refs/tags/*:refs/remotes/upstream-tags/*"
@@ -321,8 +320,7 @@ class Registry:
 
     def add(self, url: str, found_by: str = "registry", pushed_at: str = "", note: str = "") -> tuple[Source, bool]:
         sid = source_id(url)
-        existing = self.sources.get(sid)
-        if existing:
+        if existing := self.sources.get(sid):
             if pushed_at > existing.pushed_at:
                 existing.pushed_at = pushed_at
             if note and not existing.note:
@@ -851,8 +849,7 @@ def scan_patch_files(ctx: Context, src: Source, stats: Stats,
         else:
             entries = []
             for path in sorted(paths.get(name, ())):
-                blob = ctx.repo.git("rev-parse", "--quiet", "--verify", f"{ref}:{path}", check=False).strip()
-                if blob:
+                if blob := ctx.repo.git("rev-parse", "--quiet", "--verify", f"{ref}:{path}", check=False).strip():
                     entries.append((blob, path))
         for blob, path in entries:
             if blob in ctx.upstream_patch_blobs:
@@ -951,8 +948,7 @@ def score_candidate(candidate: Candidate, now: datetime) -> None:
     score = 0
     signals = []
     areas = candidate.areas
-    source = areas.get("source", 0)
-    if source:
+    if source := areas.get("source", 0):
         points = min(20, 4 + source // 8)
         score += points
         signals.append(f"+{points} {source} source lines")
@@ -1179,8 +1175,7 @@ def write_report(candidates: list[Candidate], stats: dict[str, Stats], registry:
         lines.append(f"* ranking: {'; '.join(candidate.signals)}")
         lines += ["", "```", *(f"{path} (+{added} -{removed})" for path, added, removed in candidate.files[:20]), "```", ""]
         if candidate.body:
-            body = "\n".join(f"> {line}" for line in candidate.body.splitlines()[:12] if line.strip())
-            if body:
+            if body := "\n".join(f"> {line}" for line in candidate.body.splitlines()[:12] if line.strip()):
                 lines += [body, ""]
         lines += ["```sh", *commands_for(candidate), "```", ""]
         if candidate.patch_file:
@@ -1201,8 +1196,7 @@ def write_report(candidates: list[Candidate], stats: dict[str, Stats], registry:
         lines.append(f"| [{sid}]({src.url}) | {src.kind} | {source_stats.refs} "
                      f"| {source_stats.unique_commits} | {dropped} | {source_stats.candidates} "
                      f"| {hidden.get(sid, 0)} | {src.pushed_at[:10]} |")
-    failed = [src for src in registry.sources.values() if src.status and src.status != "ok"]
-    if failed:
+    if failed := [src for src in registry.sources.values() if src.status and src.status != "ok"]:
         lines += ["", "## Unreachable", ""]
         for src in sorted(failed, key=lambda s: s.sid):
             lines.append(f"* {src.sid} ({'retired' if src.retired else 'will retry'}): {src.status[:120]}")

@@ -126,8 +126,7 @@ class QRCodeWindow(Gtk.Window):
         self.set_title(title)
         self.set_size_request(512 * n, 580)
         self.set_position(Gtk.WindowPosition.CENTER)
-        icon = get_icon_pixbuf("xpra.png")
-        if icon:
+        if icon := get_icon_pixbuf("xpra.png"):
             self.set_icon(icon)
         hbox = Gtk.HBox(homogeneous=True, spacing=20)
         for uri in uris:

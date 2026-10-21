@@ -143,8 +143,7 @@ class PointerManager(StubSubsystem):
 
     def add_new_client(self, ss, c: typedict) -> None:
         from xpra.server.source.pointer import PointerConnection
-        pointer_clients = self.get_sources_by_type(PointerConnection, ss)
-        if pointer_clients:
+        if self.get_sources_by_type(PointerConnection, ss):
             self.double_click_time = -1
             self.double_click_distance = -1, -1
         else:
@@ -185,8 +184,7 @@ class PointerManager(StubSubsystem):
             return pointer
         window = window_sub.get_window(wid)
         if ss and window:
-            ws = ss.get_window_source(wid)
-            if ws:
+            if ws := ss.get_window_source(wid):
                 mapped_at = ws.mapped_at
                 pos = window_sub.get_window_position(window)
                 if mapped_at and pos:
@@ -314,8 +312,7 @@ class PointerManager(StubSubsystem):
     def _get_pointer_abs_coordinates(self, wid: int, pos, props=None) -> tuple[int, int]:
         # simple absolute coordinates
         x, y = pos[:2]
-        relative = self.get_pointer_window_position(pos, props)
-        if relative:
+        if relative := self.get_pointer_window_position(pos, props):
             window_sub = self.get_subsystem("window")
             if window_sub is not None:
                 # relative coordinates

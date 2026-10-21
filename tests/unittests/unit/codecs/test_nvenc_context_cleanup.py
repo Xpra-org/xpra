@@ -99,8 +99,7 @@ class FakeNvencEncoder:
         We simulate the Cython cdef void behavior by catching and suppressing
         the exception (with a warning, as Cython does).
         """
-        cdc = self.cuda_device_context
-        if cdc:
+        if cdc := self.cuda_device_context:
             try:
                 with cdc:
                     self.cuda_clean()
@@ -117,8 +116,7 @@ class FakeNvencEncoder:
         Fixed cleanup: uses blocking lock acquisition with timeout,
         and has a fallback to decrement the counter if the lock times out.
         """
-        cdc = self.cuda_device_context
-        if cdc:
+        if cdc := self.cuda_device_context:
             if not cdc.lock.acquire(timeout=5):
                 self._force_context_release()
                 self.cuda_device_context = None

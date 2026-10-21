@@ -108,8 +108,7 @@ class EncoderClient(RemoteCodecClient):
             else:
                 pixels = [compress(plane) for plane in pixels]
 
-        mmap_write_area = getattr(self, "mmap_write_area", None)
-        if mmap_write_area:
+        if mmap_write_area := getattr(self, "mmap_write_area", None):
             try:
                 if nplanes == PlanarFormat.PACKED:
                     mmap_data = mmap_write_area.write_data(pixels)
@@ -167,15 +166,13 @@ def init_module(options: dict) -> None:
     log(f"encoder.init_module({options})")
     # single server syntax uses "uri=protocol://host:port/.."
     # or one can use multiple servers with "uris=protocol://host1/?attr=value&,protocol://host2/"
-    uris = options.get("uris", "")
-    if uris:
+    if uris := options.get("uris", ""):
         for uri in uris.split(";"):
             uri_override = options.copy()
             uri_override["uri"] = uri
             add_server(uri_override)
     # single uri:
-    uri = options.get("uri", "")
-    if uri:
+    if uri := options.get("uri", ""):
         add_server(options)
 
 

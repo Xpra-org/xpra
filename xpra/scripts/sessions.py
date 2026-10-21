@@ -106,8 +106,7 @@ def get_xpra_sessions(dotxpra, ignore_state=(SocketState.UNKNOWN,), matching_dis
         for state, display, sockpath in values:
             if state in ignore_state:
                 continue
-            existing = sessions.get(display)
-            if existing:
+            if existing := sessions.get(display):
                 # the same session can be reachable via multiple sockets:
                 existing.setdefault("socket-paths", []).append(sockpath)
                 continue
@@ -128,8 +127,7 @@ def get_xpra_sessions(dotxpra, ignore_state=(SocketState.UNKNOWN,), matching_dis
                         "gid": s.st_gid,
                     }
                 )
-                username = get_username_for_uid(s.st_uid)
-                if username:
+                if username := get_username_for_uid(s.st_uid):
                     session["username"] = username
             if query:
                 try:
@@ -178,13 +176,11 @@ def get_session_details(session_dir: str, attrs: dict[str, Any]) -> dict[str, st
     if session_dir:
         details["pid"] = read_session_file(session_dir, "server.pid") or details["pid"]
         details["uuid"] = read_session_file(session_dir, "server.uuid") or details["uuid"]
-        cmdline = read_session_file(session_dir, "cmdline")
-        if cmdline:
+        if cmdline := read_session_file(session_dir, "cmdline"):
             details["command"] = shlex.join(cmdline.splitlines())
         xvfb_pid = read_session_file(session_dir, "xvfb.pid")
         if xvfb_pid.isdigit():
-            display_cmd = get_proc_cmdline(int(xvfb_pid))
-            if display_cmd:
+            if display_cmd := get_proc_cmdline(int(xvfb_pid)):
                 details["display-command"] = shlex.join(display_cmd)
     return details
 
@@ -206,12 +202,10 @@ def run_list_sessions(args, options) -> ExitValue:
             attrs.get("session-name", "")))
         for i, sockpath in enumerate(attrs.get("socket-paths", ())):
             print(indent + ("sockets:     " if i == 0 else " " * 13) + sockpath)
-        session_dir = find_session_dir(options.sessions_dir, display, attrs)
-        if session_dir:
+        if session_dir := find_session_dir(options.sessions_dir, display, attrs):
             print(f"{indent}session-dir: {session_dir}")
         details = get_session_details(session_dir, attrs)
-        server = csv(f"{k} {v}" for k, v in details.items() if k in ("pid", "uuid") and v)
-        if server:
+        if server := csv(f"{k} {v}" for k, v in details.items() if k in ("pid", "uuid") and v):
             print(f"{indent}server:      {server}")
         if details.get("command"):
             print(f"{indent}command:     {details['command']}")
@@ -337,8 +331,7 @@ def run_list_windows(opts, extra_args) -> ExitValue:
         sys.stdout.flush()
         windows = "?"
         if state == SocketState.LIVE:
-            dinfo = exec_and_parse("info", display)
-            if dinfo:
+            if dinfo := exec_and_parse("info", display):
                 # first, find all the window properties:
                 winfo: dict[str, dict[str, Any]] = {}
                 for k, v in dinfo.items():

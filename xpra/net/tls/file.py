@@ -235,8 +235,7 @@ def gen_ssl_cert() -> tuple[str, str]:
         "-keyout", keypath,
         "-out", certpath,
     ]
-    ALT_LOCALHOST = envbool("XPRA_SSL_ALT_LOCALHOST", True)
-    if ALT_LOCALHOST:
+    if envbool("XPRA_SSL_ALT_LOCALHOST", True):
         cmd += ["-addext", "subjectAltName=DNS:localhost,IP:127.0.0.1"]
     openssl_config = ""
     creationflags = 0

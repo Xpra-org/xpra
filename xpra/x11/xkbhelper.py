@@ -371,8 +371,7 @@ def set_all_keycodes(xkbmap_x11_keycodes, xkbmap_keycodes, preserve_server_keyco
         modifiers: set[str] = set()
         log_fn = log.debug
         for keysym, _ in entries:
-            modifier = keysym_to_modifier.get(keysym)
-            if modifier:
+            if modifier := keysym_to_modifier.get(keysym):
                 modifiers.add(modifier)
             if keysym in DEBUG_KEYSYMS:
                 log_fn = log.info
@@ -826,8 +825,7 @@ def get_modifiers_from_keycodes(xkbmap_keycodes: Iterable, add_default_modifiers
     all_keynames = set()
     for entry in xkbmap_keycodes:
         _, keyname, _, _, _ = entry
-        modifier = pref.get(keyname)
-        if modifier:
+        if modifier := pref.get(keyname):
             keynames = matches.setdefault(modifier, [])
             if keyname not in keynames:
                 keynames.append(keyname)
@@ -971,11 +969,9 @@ def grok_modifier_map(meanings: dict) -> dict[str, int]:
     assert len(keycodes) == 8 * max_keypermod
     for i in range(8):
         for j in range(max_keypermod):
-            keycode = keycodes[i * max_keypermod + j]
-            if keycode:
+            if keycode := keycodes[i * max_keypermod + j]:
                 keysyms = mappings.get(keycode, ())
                 for keysym in keysyms:
-                    modifier = meanings.get(keysym, "")
-                    if modifier:
+                    if modifier := meanings.get(keysym, ""):
                         modifier_map[modifier] |= (1 << i)
     return modifier_map

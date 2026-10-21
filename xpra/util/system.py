@@ -317,8 +317,7 @@ def is_WSL() -> bool:
     if not POSIX:
         return False
     for f in ("/proc/sys/kernel/osrelease", "/proc/version"):
-        r = load_binary_file(f)
-        if r:
+        if r := load_binary_file(f):
             return r.find(b"Microsoft") >= 0
     return False
 
@@ -560,14 +559,12 @@ def get_run_info(subcommand="server") -> Sequence[str]:
     run_info.append(" running with pid %s%s" % (os.getpid(), osinfo))
     from xpra.net.common import FULL_INFO
     vinfo = ".".join(str(x) for x in sys.version_info[:FULL_INFO + 1])
-    arch = pinfo.get("machine", "")
-    if arch:
+    if arch := pinfo.get("machine", ""):
         vinfo += f" {arch}"
     if is_free_threaded():
         vinfo += " free-threaded"
     run_info.append(f" {sys.implementation.name} {vinfo}")
-    mem_bytes = get_mem_size()
-    if mem_bytes:
+    if mem_bytes := get_mem_size():
         LOW_MEM_LIMIT = 1024 * 1024 * 1024
         if mem_bytes and mem_bytes <= LOW_MEM_LIMIT:
             log.warn("Warning: only %iMB total system memory available", mem_bytes // (1024 ** 2))

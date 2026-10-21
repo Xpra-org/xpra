@@ -274,8 +274,7 @@ class NotificationClient(StubClientSubsystem):
         icon = sanitize_icon_data(self.supported_icon_data(icon, "icon"))
         for attr, what in (("app-icon-data", "app-icon"), ("image-data", "image")):
             if icon_data := hints.get(attr):
-                safe = sanitize_icon_data(self.supported_icon_data(icon_data, what))
-                if safe:
+                if safe := sanitize_icon_data(self.supported_icon_data(icon_data, what)):
                     hints[attr] = safe
                 else:
                     hints.pop(attr)

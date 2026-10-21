@@ -138,8 +138,7 @@ class ShadowServer(ShadowServerBase):
         # maps DISPLAYn name -> VDD slot, for monitors this server plugged in:
         self._vdd_displays: dict[str, int] = {}
         self._monitors_changed_timer: int = 0
-        device = attrs.get("device", "")
-        if device:
+        if device := attrs.get("device", ""):
             self._init_device(device)
         elif GetSystemMetrics(win32con.SM_SAMEDISPLAYFORMAT) == 0:
             raise InitException("all the monitors must use the same display format")
@@ -250,8 +249,7 @@ class ShadowServer(ShadowServerBase):
             self.source_remove(self._monitors_changed_timer)
             self._monitors_changed_timer = 0
         if self._vdd_slot >= 0 or self._vdd_multimonitor:
-            el = get_win32_event_listener(False)
-            if el:
+            if el := get_win32_event_listener(False):
                 el.remove_event_callback(win32con.WM_DISPLAYCHANGE, self._on_display_change)
                 el.remove_event_callback(win32con.WM_DISPLAYCHANGE, self._on_monitors_changed)
         self._vdd_cleanup()
@@ -274,12 +272,10 @@ class ShadowServer(ShadowServerBase):
             self.monitor_device = new_device
         x, y, w, h = self.get_monitor_geometry()
         screenlog("_on_display_change() vdd:%i %r -> (%i,%i,%ix%i)", self._vdd_slot, self.monitor_device, x, y, w, h)
-        window_subsystem = self.get_subsystem("window")
-        if window_subsystem:
+        if window_subsystem := self.get_subsystem("window"):
             for model in window_subsystem.models():
                 model.geometry = (x, y, w, h)
-        display_subsystem = self.get_subsystem("display")
-        if display_subsystem:
+        if display_subsystem := self.get_subsystem("display"):
             display_subsystem.notify_screen_changed()
 
     # ------------------------------------------------------------------
@@ -414,8 +410,7 @@ class ShadowServer(ShadowServerBase):
         # and lost-window packets for the monitors that appeared / disappeared:
         self._sync_monitor_windows()
         # push the updated virtual-screen size to clients:
-        display = self.get_subsystem("display")
-        if display:
+        if display := self.get_subsystem("display"):
             display.notify_screen_changed()
         # update the client's monitor menu:
         self.setting_changed("monitors", config)
@@ -550,8 +545,7 @@ class ShadowServer(ShadowServerBase):
         if DXGI and backend in ("auto", "dxgi"):
             try:
                 from xpra.platform.win32.d3d11.capture import get_capture_for_monitor
-                capture = get_capture_for_monitor(x, y)
-                if capture:
+                if capture := get_capture_for_monitor(x, y):
                     capture.refresh()
                     log.info("monitor %r at (%i,%i): capture using %s", title, x, y, capture.get_type())
                     return capture
@@ -573,8 +567,7 @@ class ShadowServer(ShadowServerBase):
         w, h = self.get_monitor_geometry()[2:4]
         backend = self.backend
         if backend in ("nvfbc", "auto") and NVFBC:
-            capture = _setup_nvfbc_capture(w, h, self.pixel_depth)
-            if capture:
+            if capture := _setup_nvfbc_capture(w, h, self.pixel_depth):
                 log.info("capture using NvFBC")
                 return capture
         if backend in ("gtk", "auto"):

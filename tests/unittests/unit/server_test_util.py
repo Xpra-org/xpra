@@ -78,8 +78,7 @@ class ServerTestUtil(ProcessTestUtil):
     def tearDownClass(cls):
         ProcessTestUtil.tearDownClass()
         displays = set(cls.displays())
-        new_displays = displays - set(cls.existing_displays)
-        if new_displays:
+        if new_displays := displays - set(cls.existing_displays):
             for x in list(new_displays):
                 log("stopping display %s" % x)
                 try:

@@ -426,8 +426,7 @@ class ServerCore(GLibServer):
             return
         # the client may require a more recent server version,
         # (peers that do not expose it are older than v7, the version check above rejects them)
-        perr = protocol_compat_check(c.inttupleget("protocol-version"))
-        if perr:
+        if perr := protocol_compat_check(c.inttupleget("protocol-version")):
             self.network.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {perr!r}")
             proto.close()
             return
@@ -440,8 +439,7 @@ class ServerCore(GLibServer):
             options = conn.options
             if options.get("ssl-upgrade", "yes").lower() in TRUE_OPTIONS:
                 ssl_options = self.network.get_ssl_socket_options(options)
-                cert = ssl_options.get("cert", "")
-                if cert:
+                if cert := ssl_options.get("cert", ""):
                     log.info(f"sending ssl upgrade for {conn}")
 
                     # read the certificate from disk on the main thread, not the parse
@@ -594,8 +592,7 @@ class ServerCore(GLibServer):
         if FULL_INFO:
             from xpra.scripts.parsing import get_subcommands
             caps["subcommands"] = get_subcommands()
-        server_log = os.environ.get("XPRA_SERVER_LOG", "")
-        if server_log:
+        if server_log := os.environ.get("XPRA_SERVER_LOG", ""):
             caps["server-log"] = server_log
         return caps
 

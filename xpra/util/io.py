@@ -135,8 +135,7 @@ def is_writable(path: str, uid: int, gid: int) -> bool:
 
 
 def stderr_print(msg: str = "") -> bool:
-    stderr = sys.stderr
-    if stderr:
+    if stderr := sys.stderr:
         try:
             noerr(stderr.write, msg + "\n")
             noerr(stderr.flush)
@@ -313,8 +312,7 @@ def find_lib_ldconfig(libname: str) -> str:
     import subprocess
     p = subprocess.Popen(f"{ldconfig} -p", stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, text=True)
     data = p.communicate()[0]
-    libpath = re.search(pattern, data, re.MULTILINE)
-    if libpath:
+    if libpath := re.search(pattern, data, re.MULTILINE):
         return libpath.group(1)
     return ""
 

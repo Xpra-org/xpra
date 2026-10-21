@@ -82,8 +82,7 @@ class DebugControl(ArgsControlCommand):
             categories = [v.strip() for v in group.replace("+", ",").split(",")]
             if log_cmd == "enable":
                 if CONTROL_DEBUG < 2:
-                    restricted = tuple(cat for cat in RESTRICTED_DEBUG_CATEGORIES if cat in categories)
-                    if restricted:
+                    if restricted := tuple(cat for cat in RESTRICTED_DEBUG_CATEGORIES if cat in categories):
                         warning = "Warning: enabling debug logging is restricted for: %s" % csv(repr(cat) for cat in restricted)
                         log.warn(warning)
                         return warning

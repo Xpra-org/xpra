@@ -207,8 +207,7 @@ def get_host_info(full_info: int = 1) -> dict[str, Any]:
     if full_info > 0:
         try:
             import socket
-            hostname = socket.gethostname()
-            if hostname:
+            if hostname := socket.gethostname():
                 info["hostname"] = hostname
         except OSError:
             pass
@@ -390,8 +389,7 @@ PLATFORM_FRIENDLY_NAMES: dict[str, str] = {
 
 
 def get_branch() -> str:
-    BRANCH = os.environ.get("XPRA_CURRENT_VERSION_BRANCH", "")
-    if BRANCH:
+    if BRANCH := os.environ.get("XPRA_CURRENT_VERSION_BRANCH", ""):
         return BRANCH
     try:
         from xpra.src_info import BRANCH
@@ -421,8 +419,7 @@ def get_latest_version() -> bool | None | tuple[int, ...]:
             f"{CURRENT_VERSION_URL}{branch_str}_{platname}?{XPRA_VERSION}",
             f"{CURRENT_VERSION_URL}{branch_str}?{XPRA_VERSION}",
         ):
-            latest_version_no = get_version_from_url(url)
-            if latest_version_no:
+            if latest_version_no := get_version_from_url(url):
                 return latest_version_no
     return ()
 

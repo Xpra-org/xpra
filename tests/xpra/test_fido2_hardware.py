@@ -138,8 +138,7 @@ def do_auth():
         "challenge_response": bytes(sig_data),
         "challenge_client_salt": origin,
     })
-    result = auth.fido2_check(caps)
-    if result:
+    if result := auth.fido2_check(caps):
         print("Authentication PASSED")
     else:
         print("Authentication FAILED")

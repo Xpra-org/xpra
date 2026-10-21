@@ -27,8 +27,7 @@ def main(argv: list[str]) -> int:
         window.set_size_request(width, height)
         window.connect("delete_event", Gtk.main_quit)
         window.set_position(Gtk.WindowPosition.CENTER)
-        icon = get_icon_pixbuf("pointer.png")
-        if icon:
+        if icon := get_icon_pixbuf("pointer.png"):
             window.set_icon(icon)
         cursor_combo = Gtk.ComboBoxText()
         cursor_combo.append_text("")

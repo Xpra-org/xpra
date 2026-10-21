@@ -120,8 +120,7 @@ def remove_handler(event: str, handler: Callable) -> None:
             if not power_event_handlers:
                 # the last power event handler has been removed,
                 # unregister our handler:
-                el = get_win32_event_listener(False)
-                if el:
+                if el := get_win32_event_listener(False):
                     el.remove_event_callback(win32con.WM_POWERBROADCAST, power_broadcast_event_handler)
 
 

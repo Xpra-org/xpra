@@ -19,24 +19,20 @@ def get_window_base_classes() -> tuple[type, ...]:
     if features.file and DRAGNDROP:
         from xpra.client.gtk3.window.dragndrop import DragNDropWindow
         WINDOW_BASES.append(DragNDropWindow)
-    FOCUS = envbool("XPRA_FOCUS", True)
-    if FOCUS:
+    if envbool("XPRA_FOCUS", True):
         from xpra.client.gtk3.window.focus import FocusWindow
         WINDOW_BASES.append(FocusWindow)
-    GRAB = envbool("XPRA_GRAB", True)
-    if GRAB:
+    if envbool("XPRA_GRAB", True):
         from xpra.client.gtk3.window.grab import GrabWindow
         WINDOW_BASES.append(GrabWindow)
-    WORKSPACE = envbool("XPRA_WORKSPACE", True)
-    if WORKSPACE:
+    if envbool("XPRA_WORKSPACE", True):
         from xpra.client.gtk3.window.workspace import WorkspaceWindow
         WINDOW_BASES.append(WorkspaceWindow)
     # the shape subsystem falls back to the gdk api without the X11 bindings,
     # which the win32 backend honours using `SetWindowRgn`,
     # and the wayland backend for input shapes only
     # (the macos backend does not implement shapes at all)
-    XSHAPE = envbool("XPRA_XSHAPE", not OSX)
-    if XSHAPE:
+    if envbool("XPRA_XSHAPE", not OSX):
         from xpra.client.gtk3.window.shape import ShapeWindow
         WINDOW_BASES.append(ShapeWindow)
     if features.keyboard:

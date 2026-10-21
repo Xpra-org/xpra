@@ -107,8 +107,7 @@ def get_output_lines(cmd, valid_exit_code=0) -> "Sequence[str]":
 
 
 def get_first_line_output(cmd, valid_exit_code=0) -> str:
-    lines = get_output_lines(cmd, valid_exit_code)
-    if lines:
+    if lines := get_output_lines(cmd, valid_exit_code):
         return lines[0]
     return ""
 
@@ -119,8 +118,7 @@ def get_nvcc_version() -> str:
     for nvcc in ("/usr/local/cuda/bin/nvcc", "/opt/cuda/bin/nvcc", which("nvcc")):
         if nvcc and os.path.exists(nvcc):
             cmd = f"{nvcc} --version"
-            lines = get_output_lines(cmd)
-            if lines:
+            if lines := get_output_lines(cmd):
                 vline = lines[-1]
                 vpos = vline.rfind(", V")
                 if vpos>0:
@@ -190,8 +188,7 @@ def get_platform_name() -> str:
     try:
         from xpra.util.system import get_linux_distribution
         ld = get_linux_distribution()
-        ldvalid = tuple(x for x in ld if x not in ("", "unknown", "n/a"))
-        if ldvalid:
+        if ldvalid := tuple(x for x in ld if x not in ("", "unknown", "n/a")):
             return "Linux %s" % (" ".join(ldvalid))
     except Exception:
         pass
@@ -211,8 +208,7 @@ def jhbuild(*args: str) -> str:
 
 def get_build_props() -> "dict[str, Any]":
     props = {}
-    source_epoch = os.environ.get("SOURCE_DATE_EPOCH", "")
-    if source_epoch:
+    if source_epoch := os.environ.get("SOURCE_DATE_EPOCH", ""):
         # reproducible builds:
         build_time = datetime.datetime.fromtimestamp(int(source_epoch), tz=datetime.timezone.utc)
         build_date = build_time.date()
@@ -324,8 +320,7 @@ def record_build_info() -> None:
         for package_name in get_jhbuild_package_list():
             if package_name in SKIPPED or package_name.startswith("meta-"):
                 continue
-            pinfo = get_jhbuild_package_info(package_name)
-            if pinfo:
+            if pinfo := get_jhbuild_package_info(package_name):
                 sbom[package_name] = (0, "", package_name, pinfo.get("Version", ""))
                 packages[package_name] = {key: value for key, value in pinfo.items() if key in ("Name", "Version", "URL")}
         props["sbom"] = sbom
@@ -371,8 +366,7 @@ def get_vcs_props():
         proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
         out, _ = proc.communicate()
         if proc.returncode == 0:
-            branch_out = out.decode("utf-8").splitlines()
-            if branch_out:
+            if branch_out := out.decode("utf-8").splitlines():
                 branch = branch_out[0]
                 if branch.startswith("* "):
                     branch = branch[2:]

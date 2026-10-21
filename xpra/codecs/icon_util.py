@@ -85,8 +85,7 @@ def load_icon_from_file(filename: str, max_size: int = MAX_ICON_SIZE) -> tuple:
     if filename.endswith("svg") and max_size and len(icondata) > max_size:
         # try to resize it
         size = len(icondata)
-        pngdata = svg_to_png(filename, icondata)
-        if pngdata:
+        if pngdata := svg_to_png(filename, icondata):
             log(f"reduced size of SVG icon {filename}, from {size} bytes to {len(pngdata)} bytes as PNG")
             icondata = pngdata
             filename = filename[:-3] + "png"

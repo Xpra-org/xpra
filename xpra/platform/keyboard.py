@@ -68,8 +68,7 @@ def main(argv: list[str]) -> int:
         print("")
         print(f"Repeat:     {csv(keyboard.get_keyboard_repeat())}")
         if verbose and is_X11():
-            keysyms = keyboard.get_x11_keymap()
-            if keysyms:
+            if keysyms := keyboard.get_x11_keymap():
                 print("Keysyms:")
                 for keycode, keysyms in keysyms.items():
                     print(" %3i    : %s" % (keycode, csv(keysyms)))

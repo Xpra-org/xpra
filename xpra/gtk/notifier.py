@@ -120,8 +120,7 @@ class GTKNotifier(NotifierBase):
     def new_popup(self, nid: int, summary: str, body: str, actions: Sequence[str],
                   icon, timeout=10 * 1000, show_timeout=False) -> bool:
         """Create a new Popup instance, or update an existing one """
-        existing = [p for p in self._notify_stack if p.nid == nid]
-        if existing:
+        if existing := [p for p in self._notify_stack if p.nid == nid]:
             existing[0].set_content(summary, body, actions, icon)
             return False
         if len(self._notify_stack) == self.max_popups:
@@ -185,8 +184,7 @@ class Popup(Gtk.Window):
         self.header.set_padding(3, 3)
         self.header.set_alignment(0, 0)
         header_box.pack_start(self.header, True, True, 5)
-        icon = get_icon_pixbuf("close.png")
-        if icon:
+        if icon := get_icon_pixbuf("close.png"):
             close_button = Gtk.Image()
             close_button.set_from_pixbuf(icon)
             close_button.set_padding(3, 3)
@@ -346,8 +344,7 @@ class Popup(Gtk.Window):
         remaining notification windows"""
         log("hide_notification()")
         for timer in ("fade_in_timer", "fade_out_timer", "wait_timer"):
-            v = getattr(self, timer)
-            if v:
+            if v := getattr(self, timer):
                 setattr(self, timer, None)
                 GLib.source_remove(v)
         # destroy window from the UI thread:

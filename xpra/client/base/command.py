@@ -660,8 +660,7 @@ class RunClient(CommandConnectClient):
         return protocol
 
     def schedule_verify_connected(self) -> None:
-        conn = getattr(self._protocol, "_conn", None)
-        if conn:
+        if conn := getattr(self._protocol, "_conn", None):
             delay = round((conn.timeout + conn.connection_delay) * 1000) + self.wait_time + 1000
             self.verify_connected_timer = self.timeout_add(delay, self.verify_connected)
 
@@ -898,8 +897,7 @@ class RequestStartClient(HelloRequestClient):
     def server_connection_established(self, caps: typedict) -> bool:
         # the server should respond with the display chosen
         log("server_connection_established() exit_code=%s", self.exit_code)
-        display = caps.strget("display")
-        if display:
+        if display := caps.strget("display"):
             mode = caps.strget("mode")
             session_type = {
                 "start": "seamless ",

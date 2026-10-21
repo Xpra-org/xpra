@@ -12,12 +12,10 @@ from xpra.x11.bindings.window import X11WindowBindings
 def get_wintitle(xid: int) -> str:
     X11Window = X11WindowBindings()
     with xswallow:
-        data = X11Window.XGetWindowProperty(xid, "WM_NAME", "STRING")
-        if data:
+        if data := X11Window.XGetWindowProperty(xid, "WM_NAME", "STRING"):
             return data.decode("latin1")
     with xswallow:
-        data = X11Window.XGetWindowProperty(xid, "_NET_WM_NAME", "UTF8_STRING")
-        if data:
+        if data := X11Window.XGetWindowProperty(xid, "_NET_WM_NAME", "UTF8_STRING"):
             return data.decode("utf8")
     return ""
 
@@ -37,16 +35,13 @@ def get_wininfo(xid: int) -> str:
     else:
         if XRes.check_xres():
             with xswallow:
-                pid = XRes.get_pid(xid)
-                if pid:
+                if pid := XRes.get_pid(xid):
                     wininfo.append(f"pid={pid}")
-    title = get_wintitle(xid)
-    if title:
+    if title := get_wintitle(xid):
         wininfo.insert(0, repr(title))
         return csv(wininfo)
     while xid:
-        title = get_wintitle(xid)
-        if title:
+        if title := get_wintitle(xid):
             wininfo.append(f"child of {title!r}")
             return csv(wininfo)
         parent = 0

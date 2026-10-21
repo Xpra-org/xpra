@@ -353,8 +353,7 @@ def select_device(preferred_device_id=-1, min_compute=0) -> tuple[int, Any]:
     log("select_device(%s, %s)", preferred_device_id, min_compute)
     for device_id in (preferred_device_id, get_pref("device-id")):
         if device_id is not None and device_id >= 0:
-            dct = make_device_context(device_id)
-            if dct:
+            if dct := make_device_context(device_id):
                 device, context, tpct = dct
                 context.pop()
                 context.detach()

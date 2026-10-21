@@ -403,8 +403,7 @@ def parse_xkbmap_query(xkbmap_query: str) -> dict[str, str]:
     settings = {}
     opt_re = re.compile(r"(\w*):\s*(.*)")
     for line in xkbmap_query.splitlines():
-        m = opt_re.match(line)
-        if m:
+        if m := opt_re.match(line):
             v = m.group(2).strip()
             if v.strip(","):
                 settings[m.group(1)] = v

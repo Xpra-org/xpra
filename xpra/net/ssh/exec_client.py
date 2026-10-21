@@ -136,8 +136,7 @@ def connect_to(display_desc: dict, debug_cb: Callable = noop, ssh_fail_cb=connec
         password = display_desc.get("password")
         if password and not display_desc.get("is_putty", False):
             from xpra.platform.paths import get_sshpass_command
-            sshpass_command = get_sshpass_command()
-            if sshpass_command:
+            if sshpass_command := get_sshpass_command():
                 # sshpass -e ssh ...
                 cmd.insert(0, sshpass_command)
                 cmd.insert(1, "-e")
@@ -170,8 +169,7 @@ def connect_to(display_desc: dict, debug_cb: Callable = noop, ssh_fail_cb=connec
                 error_message = "SSH connection failure"
             sshpass_error = ""
             if sshpass_command:
-                sshpass_error = SSHPASS_ERRORS.get(exitcode, "")
-                if sshpass_error:
+                if sshpass_error := SSHPASS_ERRORS.get(exitcode, ""):
                     error_message += f": {sshpass_error}"
             debug_cb(error_message)
             ssh_fail_cb(error_message)

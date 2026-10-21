@@ -365,8 +365,7 @@ def do_get_desktop_background_paths() -> list[str]:
 
 
 def get_xpra_command() -> list[str]:
-    envvalue = os.environ.get("XPRA_COMMAND", "")
-    if envvalue:
+    if envvalue := os.environ.get("XPRA_COMMAND", ""):
         return shlex.split(envvalue)
     return do_get_xpra_command()
 
@@ -383,8 +382,7 @@ def default_do_get_xpra_command() -> list[str]:
 
 
 def get_nodock_command() -> list[str]:
-    envvalue = os.environ.get("XPRA_NODOCK_COMMAND", "")
-    if envvalue:
+    if envvalue := os.environ.get("XPRA_NODOCK_COMMAND", ""):
         return shlex.split(envvalue)
     return do_get_nodock_command()
 
@@ -394,8 +392,7 @@ def do_get_nodock_command() -> list[str]:
 
 
 def get_audio_command() -> list[str]:
-    envvalue = os.environ.get("XPRA_AUDIO_COMMAND")
-    if envvalue:
+    if envvalue := os.environ.get("XPRA_AUDIO_COMMAND"):
         return shlex.split(envvalue)
     return do_get_audio_command()
 
@@ -405,8 +402,7 @@ def do_get_audio_command() -> list[str]:
 
 
 def get_python_exec_command() -> list[str]:
-    envvalue = os.environ.get("XPRA_PYTHON_EXEC_COMMAND") or os.environ.get("XPRA_PYTHON_COMMAND")
-    if envvalue:
+    if envvalue := os.environ.get("XPRA_PYTHON_EXEC_COMMAND") or os.environ.get("XPRA_PYTHON_COMMAND"):
         return shlex.split(envvalue)
     return do_get_python_exec_command()
 
@@ -416,8 +412,7 @@ def do_get_python_exec_command() -> list[str]:
 
 
 def get_python_execfile_command() -> list[str]:
-    envvalue = os.environ.get("XPRA_PYTHON_EXECFILE_COMMAND", "") or os.environ.get("XPRA_PYTHON_COMMAND", "")
-    if envvalue:
+    if envvalue := os.environ.get("XPRA_PYTHON_EXECFILE_COMMAND", "") or os.environ.get("XPRA_PYTHON_COMMAND", ""):
         return shlex.split(envvalue)
     return do_get_python_execfile_command()
 

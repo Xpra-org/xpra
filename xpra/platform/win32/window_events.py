@@ -77,8 +77,7 @@ class Win32ClientEventsWatcher:
         log("WM_MOVE: %s/%s", wparam, lparam)
         # this is not really a screen size change event,
         # but we do want to process it as such (see window reinit code)
-        display = self.window.get_subsystem("display")
-        if display:
+        if display := self.window.get_subsystem("display"):
             display.screen_size_changed()
 
     def end_session(self, wparam: int, lparam: int) -> None:

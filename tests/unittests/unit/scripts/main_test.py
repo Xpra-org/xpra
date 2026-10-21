@@ -312,8 +312,7 @@ class TestMain(unittest.TestCase):
             os.environ["XPRA_LOG_SYSTEMD_WRAP"] = "0"
             os.environ["XPRA_LOG_SYSTEMD_WRAP_COMMAND"] = "0"
             cmd = get_xpra_command()+["--version"]
-            r = systemd_run_wrap("unused", cmd, user=getuid()!=0, stdout=DEVNULL, stderr=DEVNULL)
-            if r:
+            if r := systemd_run_wrap("unused", cmd, user=getuid()!=0, stdout=DEVNULL, stderr=DEVNULL):
                 raise ValueError(f"expected return code 0 but got {r} running {cmd}")
 
     def test_display_type_check(self):
@@ -467,8 +466,7 @@ class TestMain(unittest.TestCase):
 
     @staticmethod
     def _close_subcommand_output(proc) -> None:
-        output = getattr(proc, "subcommand_output", None)
-        if output:
+        if output := getattr(proc, "subcommand_output", None):
             noerr(output.close)
 
     def _check_xpra_command(self) -> None:

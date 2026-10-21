@@ -174,8 +174,7 @@ def title_box(label_str: str, tooltip="") -> Gtk.EventBox:
 
 def color_parse(*args) -> Gdk.Color | None:
     v = Gdk.RGBA()
-    ok = v.parse(*args)
-    if ok:
+    if ok := v.parse(*args):
         return v.to_color()  # pylint: disable=no-member
     with IgnoreWarningsContext():
         ok, v = Gdk.Color.parse(*args)

@@ -39,8 +39,7 @@ def control_get_sources(server, client_uuids_str="*"):
         client_uuids = client_uuids_str.split(",")
         sources = [ss for ss in sources.values() if ss.uuid in client_uuids]
         uuids = tuple(ss.uuid for ss in sources)
-        notfound = any(x for x in client_uuids if x not in uuids)
-        if notfound:
+        if notfound := any(x for x in client_uuids if x not in uuids):
             log.warn(f"Warning: client connection not found for uuid(s): {notfound}")
     return sources
 

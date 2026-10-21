@@ -60,8 +60,7 @@ SESSION_OPTION_WHITELIST: dict[str, Callable] = {
 def sanitize_session_options(options: dict[str, str]) -> dict[str, Any]:
     d = {}
     for k, v in options.items():
-        parser = SESSION_OPTION_WHITELIST.get(k)
-        if parser:
+        if parser := SESSION_OPTION_WHITELIST.get(k):
             log("trying to add %s=%s using %s", k, v, parser)
             try:
                 d[k] = parser(k, v)

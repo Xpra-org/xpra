@@ -1683,8 +1683,7 @@ class WindowSource(WindowIconSource):
     def do_damage(self, ww: int, wh: int, x: int, y: int, w: int, h: int, options: dict) -> None:
         now = monotonic()
         if self.refresh_timer and options.get("quality", self._current_quality) < self.refresh_quality:
-            rr = tuple(self.refresh_regions)
-            if rr:
+            if rr := tuple(self.refresh_regions):
                 # does this screen update intersect with
                 # the areas that are due to be refreshed?
                 overlap = sum(rect.width*rect.height for rect in rr)
@@ -1900,8 +1899,7 @@ class WindowSource(WindowIconSource):
         return False
 
     def _log_late_acks(self, log_fn: Callable) -> None:
-        dap = dict(self.statistics.damage_ack_pending)
-        if dap:
+        if dap := dict(self.statistics.damage_ack_pending):
             now = monotonic()
             log_fn(" %i late responses:", len(dap))
             for seq in sorted(dap.keys()):
@@ -2413,8 +2411,7 @@ class WindowSource(WindowIconSource):
             # there's a video region to exclude
             # (it is handled separately with its own timer)
             window_pixcount -= refresh_exclude.width*refresh_exclude.height
-            region_excluded = region.intersection_rect(refresh_exclude)
-            if region_excluded:
+            if region_excluded := region.intersection_rect(refresh_exclude):
                 region_pixcount -= region_excluded.width*region_excluded.height
         added_pixcount = self.add_refresh_region(region)
         if window_pixcount <= 0:
@@ -2977,8 +2974,7 @@ class WindowSource(WindowIconSource):
         for v in (x, y, outw, outh, outstride):
             if not isinstance(v, int):
                 raise RuntimeError(f"expected int, found {v} ({type(v)})")
-        ws = options.get("window-size")
-        if ws:
+        if ws := options.get("window-size"):
             client_options["window-size"] = ws
         outw, outh = self.scaled_damage_packet_size(outw, outh, client_options, options)
         pwid, px, py = self._draw_packet_target(x, y)

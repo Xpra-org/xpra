@@ -63,8 +63,7 @@ def add_fallback_receiver(signal: str, handler) -> None:
 
 
 def remove_fallback_receiver(signal: str, handler) -> None:
-    receivers = fallback_receivers.get(signal, [])
-    if receivers:
+    if receivers := fallback_receivers.get(signal, []):
         receivers.remove(handler)
     log("remove_fallback_receiver(%s, %s) -> %s", signal, handler, fallback_receivers)
 

@@ -150,10 +150,8 @@ class XI2_Window:
             wheel_x, wheel_y = 0, 0
             unused_valuators = {}
             for number, value in valuators.items():
-                valuator = val_classes.get(number)
-                if valuator:
-                    label = valuator.get("label")
-                    if label:
+                if valuator := val_classes.get(number):
+                    if label := valuator.get("label"):
                         pointerlog("%s: %s", label, value)
                         if label.lower().find("horiz") >= 0:
                             wheel_x = value

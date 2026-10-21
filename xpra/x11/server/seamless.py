@@ -159,8 +159,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         window_sub._wm.connect("x11-focus-in-event", window_sub._x11_focus_in_event)
 
     def do_cleanup(self) -> None:
-        window_sub = self.subsystems.get("window")
-        if window_sub:
+        if window_sub := self.subsystems.get("window"):
             window_sub.cancel_all_configure_damage()
             if window_sub._wm:
                 window_sub._wm.cleanup()
@@ -190,8 +189,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
     def get_server_features(self, server_source=None) -> dict[str, Any]:
         capabilities = super().get_server_features(server_source)
         capabilities.setdefault("pointer", {})["grabs"] = True
-        window_sub = self.subsystems.get("window")
-        if window_sub:
+        if self.subsystems.get("window"):
             # only import the window subsystem if it is enabled:
             # `--windows=no` blocks the module (it is set to `None` in `sys.modules`),
             # and there are no window capabilities to advertise anyway

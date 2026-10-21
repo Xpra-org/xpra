@@ -122,8 +122,7 @@ class KeyboardClient(StubClientSubsystem):
             self.enabled = False
             return True
         if self.helper:
-            modifier_keycodes = c.dictget("modifier_keycodes")
-            if modifier_keycodes:
+            if modifier_keycodes := c.dictget("modifier_keycodes"):
                 self.helper.set_modifier_mappings(modifier_keycodes)
         self.key_repeat_delay, self.key_repeat_interval = c.intpair("key_repeat", (-1, -1))
         return True

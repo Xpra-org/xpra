@@ -80,8 +80,7 @@ class BugReport:
         self.window.set_default_size(400, 300)
         self.window.set_title("Xpra Bug Report")
 
-        icon_pixbuf = get_icon_pixbuf("bugs.png")
-        if icon_pixbuf:
+        if icon_pixbuf := get_icon_pixbuf("bugs.png"):
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(Gtk.WindowPosition.CENTER)
 
@@ -236,8 +235,7 @@ class BugReport:
             b.set_tooltip_text(tooltip_text)
             b.connect("clicked", callback)
             if icon_name:
-                icon = get_icon_pixbuf(icon_name)
-                if icon:
+                if icon := get_icon_pixbuf(icon_name):
                     b.set_image(scaled_image(icon, 24))
             hbox.pack_start(b)
             return b
@@ -306,8 +304,7 @@ class BugReport:
         log("get_data() collecting bug report data")
         data = []
         tb = self.description.get_buffer()
-        buf = tb.get_text(*tb.get_bounds(), include_hidden_chars=False)
-        if buf:
+        if buf := tb.get_text(*tb.get_bounds(), include_hidden_chars=False):
             data.append(("Description", "", "txt", buf))
         for name, dtype, title, value_cb, _, tooltip in self.toggles:
             if not bool(value_cb):

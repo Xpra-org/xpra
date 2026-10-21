@@ -83,8 +83,7 @@ def _has_nvidia_hardware() -> bool | None:
     import subprocess
     try:
         output = subprocess.check_output(["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"])
-        output = output.decode("utf-8").strip()
-        if output:
+        if output := output.decode("utf-8").strip():
             log(f"has_nvidia_hardware() found NVIDIA GPU(s) using nvidia-smi: {output}")
             return True
     except (subprocess.CalledProcessError, OSError):
@@ -325,8 +324,7 @@ def get_license_keys(version=0, basefilename="nvenc") -> Sequence[str]:
     if keys is not None:
         return keys
     env_name = f"XPRA_{basefilename.upper()}_CLIENT_KEY"
-    env_keys = os.environ.get(env_name, "")
-    if env_keys:
+    if env_keys := os.environ.get(env_name, ""):
         keys = [x.strip() for x in env_keys.split(",")]
         log(f"using {basefilename} keys from environment variable {env_name} : {csv(keys)}")
     else:
@@ -383,8 +381,7 @@ def main() -> int:
             log.warn("Warning: the pynvml library is missing")
             log.warn(" cannot identify the GPUs installed")
         else:
-            cards = get_cards()
-            if cards:
+            if cards := get_cards():
                 log.info("")
                 log.info(f"{len(cards)} cards:")
                 print_nested_dict(cards, print_fn=log.info)

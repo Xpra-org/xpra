@@ -33,8 +33,7 @@ class Win32ShadowKeyboardManager(ShadowKeyboardManager):
             return
         attrs = typedict(kattrs)
         if attrs.strget("backend") == "win32":
-            vk_code = attrs.intget("vk-code", 0)
-            if vk_code:
+            if vk_code := attrs.intget("vk-code", 0):
                 self._native_key_event(proto, wid, keyname, pressed, attrs, vk_code)
                 return
         super().do_process_keyboard_event(proto, wid, keyname, pressed, kattrs)
@@ -75,8 +74,7 @@ class Win32ShadowKeyboardManager(ShadowKeyboardManager):
         native_raw = attrs.dictget("native-modifiers")
         if native_raw is None:
             # Older client without native modifiers: use the existing X11 sync path
-            kc = getattr(ss, "keyboard_config", None)
-            if kc:
+            if kc := getattr(ss, "keyboard_config", None):
                 modifiers = list(attrs.strtupleget("modifiers"))
                 kc.make_keymask_match(modifiers, ignored_modifier_keycode=ignore_vk)
             return

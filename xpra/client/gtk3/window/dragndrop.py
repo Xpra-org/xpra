@@ -56,8 +56,7 @@ class DragNDropWindow(GtkStubWindow):
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         # opengl probing uses a fake client, whose `get_subsystem` returns
         # `None` for "file", in which case we don't want dragndrop initialized:
-        file_handler = client.get_subsystem("file")
-        if file_handler:
+        if file_handler := client.get_subsystem("file"):
             self._file_handler = file_handler
             self.init_dragndrop()
 

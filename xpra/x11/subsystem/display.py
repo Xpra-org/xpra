@@ -493,8 +493,7 @@ class X11DisplayManager(DisplayManager):
         # clamp any pre-existing windows to the new screen bounds:
         # (not when combining displays: the clients come and go, and moving
         #  their windows around every time would be more disruptive than helpful)
-        window_sub = self.get_subsystem("window")
-        if window_sub:
+        if window_sub := self.get_subsystem("window"):
             if self.sharing_layout:
                 sharinglog("not clamping windows to %ix%i: the display is shared as %r",
                            desired_w, desired_h, self.sharing_layout)

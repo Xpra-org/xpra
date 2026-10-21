@@ -94,18 +94,15 @@ class WindowPerformanceStatistics:
 
     def update_averages(self) -> None:
         # damage "in" latency: (the time it takes for damage requests to be processed only)
-        dil = tuple(self.damage_in_latency)
-        if dil:
+        if dil := tuple(self.damage_in_latency):
             data = tuple((when, latency) for when, _, _, latency in dil)
             self.avg_damage_in_latency, self.recent_damage_in_latency = calculate_time_weighted_average(data)
         # damage "out" latency: (the time it takes for damage requests to be processed and sent out)
-        dol = tuple(self.damage_out_latency)
-        if dol:
+        if dol := tuple(self.damage_out_latency):
             data = tuple((when, latency) for when, _, _, latency in dol)
             self.avg_damage_out_latency, self.recent_damage_out_latency = calculate_time_weighted_average(data)
         # client decode speed:
-        cdt = tuple(self.client_decode_time)
-        if cdt:
+        if cdt := tuple(self.client_decode_time):
             # the elapsed time recorded is in microseconds:
             decode_speed = tuple(
                 (event_time, size, int(size * 1000 * 1000 / elapsed))
@@ -189,8 +186,7 @@ class WindowPerformanceStatistics:
             }
         }
         # encoding stats:
-        estats = tuple(self.encoding_stats)
-        if estats:
+        if estats := tuple(self.encoding_stats):
             def add_compression_stats(enc_stats, encoding=None):
                 comp_ratios_pct = []
                 comp_times_ns = []
@@ -236,8 +232,7 @@ class WindowPerformanceStatistics:
             Then we add the average decoding latency.
             """
         decoding_latency = 0.010
-        cdt = tuple(self.client_decode_time)
-        if cdt:
+        if cdt := tuple(self.client_decode_time):
             decoding_latency = calculate_timesize_weighted_average(cdt)[0] / 1000.0
         min_latency = max(abs_min, min_client_latency or abs_min) * 1.2
         avg_latency = max(min_latency, avg_client_latency or abs_min)

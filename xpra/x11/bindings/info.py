@@ -155,8 +155,7 @@ def get_windows_info() -> dict[str, Any]:
                 "size-hints": window.getSizeHints(w),
                 "wm-hints": window.getWMHints(w)
             }
-            children = window.get_children(w)
-            if children:
+            if children := window.get_children(w):
                 info["children"] = dict((c, get_window_info(c)) for c in children)
             return info
     except ImportError:

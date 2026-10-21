@@ -69,8 +69,7 @@ def truncate(text: str, limit: int) -> str:
 
 
 def obsc(v) -> str:
-    OBSCURE_PASSWORDS = envbool("XPRA_OBSCURE_PASSWORDS", True)
-    if OBSCURE_PASSWORDS:
+    if envbool("XPRA_OBSCURE_PASSWORDS", True):
         return "".join("*" for _ in (bytestostr(v) or ""))
     return v
 

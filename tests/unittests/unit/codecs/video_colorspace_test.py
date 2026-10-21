@@ -501,8 +501,7 @@ class Test_Roundtrip(unittest.TestCase):
                         signal += s
                         noise += n
                         continue
-                    err = cmpp(saved_rowdata, in_rowdata)
-                    if err:
+                    if err := cmpp(saved_rowdata, in_rowdata):
                         index, v1, v2 = err
                         log.warn("the encoder unexpectedly modified the input buffer!")
                         log.warn(f"expected {hexstr(in_rowdata)}")
@@ -513,8 +512,7 @@ class Test_Roundtrip(unittest.TestCase):
                             f"with {encoding} encoded using {encoder_class}",
                         ))
                         raise Exception(msg)
-                    err = cmpp(in_rowdata, out_rowdata)
-                    if err:
+                    if err := cmpp(in_rowdata, out_rowdata):
                         index, v1, v2 = err
                         log.warn(f"encoder={encoder}")
                         log.warn(f"expected {hexstr(in_rowdata)}")
@@ -529,8 +527,7 @@ class Test_Roundtrip(unittest.TestCase):
         elif in_image.get_planes() == ImageWrapper.PACKED:
             if verify:
                 # verify the encoder hasn't modified anything:
-                err = cmpp(saved_pixels, in_pixels)
-                if err:
+                if err := cmpp(saved_pixels, in_pixels):
                     index, v1, v2 = err
                     log.warn("the encoder unexpectedly modified the input buffer!")
                     msg = " ".join((
@@ -580,8 +577,7 @@ class Test_Roundtrip(unittest.TestCase):
                         signal += s
                         noise += n
                         continue
-                    err = cmpp(in_rowdata, out_rowdata)
-                    if err:
+                    if err := cmpp(in_rowdata, out_rowdata):
                         index, v1, v2 = err
                         pixel = in_csc[index % len(in_csc)]
                         log.warn(f"expected {hexstr(in_rowdata)}")

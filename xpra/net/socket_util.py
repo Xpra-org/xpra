@@ -275,8 +275,7 @@ def peek_connection(conn, timeout: int = PEEK_TIMEOUT_MS, size: int = PEEK_SIZE)
     set_socket_timeout(conn, timeout / 1000)
     while elapsed <= timeout:
         try:
-            peek_data = conn.peek(size)
-            if peek_data:
+            if peek_data := conn.peek(size):
                 break
         except OSError:
             log("peek_connection(%s, %i) failed", conn, timeout, exc_info=True)
@@ -447,8 +446,7 @@ def parse_bind_options(opts) -> dict[str, Any]:
     min_port = int(opts.min_port)
     bind_options: dict[str, Any] = {}
     for mode in BIND_OPTION_TYPES:
-        value = getattr(opts, "bind_%s" % mode, ())
-        if value:
+        if value := getattr(opts, "bind_%s" % mode, ()):
             if mode == "vsock":
                 value = parse_bind_vsock(value)
             else:
@@ -572,8 +570,7 @@ def create_udp_socket(host: str, iport: int, family: socket.AddressFamily=socket
             raise RuntimeError("specified an IPv6 address but this is not supported on this system")
         if host.startswith("[") and host.endswith("]"):
             host = host[1:-1]
-    res = socket.getaddrinfo(host, iport, family=family, type=socket.SOCK_DGRAM)
-    if res:
+    if res := socket.getaddrinfo(host, iport, family=family, type=socket.SOCK_DGRAM):
         sockaddr = res[0][4]
     else:
         sockaddr = (host, iport)
@@ -938,8 +935,7 @@ def show_sockets(created: list[SocketListener]) -> None:
         log.info("created unix domain sockets:")
         for cpath in unix:
             log.info(f" {cpath!r}")
-    abstract = [address for address in addresses if address.startswith("@")]
-    if abstract:
+    if abstract := [address for address in addresses if address.startswith("@")]:
         log.info("created abstract sockets:")
         for cpath in abstract:
             log.info(f" {cpath!r}")

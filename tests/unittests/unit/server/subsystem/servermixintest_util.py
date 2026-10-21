@@ -188,8 +188,7 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter, GLibScheduler):
         # up via `server.subsystems[prefix].attr` (instance-based pattern)
         # can find it - and so peer-subsystem lookups via `self.get_subsystem`
         # also work in test contexts:
-        prefix = getattr(x, "PREFIX", "") or getattr(mclass, "PREFIX", "")
-        if prefix:
+        if prefix := getattr(x, "PREFIX", "") or getattr(mclass, "PREFIX", ""):
             self.subsystems[prefix] = x
         x.init_state()
         x.init(opts)

@@ -24,8 +24,7 @@ def make_grab_window() -> Gtk.Window:
     window.connect("delete_event", Gtk.main_quit)
     window.add_events(Gdk.EventMask.ALL_EVENTS_MASK)
     window.set_position(Gtk.WindowPosition.CENTER)
-    icon = get_icon_pixbuf("pointer.png")
-    if icon:
+    if icon := get_icon_pixbuf("pointer.png"):
         window.set_icon(icon)
     vbox = Gtk.VBox(homogeneous=False, spacing=0)
     hbox = Gtk.HBox(homogeneous=False, spacing=0)

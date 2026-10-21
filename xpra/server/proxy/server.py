@@ -126,8 +126,7 @@ def create_system_dir(sps: str) -> None:
 def get_proxy_env() -> dict[str, str]:
     env = {k: v for k, v in os.environ.items() if k in ENV_WHITELIST or "*" in ENV_WHITELIST}
     # env var to add to environment of subprocess:
-    extra_env_str = os.environ.get("XPRA_PROXY_START_ENV", "")
-    if extra_env_str:
+    if extra_env_str := os.environ.get("XPRA_PROXY_START_ENV", ""):
         extra_env = {}
         for e in extra_env_str.split(os.path.pathsep):  # ie: "A=1:B=2"
             parts = e.split("=", 1)
@@ -313,8 +312,7 @@ class ProxyServer(ServerCore):
         live = True
         log("cleanup() proxy instances: %s", self.instances)
         while monotonic() - start < PROXY_CLEANUP_GRACE_PERIOD and live:
-            live = tuple(x for x in tuple(self.instances.keys()) if x.is_alive())
-            if live:
+            if live := tuple(x for x in tuple(self.instances.keys()) if x.is_alive()):
                 log("cleanup() still %i proxies alive: %s", len(live), live)
                 time.sleep(0.1)
         if live:
@@ -368,8 +366,7 @@ class ProxyServer(ServerCore):
             return True
         displays = list(caps.strtupleget("displays"))
         if not displays:
-            display = caps.strget("display")
-            if display:
+            if display := caps.strget("display"):
                 displays = [display]
         uid = gid = -1
         if proto.authenticators:
@@ -590,8 +587,7 @@ class ProxyServer(ServerCore):
             if socket_path:
                 hello["socket-path"] = socket_path
             # echo mode if present:
-            mode = str(sns.get("mode", ""))
-            if mode:
+            if mode := str(sns.get("mode", "")):
                 hello["mode"] = mode
             client_proto.send_now(Packet("hello", hello))
             return
@@ -634,8 +630,7 @@ class ProxyServer(ServerCore):
         cipher = cipher_mode = ""
         encryption_key = b""
         if auth_caps:
-            cipher = auth_caps.get("cipher")
-            if cipher:
+            if cipher := auth_caps.get("cipher"):
                 from xpra.net.crypto import DEFAULT_MODE  # pylint: disable=import-outside-toplevel
                 cipher_mode = auth_caps.get("cipher.mode", DEFAULT_MODE)
                 encryption_key = self.get_encryption_key(client_proto.authenticators, client_proto.keyfile)
@@ -758,8 +753,7 @@ class ProxyServer(ServerCore):
         cipher = cipher_mode = ""
         encryption_key = b""
         if auth_caps:
-            cipher = auth_caps.get("cipher")
-            if cipher:
+            if cipher := auth_caps.get("cipher"):
                 from xpra.net.crypto import DEFAULT_MODE  # pylint: disable=import-outside-toplevel
                 cipher_mode = auth_caps.get("cipher.mode", DEFAULT_MODE)
                 encryption_key = self.get_encryption_key(client_proto.authenticators, client_proto.keyfile)

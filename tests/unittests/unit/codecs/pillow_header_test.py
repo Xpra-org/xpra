@@ -39,8 +39,7 @@ class TestPillowHeader(unittest.TestCase):
                   b"BM" + b"\0" * 40,
                   binascii.unhexlify("fe0000000000000000000000000000000000000000000000000000"),
                   ):
-            e = get_image_type(x)
-            if e:
+            if e := get_image_type(x):
                 raise RuntimeError(f"wrongly detected {x} as {e}")
 
 

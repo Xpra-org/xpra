@@ -342,8 +342,7 @@ def parse_display_name(opts, display_name: str, cmdline=(),
     )
 
     def add_credentials() -> None:
-        username = parsed.username or opts.username or os.environ.get("XPRA_USERNAME", "")
-        if username:
+        if username := parsed.username or opts.username or os.environ.get("XPRA_USERNAME", ""):
             desc["username"] = username
             opts.username = username
         password = parsed.password or opts.password
@@ -477,8 +476,7 @@ def parse_display_name(opts, display_name: str, cmdline=(),
         add_host_port(0)
         add_path()
         add_query()
-        display = desc.get("display", "")
-        if display:
+        if display := desc.get("display", ""):
             args = desc.setdefault("display_as_args", [display])
         else:
             args = desc.setdefault("display_as_args", [])
@@ -550,8 +548,7 @@ def parse_display_name(opts, display_name: str, cmdline=(),
         proxy = desc.get("proxy")
         if proxy == "auto":
             for scheme in (protocol, alt_scheme):
-                pprops = auto_proxy(scheme, host)
-                if pprops:
+                if pprops := auto_proxy(scheme, host):
                     desc.update(pprops)
                     break
         return desc
@@ -2264,16 +2261,14 @@ def show_audio_codec_help(is_server: bool, speaker_codecs, microphone_codecs) ->
     codec_help = []
     all_speaker_codecs = props.strtupleget("encoders" if is_server else "decoders")
     invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
-    hs = "help" in speaker_codecs
-    if hs:
+    if "help" in speaker_codecs:
         codec_help.append("speaker codecs available: " + csv(all_speaker_codecs))
     elif invalid_sc:
         codec_help.append("WARNING: some of the specified speaker codecs are not available: " + csv(invalid_sc))
 
     all_microphone_codecs = props.strtupleget("decoders" if is_server else "encoders")
     invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
-    hm = "help" in microphone_codecs
-    if hm:
+    if "help" in microphone_codecs:
         codec_help.append("microphone codecs available: " + csv(all_microphone_codecs))
     elif invalid_mc:
         codec_help.append("WARNING: some of the specified microphone codecs are not available:" + " " + csv(invalid_mc))

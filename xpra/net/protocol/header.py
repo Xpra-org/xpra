@@ -53,8 +53,7 @@ def pack_header(proto_flags: int, level: int, index: int, payload_size: int) -> 
 
 def validate_packet_header(protocol_flags: int, compression: int, packet_index: int,
                            modern: bool = False) -> str:
-    unknown_protocol_flags = protocol_flags & ~KNOWN_PROTOCOL_FLAGS
-    if unknown_protocol_flags:
+    if unknown_protocol_flags := protocol_flags & ~KNOWN_PROTOCOL_FLAGS:
         return f"unknown protocol flags {unknown_protocol_flags:#x}"
 
     encoder_flags = protocol_flags & sum(ENCODER_FLAGS)
@@ -75,8 +74,7 @@ def validate_packet_header(protocol_flags: int, compression: int, packet_index: 
         if level == 0:
             return "compressed packets must specify a non-zero compression level"
         compressor_flags = compression & 0xf0
-        unknown_compressor_flags = compressor_flags & ~KNOWN_COMPRESSOR_FLAGS
-        if unknown_compressor_flags:
+        if unknown_compressor_flags := compressor_flags & ~KNOWN_COMPRESSOR_FLAGS:
             return f"unknown compressor flags {unknown_compressor_flags:#x}"
         compressor_count = sum(bool(compressor_flags & flag) for flag in COMPRESSOR_FLAGS)
         if compressor_count != 1:

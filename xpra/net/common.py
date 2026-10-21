@@ -541,8 +541,7 @@ def open_html_url(html: str = "open", mode: str = "tcp", bind: str = "127.0.0.1"
     if html.lower() not in ("open", "connect"):
         # is a command?
         from xpra.util.io import which
-        open_cmd = which(html)
-        if open_cmd:
+        if open_cmd := which(html):
             log.info(f"opening html5 client using {html!r} at URL {url!r}")
             exec_open(open_cmd, url)
             return

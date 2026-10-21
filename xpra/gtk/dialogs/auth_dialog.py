@@ -35,8 +35,7 @@ class AuthDialog(Gtk.Window):
         self.set_decorated(True)
         # pylint: disable=no-member
         style_window(self, "auth-dialog")
-        icon = get_icon_pixbuf("authentication.png")
-        if icon:
+        if icon := get_icon_pixbuf("authentication.png"):
             self.set_icon(icon)
         add_close_accel(self, self.quit)
         self.connect("delete_event", self.quit)
@@ -85,8 +84,7 @@ class AuthDialog(Gtk.Window):
         btn.connect("clicked", callback)
         if stock_icon:
             # pylint: disable=no-member
-            image = Gtk.Image.new_from_icon_name(stock_icon, Gtk.IconSize.BUTTON)
-            if image:
+            if image := Gtk.Image.new_from_icon_name(stock_icon, Gtk.IconSize.BUTTON):
                 btn.set_image(image)
         return btn
 

@@ -52,16 +52,14 @@ def main() -> int:
                     v = load_icon_from_file(x)
                     print(f"load_icon_from_file({x})={v}")
         else:
-            menu = load_menu()
-            if menu:
+            if menu := load_menu():
                 print()
                 print("application menu:")
                 print_nested_dict(menu, vformat={"IconData": icon_fmt})
             else:
                 print("no application menu data found")
             # try desktop sessions:
-            sessions = load_desktop_sessions()
-            if sessions:
+            if sessions := load_desktop_sessions():
                 print()
                 print("session menu:")
                 print_nested_dict(sessions, vformat={"IconData": icon_fmt})

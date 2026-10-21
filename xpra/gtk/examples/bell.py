@@ -21,8 +21,7 @@ class BellWindow(Gtk.Window):
         self.set_default_size(320, 120)
         self.set_title("Test System Bell")
         self.connect("destroy", Gtk.main_quit)
-        icon = get_icon_pixbuf("bell.png")
-        if icon:
+        if icon := get_icon_pixbuf("bell.png"):
             self.set_icon(icon)
         btn = Gtk.Button(label="default bell")
         btn.connect('clicked', self.bell)

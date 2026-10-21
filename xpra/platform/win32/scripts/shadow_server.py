@@ -41,8 +41,7 @@ def main() -> None:
     args = sys.argv[:1] + [
         "shadow",
     ] + sys.argv[1:]
-    commonappdata = get_commonappdata_dir()
-    if commonappdata:
+    if commonappdata := get_commonappdata_dir():
         ssl_cert = os.path.join(commonappdata, "Xpra", "ssl-cert.pem")
         if os.path.exists(ssl_cert):
             args.append("--ssl-cert=%s" % ssl_cert)

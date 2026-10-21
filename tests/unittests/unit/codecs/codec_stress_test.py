@@ -272,8 +272,7 @@ def enc_state_abuse(mod):
 
     # flush without encode, and flush after clean
     e = _new_encoder(mod, spec, w, h)
-    fl = getattr(e, "flush", None)
-    if fl:
+    if fl := getattr(e, "flush", None):
         try:
             fl(0)
         except Exception:
@@ -488,8 +487,7 @@ def _load_module(name: str):
     mod = loader.get_codec(name)
     if mod is None:
         raise SkipScenario(f"{name} not available")
-    init = getattr(mod, "init_module", None)
-    if init:
+    if init := getattr(mod, "init_module", None):
         init({})
     return mod
 
@@ -620,8 +618,7 @@ class CodecStressTest(unittest.TestCase):
     def test_stress(self):
         scenarios = None if FULL else QUICK
         results = run_battery(codecs=_env_codecs(), scenarios=scenarios)
-        bad = {k: v for k, v in results.items() if v[0] in (Result.CRASH, Result.HANG)}
-        if bad:
+        if bad := {k: v for k, v in results.items() if v[0] in (Result.CRASH, Result.HANG)}:
             report = "\n".join(
                 f"{r.value} in {kind} {name} / {s}:\n{d}"
                 for (kind, name, s), (r, d) in bad.items()

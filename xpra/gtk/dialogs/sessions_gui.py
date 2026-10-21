@@ -144,8 +144,7 @@ class SessionsGUI(Gtk.Window):
             self.set_wmclass("xpra-sessions-gui", "Xpra-Sessions-GUI")
         add_close_accel(self, self.quit)
         self.connect("delete_event", self.quit)
-        icon = get_icon_pixbuf("browse.png")
-        if icon:
+        if icon := get_icon_pixbuf("browse.png"):
             self.set_icon(icon)
 
         hb = Gtk.HeaderBar()
@@ -364,10 +363,8 @@ class SessionsGUI(Gtk.Window):
                 pwidget = scaled_image(pil_image_to_pixbuf(session.icon), 28)
             if not pwidget:
                 # try to use an icon for the platform:
-                platform_icon_name = get_platform_icon_name(session.platform)
-                if platform_icon_name:
-                    pwidget = scaled_image(get_icon_pixbuf("%s.png" % platform_icon_name), 28)
-                    if pwidget:
+                if platform_icon_name := get_platform_icon_name(session.platform):
+                    if pwidget := scaled_image(get_icon_pixbuf("%s.png" % platform_icon_name), 28):
                         pwidget.set_tooltip_text(platform_icon_name)
             if not pwidget:
                 pwidget = l(session.platform)

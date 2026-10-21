@@ -28,8 +28,7 @@ class TestDisplayUtil(ServerTestUtil):
             os.environ["DISPLAY"] = display
             from xpra.x11.bindings.display_source import X11DisplayContext    #@UnresolvedImport
             with X11DisplayContext(display):
-                gdk_display = open_gdk_display(display)
-                if gdk_display:
+                if gdk_display := open_gdk_display(display):
                     # close the connection before killing the Xvfb below,
                     # or GDK will terminate this process with an X11 IO error
                     # the next time any test iterates a GTK main loop.

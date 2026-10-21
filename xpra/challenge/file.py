@@ -21,8 +21,7 @@ class Handler(AuthenticationHandler):
             self.password_file: str = kwargs.get("filename", "")
             return
         if "password-files" in kwargs:
-            files = kwargs.get("password-files", [])
-            if files:
+            if files := kwargs.get("password-files", []):
                 self.password_file = files.pop(0)
                 return
         self.password_file = ""

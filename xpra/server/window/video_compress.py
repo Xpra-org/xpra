@@ -863,8 +863,7 @@ class WindowVideoSource(WindowSource):
         else:
             # find how many pixels are within the region (roughly):
             # find all unique regions that intersect with it:
-            inter = tuple(x for x in (vr.intersection_rect(r) for r in regions) if x is not None)
-            if inter:
+            if inter := tuple(x for x in (vr.intersection_rect(r) for r in regions) if x is not None):
                 # merge all regions into one:
                 in_region = merge_all(inter)
                 pixels_in_region = vr.width*vr.height
@@ -1278,8 +1277,7 @@ class WindowVideoSource(WindowSource):
         w = ww & self.width_mask
         h = wh & self.height_mask
         if vs := self.video_subregion:
-            r = vs.rectangle
-            if r:
+            if r := vs.rectangle:
                 w = r.width & self.width_mask
                 h = r.height & self.width_mask
         if w < self.min_w or w > self.max_w or h < self.min_h or h > self.max_h:
@@ -2191,8 +2189,7 @@ class WindowVideoSource(WindowSource):
             # window may have been resized
             pass
         else:
-            v = scroll_data.get_scroll_values()
-            if v:
+            if v := scroll_data.get_scroll_values():
                 raw_scroll, non_scroll = v
                 if len(raw_scroll) >= max_zones or len(non_scroll) >= max_zones:
                     # avoid fragmentation, which is too costly
@@ -2301,8 +2298,7 @@ class WindowVideoSource(WindowSource):
 
     def do_schedule_auto_refresh(self, encoding: str, region, client_options: dict, options: typedict) -> None:
         # for scroll encoding, data is a LargeStructure wrapper:
-        scroll_data = client_options.get("scroll", ())
-        if scroll_data:
+        if scroll_data := client_options.get("scroll", ()):
             if not self.refresh_regions:
                 return
             # check if any pending refreshes intersect the area containing the scroll data:
@@ -2314,8 +2310,7 @@ class WindowVideoSource(WindowSource):
                 # the region that moved
                 src_rect = rectangle(x, y, w, h)
                 for rect in self.refresh_regions:
-                    inter = src_rect.intersection_rect(rect)
-                    if inter:
+                    if inter := src_rect.intersection_rect(rect):
                         dst_rect = rectangle(inter.x+dx, inter.y+dy, inter.width, inter.height)
                         pixels_added += self.add_refresh_region(dst_rect)
             if pixels_added:
@@ -2580,8 +2575,7 @@ class WindowVideoSource(WindowSource):
         h = ve.get_height()
         encoding = ve.get_encoding()
         v = ve.flush(frame)
-        closed = ve.is_closed()
-        if closed:
+        if closed := ve.is_closed():
             videolog("do_flush_video_encoder encoder %s is closed following the flush", ve)
         try:
             if not v:

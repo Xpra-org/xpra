@@ -114,8 +114,7 @@ class NotifierBase(ABC):
         if self.proxy_service is None and monotonic() - self.proxy_service_time > PROXY_CHECK_DELAY:
             from xpra.notification.common import get_notification_service_name, PROXY_NAME
             self.proxy_service_time = monotonic()
-            name = get_notification_service_name()
-            if name:
+            if name := get_notification_service_name():
                 self.proxy_service = name == PROXY_NAME
         return bool(self.proxy_service)
 

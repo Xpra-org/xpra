@@ -66,8 +66,7 @@ def main(argv: list[str]) -> int:
         assert key_handle_filenames
         for filename in key_handle_filenames:
             p = osexpand(filename)
-            key_handle_str = load_binary_file(p).rstrip(b" \n\r").decode("latin1")
-            if key_handle_str:
+            if load_binary_file(p).rstrip(b" \n\r").decode("latin1"):
                 error(" found an existing key handle in file '%s':" % p,
                       # " %s" % key_handle_str,
                       " skipping U2F registration",

@@ -24,8 +24,7 @@ class TransparentWindow(Gtk.Window):
         self.set_title("Window Transparency")
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_default_size(320, 320)
-        icon = get_icon_pixbuf("windows.png")
-        if icon:
+        if icon := get_icon_pixbuf("windows.png"):
             self.set_icon(icon)
         screen = self.get_screen()
         visual = screen.get_rgba_visual()

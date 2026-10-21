@@ -27,8 +27,7 @@ class AnimatedColorWindow(Gtk.Window):
         self.set_default_size(320, 320)
         self.set_app_paintable(True)
         self.set_events(Gdk.EventMask.KEY_PRESS_MASK | Gdk.EventMask.BUTTON_PRESS_MASK)
-        icon = get_icon_pixbuf("encoding.png")
-        if icon:
+        if icon := get_icon_pixbuf("encoding.png"):
             self.set_icon(icon)
         self.counter = 0
         self.increase = True

@@ -34,18 +34,15 @@ def get_encryption_key(authenticators: tuple = (), keyfile: str = "") -> bytes:
     log(f"get_encryption_key({authenticators}, {keyfile})")
     if keyfile:
         log(f"loading encryption key from keyfile {keyfile!r}")
-        v = filedata_nocrlf(keyfile)
-        if v:
+        if v := filedata_nocrlf(keyfile):
             return v
     KVAR = "XPRA_ENCRYPTION_KEY"
-    v = os.environ.get(KVAR, "")
-    if v:
+    if v := os.environ.get(KVAR, ""):
         log(f"using encryption key from {KVAR!r} environment variable")
         return strtobytes(v)
     if authenticators:
         for authenticator in authenticators:
-            v = authenticator.get_password()
-            if v:
+            if v := authenticator.get_password():
                 log(f"using password from authenticator {authenticator}")
                 return v
     return b""

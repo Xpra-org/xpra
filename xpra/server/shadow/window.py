@@ -24,8 +24,7 @@ class ShadowWindowServer(WindowServer):
     """
 
     def load_existing_windows(self) -> None:
-        mmap_sub = self.get_subsystem("mmap")
-        if mmap_sub:
+        if mmap_sub := self.get_subsystem("mmap"):
             mmap_sub.min_size = 1024 * 1024 * 4 * 2
         for i, model in enumerate(self.server.make_capture_window_models()):
             log(f"load_existing_windows() root window model {i} : {model}")
@@ -87,14 +86,12 @@ class ShadowWindowServer(WindowServer):
         window = self.get_window(wid)
         if not window:
             return
-        geometry = config.inttupleget("geometry")
-        if geometry:
+        if geometry := config.inttupleget("geometry"):
             self._window_mapped_at(proto, wid, window, geometry)
             w, h = geometry[2:4]
             self.refresh_window_area(window, 0, 0, w, h)
 
-        properties = config.dictget("properties")
-        if properties:
+        if properties := config.dictget("properties"):
             self._set_client_properties(proto, wid, window, properties)
 
     def _process_close(self, proto, packet: Packet) -> None:

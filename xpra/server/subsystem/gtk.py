@@ -132,8 +132,7 @@ class GTKServer(StubSubsystem):
         self.watch_keymap_changes()
         if self.get_subsystem("display"):
             Gdk = gi_import("Gdk")
-            screen = Gdk.Screen.get_default()
-            if screen:
+            if screen := Gdk.Screen.get_default():
                 screen.connect("size-changed", self._screen_size_changed)
                 screen.connect("monitors-changed", self._monitors_changed)
 

@@ -266,8 +266,7 @@ class EncodingServer(StubSubsystem):
             for encoding in pil_encs:
                 add_encoding(encoding)
         for codec_name in ("enc_avif", "enc_jph", "enc_jpeg", "enc_nvjpeg"):
-            codec = get_codec(codec_name)
-            if codec:
+            if codec := get_codec(codec_name):
                 add_encodings(*codec.get_encodings())
         # look for video encodings with lossless mode:
         for enc in ve:

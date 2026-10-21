@@ -54,8 +54,7 @@ class Authenticator(SysAuthenticator):
                 pub_keyfiles = glob.glob(os.path.join(ed, "u2f*-pub.hex"))
                 log(f"u2f: keyfiles({ed})={pub_keyfiles}")
                 for f in sorted(pub_keyfiles):
-                    key_hexstring = load_binary_file(f)
-                    if key_hexstring:
+                    if key_hexstring := load_binary_file(f):
                         key_hexstring = key_hexstring.rstrip(b" \n\r")
                         key_strs[f] = key_hexstring
                         log(f"u2f_auth: loaded public key from file {f!r}: {key_hexstring}")

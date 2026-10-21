@@ -276,8 +276,7 @@ class X11KeyboardManager(KeyboardManager):
         if not stop or not IBUS:
             return
         pidfile = ibus_pid_file()
-        pid = load_pid(pidfile)
-        if pid:
+        if pid := load_pid(pidfile):
             kill_pid(pid, "ibus-daemon")
 
     def send_initial_data(self, ss) -> None:

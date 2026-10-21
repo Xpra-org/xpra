@@ -122,8 +122,7 @@ class Authenticator(CodeAuthenticator):
         self.body_format = kwargs.pop("body-format", "json")
         if self.body_format not in CONTENT_TYPES:
             raise ValueError("body-format must be json or form")
-        body_file = kwargs.pop("body-file", "")
-        if body_file:
+        if body_file := kwargs.pop("body-file", ""):
             with open(os.path.join(cwd, body_file), encoding="utf-8") as f:
                 self.body = f.read().strip()
         else:

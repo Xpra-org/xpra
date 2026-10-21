@@ -40,8 +40,7 @@ def find_wayland_display_sockets(uid: int = getuid(), gid: int = getgid()) -> di
     from xpra.platform.posix.paths import get_runtime_dir
     xrd = osexpand(get_runtime_dir(), uid=uid, gid=gid)
     # try the one from the environment first:
-    wd = os.environ.get("WAYLAND_DISPLAY", "")
-    if wd:
+    if wd := os.environ.get("WAYLAND_DISPLAY", ""):
         addwaylandsock(wd, wd)
         addwaylandsock(wd, os.path.join(xrd, wd))
     # now try a file glob:
@@ -379,8 +378,7 @@ def get_x11_display_info(display, sessions_dir="") -> dict[str, Any]:
             except Exception:
                 pass
         state = state or "DEAD"
-        wminfo = exec_wminfo(display)
-        if wminfo:
+        if wminfo := exec_wminfo(display):
             log(f"wminfo({display})={wminfo}")
             display_info.update(wminfo)
             pid = wminfo.get("xpra-server-pid")

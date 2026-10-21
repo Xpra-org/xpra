@@ -176,8 +176,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
                 self.got_contents("TARGETS", "ATOM", 32, xatoms)
             if target_data and synchronous_client and claim:
                 targets = target_data.keys()
-                text_targets = tuple(x for x in targets if x in TEXT_TARGETS)
-                if text_targets:
+                if text_targets := tuple(x for x in targets if x in TEXT_TARGETS):
                     target = text_targets[0]
                     dtype, dformat, data = target_data.get(target)
                     dtype = bytestostr(dtype)
@@ -253,8 +252,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         if not self._enabled:
             nodata()
             return
-        blocklisted = tuple(client for client in BLOCKLISTED_CLIPBOARD_CLIENTS if client in wininfo)
-        if blocklisted:
+        if blocklisted := tuple(client for client in BLOCKLISTED_CLIPBOARD_CLIENTS if client in wininfo):
             if first_time(f"clipboard-blocklisted:{blocklisted}"):
                 log.warn("receiving clipboard requests from blocklisted client:")
                 log.warn(f" {wininfo},")
@@ -668,8 +666,7 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
     def incr_transfer_timeout(self, atom: str) -> None:
         log.warn("Warning: incremental data timeout for %r", atom)
         # this is the timer firing, so it must not be removed again:
-        incr = self.incr_transfers.pop(atom, None)
-        if incr:
+        if incr := self.incr_transfers.pop(atom, None):
             incr.timer = 0
         # the data is never going to arrive, so don't leave the requests waiting for it:
         target = atom.split("-", 1)[1]

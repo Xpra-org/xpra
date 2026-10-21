@@ -25,8 +25,7 @@ class ReadonlyConnection(StubClientConnection):
 
     def parse_client_caps(self, c: typedict) -> None:
         self.client_readonly = c.boolget("readonly", self.client_readonly)
-        window = typedict(c.dictget("window"))
-        if window:
+        if window := typedict(c.dictget("window")):
             self.client_readonly = window.boolget("read-only", self.client_readonly)
 
     def effective_readonly(self) -> bool:

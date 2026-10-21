@@ -167,12 +167,10 @@ class VideoSubregion:
         if ls := self.last_scores:
             # convert rectangles into tuples:
             info["scores"] = {r.get_geometry(): score for r, score in ls.items() if r is not None}
-        rr = tuple(self.refresh_regions)
-        if rr:
+        if rr := tuple(self.refresh_regions):
             for i, r in enumerate(rr):
                 info[f"refresh_region[{i}]"] = (r.x, r.y, r.width, r.height)
-        nvrr = tuple(self.nonvideo_regions)
-        if nvrr:
+        if nvrr := tuple(self.nonvideo_regions):
             for i, r in enumerate(nvrr):
                 info[f"nonvideo_refresh_region[{i}]"] = (r.x, r.y, r.width, r.height)
         return info
@@ -298,8 +296,7 @@ class VideoSubregion:
             incount = 0
             for _, x, y, w, h in lde:
                 r = rectangle(x, y, w, h)
-                inregion = r.intersection_rect(self.rectangle)
-                if inregion:
+                if inregion := r.intersection_rect(self.rectangle):
                     incount += inregion.width * inregion.height
             elapsed = monotonic() - from_time
             if elapsed <= 0:
@@ -379,8 +376,7 @@ class VideoSubregion:
             # count how many pixels are in or out if this region
             incount, outcount = 0, 0
             for r, count in dec.items():
-                inregion = r.intersection_rect(region)
-                if inregion:
+                if inregion := r.intersection_rect(region):
                     incount += inregion.width * inregion.height * int(count)
                 outregions = r.subtract_rect(region)
                 for x in outregions:

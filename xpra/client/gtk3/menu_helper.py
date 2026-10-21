@@ -198,17 +198,14 @@ def ensure_item_selected(submenu, item, recurse=True):
     def get_active_item(items) -> int:
         for x in items:
             if isinstance(x, Gtk.MenuItem):
-                submenu = x.get_submenu()
-                if submenu:
-                    a = get_active_item(submenu.get_children())
-                    if a:
+                if submenu := x.get_submenu():
+                    if a := get_active_item(submenu.get_children()):
                         return a
             if isinstance(x, Gtk.CheckMenuItem) and x.get_active():
                 return x
         return 0
 
-    active = get_active_item(submenu.get_children())
-    if active:
+    if active := get_active_item(submenu.get_children()):
         return active
     # if not then keep this one active:
     item.set_active(True)
@@ -394,8 +391,7 @@ def gen_non_none_menu_items(*gen: Callable[[], Gtk.ImageMenuItem | Gtk.MenuItem 
     log("get_menu_items(%s)", gen)
     items: list[Gtk.ImageMenuItem | Gtk.MenuItem] = []
     for gen in gen:
-        item = gen()
-        if item:
+        if item := gen():
             items.append(item)
     log("get_menu_items()=%s", items)
     return items

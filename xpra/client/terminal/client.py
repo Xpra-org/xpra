@@ -813,8 +813,7 @@ class XpraTerminalClient(GObjectClientAdapter, UIXpraClient):
         elif event.event in ("press", "release"):
             self.send_click(wid, window, event.button, event.event == "press", pointer)
         else:
-            pointer_sub = self.get_subsystem("pointer")
-            if pointer_sub:
+            if pointer_sub := self.get_subsystem("pointer"):
                 pointer_sub.send_mouse_position(-1, wid, pointer, modifiers=self._modifiers,
                                                 buttons=tuple(self._buttons))
 

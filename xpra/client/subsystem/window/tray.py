@@ -149,8 +149,7 @@ class WindowTray(StubClientSubsystem):
         # try to identify the application tray that generated this notification,
         # so we can show it as coming from the correct systray icon
         # on platforms that support it (ie: win32)
-        trays = tuple(w for w in self._id_to_window.values() if w.is_tray())
-        if trays:
+        if trays := tuple(w for w in self._id_to_window.values() if w.is_tray()):
             try:
                 pid = int(hints.get("pid") or 0)
             except (TypeError, ValueError):

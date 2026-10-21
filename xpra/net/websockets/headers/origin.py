@@ -32,7 +32,6 @@ def get_headers(host: str, port: int) -> dict[bytes, bytes]:
     the default headers are included here so that `origin` can be used on its own.
     """
     headers = get_default_headers(host, port)
-    origin = get_origin(host, port)
-    if origin:
+    if origin := get_origin(host, port):
         headers[b"Origin"] = strtobytes(origin)
     return headers

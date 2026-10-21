@@ -541,8 +541,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         if not window:
             log.warn("Warning: window %#x not found!", wid)
             return
-        record = packet.get_dict(2)
-        if record:
+        if record := packet.get_dict(2):
             window.record("key", key=record)
 
     def _process_clipboard_record(self, packet: Packet) -> None:

@@ -137,8 +137,7 @@ class CursorClient(StubClientSubsystem):
         log("_decode_cursor(%s)", Ellipsizer(new_cursor))
         # trim packet-type:
         encoding = str(new_cursor[0])
-        setdefault = encoding.startswith("default:")
-        if setdefault:
+        if setdefault := encoding.startswith("default:"):
             encoding = encoding.split(":")[1]
         serial = int(new_cursor[5])
         new_cursor[8] = self.decompress_cursor_data(encoding, new_cursor[8], serial)

@@ -223,12 +223,10 @@ def analyse_func(node, relpath, cyth) -> FuncRow:
         if arg.arg == "packet":
             packet_unann = True
             continue
-        t = builtin_from_default(defaults.get(arg.arg))
-        if t:
+        if t := builtin_from_default(defaults.get(arg.arg)):
             concrete.append(f"{arg.arg}:{t}")
             continue
-        h = name_hint(arg.arg)
-        if h:
+        if h := name_hint(arg.arg):
             heuristic.append(f"{arg.arg}~{h}")
 
     ret_label, ret_w = return_looseness(node.returns)

@@ -63,8 +63,7 @@ class XpraQuicConnection(Connection):
             "closed": self.closed,
             "aioquic": vtrim(aioquic_version_info),
         }
-        quic = getattr(self.connection, "_quic", None)
-        if quic:
+        if quic := getattr(self.connection, "_quic", None):
             config = quic.configuration
             qinfo |= {
                 "alpn-protocols": config.alpn_protocols,

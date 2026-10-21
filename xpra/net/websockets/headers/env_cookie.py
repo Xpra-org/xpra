@@ -10,7 +10,6 @@ from xpra.util.str_fn import strtobytes
 
 
 def get_headers(host: str, port: int) -> dict[bytes, bytes]:    # pylint: disable=unused-argument
-    cookie = os.environ.get("XPRA_WS_COOKIE", "")
-    if cookie:
+    if cookie := os.environ.get("XPRA_WS_COOKIE", ""):
         return {b"Cookie": strtobytes(cookie)}
     return {}

@@ -173,8 +173,7 @@ class DarwinWindowStackingWatcher:
             if window.is_tray():
                 # a system tray icon is an `NSStatusItem`, not a window of its own
                 continue
-            nswindow = get_nswindow(window)
-            if nswindow:
+            if nswindow := get_nswindow(window):
                 number_to_wid[nswindow.windowNumber()] = wid
         # `windowNumbersWithOptions:` returns the topmost window first,
         # the xpra server expects the reverse:

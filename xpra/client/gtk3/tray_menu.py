@@ -687,8 +687,7 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def make_keysequencemenuitem(self, combo: str, keynames: Sequence[str], title="", icon_name="") -> Gtk.ImageMenuItem:
         def send_keys() -> None:
-            keyboard = self.get_subsystem("keyboard")
-            if keyboard:
+            if keyboard := self.get_subsystem("keyboard"):
                 keyboard.send_key_sequence(keynames)
 
         item = self.menuitem(title or combo, icon_name, cb=send_keys)
@@ -1158,8 +1157,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 continue
             sink_menu = Gtk.Menu()
             sink_menu.append(sinkitem(sink_menu, _("Default"), sink_plugin))
-            devices = get_sink_devices(sink_plugin)
-            if devices:
+            if devices := get_sink_devices(sink_plugin):
                 sink_menu.append(Gtk.SeparatorMenuItem())
                 for device, device_label in devices.items():
                     audio_sink = f"{sink_plugin}:device={device}"
@@ -2091,8 +2089,7 @@ class GTKTrayMenu(GTKMenuHelper):
             if not isinstance(category_props, dict):
                 execlog("category properties is not a dict: %s", type(category_props))
                 continue
-            category_menu_item = self.start_category_menuitem(category, category_props)
-            if category_menu_item:
+            if category_menu_item := self.start_category_menuitem(category, category_props):
                 menu.append(category_menu_item)
         menu.show_all()
         return menu
@@ -2127,8 +2124,7 @@ class GTKTrayMenu(GTKMenuHelper):
             encodings = tuple(self.get_subsystem("encoding").get_core_encodings())
             if MENU_SVG_ICONS:
                 encodings += ("svg", )
-            image = get_appimage(title, icondata, self.menu_icon_size, encodings)
-            if image:
+            if image := get_appimage(title, icondata, self.menu_icon_size, encodings):
                 ignorewarnings(smi.set_image, image)
         return smi
 

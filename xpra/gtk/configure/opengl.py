@@ -82,8 +82,7 @@ def load_image(name: str) -> tuple[int, int, bytes]:
             h = int(img.height)
             img.close()
         except ImportError:
-            img = get_image(filename)
-            if img:
+            if img := get_image(filename):
                 w = int(img.get_width())
                 h = int(img.get_height())
     return w, h, image_data
@@ -92,8 +91,7 @@ def load_image(name: str) -> tuple[int, int, bytes]:
 def add_test_images() -> None:
     encodings = []
     for decoder_name in ("pillow", "jpeg", "webp", "avif"):
-        decoder = load_codec(f"dec_{decoder_name}")
-        if decoder:
+        if decoder := load_codec(f"dec_{decoder_name}"):
             encodings += decoder.get_encodings()
 
     for name, description in {

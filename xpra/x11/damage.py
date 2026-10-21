@@ -196,8 +196,7 @@ class WindowDamageHandler:
         try:
             with xsync:
                 if shm := self.get_xshm_handle():
-                    shm_image = shm.get_image(handle.get_drawable(), x, y, width, height)
-                    if shm_image:
+                    if shm_image := shm.get_image(handle.get_drawable(), x, y, width, height):
                         return shm_image
         except XError as e:
             log("get_image%s", (x, y, width, height), exc_info=True)

@@ -838,8 +838,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
 def attach_client(options, defaults) -> None:
     from xpra.platform.paths import get_xpra_command
     cmd = get_xpra_command() + ["attach"]
-    display_name = os.environ.get("DISPLAY", "")
-    if display_name:
+    if display_name := os.environ.get("DISPLAY", ""):
         cmd += [display_name]
     # options has been "fixed up", make sure this has too:
     fixup_options(defaults)

@@ -42,8 +42,7 @@ class AutostartWindow:
         self.window.set_title("Xpra Autostart")
         self.window.set_position(Gtk.WindowPosition.CENTER)
 
-        icon = get_icon_pixbuf("xpra.png")
-        if icon:
+        if icon := get_icon_pixbuf("xpra.png"):
             self.window.set_icon(icon)
 
         vbox = Gtk.VBox(homogeneous=False, spacing=16)
@@ -78,8 +77,7 @@ class AutostartWindow:
         close_btn = Gtk.Button(label="Close")
         style_button(close_btn)
         close_btn.connect("clicked", self.close)
-        close_icon = get_icon_pixbuf("quit.png")
-        if close_icon:
+        if close_icon := get_icon_pixbuf("quit.png"):
             close_btn.set_image(scaled_image(close_icon, 24))
         hbox.pack_end(close_btn, False, False, 0)
         vbox.pack_start(hbox, False, False, 0)

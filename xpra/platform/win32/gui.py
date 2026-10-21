@@ -201,8 +201,7 @@ def get_desktop_names() -> Sequence[str]:
 
 def get_desktop_name() -> str:
     try:
-        desktop = OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED)
-        if desktop:
+        if desktop := OpenInputDesktop(0, True, win32con.MAXIMUM_ALLOWED):
             try:
                 buf = create_string_buffer(128)
                 r = GetUserObjectInformationA(desktop, win32con.UOI_NAME, buf, len(buf), None)
@@ -455,8 +454,7 @@ def add_window_hooks(window) -> None:
 
 def remove_window_hooks(window) -> None:
     try:
-        win32hooks = getattr(window, "win32hooks", None)
-        if win32hooks:
+        if win32hooks := getattr(window, "win32hooks", None):
             log("remove_window_hooks(%s) found %s", window, win32hooks)
             win32hooks.cleanup()
             window.win32hooks = None
@@ -982,8 +980,7 @@ def setup_gl_drawing_area(hwnd: int) -> None:
 def cleanup_gl_drawing_area(hwnd: int) -> None:
     if not hwnd:
         return
-    proc = _gl_subclass_procs.pop(hwnd, None)
-    if proc:
+    if proc := _gl_subclass_procs.pop(hwnd, None):
         RemoveWindowSubclass(HWND(hwnd), proc, _GL_SUBCLASS_UID)
         log("cleanup_gl_drawing_area() hwnd=%#x", hwnd)
 

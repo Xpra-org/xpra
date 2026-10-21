@@ -68,8 +68,7 @@ class RecordClientTest(unittest.TestCase):
         """
         for handlers in (self.client._authenticated_ui_packet_handlers,
                          self.client._authenticated_packet_handlers):
-            handler = handlers.get(packet_type)
-            if handler:
+            if handler := handlers.get(packet_type):
                 return handler
         raise AssertionError(f"no handler registered for {packet_type!r}")
 

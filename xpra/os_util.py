@@ -225,8 +225,7 @@ def get_machine_id() -> str:
     if POSIX:
         from xpra.util.io import load_binary_file
         for filename in ("/etc/machine-id", "/var/lib/dbus/machine-id"):
-            b = load_binary_file(filename)
-            if b:
+            if b := load_binary_file(filename):
                 v = b.decode("latin1")
                 break
     elif WIN32:
@@ -240,8 +239,7 @@ def get_user_uuid() -> str:
         Try to generate an uuid string which is unique to this user.
         (relies on get_machine_id to uniquely identify a machine)
     """
-    user_uuid = os.environ.get("XPRA_USER_UUID", "")
-    if user_uuid:
+    if user_uuid := os.environ.get("XPRA_USER_UUID", ""):
         return user_uuid
     import hashlib
     u = hashlib.sha256()

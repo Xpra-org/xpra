@@ -66,8 +66,7 @@ def load_pipewire(_display: str = "") -> ShadowServerFactory | None:
 
 
 def load_wayland(display: str = "") -> ShadowServerFactory | None:
-    c = load_remotedesktop() or load_screencast()
-    if c:
+    if c := load_remotedesktop() or load_screencast():
         os.environ["GDK_BACKEND"] = "wayland"
         if display:
             os.environ["WAYLAND_DISPLAY"] = display

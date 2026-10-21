@@ -201,8 +201,7 @@ class AudioSink(AudioPipeline):
         return "AudioSink('%s' - %s)" % (self.pipeline_str, self.state)
 
     def cleanup(self) -> None:
-        dm = self.device_monitor
-        if dm:
+        if dm := self.device_monitor:
             self.device_monitor = None
             dm.stop()
         super().cleanup()

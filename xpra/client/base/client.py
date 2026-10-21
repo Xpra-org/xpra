@@ -102,8 +102,7 @@ class XpraClientBase(PacketDispatcher):
     def add_control_command(self, name: str, control) -> None:
         # delegate to the `control` subsystem,
         # so other subsystems can register a command without depending on the MRO:
-        control_subsystem = self.subsystems.get("control")
-        if control_subsystem:
+        if control_subsystem := self.subsystems.get("control"):
             control_subsystem.add_control_command(name, control)
 
     def _call_subsystem(self, cls, method: str, *args):
@@ -357,8 +356,7 @@ class XpraClientBase(PacketDispatcher):
         return self._add_common_hello(capabilities)
 
     def _add_common_hello(self, capabilities: dict[str, Any]) -> dict[str, Any]:
-        session = self.get_session_caps()
-        if session:
+        if session := self.get_session_caps():
             capabilities["session"] = session
         capabilities.update(self.hello_extra)
         return capabilities
@@ -371,13 +369,11 @@ class XpraClientBase(PacketDispatcher):
         """
         session: dict[str, str] = {}
         desc = self.display_desc
-        name = getattr(self, "session_name", "") or desc.get("session-name", "")
-        if name:
+        if name := getattr(self, "session_name", "") or desc.get("session-name", ""):
             session["name"] = name
         if self.display or desc.get("display"):
             session["display"] = self.display or desc.get("display", "")
-        uuid = desc.get("uuid", "")
-        if uuid:
+        if uuid := desc.get("uuid", ""):
             session["uuid"] = str(uuid)
         log("get_session_caps()=%s from %s", session, (desc, self.display))
         return session

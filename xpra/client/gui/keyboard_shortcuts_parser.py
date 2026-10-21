@@ -188,8 +188,7 @@ def parse_shortcuts(strs: Sequence[str],
                 if mod == "#":
                     # this is the placeholder for the list of shortcut modifiers:
                     for x in shortcut_modifiers:
-                        imod = modifier_names.get(x)
-                        if imod:
+                        if imod := modifier_names.get(x):
                             modifiers.append(imod)
                     continue
                 # find the real modifier for this name:

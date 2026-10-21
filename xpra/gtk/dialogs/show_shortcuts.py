@@ -57,8 +57,7 @@ class ShortcutInfo(Gtk.Window):
         vbox = Gtk.VBox()
         vbox.set_spacing(4)
         style_body(vbox)
-        icon = get_icon_pixbuf("keyboard.png")
-        if icon:
+        if icon := get_icon_pixbuf("keyboard.png"):
             self.set_icon(icon)
 
         if modifier_names is None:

@@ -52,13 +52,11 @@ def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
                 glprops = typedict(props)
                 if glprops.strget("success").lower() in TRUE_OPTIONS:
                     log.info(f"OpenGL is supported on display {display_name!r}")
-                    renderer = glprops.strget("renderer").split(";")[0]
-                    if renderer:
+                    if renderer := glprops.strget("renderer").split(";")[0]:
                         log.info(f" using {renderer!r} renderer")
                 else:
                     log.info("OpenGL is not supported on this display")
-                    probe_err = glprops.strget("error")
-                    if probe_err:
+                    if probe_err := glprops.strget("error"):
                         log.info(f" {probe_err}")
             else:
                 log.info("No OpenGL information available")
@@ -145,8 +143,7 @@ class OpenGLInfo(StubSubsystem):
         cmd = cmd_helper.get_full_child_command(probe_cmd)
         env = self.server.get_child_env()
         if cmd == probe_cmd:
-            err = probe_opengl_module()
-            if err:
+            if err := probe_opengl_module():
                 return err
         else:
             # the exec wrapper may run the probe somewhere else, ie: `xpra run` in another container,

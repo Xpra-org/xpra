@@ -110,8 +110,7 @@ def pick_vnc_display(vnc_arg: str) -> dict[str, Any]:
             # no X11 socket, assume no VNC server
             continue
         port = 5900 + i
-        sock = socket_connect("localhost", port, timeout=0.1)
-        if sock:
+        if socket_connect("localhost", port, timeout=0.1):
             return {
                 "type": "vnc",
                 "local": True,
@@ -255,8 +254,7 @@ def connect_or_fail(display_desc):
 
 def get_sockpath(display_desc: dict[str, Any], timeout=CONNECT_TIMEOUT) -> str:
     # if the path was specified, use that:
-    sockpath = display_desc.get("socket_path")
-    if sockpath:
+    if sockpath := display_desc.get("socket_path"):
         return sockpath
     # find the socket using the display:
     # if uid, gid or username are missing or not found on the local system,

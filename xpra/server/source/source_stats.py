@@ -150,19 +150,16 @@ class GlobalPerformanceStatistics:
             avg, recent = calculate_time_weighted_average(values)
             return max(0.001, avg), max(0.001, recent)
 
-        client_latency = tuple(self.client_latency)
-        if client_latency:
+        if client_latency := tuple(self.client_latency):
             data = tuple((when, latency) for _, when, _, latency in client_latency)
             self.min_client_latency = min(x for _, x in data)
             self.avg_client_latency, self.recent_client_latency = latency_averages(data)
         # client ping latency: from ping packets
-        client_ping_latency = tuple(self.client_ping_latency)
-        if client_ping_latency:
+        if client_ping_latency := tuple(self.client_ping_latency):
             self.min_client_ping_latency = min(x for _, x in client_ping_latency)
             self.avg_client_ping_latency, self.recent_client_ping_latency = latency_averages(client_ping_latency)
         # server ping latency: from ping packets
-        server_ping_latency = tuple(self.server_ping_latency)
-        if server_ping_latency:
+        if server_ping_latency := tuple(self.server_ping_latency):
             self.min_server_ping_latency = min(x for _, x in server_ping_latency)
             self.avg_server_ping_latency, self.recent_server_ping_latency = latency_averages(server_ping_latency)
         # set to 0 if we have less than 2 events in the last 60 seconds:
@@ -190,8 +187,7 @@ class GlobalPerformanceStatistics:
             cps.append((etime, sum(matches)))
         # log("cps(%s)=%s (now=%s)", cst, cps, now)
         self.congestion_value = time_weighted_average(cps)
-        ftl = tuple(self.frame_total_latency)
-        if ftl:
+        if ftl := tuple(self.frame_total_latency):
             edata = tuple((event_time, pixels, latency) for _, event_time, pixels, latency in ftl)
             # (wid, event_time, no_of_pixels, latency)
             self.avg_frame_total_latency = safeint(calculate_size_weighted_average(edata)[1])

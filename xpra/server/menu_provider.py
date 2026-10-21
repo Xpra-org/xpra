@@ -184,8 +184,7 @@ class MenuProvider:
     def start_menu_cache(self) -> None:
         if self.stopped or not POSIX or OSX:
             return
-        proc = self.menu_cache_process
-        if proc:
+        if proc := self.menu_cache_process:
             self.menu_cache_pending = True
             return
         from xpra.platform.paths import get_xpra_command

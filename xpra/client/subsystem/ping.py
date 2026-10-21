@@ -154,8 +154,7 @@ class PingClient(StubClientSubsystem):
         now_ms = int(1000.0 * monotonic())
         self.send("ping", now_ms)
         wait = 1000 * MIN_PING_TIMEOUT
-        aspl = tuple(self.server_latency)
-        if aspl:
+        if aspl := tuple(self.server_latency):
             spl: Sequence[float] = tuple(x[1] for x in aspl)
             avg = sum(spl) / len(spl)
             wait = max(1000 * MIN_PING_TIMEOUT, min(1000 * MAX_PING_TIMEOUT, round(1000 + avg * 2000)))

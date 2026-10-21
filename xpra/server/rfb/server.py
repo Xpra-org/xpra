@@ -192,8 +192,7 @@ class RFBServer(StubSubsystem):
             source.get_cursor_data_cb = cursor.get_cursor_data
         source.send_cursor()
         if features.keyboard:
-            keyboard = self.get_subsystem("keyboard")
-            if keyboard:
+            if keyboard := self.get_subsystem("keyboard"):
                 source.keyboard_config = keyboard.get_keyboard_config()
                 keyboard.set_keymap(source)
         # ugly weak dependency,

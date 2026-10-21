@@ -226,8 +226,7 @@ def force_focus() -> None:
 def dialog_pass(title: str = "Password Input", prompt: str = "enter password", icon: str = "") -> str:
     log("dialog_pass%s PINENTRY=%s", (title, prompt, icon), PINENTRY)
     if PINENTRY:
-        pinentry_cmd = get_pinentry_command()
-        if pinentry_cmd:
+        if pinentry_cmd := get_pinentry_command():
             return run_pinentry_getpin(pinentry_cmd, title, prompt)
 
     from xpra.gtk.dialogs.util import dialog_run, do_run_dialog
@@ -256,8 +255,7 @@ def confirm(info=(), title: str = "Confirm Key", prompt: str = "Are you sure you
     if SKIP_UI:
         return False
     if PINENTRY:
-        pinentry_cmd = get_pinentry_command()
-        if pinentry_cmd:
+        if pinentry_cmd := get_pinentry_command():
             messages = list(info) + ["", prompt]
             return run_pinentry_confirm(pinentry_cmd, title, "%0A".join(messages)) == "OK"
     if use_gui_prompt():

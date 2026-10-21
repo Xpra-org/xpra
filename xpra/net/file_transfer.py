@@ -510,8 +510,7 @@ class FileTransferHandler(FileTransferAttributes):
             # mark it as cancelled:
             chunk_state.cancelled = True
             self.transfer_progress_error(False, chunk_state, message)
-            timer = chunk_state.timer
-            if timer:
+            if timer := chunk_state.timer:
                 chunk_state.timer = 0
                 GLib.source_remove(timer)
             osclose(chunk_state.fd)
@@ -1306,8 +1305,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog("cancel_sending(%s) chunk state found: %s", chunk_id, bool(chunk_state))
         if not chunk_state:
             return
-        timer = chunk_state.timer
-        if timer:
+        if timer := chunk_state.timer:
             chunk_state.timer = 0
             GLib.source_remove(timer)
 

@@ -75,8 +75,7 @@ class LibcameraCamera(CameraDevice):
             log(" could not override pixel format: %s", e)
 
         from xpra.util.parsing import parse_resolution
-        parsed = parse_resolution(os.environ.get("XPRA_LIBCAMERA_SIZE", "320x240"))
-        if parsed:
+        if parsed := parse_resolution(os.environ.get("XPRA_LIBCAMERA_SIZE", "320x240")):
             w, h = parsed[:2]
             try:
                 stream_config.size = libcamera.Size(w, h)

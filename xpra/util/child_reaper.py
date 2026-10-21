@@ -159,8 +159,7 @@ class ChildReaper:
         self._proc_lock = Lock()
         self._pending = (0, 0.0)
         self._retry = 0
-        USE_PROCESS_POLLING = not POSIX or envbool("XPRA_USE_PROCESS_POLLING")
-        if USE_PROCESS_POLLING:
+        if not POSIX or envbool("XPRA_USE_PROCESS_POLLING"):
             POLL_DELAY = envint("XPRA_POLL_DELAY", 2)
             log("using process polling every %s seconds", POLL_DELAY)
             GLib.timeout_add(POLL_DELAY * 1000, self.check)

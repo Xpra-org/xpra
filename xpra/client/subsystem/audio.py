@@ -214,8 +214,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
                 if not properties:
                     return noaudio("No Audio",
                                    "Audio subsystem query failed, is GStreamer installed?")
-                gstv = properties.strtupleget("gst.version")
-                if gstv:
+                if gstv := properties.strtupleget("gst.version"):
                     log.info("GStreamer version %s", ".".join(gstv[:3]))
                 else:
                     log.info("GStreamer loaded")

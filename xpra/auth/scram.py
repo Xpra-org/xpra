@@ -49,8 +49,7 @@ def parse_stored_credential(value: str) -> StoredCredential | None:
 def parse_credential_records(value: str) -> tuple[StoredCredential, ...]:
     records: list[StoredCredential] = []
     for part in csv(value):
-        record = parse_stored_credential(part)
-        if record:
+        if record := parse_stored_credential(part):
             records.append(record)
     return tuple(records)
 

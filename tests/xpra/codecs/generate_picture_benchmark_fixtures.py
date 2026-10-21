@@ -223,8 +223,7 @@ def check_manifest(output_dir: Path) -> None:
     with manifest_path.open(encoding="utf-8") as manifest_file:
         manifest = json.load(manifest_file)
     filenames = {entry["file"] for entry in manifest["scenarios"]}
-    missing = filenames.difference(GENERATORS)
-    if missing:
+    if missing := filenames.difference(GENERATORS):
         raise ValueError(f"manifest refers to unknown generated fixtures: {sorted(missing)}")
 
 

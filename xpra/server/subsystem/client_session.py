@@ -85,8 +85,7 @@ class ClientSessionServer(StubSubsystem):
             if self.server._closing:
                 closing()
                 return
-            err = self.server.parse_hello(ss, caps)
-            if err:
+            if err := self.server.parse_hello(ss, caps):
                 reject(*err.split(":"))
                 return
             self.server.send_hello(ss, auth_caps)
@@ -164,8 +163,7 @@ class ClientSessionServer(StubSubsystem):
                 log.warn(f"Warning: rejecting client with an invalid {attr!r} value")
                 self.network.send_disconnect(proto, f"invalid {attr!r} value")
                 return False
-        server_uuid = caps.strget("server_uuid")
-        if server_uuid:
+        if server_uuid := caps.strget("server_uuid"):
             if server_uuid == self.server.subsystems["id"].uuid:
                 self.network.send_disconnect(proto, "cannot connect a client running on the same display"
                                              " that the server it connects to is managing - this would create a loop!")

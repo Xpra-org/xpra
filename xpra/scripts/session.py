@@ -130,8 +130,7 @@ def clean_session_dir(session_dir: str) -> bool:
     from xpra.log import Logger
     log = Logger("server")
 
-    pidmap = clean_pidfiles(session_dir)
-    if pidmap:
+    if pidmap := clean_pidfiles(session_dir):
         log.error(f"Error: cannot remove the session directory {session_dir!r},")
         log.error(f" {len(pidmap)} commands are still running:")
         for fname, (pid, command) in pidmap.items():
@@ -161,8 +160,7 @@ def clean_session_dir(session_dir: str) -> bool:
         "tmp",
     ]
     ALL_KNOWN = KNOWN_SERVER_FILES + KNOWN_SERVER_DIRS
-    unknown_files = [x for x in session_files if x not in ALL_KNOWN]
-    if unknown_files:
+    if unknown_files := [x for x in session_files if x not in ALL_KNOWN]:
         from xpra.util.str_fn import csv
         log.error("Error: found some unexpected session files:")
         log.error(" " + csv(unknown_files))
@@ -265,8 +263,7 @@ def clean_session_path(path: str) -> None:
         log.error(f"Error removing session path {path}")
         log.estr(e)
         if os.path.isdir(path):
-            files = os.listdir(path)
-            if files:
+            if files := os.listdir(path):
                 log.error(" this directory still contains some files:")
                 for file in files:
                     finfo = repr(file)

@@ -228,6 +228,5 @@ class StubSubsystem(SubsystemPacketHandlers, SignalEmitter):
 
     def add_control_command(self, name: str, control) -> None:
         """ register a control command on the `control` subsystem """
-        control_subsystem = self.get_subsystem("control")
-        if control_subsystem:
+        if control_subsystem := self.get_subsystem("control"):
             control_subsystem.add_control_command(name, control)

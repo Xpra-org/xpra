@@ -260,8 +260,7 @@ class RFBProtocol:
         start = monotonic()
         written_bytes = 0
         while buf and not self._closed:
-            written = con.write(buf)
-            if written:
+            if written := con.write(buf):
                 written_bytes += written
                 buf = buf[written:]
                 self._write_current_bytes = len(buf)

@@ -111,8 +111,7 @@ def do_main(opts: XpraConfig) -> ExitValue:
         if not get_listener_class():
             command_error("no mDNS support in this build")
             return 1
-        mdns = opts.mdns
-        if mdns:
+        if opts.mdns:
             gui = mdns_sessions(opts)
         else:
             gui = SessionsGUI(opts)

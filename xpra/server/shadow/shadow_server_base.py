@@ -478,8 +478,7 @@ class ShadowServerBase(ServerBase):
     ############################################################################
 
     def sanity_checks(self, _proto, c) -> bool:
-        server_uuid = c.strget("server_uuid")
-        if server_uuid:
+        if server_uuid := c.strget("server_uuid"):
             if server_uuid == self.subsystems["id"].uuid:
                 log.warn("Warning: shadowing your own display can be quite confusing")
                 clipboard = self.get_subsystem("clipboard")
@@ -502,13 +501,11 @@ class ShadowServerBase(ServerBase):
             # parse the display options as a dictionary:
             from xpra.util.parsing import parse_simple_dict
             opt_dict = parse_simple_dict(self.display_options)
-            windows = opt_dict.get("windows")
-            if windows:
+            if windows := opt_dict.get("windows"):
                 self.window_matches = windows.split("/")
                 return self.makeDynamicWindowModels()
             match_str = opt_dict.get("plug")
-            geometries_str = opt_dict.get("geometry", "")
-            if geometries_str:
+            if geometries_str := opt_dict.get("geometry", ""):
                 geometries = parse_geometries(geometries_str)
         else:
             try:

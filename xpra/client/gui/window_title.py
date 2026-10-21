@@ -73,8 +73,7 @@ def do_get_window_title(client, wid: int, metadata: dict) -> str:
             proto = getattr(client, "_protocol", None)
             target = None
             if proto:
-                conn = getattr(proto, "_conn", None)
-                if conn:
+                if conn := getattr(proto, "_conn", None):
                     hostname = conn.info.get("host")
                     target = str(conn.target)
                     if hostname:

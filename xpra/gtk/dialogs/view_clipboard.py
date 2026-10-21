@@ -167,8 +167,7 @@ class ClipboardInstance:
 
     def owner_changed(self, _cb, event) -> None:
         owner = self.clipboard.get_owner()
-        weownit = (owner is not None)
-        if weownit:
+        if owner is not None:
             owner_info = "(us)"
         else:
             owner_info = str(event.owner or 0)
@@ -222,8 +221,7 @@ class ClipboardStateInfoWindow:
 
         self.window.add(vbox)
         self.window.show_all()
-        icon = get_icon_pixbuf("clipboard.png")
-        if icon:
+        if icon := get_icon_pixbuf("clipboard.png"):
             self.window.set_icon(icon)
         try:
             self.add_event("ALL", "window=%s, xid=%#x" % (self.window, self.window.get_window().get_xid()))

@@ -42,11 +42,9 @@ def ref_exists(ref: str) -> bool:
 
 
 def parse_version(line: str) -> str:
-    m = VERSION_RE.match(line)
-    if m:
+    if m := VERSION_RE.match(line):
         return m.group(1)
-    m = VERSION_INFO_RE.match(line)
-    if m:
+    if m := VERSION_INFO_RE.match(line):
         return ".".join(x.strip() for x in m.group(1).split(",") if x.strip())
     return ""
 
@@ -54,8 +52,7 @@ def parse_version(line: str) -> str:
 def get_version(commit: str) -> str:
     for path in VERSION_FILES:
         for line in git("show", f"{commit}:{path}", check=False).splitlines():
-            version = parse_version(line)
-            if version:
+            if version := parse_version(line):
                 return version
     return ""
 

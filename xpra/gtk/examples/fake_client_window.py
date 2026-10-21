@@ -159,8 +159,7 @@ def patch_window_base_classes(args) -> None:
         from xpra.client.gtk3.window.base import GTKClientWindowBase
         bases: list[type] = [GTKClientWindowBase]
         for name in args.mixins.split(","):
-            name = name.strip().lower()
-            if name:
+            if name := name.strip().lower():
                 add_mixin(bases, name)
         log.info("fake client window bases from mixins=%r: %s",
                  args.mixins, [c.__name__ for c in bases])

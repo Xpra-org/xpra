@@ -1574,8 +1574,7 @@ class GLWindowBackingBase(WindowBackingBase):
             return True
         enc_width, enc_height = options.intpair("scaled_size", (width, height))
         input_colorspace = options.strget("csc", "YUV420P")
-        vd = self._video_decoder
-        if vd:
+        if vd := self._video_decoder:
             reason = self.video_decoder_restart_reason(vd, coding, enc_width, enc_height, input_colorspace, options)
             if reason:
                 log("do_paint_nvdec_video: %s", reason)

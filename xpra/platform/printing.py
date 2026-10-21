@@ -65,8 +65,7 @@ def get_mimetypes() -> list[str]:
         if RAW_MODE:
             MIMETYPES.append("raw")
         # make it easier to test different mimetypes:
-        PREFERRED_MIMETYPE = os.environ.get("XPRA_PRINTING_PREFERRED_MIMETYPE")
-        if PREFERRED_MIMETYPE:
+        if PREFERRED_MIMETYPE := os.environ.get("XPRA_PRINTING_PREFERRED_MIMETYPE"):
             if PREFERRED_MIMETYPE in MIMETYPES:
                 MIMETYPES.remove(PREFERRED_MIMETYPE)
                 MIMETYPES.insert(0, PREFERRED_MIMETYPE)
@@ -132,8 +131,7 @@ def main(argv: list[str]) -> int:
             print("Printers:")
             print(f"* {k}")
             dump_dict(v)
-            attr = get_printer_attributes(k)
-            if attr:
+            if attr := get_printer_attributes(k):
                 print(" attributes:")
                 for a in attr:
                     print(f"        {a}")

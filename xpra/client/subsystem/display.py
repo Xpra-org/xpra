@@ -188,8 +188,7 @@ class DisplayClient(StubClientSubsystem):
             "refresh-rate.raw": self.get_raw_vrefresh(),
         }
         if FULL_INFO > 0:
-            wm_name = get_wm_name()
-            if wm_name:
+            if wm_name := get_wm_name():
                 caps["wm_name"] = wm_name
 
             # opengl caps are still reported here (in the display capabilities),
@@ -295,8 +294,7 @@ class DisplayClient(StubClientSubsystem):
         caps: dict[str, int | dict] = {
             "vrefresh": self.get_vrefresh(),
         }
-        aa = get_antialias_info()
-        if aa:
+        if aa := get_antialias_info():
             caps["antialias"] = aa
         return caps
 
@@ -777,8 +775,7 @@ class DisplayClient(StubClientSubsystem):
         else:
             scalinglog.info("setting scaling to %i%% x %i%%:", round(100 * self.xscale), round(100 * self.yscale))
         self.update_screen_size()
-        window = self.get_subsystem("window")
-        if window:
+        if window := self.get_subsystem("window"):
             # re-initialize all the windows with their new size
             for win in self.get_windows():
                 if hasattr(win, "_xscale"):

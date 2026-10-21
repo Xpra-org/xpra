@@ -149,8 +149,7 @@ class Printer(StubClientSubsystem):
                 return {pk: pv for pk, pv in d.items() if pk in self.printer_attributes}
 
             for k, v in printers.items():
-                device_uri = v.get("device-uri", "")
-                if device_uri:
+                if device_uri := v.get("device-uri", ""):
                     # this is specific to the `cups` backend:
                     printlog("send_printers_thread() device-uri(%s)=%s", k, device_uri)
                     if device_uri.startswith("xpraforwarder"):
@@ -171,11 +170,9 @@ class Printer(StubClientSubsystem):
                 printlog("send_printers_thread() exported printers unchanged: %s", self.exported_printers)
                 return
             # show summary of what has changed:
-            added = tuple(k for k in exported_printers if k not in self.exported_printers)
-            if added:
+            if added := tuple(k for k in exported_printers if k not in self.exported_printers):
                 printlog("send_printers_thread() new printers: %s", added)
-            removed = tuple(k for k in self.exported_printers if k not in exported_printers)
-            if removed:
+            if removed := tuple(k for k in self.exported_printers if k not in exported_printers):
                 printlog("send_printers_thread() printers removed: %s", removed)
             modified = tuple(k for k, v in exported_printers.items() if
                              self.exported_printers.get(k) != v and k not in added)

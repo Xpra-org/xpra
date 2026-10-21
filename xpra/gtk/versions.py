@@ -33,8 +33,7 @@ def get_gtk_version_info() -> dict[str, Any]:
     V("gi", gi, "__version__")
 
     def giv(k: str, gimod: str, attr_name: str) -> None:
-        mod = gi_import(gimod)
-        if mod:
+        if mod := gi_import(gimod):
             V(k, mod, attr_name)
 
     giv("gobject", "GObject", "pygobject_version")

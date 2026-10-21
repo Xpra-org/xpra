@@ -143,8 +143,7 @@ class SSLSocketConnection(SocketConnection):
                     i[k] = v
         if cipher_fn := getattr(self._socket, "cipher", None):
             # noinspection calling-non-callable
-            cipher = cipher_fn()
-            if cipher:
+            if cipher := cipher_fn():
                 i["cipher"] = {
                     "name": cipher[0],
                     "protocol": cipher[1],

@@ -302,8 +302,7 @@ class WestonTestUtil(ServerTestUtil):
                 self.wait_for_exit(server, "Wayland server")
         finally:
             self.terminate_process(server)
-            runtime = getattr(server, "runtime", None)
-            if runtime:
+            if runtime := getattr(server, "runtime", None):
                 runtime.cleanup()
                 server.runtime = None
 

@@ -149,8 +149,7 @@ class DesktopWindowServer(WindowServer):
             state = config.dictget("state")
             self._set_window_state(wid, window, state)
 
-        geometry = config.inttupleget("geometry")
-        if geometry:
+        if geometry := config.inttupleget("geometry"):
             self._window_mapped_at(proto, wid, window, geometry)
             if not self.is_readonly(proto):
                 w, h = geometry[2:4]
@@ -159,8 +158,7 @@ class DesktopWindowServer(WindowServer):
                 if oww != w or owh != h:
                     window.resize(w, h)
 
-        properties = config.dictget("properties")
-        if properties:
+        if properties := config.dictget("properties"):
             metadatalog("window client properties updates: %s", properties)
             self._set_client_properties(proto, wid, window, properties)
 
@@ -198,8 +196,7 @@ class XpraDesktopWindowServer(DesktopWindowServer):
             self.do_add_new_window_common(1, model)
             model.managed_connect("client-contents-changed", self._contents_changed)
             model.managed_connect("resized", self.send_updated_screen_size)
-            pointer = self.get_subsystem("pointer")
-            if pointer:
+            if pointer := self.get_subsystem("pointer"):
                 model.managed_connect("motion", pointer._motion_signaled)
 
     def send_updated_screen_size(self, model) -> None:
@@ -240,8 +237,7 @@ class MonitorWindowServer(DesktopWindowServer):
         self.do_add_new_window_common(wid, model)
         model.managed_connect("client-contents-changed", self._contents_changed)
         model.managed_connect("resized", self.monitor_resized)
-        pointer = self.get_subsystem("pointer")
-        if pointer:
+        if pointer := self.get_subsystem("pointer"):
             model.managed_connect("motion", pointer._motion_signaled)
         return model
 

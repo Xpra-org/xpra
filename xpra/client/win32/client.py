@@ -371,8 +371,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
             x, y = absx - ox, absy - oy
         else:
             absx, absy = window.x + x, window.y + y
-        display = self.get_subsystem("display")
-        if display:
+        if display := self.get_subsystem("display"):
             absx, absy = display.cp(absx, absy)
             x, y = display.cp(x, y)
         return absx, absy, x, y

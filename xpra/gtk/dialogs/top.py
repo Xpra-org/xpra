@@ -154,8 +154,7 @@ class TopGUI(BaseGUIWindow):
         for session_key, img in list(self._screenshot_widgets.items()):
             last = self._screenshot_times.get(session_key, 0)
             if now - last >= 10 and session_key not in self._screenshot_pending:
-                path = self._session_paths.get(session_key)
-                if path:
+                if path := self._session_paths.get(session_key):
                     self._request_screenshot(session_key, path, img)
 
     def _rebuild_list(self, displays: dict[str, list]) -> None:
@@ -347,8 +346,7 @@ class TopSessionGUI(Gtk.Window):
         self.set_default_size(740, 600)
         self.set_position(Gtk.WindowPosition.CENTER)
         from xpra.gtk.pixbuf import get_icon_pixbuf
-        icon = get_icon_pixbuf("xpra.png")
-        if icon:
+        if icon := get_icon_pixbuf("xpra.png"):
             self.set_icon(icon)
         self.connect("delete-event", self._on_close)
 
@@ -422,13 +420,11 @@ class TopSessionGUI(Gtk.Window):
         thread_info = sldict("threads")
         thread_count = thread_info.intget("count")
         rinfo = f"{thread_count} threads"
-        server_pid = server_info.intget("pid", 0)
-        if server_pid:
+        if server_pid := server_info.intget("pid", 0):
             rinfo += f", pid {server_pid}"
             machine_id = server_info.get("machine-id")
             if machine_id is None or machine_id == get_machine_id():
-                cpu_str = self._cpu_str(server_pid)
-                if cpu_str:
+                if cpu_str := self._cpu_str(server_pid):
                     rinfo += cpu_str
         if cpuinfo := sldict("cpuinfo"):
             rinfo += ", " + cpuinfo.strget("hz_actual")
@@ -561,8 +557,7 @@ class TopSessionGUI(Gtk.Window):
         depth = gli.intget("depth")
         if depth not in (0, 24):
             gl_info += f", {depth}bits"
-        modes = gli.get("display_mode")
-        if modes:
+        if gli.get("display_mode"):
             gl_info += " - " + strget("display_mode", ", ")
         return gl_info
 
@@ -571,8 +566,7 @@ class TopSessionGUI(Gtk.Window):
         title = f"{ctype} client version {caps_to_version(ci)}"
         chost = ci.strget("hostname")
         conn_info = f"connected from {chost} " if chost else ""
-        cinfo = ci.dictget("connection")
-        if cinfo:
+        if cinfo := ci.dictget("connection"):
             cinfo = td(cinfo)
             conn_info += "using %s %s" % (cinfo.strget("type"), cinfo.strget("protocol-type"))
             conn_info += ", with %s and %s" % (cinfo.strget("encoder"), cinfo.strget("compressor"))
@@ -646,19 +640,16 @@ class TopSessionGUI(Gtk.Window):
         if not geom or len(geom) < 4:
             return []
         g_str = "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])
-        sc = wi.dictget("size-constraints")
-        if sc:
+        if sc := wi.dictget("size-constraints"):
             def sc_str(k, v):
                 if k == "gravity":
                     v = gravity_str(v)
                 return f"{k}={v}"
             g_str += " - %s" % csv(sc_str(k, v) for k, v in sc.items())
         line1 = ""
-        pid = wi.intget("pid", 0)
-        if pid:
+        if pid := wi.intget("pid", 0):
             line1 = f"pid {pid}: "
-        title = wi.strget("title")
-        if title:
+        if title := wi.strget("title"):
             line1 += f'"{title}"'
         attrs = [
             x for x in (

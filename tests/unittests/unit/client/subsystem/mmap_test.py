@@ -89,8 +89,7 @@ class MixinsTest(ClientMixinTest):
 
     def make_caps(self, caps=None) -> typedict:
         d = super().make_caps(caps)
-        x = self.mixin.mmap_read_area
-        if x:
+        if x := self.mixin.mmap_read_area:
             index = x.token_index
             if x.filename and x.filename.find("fail") >= 0:
                 index -= 10

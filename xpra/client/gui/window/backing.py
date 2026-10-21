@@ -308,8 +308,7 @@ class WindowBackingBase:
             text = f"{self.fps_value} fps"
             width, height = FONT_SIZE * 6, FONT_SIZE * 3 // 2
             self.fps_buffer_size = (width, height)
-            pixels = rgba_text(text, width, height)
-            if pixels:
+            if pixels := rgba_text(text, width, height):
                 self.update_fps_buffer(width, height, pixels)
 
     def update_fps_buffer(self, width: int, height: int, pixels) -> None:
@@ -664,8 +663,7 @@ class WindowBackingBase:
                   options: typedict, callbacks: PaintCallbacks) -> None:
         """ can be called from a non-UI thread """
         # was a compressor used?
-        comp = tuple(x for x in compression.ALL_COMPRESSORS if options.intget(x, 0))
-        if comp:
+        if comp := tuple(x for x in compression.ALL_COMPRESSORS if options.intget(x, 0)):
             if len(comp) != 1:
                 raise ValueError(f"more than one compressor specified: {comp!r}")
             compressor = comp[0]

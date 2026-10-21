@@ -220,8 +220,7 @@ class XvfbManager(StubSubsystem):
             resize = self.resize_display.lower()
             if resize not in ALL_BOOLEAN_OPTIONS and resize != "auto":
                 sizes = self.resize_display.split(":", 1)[-1]
-                resolutions = parse_resolutions(sizes, self.refresh_rate)
-                if resolutions:
+                if resolutions := parse_resolutions(sizes, self.refresh_rate):
                     vfb_geom = resolutions[0]
             fps = get_refresh_rate_for_value(self.refresh_rate, 60) if self.refresh_rate else 0
             try:
@@ -274,8 +273,7 @@ class XvfbManager(StubSubsystem):
         session_files = self.get_subsystem("session-files")
         assert session_files
         root = POSIX and getuid() == 0
-        xauthority = valid_xauth((load_session_file("xauthority")).decode(), self.uid, self.gid, writable)
-        if xauthority:
+        if xauthority := valid_xauth((load_session_file("xauthority")).decode(), self.uid, self.gid, writable):
             os.environ["XAUTHORITY"] = xauthority
             return xauthority
 

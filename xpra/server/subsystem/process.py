@@ -108,8 +108,7 @@ def setup_pam_session(display_name: str, xauth_data: str, uid: int) -> tuple[Any
     # if pam is present, try to create a new session:
     pam = None
     root = POSIX and getuid() == 0
-    pam_open = POSIX and envbool("XPRA_PAM_OPEN", root and uid != 0)
-    if pam_open:
+    if POSIX and envbool("XPRA_PAM_OPEN", root and uid != 0):
         try:
             from xpra.platform.pam import pam_session
         except ImportError as e:
@@ -168,8 +167,7 @@ def setup_runtime_dir(opts_env: tuple[str, ...], uid: int, gid: int, protected_e
             xrd = ""
     if not xrd:
         xrd = os.environ.get("XDG_RUNTIME_DIR", "")
-    xrd = create_runtime_dir(xrd, uid, gid)
-    if xrd:
+    if xrd := create_runtime_dir(xrd, uid, gid):
         # this may override the value we get from pam
         # with the value supplied by the user:
         protected_env["XDG_RUNTIME_DIR"] = xrd
@@ -257,8 +255,7 @@ class ProcessServer(StubSubsystem):
                 "USER": username,
                 "LOGNAME": username,
             })
-            shell = get_shell_for_uid(self.uid)
-            if shell:
+            if shell := get_shell_for_uid(self.uid):
                 os.environ["SHELL"] = shell
             # now we've changed uid, it is safe to honour all the env updates:
             configure_env(self.env)

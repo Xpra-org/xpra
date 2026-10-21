@@ -55,7 +55,6 @@ def first_truthy(subsystems: Mapping[str, Any], method: str, *args) -> Any:
         fn = getattr(sub, method, None)
         if not callable(fn):
             continue
-        result = fn(*args)
-        if result:
+        if result := fn(*args):
             return result
     return None

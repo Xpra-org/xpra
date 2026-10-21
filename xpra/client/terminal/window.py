@@ -118,8 +118,7 @@ class ClientWindow(ClientWindowBase):
         old_id = self._image_id
         new_id = self.wid + BACK_IMAGE_OFFSET if old_id == self.wid else self.wid
         pixels = bytes(backing.pixels)
-        name = self._client.shm_transfer(pixels)
-        if name:
+        if name := self._client.shm_transfer(pixels):
             output.write(graphics.transmit_shm(new_id, bw, bh, name))
         else:
             output.write(graphics.transmit(new_id, bw, bh, pixels))

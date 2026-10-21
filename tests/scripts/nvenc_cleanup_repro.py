@@ -201,7 +201,7 @@ def worker_main(args: argparse.Namespace) -> int:
             name="cleanup", daemon=True,
         )
 
-        print(f"[cycle] entering `with cdc:` — push context + hold lock",
+        print("[cycle] entering `with cdc:` — push context + hold lock",
               file=sys.stderr)
         with cdc:
             t.start()
@@ -247,8 +247,7 @@ def parent_main(args: argparse.Namespace) -> int:
     for line in proc.stderr:
         sys.stderr.write(line)
         sys.stderr.flush()
-        m = WARNING_PATTERN.search(line)
-        if m:
+        if m := WARNING_PATTERN.search(line):
             warning_counts[m.group(1)] = warning_counts.get(m.group(1), 0) + 1
         if "[summary] encoders_created=" in line:
             saw_summary = True

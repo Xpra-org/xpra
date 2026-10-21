@@ -220,8 +220,7 @@ class SessionFilesServer(StubSubsystem):
         return load_options()
 
     def apply_config(self, opts, cmdline: list[str]) -> None:
-        options = self.load_options()
-        if options:
+        if options := self.load_options():
             apply_config(opts, options, cmdline)
 
     def get_info(self, _proto) -> dict[str, Any]:

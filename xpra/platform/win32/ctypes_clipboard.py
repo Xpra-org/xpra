@@ -199,8 +199,7 @@ def with_clipboard_lock(window,
                         failure_callback: Callable[[str], []],
                         retries=RETRY, delay=DELAY):
     log("with_clipboard_lock%s", (window, success_callback, failure_callback, retries, delay))
-    r = OpenClipboard(window)
-    if r:
+    if r := OpenClipboard(window):
         log("OpenClipboard(%#x)=%s", window, r)
         try:
             r = success_callback()
@@ -222,8 +221,7 @@ def with_clipboard_lock(window,
 
 
 def format_name(fmt: int) -> str:
-    name = CLIPBOARD_FORMATS.get(fmt)
-    if name:
+    if name := CLIPBOARD_FORMATS.get(fmt):
         return name
     ulen = 128
     buf = LPCSTR(b" " * ulen)
@@ -262,8 +260,7 @@ def get_clipboard_formats() -> Sequence[int]:
     formats = []
     fmt = 0
     while True:
-        fmt = EnumClipboardFormats(fmt)
-        if fmt:
+        if fmt := EnumClipboardFormats(fmt):
             formats.append(fmt)
         else:
             break
@@ -670,13 +667,11 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         def got_clipboard_lock() -> bool:
             if COMPRESSED_IMAGES:
                 fmt_name = LPCSTR(img_format.upper().encode("latin1") + b"\0")  # ie: "PNG"
-                fmt = RegisterClipboardFormatA(fmt_name)
-                if fmt:
+                if fmt := RegisterClipboardFormatA(fmt_name):
                     data_handle = GetClipboardData(fmt)
                     log("GetClipboardData(%s)=%#x", img_format.upper(), data_handle or 0)
                     if data_handle:
-                        cdata = get_global_data(data_handle)
-                        if cdata:
+                        if cdata := get_global_data(data_handle):
                             got_image(cdata, False)
                             return True
 
@@ -942,8 +937,7 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         if COMPRESSED_IMAGES:
             # first save it as binary compressed data:
             fmt_name = LPCSTR(img_format.upper().encode("latin1") + b"\0")  # ie: "PNG"
-            fmt = RegisterClipboardFormatA(fmt_name)
-            if fmt:
+            if fmt := RegisterClipboardFormatA(fmt_name):
                 try:
                     image_formats[fmt] = alloc_global(img_data)
                 except RuntimeError as e:

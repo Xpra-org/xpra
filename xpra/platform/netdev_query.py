@@ -32,8 +32,7 @@ def print_address(iface, addr, defs) -> None:
     from xpra.os_util import POSIX
     from xpra.util.str_fn import print_nested_dict
     for d in defs:
-        ip = d.get("addr")
-        if ip:
+        if ip := d.get("addr"):
             stype = {
                 socket.AF_INET: "IPv4",
                 socket.AF_INET6: "IPv6",
@@ -45,8 +44,7 @@ def print_address(iface, addr, defs) -> None:
                 try:
                     sock = create_tcp_socket(ip, 0)
                     sockfd = sock.fileno()
-                    info = get_interface_info(sockfd, iface)
-                    if info:
+                    if info := get_interface_info(sockfd, iface):
                         print_nested_dict(info, prefix="    ", lchar="-")
                 finally:
                     if sock:
@@ -62,8 +60,7 @@ def print_iface(iface):
         if addr in (socket.AF_INET, socket.AF_INET6):
             print_address(iface, addr, defs)
     if not POSIX:
-        info = get_interface_info(0, iface)
-        if info:
+        if info := get_interface_info(0, iface):
             print(f"  {info}")
 
 

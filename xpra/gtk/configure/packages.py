@@ -45,8 +45,7 @@ def get_terminal() -> str:
         "alacritty", "hyper", "wezterm", "rio",
     ):
         if terminal:
-            cmd = which(terminal)
-            if cmd:
+            if cmd := which(terminal):
                 return cmd
     return ""
 

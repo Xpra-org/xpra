@@ -17,8 +17,7 @@ class X11SeamlessPointerManager(X11PointerManager):
     SKIP_REDUNDANT_MOVES = False
 
     def _move_pointer(self, device_id: int, wid: int, pos, props=None) -> None:
-        window = self.get_subsystem("window")
-        if window:
+        if window := self.get_subsystem("window"):
             window.raise_window_under_pointer(wid)
         super()._move_pointer(device_id, wid, pos, props)
 

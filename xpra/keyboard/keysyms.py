@@ -172,8 +172,7 @@ def keysym_name(char: str) -> str:
     if not char:
         return ""
     c = char[0]
-    name = KEYSYM_NAMES.get(c, "")
-    if name:
+    if name := KEYSYM_NAMES.get(c, ""):
         return name
     if c.isascii() and c.isalnum():
         # letters and digits are named after themselves

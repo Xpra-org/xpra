@@ -91,8 +91,7 @@ class GSettingsClient(StubClientSubsystem):
         keys: list[tuple[str, str]] = []
         # `list_schemas` returns a (non-relocatable, relocatable) tuple:
         for schema_id in source.list_schemas(True)[0]:
-            schema = source.lookup(schema_id, True)
-            if schema:
+            if schema := source.lookup(schema_id, True):
                 keys += [
                     (schema_id, key) for key in schema.list_keys()
                     if (schema_id, key) not in self.values and self.allowed(schema_id, key)
@@ -103,8 +102,7 @@ class GSettingsClient(StubClientSubsystem):
     def setup_gsettings(self) -> None:
         values = {gsettings_key(schema, key): value for (schema, key), value in self.values.items()}
         # `get_keys` only returns keys which do exist, so they are safe to read:
-        keys = self.get_keys()
-        if keys:
+        if keys := self.get_keys():
             from xpra.os_util import gi_import
             Gio = gi_import("Gio")
         for schema_id, key in keys:

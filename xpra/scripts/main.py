@@ -447,11 +447,9 @@ def systemd_run_wrap(mode: str, args, systemd_run_args="", user: bool = True, **
     cmd += args
     cmd.append("--systemd-run=no")
     errwrite = getattr(sys.stderr, "write", noop)
-    log_systemd_wrap = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
-    if log_systemd_wrap:
+    if envbool("XPRA_LOG_SYSTEMD_WRAP", True):
         noerr(errwrite, f"using systemd-run to wrap {mode!r} xpra server subcommand\n")
-    log_systemd_wrap_command = envbool("XPRA_LOG_SYSTEMD_WRAP_COMMAND", False)
-    if log_systemd_wrap_command:
+    if envbool("XPRA_LOG_SYSTEMD_WRAP_COMMAND", False):
         noerr(errwrite, "%s\n" % " ".join(["'%s'" % x for x in cmd]))
     try:
         with Popen(cmd, **kwargs) as p:
@@ -726,8 +724,7 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
                 pass
             else:
                 dotxpra = DotXpra(options.socket_dirs)
-                display_name = display.get("display_name")
-                if display_name:
+                if display_name := display.get("display_name"):
                     state = dotxpra.get_display_state(display_name)
                     if state == SocketState.LIVE:
                         get_logger().info(f"existing live display found on {display_name}, attaching")
@@ -1116,8 +1113,7 @@ def run_pass(extra_args) -> ExitValue:
 def run_send_file(extra_args) -> ExitValue:
     sockpath = os.environ.get("XPRA_SERVER_SOCKET")
     if not sockpath:
-        display = os.environ.get("DISPLAY", "")
-        if display:
+        if display := os.environ.get("DISPLAY", ""):
             uri = display
         else:
             raise InitException("cannot find xpra server to use")
@@ -1317,8 +1313,7 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
             log("do_setup_connection() conn=%s", conn)
             # source the credentials from `display_desc` since `parse_display_name`
             # merges URL / opts / env / password-file into it during connect:
-            challenge = app.get_subsystem("challenge")
-            if challenge:
+            if challenge := app.get_subsystem("challenge"):
                 challenge.username = display_desc.get("username", "")
                 challenge.password = display_desc.get("password", "")
             protocol = app.make_protocol(conn)
@@ -1479,8 +1474,7 @@ def connect_client_app(app, cmdline: list[str], opts, extra_args: list[str], mod
             may_show_progress(app, 60, "connecting to server")
         if mode != "attach" and not extra_args:
             # try to guess the server intended:
-            server_socket = os.environ.get("XPRA_SERVER_SOCKET", "")
-            if server_socket:
+            if server_socket := os.environ.get("XPRA_SERVER_SOCKET", ""):
                 extra_args = [f"socket://{server_socket}"]
         display_desc = do_pick_display(opts, extra_args, cmdline)
         if len(extra_args) == 1 and opts.password:
@@ -1545,8 +1539,7 @@ def get_client_gui_app(opts, request_mode: str, extra_args: Sequence[str], mode:
             log = get_logger()
             try:
                 p = app._protocol
-                conn = p._conn
-                if conn:
+                if conn := p._conn:
                     log.info("Attached to %s server at %s", p.TYPE, conn.target)
                     log.info(" (press Control-C to detach)\n")
             except AttributeError:
@@ -2068,8 +2061,7 @@ def run_server(script_file, cmdline: list[str], options, args: list[str], full_m
             pass
         else:
             dotxpra = DotXpra(options.socket_dirs)
-            display = display_desc.get("display_name")
-            if display:
+            if display := display_desc.get("display_name"):
                 state = dotxpra.get_display_state(display)
                 if state == SocketState.LIVE:
                     get_logger().info(f"existing live display found on {display}, attaching")
@@ -2249,8 +2241,7 @@ def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults
         }
         for x in START_COMMAND_OPTIONS:
             fn = x.replace("-", "_")
-            v = getattr(opts, fn)
-            if v:
+            if v := getattr(opts, fn):
                 sns[x] = v
         hello_extra = {"start-new-session": sns}
 
@@ -2419,8 +2410,7 @@ def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name) -> 
             from xpra.platform.win32.wtsapi import find_session
             from xpra.platform.info import get_username
             username = get_username()
-            session_info = find_session(username)
-            if session_info:
+            if session_info := find_session(username):
                 cmd = [
                     "paexec.exe",
                     "-i", str(session_info["SessionID"]), "-s",
@@ -2956,8 +2946,7 @@ def run_sessions_gui(options) -> ExitValue:
         mdns = False
     if mdns:
         from xpra.net.mdns import get_listener_class
-        listener = get_listener_class()
-        if listener:
+        if get_listener_class():
             from xpra.gtk.dialogs import mdns_gui
             return mdns_gui.do_main(options)
         else:
@@ -3151,8 +3140,7 @@ def run_displays(options, args) -> ExitValue:
     for display, descr in displays.items():
         state = descr.pop("state", "LIVE")
         info_str = ""
-        wmname = descr.get("wmname")
-        if wmname:
+        if wmname := descr.get("wmname"):
             info_str += f"{wmname}: "
 
         def show(name: str, value) -> str:
@@ -3245,12 +3233,10 @@ def run_xshm(args) -> ExitValue:
         from xpra.x11.bindings.core import get_root_xid
         from xpra.x11.bindings.shm import XShmBindings
         XShm = XShmBindings()
-        xshm = XShm.has_XShm()
-        if xshm:
+        if xshm := XShm.has_XShm():
             # try to use it:
             rxid = get_root_xid()
-            w = XShm.get_XShmWrapper(rxid)
-            if w:
+            if w := XShm.get_XShmWrapper(rxid):
                 res = w.setup()
                 if not res[0]:
                     warn("XShm access failed")
@@ -3281,8 +3267,7 @@ def run_wminfo(args) -> ExitValue:
 
 
 def run_wmname(args) -> ExitValue:
-    name = display_wm_info(args).get("wmname", "")
-    if name:
+    if name := display_wm_info(args).get("wmname", ""):
         print(name)
     return 0
 

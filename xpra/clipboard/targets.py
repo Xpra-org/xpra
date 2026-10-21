@@ -143,8 +143,7 @@ def choose_eager_targets(targets: Iterable[str], preferred_targets: Iterable[str
     available = tuple(dict.fromkeys(bytestostr(target) for target in targets))
     preferred = tuple(dict.fromkeys(bytestostr(target) for target in preferred_targets))
     supported = set(preferred or available)
-    eager = tuple(target for target in EAGER_TARGETS if target in available and target in supported)
-    if eager:
+    if eager := tuple(target for target in EAGER_TARGETS if target in available and target in supported):
         return eager
     common = tuple(target for target in preferred if target in available)
     return common[:1] or available[:1]

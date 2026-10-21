@@ -207,8 +207,7 @@ def get_follow_window_types() -> Sequence[Gdk.WindowTypeHint]:
         return ALL_WINDOW_TYPES
     types: list[Gdk.WindowTypeHint] = []
     for v in types_strs:
-        hint = WINDOW_NAME_TO_HINT.get(v, "")
-        if hint:
+        if hint := WINDOW_NAME_TO_HINT.get(v, ""):
             types.append(hint)
         else:
             log.warn(f"Warning: invalid follow window type specified {v!r}")
@@ -445,8 +444,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             # to set the frame-extents property anyway
             if wfs := self._client.get_window_frame_sizes():
                 geomlog("setup_window() window frame sizes=%s", wfs)
-                v = wfs.get("offset")
-                if v:
+                if v := wfs.get("offset"):
                     dx, dy = v
                     x = max(32 - w, x - dx)
                     y = max(32 - h, y - dy)
@@ -518,8 +516,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def new_backing(self, bw: int, bh: int):
         b = ClientWindowBase.new_backing(self, bw, bh)
         # soft dependency on `PointerWindow`:
-        cursor_data = getattr(self, "cursor_data", ())
-        if cursor_data:
+        if cursor_data := getattr(self, "cursor_data", ()):
             # call via idle_add so that the backing has time to be realized too:
             self.when_realized("cursor", self.idle_add, self._backing.set_cursor_data, cursor_data)
         return b
@@ -590,8 +587,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 # the whole window is visible
                 return None
             # keep track of how many pixels would be on this monitor:
-            inter = wrect.intersection(x, y, w, h)
-            if inter:
+            if inter := wrect.intersection(x, y, w, h):
                 pixels_in_monitor[inter.width * inter.height] = i
         # if we're here, then some of the window would land on an area
         # not show on any monitors
@@ -964,8 +960,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     if "NORMAL" in window_types:
                         continue
                     window_type = "NORMAL"
-            hint = WINDOW_NAME_TO_HINT.get(window_type, 0)
-            if hint:
+            if hint := WINDOW_NAME_TO_HINT.get(window_type, 0):
                 hints |= hint
             else:
                 log("ignoring unknown window type hint: %s", window_type)
@@ -1516,8 +1511,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def get_monitor_position(self, x: int | None = None, y: int | None = None) -> dict[str, Any]:
         monitor = self._monitor
         if monitor is None:
-            gdkwin = self.get_window()
-            if gdkwin:
+            if gdkwin := self.get_window():
                 monitor = gdkwin.get_display().get_monitor_at_window(gdkwin)
         if monitor is None:
             return {}

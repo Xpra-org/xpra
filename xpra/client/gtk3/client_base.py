@@ -90,8 +90,7 @@ def _add_statusicon_tray(tray_classes: list[type]) -> list[type]:
         try:
             from xpra.gtk.statusicon_tray import GTKStatusIconTray
             # unlikely to work with gnome:
-            PREFER_STATUSICON = envbool("XPRA_PREFER_STATUSICON", False)
-            if PREFER_STATUSICON:
+            if envbool("XPRA_PREFER_STATUSICON", False):
                 tray_classes.insert(0, GTKStatusIconTray)
             else:
                 tray_classes.append(GTKStatusIconTray)
@@ -257,8 +256,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         wfs = get_window_frame_sizes()
         if self.frame_request_window:
             extents = self.get_frame_extents(self.frame_request_window)
-            v = extents.get("frame", ())
-            if v:
+            if v := extents.get("frame", ()):
                 try:
                     wm_name = get_wm_name()  # pylint: disable=assignment-from-none
                 except Exception:
@@ -335,12 +333,10 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             capabilities["encoding.transparency"] = display.has_transparency() if display else False
         if FULL_INFO > 1:
             capabilities.setdefault("versions", {}).update(get_gtk_version_info())
-        EXPORT_ICON_DATA = envbool("XPRA_EXPORT_ICON_DATA", FULL_INFO > 1)
-        if EXPORT_ICON_DATA:
+        if envbool("XPRA_EXPORT_ICON_DATA", FULL_INFO > 1):
             # tell the server which icons GTK can use
             # so it knows when it should supply one as fallback
-            it = Gtk.IconTheme.get_default()
-            if it:
+            if it := Gtk.IconTheme.get_default():
                 # this would add our bundled icon directory
                 # to the search path, but I don't think we have
                 # any extra icons that matter in there:
@@ -377,8 +373,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                 ms += ["shaded", "bypass-compositor", "strut", "fullscreen-monitors", "locale"]
             if HAS_X11_BINDINGS:
                 ms += ["x11-property", "focused"]
-                XSHAPE = envbool("XPRA_XSHAPE", True)
-                if XSHAPE:
+                if envbool("XPRA_XSHAPE", True):
                     ms += ["shape"]
             log("metadata.supported: %s", ms)
             capabilities["metadata.supported"] = ms
@@ -577,8 +572,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def find_gdk_window(self, metadata: typedict, metadata_key="transient-for"):
         if client_window := self.find_window(metadata, metadata_key):
-            gdk_window = client_window.get_window()
-            if gdk_window:
+            if gdk_window := client_window.get_window():
                 return gdk_window
         return None
 

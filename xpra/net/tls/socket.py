@@ -38,8 +38,7 @@ def ssl_wrap_socket(sock, **kwargs):
 def log_ssl_info(ssl_sock) -> None:
     log = get_ssl_logger()
     log("server_hostname=%s", ssl_sock.server_hostname)
-    cipher = ssl_sock.cipher()
-    if cipher:
+    if cipher := ssl_sock.cipher():
         log.info(" %s, %s bits", cipher[0], cipher[2])
     try:
         cert = ssl_sock.getpeercert()

@@ -195,8 +195,7 @@ class NetworkListener(StubClientSubsystem):
             proto.parse_remote_caps(caps)
             proto.enable_compressor_from_caps(caps)
             proto.enable_encoder_from_caps(caps)
-            request = caps.strget("request")
-            if request:
+            if request := caps.strget("request"):
                 if not self.handle_hello_request(proto, request, caps):
                     log.info(f"{request!r} requests are not handled by this client")
                     proto.send_disconnect([ConnectionMessage.PROTOCOL_ERROR])

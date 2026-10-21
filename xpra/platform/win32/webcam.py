@@ -77,8 +77,7 @@ def add_video_device_change_callback(callback):
     from xpra.platform.webcam import _video_device_change_callbacks
     if len(_video_device_change_callbacks) == 0:
         # first callback added, register our handler:
-        el = get_win32_event_listener()
-        if el:
+        if el := get_win32_event_listener():
             el.add_event_callback(WM_DEVICECHANGE, callback)
     _video_device_change_callbacks.append(_device_change_callback)
 
@@ -89,6 +88,5 @@ def remove_video_device_change_callback(callback):
         _video_device_change_callbacks.remove(callback)
     if len(_video_device_change_callbacks) == 0:
         # none left, stop listening
-        el = get_win32_event_listener(False)
-        if el:
+        if el := get_win32_event_listener(False):
             el.remove_event_callback(WM_DEVICECHANGE, _device_change_callback)
