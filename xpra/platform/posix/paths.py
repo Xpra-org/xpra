@@ -225,11 +225,10 @@ def do_get_socket_dirs() -> list[str]:
 
 
 def do_get_client_socket_dirs() -> list[str]:
-    DIRS = []
     runtime_dir = _get_xpra_runtime_dir()
     if runtime_dir:
-        DIRS.append(os.path.join(runtime_dir, "clients"))
-    return DIRS
+        return [os.path.join(runtime_dir, "clients")]
+    return []
 
 
 def do_get_default_log_dirs() -> list[str]:

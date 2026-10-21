@@ -10,6 +10,13 @@ from time import monotonic, sleep
 
 from xpra.os_util import gi_import
 
+try:
+    import xpra.wayland.server
+except ImportError:
+    if __name__ == "__main__":
+        raise SystemExit(0)
+    raise unittest.SkipTest("wayland server is not available")
+
 GLib = gi_import("GLib")
 
 SELECTIONS = ("CLIPBOARD", "PRIMARY")

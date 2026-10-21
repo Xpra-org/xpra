@@ -8,7 +8,7 @@ import os
 import unittest
 
 from unit.server_test_util import ServerTestUtil, log
-from xpra.os_util import OSX, POSIX
+from xpra.os_util import OSX, POSIX, OPENBSD
 from xpra.util.env import OSEnvContext
 
 
@@ -28,6 +28,8 @@ class TestX11Keyboard(ServerTestUtil):
         display = cls.find_free_display()
         cls.xvfb = cls.start_Xvfb(display)
         os.environ["DISPLAY"] = display
+        cls.default_env["DISPLAY"] = display
+        cls.default_env["GDK_BACKEND"] = "x11"
         from xpra.x11.bindings.display_source import init_display_source  #@UnresolvedImport
         cls.display_ptr = init_display_source()
         from xpra.gtk.util import open_gdk_display
@@ -342,6 +344,7 @@ class TestX11Keyboard(ServerTestUtil):
         assert keycode in main, f"('period', 1) mapped to {keycode}, expected one of {main} and not the keypad {keypad}"
         assert config.keycode_translation.get("KP_Delete") in keypad
 
+    @unittest.skipIf(OPENBSD, "Xvfb cannot set the exact keymap")
     def test_keymap_full(self):
         # a macOS client has many more keysyms missing from the server keymap than there are free keycodes,
         # and some keysyms we cannot use at all: control characters and undefined values

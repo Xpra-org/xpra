@@ -8,7 +8,13 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from xpra.client.subsystem import encoding
+try:
+    from xpra.client.subsystem import encoding
+    import xpra.seccomp
+except ImportError:
+    if __name__ == "__main__":
+        raise SystemExit(0)
+    raise unittest.SkipTest("seccomp is not available")
 
 
 class EncodingSeccompTest(unittest.TestCase):

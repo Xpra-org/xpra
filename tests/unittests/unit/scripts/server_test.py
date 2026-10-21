@@ -7,6 +7,7 @@
 
 import os
 import sys
+import importlib.util
 from concurrent.futures import ThreadPoolExecutor
 from io import StringIO
 import tempfile
@@ -421,6 +422,7 @@ class TestMain(unittest.TestCase):
         assert result.displayfd == 0
         assert "Error: invalid displayfd 'not-an-int':" in stderr.getvalue()
 
+    @unittest.skipUnless(importlib.util.find_spec("xpra.uinput"), "uinput is not available")
     def test_start_server_vfb_destroys_uinput_devices_on_failure(self):
         from xpra.server.subsystem.xvfb import XvfbManager
         session_files = SimpleNamespace(write_session_file=Mock())

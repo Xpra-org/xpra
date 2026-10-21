@@ -16,6 +16,7 @@ from unittest.mock import patch
 from time import monotonic
 
 from xpra.net.tls.common import SSLVerifyFailure, SSL_VERIFY_SELF_SIGNED
+from xpra.os_util import OPENBSD
 from xpra.net.tls.socket import ssl_handshake, ssl_retry, warn_certificate_changed
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
@@ -98,6 +99,7 @@ OPENSSL = shutil.which("openssl")
 
 
 @unittest.skipUnless(OPENSSL, "openssl is required to generate a test certificate")
+@unittest.skipIf(OPENBSD, "certificate verification differs with LibreSSL")
 class TestSSLVerifyFailure(unittest.TestCase):
 
     @classmethod

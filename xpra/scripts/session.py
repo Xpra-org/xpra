@@ -119,9 +119,11 @@ def pidexists(pid: int) -> bool:
         return False
     try:
         os.kill(pid, 0)
-        return os.path.exists(f"/proc/{pid}")
     except OSError:
         return False
+    if os.path.isdir("/proc"):
+        return os.path.exists(f"/proc/{pid}")
+    return True
 
 
 def clean_session_dir(session_dir: str) -> bool:

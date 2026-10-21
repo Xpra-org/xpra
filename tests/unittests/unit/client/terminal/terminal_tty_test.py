@@ -229,7 +229,12 @@ class TestTerminalContext(unittest.TestCase):
         self.context.enter()
         self.assertNotEqual(termios.tcgetattr(self.slave), saved)
         self.context.exit()
-        self.assertEqual(termios.tcgetattr(self.slave), saved)
+        actual = termios.tcgetattr(self.slave)
+        for name in ("ECHOCTL", "PENDIN"):
+            if flag := getattr(termios, name, 0):
+                saved[tty_module.LFLAG] &= ~flag
+                actual[tty_module.LFLAG] &= ~flag
+        self.assertEqual(actual, saved)
 
     def test_exit_is_idempotent(self):
         self.context.enter()

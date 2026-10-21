@@ -170,7 +170,7 @@ class TestStatDisplaySocket(unittest.TestCase):
             try:
                 result = stat_display_socket(sockpath, timeout=0)
                 assert result["uid"] == os.getuid()
-                assert result["gid"] == os.getgid()
+                assert result["gid"] == os.stat(sockpath).st_gid
             finally:
                 srv.close()
 
