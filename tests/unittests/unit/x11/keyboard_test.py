@@ -28,6 +28,10 @@ class TestX11Keyboard(ServerTestUtil):
         display = cls.find_free_display()
         cls.xvfb = cls.start_Xvfb(display)
         os.environ["DISPLAY"] = display
+        # `ProcessTestUtil.setUp` restores `default_env` before each test,
+        # without these the X11 bindings would probe the caller's display instead, see #5089:
+        cls.default_env["DISPLAY"] = display
+        cls.default_env["GDK_BACKEND"] = "x11"
         from xpra.x11.bindings.display_source import init_display_source  #@UnresolvedImport
         cls.display_ptr = init_display_source()
         from xpra.gtk.util import open_gdk_display
