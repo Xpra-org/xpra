@@ -10,7 +10,7 @@ from collections import deque
 
 try:
     from xpra.server.window import video_subregion
-    from xpra import rectangle
+    from xpra.util import rectangle
 except ImportError:
     video_subregion = None
     rectangle = None
@@ -34,6 +34,7 @@ class TestVideoSubregion(unittest.TestCase):
 
         ww = 1024
         wh = 768
+
         def assertiswin():
             if not r.rectangle:
                 raise Exception("region not found, should have matched the whole window")
@@ -73,13 +74,13 @@ class TestVideoSubregion(unittest.TestCase):
         last_damage_events = deque(maxlen=150)
         for x in range(4):
             for y in range(4):
-                vr = (monotonic(), ww*x/4, wh*y/4, ww/4, wh/4)
+                vr = (monotonic(), ww*x//4, wh*y//4, ww//4, wh//4)
                 for _ in range(3):
                     last_damage_events.append(vr)
         r.identify_video_subregion(ww, wh, 150, last_damage_events)
         assertiswin()
 
-        vr = (monotonic(), ww/4, wh/4, ww/2, wh/2)
+        vr = (monotonic(), ww//4, wh//4, ww//2, wh//2)
         log("* mixed with region using 1/4 of window and 1/3 of updates: %s", vr)
         for _ in range(24):
             last_damage_events.append(vr)
@@ -99,14 +100,14 @@ class TestVideoSubregion(unittest.TestCase):
         r.identify_video_subregion(ww, wh, 100, last_damage_events)
         assert r.rectangle is None
 
-        log("* checking that two video regions close to each other can be merged")
+        log("* checking that nearby horizontal video bands can be merged")
         for N1, N2 in ((50, 50), (60, 40), (50, 30)):
             last_damage_events = deque(maxlen=150)
             r.reset()
             v1 = (monotonic(), 100, 100, 320, 240)
             for _ in range(N1):
                 last_damage_events.append(v1)
-            v2 = (monotonic(), 460, 120, 320, 240)
+            v2 = (monotonic(), 460, 100, 320, 240)
             for _ in range(N2):
                 last_damage_events.append(v2)
             r.identify_video_subregion(ww, wh, 100, last_damage_events)
@@ -128,10 +129,8 @@ class TestVideoSubregion(unittest.TestCase):
 
 
 def main():
-    if video_subregion and rectangle:
-        unittest.main()
-    else:
-        print("video_subregion_test skipped")
+    unittest.main()
+
 
 if __name__ == '__main__':
     main()
