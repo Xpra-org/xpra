@@ -17,7 +17,7 @@ from xpra.util.parsing import (
 )
 from xpra.util.str_fn import csv
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid, is_arm
+from xpra.os_util import WIN32, OSX, POSIX, getuid, getgid, get_username_for_uid
 from xpra.util.env import osexpand, envbool
 from xpra.util.io import stderr_print, which
 from xpra.util.system import is_DEB, can_use_fakescreenfps
@@ -124,9 +124,6 @@ def get_xorg_bin() -> str:
     if xorg:
         return xorg
     # Detect Xorg Binary
-    if is_arm() and is_DEB() and os.path.exists("/usr/bin/Xorg"):
-        # Raspbian breaks if we use a different binary..
-        return "/usr/bin/Xorg"
     for p in (
         "/usr/libexec/Xorg",              # fedora 22+
         "/usr/lib/xorg/Xorg",             # ubuntu 16.10
