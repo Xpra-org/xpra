@@ -29,12 +29,27 @@ case "${ACCEL}" in
   none|encoder|gpu) ;;
   *) echo "invalid ACCEL value '${ACCEL}', use 'none', 'encoder' or 'gpu'" >&2; exit 1;;
 esac
+# the DRI render nodes, except the ones from the NVIDIA driver:
+# VA-API cannot use them, NVENC requires the NVIDIA devices and libraries instead (`GPU=nvidia`)
+RENDER_NODES=()
+for device in /dev/dri/renderD*; do
+  [ -e "${device}" ] || continue
+  driver=$(readlink -f "/sys/class/drm/$(basename "${device}")/device/driver")
+  if [ "$(basename "${driver}")" != "nvidia" ]; then
+    RENDER_NODES+=("${device}")
+  fi
+done
+NVIDIA_CDI_HELP="install the NVIDIA Container Toolkit and run:
+ sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml"
 if [ "${ACCEL}" == "gpu" ]; then
   if [ "${GPU}" == "auto" ]; then
     if ls /etc/cdi/*nvidia* /var/run/cdi/*nvidia* &> /dev/null; then
       GPU="nvidia"
-    elif ls /dev/dri/renderD* &> /dev/null; then
+    elif [ "${#RENDER_NODES[@]}" -gt 0 ]; then
       GPU="dri"
+    elif [ -e /dev/nvidiactl ]; then
+      echo "no NVIDIA CDI specification found, ${NVIDIA_CDI_HELP}" >&2
+      exit 1
     else
       echo "no GPU found, use 'GPU=nvidia' or 'GPU=dri'" >&2
       exit 1
@@ -45,12 +60,16 @@ if [ "${ACCEL}" == "gpu" ]; then
       # the driver libraries must match the kernel module,
       # the NVIDIA Container Toolkit's CDI specification injects the host's libraries and devices:
       if ! ls /etc/cdi/*nvidia* /var/run/cdi/*nvidia* &> /dev/null; then
-        echo "no NVIDIA CDI specification found, install the NVIDIA Container Toolkit and run:" >&2
-        echo " sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml" >&2
+        echo "no NVIDIA CDI specification found, ${NVIDIA_CDI_HELP}" >&2
         exit 1
       fi
       ;;
-    dri) ;;
+    dri)
+      if [ "${#RENDER_NODES[@]}" -eq 0 ]; then
+        echo "no DRI render nodes found, except for NVIDIA GPUs: use 'GPU=nvidia'" >&2
+        exit 1
+      fi
+      ;;
     *) echo "invalid GPU value '${GPU}', use 'auto', 'nvidia' or 'dri'" >&2; exit 1;;
   esac
 fi
@@ -242,7 +261,7 @@ elif [ "${ACCEL}" == "gpu" ]; then
   else
     # only the render nodes, not the display devices ('/dev/dri/card*'),
     # `keep-groups` keeps the 'render' and 'video' groups of the current user, which may be needed to access them:
-    for device in /dev/dri/renderD*; do
+    for device in "${RENDER_NODES[@]}"; do
       ACCEL_ARGS+=(--device "${device}")
     done
     ACCEL_ARGS+=(--group-add keep-groups)
@@ -269,8 +288,8 @@ podman run -dt \
   --user 1000:1000 \
   --ipc=container:xpra-secure-xvfb \
   --network "$PUBLIC_NET" \
-  -p ${HOST_ADDRESS}:${PORT}:${PORT}/tcp \
-  -p ${HOST_ADDRESS}:${PORT}:${PORT}/udp \
+  -p "${HOST_ADDRESS}:${PORT}:${PORT}/tcp" \
+  -p "${HOST_ADDRESS}:${PORT}:${PORT}/udp" \
   "${HARDEN[@]}" \
   --memory=2g \
   "$XPRA_LABEL" \
@@ -323,7 +342,7 @@ echo
 
 echo "Waiting for port ${PORT}"
 if curl --version >& /dev/null; then
-  while ! curl --output /dev/null --silent --head --fail http://127.0.0.1:$PORT; do
+  while ! curl --output /dev/null --silent --head --fail "http://127.0.0.1:${PORT}"; do
     sleep 1 && echo -n .
   done
   echo
