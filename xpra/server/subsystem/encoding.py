@@ -123,7 +123,9 @@ class EncodingServer(StubSubsystem):
         encoding_sources = self.get_sources_by_type(EncodingsConnection)
         for ss in encoding_sources:
             ss.reinit_encodings(self)
-            ss.reinit_encoders()
+            # the encoder server's sources have no windows:
+            if is_windows_source(ss):
+                ss.reinit_encoders()
             ss.threaded_init_complete(self)
 
     def add_new_client(self, ss, *_args) -> None:
