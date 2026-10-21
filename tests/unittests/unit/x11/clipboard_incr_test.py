@@ -26,6 +26,7 @@ SELECTION = "XPRAINCRTEST"
 CHECKS = r"""
 import os, sys, struct
 from time import monotonic, sleep
+from unittest.mock import Mock, patch
 import gi
 gi.require_version("Gdk", "3.0"); gi.require_version("Gtk", "3.0")
 from gi.repository import GLib, GObject, Gdk
@@ -50,6 +51,18 @@ failures = []
 def check(name, condition, message):
     if not condition:
         failures.append("%s: %s" % (name, message))
+
+# A disappearing parent must end the diagnostic lookup immediately.
+from xpra.x11.gtk_x11 import clipboard
+from xpra.gtk_common.error import XError
+window = Mock()
+window.getParent.side_effect = [XError("window destroyed"), 0]
+proxy = Mock()
+proxy.get_wintitle.return_value = ""
+with patch.object(clipboard, "X11Window", window), patch.object(clipboard, "XRes", None):
+    result = clipboard.ClipboardProxy.get_wininfo(proxy, 123)
+check("parent info", result == ["xid=7b"], "unexpected window info: %r" % (result,))
+check("parent lookup", window.getParent.call_count == 1, "retried a destroyed parent")
 
 class Owner(GObject.GObject):
     __gsignals__ = {

@@ -266,8 +266,10 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
             if title:
                 wininfo.append(f"child of {title!r}")
                 return wininfo
+            parent = 0
             with xswallow:
-                xid = X11Window.getParent(xid)
+                parent = X11Window.getParent(xid)
+            xid = parent
         return wininfo
 
     ############################################################################
