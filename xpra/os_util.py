@@ -268,7 +268,9 @@ def force_quit(status=1) -> NoReturn:
 
 def is_arm() -> bool:
     import platform
-    return platform.uname()[4].startswith("arm")
+    machine = platform.uname()[4]
+    # ie: "armv7l", "aarch64" or "arm64" (MacOS)
+    return machine.startswith("arm") or machine.startswith("aarch")
 
 
 def crash() -> NoReturn:
