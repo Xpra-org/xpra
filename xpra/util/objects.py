@@ -266,7 +266,8 @@ class typedict(dict):
                 if not isinstance(x, item_type):
                     if callable(item_type):
                         try:
-                            return item_type(x)
+                            aslist[i] = item_type(x)
+                            continue
                         except (ValueError, TypeError):
                             self._warn("invalid item type for %s %s: %s cannot be used with %s",
                                        type(v), k, item_type, type(x))
