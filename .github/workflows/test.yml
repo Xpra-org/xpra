@@ -123,6 +123,10 @@ jobs:
     steps:
     - uses: actions/checkout@v7
 
+    - name: Record the source information
+      # the workspace is copied without `.git`, so `src_info.py` must be generated here
+      run: python3 ./fs/bin/add_build_info.py src
+
     - name: Test in OpenBSD
       uses: vmactions/openbsd-vm@v1
       with:

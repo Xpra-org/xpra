@@ -61,14 +61,8 @@ class TestVersionUtilModule(unittest.TestCase):
             self.assertTrue(x in get_host_info(), "%s not found in host info" % x)
 
     def test_get_version_info(self):
-        info = get_version_info()
-        self.assertIn("version", info)
-        try:
-            from xpra.src_info import REVISION
-        except ImportError:
-            return
-        if REVISION != "unknown":
-            self.assertIn("revision", info)
+        for x in ("version", "revision"):
+            self.assertTrue(x in get_version_info(), "%s not found in version info" % x)
 
     def test_get_platform_info(self):
         for x in ("release", "name"):
