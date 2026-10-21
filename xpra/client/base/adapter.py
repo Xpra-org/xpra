@@ -9,12 +9,12 @@ import uuid
 from typing import Any
 from threading import Event
 
-from xpra import __version__
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.io import is_socket, load_binary_file
 from xpra.util.env import envint, osexpand
 from xpra.util.objects import typedict
 from xpra.util.thread import start_thread
+from xpra.util.version import XPRA_VERSION, vparts
 from xpra.net.connect import connect_to
 from xpra.scripts.parsing import parse_display_name
 from xpra.scripts.config import InitExit, make_defaults_struct
@@ -243,7 +243,7 @@ class RemoteServerAdapter(baseclass):
 
     def make_hello(self) -> dict[str, Any]:
         return {
-            "version": __version__[:FULL_INFO+1],
+            "version": vparts(XPRA_VERSION, FULL_INFO + 1),
             # "client_type": "encode",
             "uuid": uuid.uuid4().hex,
         }
