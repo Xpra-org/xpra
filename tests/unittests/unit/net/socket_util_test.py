@@ -581,6 +581,31 @@ class TestUnixDomainSocket(unittest.TestCase):
                 cleanup()
             assert not os.path.exists(sockpath)
 
+    def create_socket_lchown(self, group_id: int, groups: list[int], egid: int = -1, uid: int = 1000) -> list:
+        from unittest.mock import patch
+        from xpra.net.socket_util import create_unix_domain_socket
+        calls = []
+        with tempfile.TemporaryDirectory() as tmpdir, \
+                patch("xpra.net.socket_util.get_group_id", return_value=group_id), \
+                patch("xpra.net.socket_util.getuid", return_value=uid), \
+                patch("os.getgroups", return_value=groups), \
+                patch("os.getegid", return_value=egid), \
+                patch("os.lchown", side_effect=lambda *args: calls.append(args)):
+            sockpath = os.path.join(tmpdir, "test.sock")
+            sock, cleanup = create_unix_domain_socket(sockpath, 0o600)
+            cleanup()
+        return [gid for _path, _uid, gid in calls]
+
+    def test_xpra_group(self):
+        # only set the group if this process is a member of it,
+        # whatever the user database says (ie: a container started with `--user=1000:1000`):
+        self.assertEqual(self.create_socket_lchown(995, [1000]), [])
+        self.assertEqual(self.create_socket_lchown(995, [1000, 995]), [995])
+        self.assertEqual(self.create_socket_lchown(995, [], egid=995), [995])
+        self.assertEqual(self.create_socket_lchown(995, [], uid=0), [995])
+        # no such group:
+        self.assertEqual(self.create_socket_lchown(-1, [1000], uid=0), [])
+
 
 @unittest.skipUnless(POSIX, "abstract sockets only on POSIX")
 class TestCreateAbstractSocket(unittest.TestCase):
