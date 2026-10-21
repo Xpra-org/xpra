@@ -344,7 +344,8 @@ class TestSocketWaitingAndPermissions(unittest.TestCase):
 class TestAdditionalIOHelpers(unittest.TestCase):
 
     def test_libexec_discovery_and_absolute_command(self):
-        self.assertEqual(io.find_libexec_command("/custom/tool"), "/custom/tool")
+        absolute = os.path.abspath("test-tool")
+        self.assertEqual(io.find_libexec_command(absolute), absolute)
         self.assertEqual(io.find_libexec_command(""), "")
         with patch("xpra.platform.paths.get_resources_dir", return_value="/resources"), \
                 patch("xpra.platform.paths.get_app_dir", return_value="/app"), \

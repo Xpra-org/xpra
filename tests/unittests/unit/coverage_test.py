@@ -22,6 +22,7 @@ except ImportError:
 @unittest.skipUnless(coverage and runner.COVERAGE, "coverage.py is not installed")
 class CoverageTest(unittest.TestCase):
 
+    @unittest.skipUnless(coverage and coverage.version_info >= (7, 10), "subprocess coverage requires coverage.py 7.10 or later")
     def test_direct_python_child_is_measured(self):
         with tempfile.TemporaryDirectory(prefix="xpra-coverage-child-") as directory:
             root = Path(directory)

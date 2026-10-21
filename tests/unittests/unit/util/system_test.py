@@ -75,6 +75,11 @@ class DistributionTest(unittest.TestCase):
 
 class DisplayDetectionTest(unittest.TestCase):
 
+    def setUp(self):
+        x11 = patch.object(xpra, "x11", SimpleNamespace(), create=True)
+        x11.start()
+        self.addCleanup(x11.stop)
+
     def test_wayland_environment_precedence(self):
         for values, expected in (({}, False), ({"WAYLAND_DISPLAY": "wayland-0"}, True),
                                  ({"XDG_SESSION_TYPE": "wayland"}, True), ({"GDK_BACKEND": "wayland"}, True),
@@ -145,11 +150,11 @@ class SystemProbeTest(unittest.TestCase):
                     self.assertEqual(system.get_sysconfig_info(), {"platform": "test", "python-version": "3.14"})
 
     def test_memory_and_load_queries(self):
-        with patch.object(os, "sysconf", side_effect=lambda key: {"SC_PAGE_SIZE": 4096, "SC_PHYS_PAGES": 1024}[key]):
+        with patch.object(os, "sysconf", side_effect=lambda key: {"SC_PAGE_SIZE": 4096, "SC_PHYS_PAGES": 1024}[key], create=True):
             self.assertEqual(system.get_mem_size(), 4194304)
-        with patch.object(os, "sysconf", side_effect=OSError("unavailable")), patch("xpra.log.Logger"):
+        with patch.object(os, "sysconf", side_effect=OSError("unavailable"), create=True), patch("xpra.log.Logger"):
             self.assertEqual(system.get_mem_size(), 0)
-        with patch.object(system, "POSIX", True), patch.object(os, "getloadavg", return_value=(1.2, 2.8, 3.5)):
+        with patch.object(system, "POSIX", True), patch.object(os, "getloadavg", return_value=(1.2, 2.8, 3.5), create=True):
             self.assertEqual(system.getloadavg(), (1, 2, 3))
         with patch.multiple(system, POSIX=False, WIN32=False):
             self.assertEqual(system.getloadavg(), (0, 0, 0))
