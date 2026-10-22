@@ -22,7 +22,7 @@ if [ ! -d "${APP_DIR}" ]; then
 fi
 
 #get the version and build info from the python build records:
-export PYTHONPATH="${APP_DIR}/Contents/Frameworks/python/"
+export PYTHONPATH="${APP_DIR}/Contents/Resources/lib/python/"
 VERSION=$(${PYTHON} -c "from xpra import __version__;import sys;sys.stdout.write(__version__)")
 REVISION=$(${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(str(src_info.REVISION))")
 REV_MOD=$(${PYTHON} -c "from xpra import src_info;import sys;sys.stdout.write(['','M'][src_info.LOCAL_MODIFICATIONS>0])")
