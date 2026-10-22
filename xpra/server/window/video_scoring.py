@@ -3,6 +3,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import NamedTuple
+
 from xpra.util.env import envint
 from xpra.codecs.constants import LOSSY_PIXEL_FORMATS, CSCSpec, VideoSpec
 from xpra.log import Logger
@@ -22,6 +24,22 @@ SUBSAMPLING_QUALITY_LOSS = {
 }
 
 LOSSY_CSC = ("NV12", "YUV420P", "YUV422P")
+
+
+class PipelineScore(NamedTuple):
+    """A scored pipeline, preserving the original eleven positional fields."""
+
+    score: int
+    scaling: tuple[int, int]
+    csc_scaling: tuple[int, int] | None
+    csc_width: int
+    csc_height: int
+    csc_spec: CSCSpec | None
+    enc_in_format: str
+    encoder_scaling: tuple[int, int]
+    enc_width: int
+    enc_height: int
+    encoder_spec: VideoSpec
 
 
 def clamp(value: int) -> int:
@@ -92,7 +110,7 @@ def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spe
                        target_quality: int, min_quality: int,
                        target_speed: int, min_speed: int,
                        current_csce, current_ve,
-                       score_delta: int, ffps: int, detection=True) -> tuple | None:
+                       score_delta: int, ffps: int, detection=True) -> PipelineScore | None:
     """
         Given an optional csc step (csc_format and csc_spec),
         and a required encoding step (encoder_spec and width/height),
@@ -223,7 +241,7 @@ def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spe
         qscore, sscore, ecsc_score, ee_score, runtime_score, scaling,
         encoder_scaling, enc_width, enc_height, sizescore, score_delta,
         cpu_score, gpu_score, score)
-    return (
+    return PipelineScore(
         score, scaling, csc_scaling, csc_width, csc_height, csc_spec, enc_in_format,
         encoder_scaling, enc_width, enc_height, encoder_spec,
     )
