@@ -9,7 +9,6 @@ from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.util.env import SilenceWarningsContext
-from xpra.util.version import dict_version_trim
 from xpra.util.screen import prettify_plug_name
 from xpra.common import noop
 from xpra.net.common import FULL_INFO
@@ -189,6 +188,6 @@ class GTKServer(StubSubsystem):
     def get_ui_info(self, _proto, **kwargs) -> dict[str, Any]:
         from xpra.gtk.info import get_screen_sizes
         return {
-            "versions": dict_version_trim(get_gtk_version_info()),
+            "versions": get_gtk_version_info(),
             "screen_sizes": get_screen_sizes(),
         }
