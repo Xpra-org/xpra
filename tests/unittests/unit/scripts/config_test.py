@@ -49,7 +49,8 @@ class VFBParametersTest(unittest.TestCase):
 
     def test_rhel_weston_parameters(self):
         with patch("xpra.config.vfb.WIN32", False), patch("xpra.config.vfb.OSX", False), \
-             patch("xpra.config.vfb.POSIX", True), patch("xpra.config.vfb.is_DEB", return_value=False), \
+             patch("xpra.config.vfb.POSIX", True), patch("xpra.config.vfb.sys.platform", "linux"), \
+             patch("xpra.config.vfb.is_DEB", return_value=False), \
              patch("xpra.config.vfb.can_use_fakescreenfps", return_value=True), \
              patch("xpra.util.system.get_distribution_version_id", return_value="10"), \
              patch("xpra.util.system.is_distribution_variant", return_value=True):
