@@ -1703,6 +1703,7 @@ external_excludes = [
     "nose", "pytest", "_pytest", "pluggy", "more_itertools", "apipkg", "py", "funcsigs",
     "Cython", "cython", "pyximport",
     "pydoc_data",
+    "imaplib", "poplib",
 ]
 if not crypto_ENABLED:
     external_excludes += ["ssl", "_ssl", "uvloop"]
