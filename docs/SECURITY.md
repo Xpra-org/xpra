@@ -52,6 +52,11 @@ please send a request to [security@xpra.org](mailto:security@xpra.org)
 * [strings and data from the peer are not validated](https://github.com/Xpra-org/xpra/issues/5084): window titles, file names, client names, log messages and other strings could contain control characters, terminal escape sequences or bidi overrides, used to spoof window titles and file extensions or to inject into log files, and some lists (clipboard targets, printers, monitors, start menu) had no size limit - all versions, fixed in 7.0
 
 
+## Bundled libraries
+The MS Windows builds are scanned every day for known vulnerabilities in the libraries they bundle,
+see [CVEs](https://github.com/Xpra-org/xpra/blob/master/docs/Build/CVE.md) for every vulnerability found and whether it applies.
+
+
 ## False positives
 Some vulnerabilities are reported, sometimes automatically,
 but cannot be exploited because the code is not actually used:

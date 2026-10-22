@@ -5,13 +5,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
-import re
 import sys
-import json
-from collections import defaultdict
-from urllib.request import urlopen
 from xpra.build_info import packages
+from msys2_sbom import (
+    load_msys2_references, get_upstream_version, get_identifiers,
+    PACKAGE_VERSION_PROPERTY, EXTRA_CPE_PROPERTY,
+)
 
 from packageurl import PackageURL
 from packageurl.contrib import url2purl
@@ -24,73 +23,7 @@ from cyclonedx.model.component import Component, ComponentType
 from cyclonedx.output.json import JsonV1Dot5
 
 
-# MSYS2 maintains CPE and PURL references for its packages (`msys2_references` in the PKGBUILDs),
-# and publishes them in the SBOMs it uses for its own vulnerability reports:
-# https://www.msys2.org/dev/vulnerabilities/
-# add them to our components so that vulnerability scanners can match them:
-MSYS2_SBOM_URLS = os.environ.get("MSYS2_SBOM_URLS", ",".join((
-    "https://github.com/msys2/MINGW-packages/releases/download/srcinfo-cache/sbom.vuln.cdx.json",
-    "https://github.com/msys2/MSYS2-packages/releases/download/srcinfo-cache/sbom.vuln.cdx.json",
-))).split(",")
-
-# packages whose name does not match their MSYS2 base package name,
-# (in addition to the "-libs" split packages):
-MSYS2_PKGBASE = {
-    "atk": "at-spi2-core",
-    "boost-libs": "boost",
-    "gettext-runtime": "gettext",
-    "gobject-introspection-runtime": "gobject-introspection",
-    "libwinpthread": "winpthreads",
-    "python-cairo": "pycairo",
-}
-
-
-def load_msys2_references() -> dict[str, list[dict]]:
-    references = defaultdict(list)
-    for url in MSYS2_SBOM_URLS:
-        if not url:
-            continue
-        try:
-            with urlopen(url, timeout=60) as response:
-                msys2_bom = json.load(response)
-        except (OSError, ValueError) as e:
-            sys.stderr.write(f"Warning: unable to load the MSYS2 SBOM from {url!r}: {e}\n")
-            continue
-        for ref in msys2_bom.get("components", ()):
-            if not (ref.get("cpe") or ref.get("purl")):
-                continue
-            for prop in ref.get("properties", ()):
-                if prop.get("name") == "msys2:pkgbase":
-                    references[prop["value"]].append(ref)
-    return references
-
-
-def get_upstream_version(version: str) -> str:
-    # strip the epoch and pkgrel, ie: "1:2.3.4-5" -> "2.3.4"
-    return version.split(":", 1)[-1].rsplit("-", 1)[0]
-
-
-def get_identifiers(package_name: str, upstream_version: str) -> tuple[list[str], list[PackageURL]]:
-    pkgbase = MSYS2_PKGBASE.get(package_name, package_name)
-    refs = ()
-    for name in (pkgbase, pkgbase.removesuffix("-libs")):
-        refs = msys2_references.get(f"mingw-w64-{name}") or msys2_references.get(name) or ()
-        if refs:
-            break
-    # the references use the version MSYS2 currently ships, use ours instead:
-    cpes = []
-    purls = []
-    for ref in refs:
-        if cpe := ref.get("cpe"):
-            # ie: "cpe:2.3:a:gnome:pango:1.58.2:*:*:*:*:*:*:*"
-            parts = re.split(r"(?<!\\):", cpe)
-            parts[5] = upstream_version
-            cpes.append(":".join(parts))
-        if purl := ref.get("purl"):
-            purls.append(PackageURL.from_string(purl)._replace(version=upstream_version))
-    return cpes, purls
-
-
+# add the CPE and PURL references maintained by MSYS2, so that vulnerability scanners can match our components:
 msys2_references = load_msys2_references()
 
 lc_factory = LicenseFactory()
@@ -126,20 +59,18 @@ for package_name, info in packages.items():
     # scanners compare the component version with the upstream versions affected by a vulnerability,
     # and "48.0.1-1" would be a post-release of "48.0.1" for PyPI packages:
     version = get_upstream_version(package_version)
-    cpes, purls = get_identifiers(package_name, version)
+    cpes, purls = get_identifiers(msys2_references, package_name, version)
     if msys2_references and version and not (cpes or purls):
         unidentified.append(package_name)
-    properties = [Property(name="xpra:package-version", value=package_version)] if package_version != version else []
+    properties = [Property(name=PACKAGE_VERSION_PROPERTY, value=package_version)] if package_version != version else []
     component = Component(
         type=ComponentType.LIBRARY,
         name=package_name,
         version=version,
         licenses=licenses,
-        purl=purls[0] if purls else url2purl.get_purl(info.get("URL", "")),
+        purl=PackageURL.from_string(purls[0]) if purls else url2purl.get_purl(info.get("URL", "")),
         cpe=cpes[0] if cpes else None,
-        # the same project is often recorded under different CPE vendors or product names,
-        # CycloneDX only has room for one, so add the others the same way that syft does:
-        properties=properties + [Property(name="syft:cpe23", value=cpe) for cpe in cpes[1:]],
+        properties=properties + [Property(name=EXTRA_CPE_PROPERTY, value=cpe) for cpe in cpes[1:]],
     )
     bom.components.add(component)
     components[package_name] = component

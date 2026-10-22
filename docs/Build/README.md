@@ -151,3 +151,5 @@ setuptools may otherwise mangle.
 </div>
 
 Configuration implementation: [modules, defaults, and file loading](Configuration.md).
+
+Known vulnerabilities in the libraries bundled with the MS Windows builds: [CVEs](CVE.md).
