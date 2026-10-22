@@ -111,7 +111,7 @@ class RemoteInfo(StubClientSubsystem):
         if isinstance(display, dict):
             td = typedict(display)
             self._remote_display = td.strget("name", "") or td.get("address", "")
-        self._remote_platform = c.strget("platform")
+        self._remote_platform = c.strget("platform.system", c.strget("platform"))
         self._remote_uuid = c.strget("uuid")
 
         self._remote_version = parse_version(c.strget("build.version", c.strget("version")))
