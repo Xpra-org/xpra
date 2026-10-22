@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from typing import Dict
 
 from xpra.os_util import get_hex_uuid, osexpand
 from unit.server_test_util import ServerTestUtil, log
@@ -12,6 +13,7 @@ from unit.server_test_util import ServerTestUtil, log
 class X11ClientTestUtil(ServerTestUtil):
 
 	uq = 0
+	xauth_cookies: Dict[str, str] = {}
 
 	def run_client(self, *args):
 		client_display = self.find_free_display()
@@ -21,7 +23,9 @@ class X11ClientTestUtil(ServerTestUtil):
 
 	def do_run_client(self, client_display, *args):
 		from xpra.x11.vfb_util import xauth_add
-		xauth_data = get_hex_uuid()
+		# Xvfb may not reload cookies replaced twice within the same second.
+		# Keep one cookie per display for all test clients.
+		xauth_data = X11ClientTestUtil.xauth_cookies.setdefault(client_display, get_hex_uuid())
 		xauthority = self.default_env.get("XAUTHORITY", osexpand("~/.Xauthority"))
 		xauth_add(xauthority, client_display, xauth_data, os.getuid(), os.getgid())
 		env = self.get_run_env()
