@@ -25,6 +25,7 @@ etc/xpra/conf.d/35_webcam.conf
 /usr/lib/*/wireshark/plugins/xpra*
 usr/lib/python3*/*/xpra/auth/
 usr/lib/python3*/*/xpra/challenge/
+usr/lib/python3*/*/xpra/config/
 usr/lib/python3*/*/xpra/buffers/
 usr/lib/python3*/*/xpra/clipboard/
 usr/lib/python3*/*/xpra/notification/

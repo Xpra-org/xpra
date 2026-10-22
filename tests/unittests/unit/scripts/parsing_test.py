@@ -19,7 +19,9 @@ from xpra.scripts.parsing import (
     parse_display_name, parse_cmdline, get_usage,
 )
 from xpra.scripts.args import get_start_server_args
-from xpra.scripts.config import fixup_clipboard, get_defaults, InitException
+from xpra.config.fixup import fixup_clipboard
+from xpra.config.defaults import get_defaults
+from xpra.config import InitException
 from xpra.util.objects import AdHocStruct
 from xpra.util.parsing import FALSE_OPTIONS, TRUE_OPTIONS
 
@@ -41,7 +43,7 @@ class TestParsing(unittest.TestCase):
 
     def test_landlock_ignores_environment(self):
         with patch.dict(os.environ, {"XPRA_LANDLOCK": "STRICT"}), \
-             patch("xpra.scripts.config.GLOBAL_DEFAULTS", None):
+             patch("xpra.config.defaults.GLOBAL_DEFAULTS", None):
             options, _ = parse_cmdline(["xpra", "attach", "--landlock=OFF"])
             self.assertEqual(options.landlock, "no")
             options, _ = parse_cmdline(["xpra", "attach"])
@@ -59,8 +61,8 @@ class TestParsing(unittest.TestCase):
             options = AdHocStruct()
             options.clipboard = clipboard
             options.clipboard_direction = "both"
-            with patch("xpra.scripts.config.WIN32", win32), \
-                    patch("xpra.scripts.config.OSX", osx):
+            with patch("xpra.config.fixup.WIN32", win32), \
+                    patch("xpra.config.fixup.OSX", osx):
                 fixup_clipboard(options)
             return options.clipboard
 

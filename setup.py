@@ -1809,7 +1809,7 @@ def toggle_packages(enabled: bool, *module_names: str) -> None:
 
 # always included:
 if modules_ENABLED:
-    add_packages("xpra.util", "xpra.net")
+    add_packages("xpra.config", "xpra.util", "xpra.net")
     add_modules("xpra",
                 "xpra.platform",
                 "xpra.scripts.common",
@@ -2216,18 +2216,20 @@ def get_conf_dir(install_dir: str, stripbuildroot=True) -> str:
 
 def detect_xorg_setup(install_dir="") -> "Sequence[str]":
     # pylint: disable=import-outside-toplevel
-    from xpra.scripts import config
+    from xpra import config
     config.debug = config.warn
     conf_dir = get_conf_dir(install_dir)
-    return config.detect_xvfb_command(conf_dir, None, Xdummy_ENABLED, Xdummy_wrapper_ENABLED)
+    from xpra.config.vfb import detect_xvfb_command
+    return detect_xvfb_command(conf_dir, None, Xdummy_ENABLED, Xdummy_wrapper_ENABLED)
 
 
 def detect_xdummy_setup(install_dir="") -> "Sequence":
     # pylint: disable=import-outside-toplevel
-    from xpra.scripts import config
+    from xpra import config
     config.debug = config.warn
     conf_dir = get_conf_dir(install_dir)
-    return config.detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
+    from xpra.config.vfb import detect_xdummy_command
+    return detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
 
 
 def convert_templates(install_dir: str, subs: "dict[str, str]", subdirs: "Sequence[str]" = ()) -> None:
@@ -2294,9 +2296,9 @@ def build_xpra_conf(install_dir: str, runtime_dir="") -> None:
     conf_dir = get_conf_dir(runtime_dir)
     print(f"get_conf_dir({runtime_dir})={conf_dir}")
     from xpra.platform.paths import get_socket_dirs
-    from xpra.scripts.config import (
-        wrap_cmd_str, unexpand,
-        get_default_key_shortcuts, get_default_systemd_run, get_default_env, get_default_start_env,
+    from xpra.config.vfb import wrap_cmd_str
+    from xpra.config.defaults import (
+        unexpand, get_default_key_shortcuts, get_default_systemd_run, get_default_env, get_default_start_env,
         DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO,
     )
     default_env = "\n".join(f"env = {x}" for x in get_default_env())
@@ -2853,7 +2855,7 @@ if WIN32:
             if client_ENABLED or server_ENABLED:
                 add_console_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_cmd")
                 add_gui_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_gui")
-                add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
+                add_console_exe("xpra/config/__main__.py",           "gears.ico",        "Config_info")
             if server_ENABLED:
                 add_console_exe("xpra/auth/sqlite.py",  "sqlite.ico",        "SQLite_auth_tool")
                 add_console_exe("xpra/auth/sql.py",     "sql.ico",           "SQL_auth_tool")
@@ -4021,6 +4023,7 @@ if cythonize_more_ENABLED:
     if wayland_server_ENABLED:
         ax("xpra.wayland.server")
 
+    ax("xpra.config")
     ax("xpra.util")
     ace("xpra.common")
     ace("xpra.exit_codes")

@@ -13,10 +13,10 @@ from types import SimpleNamespace
 
 from unittest.mock import patch
 
-from xpra.scripts.config import (
-    read_xpra_conf, fixup_keyboard, fixup_options, dict_to_validated_config, get_defaults,
-    detect_xvfb_command, detect_xdummy_command, get_default_start_env,
-)
+from xpra.config.io import read_xpra_conf
+from xpra.config.fixup import fixup_keyboard, fixup_options
+from xpra.config.defaults import dict_to_validated_config, get_defaults, get_default_start_env
+from xpra.config.vfb import detect_xvfb_command, detect_xdummy_command
 from xpra.util.parsing import FALSE_OPTIONS, TRUE_OPTIONS
 
 
@@ -37,7 +37,7 @@ class LandlockConfigTest(unittest.TestCase):
 
     def test_configuration_file(self):
         with tempfile.TemporaryDirectory() as directory, \
-             patch("xpra.scripts.config.GLOBAL_DEFAULTS", None):
+             patch("xpra.config.defaults.GLOBAL_DEFAULTS", None):
             with open(os.path.join(directory, "xpra.conf"), "w", encoding="utf8") as config:
                 config.write("landlock = STRICT\n")
             options = dict_to_validated_config(read_xpra_conf(directory))
@@ -48,9 +48,9 @@ class LandlockConfigTest(unittest.TestCase):
 class VFBParametersTest(unittest.TestCase):
 
     def test_rhel_weston_parameters(self):
-        with patch("xpra.scripts.config.WIN32", False), patch("xpra.scripts.config.OSX", False), \
-             patch("xpra.scripts.config.POSIX", True), patch("xpra.scripts.config.is_DEB", return_value=False), \
-             patch("xpra.scripts.config.can_use_fakescreenfps", return_value=True), \
+        with patch("xpra.config.vfb.WIN32", False), patch("xpra.config.vfb.OSX", False), \
+             patch("xpra.config.vfb.POSIX", True), patch("xpra.config.vfb.is_DEB", return_value=False), \
+             patch("xpra.config.vfb.can_use_fakescreenfps", return_value=True), \
              patch("xpra.util.system.get_distribution_version_id", return_value="10"), \
              patch("xpra.util.system.is_distribution_variant", return_value=True):
             command = detect_xvfb_command(depth=8, dpi=144, fps=30)
@@ -60,9 +60,9 @@ class VFBParametersTest(unittest.TestCase):
         self.assertEqual(command[command.index("-fakescreenfps") + 1], "30")
 
     def test_unreadable_xorg_fallback_depth(self):
-        with patch("xpra.scripts.config.POSIX", True), patch("xpra.scripts.config.OSX", False), \
-             patch("xpra.scripts.config.get_xorg_bin", return_value="/test/Xorg"), \
-             patch("xpra.scripts.config.os.stat", return_value=SimpleNamespace(st_mode=stat.S_ISUID)):
+        with patch("xpra.config.vfb.POSIX", True), patch("xpra.config.vfb.OSX", False), \
+             patch("xpra.config.vfb.get_xorg_bin", return_value="/test/Xorg"), \
+             patch("xpra.config.vfb.os.stat", return_value=SimpleNamespace(st_mode=stat.S_ISUID)):
             command = detect_xdummy_command(depth=8, dpi=144, fps=30)
         self.assertEqual(command[0], "Xvfb")
         self.assertEqual(command[command.index("-screen") + 2], "8192x4096x8")
@@ -72,7 +72,7 @@ class StartEnvironmentTest(unittest.TestCase):
 
     def test_settings_are_separate_from_comments(self):
         from xpra.scripts.parsing import parse_env
-        with patch("xpra.scripts.config.WIN32", False), patch("xpra.scripts.config.OSX", False):
+        with patch("xpra.config.defaults.WIN32", False), patch("xpra.config.defaults.OSX", False):
             environment = parse_env(get_default_start_env())
         self.assertEqual(environment.get("QT_AUTO_SCREEN_SET_FACTOR"), "0")
         self.assertEqual(environment.get("GTK_OVERLAY_SCROLLING"), "0")

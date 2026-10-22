@@ -19,7 +19,9 @@ import traceback
 from typing import Any
 from collections.abc import Callable
 
-from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
+from xpra.config.io import read_config, save_config
+from xpra.config.defaults import make_defaults_struct
+from xpra.config.validation import validate_config
 from xpra.util.glib import register_os_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import (
@@ -1215,7 +1217,7 @@ def do_main(argv: list[str]) -> int:
         return 1
 
     # allow config to be debugged:
-    from xpra.scripts import config
+    from xpra import config
     config.debug = log.debug
 
     try:

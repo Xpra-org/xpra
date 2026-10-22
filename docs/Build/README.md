@@ -149,3 +149,5 @@ setuptools may otherwise mangle.
 
 </section>
 </div>
+
+Configuration implementation: [modules, defaults, and file loading](Configuration.md).

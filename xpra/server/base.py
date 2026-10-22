@@ -132,7 +132,7 @@ class ServerBase(ServerCore):
 
     def init(self, opts) -> None:
         # from now on, use the logger for parsing errors:
-        from xpra.scripts import config  # pylint: disable=import-outside-toplevel
+        from xpra import config  # pylint: disable=import-outside-toplevel
         config.warn = log.warn
         # ServerCore.init dispatches `init` to every entry in self.subsystems,
         # including the `network` subsystem which handles the connection layer

@@ -836,6 +836,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %{python3_sitearch}/xpra/auth/
 %{python3_sitearch}/xpra/challenge/
+%{python3_sitearch}/xpra/config/
 %{python3_sitearch}/xpra/buffers/
 %{python3_sitearch}/xpra/clipboard/
 %{python3_sitearch}/xpra/gstreamer/
