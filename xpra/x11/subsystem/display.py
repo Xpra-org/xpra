@@ -572,6 +572,8 @@ class X11DisplayManager(DisplayManager):
             if self.randr_exact_size:
                 # Xvfb with randr > 1.2: the resolution has been added
                 # we can use XRRSetScreenSize:
+                wmm = round(w * 25.4 / xdpi)
+                hmm = round(h * 25.4 / ydpi)
                 try:
                     with xsync:
                         RandRBindings().xrr_set_screen_size(w, h, wmm, hmm)
