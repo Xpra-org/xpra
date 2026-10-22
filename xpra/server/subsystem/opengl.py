@@ -10,7 +10,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import bytestostr
 from xpra.util.env import envint
 from xpra.util.thread import start_thread
-from xpra.util.version import parse_version, dict_version_trim
+from xpra.util.version import parse_version
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import FULL_INFO
 from xpra.server.subsystem.stub import StubSubsystem
@@ -157,7 +157,7 @@ class OpenGLInfo(StubSubsystem):
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {}
         if FULL_INFO and self.props:
-            caps[OpenGLInfo.PREFIX] = dict_version_trim(self.props)
+            caps[OpenGLInfo.PREFIX] = self.props
         return caps
 
     def get_info(self, _proto) -> dict[str, Any]:
