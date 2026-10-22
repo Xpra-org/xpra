@@ -34,6 +34,7 @@ from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
 from xpra.server.window.video_pipeline import (
     PipelineSettings, PipelineCodecState, get_pipeline_options, get_pipeline_quality,
 )
+from xpra.server.window.video_scoring import PipelineScore
 from xpra.server.window.scaling import (
     DEFAULT_SCALING_OPTIONS, ScalingSettings, ScalingState,
     get_scaling_override, calculate_scaling as calculate_video_scaling,
@@ -214,7 +215,7 @@ class WindowVideoSource(WindowSource):
         self.actual_scaling = (1, 1)
 
         self.last_pipeline_params : tuple = ()
-        self.last_pipeline_scores : tuple = ()
+        self.last_pipeline_scores: tuple[PipelineScore, ...] = ()
         self.last_pipeline_time: float = 0.0
 
         self.video_subregion = VideoSubregion(self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
@@ -575,7 +576,7 @@ class WindowVideoSource(WindowSource):
             # if we have a hardware video encoder, use video more:
             self.update_pipeline_scores()
             for i, score_data in enumerate(self.last_pipeline_scores):
-                encoder_spec = score_data[-1]
+                encoder_spec = score_data.encoder_spec
                 if encoder_spec.gpu_cost > encoder_spec.cpu_cost:
                     videolog(f"found GPU accelerated encoder {encoder_spec}")
                     video_hint += 1+int(i == 0)
@@ -1327,47 +1328,49 @@ class WindowVideoSource(WindowSource):
         scorelog("verify_csc_and_encoder() scores=%s", scores)
         if not scores:
             return False
-        _, _, _, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec = scores[0]
+        best = scores[0]
+        if not isinstance(best, PipelineScore):
+            best = PipelineScore(*best)
         if csce := self._csc_encoder:
-            if csc_spec is None:
+            if best.csc_spec is None:
                 scorelog(f" csc {csce} is no longer needed")
                 return False
             if csce.is_closed():
                 scorelog(f" csc {csce} is closed")
                 return False
-            if csce.get_dst_format() != enc_in_format:
-                scorelog(f" change of csc output format from {csce.get_dst_format()} to {enc_in_format}")
+            if csce.get_dst_format() != best.enc_in_format:
+                scorelog(f" change of csc output format from {csce.get_dst_format()} to {best.enc_in_format}")
                 return False
-            if csce.get_src_width() != csc_width or csce.get_src_height() != csc_height:
+            if csce.get_src_width() != best.csc_width or csce.get_src_height() != best.csc_height:
                 scorelog(" change of csc input dimensions from %ix%i to %ix%i",
-                         csce.get_src_width(), csce.get_src_height(), csc_width, csc_height)
+                         csce.get_src_width(), csce.get_src_height(), best.csc_width, best.csc_height)
                 return False
-            if csce.get_dst_width() != enc_width or csce.get_dst_height() != enc_height:
+            if csce.get_dst_width() != best.enc_width or csce.get_dst_height() != best.enc_height:
                 scorelog(" change of csc output dimensions from %ix%i to %ix%i",
-                         csce.get_dst_width(), csce.get_dst_height(), enc_width, enc_height)
+                         csce.get_dst_width(), csce.get_dst_height(), best.enc_width, best.enc_height)
                 return False
         if ve := self._video_encoder:
             if ve.is_closed():
                 scorelog(f" {ve} is closed")
                 return False
-            if ve.get_src_format() != enc_in_format:
+            if ve.get_src_format() != best.enc_in_format:
                 scorelog(" change of video input format from %s to %s",
-                         ve.get_src_format(), enc_in_format)
+                         ve.get_src_format(), best.enc_in_format)
                 return False
-            if ve.get_width() != enc_width or ve.get_height() != enc_height:
+            if ve.get_width() != best.enc_width or ve.get_height() != best.enc_height:
                 scorelog(" change of video input dimensions from %ix%i to %ix%i",
-                         ve.get_width(), ve.get_height(), enc_width, enc_height)
+                         ve.get_width(), ve.get_height(), best.enc_width, best.enc_height)
                 return False
-            if ve.get_type() != encoder_spec.codec_type:
-                scorelog(f" found a better video encoder type than {ve.get_type()}: {encoder_spec.codec_type}")
+            if ve.get_type() != best.encoder_spec.codec_type:
+                scorelog(f" found a better video encoder type than {ve.get_type()}: {best.encoder_spec.codec_type}")
                 return False
-        if self.actual_scaling != encoder_scaling:
-            scorelog(" change of scaling from %s to %s", self.actual_scaling, encoder_scaling)
+        if self.actual_scaling != best.encoder_scaling:
+            scorelog(" change of scaling from %s to %s", self.actual_scaling, best.encoder_scaling)
             return False
         # everything is still valid:
         return True
 
-    def get_video_pipeline_options(self, encodings: Iterable[str], width: int, height: int, src_format: str) -> tuple:
+    def get_video_pipeline_options(self, encodings: Iterable[str], width: int, height: int, src_format: str) -> tuple[PipelineScore, ...]:
         """Gather selection inputs and publish scored pipelines. May run from any thread."""
         vh = self.video_helper
         if vh is None:
@@ -1504,7 +1507,7 @@ class WindowVideoSource(WindowSource):
 
         if self._current_quality == 100:
             # discard options with negative scores (usually subsampled or downscaled)
-            positive_scores = tuple(filter(lambda option: option[0] >= 0, scores))
+            positive_scores = tuple(option for option in scores if option.score >= 0)
             if not positive_scores:
                 videolog(f"no pipeline scores above 0 for quality={self._current_quality}, cannot use video")
                 return False

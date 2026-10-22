@@ -58,9 +58,10 @@ def make_source(encoders=None, converters=None):
 
 def current_encoder(spec, width=640, height=480, src_format="RGB"):
     return SimpleNamespace(get_type=lambda: spec.codec_type, get_src_format=lambda: src_format,
-                           get_width=lambda: width, get_height=lambda: height)
+                           get_width=lambda: width, get_height=lambda: height, is_closed=lambda: False)
 
 
 def current_csc(spec, width=640, height=480, dst_format="YUV420P"):
     return SimpleNamespace(get_type=lambda: spec.codec_type, get_dst_format=lambda: dst_format,
-                           get_src_width=lambda: width, get_src_height=lambda: height)
+                           get_src_width=lambda: width, get_src_height=lambda: height,
+                           get_dst_width=lambda: width, get_dst_height=lambda: height, is_closed=lambda: False)

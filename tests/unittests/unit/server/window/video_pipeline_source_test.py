@@ -6,7 +6,7 @@
 
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from xpra.server.window import video_compress, video_pipeline, video_scoring
 from xpra.server.window.video_scoring import get_pipeline_score
@@ -239,6 +239,42 @@ class VideoPipelineSourceTest(unittest.TestCase):
     def test_rejected_score_is_omitted(self):
         source = make_source({"h264": {"RGB": (encoder_spec(min_w=641),)}})
         self.assertEqual(self.select(source), ())
+
+    def test_selected_named_and_ordinary_tuples_verify_existing_codecs(self):
+        spec, converter = encoder_spec(), csc_spec()
+        for use_csc in (False, True):
+            source = make_source({"h264": {"YUV420P": (spec,)}}, {"YUV420P": (converter,)} if use_csc else {})
+            score, = self.select(source, src_format="RGB" if use_csc else "YUV420P")
+            source._video_encoder = current_encoder(spec, src_format="YUV420P")
+            source._csc_encoder = current_csc(converter) if use_csc else None
+            source.actual_scaling = (1, 1)
+            for candidate in (score, tuple(score)):
+                with self.subTest(use_csc=use_csc, named=hasattr(candidate, "score")):
+                    source.last_pipeline_scores = (candidate,)
+                    self.assertTrue(source.verify_csc_and_encoder())
+                    source.actual_scaling = (1, 2)
+                    self.assertFalse(source.verify_csc_and_encoder())
+                    source.actual_scaling = (1, 1)
+
+    def test_lossless_pipeline_setup_filters_negative_scores(self):
+        for positive_score in (0, 1, None):
+            with self.subTest(positive_score=positive_score):
+                source = make_source()
+                score, = self.select(source)
+                negative = score._replace(score=-1)
+                positive = score._replace(score=positive_score) if positive_score is not None else None
+                source.get_video_pipeline_options = Mock(return_value=(negative, positive) if positive else (negative,))
+                source.do_check_pipeline = Mock(return_value=False)
+                source.csc_clean = Mock()
+                source.ve_clean = Mock()
+                source.setup_pipeline = Mock(return_value=True)
+                source.width_mask = source.height_mask = 0xFFFF
+                source._current_quality = 100
+                self.assertEqual(source.check_pipeline(("h264",), 640, 480, "RGB"), positive is not None)
+                if positive is None:
+                    source.setup_pipeline.assert_not_called()
+                else:
+                    source.setup_pipeline.assert_called_once_with((positive,), 640, 480, "RGB")
 
 
 if __name__ == "__main__":
