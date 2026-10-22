@@ -528,8 +528,6 @@ def fixups(light: bool) -> None:
             os.unlink(os.path.join(lpath, filename))
     debug("gio modules")
     BUNDLE_GIO = ["libproxy", "openssl"]
-    if not light:
-        BUNDLE_GIO += ["gnutls"]
     os.mkdir(f"{LIB_DIR}/gio")
     os.mkdir(f"{LIB_DIR}/gio/modules")
     for modname in BUNDLE_GIO:
@@ -635,6 +633,8 @@ def delete_dlls(light: bool) -> None:
     )
     # remove codecs we don't need:
     delete_libs("libx265*", "libjxl*", "libkvazaar*")
+    # only used by kvazaar:
+    delete_libs("libcryptopp*")
     if light:
         # let's keep kerberos / gss libs because clients can use them:
         # "libshishi*", "libgss*"
