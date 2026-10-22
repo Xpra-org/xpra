@@ -9,8 +9,8 @@
 %global xpra_libdir     %{_libdir}/xpra
 
 Name:           xpra-openh264
-Version:        2.6.0
-Release:        2
+Version:        2.7.0
+Release:        1
 Summary:        Private H.264 codec library for Xpra
 License:        BSD-2-Clause
 URL:            https://www.openh264.org/
@@ -40,7 +40,7 @@ building Xpra codec modules against the private openh264 build.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "558544ad358283a7ab2930d69a9ceddf913f4a51ee9bf1bfb9e377322af81a69" ]; then
+if [ "${sha256}" != "5178775c8b440073e70920e97d195efff721c0e56d0a78cc82c919e95d54924d" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -119,6 +119,9 @@ cp -a %{name}.pc $RPM_BUILD_ROOT%{_libdir}/pkgconfig/
 
 
 %changelog
+* Thu Oct 22 2026 Antoine Martin <antoine@xpra.org> - 2.7.0-1
+- new upstream release
+
 * Fri Jun 12 2026 Antoine Martin <antoine@xpra.org> - 2.6.0-2
 - #4626 build as a private 'xpra-openh264' library so it can coexist with the
   distribution openh264 / noopenh264 packages
