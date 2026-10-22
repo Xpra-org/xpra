@@ -232,7 +232,7 @@ class ScalingCacheTest(unittest.TestCase):
         source.calculate_scaling = Mock(side_effect=((1, 1), (2, 3)))
 
         with patch(
-            "xpra.server.window.video_compress.get_pipeline_score",
+            "xpra.server.window.video_pipeline.get_pipeline_score",
             return_value=(1,),
         ) as get_pipeline_score:
             source.get_video_pipeline_options(("h264",), 3000, 2000, "RGB")

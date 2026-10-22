@@ -55,6 +55,46 @@ level the stream it is producing actually requires.
 
 <div class="docs-section-heading" markdown="1">
 
+## Server pipeline selection
+
+</div>
+
+[`video_pipeline.py`](../../xpra/server/window/video_pipeline.py) enumerates direct
+video encoders and combinations of colourspace converters (CSC) and encoders.
+It filters candidates against client output formats, applies scaling and content
+preferences, and returns candidates in stable descending score order. It accepts
+codec specifications, settings, and callbacks; it does not instantiate codecs or
+require a display. Matching video subregions lower the quality target according
+to their measured FPS, while matching non-video subregions raise it.
+
+[`video_scoring.py`](../../xpra/server/window/video_scoring.py) calculates each
+candidate's quality, speed, setup, size, and runtime scores. `PipelineScore` gives
+names to the existing eleven tuple fields while retaining positional access,
+unpacking, and equality with ordinary tuples. Current codec references and
+detection state are read for each candidate, and specification runtime factors
+remain live reads.
+
+[`WindowVideoSource`](../../xpra/server/window/video_compress.py) gathers the
+selection inputs and owns the score cache and its timestamp. Selection checks
+cancellation while visiting candidates and may return a partial result. The
+source checks cancellation again before publishing: cancellation clears the
+cached parameters and scores, while still updating the calculation timestamp.
+Codec creation, replacement, flushing, and cleanup retain their existing encode
+thread ownership.
+
+The direct tests need no server or codec instances. Run them, the source adapter
+regressions, and the scorer tests from the source directory with:
+
+```shell
+PYTHONPATH=.:tests/unittests python3 -m unittest \
+    unit.server.window.video_pipeline_test \
+    unit.server.window.video_pipeline_source_test \
+    unit.server.window.video_compress_test \
+    unit.server.video_scoring_test
+```
+
+<div class="docs-section-heading" markdown="1">
+
 ## Network Packets
 
 </div>

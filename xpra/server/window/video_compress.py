@@ -6,7 +6,7 @@
 import os
 import time
 import operator
-from math import sqrt, ceil
+from math import ceil
 from functools import reduce
 from time import monotonic
 from typing import Any
@@ -31,12 +31,14 @@ from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_EOS
 from xpra.util.rectangle import rectangle, merge_all
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
-from xpra.server.window.video_scoring import get_pipeline_score
+from xpra.server.window.video_pipeline import (
+    PipelineSettings, PipelineCodecState, get_pipeline_options, get_pipeline_quality,
+)
 from xpra.server.window.scaling import (
     DEFAULT_SCALING_OPTIONS, ScalingSettings, ScalingState,
     get_scaling_override, calculate_scaling as calculate_video_scaling,
 )
-from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder, CSCSpec
+from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder
 from xpra.codecs.protocols import VideoEncoder
 from xpra.codecs.loader import has_codec
 from xpra.common import roundup
@@ -1366,154 +1368,49 @@ class WindowVideoSource(WindowSource):
         return True
 
     def get_video_pipeline_options(self, encodings: Iterable[str], width: int, height: int, src_format: str) -> tuple:
-        """
-            Given a picture format (width, height and src pixel format),
-            we find all the pipeline options that will allow us to compress
-            it using the given encodings.
-            First, we try with direct encoders (for those that support the
-            source pixel format natively), then we try all the combinations
-            using csc encoders to convert to an intermediary format.
-            Each solution is rated, and we return all of them in descending
-            score (the best solution comes first).
-            Because this function is expensive to call, we cache the results.
-            This allows it to run more often from the timer thread.
-
-            Can be called from any thread.
-        """
+        """Gather selection inputs and publish scored pipelines. May run from any thread."""
         vh = self.video_helper
         if vh is None:
-            return ()       # closing down
+            return ()       # closing down: retain the existing cache and timestamp
 
         target_q = int(self._current_quality)
         min_q = self._fixed_min_quality
         target_s = int(self._current_speed)
         min_s = self._fixed_min_speed
         text_hint = "text" in self.content_types
-        if text_hint:
-            vmw = vmh = 16384
-        else:
-            vmw, vmh = self.video_max_size
-        # tune quality target for (non-)video region:
+        max_size = (16384, 16384) if text_hint else self.video_max_size
         vr = self.matches_video_subregion(width, height)
         if vr and target_q < 100 and not text_hint:
-            if self.subregion_is_video():
-                # lower quality a bit more:
-                fps = self.video_subregion.fps
-                f = min(90, 2*fps)
-                target_q = max(min_q, int(target_q*(100-f)//100))
-                scorelog("lowering quality target %i by %i%% for video %s (fps=%i)", target_q, f, vr, fps)
-            else:
-                # not the video region, or not really video content, raise quality a bit:
-                target_q = int(sqrt(target_q/100.0)*100)
-                scorelog("raising quality for video encoding of non-video region")
-        scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)",
-                 (encodings, width, height, src_format), target_s, min_s, target_q, min_q)
+            video_fps = self.video_subregion.fps if self.subregion_is_video() else None
+            target_q = get_pipeline_quality(target_q, min_q, video_fps)
+            scorelog("adjusted quality target to %i for region %s (video fps=%s)", target_q, vr, video_fps)
+        settings = PipelineSettings(
+            quality=target_q, min_quality=min_q, speed=target_s, min_speed=min_s,
+            max_size=max_size, text_hint=text_hint, is_shadow=self.is_shadow,
+            force_csc=FORCE_CSC, force_csc_mode=FORCE_CSC_MODE, preferred_encodings=PREFERRED_ENCODING_ORDER,
+        )
 
-        ffps = self.get_video_fps(width, height)
-        cached_w = cached_h = 4096
-        cached_scaling = [cached_w, cached_h, self.calculate_scaling(width, height, cached_w, cached_h)]
-        scores = []
-        all_no_match = {}
-        csc_specs = vh.get_csc_specs(src_format)
-        scorelog(f"csc for {src_format} source format: {csc_specs}")
-        if FORCE_CSC:
-            csc_specs = {FORCE_CSC_MODE : csc_specs.get(FORCE_CSC_MODE, ())}
-            scorelog(f"{FORCE_CSC_MODE=} : {csc_specs=}")
-        for encoding in encodings:
-            # these are the CSC modes the client can handle for this encoding:
-            # we must check that the output csc mode for each encoder is one of those
-            supported_csc_modes = self.full_csc_modes.strtupleget(encoding)
-            if not supported_csc_modes:
-                scorelog(" no supported csc modes for %s", encoding)
-                continue
-            encoder_specs = vh.get_encoder_specs(encoding)
-            if not encoder_specs:
-                scorelog(" no encoder specs for %s", encoding)
-                continue
-            scorelog(f"encoders({encoding})={encoder_specs}, {supported_csc_modes=}")
-            # if not specified as an encoding option,
-            # discount encodings further down the list of preferred encodings:
-            # (ie: prefer h264 to vp9)
-            try:
-                encoding_score_delta = len(PREFERRED_ENCODING_ORDER)//2-list(PREFERRED_ENCODING_ORDER).index(encoding)
-            except ValueError:
-                encoding_score_delta = 0
-            encoding_score_delta = self.encoding_options.get(f"{encoding}.score-delta", encoding_score_delta)
-            no_match = []
+        def get_codec_state() -> PipelineCodecState:
+            # These objects may change during enumeration. Read them for each score,
+            # at the same point as before, rather than freezing codec state at entry.
+            vs = self.video_subregion
+            detection = bool(vs) and vs.detection
+            return PipelineCodecState(self._csc_encoder, self._video_encoder, detection)
 
-            def add_scores(info, csc_spec: CSCSpec | None, enc_in_format) -> None:
-                # find encoders that take 'enc_in_format' as input:
-                colorspace_specs = encoder_specs.get(enc_in_format)
-                if not colorspace_specs:
-                    scorelog(f"no encoders for {enc_in_format}")
-                    no_match.append(info)
-                    return
-                # log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
-                for encoder_spec in colorspace_specs:
-                    # ensure that the output of the encoder can be processed by the client:
-                    matches = tuple(x for x in encoder_spec.output_colorspaces if x in supported_csc_modes)
-                    if not matches or self.is_cancelled():
-                        scorelog(f"output colorspaces {encoder_spec.output_colorspaces} not supported")
-                        no_match.append(encoder_spec.codec_type+" "+info)
-                        continue
-                    max_w = min(encoder_spec.max_w, vmw)
-                    max_h = min(encoder_spec.max_h, vmh)
-                    if (csc_spec and csc_spec.can_scale) or encoder_spec.can_scale:
-                        if (
-                            width <= max_w and height <= max_h
-                            and cached_scaling[0] >= width and cached_scaling[1] >= height
-                        ):
-                            scaling = cached_scaling[2]
-                        else:
-                            scaling = self.calculate_scaling(width, height, max_w, max_h)
-                    else:
-                        scaling = (1, 1)
-                    score_delta = encoding_score_delta
-                    lossy_csc = enc_in_format in ("NV12", "YUV420P", "YUV422P")
-                    if scaling != (1, 1) or lossy_csc:
-                        if text_hint:
-                            # we should not be using scaling or csc with text!
-                            score_delta -= 500
-                        elif target_q >= 100:
-                            # we want lossless, this would be far from it!
-                            score_delta -= 250
-                    if self.is_shadow and lossy_csc and scaling == (1, 1):
-                        # avoid subsampling with shadow servers:
-                        score_delta -= 40
-                    vs = self.video_subregion
-                    detection = bool(vs) and vs.detection
-                    score_data = get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
-                                                    target_q, min_q, target_s, min_s,
-                                                    self._csc_encoder, self._video_encoder,
-                                                    score_delta, ffps, detection)
-                    if score_data:
-                        scores.append(score_data)
-                    else:
-                        scorelog(" no score data for %s",
-                                 (enc_in_format, csc_spec, encoder_spec, width, height, scaling, ".."))
-            if not FORCE_CSC or src_format == FORCE_CSC_MODE:
-                add_scores(f"direct (no csc) {src_format}", None, src_format)
-
-            # now add those that require a csc step:
-            # log("%s can also be converted to %s using %s",
-            #    pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
-            # we have csc module(s) that can get us from pixel_format to out_csc:
-            for out_csc, l in csc_specs.items():
-                for csc_spec in l:
-                    add_scores(f"via {out_csc}", csc_spec, out_csc)
-            all_no_match[encoding] = no_match
-        if all_no_match:
-            scorelog("no matching colorspace specs for %s", all_no_match)
-        s = tuple(sorted(scores, key=lambda x: -x[0]))
-        scorelog("get_video_pipeline_options%s scores=%s", (encodings, width, height, src_format), s)
+        scores = get_pipeline_options(
+            encodings, width, height, src_format, settings, vh,
+            lambda encoding: self.full_csc_modes.strtupleget(encoding), self.encoding_options,
+            self.calculate_scaling, self.is_cancelled, get_codec_state, self.get_video_fps(width, height),
+        )
+        scorelog("get_video_pipeline_options%s scores=%s", (encodings, width, height, src_format), scores)
         if self.is_cancelled():
             self.last_pipeline_params = ()
             self.last_pipeline_scores = ()
         else:
             self.last_pipeline_params = (encodings, width, height, src_format)
-            self.last_pipeline_scores = s
+            self.last_pipeline_scores = scores
         self.last_pipeline_time = monotonic()
-        return s
+        return scores
 
     def get_video_fps(self, width: int, height: int) -> int:
         mvsub = self.matches_video_subregion(width, height)

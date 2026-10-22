@@ -8,7 +8,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
-from xpra.server.window import video_compress, video_scoring
+from xpra.server.window import video_compress, video_pipeline, video_scoring
 from xpra.server.window.video_scoring import get_pipeline_score
 from unit.server.window.video_pipeline_test_util import encoder_spec, csc_spec, make_source, current_encoder, current_csc
 
@@ -125,7 +125,7 @@ class VideoPipelineSourceTest(unittest.TestCase):
                 source.matches_video_subregion.return_value = object()
                 source.subregion_is_video.return_value = is_video
                 source.video_subregion = SimpleNamespace(fps=fps, detection=True)
-                with patch.object(video_compress, "get_pipeline_score", wraps=get_pipeline_score) as scorer:
+                with patch.object(video_pipeline, "get_pipeline_score", wraps=get_pipeline_score) as scorer:
                     self.select(source)
                 self.assertEqual(scorer.call_args.args[6:10], (expected, minimum, 50, 0))
 
@@ -136,7 +136,7 @@ class VideoPipelineSourceTest(unittest.TestCase):
                 source._current_quality = quality
                 source.content_types = ("text",) if text else ()
                 source.matches_video_subregion.return_value = object()
-                with patch.object(video_compress, "get_pipeline_score", wraps=get_pipeline_score) as scorer:
+                with patch.object(video_pipeline, "get_pipeline_score", wraps=get_pipeline_score) as scorer:
                     self.select(source)
                 source.subregion_is_video.assert_not_called()
                 self.assertEqual(scorer.call_args.args[6], quality)
@@ -152,7 +152,7 @@ class VideoPipelineSourceTest(unittest.TestCase):
                 source._current_quality = quality
                 source.content_types = ("text",) if text else ()
                 source.is_shadow = shadow
-                with patch.object(video_compress, "get_pipeline_score", wraps=get_pipeline_score) as scorer:
+                with patch.object(video_pipeline, "get_pipeline_score", wraps=get_pipeline_score) as scorer:
                     self.select(source, src_format="YUV420P")
                 self.assertEqual(scorer.call_args.args[12], expected_delta)
 
@@ -166,7 +166,7 @@ class VideoPipelineSourceTest(unittest.TestCase):
                 source.is_shadow = True
                 source._current_quality = quality
                 source.content_types = ("text",) if text else ()
-                with patch.object(video_compress, "get_pipeline_score", wraps=get_pipeline_score) as scorer:
+                with patch.object(video_pipeline, "get_pipeline_score", wraps=get_pipeline_score) as scorer:
                     self.select(source, src_format=src_format)
                 self.assertEqual(scorer.call_args.args[12], expected_delta)
 
@@ -190,7 +190,7 @@ class VideoPipelineSourceTest(unittest.TestCase):
             source.video_subregion = SimpleNamespace(detection=True)
             return (1,)
 
-        with patch.object(video_compress, "get_pipeline_score", side_effect=score) as scorer:
+        with patch.object(video_pipeline, "get_pipeline_score", side_effect=score) as scorer:
             self.select(source)
         first, second = scorer.call_args_list
         self.assertEqual(first.args[10:12], (None, None))
