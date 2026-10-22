@@ -2787,6 +2787,12 @@ def run_stopexit(mode: str, opts, extra_args: list[str], cmdline: list[str]) -> 
     elif len(extra_args) > 1:
         return multimode(extra_args)
 
+    if mode == "stop" and len(extra_args) == 1 and POSIX and not OSX:
+        # the server may be gone (`xpra exit` or a crash), but not the processes it started:
+        r = stop_dead_session(opts, extra_args[0])
+        if r is not None:
+            return r
+
     display_desc = pick_display(opts, extra_args, cmdline)
     app = None
     try:
@@ -3149,6 +3155,63 @@ def run_displays(options, args) -> ExitValue:
     return 0
 
 
+def countdown(what: str, wait=5) -> None:
+    print(f"{what} will be forcibly terminated in {wait} seconds")
+    print("Press Control-C to abort")
+    for _ in range(wait):
+        sys.stdout.write(".")
+        sys.stdout.flush()
+        time.sleep(1)
+    print(flush=True)
+
+
+def stop_dead_session(opts, display: str) -> ExitValue | None:
+    """
+    terminate the processes left behind by a server that is no longer running,
+    returns `None` if this does not look like a dead local session
+    """
+    if not display.lstrip(":").isdigit():
+        return None
+    display = ":" + display.lstrip(":")
+    uid = getuid()
+    dotxpra = DotXpra(opts.socket_dirs)
+    if display in dotxpra.displays(check_uid=uid, matching_state=SocketState.LIVE):
+        return None
+    from xpra.scripts.session import get_session_dir
+    session_dir = get_session_dir("", opts.sessions_dir, display, uid)
+    if not os.path.isdir(session_dir):
+        return None
+    server_pid = load_pid(os.path.join(session_dir, "server.pid"))
+    if server_pid and os.path.exists(f"/proc/{server_pid}"):
+        # the server is still running, even if we cannot see its socket:
+        return None
+    pids: dict[int, str] = {}
+    for fname in sorted(os.listdir(session_dir)):
+        if not fname.endswith(".pid") or fname == "server.pid":
+            continue
+        pid = load_pid(os.path.join(session_dir, fname))
+        try:
+            if not pid or os.stat(f"/proc/{pid}").st_uid != uid:
+                continue
+        except OSError:
+            continue
+        cmd = (load_binary_file(f"/proc/{pid}/cmdline") or b"").replace(b"\0", b" ").decode("latin1").strip()
+        pids[pid] = cmd or fname[:-4]
+    if pids:
+        print(f"The server for session {display} is no longer running, found {len(pids)} processes left behind:")
+        for pid, cmd in pids.items():
+            print("%8i    %s" % (pid, cmd))
+        print()
+        countdown("These processes")
+        for pid, cmd in pids.items():
+            kill_pid(pid, cmd)
+        start = monotonic()
+        while monotonic() - start < 5 and any(os.path.exists(f"/proc/{pid}") for pid in pids):
+            time.sleep(0.1)
+    # remove the session directory and sockets:
+    return run_clean(opts, [display])
+
+
 def run_clean_displays(options, args) -> ExitValue:
     if not POSIX or OSX:
         raise InitExit(ExitCode.UNSUPPORTED, "clean-displays is not supported on this platform")
@@ -3172,19 +3235,12 @@ def run_clean_displays(options, args) -> ExitValue:
     for display, (pid, cmd) in sorted_nicely(display_pids.items()):
         print("%4s    %-8s    %s" % (display, pid, cmd))
     print()
-    WAIT = 5
-    print(f"These displays will be forcibly terminated in {WAIT} seconds")
-    print("Press Control-C to abort")
-    for _ in range(WAIT):
-        sys.stdout.write(".")
-        sys.stdout.flush()
-        time.sleep(1)
+    countdown("These displays")
     for display, (pid, cmd) in display_pids.items():
         try:
             os.kill(pid, signal.SIGINT)
         except OSError as e:
             print(f"Unable to send SIGINT to {pid}: {e}")
-    print("")
     print("Done")
     return 0
 
