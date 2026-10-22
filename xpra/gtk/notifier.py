@@ -25,7 +25,7 @@ from xpra.notification.common import IconData
 from xpra.os_util import OSX, gi_import
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import label, modify_fg, color_parse
-from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.pixbuf import get_icon_pixbuf, load_pixbuf
 from xpra.notification.base import NotifierBase, log, NID
 
 Gtk = gi_import("Gtk")
@@ -129,11 +129,11 @@ class GTKNotifier(NotifierBase):
             self.popup_closed(oldest.nid, 4)
         image = None
         if icon and icon[0] == "png":
-            img_data = icon[3]
-            loader = GdkPixbuf.PixbufLoader()
-            loader.write(img_data)
-            loader.close()
-            image = loader.get_pixbuf()
+            try:
+                image = load_pixbuf(icon[3], ("png", ))
+            except Exception as e:
+                log("failed to load notification icon", exc_info=True)
+                log.warn("Warning: failed to load notification icon: %s", e)
         popup = Popup(self, nid, summary, body, actions, image=image, timeout=timeout // 1000,
                       show_timeout=show_timeout)
         self._notify_stack.append(popup)

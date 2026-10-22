@@ -74,12 +74,8 @@ def load_sessions_css() -> None:
 
 def pil_image_to_pixbuf(img):
     from xpra.codecs.image import to_png
-    from xpra.gtk.pixbuf import GdkPixbuf
-    data = to_png(img.convert("RGBA"))
-    loader = GdkPixbuf.PixbufLoader()
-    loader.write(data)
-    loader.close()
-    return loader.get_pixbuf()
+    from xpra.gtk.pixbuf import load_pixbuf
+    return load_pixbuf(to_png(img.convert("RGBA")), ("png", ))
 
 
 def get_session_info(sockpath: str) -> dict:
