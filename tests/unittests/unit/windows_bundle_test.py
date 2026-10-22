@@ -50,6 +50,25 @@ class WindowsBundleTest(unittest.TestCase):
                 self.assertEqual((target / "libgioopenssl.dll").read_bytes(), b"openssl")
                 command.assert_called_once_with("gio-querymodules.exe %s/gio/modules" % lib, "gio-cache.log")
 
+    def test_gstreamer_video_is_removed_without_removing_audio(self):
+        video = ("vpx", "x264", "aom", "openh264", "d3d11", "winscreencap", "videoconvertscale", "videorate")
+        audio = ("audioconvert", "audioresample", "wasapi", "directsound", "opus", "vorbis")
+        for light in (False, True):
+            with self.subTest(light=light), tempfile.TemporaryDirectory() as directory:
+                dist = Path(directory)
+                lib = dist / "lib"
+                plugins = lib / "gstreamer-1.0"
+                plugins.mkdir(parents=True)
+                for plugin in video + audio:
+                    (plugins / ("libgst%s.dll" % plugin)).touch()
+                (lib / "libgstcodecparsers-1.0-0.dll").touch()
+                (lib / "libgstreamer-1.0-0.dll").touch()
+                with patch.object(self.build, "DIST", str(dist)), redirect_stdout(io.StringIO()):
+                    self.build.delete_dlls(light)
+                self.assertEqual({path.name for path in plugins.iterdir()}, {"libgst%s.dll" % p for p in audio})
+                self.assertFalse((lib / "libgstcodecparsers-1.0-0.dll").exists())
+                self.assertTrue((lib / "libgstreamer-1.0-0.dll").exists())
+
     def test_unused_cryptopp_is_removed_without_removing_openssl(self):
         removed = ("libcryptopp.dll", "libcryptopp-8.dll", "libkvazaar-7.dll", "libde265-0.dll")
         kept = ("libcrypto-3-x64.dll", "libssl-3-x64.dll")
