@@ -270,9 +270,8 @@ class TopGUI(BaseGUIWindow):
             return
         try:
             GdkPixbuf = gi_import("GdkPixbuf")
-            Gio = gi_import("Gio")
-            stream = Gio.MemoryInputStream.new_from_bytes(GLib.Bytes.new(data))
-            pb = GdkPixbuf.Pixbuf.new_from_stream(stream, None)
+            from xpra.gtk.pixbuf import load_pixbuf
+            pb = load_pixbuf(data, ("png", ))
             w, h = pb.get_width(), pb.get_height()
             max_w, max_h = 320, 180
             scale = min(max_w / max(w, 1), max_h / max(h, 1), 1.0)

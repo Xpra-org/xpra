@@ -15,7 +15,7 @@ from xpra.client.gui.menu_helper import MenuHelper, ImageMenuItem, MenuItem
 from xpra.codecs.icon_util import INKSCAPE_RE
 from xpra.codecs.image_type import get_image_type
 from xpra.gtk.widget import scaled_image, menuitem
-from xpra.gtk.pixbuf import get_pixbuf_from_data
+from xpra.gtk.pixbuf import get_pixbuf_from_data, load_pixbuf
 from xpra.gtk.dialogs.about import close_about
 from xpra.platform.paths import get_icon_dir
 from xpra.util.i18n import _
@@ -94,13 +94,6 @@ def set_sensitive(widget, sensitive: bool) -> None:
         else:
             widget.hide()
     widget.set_sensitive(sensitive)
-
-
-def load_pixbuf(data) -> GdkPixbuf.Pixbuf:
-    loader = GdkPixbuf.PixbufLoader()
-    loader.write(data)
-    loader.close()
-    return loader.get_pixbuf()
 
 
 def get_appimage(app_name: str, icondata=b"", menu_icon_size=24, encodings=()) -> Gtk.Image | None:

@@ -16,6 +16,7 @@ from typing import Any
 from xpra.common import SizedBuffer
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.os_util import gi_import
+from xpra.gtk.pixbuf import load_pixbuf
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.base.client import XpraClientBase
@@ -32,12 +33,7 @@ GLib = gi_import("GLib")
 
 def get_pixbuf(encoding: str, data: bytes):
     try:
-        assert encoding in ("jpeg", "png", "webp")
-        mime = f"image/{encoding}"
-        loader = GdkPixbuf.PixbufLoader.new_with_mime_type(mime)
-        loader.write(data)
-        loader.close()
-        return loader.get_pixbuf()
+        return load_pixbuf(data, (encoding, ))
     except Exception as e:
         log("get_pixbuf(%s, %i bytes) error: %s", encoding, len(data), e)
         return get_pillow_pixbuf(encoding, data)

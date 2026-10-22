@@ -37,6 +37,7 @@
   * [paramiko ssh agent forwarding handler](https://github.com/Xpra-org/xpra/issues/4353)
   * [basic RDP handling](https://github.com/Xpra-org/xpra/issues/4476)
 * 🛡️ Security:
+  * [unnecessary GdkPixbuf image decoders exposed to untrusted image data](https://github.com/Xpra-org/xpra/commit/d1cdcdc656c01bc4dcd811dcd299c0f9999862b8)
   * [stricter peer data validation](https://github.com/Xpra-org/xpra/issues/5084)
   * [validate notifications](https://github.com/Xpra-org/xpra/issues/5085)
   * [SMS 2FA](https://github.com/Xpra-org/xpra/issues/5078), [email 2FA](https://github.com/Xpra-org/xpra/issues/5076)
