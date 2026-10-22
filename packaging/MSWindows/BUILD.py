@@ -635,6 +635,14 @@ def delete_dlls(light: bool) -> None:
     delete_libs("libx265*", "libjxl*", "libkvazaar*")
     # only used by kvazaar:
     delete_libs("libcryptopp*")
+
+    def delgst(*exps: str) -> None:
+        gstlibs = tuple(f"gstreamer-1.0/libgst{exp}*" for exp in exps)
+        delete_libs(*gstlibs)
+    # GStreamer is only used for audio, xpra has its own video codecs:
+    delgst("vpx", "x264", "aom", "openh264", "d3d11", "winscreencap", "videoconvertscale", "videorate")
+    # only used by the video elements, and vulnerable to CVE-2026-12891 and CVE-2026-12892:
+    delete_libs("libgstcodecparsers*")
     if light:
         # let's keep kerberos / gss libs because clients can use them:
         # "libshishi*", "libgss*"
@@ -653,9 +661,6 @@ def delete_dlls(light: bool) -> None:
             "libmp3*", "libwavpack*", "libmpdec*", "libFLAC*", "libmpg123*", "libfaad*", "libfaac*",
         )
 
-        def delgst(*exps: str) -> None:
-            gstlibs = tuple(f"gstreamer-1.0/libgst{exp}*" for exp in exps)
-            delete_libs(*gstlibs)
         # matching gstreamer modules:
         delgst("flac", "wavpack", "wavenc", "lame", "mpg123", "faac", "faad", "wav")
         # these started causing packaging problems with GStreamer 1.24:
