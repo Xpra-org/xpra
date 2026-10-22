@@ -133,12 +133,15 @@ class WestonTestUtil(ServerTestUtil):
         cmd = ["wl-copy", "--type", "text/plain;charset=utf-8"]
         if selection == "primary":
             cmd.append("--primary")
-        # wl-copy forks a process to own the selection.  It inherits stdout and
-        # stderr, so communicate() waits for the clipboard owner to exit.
+        # Keep stdout and stderr in run_command's temporary files: wl-copy's
+        # forked clipboard owner inherits them and would keep pipes open.
         proc = self.run_command(cmd, env=env, stdin=subprocess.PIPE)
-        proc.stdin.write(value.encode("utf8"))
-        proc.stdin.close()
-        if pollwait(proc, WESTON_TIMEOUT) != 0:
+        try:
+            # communicate() tolerates wl-copy exiting before reading stdin.
+            proc.communicate(input=value.encode("utf8"), timeout=WESTON_TIMEOUT)
+        except subprocess.TimeoutExpired:
+            self.show_proc_error(proc, f"{' '.join(cmd)} timed out")
+        if proc.returncode != 0:
             error = read_proc_pipe(getattr(proc, "stderr_file", None),
                                    "stderr")
             if "does not seem to implement seat" in error:
