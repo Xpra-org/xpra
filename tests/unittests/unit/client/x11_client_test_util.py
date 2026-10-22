@@ -16,6 +16,7 @@ from unit.server_test_util import ServerTestUtil, log
 class X11ClientTestUtil(ServerTestUtil):
 
     uq = 0
+    xauth_cookies: dict[str, str] = {}
 
     def terminate_and_wait(self, proc, timeout=5) -> None:
         # a bare `proc.terminate()` only sends the signal and returns immediately:
@@ -35,7 +36,9 @@ class X11ClientTestUtil(ServerTestUtil):
 
     def do_run_client(self, client_display, *args):
         from xpra.x11.vfb_util import xauth_add
-        xauth_data = get_hex_uuid()
+        # the Xvfb may not reload the authority file when we replace its cookie (ie: twice within the same second),
+        # so every client on the same display must use the same one:
+        xauth_data = X11ClientTestUtil.xauth_cookies.setdefault(client_display, get_hex_uuid())
         xauthority = self.default_env.get("XAUTHORITY", osexpand("~/.Xauthority"))
         xauth_add(xauthority, client_display, xauth_data, os.getuid(), os.getgid())
         env = self.get_run_env()
