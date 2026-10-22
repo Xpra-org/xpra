@@ -66,8 +66,9 @@ echo "<html><head><title>fake html client</title></head><body>nothing here</body
 
 pushd $UNITTESTS_DIR
 if [ "${XPRA_TEST_COVERAGE}" == "1" ]; then
-    COVERAGE=`which coverage || which python3-coverage`
-    if [ -z "${COVERAGE}" ]; then
+    # not the `coverage` script, which prints a deprecation banner with newer coverage.py versions:
+    COVERAGE="$PYTHON -m coverage"
+    if ! $PYTHON -c "import coverage" >& /dev/null; then
       echo "python3-coverage is not installed, turning off coverage report"
       XPRA_TEST_COVERAGE=0
     fi

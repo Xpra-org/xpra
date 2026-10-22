@@ -14,7 +14,20 @@ import subprocess
 from argparse import ArgumentParser
 
 TEST_COVERAGE = os.environ.get("XPRA_TEST_COVERAGE", "1") == "1"
-COVERAGE = os.environ.get("COVERAGE", shutil.which("coverage") or shutil.which("python3-coverage"))
+
+
+def get_coverage_launcher() -> list[str]:
+    if envvalue := os.environ.get("COVERAGE", ""):
+        return shlex.split(envvalue)
+    # the `coverage` scripts print a deprecation banner on stdout with newer coverage.py versions,
+    # which would end up in the output of every command we run through it:
+    if importlib.util.find_spec("coverage"):
+        return [sys.executable, "-m", "coverage"]
+    found = shutil.which("coverage") or shutil.which("python3-coverage")
+    return [found] if found else []
+
+
+COVERAGE = get_coverage_launcher()
 
 # tests whose name starts with one of these prefixes are only run if the module they test was built:
 REQUIRED_MODULES = {
@@ -50,8 +63,8 @@ def get_coverage_command(unittests_dir: str) -> list[str]:
     data_file = os.path.abspath(os.environ.get("COVERAGE_FILE", os.path.join(unittests_dir, ".coverage")))
     rcfile = os.path.abspath(os.environ.get("COVERAGE_RCFILE", os.path.join(unittests_dir, ".coveragerc")))
     # Children may change directory, and their temporary cwd may be removed before `coverage combine`.
-    return [COVERAGE, "run", "--parallel-mode", f"--data-file={data_file}", f"--rcfile={rcfile}",
-            f"--include={xpra_mod_dir}/*,{source_dir}/xpra/*"]
+    return COVERAGE + ["run", "--parallel-mode", f"--data-file={data_file}", f"--rcfile={rcfile}",
+                       f"--include={xpra_mod_dir}/*,{source_dir}/xpra/*"]
 
 
 def main(args) -> int:

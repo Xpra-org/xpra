@@ -46,7 +46,7 @@ class CoverageTest(unittest.TestCase):
                 command = runner.get_coverage_command(str(unittests))
                 env = dict(os.environ, PYTHONPATH=str(root))
                 # Use the same interpreter for coverage and for the unwrapped Python child.
-                command[:1] = [sys.executable, "-m", "coverage"]
+                command[:len(runner.COVERAGE)] = [sys.executable, "-m", "coverage"]
                 subprocess.run(command + [str(script)], cwd=unittests, env=env, check=True, capture_output=True)
                 cov = coverage.Coverage(config_file=str(rcfile), data_file=str(unittests / ".coverage"))
                 cov.combine(data_paths=[str(unittests)], strict=True)
