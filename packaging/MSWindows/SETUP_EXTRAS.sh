@@ -51,9 +51,19 @@ done
 # * `msbuild` and the .NET Framework for `DesktopLogon`
 # (`--includeRecommended` pulls in the Windows SDK, which also provides `signtool.exe`)
 VS_INSTALLER="vs_buildtools.exe"
+# discard a previous download that is not an executable (ie: an error page):
+if [[ -f "$VS_INSTALLER" && "$(head -c 2 "$VS_INSTALLER")" != "MZ" ]]; then
+	rm -f "$VS_INSTALLER"
+fi
 if [[ ! -f "$VS_INSTALLER" ]]; then
 	echo "Downloading Visual Studio Build Tools..."
-	curl -fL -o "$VS_INSTALLER" "https://aka.ms/vs/18/release/vs_buildtools.exe"
+	# Visual Studio 2026 (18) uses the "stable" channel, "release" was for 2022 (17) and earlier:
+	curl -fL -o "$VS_INSTALLER" "https://aka.ms/vs/18/stable/vs_buildtools.exe"
+	if [[ "$(head -c 2 "$VS_INSTALLER")" != "MZ" ]]; then
+		echo "Visual Studio Build Tools download is not an executable"
+		rm -f "$VS_INSTALLER"
+		exit 1
+	fi
 fi
 echo "Installing Visual Studio Build Tools..."
 ./"$VS_INSTALLER" --quiet --wait --norestart --nocache \
