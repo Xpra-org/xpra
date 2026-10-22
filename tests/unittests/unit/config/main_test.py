@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import io
+import importlib.util
 import tempfile
 import unittest
 from contextlib import nullcontext, redirect_stdout
@@ -16,6 +17,11 @@ from xpra.config.types import dict_to_config
 
 
 class ConfigToolTest(unittest.TestCase):
+
+    def test_module_entrypoint_has_executable_code(self):
+        # Extension modules cannot supply the code object required by python -m.
+        spec = importlib.util.find_spec("xpra.config.__main__")
+        self.assertIsNotNone(spec.loader.get_code(spec.name))
 
     def test_default_output(self):
         output = io.StringIO()

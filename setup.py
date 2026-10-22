@@ -3886,10 +3886,10 @@ if wayland_server_ENABLED:
     ace("xpra.wayland.server.compositor", f"{WLROOTS_PKG_CONFIG},libdrm,wayland-server,pixman-1", extra_compile_args=wlr_args)
 
 if cythonize_more_ENABLED:
-    def ax(base):
+    def ax(base, skip=("__init__.py",)):
         dirname = base.replace(".", os.path.sep)
         for x in glob(f"{dirname}/*.py"):
-            if not x.endswith("__init__.py"):
+            if os.path.basename(x) not in skip:
                 mod = x[:-3].replace(os.path.sep, ".")
                 ace(mod)
 
@@ -3982,7 +3982,8 @@ if cythonize_more_ENABLED:
     if LINUX:
         ace("xpra.platform.posix.shadow_server")
     if scripts_ENABLED:
-        ax("xpra.scripts")
+        # The configuration compatibility entry point must still support python -m.
+        ax("xpra.scripts", skip=("__init__.py", "config.py"))
     if WIN32 and service_ENABLED:
         ace("xpra.platform.win32.service")
         ace("xpra.platform.win32.shadow")
@@ -4023,7 +4024,7 @@ if cythonize_more_ENABLED:
     if wayland_server_ENABLED:
         ax("xpra.wayland.server")
 
-    ax("xpra.config")
+    ax("xpra.config", skip=("__init__.py", "__main__.py"))
     ax("xpra.util")
     ace("xpra.common")
     ace("xpra.exit_codes")

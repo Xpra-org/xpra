@@ -54,6 +54,8 @@ python3 -m xpra.config /path/to/xpra.conf
 
 The Windows and macOS `Config_info` tools use this entry point. The legacy
 `python3 -m xpra.scripts.config` invocation remains available.
+Both entry-point files remain Python modules in `cythonize_more` builds:
+extension modules cannot provide the code object needed by `python -m`.
 
 The package is part of the common runtime, including minimal builds. Build
 changes must retain its selection in `setup.py`, its optional Cython build,
