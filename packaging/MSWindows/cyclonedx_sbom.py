@@ -43,6 +43,7 @@ for package_name, info in packages.items():
     licenses = [
         lc_factory.make_from_string(license_name)
         for license_name in [info.get("Licenses", "")]
+        if license_name
     ]
     component = Component(
         type=ComponentType.LIBRARY,
