@@ -6,6 +6,7 @@
 
 import os
 import time
+import signal
 import tempfile
 import subprocess
 
@@ -197,6 +198,35 @@ class ServerTestUtil(ProcessTestUtil):
             self.show_proc_pipes(server_proc)
             self.show_proc_error(stopit, "%s server error" % subcommand)
             raise Exception("server process %s failed to '%s'" % (server_proc, subcommand))
+        if subcommand == "exit" and connect_args and str(connect_args[0]).startswith(":"):
+            # `exit` leaves the session's dbus-daemon running for the next server to adopt,
+            # so nothing would ever stop it - nor the portals activated on its bus:
+            self.stop_display_dbus(connect_args[0])
+
+    def stop_display_dbus(self, display: str) -> None:
+        # the server records the pid of its dbus-daemon on the root window:
+        env = self.get_run_env()
+        env["DISPLAY"] = display
+        out = self.get_command_output(self.get_xpra_cmd() + ["wminfo"], env=env)
+        pid = 0
+        for line in out.decode(errors="replace").splitlines():
+            k, _, v = line.partition("=")
+            if k == "dbus-pid" and v.isdigit():
+                pid = int(v)
+        if not pid:
+            return
+        # don't kill an unrelated process if the pid has been recycled:
+        try:
+            with open(f"/proc/{pid}/comm", "rb") as f:
+                if f.read().strip() != b"dbus-daemon":
+                    return
+        except OSError:
+            return
+        log("stopping dbus-daemon %i for display %s", pid, display)
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except OSError as e:
+            log("failed to stop dbus-daemon %i: %s", pid, e)
 
     def check_stop_server(self, server_proc, subcommand="stop", display=":99999") -> None:
         log("check_stop_server%s", (server_proc, subcommand, display))
