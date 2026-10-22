@@ -671,47 +671,46 @@ def DotXpra(*args, **kwargs):
     return dotxpra.DotXpra(*args, **kwargs)
 
 
-def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], full_mode: str, defaults) -> ExitValue:
-    mode_parts = full_mode.split(",", 1)
-    mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
-    # keep the (normalized) mode on the options so that subsystems which only get `opts`
-    # (ie: `parse_display_name`) can adjust their behaviour, ie: ssh agent forwarding:
-    options.mode = mode
-    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic")
-    if args and mode in ("seamless", "desktop", "monitor"):
-        # all args that aren't specifying a connection will be interpreted as a start-child command:
-        # ie: "xpra" "seamless" "xterm"
-        # ie: "xpra" "desktop" "ssh://host/" "fluxbox"
-        # and we also enable `exit-with-children` if unspecified
-        commands = []
-        connargs = []
-        for arg in tuple(args):
-            if is_connection_arg(arg):
-                # keep this one
-                connargs.append(arg)
-            else:
-                commands.append(arg)
-        if commands:
-            args = connargs
-            # figure out if we also auto-enable:
-            # * --exit-with-children:
-            if not any(x.startswith("--exit-with-children") or x == "--no-exit-with-children" for x in cmdline):
-                options.exit_with_children = True
-            # * --attach if we have a real display:
-            # but not if attach was specified on the command line
-            # and not if we have html=open
-            html_open = (options.html or "").lower() not in (list(ALL_BOOLEAN_OPTIONS) + ["auto", "none", None])
-            if not html_open and not any(x.startswith("--attach") or x == "--no-attach" for x in cmdline):
-                options.attach = OSX or WIN32 or any(os.environ.get(x) for x in (
-                    "DISPLAY", "WAYLAND_DISPLAY", "SSH_CONNECTION",
-                ))
-            for command in commands:
-                options.start_child.append(command)
+def split_start_child_args(cmdline: list[str], options, args: list[str]) -> list[str]:
+    """
+    all args that aren't specifying a connection will be interpreted as a start-child command:
+    ie: "xpra" "seamless" "xterm"
+    ie: "xpra" "desktop" "ssh://host/" "fluxbox"
+    and we also enable `exit-with-children` if unspecified
+    returns the connection args
+    """
+    commands = []
+    connargs = []
+    for arg in args:
+        if is_connection_arg(arg):
+            # keep this one
+            connargs.append(arg)
+        else:
+            commands.append(arg)
+    if not commands:
+        return args
+    # figure out if we also auto-enable:
+    # * --exit-with-children:
+    if not any(x.startswith("--exit-with-children") or x == "--no-exit-with-children" for x in cmdline):
+        options.exit_with_children = True
+    # * --attach if we have a real display:
+    # but not if attach was specified on the command line
+    # and not if we have html=open
+    html_open = (options.html or "").lower() not in (list(ALL_BOOLEAN_OPTIONS) + ["auto", "none", None])
+    if not html_open and not any(x.startswith("--attach") or x == "--no-attach" for x in cmdline):
+        options.attach = OSX or WIN32 or any(os.environ.get(x) for x in (
+            "DISPLAY", "WAYLAND_DISPLAY", "SSH_CONNECTION",
+        ))
+    options.start_child += commands
+    return connargs
+
+
+def run_server_mode(script_file: str, cmdline: list[str], options, args: list[str], mode: str, full_mode: str, defaults) -> ExitValue:
     if mode in ("seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen"):
-        if display_is_remote:
+        if isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic"):
             # ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
             return run_remote_server(script_file, cmdline, options, args, mode, defaults)
-        elif args and str_to_bool(options.attach, False):
+        if args and str_to_bool(options.attach, False):
             # maybe the server is already running,
             # and we don't need to bother trying to start it:
             try:
@@ -727,10 +726,21 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
                         # we're connecting locally, so no need for these:
                         options.csc_modules = ["none"]
                         options.video_decoders = ["none"]
-                        return do_run_mode(script_file, cmdline, options, args, "attach", defaults)
+                        options.mode = "attach"
+                        return run_client(script_file, cmdline, options, args, "attach")
+    return run_server(script_file, cmdline, options, args, full_mode, defaults)
 
+
+def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], full_mode: str, defaults) -> ExitValue:
+    mode_parts = full_mode.split(",", 1)
+    mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
+    # keep the (normalized) mode on the options so that subsystems which only get `opts`
+    # (ie: `parse_display_name`) can adjust their behaviour, ie: ssh agent forwarding:
+    options.mode = mode
+    if args and mode in ("seamless", "desktop", "monitor"):
+        args = split_start_child_args(cmdline, options, args)
     if mode in SERVER_SUBCOMMANDS:
-        return run_server(script_file, cmdline, options, args, full_mode, defaults)
+        return run_server_mode(script_file, cmdline, options, args, mode, full_mode, defaults)
     if mode in ("run", "exec") and args and args[0].startswith(":"):
         # for local displays, run via "_proxy_run"
         # which will use plain-X11 connections if needed:
