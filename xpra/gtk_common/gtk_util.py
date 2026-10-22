@@ -51,14 +51,14 @@ def get_gtk_version_info() -> Dict[str,Any]:
         V("gobject",    GObject,    "_version")
         V("pixbuf",     GdkPixbuf,     "_version")
         V("pixbuf",     GdkPixbuf,     "PIXBUF_VERSION")
-        def MAJORMICROMINOR(name, module):
+        def MAJORMINORMICRO(name, module):
             try:
-                v = tuple(getattr(module, x) for x in ("MAJOR_VERSION", "MICRO_VERSION", "MINOR_VERSION"))
+                v = tuple(getattr(module, x) for x in ("MAJOR_VERSION", "MINOR_VERSION", "MICRO_VERSION"))
                 av(name, ".".join(str(x) for x in v))
             except Exception:
                 pass
-        MAJORMICROMINOR("gtk",  Gtk)
-        MAJORMICROMINOR("glib", GLib)
+        MAJORMINORMICRO("gtk",  Gtk)
+        MAJORMINORMICRO("glib", GLib)
         av("cairo", parse_version(cairo.version_info))  #pylint: disable=no-member
         av("pango", parse_version(Pango.version_string()))
     return GTK_VERSION_INFO.copy()

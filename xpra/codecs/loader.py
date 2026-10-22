@@ -147,7 +147,7 @@ def add_codec_version(name:str, top_module, version:str="get_version()", alt_ver
         for fieldname in fieldnames:
             f = fieldname
             if f.endswith("()"):
-                f = version[:-2]
+                f = fieldname[:-2]
             module = __import__(top_module, {}, {}, [f])
             if not hasattr(module, f):
                 continue
