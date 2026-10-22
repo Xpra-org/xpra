@@ -24,8 +24,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # add `lts` once 7.0 is released
-        branch: [stable, beta]
+        # add `beta`, and `lts` once 7.0 is released
+        branch: [stable]
         variant: [Xpra, Xpra-Light]
     env:
       NAME: ${{ matrix.branch }}-${{ matrix.variant }}

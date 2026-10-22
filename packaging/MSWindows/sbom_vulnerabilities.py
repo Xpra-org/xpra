@@ -6,7 +6,8 @@
 # later version. See the file COPYING for details.
 
 # Summarize grype JSON reports as markdown,
-# using `docs/Build/CVE.md` to tell which vulnerabilities are new and which ones have been switched off:
+# using `docs/Build/CVE.md` to tell which vulnerabilities are new and which ones have been switched off,
+# and to skip the packages listed in its ignored packages table:
 # python3 sbom_vulnerabilities.py --scan 6.5.5-r0 grype.json [--scan 7.0-r42750 grype-beta.json] [--update]
 # `--update` adds the new vulnerabilities to `docs/Build/CVE.md`.
 # The number of new vulnerabilities is written to `$GITHUB_OUTPUT` as `new`.
@@ -21,6 +22,10 @@ CVE_DOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "
 CVE_DOC_URL = "https://github.com/Xpra-org/xpra/blob/master/docs/Build/CVE.md"
 
 SEVERITIES = ("Critical", "High", "Medium", "Low", "Negligible", "Unknown")
+
+# "on" stands out in the rendered table, "off" is the exception:
+LIVE_ON = "🔴 on"
+LIVE_OFF = "off"
 
 COLUMNS = ("CVE", "Package", "Severity", "Issue", "Upstream fix", "Live", "First xpra version", "Fixed in xpra", "Ticket", "Notes")
 
@@ -113,6 +118,24 @@ def load_doc(filename: str) -> tuple[list[str], list[str], dict[str, dict[str, s
     return lines[:header], lines[end:], rows
 
 
+def load_ignored(lines: list[str]) -> set[str]:
+    """
+    the packages listed in the `| Package | Reason |` table
+    """
+    ignored: set[str] = set()
+    in_table = False
+    for line in lines:
+        if not line.startswith("|"):
+            in_table = False
+            continue
+        cells = split_row(line)
+        if cells[:2] == ["Package", "Reason"]:
+            in_table = True
+        elif in_table and cells and not cells[0].startswith("---"):
+            ignored.add(cells[0].strip("`"))
+    return ignored
+
+
 def format_row(row: dict[str, str]) -> str:
     return "| " + " | ".join(row.get(column, "") for column in COLUMNS) + " |"
 
@@ -135,7 +158,7 @@ def new_row(m: dict, versions: list[str]) -> dict[str, str]:
         "Severity": m["severity"],
         "Issue": summarize(m["description"]),
         "Upstream fix": escape(m["fixed"]),
-        "Live": "on",
+        "Live": LIVE_ON,
         "First xpra version": ", ".join(versions),
     }
 
@@ -147,6 +170,10 @@ def update_row(row: dict[str, str], m: dict) -> None:
     row["Package"] = ", ".join(packages)
     if not row.get("Upstream fix"):
         row["Upstream fix"] = escape(m["fixed"])
+
+
+def is_live(row: dict[str, str]) -> bool:
+    return row.get("Live", "").split()[-1:] != [LIVE_OFF]
 
 
 def severity_index(severity: str) -> int:
@@ -172,11 +199,18 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv[1:])
 
     before, after, rows = load_doc(args.doc)
+    ignored = load_ignored(before + after)
     # merge the scans, remembering which xpra versions match each vulnerability:
     matches: dict[str, dict] = {}
     versions: dict[str, list[str]] = {}
+    skipped: set[str] = set()
     for xpra_version, filename in args.scan:
         for vuln_id, m in load_matches(filename).items():
+            for package in ignored & set(m["packages"]):
+                del m["packages"][package]
+            if not m["packages"]:
+                skipped.add(vuln_id)
+                continue
             if vuln_id in matches:
                 matches[vuln_id]["packages"].update(m["packages"])
             else:
@@ -186,7 +220,7 @@ def main(argv: list[str]) -> int:
 
     new = [new_row(m, versions[vuln_id]) for vuln_id, m in matches.items() if vuln_id not in rows]
     known = [rows[vuln_id] for vuln_id in matches if vuln_id in rows]
-    live = [row for row in known if row.get("Live") != "off"]
+    live = [row for row in known if is_live(row)]
     off = len(known) - len(live)
 
     counts = ", ".join(
@@ -196,7 +230,8 @@ def main(argv: list[str]) -> int:
     lines = [
         f"{len(matches)} vulnerabilities" + (f": {counts}" if counts else ""),
         "",
-        f"{len(new)} new, {len(live)} live and {off} switched off in [CVE.md]({CVE_DOC_URL}).",
+        f"{len(new)} new, {len(live)} live and {off} switched off in [CVE.md]({CVE_DOC_URL}),"
+        f" {len(skipped - set(matches))} more in ignored packages.",
     ]
     if new:
         lines += ["", "## New vulnerabilities", ""] + table(new)
