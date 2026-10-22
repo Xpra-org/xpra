@@ -6,7 +6,7 @@
 import sys
 
 from xpra.exit_codes import ExitValue
-from xpra.scripts.config import XpraConfig
+from xpra.config.types import XpraConfig
 from xpra.gtk.dialogs.sessions_gui import SessionsGUI
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, get_listener_class
 from xpra.net.session_discovery import (
@@ -121,7 +121,7 @@ def do_main(opts: XpraConfig) -> ExitValue:
 
 def main(argv: list[str]) -> ExitValue:
     # pylint: disable=import-outside-toplevel
-    from xpra.scripts.config import make_defaults_struct
+    from xpra.config.defaults import make_defaults_struct
     opts = make_defaults_struct()
     consume_verbose_argv(argv, "mdns")
     return do_main(opts)

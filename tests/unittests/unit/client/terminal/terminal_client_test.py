@@ -56,7 +56,7 @@ IO_IN = 1
 # what `xpra.scripts.main.make_client` must end up with for `--backend=terminal`,
 # run in a subprocess because it poisons the `gi.repository` Gtk modules process wide:
 MAKE_CLIENT_SCRIPT = """
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
 from xpra.scripts.main import make_client
 opts = make_defaults_struct()
 opts.backend = "terminal"

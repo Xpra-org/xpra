@@ -18,7 +18,8 @@ from collections.abc import Callable, Sequence
 from subprocess import Popen, PIPE, call
 import os.path
 
-from xpra.scripts.config import InitException, get_Xdummy_confdir
+from xpra.config import InitException
+from xpra.config.vfb import get_Xdummy_confdir
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, shellsub, osexpand, get_exec_env, get_saved_env_var
 from xpra.os_util import getuid, getgid, POSIX, OSX

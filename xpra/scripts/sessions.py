@@ -22,7 +22,7 @@ from xpra.util.str_fn import csv, sort_human
 from xpra.util.env import envint
 from xpra.net.constants import SocketState
 from xpra.log import Logger
-from xpra.scripts.config import InitException, InitInfo, InitExit
+from xpra.config import InitException, InitInfo, InitExit
 
 # pylint: disable=import-outside-toplevel
 

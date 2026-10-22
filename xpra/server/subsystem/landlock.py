@@ -8,7 +8,8 @@ import os
 from xpra.exit_codes import ExitCode
 from xpra.log import Logger
 from xpra.os_util import LINUX
-from xpra.scripts.config import InitException, InitExit, split_landlock_option
+from xpra.config import InitException, InitExit
+from xpra.config.validation import split_landlock_option
 from xpra.server.subsystem.stub import StubSubsystem
 
 log = Logger("landlock")

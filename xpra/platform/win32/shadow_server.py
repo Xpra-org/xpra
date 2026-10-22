@@ -14,7 +14,7 @@ from xpra.util.str_fn import csv
 from xpra.constants import XPRA_APP_ID
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet
-from xpra.scripts.config import InitException, InitExit
+from xpra.config import InitException, InitExit
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con

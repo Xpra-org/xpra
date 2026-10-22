@@ -10,7 +10,7 @@ from typing import Any, TypeAlias
 
 from xpra.util.parsing import parse_simple_dict
 from xpra.os_util import WIN32
-from xpra.scripts.config import InitException
+from xpra.config import InitException
 from xpra.log import Logger
 
 log = Logger("auth")

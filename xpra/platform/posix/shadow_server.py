@@ -10,7 +10,7 @@ from xpra.log import Logger
 from xpra.util.env import envbool
 from xpra.util.str_fn import csv
 from xpra.exit_codes import ExitCode
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 
 
 ShadowServerFactory = Callable[[dict[str, str]], object]

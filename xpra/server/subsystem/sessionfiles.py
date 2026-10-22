@@ -8,10 +8,10 @@ import socket
 from typing import Any
 
 from xpra import __version__
-from xpra.scripts.config import (
-    OPTION_TYPES, CLIENT_ONLY_OPTIONS,
-    fixup_options, make_defaults_struct, read_config, dict_to_validated_config,
-)
+from xpra.config.types import OPTION_TYPES, CLIENT_ONLY_OPTIONS
+from xpra.config.fixup import fixup_options
+from xpra.config.defaults import make_defaults_struct, dict_to_validated_config
+from xpra.config.io import read_config
 from xpra.scripts.parsing import fixup_defaults
 from xpra.scripts.session import (
     clean_session_files, get_session_dir, make_session_dir, rm_session_dir, save_session_file, session_file_path,

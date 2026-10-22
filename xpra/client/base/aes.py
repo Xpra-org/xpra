@@ -9,7 +9,7 @@ from typing import Any
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.util.str_fn import csv, strtobytes, Ellipsizer
 from xpra.util.io import filedata_nocrlf
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.exit_codes import ExitCode
 from xpra.net.crypto import (

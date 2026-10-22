@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.scripts.config import InitException
+from xpra.config import InitException
 from xpra.server.session_registry import Session, SessionRegistry
 from xpra.server.session_registry.helper import load_session_registry, parse_session_registry_string
 

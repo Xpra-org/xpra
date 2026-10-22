@@ -28,7 +28,7 @@ from xpra.audio.gstreamer_util import (
 )
 from xpra.util.gobject import one_arg_signal
 from xpra.net.compression import decompress_by_name
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.common import SizedBuffer
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv

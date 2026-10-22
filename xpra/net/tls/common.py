@@ -10,7 +10,7 @@ from collections.abc import Sequence
 
 from xpra.common import noerr
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 
 SSL_VERIFY_EXPIRED = 10
 SSL_VERIFY_WRONG_HOST = 20

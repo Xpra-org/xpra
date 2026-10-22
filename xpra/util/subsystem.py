@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from xpra.log import Logger
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.util.objects import merge_dicts
 
 log = Logger("subsystems")

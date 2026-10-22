@@ -604,7 +604,7 @@ def do_main(options) -> int:
 
 
 def main() -> int:
-    from xpra.scripts.config import make_defaults_struct
+    from xpra.config.defaults import make_defaults_struct
     options = make_defaults_struct()
     return do_main(options)
 

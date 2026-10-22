@@ -11,7 +11,7 @@ from types import SimpleNamespace
 from xpra.client.base.features import set_client_features
 from xpra.server.features import set_server_features
 from xpra.server.subsystem.control import ControlHandler
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
 from xpra.scripts.parsing import parse_cmdline
 
 

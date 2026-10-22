@@ -15,7 +15,8 @@ from xpra.util.version import XPRA_VERSION
 from xpra.x11.error import xlog, xsync, xswallow, XError
 from xpra.exit_codes import ExitCode
 from xpra.util.system import is_X11
-from xpra.scripts.config import FALSE_OPTIONS, InitExit
+from xpra.util.parsing import FALSE_OPTIONS
+from xpra.config import InitExit
 from xpra.net.common import Packet
 from xpra.common import may_notify_client
 from xpra.constants import MAX_WINDOW_SIZE, NotificationID

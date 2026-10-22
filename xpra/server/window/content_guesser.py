@@ -84,7 +84,7 @@ def _merge_defs(target: ConfDict, source: ConfDict, source_first: bool = False) 
 def _load_dict_dir(d: str, parser: ConfParser) -> ConfDict:
     # load all the .conf files from the directory.
     # do_get_user_conf_dirs returns paths with literal '~' so they can be expanded
-    # against the target user when osexpand is called (e.g. xpra/scripts/config.py
+    # against the target user when osexpand is called (e.g. xpra/config/defaults.py
     # for multi-user proxies). This loader is server-side, called as the user the
     # rules belong to, so a plain expanduser is the right resolution here.
     d = os.path.expanduser(d)

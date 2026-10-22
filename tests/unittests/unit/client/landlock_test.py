@@ -18,7 +18,8 @@ from xpra.client.base.landlock import LandLock
 from xpra.exit_codes import ExitCode
 from xpra.os_util import LINUX
 from xpra.util import subsystem as dispatch
-from xpra.scripts.config import InitExit, make_defaults_struct
+from xpra.config import InitExit
+from xpra.config.defaults import make_defaults_struct
 
 
 @unittest.skipUnless(LINUX, "Landlock is Linux only")

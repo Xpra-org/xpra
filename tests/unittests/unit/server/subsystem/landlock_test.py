@@ -14,7 +14,8 @@ from unittest.mock import Mock, patch
 from xpra.exit_codes import ExitCode
 from xpra.os_util import LINUX
 from xpra.util import subsystem as dispatch
-from xpra.scripts.config import InitException, InitExit, make_defaults_struct
+from xpra.config import InitException, InitExit
+from xpra.config.defaults import make_defaults_struct
 from xpra.server import features
 from xpra.server.core import ServerCore, get_instance_subsystem_classes
 from xpra.server.subsystem.landlock import LandLock

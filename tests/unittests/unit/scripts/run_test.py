@@ -12,7 +12,7 @@ from xpra.client.base.command import RunClient
 from xpra.client.base.client import XpraClientBase
 from xpra.exit_codes import ExitCode
 from xpra.net.constants import SocketState
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
 from xpra.scripts.main import connect_client_app, create_client_app, do_run_mode, run_proxy_run
 from xpra.scripts.parsing import mode_needs_ssh_agent
 

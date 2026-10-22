@@ -9,7 +9,7 @@ import os.path
 from xpra.os_util import gi_import
 from xpra.util.thread import check_main_thread
 from xpra.util.version import XPRA_VERSION
-from xpra.scripts.config import get_build_info
+from xpra.config.info import get_build_info
 from xpra.gtk.window import add_close_accel
 from xpra.log import Logger
 

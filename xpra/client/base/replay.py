@@ -766,7 +766,7 @@ def do_main(config) -> int:
 
 
 def main() -> int:
-    from xpra.scripts.config import make_defaults_struct
+    from xpra.config.defaults import make_defaults_struct
     return do_main(make_defaults_struct())
 
 

@@ -15,7 +15,7 @@ from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.common import noop, SizedBuffer
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import LINUX, WIN32, OSX
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.util.parsing import str_to_bool
 from xpra.util.system import platform_name
 from xpra.util.str_fn import std, csv, single_line, truncate

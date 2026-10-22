@@ -7,7 +7,7 @@ import os
 from importlib import import_module
 
 from xpra.util.parsing import parse_simple_dict
-from xpra.scripts.config import InitException
+from xpra.config import InitException
 from xpra.server.session_registry import SessionRegistry
 from xpra.log import Logger
 

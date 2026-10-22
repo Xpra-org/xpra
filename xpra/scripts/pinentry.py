@@ -16,7 +16,7 @@ from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.io import use_gui_prompt, which
 from xpra.util.system import is_gnome, is_kde, stop_proc
 from xpra.util.str_fn import bytestostr
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.exit_codes import ExitCode
 from xpra.log import Logger

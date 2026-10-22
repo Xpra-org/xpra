@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import patch
 
 from xpra.platform.posix import security
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
 
 
 class FakeCall:

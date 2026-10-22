@@ -13,7 +13,7 @@ from subprocess import TimeoutExpired
 from unittest.mock import patch, MagicMock
 
 from xpra.net.constants import SocketState
-from xpra.scripts.config import InitException, InitInfo
+from xpra.config import InitException, InitInfo
 from xpra.scripts.sessions import (
     WAIT_SERVER_TIMEOUT,
     LIST_REPROBE_TIMEOUT,

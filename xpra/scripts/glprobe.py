@@ -16,7 +16,7 @@ from importlib.util import find_spec
 from typing import Any, NoReturn
 
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.scripts.config import XpraConfig
+from xpra.config.types import XpraConfig
 from xpra.os_util import POSIX, OSX, is_admin, force_quit
 from xpra.util.env import OSEnvContext, get_exec_env, envint, envbool
 from xpra.util.io import stderr_print, use_tty

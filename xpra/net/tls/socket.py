@@ -19,7 +19,7 @@ from xpra.net.tls.file import (
 from xpra.net.tls.parsing import (
     parse_ssl_options_mask, parse_ssl_verify_mask, parse_ssl_protocol, parse_ssl_verify_mode,
 )
-from xpra.scripts.config import InitExit, InitException
+from xpra.config import InitExit, InitException
 from xpra.util.env import envbool, envint
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.str_fn import print_nested_dict, Ellipsizer

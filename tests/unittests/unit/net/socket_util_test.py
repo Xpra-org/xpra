@@ -31,7 +31,7 @@ from xpra.net.socket_util import (
     setup_tcp_socket,
     setup_udp_socket,
 )
-from xpra.scripts.config import InitException
+from xpra.config import InitException
 from xpra.net.protocol.header import FLAGS_RENCODEPLUS
 
 
@@ -869,7 +869,7 @@ class TestSetupQuicSocket(unittest.TestCase):
     def test_no_aioquic_raises_init_exit(self):
         import sys
         from xpra.net.socket_util import setup_quic_socket
-        from xpra.scripts.config import InitExit
+        from xpra.config import InitExit
         saved = sys.modules.get("aioquic", ...)
         sys.modules["aioquic"] = None
         try:

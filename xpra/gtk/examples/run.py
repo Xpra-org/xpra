@@ -7,7 +7,7 @@ from importlib import import_module
 
 from xpra.util.str_fn import csv
 from xpra.exit_codes import ExitValue
-from xpra.scripts.config import InitException, InitInfo
+from xpra.config import InitException, InitInfo
 
 ALL_EXAMPLES = (
     "bell", "clicks",

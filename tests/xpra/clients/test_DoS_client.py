@@ -8,11 +8,11 @@ import sys
 import socket
 
 from xpra.log import Logger
-log = Logger()
-
 from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
+
+log = Logger()
 
 
 def test_DoS(client_class_constructor, args):

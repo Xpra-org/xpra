@@ -149,7 +149,7 @@ class BugReport:
 
         def get_sys_info() -> dict[str, Any]:
             from xpra.platform.info import get_user_info
-            from xpra.scripts.config import read_xpra_defaults
+            from xpra.config.io import read_xpra_defaults
             return {
                 "argv": sys.argv,
                 "path": sys.path,

@@ -9,7 +9,7 @@ import unittest
 from unittest.mock import Mock, call, patch
 
 from xpra.client.base.replay import Replay, WindowModel, WindowReplay
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
 from xpra.util.objects import typedict
 
 

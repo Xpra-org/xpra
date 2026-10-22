@@ -41,17 +41,13 @@ from xpra.scripts.parsing import (
     validated_encodings, validate_encryption, do_parse_cmdline, show_audio_codec_help,
     MODE_ALIAS,
 )
-from xpra.scripts.config import (
-    XpraConfig,
-    CLIENT_OPTIONS,
-    START_COMMAND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS,
-    InitException, InitInfo, InitExit,
-    fixup_options, parse_landlock_option, split_landlock_option,
-    find_docs_path, find_html5_path,
-    get_defaults,
-    make_defaults_struct, has_audio_support,
-    xvfb_command,
-)
+from xpra.config.types import XpraConfig, CLIENT_OPTIONS, START_COMMAND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS
+from xpra.config import InitException, InitInfo, InitExit
+from xpra.config.fixup import fixup_options
+from xpra.config.validation import parse_landlock_option, split_landlock_option
+from xpra.config.paths import find_docs_path, find_html5_path
+from xpra.config.defaults import get_defaults, make_defaults_struct, has_audio_support
+from xpra.config.vfb import xvfb_command
 from xpra.net.constants import SOCKET_TYPES, SocketState
 from xpra.log import is_debug_enabled, Logger, get_debug_args, enable_format, inject_debug_logging
 from xpra.scripts.display import (
@@ -2010,7 +2006,7 @@ def get_start_new_session_dict(opts, mode: str, extra_args) -> dict[str, Any]:
     }
     if len(extra_args) == 1:
         sns["display"] = extra_args[0]
-    from xpra.scripts.config import dict_to_config
+    from xpra.config.types import dict_to_config
     defaults = dict_to_config(get_defaults())
     fixup_options(defaults)
     for x in PROXY_START_OVERRIDABLE_OPTIONS:
@@ -2897,7 +2893,7 @@ def run_about() -> ExitValue:
         if is_terminal():
             from xpra.util.version import XPRA_VERSION
             from xpra.gtk.dialogs import about
-            from xpra.scripts.config import get_build_info
+            from xpra.config.info import get_build_info
 
             stderr_print(f"Xpra {XPRA_VERSION}")
             stderr_print()

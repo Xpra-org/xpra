@@ -23,7 +23,7 @@ from xpra.util.io import pollwait
 from xpra.util.objects import AdHocStruct
 from xpra.platform.paths import get_xpra_command
 from xpra.common import noop, noerr
-from xpra.scripts.config import InitException, InitExit, InitInfo
+from xpra.config import InitException, InitExit, InitInfo
 from xpra.scripts.main import (
     nox, use_systemd_run, systemd_run_command, systemd_run_wrap,
     handle_client_encoding_option, normalize_client_encoding_option,
@@ -240,7 +240,7 @@ class TestMain(unittest.TestCase):
         glib.idle_add.assert_called_once()
 
     def test_remote_start_connects_after_run_hooks(self):
-        from xpra.scripts.config import make_defaults_struct
+        from xpra.config.defaults import make_defaults_struct
         from xpra.scripts.main import run_remote_server
         opts = make_defaults_struct()
         opts.attach = False

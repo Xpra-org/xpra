@@ -7,7 +7,7 @@ import os
 from typing import Any
 
 from xpra.os_util import gi_import
-from xpra.scripts.config import InitException
+from xpra.config import InitException
 from xpra.net.common import Packet
 from xpra.server.common import get_sources_by_type
 from xpra.util.env import envbool

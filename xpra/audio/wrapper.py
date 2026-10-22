@@ -24,7 +24,7 @@ from xpra.os_util import WIN32, OSX, POSIX, BITS, gi_import
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
-from xpra.scripts.config import InitExit, InitException
+from xpra.config import InitExit, InitException
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

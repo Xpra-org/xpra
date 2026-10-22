@@ -23,7 +23,7 @@ from xpra.util.io import pollwait
 from xpra.platform.paths import get_xpra_command
 from xpra.platform.dotxpra import DISPLAY_PREFIX
 from xpra.scripts.display import X11_SOCKET_DIR, stat_display_socket
-from xpra.scripts.config import get_defaults
+from xpra.config.defaults import get_defaults
 
 from xpra.log import Logger
 
@@ -373,7 +373,7 @@ class ProcessTestUtil(unittest.TestCase):
             ):  #DBUS_SESSION_BUS_ADDRESS
                 #keep it
                 env[x] = os.environ.get(x)
-        from xpra.scripts.config import xvfb_command
+        from xpra.config.vfb import xvfb_command
         cmd = xvfb_command(cls.test_xvfb_command, depth=depth, dpi=0, fps=0)
         if not os.environ.get("XAUTHORITY"):
             for i, arg in enumerate(cmd):

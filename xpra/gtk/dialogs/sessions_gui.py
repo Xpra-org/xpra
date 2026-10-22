@@ -13,7 +13,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.gui import force_focus
 from xpra.util.child_reaper import get_child_reaper
 from xpra.exit_codes import exit_str
-from xpra.scripts.config import OPTION_TYPES
+from xpra.config.types import OPTION_TYPES
 from xpra.scripts.args import get_command_args
 from xpra.gtk.css_overrides import add_screen_css
 from xpra.gtk.dialogs.common_style import add_style_class, load_common_style
@@ -565,7 +565,7 @@ def do_main(opts) -> ExitValue:
 
 
 def main() -> ExitValue:  # pragma: no cover
-    from xpra.scripts.config import make_defaults_struct
+    from xpra.config.defaults import make_defaults_struct
     opts = make_defaults_struct()
     return do_main(opts)
 

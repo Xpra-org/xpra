@@ -10,7 +10,7 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.os_util import gi_import, is_admin
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
 from xpra.util.env import osexpand
 from xpra.util.parsing import parse_simple_dict
 from xpra.util.thread import start_thread

@@ -174,7 +174,7 @@ def do_main(opts):
 
 
 def main(_args):
-    from xpra.scripts.config import make_defaults_struct
+    from xpra.config.defaults import make_defaults_struct
     defaults = make_defaults_struct()
     return do_main(defaults)
 

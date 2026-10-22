@@ -418,7 +418,7 @@ class TestVerifyHypervAvailable(unittest.TestCase):
     @unittest.skipIf(sys.platform.startswith("win"), "non-Windows: HyperV should be unavailable")
     def test_non_windows_raises(self):
         from xpra.net.common import verify_hyperv_available
-        from xpra.scripts.config import InitExit
+        from xpra.config import InitExit
         with self.assertRaises(InitExit):
             verify_hyperv_available()
 

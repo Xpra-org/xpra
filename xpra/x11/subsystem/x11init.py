@@ -36,7 +36,7 @@ class X11Init(StubSubsystem):
                 wait_for_x_server(self.display, VFB_WAIT)
                 init_display_source()
             except (RuntimeError, ValueError) as e:
-                from xpra.scripts.config import InitExit
+                from xpra.config import InitExit
                 from xpra.exit_codes import ExitCode
                 raise InitExit(ExitCode.VFB_ERROR, str(e)) from None
         main_loop = getattr(self.server, "main_loop", None)

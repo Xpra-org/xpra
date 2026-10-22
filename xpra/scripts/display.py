@@ -21,7 +21,7 @@ from xpra.util.io import is_socket, wait_for_socket, warn
 from xpra.util.str_fn import sorted_nicely, csv
 from xpra.util.pid import load_pid
 from xpra.log import Logger
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 
 VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
 

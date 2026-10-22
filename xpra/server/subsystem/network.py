@@ -45,7 +45,7 @@ from xpra.util.thread import start_thread
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, hexstr
 from xpra.util.env import envint, envbool, envfloat
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

@@ -14,7 +14,8 @@ from xpra.common import noerr, noop
 from xpra.os_util import POSIX, OSX, getuid, get_username_for_uid, find_group
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.scripts.server import VFBStartResult, verify_display
-from xpra.scripts.config import InitExit, xvfb_command
+from xpra.config import InitExit
+from xpra.config.vfb import xvfb_command
 from xpra.scripts.common import no_gtk
 from xpra.scripts.display import stat_display_socket, X11_SOCKET_DIR
 from xpra.scripts.session import load_session_file

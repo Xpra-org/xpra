@@ -29,7 +29,7 @@ from xpra.platform.posix.fd_portal import (
     AvailableSourceTypes, AvailableDeviceTypes,
 )
 from xpra.log import Logger
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 
 log = Logger("shadow")
 

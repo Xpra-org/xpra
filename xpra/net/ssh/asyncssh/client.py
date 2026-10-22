@@ -21,7 +21,7 @@ from xpra.net.ssh.asyncssh.connection import SSHStreamConnection
 from xpra.platform.info import get_username
 from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.scripts.args import shellquote
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.scripts.pinentry import confirm, input_pass
 from xpra.util.env import envbool, envint
 from xpra.util.io import umask_context

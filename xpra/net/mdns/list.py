@@ -15,7 +15,7 @@ from xpra.net.session_discovery import (
 )
 from xpra.exit_codes import ExitValue
 from xpra.exit_codes import ExitCode
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 
 
 def run_list_mdns(extra_args) -> ExitValue:

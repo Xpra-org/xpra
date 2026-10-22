@@ -11,7 +11,7 @@ from xpra.server.common import get_sources_by_type
 from xpra.server.shadow.common import parse_geometries
 from xpra.server.window import batch_config
 from xpra.server.base import ServerBase
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.platform.paths import get_icon_dir
 from xpra.os_util import POSIX, OSX
 from xpra.server import features

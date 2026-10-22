@@ -21,7 +21,7 @@ from xpra.net.constants import SocketState
 from xpra.util.str_fn import bytestostr, csv, sorted_nicely
 from xpra.util.io import stderr_print
 from xpra.util.env import envint
-from xpra.scripts.config import InitException, InitExit, InitInfo
+from xpra.config import InitException, InitExit, InitInfo
 from xpra.scripts.parsing import parse_display_name
 from xpra.scripts.display import X11_SOCKET_DIR
 from xpra.log import Logger

@@ -13,7 +13,7 @@ from typing import Any, NoReturn
 from types import FrameType
 from collections.abc import Callable, Sequence
 
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.common import noerr, noop, may_show_progress, stop_asyncio_loop
 from xpra.net.constants import ConnectionMessage
 from xpra.net.common import (

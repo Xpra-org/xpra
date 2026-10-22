@@ -8,7 +8,7 @@ from xpra.net.common import Packet
 from xpra.util.thread import start_thread
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitCode
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.log import Logger
 
 log = Logger("ssl")

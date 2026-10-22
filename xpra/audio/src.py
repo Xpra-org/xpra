@@ -27,7 +27,7 @@ from xpra.audio.gstreamer_util import (
     MS_TO_NS, GST_QUEUE_LEAK_DOWNSTREAM,
 )
 from xpra.net.compression import compressed_wrapper
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.log import Logger
 
 GLib = gi_import("GLib")

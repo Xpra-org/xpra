@@ -129,7 +129,7 @@ from types import SimpleNamespace
 from xpra.client.base.landlock import LandLock
 from xpra.common import noop
 from xpra.platform.paths import get_mmap_dir
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
 home, downloads, credential = sys.argv[1:]
 secret = os.path.join(home, "secret")
 ready = threading.Event()

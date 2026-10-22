@@ -28,7 +28,7 @@ from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base.stub import StubClientSubsystem
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.log import Logger
 
 log = Logger("network")

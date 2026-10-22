@@ -20,11 +20,9 @@ from xpra.util.parsing import FALSE_OPTIONS, parse_str_dict, str_to_bool, parse_
 from xpra.scripts.parsing import MODE_ALIAS
 from xpra.scripts.main import nox, parse_env
 from xpra.scripts.sessions import get_xpra_sessions
-from xpra.scripts.config import (
-    InitException, InitInfo, InitExit,
-    OPTION_TYPES, CLIENT_OPTIONS,
-    fixup_options,
-)
+from xpra.config import InitException, InitInfo, InitExit
+from xpra.config.types import OPTION_TYPES, CLIENT_OPTIONS
+from xpra.config.fixup import fixup_options
 from xpra.common import noerr
 from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY, is_virtual_session
 from xpra.net.constants import SocketState, ConnectionMessage

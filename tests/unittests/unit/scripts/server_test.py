@@ -15,7 +15,8 @@ import unittest
 from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock, patch
 
-from xpra.scripts.config import InitException, make_defaults_struct
+from xpra.config import InitException
+from xpra.config.defaults import make_defaults_struct
 from xpra.scripts.session import save_session_file
 from xpra.scripts.server import (
     VFBStartResult,
@@ -498,7 +499,7 @@ class TestMain(unittest.TestCase):
 
     def test_x11_display_startup_state_checks_vfb(self):
         from xpra.exit_codes import ExitCode
-        from xpra.scripts.config import InitExit
+        from xpra.config import InitExit
         from xpra.x11.subsystem.display import X11DisplayManager
         state = VFBStartResult(object(), 123, {}, ":42", ("Xvfb",), 7)
         display = X11DisplayManager.__new__(X11DisplayManager)
@@ -568,7 +569,7 @@ class TestMain(unittest.TestCase):
 
     def test_resolve_x11_display_missing_upgrade(self):
         from xpra.exit_codes import ExitCode
-        from xpra.scripts.config import InitExit
+        from xpra.config import InitExit
         from xpra.server.subsystem.xvfb import XvfbManager
         xvfb = XvfbManager(SimpleNamespace(subsystems={}))
         xvfb.uid = os.getuid()

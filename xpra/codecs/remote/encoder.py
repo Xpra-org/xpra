@@ -11,7 +11,7 @@ from weakref import WeakValueDictionary
 
 from xpra.util.str_fn import Ellipsizer, print_nested_dict
 from xpra.util.objects import typedict
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.net.common import Packet, MmapPointerError
 from xpra.codecs.constants import VideoSpec, CodecStateException
 from xpra.codecs.image import ImageWrapper, PlanarFormat

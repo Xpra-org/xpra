@@ -18,7 +18,8 @@ from xpra.util.thread import start_thread
 from xpra.util.version import XPRA_VERSION, vparts, min_version_check, protocol_compat_check
 from xpra.net.connect import connect_to
 from xpra.scripts.parsing import parse_display_name
-from xpra.scripts.config import InitExit, make_defaults_struct
+from xpra.config import InitExit
+from xpra.config.defaults import make_defaults_struct
 from xpra.net.common import PacketElement, Packet, FULL_INFO, REMOTE_CODEC_PROTOCOL_VERSION, connection_close_info
 from xpra.net.packet_type import ENCODING_SET
 from xpra.log import Logger

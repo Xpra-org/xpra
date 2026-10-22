@@ -18,7 +18,7 @@ from time import monotonic
 from xpra.net.tls.common import SSLVerifyFailure, SSL_VERIFY_SELF_SIGNED
 from xpra.os_util import OPENBSD
 from xpra.net.tls.socket import ssl_handshake, ssl_retry, warn_certificate_changed
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.exit_codes import ExitCode
 
 

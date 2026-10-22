@@ -18,7 +18,7 @@ from unittest.mock import patch
 from xpra.net.common import ConnectionClosedException
 from xpra.net.connect import connect_to_tcp
 from xpra.net.websockets import common
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 
 OPENSSL = shutil.which("openssl")
 

@@ -10,7 +10,7 @@ from unittest.mock import patch
 
 from xpra.client.base import features
 from xpra.client.base.features import set_client_features
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
 
 
 class ClientFeaturesTest(unittest.TestCase):

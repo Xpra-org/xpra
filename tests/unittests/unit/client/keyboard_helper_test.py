@@ -16,7 +16,7 @@ from unit.process_test_util import DisplayContext
 class KeyboardHelperTest(unittest.TestCase):
 
     def test_dismiss_popups_shortcut(self):
-        from xpra.scripts.config import get_default_key_shortcuts
+        from xpra.config.defaults import get_default_key_shortcuts
 
         kh = KeyboardHelper(noop, key_shortcuts=get_default_key_shortcuts())
         self.addCleanup(kh.cleanup)

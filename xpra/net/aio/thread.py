@@ -14,7 +14,7 @@ from collections import namedtuple
 from collections.abc import Coroutine, Generator
 
 from time import monotonic
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.util.thread import start_thread
 from xpra.util.str_fn import csv
 from xpra.util.env import envbool

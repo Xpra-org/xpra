@@ -15,7 +15,7 @@ from xpra.exit_codes import ExitCode
 from xpra.gtk.widget import FILE_CHOOSER_NATIVE, label
 from xpra.net.common import pretty_socket
 from xpra.os_util import gi_import, OSX
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.util.child_reaper import get_child_reaper
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict

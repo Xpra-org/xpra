@@ -13,7 +13,7 @@ from importlib.util import find_spec
 from dataclasses import dataclass
 
 from xpra.common import noerr, SizedBuffer, noop
-from xpra.scripts.config import InitException, InitExit
+from xpra.config import InitException, InitExit
 from xpra.exit_codes import ExitCode
 from xpra.net.constants import DEFAULT_PORT, DEFAULT_PORTS, ABSTRACT_SOCKET_PREFIX, AUTO_ABSTRACT_SOCKET, SocketState
 from xpra.net.bytestreams import set_socket_timeout, SocketConnection, SOCKET_TIMEOUT

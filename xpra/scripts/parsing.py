@@ -29,14 +29,12 @@ from xpra.exit_codes import ExitCode
 from xpra.net.constants import DEFAULT_PORT, DEFAULT_PORTS, SOCKET_TYPES, IP_SOCKTYPES, URL_MODES
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.util.io import warn
-from xpra.scripts.config import (
-    XpraConfig,
-    OPTION_TYPES, InitException, InitInfo, InitExit,
-    fixup_debug_option, fixup_options,
-    find_docs_path, find_html5_path,
-    make_defaults_struct, validate_config, name_to_field,
-    URL_SAFE_OPTIONS,
-)
+from xpra.config.types import XpraConfig, OPTION_TYPES, name_to_field, URL_SAFE_OPTIONS
+from xpra.config import InitException, InitInfo, InitExit
+from xpra.config.fixup import fixup_debug_option, fixup_options
+from xpra.config.paths import find_docs_path, find_html5_path
+from xpra.config.defaults import make_defaults_struct
+from xpra.config.validation import validate_config
 
 MODE_ALIAS: dict[str, str] = {
     "start": "seamless",

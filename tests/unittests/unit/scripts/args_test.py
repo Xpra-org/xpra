@@ -15,7 +15,7 @@ from xpra.scripts.args import (
     strip_attach_extra_positional_args,
     find_mode_pos,
 )
-from xpra.scripts.config import InitException
+from xpra.config import InitException
 
 
 class TestShellquote(unittest.TestCase):

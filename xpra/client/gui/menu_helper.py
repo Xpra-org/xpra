@@ -126,7 +126,7 @@ class MenuHelper:
 
     def make_docsmenuitem(self) -> ImageMenuItem:
         from xpra.scripts.main import show_docs
-        from xpra.scripts.config import find_docs_path
+        from xpra.config.paths import find_docs_path
         docs_menuitem = self.menuitem(_("Documentation"), "documentation.png", cb=show_docs)
         if not find_docs_path():
             docs_menuitem.set_tooltip_text("documentation not found!")
@@ -147,7 +147,7 @@ class MenuHelper:
                 pass
             start_thread(run_html5, "open HTML5 client", True, args=(url_options,))
 
-        from xpra.scripts.config import find_html5_path
+        from xpra.config.paths import find_html5_path
         html5_menuitem = self.menuitem(_("HTML5 client"), "browser.png", cb=show_html5)
         if not find_html5_path():
             html5_menuitem.set_tooltip_text("html5 client not found!")

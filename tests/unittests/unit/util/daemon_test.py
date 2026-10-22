@@ -64,7 +64,7 @@ class TestOpenLogFile(unittest.TestCase):
 
     def test_raises_on_bad_path(self):
         from xpra.util.daemon import open_log_file
-        from xpra.scripts.config import InitException
+        from xpra.config import InitException
         with self.assertRaises(InitException):
             open_log_file("/nonexistent/dir/test.log")
 

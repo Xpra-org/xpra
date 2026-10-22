@@ -11,7 +11,7 @@ from typing import Any, NoReturn
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.server.common import get_sources_by_type
 from xpra.server.source.display import DisplayConnection
 from xpra.util.env import envbool
@@ -142,7 +142,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
                 with xsync:
                     wm_name = f"{get_wm_name()!r}"
                 err = f"{wm_name} is already active on display {display}"
-                from xpra.scripts.config import InitException  # pylint: disable=import-outside-toplevel
+                from xpra.config import InitException
                 raise InitException(err) from None
             except XError as e:
                 x11_errors.append(e)
