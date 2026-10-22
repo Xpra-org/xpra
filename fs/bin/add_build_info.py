@@ -202,7 +202,11 @@ def jhbuild(*args: str) -> str:
     gtk_osx_build = os.path.expanduser("~/gtk-osx-build")
     cwd = gtk_osx_build if os.path.exists(gtk_osx_build) else os.getcwd()
     full_cmd = ["jhbuild"] + list(args)
-    returncode, out, _ = get_status_output(full_cmd, cwd=cwd)
+    # we may be running from within a `jhbuild shell`, which sets `PYTHONNOUSERSITE`,
+    # and that prevents the `jhbuild` wrapper from loading `pipenv` from the user site:
+    env = dict(os.environ)
+    env.pop("PYTHONNOUSERSITE", None)
+    returncode, out, _ = get_status_output(full_cmd, cwd=cwd, env=env)
     if returncode != 0:
         print("%s failed and returned %s" % (" ".join(full_cmd), returncode))
         return ""
@@ -326,7 +330,7 @@ def record_build_info() -> None:
                 continue
             pinfo = get_jhbuild_package_info(package_name)
             if pinfo:
-                sbom[package_name] = (0, "", package_name, pinfo.get("Version", ""))
+                sbom[package_name] = {"package": package_name, "version": pinfo.get("Version", "")}
                 packages[package_name] = {key: value for key, value in pinfo.items() if key in ("Name", "Version", "URL")}
         props["sbom"] = sbom
         props["packages"] = packages
@@ -337,7 +341,7 @@ def get_jhbuild_package_list() -> "list[str]":
     output = jhbuild("list")
     packages = []
     for line in output.split("\n"):
-        if line.find(" ") >= 0:
+        if not line.strip() or line.find(" ") >= 0:
             continue
         packages.append(line.strip())
     return packages
