@@ -223,3 +223,6 @@ tests/unittests/test-file*
 
 # a place where we can stash local files without polluting:
 /local
+
+# macos build logs:
+/packaging/MacOS/logs/
