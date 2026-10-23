@@ -49,8 +49,7 @@ class RefreshSourceTest(unittest.TestCase):
         self.clock = FakeClock()
         self.scheduler = FakeScheduler()
         for p in (patch.object(compress, "GLib", self.scheduler), patch.object(compress, "monotonic", self.clock)):
-            p.start()
-            self.addCleanup(p.stop)
+            self.enterContext(p)
 
     def make_source(self, source_type=WindowSource):
         source = object.__new__(source_type)

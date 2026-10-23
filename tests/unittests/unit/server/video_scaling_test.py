@@ -103,17 +103,13 @@ class TestVerifyScaling(unittest.TestCase):
 class TestCalculateScaling(unittest.TestCase):
 
     def setUp(self):
-        settings = patch.multiple(
+        self.enterContext(patch.multiple(
             video_compress, SCALING=True, SCALING_HARDCODED=None,
             SCALING_OPTIONS=video_compress.DEFAULT_SCALING_OPTIONS,
             SCALING_PPS_TARGET=25*1920*1080, SCALING_MIN_PPS=25*320*240,
             DOWNSCALE=True, DOWNSCALE_THRESHOLD=20, TEXT_QUALITY=100,
-        )
-        settings.start()
-        self.addCleanup(settings.stop)
-        clock = patch.object(video_compress, "monotonic", return_value=1024)
-        clock.start()
-        self.addCleanup(clock.stop)
+        ))
+        self.enterContext(patch.object(video_compress, "monotonic", return_value=1024))
 
     @staticmethod
     def make_source(**changes):

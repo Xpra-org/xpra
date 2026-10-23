@@ -112,9 +112,7 @@ class DistributionTest(unittest.TestCase):
 class DisplayDetectionTest(unittest.TestCase):
 
     def setUp(self):
-        x11 = patch.object(xpra, "x11", SimpleNamespace(), create=True)
-        x11.start()
-        self.addCleanup(x11.stop)
+        self.enterContext(patch.object(xpra, "x11", SimpleNamespace(), create=True))
 
     def test_wayland_environment_precedence(self):
         for values, expected in (({}, False), ({"WAYLAND_DISPLAY": "wayland-0"}, True),
