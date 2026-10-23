@@ -49,18 +49,8 @@ from xpra.config.defaults import get_defaults, make_defaults_struct, has_audio_s
 from xpra.config.vfb import xvfb_command
 from xpra.net.constants import SOCKET_TYPES, SocketState
 from xpra.log import is_debug_enabled, Logger, get_debug_args, enable_format, inject_debug_logging
-from xpra.scripts.display import (
-    get_display_info, get_displays_info,
-    run_displays, run_clean_displays,
-    run_xshm, run_xwait, run_xinfo, run_wminfo, run_wmname,
-    run_monitor_info, run_set_monitor,
-)
-from xpra.scripts.sessions import (
-    identify_new_socket,
-    run_list_sessions,
-    run_list, run_list_windows, run_list_clients,
-    run_stopexit, run_clean, run_clean_sockets,
-)
+from xpra.scripts.display import get_display_info, get_displays_info
+from xpra.scripts.sessions import identify_new_socket, run_stopexit
 from xpra.scripts.args import (
     strip_defaults_start_child,
     split_display_arg,
@@ -715,6 +705,52 @@ def run_server_mode(script_file: str, cmdline: list[str], options, args: list[st
     return run_server(script_file, cmdline, options, args, full_mode, defaults)
 
 
+def mode_argument_error(mode: str, message: str) -> InitExit:
+    usage = tuple(f"xpra {line}" for line in get_usage() if line.split(" ")[0] == mode)
+    if usage:
+        message += ", usage: " + " or ".join(usage)
+    return InitExit(ExitCode.ARGUMENT_MISMATCH, message)
+
+
+def check_mode_flags(mode: str, flags: str, args: list[str]) -> None:
+    for flag in flags.split(","):
+        if flag == "no_extra_args":
+            if args:
+                raise mode_argument_error(mode, f"too many arguments for {mode!r}")
+        elif flag == "max_one_arg":
+            if len(args) > 1:
+                raise mode_argument_error(mode, f"too many arguments for {mode!r}")
+        elif flag == "requires_args":
+            if not args:
+                raise mode_argument_error(mode, f"{mode!r} requires an argument")
+        elif flag == "posix":
+            if not POSIX or OSX:
+                raise InitExit(ExitCode.UNSUPPORTED, f"{mode!r} is not supported on this platform")
+        elif flag == "x11":
+            reqx11(mode)
+        elif flag == "no_gtk":
+            no_gtk()
+        elif flag == "gtk_client":
+            check_gtk_client()
+        elif flag == "gtk":
+            check_gtk(mode)
+        elif flag:
+            raise ValueError(f"invalid flag {flag!r} for {mode!r}")
+
+
+def get_mode_handler(mode: str, args: list[str], flags: str, handler: Callable | str) -> Callable:
+    """
+    validates the arguments and runs the guards in `flags`,
+    then returns the handler, importing it if it is specified as "module:function"
+    """
+    check_mode_flags(mode, flags, args)
+    if callable(handler):
+        return handler
+    module_name, function_name = handler.split(":")
+    from importlib import import_module
+    return getattr(import_module(module_name), function_name)
+
+
 def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], full_mode: str, defaults) -> ExitValue:
     mode_parts = full_mode.split(",", 1)
     mode = MODE_ALIAS.get(mode_parts[0], mode_parts[0])
@@ -731,72 +767,23 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         return run_proxy_run(options, script_file, cmdline, args, mode)
     if mode in CLIENT_SUBCOMMANDS or mode.startswith("request-"):
         return run_client(script_file, cmdline, options, args, mode)
+    if entry := NO_ARGS_MODES.get(mode):
+        return get_mode_handler(mode, args, *entry)()
+    if entry := OPTIONS_MODES.get(mode):
+        return get_mode_handler(mode, args, *entry)(options)
+    if entry := ARGS_MODES.get(mode):
+        return get_mode_handler(mode, args, *entry)(args)
+    if entry := CMDLINE_MODES.get(mode):
+        return get_mode_handler(mode, args, *entry)(cmdline)
+    if entry := OPTIONS_ARGS_MODES.get(mode):
+        return get_mode_handler(mode, args, *entry)(options, args)
+    if entry := OPTIONS_ARGS_CMDLINE_MODES.get(mode):
+        return get_mode_handler(mode, args, *entry)(options, args, cmdline)
     if mode in ("stop", "exit"):
         no_gtk()
         return run_stopexit(mode, options, args, cmdline)
-    if mode == "top":
-        no_gtk()
-        return run_top(options, args, cmdline)
-    if mode == "encode":
-        no_gtk()
-        return run_encode(options, args, cmdline)
-    if mode == "list":
-        no_gtk()
-        return run_list(options, args)
-    if mode == "list-windows":
-        no_gtk()
-        return run_list_windows(options, args)
-    if mode == "list-clients":
-        no_gtk()
-        return run_list_clients(options, args)
-    if mode == "list-mdns":
-        no_gtk()
-        from xpra.net.mdns.list import run_list_mdns
-        return run_list_mdns(args)
-    if mode == "mdns-gui":
-        check_gtk_client()
-        return run_mdns_gui(options)
-    if mode == "list-sessions":
-        no_gtk()
-        return run_list_sessions(options, args)
-    if mode == "sessions":
-        check_gtk_client()
-        return run_sessions_gui(options)
-    if mode == "displays":
-        no_gtk()
-        return run_displays(options, args)
-    if mode == "clean-displays":
-        no_gtk()
-        return run_clean_displays(options, args)
-    if mode == "clean-sockets":
-        no_gtk()
-        return run_clean_sockets(options, args)
-    if mode == "clean":
-        no_gtk()
-        return run_clean(options, args)
     if mode == "recover":
         return run_recover(script_file, cmdline, options, args, defaults)
-    if mode == "xwait":
-        no_gtk()
-        return run_xwait(args)
-    if mode == "xshm":
-        no_gtk()
-        return run_xshm(args)
-    if mode == "xinfo":
-        no_gtk()
-        return run_xinfo(args)
-    if mode == "wminfo":
-        no_gtk()
-        return run_wminfo(args)
-    if mode == "wmname":
-        no_gtk()
-        return run_wmname(args)
-    if mode == "desktop-greeter":
-        check_gtk_client()
-        return run_desktop_greeter()
-    if mode == "replay":
-        from xpra.gtk.dialogs.replay import do_main as replay_main
-        return replay_main(options)
     if mode == "launcher":
         check_gtk_client()
         from xpra.client.gtk3.launcher import main as launcher_main
@@ -821,26 +808,14 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
             warn(f"Warning: the xpra client gui component is not installed: {e}")
             run_help(script_file)
             return ExitCode.COMPONENT_MISSING
-    if mode == "start-gui":
-        check_gtk_client()
-        from xpra.gtk.dialogs import start_gui
-        return start_gui.main(options)
     if mode == "bug-report":
         check_gtk_client()
         from xpra.gtk.dialogs import bug_report
         return bug_report.main(["bug_report.py"] + args)
-    if mode == "session-info":
-        return run_session_info(options, args, cmdline)
-    if mode in ("docs", "documentation"):
-        return run_docs()
-    if mode == "about":
-        return run_about()
     if mode == "license":
         from xpra.gtk.dialogs.about import load_license
         stderr_print(load_license())
         return 0
-    if mode == "html5":
-        return run_html5()
     if mode in ("_proxy_run", "_proxy_exec"):
         nox()
         return run_proxy_run(options, script_file, cmdline, args, "exec" if mode == "_proxy_exec" else "run")
@@ -852,46 +827,15 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
             raise InitExit(ExitCode.COMPONENT_MISSING, "no audio support!")
         from xpra.audio.wrapper import run_audio
         return run_audio(mode, args)
-    if mode == "pinentry":
-        check_gtk_client()
-        from xpra.scripts.pinentry import run_pinentry
-        return run_pinentry(args)
     if mode == "input_pass":
         check_gtk_client()
         from xpra.scripts.pinentry import input_pass
         password = input_pass((args + ["password"])[0])
         return len(password) > 0
-    if mode == "_dialog":
-        check_gtk_client()
-        return run_dialog(args)
-    if mode == "_pass":
-        check_gtk_client()
-        return run_pass(args)
-    if mode == "send-file":
-        check_gtk("send-file")
-        return run_send_file(args)
-    if mode == "splash":
-        check_gtk("splash")
-        return run_splash(args)
-    if mode == "opengl":
-        from xpra.scripts.glprobe import run_glcheck
-        return run_glcheck(options)
-    if mode == "opengl-probe":
-        check_gtk_client()
-        from xpra.scripts.glprobe import run_glprobe
-        return run_glprobe(options)
     if mode == "opengl-test":
         check_gtk_client()
         from xpra.scripts.glprobe import run_glprobe
         return run_glprobe(options, True)
-    if mode == "opengl-save-probe":
-        check_gtk_client()
-        from xpra.scripts.glprobe import run_glsaveprobe
-        return run_glsaveprobe()
-    if mode == "example":
-        check_gtk_client()
-        from xpra.gtk.examples.run import run_example
-        return run_example(args)
     if mode == "autostart":
         return run_autostart(script_file, args)
     if mode == "encoding":
@@ -913,12 +857,6 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         modified = cache_menu_icons()
         print(f"modified={modified}")
         return ExitCode.OK
-    if mode == "video":
-        from xpra.codecs import video
-        return video.main()
-    if mode == "nvinfo":
-        from xpra.codecs.nvidia import util
-        return util.main()
     if mode == "webcam":
         check_gtk("webcam")
         from xpra.gtk.dialogs import show_webcam
@@ -936,9 +874,6 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         app.init(options)
         connect_to_server(app, display_desc, options)
         return do_run_client(app)
-    if mode == "keyboard":
-        from xpra.platform import keyboard
-        return keyboard.main(cmdline)
     if mode in ("keymap", "keymap-test"):
         # dumping the keymap of this system requires gtk,
         # `keymap-test` only needs it if no keymap file is specified:
@@ -957,10 +892,6 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
             size = get_root_size((0, 0))
         sys.stdout.write("%ix%i\n" % size)
         return ExitCode.OK
-    if mode == "gtk-info":
-        check_gtk("gtk-info")
-        from xpra.gtk import info
-        return info.main(cmdline)
     if mode == "gui-info":
         if (options.backend or "gtk") == "win32":
             no_gi_gtk_modules()
@@ -968,72 +899,11 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
             check_gtk("gui-info")
         from xpra.platform import gui as platform_gui
         return platform_gui.main(cmdline)
-    if mode == "network-info":
-        from xpra.net import net_util
-        return net_util.main(cmdline)
     if mode == "rdp":
         from xpra.net.rdp import probe
         return probe.main(["xpra rdp"] + args)
-    if mode == "crypto-info":
-        from xpra.net import crypto
-        return crypto.main()
-    if mode == "monitor-info":
-        return run_monitor_info(options, args)
-    if mode == "set-monitor":
-        return run_set_monitor(options, args)
-    if mode == "compression":
-        from xpra.net import compression
-        return compression.main()
-    if mode == "packet-encoding":
-        from xpra.net import packet_encoding
-        return packet_encoding.main()
-    if mode == "path-info":
-        from xpra.platform import paths
-        return paths.main(cmdline)
-    if mode == "printing-info":
-        from xpra.platform import printing
-        return printing.main(args)
-    if mode == "version-info":
-        from xpra.scripts import version
-        return version.main(cmdline)
-    if mode == "version-check":
-        return run_version_check(args)
-    if mode == "toolbox":
-        check_gtk_client()
-        from xpra.gtk.dialogs import toolbox
-        return toolbox.main(args)
     if mode == "initenv":
         raise InitExit(ExitCode.UNSUPPORTED, "initenv is no longer supported")
-    if mode == "setup-ssl":
-        from xpra.net.tls.common import setup_ssl
-        return setup_ssl(options, args, cmdline)
-    if mode == "show-ssl":
-        from xpra.net.tls.common import show_ssl
-        return show_ssl(options, args, cmdline)
-    if mode == "auth":
-        from xpra.auth.auth_helper import run_auth
-        return run_auth(args)
-    if mode == "notify":
-        return run_notify(args)
-    if mode == "dbus-system-list":
-        return run_dbus_system_list()
-    if mode == "dbus-session-list":
-        return run_dbus_session_list()
-    if mode == "u2f":
-        return run_u2f(args)
-    if mode == "fido2":
-        return run_fido2(args)
-    if mode == "otp":
-        return run_otp(args)
-    if mode == "configure":
-        from xpra.gtk.configure.main import do_main
-        return do_main(args)
-    if mode == "wait-for-x11":
-        from xpra.x11.wait import main
-        return main(args)
-    if mode == "wait-for-wayland":
-        from xpra.wayland.client.wait import main
-        return main(args)
     if mode == "xvfb-command":
         fps = get_refresh_rate_for_value(options.refresh_rate, 60) if options.refresh_rate else 0
         print(shlex.join(xvfb_command(options.xvfb, options.pixel_depth, options.dpi, fps)))
@@ -1050,14 +920,6 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         xvfb_cmd = xvfb_command(options.xvfb, options.pixel_depth, options.dpi, fps)
         from xpra.x11.vfb_util import start_xvfb_standalone
         return start_xvfb_standalone(xvfb_cmd, options.sessions_dir, options.pixel_depth, fps, display, options.daemon)
-    if mode == "sbom":
-        return run_sbom(args)
-    if mode == "showconfig":
-        from xpra.scripts.settings import run_showconfig
-        return run_showconfig(options, args)
-    if mode == "showsetting":
-        from xpra.scripts.settings import run_showsetting
-        return run_showsetting(args)
     if mode in ("set", "setting"):
         from xpra.scripts.settings import run_setting
         return run_setting(True, args)
@@ -2266,11 +2128,6 @@ def run_autostart(script_file, args) -> ExitValue:
     return 0
 
 
-def run_splash(args) -> ExitValue:
-    from xpra.gtk.dialogs import splash
-    return splash.main(args)
-
-
 def start_macos_shadow(cmd, env, cwd) -> None:
     # launch the shadow server via launchctl,
     # so it can have GUI access:
@@ -2645,8 +2502,6 @@ def run_encode(options, args: list[str], cmdline: list[str]) -> ExitValue:
     from xpra.client.base.features import set_client_features
     set_client_features(options)
     from xpra.client.base.encode import EncodeClient
-    if not args:
-        raise ValueError("please specify a display and at least one filename")
     display_desc = pick_display(options, args[:1], cmdline)
     app = EncodeClient(options, args[1:])
     app.init(options)
@@ -2655,7 +2510,6 @@ def run_encode(options, args: list[str], cmdline: list[str]) -> ExitValue:
 
 
 def run_session_info(options, args: list[str], cmdline: list[str]) -> ExitValue:
-    check_gtk_client()
     display_desc = pick_display(options, args, cmdline)
     from xpra.gtk.dialogs.session_info import SessionInfoClient
     app = SessionInfoClient(options)
@@ -2725,11 +2579,6 @@ def _browser_open_file(file_path) -> ExitValue:
     import webbrowser
     webbrowser.open_new_tab(f"file://{file_path}")
     return 0
-
-
-def run_desktop_greeter() -> ExitValue:
-    from xpra.gtk.dialogs import desktop_greeter
-    return desktop_greeter.main()
 
 
 def run_sessions_gui(options) -> ExitValue:
@@ -2829,8 +2678,6 @@ def run_dbus_session_list() -> ExitValue:
 
 
 def run_notify(args: list[str]) -> ExitValue:
-    if not args:
-        raise InitException("specify notification text")
     title = args[0]
     body = args[1] if len(args) >= 2 else ""
     from xpra.notification.dbus_backend import DBUSNotifier, log
@@ -2862,11 +2709,6 @@ def run_u2f(args: list[str]) -> ExitValue:
 def run_fido2(args: list[str]) -> ExitValue:
     from xpra.gtk.dialogs.fido2_tool import main
     return main(["fido2_tool.py"] + args)
-
-
-def run_otp(args: list[str]) -> ExitValue:
-    from xpra.gtk.dialogs.otp import main
-    return main(args)
 
 
 def run_version_check(args) -> ExitValue:
@@ -2915,6 +2757,87 @@ def run_sbom(args: list[str]) -> ExitValue:
         for key, value in pinfo.items():
             print(f"    {key:16}: {value}")
     return ExitCode.OK
+
+
+# the subcommands that only need to call a single function, grouped by the arguments it takes,
+# the flags are the guards to run and the argument checks to make before calling it:
+NO_ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
+    "desktop-greeter": ("no_extra_args,gtk_client", "xpra.gtk.dialogs.desktop_greeter:main"),
+    "docs": ("no_extra_args", run_docs),
+    "documentation": ("no_extra_args", run_docs),
+    "about": ("no_extra_args", run_about),
+    "html5": ("no_extra_args", run_html5),
+    "opengl-save-probe": ("no_extra_args,gtk_client", "xpra.scripts.glprobe:run_glsaveprobe"),
+    "video": ("no_extra_args", "xpra.codecs.video:main"),
+    "nvinfo": ("no_extra_args", "xpra.codecs.nvidia.util:main"),
+    "crypto-info": ("no_extra_args", "xpra.net.crypto:main"),
+    "compression": ("no_extra_args", "xpra.net.compression:main"),
+    "packet-encoding": ("no_extra_args", "xpra.net.packet_encoding:main"),
+    "dbus-system-list": ("no_extra_args", run_dbus_system_list),
+    "dbus-session-list": ("no_extra_args", run_dbus_session_list),
+}
+OPTIONS_MODES: dict[str, tuple[str, Callable | str]] = {
+    "mdns-gui": ("no_extra_args,gtk_client", run_mdns_gui),
+    "sessions": ("no_extra_args,gtk_client", run_sessions_gui),
+    "replay": ("no_extra_args", "xpra.gtk.dialogs.replay:do_main"),
+    "start-gui": ("no_extra_args,gtk_client", "xpra.gtk.dialogs.start_gui:main"),
+    "opengl": ("no_extra_args", "xpra.scripts.glprobe:run_glcheck"),
+    "opengl-probe": ("no_extra_args,gtk_client", "xpra.scripts.glprobe:run_glprobe"),
+}
+ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
+    "list-mdns": ("max_one_arg,no_gtk", "xpra.net.mdns.list:run_list_mdns"),
+    "xwait": ("no_gtk", "xpra.scripts.display:run_xwait"),
+    "xshm": ("x11,no_gtk", "xpra.scripts.display:run_xshm"),
+    "xinfo": ("no_gtk", "xpra.scripts.display:run_xinfo"),
+    "wminfo": ("x11,no_gtk", "xpra.scripts.display:run_wminfo"),
+    "wmname": ("x11,no_gtk", "xpra.scripts.display:run_wmname"),
+    "pinentry": ("gtk_client", "xpra.scripts.pinentry:run_pinentry"),
+    "_dialog": ("gtk_client", run_dialog),
+    "_pass": ("gtk_client", run_pass),
+    "send-file": ("gtk", run_send_file),
+    "splash": ("gtk", "xpra.gtk.dialogs.splash:main"),
+    "example": ("gtk_client", "xpra.gtk.examples.run:run_example"),
+    "printing-info": ("", "xpra.platform.printing:main"),
+    "version-check": ("", run_version_check),
+    "toolbox": ("gtk_client", "xpra.gtk.dialogs.toolbox:main"),
+    "auth": ("requires_args", "xpra.auth.auth_helper:run_auth"),
+    "notify": ("requires_args", run_notify),
+    "u2f": ("", run_u2f),
+    "fido2": ("", run_fido2),
+    "otp": ("", "xpra.gtk.dialogs.otp:main"),
+    "configure": ("", "xpra.gtk.configure.main:do_main"),
+    "wait-for-x11": ("max_one_arg", "xpra.x11.wait:main"),
+    "wait-for-wayland": ("max_one_arg", "xpra.wayland.client.wait:main"),
+    "sbom": ("", run_sbom),
+    "showsetting": ("requires_args", "xpra.scripts.settings:run_showsetting"),
+}
+CMDLINE_MODES: dict[str, tuple[str, Callable | str]] = {
+    "keyboard": ("", "xpra.platform.keyboard:main"),
+    "gtk-info": ("gtk", "xpra.gtk.info:main"),
+    "network-info": ("", "xpra.net.net_util:main"),
+    "path-info": ("", "xpra.platform.paths:main"),
+    "version-info": ("", "xpra.scripts.version:main"),
+}
+OPTIONS_ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
+    "list": ("no_extra_args,no_gtk", "xpra.scripts.sessions:run_list"),
+    "list-windows": ("no_extra_args,no_gtk", "xpra.scripts.sessions:run_list_windows"),
+    "list-clients": ("no_extra_args,no_gtk", "xpra.scripts.sessions:run_list_clients"),
+    "list-sessions": ("no_extra_args,no_gtk", "xpra.scripts.sessions:run_list_sessions"),
+    "displays": ("no_gtk", "xpra.scripts.display:run_displays"),
+    "clean-displays": ("posix,no_gtk", "xpra.scripts.display:run_clean_displays"),
+    "clean-sockets": ("max_one_arg,no_gtk", "xpra.scripts.sessions:run_clean_sockets"),
+    "clean": ("no_gtk", "xpra.scripts.sessions:run_clean"),
+    "monitor-info": ("", "xpra.scripts.display:run_monitor_info"),
+    "set-monitor": ("", "xpra.scripts.display:run_set_monitor"),
+    "showconfig": ("", "xpra.scripts.settings:run_showconfig"),
+}
+OPTIONS_ARGS_CMDLINE_MODES: dict[str, tuple[str, Callable | str]] = {
+    "top": ("no_gtk", run_top),
+    "encode": ("requires_args,no_gtk", run_encode),
+    "session-info": ("gtk_client", run_session_info),
+    "setup-ssl": ("max_one_arg", "xpra.net.tls.common:setup_ssl"),
+    "show-ssl": ("max_one_arg", "xpra.net.tls.common:show_ssl"),
+}
 
 
 if __name__ == "__main__":  # pragma: no cover

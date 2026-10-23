@@ -19,16 +19,11 @@ from xpra.config import InitExit
 
 
 def run_list_mdns(extra_args) -> ExitValue:
-    from xpra.scripts.common import no_gtk
-    no_gtk()
     mdns_wait = 5
-    if len(extra_args) <= 1:
-        try:
-            mdns_wait = int(extra_args[0])
-        except (IndexError, ValueError):
-            pass
-    else:
-        raise InitExit(ExitCode.ARGUMENT_MISMATCH, "too many arguments for `list-mdns` mode")
+    try:
+        mdns_wait = int(extra_args[0])
+    except (IndexError, ValueError):
+        pass
     from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE
     try:
         from xpra.net.mdns.zeroconf_listener import ZeroconfListener

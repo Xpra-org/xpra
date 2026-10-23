@@ -13,7 +13,7 @@ from subprocess import TimeoutExpired
 from unittest.mock import patch, MagicMock
 
 from xpra.net.constants import SocketState
-from xpra.config import InitException, InitInfo
+from xpra.config import InitException
 from xpra.scripts.sessions import (
     WAIT_SERVER_TIMEOUT,
     LIST_REPROBE_TIMEOUT,
@@ -433,11 +433,6 @@ class TestCleanSockets(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestRunListSessions(unittest.TestCase):
-
-    def test_extra_args_raises_init_info(self):
-        opts = MagicMock()
-        with self.assertRaises(InitInfo):
-            run_list_sessions(opts, ["unexpected-arg"])
 
     def test_empty_sessions_prints_found_zero(self):
         opts = MagicMock()

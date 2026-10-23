@@ -25,7 +25,6 @@ from xpra.util.env import envint, osexpand
 from xpra.net.constants import SocketState
 from xpra.log import Logger
 from xpra.config import InitException, InitInfo, InitExit
-from xpra.scripts.common import no_gtk
 from xpra.scripts.display import countdown, x11_display_socket, stat_display_socket, get_xvfb_pid
 from xpra.scripts.picker import pick_display, get_sockpath
 
@@ -190,9 +189,7 @@ def get_session_details(session_dir: str, attrs: dict[str, Any]) -> dict[str, st
     return details
 
 
-def run_list_sessions(options, args) -> ExitValue:
-    if args:
-        raise InitInfo("too many arguments for 'list-sessions' mode")
+def run_list_sessions(options, _args) -> ExitValue:
     from xpra.platform.dotxpra import DotXpra
     dotxpra = DotXpra(options.socket_dirs)
     sessions = get_xpra_sessions(dotxpra)
@@ -219,11 +216,7 @@ def run_list_sessions(options, args) -> ExitValue:
     return 0
 
 
-def run_list(opts, extra_args, clean: bool = True) -> ExitValue:
-    from xpra.scripts.common import no_gtk
-    no_gtk()
-    if extra_args:
-        raise InitExit(ExitCode.ARGUMENT_MISMATCH, "too many arguments for `list` mode")
+def run_list(opts, _args, clean: bool = True) -> ExitValue:
     from xpra.platform.dotxpra import DotXpra
     dotxpra = DotXpra(opts.socket_dirs + opts.client_socket_dirs)
     results = dotxpra.socket_details()
@@ -310,11 +303,7 @@ def exec_and_parse(subcommand="id", display="") -> dict[str, str]:
     return d
 
 
-def run_list_windows(opts, extra_args) -> ExitValue:
-    from xpra.scripts.common import no_gtk
-    no_gtk()
-    if extra_args:
-        raise InitExit(ExitCode.ARGUMENT_MISMATCH, "too many arguments for `list-windows` mode")
+def run_list_windows(opts, _args) -> ExitValue:
     from xpra.platform.dotxpra import DotXpra
     dotxpra = DotXpra(opts.socket_dirs)
     displays = dotxpra.displays()
@@ -360,11 +349,7 @@ def run_list_windows(opts, extra_args) -> ExitValue:
     return 0
 
 
-def run_list_clients(opts, extra_args) -> ExitValue:
-    from xpra.scripts.common import no_gtk
-    no_gtk()
-    if extra_args:
-        raise InitExit(ExitCode.ARGUMENT_MISMATCH, "too many arguments for `list-windows` mode")
+def run_list_clients(opts, _args) -> ExitValue:
     from xpra.platform.dotxpra import DotXpra
     dotxpra = DotXpra(sockdirs=opts.client_socket_dirs)
     results = dotxpra.socket_details()
@@ -394,7 +379,6 @@ def run_list_clients(opts, extra_args) -> ExitValue:
 
 def run_stopexit(mode: str, opts, extra_args: list[str], cmdline: list[str]) -> ExitValue:
     assert mode in ("stop", "exit")
-    no_gtk()
 
     def multimode(displays: list[str]) -> int:
         sys.stdout.write(f"Trying to {mode} {len(displays)} displays:\n")
@@ -564,7 +548,6 @@ def stop_dead_session(opts, display: str) -> ExitValue | None:
 
 
 def run_clean(opts, args: Iterable[str]) -> ExitValue:
-    no_gtk()
     try:
         uid = int(opts.uid)
     except (ValueError, TypeError):
@@ -646,13 +629,7 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
 
 
 def run_clean_sockets(opts, args) -> ExitValue:
-    no_gtk()
-    matching_display = None
-    if args:
-        if len(args) == 1:
-            matching_display = args[0]
-        else:
-            raise InitInfo("too many arguments for 'clean' mode")
+    matching_display = args[0] if args else None
     from xpra.platform.dotxpra import DotXpra
     dotxpra = DotXpra(opts.socket_dirs + opts.client_socket_dirs)
     results = dotxpra.socket_details(check_uid=getuid(),

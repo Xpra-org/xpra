@@ -107,9 +107,6 @@ def run_showconfig(options, args) -> ExitValue:
 
 
 def run_showsetting(args) -> ExitValue:
-    if not args:
-        raise InitException("specify a setting to display")
-
     log = get_logger()
 
     settings = []

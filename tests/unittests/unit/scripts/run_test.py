@@ -5,7 +5,10 @@
 # later version. See the file COPYING for details.
 
 import os
+import ast
+import inspect
 import unittest
+from importlib.util import find_spec
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -13,11 +16,14 @@ from xpra.client.base.command import RunClient
 from xpra.client.base.client import XpraClientBase
 from xpra.exit_codes import ExitCode
 from xpra.net.constants import SocketState
+from xpra.config import InitExit
 from xpra.config.defaults import make_defaults_struct
+from xpra.scripts import main
 from xpra.scripts.main import (
     connect_client_app, create_client_app, do_run_mode, run_proxy_run, run_server_mode, split_start_child_args,
+    get_mode_handler,
 )
-from xpra.scripts.parsing import mode_needs_ssh_agent
+from xpra.scripts.parsing import mode_needs_ssh_agent, get_usage, MODE_ALIAS
 
 
 class RunRoutingTest(unittest.TestCase):
@@ -166,6 +172,108 @@ class ServerModeTest(unittest.TestCase):
             self.assertEqual(r, "server")
             remote.assert_not_called()
             client.assert_not_called()
+
+
+MODE_TABLES = (
+    main.NO_ARGS_MODES, main.OPTIONS_MODES, main.ARGS_MODES, main.CMDLINE_MODES,
+    main.OPTIONS_ARGS_MODES, main.OPTIONS_ARGS_CMDLINE_MODES,
+)
+FLAGS = ("no_extra_args", "max_one_arg", "requires_args", "posix", "x11", "no_gtk", "gtk_client", "gtk")
+
+
+def explicit_modes() -> set[str]:
+    # the modes that `do_run_mode` compares against, ie: `mode == "gui"` or `mode in ("set", "setting")`
+    tree = ast.parse(inspect.getsource(do_run_mode))
+    modes = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Compare) and isinstance(node.left, ast.Name) and node.left.id == "mode":
+            for comparator in node.comparators:
+                for c in ast.walk(comparator):
+                    if isinstance(c, ast.Constant) and isinstance(c.value, str):
+                        modes.add(c.value)
+    return modes
+
+
+class ModeTableTest(unittest.TestCase):
+
+    def test_tables(self):
+        seen = set()
+        for table in MODE_TABLES:
+            for mode, (flags, handler) in table.items():
+                self.assertNotIn(mode, seen, f"{mode!r} is in more than one table")
+                seen.add(mode)
+                for flag in filter(None, flags.split(",")):
+                    self.assertIn(flag, FLAGS, f"invalid flag {flag!r} for {mode!r}")
+                if callable(handler):
+                    continue
+                module_name, function_name = handler.split(":")
+                spec = find_spec(module_name)
+                if not spec:
+                    # ie: optional components like nvidia
+                    continue
+                if spec.origin and spec.origin.endswith(".py"):
+                    with open(spec.origin, encoding="utf8") as f:
+                        tree = ast.parse(f.read())
+                    names = {n.name for n in tree.body if isinstance(n, ast.FunctionDef)}
+                    self.assertIn(function_name, names, f"{handler!r} not found for {mode!r}")
+        self.assertFalse(seen & explicit_modes(), "modes handled twice")
+        for mode in main.NO_ARGS_MODES | main.OPTIONS_MODES:
+            self.assertIn("no_extra_args", main.NO_ARGS_MODES.get(mode, main.OPTIONS_MODES.get(mode))[0])
+
+    def test_all_modes_dispatchable(self):
+        handled = explicit_modes() | set(main.SERVER_SUBCOMMANDS) | set(main.CLIENT_SUBCOMMANDS)
+        for table in MODE_TABLES:
+            handled |= set(table)
+        usage = tuple(line.split(" ")[0] for line in get_usage() if line)
+        for mode in main.NO_NETWORK_SUBCOMMANDS + main.STDOUT_SUBCOMMANDS + usage:
+            mode = MODE_ALIAS.get(mode, mode)
+            if mode.startswith("request-") or mode.startswith("_proxy") or mode.startswith("upgrade-"):
+                continue
+            self.assertIn(mode, handled, f"{mode!r} cannot be dispatched")
+
+    def test_argument_flags(self):
+        def check(flags, args):
+            with self.assertRaises(InitExit) as cm:
+                get_mode_handler("test", args, flags, noop)
+            self.assertEqual(cm.exception.status, ExitCode.ARGUMENT_MISMATCH)
+
+        def noop(*_args):
+            return 0
+
+        check("no_extra_args", ["extra"])
+        check("max_one_arg", ["one", "two"])
+        check("requires_args", [])
+        for flags, args in (("no_extra_args", []), ("max_one_arg", ["one"]), ("requires_args", ["one"]), ("", ["a", "b"])):
+            self.assertIs(get_mode_handler("test", args, flags, noop), noop)
+        with self.assertRaises(ValueError):
+            get_mode_handler("test", [], "invalid", noop)
+
+    def test_guard_flags(self):
+        for flag, fn, call_args in (
+            ("no_gtk", "no_gtk", ()),
+            ("gtk_client", "check_gtk_client", ()),
+            ("gtk", "check_gtk", ("test", )),
+            ("x11", "reqx11", ("test", )),
+        ):
+            with patch(f"xpra.scripts.main.{fn}") as guard:
+                get_mode_handler("test", [], flag, print)
+            guard.assert_called_once_with(*call_args)
+
+    def test_lazy_handler(self):
+        from xpra.scripts.sessions import run_list
+        self.assertIs(get_mode_handler("list", [], "", "xpra.scripts.sessions:run_list"), run_list)
+
+    def test_dispatch(self):
+        opts = make_defaults_struct()
+        with patch("xpra.scripts.main.no_gtk") as no_gtk, patch("xpra.scripts.sessions.run_list_sessions", return_value=0) as handler:
+            self.assertEqual(do_run_mode("xpra", [], opts, [], "list-sessions", None), 0)
+            no_gtk.assert_called_once()
+            handler.assert_called_once_with(opts, [])
+            with self.assertRaises(InitExit) as cm:
+                do_run_mode("xpra", [], opts, ["unexpected-arg"], "list-sessions", None)
+            self.assertEqual(cm.exception.status, ExitCode.ARGUMENT_MISMATCH)
+            self.assertIn("usage: xpra list-sessions", str(cm.exception))
+            handler.assert_called_once()
 
 
 if __name__ == "__main__":

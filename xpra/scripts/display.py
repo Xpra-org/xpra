@@ -19,7 +19,7 @@ from importlib.util import find_spec
 from typing import Any, Final
 
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import getuid, getgid, gi_import, WIN32, OSX, POSIX
+from xpra.os_util import getuid, getgid, gi_import, WIN32, OSX
 from xpra.util.env import envint, osexpand, OSEnvContext
 from xpra.util.io import is_socket, wait_for_socket, warn, load_binary_file
 from xpra.util.parsing import adjust_monitor_refresh_rate, validated_monitor_data
@@ -27,7 +27,6 @@ from xpra.util.str_fn import sorted_nicely, csv
 from xpra.util.pid import load_pid
 from xpra.log import Logger
 from xpra.config import InitExit
-from xpra.scripts.common import no_gtk, reqx11
 
 VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
 
@@ -463,8 +462,6 @@ def run_displays(options, args) -> ExitValue:
 
 
 def run_clean_displays(options, args) -> ExitValue:
-    if not POSIX or OSX:
-        raise InitExit(ExitCode.UNSUPPORTED, "clean-displays is not supported on this platform")
     displays = get_displays_info(sessions_dir=options.sessions_dir)
     dead_displays = tuple(display for display, descr in displays.items() if descr.get("state") == "DEAD")
     if not dead_displays:
@@ -496,10 +493,8 @@ def run_clean_displays(options, args) -> ExitValue:
 
 
 def display_wm_info(args) -> dict[str, Any]:
-    reqx11("wminfo")
-    if not find_spec("xpra.x11") or not find_spec("xpra.x11.gtk"):
+    if not find_spec("xpra.x11.gtk"):
         raise InitExit(ExitCode.UNSUPPORTED, "wminfo is not supported on this platform")
-    no_gtk()
     if len(args) == 1:
         os.environ["DISPLAY"] = args[0]
     elif not args and os.environ.get("DISPLAY"):
@@ -519,9 +514,6 @@ def display_wm_info(args) -> dict[str, Any]:
 
 
 def run_xshm(args) -> ExitValue:
-    if not find_spec("xpra.x11"):
-        raise RuntimeError("xshm subcommand is not supported on this platform")
-    no_gtk()
     if len(args) == 1:
         os.environ["DISPLAY"] = args[0]
     elif not args and os.environ.get("DISPLAY"):
