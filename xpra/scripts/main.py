@@ -54,7 +54,7 @@ from xpra.scripts.args import (
 from xpra.scripts.picker import (
     pick_display,
 )
-from xpra.scripts.common import bypass_no_gtk, no_gtk, reqx11, no_gi_gtk_modules
+from xpra.scripts.common import bypass_no_gtk, no_gtk, nox, reqx11, no_gi_gtk_modules
 from xpra.scripts.clients import run_client, make_client, connect_to_server, do_run_client, exec_reconnect
 from xpra.scripts.proxy import run_proxy, run_proxy_run, start_server_via_proxy
 
@@ -127,17 +127,6 @@ SERVER_SUBCOMMANDS = (
 )
 # pylint: disable=import-outside-toplevel
 # noinspection PyBroadException
-
-
-def nox() -> str:
-    DISPLAY = os.environ.get("DISPLAY")
-    if DISPLAY is not None:
-        del os.environ["DISPLAY"]
-    # This is an error on Fedora/RH, so make it an error everywhere
-    # to ensure that it will be noticed:
-    import warnings
-    warnings.filterwarnings("error", "could not open display")
-    return str(DISPLAY or "") or os.environ.get("WAYLAND_DISPLAY", "")
 
 
 def get_logger() -> Logger:

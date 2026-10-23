@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
 from importlib.util import find_spec
 
@@ -31,6 +32,17 @@ def no_gtk() -> None:
         # all good, not loaded
         return
     raise InitException("the Gtk module is already loaded: %s" % Gtk)
+
+
+def nox() -> str:
+    DISPLAY = os.environ.get("DISPLAY")
+    if DISPLAY is not None:
+        del os.environ["DISPLAY"]
+    # This is an error on Fedora/RH, so make it an error everywhere
+    # to ensure that it will be noticed:
+    import warnings
+    warnings.filterwarnings("error", "could not open display")
+    return str(DISPLAY or "") or os.environ.get("WAYLAND_DISPLAY", "")
 
 
 def reqx11(mode: str) -> None:

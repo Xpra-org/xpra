@@ -17,8 +17,8 @@ from subprocess import Popen
 
 from xpra.util.io import warn, error, wait_for_socket, which
 from xpra.util.parsing import FALSE_OPTIONS, parse_str_dict, str_to_bool, parse_bool_or
-from xpra.scripts.parsing import MODE_ALIAS
-from xpra.scripts.main import nox, parse_env
+from xpra.scripts.parsing import MODE_ALIAS, parse_env
+from xpra.scripts.common import nox
 from xpra.scripts.sessions import get_xpra_sessions
 from xpra.config import InitException, InitInfo, InitExit
 from xpra.config.types import OPTION_TYPES, CLIENT_OPTIONS
