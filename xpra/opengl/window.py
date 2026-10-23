@@ -96,8 +96,7 @@ def get_test_gl_icon() -> tuple[str, int, int, int, bytes]:
     w = 32
     h = 32
     stride = w * 4
-    gl_icon = get_icon_filename("opengl", ext="png")
-    if gl_icon:
+    if gl_icon := get_icon_filename("opengl", ext="png"):
         try:
             from PIL import Image, __version__ as pil_version  # @UnresolvedImport pylint: disable=import-outside-toplevel
         except ImportError as e:
@@ -231,8 +230,7 @@ def test_gl_client_window(gl_client_window_class: Callable,
             # when the main loop is not running:
             if hasattr(window_backing, "on_realize"):
                 window_backing.on_realize()
-        last_error = window_backing.get_info().get("last-error", "")
-        if last_error:
+        if last_error := window_backing.get_info().get("last-error", ""):
             return {
                 "success": False,
                 "message": f"failed to present FBO on screen: {last_error!r}",

@@ -527,8 +527,7 @@ def parse_env_resolutions(envkey: str = "XPRA_DEFAULT_VFB_RESOLUTIONS",
                           single_envkey: str = "XPRA_DEFAULT_VFB_RESOLUTION",
                           default_res: str = "8192x4096",
                           default_refresh_rate: int | str = DEFAULT_REFRESH_RATE//1000) -> tuple | None:
-    s = os.environ.get(envkey)
-    if s:
+    if s := os.environ.get(envkey):
         return parse_resolutions(s, default_refresh_rate)
     return (parse_resolution(os.environ.get(single_envkey, default_res), default_refresh_rate), )
 

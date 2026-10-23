@@ -29,8 +29,7 @@ def find_packet_handler(subsystems: dict[str, Any], packet_type: str) -> tuple[A
     while True:
         sub = subsystems.get(prefix)
         if sub is not None:
-            handler_def = sub.get_packet_handler(subtype)
-            if handler_def:
+            if handler_def := sub.get_packet_handler(subtype):
                 return sub, subtype, handler_def[0], handler_def[1]
         if not sep:
             return None
@@ -142,8 +141,7 @@ class PacketDispatcher:
     def get_info(self) -> dict[str, Any]:
         routed: dict[str, Any] = {}
         for prefix, sub in self.subsystems.items():
-            packet_types = sub.get_packet_types()
-            if packet_types:
+            if packet_types := sub.get_packet_types():
                 routed[prefix] = sorted(packet_types)
         handlers: dict[str, Any] = {
             "authenticated": sorted(self._authenticated_packet_handlers.keys()),
@@ -171,8 +169,7 @@ class PacketDispatcher:
             ):
                 d.pop(k, None)
             # the handler may belong to a subsystem's own registry:
-            found = find_packet_handler(self.subsystems, k)
-            if found:
+            if found := find_packet_handler(self.subsystems, k):
                 sub, subtype = found[0], found[1]
                 sub.remove_packet_handler(subtype)
 

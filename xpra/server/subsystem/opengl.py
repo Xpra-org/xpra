@@ -10,7 +10,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import bytestostr
 from xpra.util.env import envint
 from xpra.util.thread import start_thread
-from xpra.util.version import parse_version, dict_version_trim
+from xpra.util.version import parse_version
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import FULL_INFO
 from xpra.server.subsystem.stub import StubSubsystem
@@ -52,13 +52,11 @@ def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
                 glprops = typedict(props)
                 if glprops.strget("success").lower() in TRUE_OPTIONS:
                     log.info(f"OpenGL is supported on display {display_name!r}")
-                    renderer = glprops.strget("renderer").split(";")[0]
-                    if renderer:
+                    if renderer := glprops.strget("renderer").split(";")[0]:
                         log.info(f" using {renderer!r} renderer")
                 else:
                     log.info("OpenGL is not supported on this display")
-                    probe_err = glprops.strget("error")
-                    if probe_err:
+                    if probe_err := glprops.strget("error"):
                         log.info(f" {probe_err}")
             else:
                 log.info("No OpenGL information available")
@@ -145,8 +143,7 @@ class OpenGLInfo(StubSubsystem):
         cmd = cmd_helper.get_full_child_command(probe_cmd)
         env = self.server.get_child_env()
         if cmd == probe_cmd:
-            err = probe_opengl_module()
-            if err:
+            if err := probe_opengl_module():
                 return err
         else:
             # the exec wrapper may run the probe somewhere else, ie: `xpra run` in another container,
@@ -157,7 +154,7 @@ class OpenGLInfo(StubSubsystem):
     def get_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {}
         if FULL_INFO and self.props:
-            caps[OpenGLInfo.PREFIX] = dict_version_trim(self.props)
+            caps[OpenGLInfo.PREFIX] = self.props
         return caps
 
     def get_info(self, _proto) -> dict[str, Any]:

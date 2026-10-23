@@ -15,7 +15,7 @@ from xpra.net.bytestreams import SOCKET_TIMEOUT, SocketConnection, VSOCK_TIMEOUT
 from xpra.net.common import verify_hyperv_available
 from xpra.net.constants import DEFAULT_PORTS, ABSTRACT_SOCKET_PREFIX, AUTO_ABSTRACT_SOCKET
 from xpra.os_util import WIN32
-from xpra.scripts.config import InitException, InitExit
+from xpra.config import InitException, InitExit
 from xpra.util.parsing import TRUE_OPTIONS
 from xpra.scripts.picker import CONNECT_TIMEOUT
 from xpra.util.objects import typedict
@@ -252,10 +252,12 @@ def connect_to_socket(display_desc: dict[str, Any]):
     try:
         sock.settimeout(None)
         conn = SocketConnection(sock, sock.getsockname(), sock.getpeername(), display_name, "socket")
+        # the peer's address is the path the server bound to, which may not exist in our mount namespace,
+        # ie: a socket bind mounted in a container:
+        conn.filename = sockpath
         conn.timeout = timeout
         target = "socket://"
-        username = display_desc.get("username")
-        if username:
+        if username := display_desc.get("username"):
             target += f"{username}@"
         target += sockpath
         conn.target = target
@@ -318,8 +320,7 @@ def display_desc_to_uri(display_desc: dict[str, Any]) -> str:
     if not dtype:
         raise InitException("missing display type")
     uri = f"{dtype}://"
-    username = props.strget("username")
-    if username:
+    if username := props.strget("username"):
         uri += username
     if "password" in props:
         uri += ":" + props.strget("password")
@@ -349,16 +350,13 @@ def display_desc_to_uri(display_desc: dict[str, Any]) -> str:
 
 def display_desc_to_display_path(display_desc: dict[str, Any]) -> str:
     uri = ""
-    path = display_desc.get("path", "")
-    if path:
+    if path := display_desc.get("path", ""):
         uri += path
-    display = display_desc.get("display", "")
-    if display:
+    if display := display_desc.get("display", ""):
         if path:
             uri += "#"
         uri += display.lstrip(":")
-    options_str = display_desc.get("options_str", "")
-    if options_str:
+    if options_str := display_desc.get("options_str", ""):
         uri += f"?{options_str}"
     return uri
 
@@ -376,8 +374,7 @@ def retry_socket_connect(options: dict):
     retry_count = 0
     timeout = options.get("timeout", CONNECT_TIMEOUT)
     while True:
-        sock = socket_connect(host, port, timeout=timeout)
-        if sock:
+        if sock := socket_connect(host, port, timeout=timeout):
             return sock
         if not retry:
             break

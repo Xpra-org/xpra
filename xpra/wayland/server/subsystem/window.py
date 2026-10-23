@@ -123,8 +123,7 @@ class WaylandWindowServer(WindowServer):
 
     def _ensure_popup_window(self, parent_wid: int, popup: Popup,
                              position: tuple[int, int], size: tuple[int, int]):
-        window = self.get_window(popup.wid)
-        if window:
+        if window := self.get_window(popup.wid):
             return window
         x, y = position
         w, h = size
@@ -226,18 +225,15 @@ class WaylandWindowServer(WindowServer):
         self.update_size(window, size)
 
     def title(self, wid: int, title: str) -> None:
-        window = self.get_window(wid)
-        if window:
+        if window := self.get_window(wid):
             window._updateprop("title", title)
 
     def app_id(self, wid: int, app_id: str) -> None:
-        window = self.get_window(wid)
-        if window:
+        if window := self.get_window(wid):
             window._updateprop("app-id", app_id)
 
     def unmap(self, wid: int) -> None:
-        window = self.get_window(wid)
-        if window:
+        if window := self.get_window(wid):
             window.set_property("iconic", True)
 
     def minimize(self, wid: int) -> None:
@@ -276,12 +272,10 @@ class WaylandWindowServer(WindowServer):
         self.update_opaque_region(window, surface)
         for sub_wid, sx, sy, logical_w, logical_h, native_w, native_h in subsurfaces:
             self.subsurface_info[sub_wid] = (wid, sx, sy, logical_w, logical_h, native_w, native_h)
-            facade = self.subsurface_facades.get(sub_wid)
-            if facade:
+            if facade := self.subsurface_facades.get(sub_wid):
                 facade.update_dimensions(logical_w, logical_h)
             for ss in self.window_sources():
-                sub_ws = ss.subsurface_sources.get(sub_wid)
-                if sub_ws:
+                if sub_ws := ss.subsurface_sources.get(sub_wid):
                     sub_ws.update_geometry(wid, sx, sy, logical_w, logical_h, native_w, native_h)
         if mapped and not rects:
             window.schedule_empty_acknowledgement()
@@ -419,8 +413,7 @@ class WaylandWindowServer(WindowServer):
                 self.refresh_window_area(window, 0, 0, w, h, options={"damage": True})
 
     def popup_reposition(self, wid: int, position: tuple[int, int]) -> None:
-        window = self.get_window(wid)
-        if window:
+        if window := self.get_window(wid):
             self.update_geometry(window, position, window.get_property("geometry")[2:4])
 
     def popup_destroy(self, wid: int) -> None:
@@ -440,8 +433,7 @@ class WaylandWindowServer(WindowServer):
                 ss.cleanup_subsurface_source(wid)
         window = self.get_window(wid)
         if window is not None:
-            surface = window.get_property("surface")
-            if surface:
+            if surface := window.get_property("surface"):
                 self.toplevel_wid.pop(getattr(surface, "toplevel_ptr", 0), 0)
             window._internal_set_property("surface", None)
             window.unmanage()
@@ -517,12 +509,10 @@ class WaylandWindowServer(WindowServer):
         surface = self.get_surface(wid)
         if not (window and surface):
             return
-        properties = config.dictget("properties")
-        if properties:
+        if properties := config.dictget("properties"):
             log("window client properties updates: %s", properties)
             self._set_client_properties(proto, wid, window, properties)
-        geometry = config.inttupleget("geometry")
-        if geometry:
+        if geometry := config.inttupleget("geometry"):
             w, h = geometry[2:4]
             surface.resize(w, h)
             surface.frame_done()

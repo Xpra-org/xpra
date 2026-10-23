@@ -12,6 +12,7 @@ from unittest.mock import Mock, patch
 
 from xpra.server.window import compress
 from xpra.server.window.compress import WindowSource
+from xpra.server.window.refresh import RefreshController
 
 
 class CompressTest(unittest.TestCase):
@@ -104,9 +105,10 @@ class CompressTest(unittest.TestCase):
         source._damage_cancelled = 0
         source._damage_delayed = None
         source.encode_queue = []
-        source.refresh_regions = []
-        source.refresh_event_time = 0
-        for timer in ("expire_timer", "may_send_timer", "soft_timer", "refresh_timer",
+        source.refresh_controller = RefreshController(
+            compress.GLib, compress.monotonic, can_refresh=source.can_refresh, on_refresh=source.timer_full_refresh,
+        )
+        for timer in ("expire_timer", "may_send_timer", "soft_timer",
                       "timeout_timer", "av_sync_timer", "decode_error_refresh_timer"):
             setattr(source, timer, 0)
         source.statistics = SimpleNamespace(encoding_pending={})
@@ -248,6 +250,115 @@ class CompressTest(unittest.TestCase):
         size = (1024, 1024)
         self.assertEqual(source.get_transparent_encoding(*size, {"quality": 100}, "auto"), "webp")
         self.assertEqual(source.get_transparent_encoding(*size, {"quality": 80}, "auto"), "jpega")
+
+
+class EncodingPolicyWrapperTest(unittest.TestCase):
+
+    def setUp(self):
+        settings = patch.multiple(
+            compress, HARDCODED_ENCODING="", WEBP_EFFICIENCY_CUTOFF=512*1024,
+            TRANSPARENCY_ENCODINGS=("webp", "png", "rgb32", "jpega"),
+        )
+        settings.start()
+        self.addCleanup(settings.stop)
+
+    @staticmethod
+    def make_source(**changes):
+        source = CompressTest.make_source()
+        source.common_encodings = ("rgb24", "rgb32", "webp", "jpeg", "jpega", "png", "png/P", "png/L")
+        source._encoders = dict.fromkeys(source.common_encodings)
+        source._encoding_hint = ""
+        source._mmap = None
+        source.strict = False
+        source.__dict__.update(changes)
+        return source
+
+    def test_strategy_identifiers_bind_existing_methods(self):
+        for changes, name in (
+            ({"_encoding_hint": "png"}, "encoding_is_hint"),
+            ({"_encoding_hint": "missing", "_mmap": True}, "encoding_is_mmap"),
+            ({"encoding": "png/L"}, "encoding_is_pngL"),
+            ({"encoding": "png/P"}, "encoding_is_pngP"),
+            ({"encoding": "rgb", "strict": True}, "encoding_is_rgb24"),
+            ({"encoding": "rgb", "_want_alpha": True}, "encoding_is_rgb32"),
+            ({"encoding": "png", "strict": True}, "get_strict_encoding"),
+            ({"encoding": "grayscale", "_want_alpha": True}, "encoding_is_grayscale"),
+            ({"_want_alpha": True}, "get_transparent_encoding"),
+            ({}, "get_auto_encoding"),
+            ({"encoding": "jpeg"}, "get_current_or_rgb"),
+        ):
+            with self.subTest(changes=changes):
+                source = self.make_source(**changes)
+                getter = source.get_best_encoding_impl()
+                self.assertEqual(getter, getattr(source, name))
+                self.assertEqual(getter.__name__, name)
+
+    def test_selected_getters_read_live_hint_and_override(self):
+        source = self.make_source(_encoding_hint="png")
+        getter = source.get_best_encoding_impl()
+        source._encoding_hint = "jpeg"
+        self.assertEqual(getter(), "jpeg")
+        with patch.object(compress, "HARDCODED_ENCODING", "png"):
+            getter = source.get_best_encoding_impl()
+            self.assertEqual(getter, source.hardcoded_encoding)
+            with patch.object(compress, "HARDCODED_ENCODING", "jpeg"):
+                self.assertEqual(getter(), "jpeg")
+
+    def test_video_source_keeps_default_strategy_hook(self):
+        from xpra.server.window.video_compress import WindowVideoSource
+        source = object.__new__(WindowVideoSource)
+        source.__dict__.update(vars(self.make_source()))
+        source.window_type = set()
+        source.common_video_encodings = ("h264",)
+        source.supports_scrolling = False
+        self.assertEqual(source.get_best_encoding_impl(), source.get_best_encoding_video)
+        source._want_alpha = True
+        self.assertEqual(source.get_best_encoding_impl(), source.get_transparent_encoding)
+        source._want_alpha = False
+        source.content_types = ("lossless",)
+        self.assertEqual(source.get_best_encoding_impl(), source.get_auto_encoding)
+
+    def test_automatic_selection_honors_region_options_and_candidates(self):
+        source = self.make_source(_current_quality=100)
+        # Missing region quality retains its existing default of zero.
+        self.assertEqual(source.get_auto_encoding(1024, 1024, {}), "jpeg")
+        self.assertEqual(source.get_auto_encoding(1024, 1024, {"quality": 100}), "webp")
+        self.assertEqual(source.do_get_auto_encoding(1024, 1024, {}, "", ("png",)), "png")
+        options = {"quality": 80, "speed": 30}
+        self.assertEqual(source.get_auto_encoding(1024, 1024, options), "jpeg")
+        self.assertEqual(options, {"quality": 80, "speed": 30})
+
+    def test_screen_content_takes_precedence_over_natural_content(self):
+        source = self.make_source(common_encodings=("webp", "jpeg", "jph"))
+        source.content_types = ("picture",)
+        self.assertEqual(source.get_auto_encoding(640, 360, {"quality": 50, "speed": 49}), "jph")
+        source.content_types = ("picture", "browser")
+        self.assertEqual(source.get_auto_encoding(640, 360, {"quality": 50, "speed": 49}), "webp")
+
+    def test_transparent_selection_uses_current_quality_and_settings(self):
+        source = self.make_source(common_encodings=("webp", "jpega", "png"), _current_quality=100)
+        self.assertEqual(source.get_transparent_encoding(1024, 1024, {}, "auto"), "webp")
+        source._current_quality = 80
+        self.assertEqual(source.get_transparent_encoding(1024, 1024, {}, "auto"), "jpega")
+        with patch.object(compress, "TRANSPARENCY_ENCODINGS", ("png",)):
+            self.assertEqual(source.get_transparent_encoding(1024, 1024, {}, "auto"), "png")
+        with patch.object(compress, "WEBP_EFFICIENCY_CUTOFF", 1024*1024):
+            self.assertEqual(source.get_transparent_encoding(1024, 1024, {}, "auto"), "webp")
+            self.assertEqual(source.get_auto_encoding(1024, 1024, {"quality": 80}), "webp")
+
+    def test_transparent_fallback_delegates_to_automatic_override(self):
+        source = self.make_source(common_encodings=("h264",))
+        source.get_auto_encoding = Mock(return_value="custom")
+        options = {"quality": 80}
+        self.assertEqual(source.get_transparent_encoding(640, 480, options, ""), "custom")
+        source.get_auto_encoding.assert_called_once_with(640, 480, options, "")
+        self.assertIs(source.get_auto_encoding.call_args.args[2], options)
+
+    def test_simple_paths_do_not_need_window_state(self):
+        source = object.__new__(WindowSource)
+        self.assertEqual(source.get_transparent_encoding(640, 480, {}, "webp"), "webp")
+        with self.assertRaisesRegex(ValueError, "no options to choose from"):
+            source.do_get_auto_encoding(640, 480, {}, "", ())
 
 
 if __name__ == "__main__":

@@ -244,8 +244,7 @@ class DBUS_Server(DBUS_Server_Base):
     def SetIdleTimeout(self, value):
         nvalue = ni(value)
         self.log(".SetIdleTimeout(%s)", nvalue)
-        idle = self.server.get_subsystem("idle")
-        if idle:
+        if idle := self.server.get_subsystem("idle"):
             idle.control_command_idle_timeout(nvalue)
 
     @dbus.service.method(INTERFACE, in_signature='ii')

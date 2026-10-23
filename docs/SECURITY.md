@@ -10,6 +10,8 @@ For a general overview, please first read [security considerations](./docs/Usage
 
 To isolate applications which may be hostile, see the [secure pod](https://github.com/Xpra-org/xpra/tree/master/packaging/containers/podman/secure):
 the application runs in its own container, which only shares the X11 display with the X server and the xpra server.
+It can use the GPU for video encoding, see [GPU acceleration and the secure pod](https://github.com/Xpra-org/xpra/blob/master/packaging/containers/podman/GPU.md)
+for the security implications of each approach.
 
 
 ## Reporting a Vulnerability
@@ -48,6 +50,11 @@ please send a request to [security@xpra.org](mailto:security@xpra.org)
 * [cross-site websocket hijacking](https://github.com/Xpra-org/xpra/issues/4957): the `Origin` header of websocket connections was not validated, so any web page visited by the user could connect to a `bind-ws` socket (or a websocket upgradable one) and take over a session that does not require authentication - all versions, only fixed in 7.0 with the new `http-origin` option
 * [notifications from the server are not validated](https://github.com/Xpra-org/xpra/issues/5085): a malicious server could make the client's notification daemon load local files (`app_icon` URIs, `img` tags in the body), show links, impersonate local applications, bypass "do not disturb" or flood the desktop with notifications - all versions, fixed in 7.0
 * [strings and data from the peer are not validated](https://github.com/Xpra-org/xpra/issues/5084): window titles, file names, client names, log messages and other strings could contain control characters, terminal escape sequences or bidi overrides, used to spoof window titles and file extensions or to inject into log files, and some lists (clipboard targets, printers, monitors, start menu) had no size limit - all versions, fixed in 7.0
+
+
+## Bundled libraries
+The MS Windows builds are scanned every day for known vulnerabilities in the libraries they bundle,
+see [CVEs](https://github.com/Xpra-org/xpra/blob/master/docs/Build/CVE.md) for every vulnerability found and whether it applies.
 
 
 ## False positives

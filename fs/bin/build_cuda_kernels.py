@@ -51,8 +51,7 @@ def get_nvcc() -> [str, tuple[int, ...]]:
         options.insert(0, v)
     nvcc_versions = {}
     for filename in options:
-        vnum = get_nvcc_version(filename)
-        if vnum:
+        if vnum := get_nvcc_version(filename):
             nvcc_versions[vnum] = filename
     if not nvcc_versions:
         print("unable to find nvcc")

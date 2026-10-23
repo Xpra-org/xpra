@@ -236,8 +236,7 @@ def get_libcamera_devices() -> dict[str, dict]:
         for camera in cm.cameras:
             camera_id = camera.id
             info: dict = {"id": camera_id, "name": camera_id}
-            paths = _libcamera_device_paths(camera, rdev_map)
-            if paths:
+            if paths := _libcamera_device_paths(camera, rdev_map):
                 info["devices"] = paths
                 info["device"] = paths[0]
             devices[camera_id] = info

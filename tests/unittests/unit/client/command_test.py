@@ -14,7 +14,7 @@ from xpra.client.base.command import AbstractImageXpraClient, CommandConnectClie
 from xpra.net.common import Packet
 from xpra.net.packet_type import SHUTDOWN_SERVER
 from xpra.exit_codes import ExitCode
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
 from xpra.net.constants import MAX_PACKET_SIZE
 from xpra.util.objects import typedict
 

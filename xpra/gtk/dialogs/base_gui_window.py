@@ -65,8 +65,7 @@ class BaseGUIWindow(Gtk.Window):
         self.set_decorated(True)
         self.set_position(Gtk.WindowPosition.CENTER)
         self.icon_name = icon_name
-        icon = get_icon_pixbuf(icon_name)
-        if icon:
+        if icon := get_icon_pixbuf(icon_name):
             self.set_icon(icon)
         if parent:
             if not WIN32:
@@ -300,8 +299,7 @@ class BaseGUIWindow(Gtk.Window):
 
     def busy_cursor(self, widget) -> None:
         from xpra.gtk.cursors import cursor_types
-        watch = cursor_types.get("WATCH")
-        if watch:
+        if watch := cursor_types.get("WATCH"):
             display = Gdk.Display.get_default()
             cursor = Gdk.Cursor.new_for_display(display, watch)
             widget.get_window().set_cursor(cursor)
@@ -309,8 +307,7 @@ class BaseGUIWindow(Gtk.Window):
 
     def reset_cursors(self, *_args) -> None:
         for widget in self.vbox.get_children():
-            gdkwin = widget.get_window()
-            if gdkwin:
+            if gdkwin := widget.get_window():
                 gdkwin.set_cursor(None)
 
     def exec_subcommand(self, subcommand, *args) -> None:

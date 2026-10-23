@@ -97,7 +97,7 @@ class TestGetAuthModule(unittest.TestCase):
         self.assertEqual(options.get("value"), "s3cret")
 
     def test_invalid_type(self):
-        from xpra.scripts.config import InitException
+        from xpra.config import InitException
         # a non-str is rejected either by the isinstance guard (pure-python)
         # or by Cython's enforced `auth_str: str` annotation (cythonized build)
         with self.assertRaises((InitException, TypeError)):
@@ -112,7 +112,7 @@ class TestGetAuthModule(unittest.TestCase):
             get_auth_module("auth_helper")
 
     def test_invalid_module(self):
-        from xpra.scripts.config import InitException
+        from xpra.config import InitException
         with self.assertRaises(InitException):
             get_auth_module("nonexistent_module_xyz")
 

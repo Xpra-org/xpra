@@ -114,8 +114,7 @@ def has_plugins(*names: str) -> bool:
         if not x:
             continue
         snames += [v.strip() for v in x.split("!")]
-    missing = [name for name in snames if (name is not None and name not in allp)]
-    if missing:
+    if missing := [name for name in snames if (name is not None and name not in allp)]:
         log("missing %s from %s", missing, names)
     return len(missing) == 0
 

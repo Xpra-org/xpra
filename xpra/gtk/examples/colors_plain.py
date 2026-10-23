@@ -28,8 +28,7 @@ class ColorPlainWindow(Gtk.Window):
         self.set_app_paintable(True)
         self.set_events(Gdk.EventMask.KEY_PRESS_MASK)
         self.set_title("Colors")
-        icon = get_icon_pixbuf("encoding.png")
-        if icon:
+        if icon := get_icon_pixbuf("encoding.png"):
             self.set_icon(icon)
         drawing_area = Gtk.DrawingArea()
         drawing_area.connect("draw", self.area_draw)

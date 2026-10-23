@@ -372,8 +372,7 @@ def numpy_import_context(subsystem: str, blocking=False) -> AbstractContextManag
     env_name = "XPRA_"+(key.upper())+"_NUMPY"
     if env_name not in os.environ:
         env_name = "XPRA_NUMPY"
-    allow_numpy = envbool(env_name, True)
-    if allow_numpy:
+    if envbool(env_name, True):
         import threading
         thread = threading.current_thread()
         info = subsystem + f" in thread {thread.ident}: {thread.name!r}"

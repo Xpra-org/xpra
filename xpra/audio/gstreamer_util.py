@@ -546,8 +546,7 @@ def get_sink_devices(sink_plugin: str) -> dict[str, str]:
 
 def get_sink_device_name(sink_plugin: str, device: str) -> str:
     """Resolve a sink device ID, preferring an earlier menu enumeration."""
-    device_name = SINK_DEVICE_CACHE.get(sink_plugin, {}).get(device, "")
-    if device_name:
+    if device_name := SINK_DEVICE_CACHE.get(sink_plugin, {}).get(device, ""):
         return device_name
     return get_sink_devices(sink_plugin).get(device, "")
 

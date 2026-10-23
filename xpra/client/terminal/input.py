@@ -460,8 +460,7 @@ class InputParser:
     def _parse_legacy(self, buf: bytes, pos: int, mods: int) -> tuple[int, list[object]]:
         """ decode a key that is not using the kitty keyboard protocol """
         b = buf[pos]
-        code = C0_KEYS.get(b, 0)
-        if code:
+        if code := C0_KEYS.get(b, 0):
             return 1, [KeyEvent(code, mods=mods)]
         if b < 0x20:
             # `ctrl` + a letter, or one of `@ [ \\ ] ^ _`:

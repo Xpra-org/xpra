@@ -38,8 +38,7 @@ def _load(name, *versions):
             return ctypes.cdll.LoadLibrary(libname)
         except Exception:
             pass
-    name_ver = ctypes.util.find_library(name)
-    if name_ver:
+    if name_ver := ctypes.util.find_library(name):
         return ctypes.cdll.LoadLibrary(name_ver)
     raise ImportError(f"Unable to find {name} library")
 
@@ -131,8 +130,7 @@ class ProxyFactory:
 
         i = 0
         while array[i]:
-            proxy_bytes = cast(array[i], c_char_p).value
-            if proxy_bytes:
+            if proxy_bytes := cast(array[i], c_char_p).value:
                 proxies.append(proxy_bytes.decode('utf-8', errors='replace'))
             i += 1
 

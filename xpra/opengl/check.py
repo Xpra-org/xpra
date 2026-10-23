@@ -501,8 +501,7 @@ def do_check_PyOpenGL_support(force_enable) -> dict[str, Any]:
             check_texture_functions,
             check_shader_functions,
     ):
-        msg = check_fn()
-        if msg:
+        if msg := check_fn():
             unsafe(msg)
 
     safe = check_lists(props, force_enable)

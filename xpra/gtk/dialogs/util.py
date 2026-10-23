@@ -82,8 +82,7 @@ def nearest_icon_enum(size: int) -> Gtk.IconSize:
 
 def load_hb_image(icon_name: str, size=32) -> Gtk.Image | None:
     from xpra.gtk.pixbuf import get_icon_pixbuf
-    pixbuf = get_icon_pixbuf(f"{icon_name}.png")
-    if pixbuf:
+    if pixbuf := get_icon_pixbuf(f"{icon_name}.png"):
         if pixbuf.get_width() != size or pixbuf.get_height() != size:
             GdkPixbuf = gi_import("GdkPixbuf")
             pixbuf = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.HYPER)
@@ -98,8 +97,7 @@ def load_hb_image(icon_name: str, size=32) -> Gtk.Image | None:
 
 def hb_button(tooltip: str, icon_name: str, callback: Callable, size=32) -> Gtk.Button:
     btn = Gtk.Button()
-    image = load_hb_image(icon_name, size)
-    if image:
+    if image := load_hb_image(icon_name, size):
         btn.add(image)
         btn.set_tooltip_text(tooltip)
         current_size = [size, size]

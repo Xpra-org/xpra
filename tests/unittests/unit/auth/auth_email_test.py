@@ -326,9 +326,10 @@ class EmailAuthTest(unittest.TestCase):
         }).make_ssl_context()
         self.assertEqual(context.protocol, ssl.PROTOCOL_TLS_CLIENT)
         self.assertEqual(context.verify_flags, ssl.VERIFY_X509_STRICT)
-        self.assertTrue(context.options & ssl.OP_NO_COMPRESSION)
+        self.assertEqual(context.options & ssl.OP_NO_COMPRESSION, ssl.OP_NO_COMPRESSION)
         self.assertTrue(context.check_hostname)
-        ciphers = [cipher["name"] for cipher in context.get_ciphers() if cipher["protocol"] != "TLSv1.3"]
+        # TLS 1.3 suites are not affected by set_ciphers(), and LibreSSL does not label them as "TLSv1.3"
+        ciphers = [cipher["name"] for cipher in context.get_ciphers() if not cipher["name"].startswith("TLS_")]
         self.assertEqual(ciphers, ["ECDHE-RSA-AES256-GCM-SHA384"])
 
     def test_ssl_flag_lists_through_auth_options(self):
@@ -341,8 +342,8 @@ class EmailAuthTest(unittest.TestCase):
         self.addCleanup(auth.cleanup)
         context = auth.make_ssl_context()
         self.assertEqual(context.verify_flags, ssl.VERIFY_X509_STRICT | ssl.VERIFY_X509_PARTIAL_CHAIN)
-        self.assertTrue(context.options & ssl.OP_NO_RENEGOTIATION)
-        self.assertTrue(context.options & ssl.OP_NO_COMPRESSION)
+        self.assertEqual(context.options & ssl.OP_NO_RENEGOTIATION, ssl.OP_NO_RENEGOTIATION)
+        self.assertEqual(context.options & ssl.OP_NO_COMPRESSION, ssl.OP_NO_COMPRESSION)
 
     def test_invalid_ssl_options_do_not_connect(self):
         invalid = (
@@ -759,8 +760,10 @@ class EmailSSLContextTest(unittest.TestCase):
 
     def test_ca_directory(self):
         with tempfile.TemporaryDirectory(prefix="xpra-email-ca-") as directory:
-            shutil.copy(self.cert, os.path.join(directory, "cert.pem"))
-            subprocess.run([shutil.which("openssl"), "rehash", directory], check=True, capture_output=True)
+            # name the file after its subject hash ourselves: LibreSSL has no `openssl rehash`
+            proc = subprocess.run([shutil.which("openssl"), "x509", "-hash", "-noout", "-in", self.cert],
+                                  check=True, capture_output=True, text=True)
+            shutil.copy(self.cert, os.path.join(directory, proc.stdout.strip() + ".0"))
             self.handshake(self.auth(**{"smtp-ssl-ca-certs": directory}).make_ssl_context())
 
     def test_inline_ca_data(self):

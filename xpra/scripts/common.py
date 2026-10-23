@@ -6,7 +6,7 @@
 import sys
 
 from xpra.os_util import OSX
-from xpra.scripts.config import InitException
+from xpra.config import InitException
 
 
 no_gtk_bypass = False

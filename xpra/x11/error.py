@@ -88,8 +88,7 @@ def get_X_error(xerror) -> str:
         return str(xerror)
     with log.trap_error("Error retrieving error string for %s", xerror):
         from xpra.x11.bindings.core import X11CoreBindings, errors
-        text = errors.get(xerror, "")
-        if text:
+        if text := errors.get(xerror, ""):
             return text
         return X11CoreBindings().get_error_text(xerror)
     return str(xerror)
@@ -187,8 +186,7 @@ class XSyncContext:
         trap.Xenter()
 
     def __exit__(self, e_typ, _e_val, trcbak):
-        err = trap.Xexit()
-        if err:
+        if err := trap.Xexit():
             if e_typ is None:
                 # we are not handling an exception yet, so raise this one:
                 raise XError(err)

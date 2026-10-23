@@ -13,7 +13,7 @@ from xpra.platform.dotxpra import DotXpra
 from xpra.platform.gui import force_focus
 from xpra.util.child_reaper import get_child_reaper
 from xpra.exit_codes import exit_str
-from xpra.scripts.config import OPTION_TYPES
+from xpra.config.types import OPTION_TYPES
 from xpra.scripts.args import get_command_args
 from xpra.gtk.css_overrides import add_screen_css
 from xpra.gtk.dialogs.common_style import add_style_class, load_common_style
@@ -74,12 +74,8 @@ def load_sessions_css() -> None:
 
 def pil_image_to_pixbuf(img):
     from xpra.codecs.image import to_png
-    from xpra.gtk.pixbuf import GdkPixbuf
-    data = to_png(img.convert("RGBA"))
-    loader = GdkPixbuf.PixbufLoader()
-    loader.write(data)
-    loader.close()
-    return loader.get_pixbuf()
+    from xpra.gtk.pixbuf import load_pixbuf
+    return load_pixbuf(to_png(img.convert("RGBA")), ("png", ))
 
 
 def get_session_info(sockpath: str) -> dict:
@@ -144,8 +140,7 @@ class SessionsGUI(Gtk.Window):
             self.set_wmclass("xpra-sessions-gui", "Xpra-Sessions-GUI")
         add_close_accel(self, self.quit)
         self.connect("delete_event", self.quit)
-        icon = get_icon_pixbuf("browse.png")
-        if icon:
+        if icon := get_icon_pixbuf("browse.png"):
             self.set_icon(icon)
 
         hb = Gtk.HeaderBar()
@@ -364,10 +359,8 @@ class SessionsGUI(Gtk.Window):
                 pwidget = scaled_image(pil_image_to_pixbuf(session.icon), 28)
             if not pwidget:
                 # try to use an icon for the platform:
-                platform_icon_name = get_platform_icon_name(session.platform)
-                if platform_icon_name:
-                    pwidget = scaled_image(get_icon_pixbuf("%s.png" % platform_icon_name), 28)
-                    if pwidget:
+                if platform_icon_name := get_platform_icon_name(session.platform):
+                    if pwidget := scaled_image(get_icon_pixbuf("%s.png" % platform_icon_name), 28):
                         pwidget.set_tooltip_text(platform_icon_name)
             if not pwidget:
                 pwidget = l(session.platform)
@@ -568,7 +561,7 @@ def do_main(opts) -> ExitValue:
 
 
 def main() -> ExitValue:  # pragma: no cover
-    from xpra.scripts.config import make_defaults_struct
+    from xpra.config.defaults import make_defaults_struct
     opts = make_defaults_struct()
     return do_main(opts)
 

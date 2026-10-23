@@ -126,8 +126,7 @@ class X11DisplayPropsWatcher:
     def _handle_root_prop_changed(self, obj, prop) -> None:
         if prop == "_NET_CLIENT_LIST_STACKING":
             focuslog("root_prop_changed(%s, %s)", obj, prop)
-            window = self.display.get_subsystem("window")
-            if window:
+            if window := self.display.get_subsystem("window"):
                 window.send_window_stacking(self.get_window_stacking(window))
             return
         log("root_prop_changed(%s, %s)", obj, prop)
@@ -160,8 +159,7 @@ class X11DisplayPropsWatcher:
         xids = root_array_get("_NET_CLIENT_LIST_STACKING", "window") or ()
         xid_to_wid = {}
         for wid, window in window_client._id_to_window.items():
-            gdkwindow = window.get_window()
-            if gdkwindow:
+            if gdkwindow := window.get_window():
                 xid_to_wid[gdkwindow.get_xid()] = wid
         stacking = tuple(xid_to_wid[xid] for xid in xids if xid in xid_to_wid)
         focuslog("_NET_CLIENT_LIST_STACKING=%s, window stacking=%s", xids, stacking)

@@ -57,8 +57,7 @@ class ShortcutInfo(Gtk.Window):
         vbox = Gtk.VBox()
         vbox.set_spacing(4)
         style_body(vbox)
-        icon = get_icon_pixbuf("keyboard.png")
-        if icon:
+        if icon := get_icon_pixbuf("keyboard.png"):
             self.set_icon(icon)
 
         if modifier_names is None:
@@ -119,7 +118,7 @@ def main(_args):
     from xpra.platform.keyboard import Keyboard
     from xpra.util.system import is_X11
     from xpra.client.gui.keyboard_shortcuts_parser import parse_shortcut_modifiers, parse_shortcuts
-    from xpra.scripts.config import read_xpra_defaults
+    from xpra.config.io import read_xpra_defaults
     from xpra.util.parsing import TRUE_OPTIONS
     with program_context("Keyboard-Shortcuts", "Keyboard Shortcuts"):
         if is_X11():

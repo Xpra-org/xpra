@@ -10,7 +10,7 @@ from xpra.log import Logger
 from xpra.util.env import envbool
 from xpra.util.str_fn import csv
 from xpra.exit_codes import ExitCode
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 
 
 ShadowServerFactory = Callable[[dict[str, str]], object]
@@ -66,8 +66,7 @@ def load_pipewire(_display: str = "") -> ShadowServerFactory | None:
 
 
 def load_wayland(display: str = "") -> ShadowServerFactory | None:
-    c = load_remotedesktop() or load_screencast()
-    if c:
+    if c := load_remotedesktop() or load_screencast():
         os.environ["GDK_BACKEND"] = "wayland"
         if display:
             os.environ["WAYLAND_DISPLAY"] = display

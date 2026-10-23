@@ -50,8 +50,7 @@ class IDServer(StubSubsystem):
         caps = {}
         if source is None or "versions" in source.wants:
             caps["uuid"] = self.uuid
-            mid = get_machine_id()
-            if mid:
+            if mid := get_machine_id():
                 caps["machine_id"] = mid
         return caps
 
@@ -80,7 +79,6 @@ class IDServer(StubSubsystem):
             "machine-id": get_machine_id(),
             "version": XPRA_NUMERIC_VERSION[:FULL_INFO+1],
         }
-        display = os.environ.get("DISPLAY", "")
-        if display:
+        if display := os.environ.get("DISPLAY", ""):
             id_info["display"] = display
         return id_info

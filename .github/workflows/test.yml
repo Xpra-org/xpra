@@ -115,3 +115,55 @@ jobs:
         --skip-slow unit.server.shadow_server_test
         --skip-slow unit.server.subsystem.start_option_test
         --skip-slow unit.server.subsystem.shadow_option_test
+
+  openbsd:
+    name: "unittest (openbsd)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+    - uses: actions/checkout@v7
+
+    - name: Record the source information
+      # the workspace is copied without `.git`, so `src_info.py` must be generated here
+      run: python3 ./fs/bin/add_build_info.py src
+
+    - name: Test in OpenBSD
+      uses: vmactions/openbsd-vm@v1
+      with:
+        release: "7.9"
+        prepare: |
+          pkg_add -I rsync--
+          pkg_add -I bash py3-setuptools py3-cython py3-gobject3 py3-cairo py3-numpy py3-Pillow \
+            py3-lz4 py3-brotli py3-cryptography py3-dbus py3-yaml py3-rencode \
+            py3-gstreamer1 py3-opengl py3-paramiko py3-netifaces py3-setproctitle \
+            py3-xdg py3-asyncssh py3-aioquic py3-gssapi gtk+3 \
+            xxhash x264 libvpx libwebp libavif libde265 openh264 dav1d aom \
+            libqrencode zstd libnotify xdg-utils
+        run: |
+          groupadd xpra 2>/dev/null || true
+          useradd -m -g xpra -s /bin/ksh xpra 2>/dev/null || true
+          WORKSPACE=$(cd "$GITHUB_WORKSPACE" && pwd -P)
+          CI_WORKSPACE=/home/xpra/xpra-ci
+          rm -rf "$CI_WORKSPACE"
+          mkdir -p "$CI_WORKSPACE"
+          rsync -a --exclude=.git --exclude=build --exclude=dist --exclude=socket-test \
+            "$WORKSPACE/" "$CI_WORKSPACE/"
+          chown -R xpra:xpra "$CI_WORKSPACE"
+          printf 'cd "%s"\n' "$CI_WORKSPACE" > /tmp/xpra-tests.sh
+          SCRIPT='export NTHREADS=2
+          export XPRA_TEST_COVERAGE=0
+          bash tests/unittests/run \
+            --skip-fail unit.client.splash_test \
+            --skip-slow unit.client.x11_client_test \
+            --skip-slow unit.client.x11_client_paint_test \
+            --skip-slow unit.server.subsystem.startdesktop_option_test \
+            --skip-slow unit.x11.x11_server_test \
+            --skip-slow unit.x11.gtk_bindings_test \
+            --skip-slow unit.server.server_auth_test \
+            --skip-slow unit.server.shadow_server_test \
+            --skip-slow unit.server.subsystem.start_option_test \
+            --skip-slow unit.server.subsystem.shadow_option_test
+          '
+          printf '%s\n' "$SCRIPT" >> /tmp/xpra-tests.sh
+          chmod 755 /tmp/xpra-tests.sh
+          su -l xpra < /tmp/xpra-tests.sh

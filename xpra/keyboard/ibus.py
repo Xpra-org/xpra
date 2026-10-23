@@ -47,11 +47,9 @@ def query_ibus() -> dict[str, Any]:
         "connected": bus.is_connected(),
     }
     if bus.is_connected():
-        ge = bus.get_global_engine()
-        if ge:
+        if ge := bus.get_global_engine():
             info["engine"] = query_engine(ge)
-        engines = bus.list_engines()
-        if engines:
+        if engines := bus.list_engines():
             info["engines"] = tuple(query_engine(engine) for engine in engines)
     log("query_ibus()=%s", Ellipsizer(info))
     return info
@@ -62,7 +60,7 @@ dbus_watched = None
 
 
 def with_ibus_ready(callback: Callable[[], None]):
-    global ready_callbacks, dbus_watched
+    global dbus_watched
     ready_callbacks.append(callback)
     if not dbus_watched:
         dbus_watched = True

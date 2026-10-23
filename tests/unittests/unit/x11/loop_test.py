@@ -8,11 +8,12 @@ import os
 import sys
 import ctypes
 import unittest
+from ctypes.util import find_library
 from itertools import pairwise
 from threading import Thread, Event
 from time import monotonic, sleep
 
-from xpra.os_util import POSIX, OSX
+from xpra.os_util import POSIX, OSX, OPENBSD
 from xpra.util.io import pollwait
 from xpra.util.env import OSEnvContext
 from unit.server_test_util import ServerTestUtil
@@ -48,7 +49,7 @@ def storm_thread(display_name: str, xid: int, stop: Event) -> None:
     (Xlib is not thread safe, so we can't re-use the one the bindings use)
     just like an application setting its window title on every frame does.
     """
-    xlib = ctypes.CDLL("libX11.so.6")
+    xlib = ctypes.CDLL(find_library("X11") or "libX11.so.6")
     xlib.XOpenDisplay.restype = ctypes.c_void_p
     xlib.XOpenDisplay.argtypes = [ctypes.c_char_p]
     xlib.XCloseDisplay.argtypes = [ctypes.c_void_p]
@@ -249,6 +250,7 @@ class X11EventLoopTest(ServerTestUtil):
             xvfb.terminate()
             self.assertIsNotNone(pollwait(xvfb, 10))
 
+    @unittest.skipIf(OPENBSD, "Xvfb does not deliver enough property events")
     def test_event_storm_fairness(self):
         display = self.find_free_display()
         xvfb = self.start_Xvfb(display)

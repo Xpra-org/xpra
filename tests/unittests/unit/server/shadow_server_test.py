@@ -6,13 +6,54 @@
 
 import time
 import socket
+import sys
 import unittest
+from types import ModuleType
+from unittest.mock import Mock, patch
 
 from xpra.util.objects import typedict
 from xpra.os_util import OSX, POSIX
 from xpra.util.io import pollwait, which
 from xpra.codecs.image import ImageWrapper
 from unit.server_test_util import ServerTestUtil
+
+
+class ShadowNotifierTest(unittest.TestCase):
+
+    def test_tray_requires_existing_bus(self):
+        from xpra.server import features
+        from xpra.server.subsystem import tray
+        gtk_module = ModuleType("xpra.gtk.statusicon_tray")
+        for enabled, address in ((True, "desktop-bus"), (True, ""), (False, "desktop-bus")):
+            widget = Mock()
+            gtk_module.GTKStatusIconTray = Mock(return_value=widget)
+            native = Mock(return_value=widget)
+            with self.subTest(dbus=enabled, address=address), patch.object(tray, "POSIX", True), \
+                    patch.object(tray, "OSX", False), patch.object(features, "dbus", enabled), \
+                    patch.dict(sys.modules, {gtk_module.__name__: gtk_module}), \
+                    patch("xpra.dbus.common.find_session_bus_address", return_value=address), \
+                    patch("xpra.platform.systray.get_backends", return_value=[native]) as backends:
+                manager = tray.TrayMenu()
+                manager.menu = object()
+                self.assertIs(manager.make_tray_widget(), widget)
+                use_native = bool(enabled and address)
+                self.assertEqual(backends.call_count, int(use_native))
+                self.assertEqual(native.call_count, int(use_native))
+                self.assertEqual(gtk_module.GTKStatusIconTray.call_count, int(not use_native))
+
+    def test_native_notifier_requires_existing_bus(self):
+        from xpra.server import features
+        from xpra.server.shadow import shadow_server_base as shadow
+        server = shadow.ShadowServerBase.__new__(shadow.ShadowServerBase)
+        server.subsystems = {}
+        for enabled, address in ((True, "desktop-bus"), (True, ""), (False, "desktop-bus")):
+            with self.subTest(dbus=enabled, address=address), patch.object(shadow, "POSIX", True), \
+                    patch.object(shadow, "OSX", False), patch.object(shadow, "NATIVE_NOTIFIER", True), \
+                    patch.object(features, "dbus", enabled), \
+                    patch("xpra.dbus.common.find_session_bus_address", return_value=address), \
+                    patch("xpra.platform.notification.get_backends", return_value=[object]) as backends:
+                self.assertEqual(server.get_notifier_classes(), [object] if enabled and address else [])
+                self.assertEqual(backends.call_count, int(bool(enabled and address)))
 
 
 class ShadowServerTest(ServerTestUtil):

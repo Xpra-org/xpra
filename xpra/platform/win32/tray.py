@@ -34,8 +34,7 @@ class Win32Tray(TrayBase):
                                            click_callback=self.click_cb,
                                            exit_callback=self.exit_cb,
                                            iconPathName=icon_filename)
-        el = get_win32_event_listener()
-        if el:
+        if el := get_win32_event_listener():
             el.add_event_callback(win32con.WM_DISPLAYCHANGE, self.calculate_offset)
 
     def show(self) -> None:
@@ -59,8 +58,7 @@ class Win32Tray(TrayBase):
         if self.tray_widget:
             self.tray_widget.close()
             self.tray_widget = None
-        el = get_win32_event_listener()
-        if el:
+        if el := get_win32_event_listener():
             el.remove_event_callback(win32con.WM_DISPLAYCHANGE, self.calculate_offset)
         log("Win32Tray.cleanup() ended")
 
@@ -99,8 +97,7 @@ class Win32Tray(TrayBase):
 
     def get_geometry(self) -> tuple[int, int, int, int]:
         if tw := self.tray_widget:
-            geom = tw.get_geometry()
-            if geom:
+            if geom := tw.get_geometry():
                 return geom
         return self.geometry_guess
 

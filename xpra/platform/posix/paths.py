@@ -47,8 +47,7 @@ def do_get_install_prefix() -> str:
             return argv0[:p]
     # ie: "/opt/xpra/lib/python3.14/site-packages/xpra/platform/posix/paths.py" -> "/opt/xpra"
     # (also works with "python3 -m xpra")
-    m = re.match(r"^(/.*)/lib(?:64)?/python3[^/]*/(?:site|dist)-packages/xpra/", __file__)
-    if m:
+    if m := re.match(r"^(/.*)/lib(?:64)?/python3[^/]*/(?:site|dist)-packages/xpra/", __file__):
         return m.group(1)
     return sys.prefix
 
@@ -103,8 +102,7 @@ def do_get_xpra_tmp_dir() -> str:
 
 def do_get_script_bin_dirs() -> list[str]:
     script_bin_dirs = []
-    runtime_dir = _get_xpra_runtime_dir()
-    if runtime_dir:
+    if runtime_dir := _get_xpra_runtime_dir():
         script_bin_dirs.append(runtime_dir)
     return script_bin_dirs
 
@@ -169,8 +167,7 @@ def get_runtime_dir(uid: int = -1) -> str:
         so that the same value can also be expanded for another user.  `uid`
         identifies that other user when deriving a fallback path.
     """
-    runtime_dir = os.environ.get("XDG_RUNTIME_DIR", "")
-    if runtime_dir:
+    if runtime_dir := os.environ.get("XDG_RUNTIME_DIR", ""):
         # the standard layout ends with the uid, ie: "/run/user/1000",
         # expanding what we return then gives us this exact same path back:
         parent, name = os.path.split(runtime_dir.rstrip(os.path.sep))
@@ -205,10 +202,8 @@ def do_get_xpra_runtime_dir() -> str:
 def do_get_socket_dirs() -> list[str]:
     SOCKET_DIRS = []
     from xpra.util.env import envbool
-    LEGACY_SOCKET_DIRS = envbool("XPRA_LEGACY_SOCKET_DIRS", True)
-    if LEGACY_SOCKET_DIRS:
-        runtime_dir = _get_xpra_runtime_dir()
-        if runtime_dir:
+    if LEGACY_SOCKET_DIRS := envbool("XPRA_LEGACY_SOCKET_DIRS", True):
+        if runtime_dir := _get_xpra_runtime_dir():
             # private, per user: XDG_RUNTIME_DIR/xpra
             # (ie: "/run/user/1000/xpra")
             SOCKET_DIRS.append(runtime_dir)
@@ -225,17 +220,14 @@ def do_get_socket_dirs() -> list[str]:
 
 
 def do_get_client_socket_dirs() -> list[str]:
-    DIRS = []
-    runtime_dir = _get_xpra_runtime_dir()
-    if runtime_dir:
-        DIRS.append(os.path.join(runtime_dir, "clients"))
-    return DIRS
+    if runtime_dir := _get_xpra_runtime_dir():
+        return [os.path.join(runtime_dir, "clients")]
+    return []
 
 
 def do_get_default_log_dirs() -> list[str]:
     log_dirs = []
-    v = _get_xpra_runtime_dir()
-    if v:
+    if v := _get_xpra_runtime_dir():
         log_dirs.append(v)
     log_dirs.append(tempfile.gettempdir())
     return log_dirs
@@ -279,11 +271,9 @@ def _get_user_dirs_download_dir() -> str:
 
 
 def do_get_download_dir() -> str:
-    download_dir = _get_xdg_download_dir()
-    if download_dir:
+    if download_dir := _get_xdg_download_dir():
         return download_dir
-    download_dir = _get_user_dirs_download_dir()
-    if download_dir:
+    if download_dir := _get_user_dirs_download_dir():
         return download_dir
     if os.path.exists(os.path.expanduser("~/Downloads")):
         return "~/Downloads"

@@ -1,4 +1,4 @@
-policy_module(xpra, 2.1)
+policy_module(xpra, 2.2)
 
 require {
 	class dbus { acquire_svc send_msg };
@@ -30,6 +30,7 @@ require {
 	type config_home_t;
 
 	attribute can_read_shadow_passwords;
+	role unconfined_r;
 }
 
 systemd_domain_template(xpra)
@@ -162,3 +163,20 @@ allow xpra_t user_tmp_t:sock_file write;
 #proxy instance mmap:
 allow xpra_t tmpfs_t:file map;
 allow xpra_t bin_t:file map;
+
+#the encoder server used by containers, ie: the 'encoder' variant of the secure podman pod,
+#started with `runcon -t xpra_encoder_t -l s0 xpra encoder ...`
+#so that containers can connect to its socket and nothing else running as the user.
+#it is not confined yet, see #5087:
+type xpra_encoder_t;
+domain_type(xpra_encoder_t)
+domain_entry_file(xpra_encoder_t, xpra_exec_t)
+role unconfined_r types xpra_encoder_t;
+allow unconfined_t xpra_encoder_t:process transition;
+unconfined_domain(xpra_encoder_t)
+optional_policy(`
+	gen_require(`
+		type container_t;
+	')
+	allow container_t xpra_encoder_t:unix_stream_socket connectto;
+')

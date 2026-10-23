@@ -107,8 +107,7 @@ def open_camera(device_str: str) -> CameraDevice | None:
         avf_devices = _get_avfoundation_devices()
         log("avfoundation_devices=%s", avf_devices)
         if avf_devices:
-            unique_id = _find_avfoundation_id(device_str, avf_devices)
-            if unique_id:
+            if unique_id := _find_avfoundation_id(device_str, avf_devices):
                 log("using AVFoundation backend for %r (uniqueID=%r)", device_str, unique_id)
                 from xpra.platform.darwin.avfoundation_camera import AVFoundationCamera
                 return AVFoundationCamera(unique_id)

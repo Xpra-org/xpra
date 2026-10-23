@@ -14,7 +14,8 @@ from xpra.common import noerr, noop
 from xpra.os_util import POSIX, OSX, getuid, get_username_for_uid, find_group
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.scripts.server import VFBStartResult, verify_display
-from xpra.scripts.config import InitExit, xvfb_command
+from xpra.config import InitExit
+from xpra.config.vfb import xvfb_command
 from xpra.scripts.common import no_gtk
 from xpra.scripts.display import stat_display_socket, X11_SOCKET_DIR
 from xpra.scripts.session import load_session_file
@@ -220,8 +221,7 @@ class XvfbManager(StubSubsystem):
             resize = self.resize_display.lower()
             if resize not in ALL_BOOLEAN_OPTIONS and resize != "auto":
                 sizes = self.resize_display.split(":", 1)[-1]
-                resolutions = parse_resolutions(sizes, self.refresh_rate)
-                if resolutions:
+                if resolutions := parse_resolutions(sizes, self.refresh_rate):
                     vfb_geom = resolutions[0]
             fps = get_refresh_rate_for_value(self.refresh_rate, 60) if self.refresh_rate else 0
             try:
@@ -274,8 +274,7 @@ class XvfbManager(StubSubsystem):
         session_files = self.get_subsystem("session-files")
         assert session_files
         root = POSIX and getuid() == 0
-        xauthority = valid_xauth((load_session_file("xauthority")).decode(), self.uid, self.gid, writable)
-        if xauthority:
+        if xauthority := valid_xauth((load_session_file("xauthority")).decode(), self.uid, self.gid, writable):
             os.environ["XAUTHORITY"] = xauthority
             return xauthority
 

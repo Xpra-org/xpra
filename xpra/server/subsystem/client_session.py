@@ -11,7 +11,6 @@ from xpra.net.common import FULL_INFO
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import valid_uuid
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.util import subsystem as dispatch
 from xpra.util.background_worker import add_work_item
 from xpra.util.objects import typedict, merge_dicts
 from xpra.log import Logger
@@ -86,8 +85,7 @@ class ClientSessionServer(StubSubsystem):
             if self.server._closing:
                 closing()
                 return
-            err = self.server.parse_hello(ss, caps)
-            if err:
+            if err := self.server.parse_hello(ss, caps):
                 reject(*err.split(":"))
                 return
             self.server.send_hello(ss, auth_caps)
@@ -103,15 +101,6 @@ class ClientSessionServer(StubSubsystem):
             log("process_hello_ui%s", (ss, caps, auth_caps))
             log.error("Error: processing new connection from %s:", ss.protocol or ss, exc_info=True)
             reject("error accepting new connection")
-
-    def dispatch_parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
-        return dispatch.first_truthy(self.server.subsystems, "parse_hello", ss, caps) or ""
-
-    def dispatch_add_new_client(self, ss, caps: typedict) -> None:
-        dispatch.call(self.server.subsystems, "add_new_client", ss, caps)
-
-    def dispatch_send_initial_data(self, ss) -> None:
-        dispatch.call(self.server.subsystems, "send_initial_data", ss)
 
     def client_startup_complete(self, ss) -> None:
         ss.startup_complete()
@@ -174,8 +163,7 @@ class ClientSessionServer(StubSubsystem):
                 log.warn(f"Warning: rejecting client with an invalid {attr!r} value")
                 self.network.send_disconnect(proto, f"invalid {attr!r} value")
                 return False
-        server_uuid = caps.strget("server_uuid")
-        if server_uuid:
+        if server_uuid := caps.strget("server_uuid"):
             if server_uuid == self.server.subsystems["id"].uuid:
                 self.network.send_disconnect(proto, "cannot connect a client running on the same display"
                                              " that the server it connects to is managing - this would create a loop!")
@@ -197,9 +185,12 @@ class ClientSessionServer(StubSubsystem):
         for protocol in protocols:
             self.network.disconnect_client(protocol, ConnectionMessage.DETACH_REQUEST)
 
-    def get_sources_info(self, proto, server_sources=()) -> dict[str, Any]:
-        log("ClientSessionServer.get_sources_info%s", (proto, server_sources))
+    def get_sources_info(self, proto, client_uuids: Sequence[str] = ()) -> dict[str, Any]:
+        log("ClientSessionServer.get_sources_info%s", (proto, client_uuids))
         start = monotonic()
+        server_sources = tuple(self.sources.values())
+        if client_uuids:
+            server_sources = tuple(ss for ss in server_sources if ss.uuid in client_uuids)
         info: dict[str, Any] = {
             "clients": {
                 "": sum(1 for p in self.sources if p != proto),

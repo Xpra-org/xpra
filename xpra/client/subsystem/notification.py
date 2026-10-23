@@ -39,7 +39,7 @@ class NotificationClient(StubClientSubsystem):
     """
     Mixin for clients that handle notifications
     """
-    __slots__ = ("callbacks", "client_supports", "enabled", "notifier", "server", "tray", "shown", "show_times")
+    __slots__ = ("callbacks", "client_supports", "enabled", "notifier", "server", "shown", "show_times")
     PREFIX = "notification"
 
     def __init__(self, client=None):
@@ -48,7 +48,6 @@ class NotificationClient(StubClientSubsystem):
         self.server = False
         self.enabled = False
         self.notifier = None
-        self.tray = None
         self.callbacks: dict[int, Callable] = {}
         # the notifications we have shown (used as an ordered set),
         # and when we have shown new ones, for rate limiting:
@@ -168,8 +167,11 @@ class NotificationClient(StubClientSubsystem):
                 from xpra.notification.common import parse_image_path, strip_unsafe_markup
                 icon_filename = get_icon_filename(icon_name)
                 icon = parse_image_path(icon_filename)
+                # the xpra system tray is owned by the `tray` subsystem (which may be disabled):
+                tray_subsystem = self.get_subsystem("tray")
+                tray = tray_subsystem.tray if tray_subsystem else None
                 # the body may include messages from the server, ie: the disconnection reason
-                n.show_notify("", self.tray, int(nid), "Xpra", int(nid), "",
+                n.show_notify("", tray, int(nid), "Xpra", int(nid), "",
                               summary, strip_unsafe_markup(body), actions, hints or {}, expire_timeout, icon)
             except Exception as e:
                 log("failed to show notification", exc_info=True)
@@ -274,8 +276,7 @@ class NotificationClient(StubClientSubsystem):
         icon = sanitize_icon_data(self.supported_icon_data(icon, "icon"))
         for attr, what in (("app-icon-data", "app-icon"), ("image-data", "image")):
             if icon_data := hints.get(attr):
-                safe = sanitize_icon_data(self.supported_icon_data(icon_data, what))
-                if safe:
+                if safe := sanitize_icon_data(self.supported_icon_data(icon_data, what)):
                     hints[attr] = safe
                 else:
                     hints.pop(attr)

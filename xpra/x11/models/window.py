@@ -75,8 +75,7 @@ def calc_constrained_size(width: int, height: int, hints) -> tuple[int, int]:
         return width, height
 
     def getintpair(key: str, dv1: int, dv2: int) -> tuple[int, int]:
-        v = hints.get(key)
-        if v:
+        if v := hints.get(key):
             try:
                 return int(v[0]), int(v[1])
             except (ValueError, IndexError):
@@ -856,8 +855,7 @@ class WindowModel(BaseWindowModel):
                 "max_aspect_ratio": "maximum-aspect-ratio",
             }
             for k, v in size_hints.items():
-                trans_name = TRANSLATED_NAMES.get(k)
-                if trans_name:
+                if trans_name := TRANSLATED_NAMES.get(k):
                     hints[trans_name] = v
         # handle min-size and max-size,
         # applying our size constraints if we have any:

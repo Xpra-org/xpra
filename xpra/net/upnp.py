@@ -29,8 +29,7 @@ def get_interface_address(addrs) -> str:
             continue
         for a in inet:
             # ie: host = {'addr': '192.168.0.111', 'netmask': '255.255.255.0', 'broadcast': '192.168.0.255'}
-            host = a.get("addr")
-            if host:
+            if host := a.get("addr"):
                 return host
     return ""
 
@@ -217,8 +216,7 @@ def upnp_add(socktype: str, info, options: dict):
         log("%s%s", add, kwargs)
         add(**kwargs)
         log_upnp_info(service)
-        external_ip = get_new_service_ip(service)
-        if external_ip:
+        if external_ip := get_new_service_ip(service):
             log.info("UPnP port mapping added for %s:%s", external_ip, external_port)
             options["upnp-address"] = (external_ip, external_port)
 
@@ -280,8 +278,7 @@ def get_new_service_ip(service) -> str:
         try:
             # noinspection calling-non-callable
             reply = getip()
-            ip = (reply or {}).get("NewExternalIPAddress")
-            if ip:
+            if ip := (reply or {}).get("NewExternalIPAddress"):
                 return ip
         except Exception:
             log("%s", getip, exc_info=True)

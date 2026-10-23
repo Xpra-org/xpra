@@ -68,8 +68,7 @@ class TestPlanarFormats(unittest.TestCase):
             self.assertIn(fmt, PIXEL_UPLOAD_FORMAT, f"no upload format for {fmt!r}")
             assert len(PIXEL_UPLOAD_FORMAT[fmt]) >= nplanes, f"not enough upload formats for {fmt!r}"
             # the internal format is optional, but must cover every plane if present:
-            iformats = PIXEL_INTERNAL_FORMAT.get(fmt, ())
-            if iformats:
+            if iformats := PIXEL_INTERNAL_FORMAT.get(fmt, ()):
                 assert len(iformats) >= nplanes, f"not enough internal formats for {fmt!r}"
 
     def test_shaders(self):
@@ -596,8 +595,7 @@ class TestGLInit(unittest.TestCase):
         """GLDrawingArea can initialize an OpenGL context."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = backing.gl_context()
-            if ctx:
+            if ctx := backing.gl_context():
                 with ctx:
                     backing.gl_init(ctx)
                 assert backing.gl_setup
@@ -609,8 +607,7 @@ class TestGLInit(unittest.TestCase):
         """init_textures() creates textures and fbos."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = backing.gl_context()
-            if ctx:
+            if ctx := backing.gl_context():
                 with ctx:
                     backing.init_textures()
                 assert len(backing.textures) > 0
@@ -624,8 +621,7 @@ class TestGLInit(unittest.TestCase):
         from xpra.opengl.backing import TEX_FBO
         backing, win = self._make_gl_backing()
         try:
-            ctx = backing.gl_context()
-            if ctx:
+            if ctx := backing.gl_context():
                 with ctx:
                     backing.init_textures()
                     backing.init_fbo(TEX_FBO, backing.offscreen_fbo, 64, 64, GL_NEAREST)
@@ -637,8 +633,7 @@ class TestGLInit(unittest.TestCase):
         """gl_init() raises ValueError when texture size exceeds the GL maximum."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = backing.gl_context()
-            if ctx:
+            if ctx := backing.gl_context():
                 with ctx:
                     backing.size = (200000, 200000)
                     self.assertRaises(ValueError, backing.gl_init, ctx)
@@ -650,8 +645,7 @@ class TestGLInit(unittest.TestCase):
         """init_shaders() compiles and links all fragment programs."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = backing.gl_context()
-            if ctx:
+            if ctx := backing.gl_context():
                 with ctx:
                     backing.init_textures()
                     backing.init_shaders()
@@ -691,8 +685,7 @@ class TestGLInit(unittest.TestCase):
 
     def _full_gl_init(self, backing):
         """Run gl_init + init_shaders inside a context; return the context (or None)."""
-        ctx = backing.gl_context()
-        if ctx:
+        if ctx := backing.gl_context():
             with ctx:
                 backing.gl_init(ctx)
                 backing.init_shaders()
@@ -821,8 +814,7 @@ class TestGLInit(unittest.TestCase):
         """resize_fbo copies the existing FBO pixels onto a new-sized tmp FBO."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = backing.gl_context()
-            if ctx:
+            if ctx := backing.gl_context():
                 with ctx:
                     backing.gl_init(ctx)
                     # update size to simulate a window resize, then call resize_fbo
@@ -840,8 +832,7 @@ class TestGLInit(unittest.TestCase):
         """copy_fbo blits offscreen FBO into the tmp FBO without error."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = backing.gl_context()
-            if ctx:
+            if ctx := backing.gl_context():
                 with ctx:
                     backing.gl_init(ctx)
                     w, h = backing.size
@@ -855,8 +846,7 @@ class TestGLInit(unittest.TestCase):
         from xpra.opengl.backing import TEX_FBO, TEX_TMP_FBO
         backing, win = self._make_gl_backing()
         try:
-            ctx = backing.gl_context()
-            if ctx:
+            if ctx := backing.gl_context():
                 with ctx:
                     backing.gl_init(ctx)
                 off_before = backing.offscreen_fbo
@@ -880,8 +870,7 @@ class TestGLInit(unittest.TestCase):
         """do_present_fbo renders the offscreen FBO to the display framebuffer."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = backing.gl_context()
-            if ctx:
+            if ctx := backing.gl_context():
                 with ctx:
                     backing.gl_init(ctx)
                     backing.pending_fbo_paint = [(0, 0, *backing.size)]
@@ -894,8 +883,7 @@ class TestGLInit(unittest.TestCase):
         """present_fbo appends the rect and flushes through to do_present_fbo."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = backing.gl_context()
-            if ctx:
+            if ctx := backing.gl_context():
                 with ctx:
                     backing.gl_init(ctx)
                     backing.paint_screen = True
@@ -926,8 +914,7 @@ class TestGLInit(unittest.TestCase):
         """save_fbo delegates to the utility function with correct arguments."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = backing.gl_context()
-            if ctx:
+            if ctx := backing.gl_context():
                 with ctx:
                     backing.gl_init(ctx)
                     with patch("xpra.opengl.backing.save_fbo") as mock_save:
@@ -949,8 +936,7 @@ class TestGLInit(unittest.TestCase):
         """upload_alert_texture returns False gracefully when no icon is available."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = backing.gl_context()
-            if ctx:
+            if ctx := backing.gl_context():
                 with ctx:
                     backing.gl_init(ctx)
                     result = backing.upload_alert_texture()
@@ -966,8 +952,7 @@ class TestGLInit(unittest.TestCase):
         """draw_alert_spinner uses the fixed-color shader to draw NLINES sectors."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = self._full_gl_init(backing)
-            if ctx:
+            if ctx := self._full_gl_init(backing):
                 with ctx:
                     backing.draw_alert_spinner()
                     backing.draw_alert_spinner(outer_pct=40)   # small-spinner variant
@@ -980,8 +965,7 @@ class TestGLInit(unittest.TestCase):
         """draw_alert_shade blends a semi-transparent shade over the FBO."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = self._full_gl_init(backing)
-            if ctx:
+            if ctx := self._full_gl_init(backing):
                 with ctx:
                     backing.draw_alert_shade()              # default shade=0.5
                     backing.draw_alert_shade(shade=0.2)     # dark-shade
@@ -994,8 +978,7 @@ class TestGLInit(unittest.TestCase):
         """draw_alert_icon completes without error; alert_uploaded is set to ±1."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = self._full_gl_init(backing)
-            if ctx:
+            if ctx := self._full_gl_init(backing):
                 with ctx:
                     backing.draw_alert_icon()
                 # alert_uploaded is either 1 (icon found & uploaded) or -1 (not found)
@@ -1008,8 +991,7 @@ class TestGLInit(unittest.TestCase):
         """draw_alert_icon returns early and sets alert_uploaded=-1 when no icon exists."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = self._full_gl_init(backing)
-            if ctx:
+            if ctx := self._full_gl_init(backing):
                 from xpra.client.gui.window.backing import WindowBackingBase
                 with patch.object(WindowBackingBase, "get_alert_icon", return_value=(0, 0, None)):
                     with ctx:
@@ -1030,8 +1012,7 @@ class TestGLInit(unittest.TestCase):
         from xpra.opengl.util import upload_rgba_texture
         backing, win = self._make_gl_backing()
         try:
-            ctx = self._full_gl_init(backing)
-            if ctx:
+            if ctx := self._full_gl_init(backing):
                 cw, ch = 16, 16
                 pixels = b"\x80\x80\x80\xff" * (cw * ch)
                 with ctx:
@@ -1054,8 +1035,7 @@ class TestGLInit(unittest.TestCase):
         from xpra.client.gui.window_border import WindowBorder
         backing, win = self._make_gl_backing()
         try:
-            ctx = self._full_gl_init(backing)
-            if ctx:
+            if ctx := self._full_gl_init(backing):
                 border = WindowBorder(shown=True, red=1.0, green=0.0, blue=0.0, alpha=0.6, size=4)
                 with ctx:
                     backing.draw_border(border)
@@ -1070,8 +1050,7 @@ class TestGLInit(unittest.TestCase):
         """paint_box draws a debug rectangle around the painted region."""
         backing, win = self._make_gl_backing()
         try:
-            ctx = self._full_gl_init(backing)
-            if ctx:
+            if ctx := self._full_gl_init(backing):
                 backing.paint_box_line_width = 2
                 with ctx:
                     backing.paint_box("rgb24", 10, 20, 80, 60)

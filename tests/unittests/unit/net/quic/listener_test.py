@@ -205,7 +205,7 @@ class TestListenQuic(unittest.TestCase):
 
     def test_missing_cert_raises_init_exit(self):
         from xpra.net.quic.listener import listen_quic
-        from xpra.scripts.config import InitExit
+        from xpra.config import InitExit
         server = MagicMock()
         server.get_ssl_socket_options = lambda opts: {}
         # find_ssl_cert is imported lazily inside listen_quic; patch it at its source
@@ -215,7 +215,7 @@ class TestListenQuic(unittest.TestCase):
 
     def test_missing_key_raises_init_exit(self):
         from xpra.net.quic.listener import listen_quic
-        from xpra.scripts.config import InitExit
+        from xpra.config import InitExit
         server = MagicMock()
         # cert is set via socket options, key comes from find_ssl_cert which returns ""
         server.get_ssl_socket_options = lambda opts: {"cert": "/some/cert.pem"}

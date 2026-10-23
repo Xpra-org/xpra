@@ -29,8 +29,7 @@ def parse_dbus_hints(dbus_hints) -> dict[str, Any]:
     # generic hints:
     hints: dict[str, Any] = validated_hints(h)
     # icon / image hints:
-    image_data = image_data_hint(h)
-    if image_data:
+    if image_data := image_data_hint(h):
         hints["image-data"] = image_data
     log("parse_dbus_hints(%s)=%s", dbus_hints, hints)
     return hints
@@ -98,8 +97,7 @@ class DBUSNotificationsForwarder(dbus.service.Object):
                 hints = parse_dbus_hints(hints)
                 # forward app_icon image data using hints,
                 # because clients expect this value to be a string
-                app_icon_str = str(app_icon or "")
-                if app_icon_str:
+                if app_icon_str := str(app_icon or ""):
                     app_icon_data = parse_image_path(app_icon_str)
                     if not app_icon_data:
                         try:

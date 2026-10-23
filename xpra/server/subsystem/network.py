@@ -45,7 +45,7 @@ from xpra.util.thread import start_thread
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, hexstr
 from xpra.util.env import envint, envbool, envfloat
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -183,12 +183,10 @@ class NetworkServer(StubSubsystem):
         self.sockets += local_sockets
 
         # all unix domain sockets:
-        ud_paths = [sock.address for sock in local_sockets if sock.socktype in ("socket", "named-pipe")]
-        if ud_paths:
+        if ud_paths := [sock.address for sock in local_sockets if sock.socktype in ("socket", "named-pipe")]:
             os.environ["XPRA_SERVER_SOCKET"] = ud_paths[0]
             if opts.forward_xdg_open:
-                xdg_open = find_libexec_command("xdg-open")
-                if xdg_open:
+                if xdg_open := find_libexec_command("xdg-open"):
                     libexec_dir = os.path.dirname(xdg_open)
                     os.environ["PATH"] = libexec_dir + os.pathsep + os.environ.get("PATH", "")
         else:

@@ -7,6 +7,7 @@
 
 import os
 import sys
+import importlib.util
 from concurrent.futures import ThreadPoolExecutor
 from io import StringIO
 import tempfile
@@ -14,7 +15,8 @@ import unittest
 from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock, patch
 
-from xpra.scripts.config import InitException, make_defaults_struct
+from xpra.config import InitException
+from xpra.config.defaults import make_defaults_struct
 from xpra.scripts.session import save_session_file
 from xpra.scripts.server import (
     VFBStartResult,
@@ -297,6 +299,17 @@ class TestMain(unittest.TestCase):
             sanitize_dbus_env("yes")
             assert os.environ == {"OTHER": "1"}
 
+    def test_sanitize_dbus_env_for_server_modes(self):
+        env = {"DBUS_SESSION_BUS_ADDRESS": "desktop-bus", "DBUS_SESSION_BUS_PID": "123", "OTHER": "1"}
+        for mode in ("seamless", "desktop", "monitor", "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor"):
+            with self.subTest(mode=mode), patch.dict(os.environ, env, clear=True):
+                sanitize_dbus_env("yes", mode)
+                self.assertEqual(dict(os.environ), {"OTHER": "1"})
+        for mode in ("shadow", "shadow-screen", "shadow-device", "expand", "proxy", "encoder", "runner"):
+            with self.subTest(mode=mode), patch.dict(os.environ, env, clear=True):
+                sanitize_dbus_env("yes", mode)
+                self.assertEqual(dict(os.environ), env)
+
     def test_resolve_server_display_name_with_options(self):
         opts = SimpleNamespace(sessions_dir="/sessions", socket_dir="/socket", socket_dirs=())
         with patch("xpra.scripts.server.display_name_check") as display_name_check:
@@ -410,6 +423,7 @@ class TestMain(unittest.TestCase):
         assert result.displayfd == 0
         assert "Error: invalid displayfd 'not-an-int':" in stderr.getvalue()
 
+    @unittest.skipUnless(importlib.util.find_spec("xpra.uinput"), "uinput is not available")
     def test_start_server_vfb_destroys_uinput_devices_on_failure(self):
         from xpra.server.subsystem.xvfb import XvfbManager
         session_files = SimpleNamespace(write_session_file=Mock())
@@ -485,7 +499,7 @@ class TestMain(unittest.TestCase):
 
     def test_x11_display_startup_state_checks_vfb(self):
         from xpra.exit_codes import ExitCode
-        from xpra.scripts.config import InitExit
+        from xpra.config import InitExit
         from xpra.x11.subsystem.display import X11DisplayManager
         state = VFBStartResult(object(), 123, {}, ":42", ("Xvfb",), 7)
         display = X11DisplayManager.__new__(X11DisplayManager)
@@ -555,7 +569,7 @@ class TestMain(unittest.TestCase):
 
     def test_resolve_x11_display_missing_upgrade(self):
         from xpra.exit_codes import ExitCode
-        from xpra.scripts.config import InitExit
+        from xpra.config import InitExit
         from xpra.server.subsystem.xvfb import XvfbManager
         xvfb = XvfbManager(SimpleNamespace(subsystems={}))
         xvfb.uid = os.getuid()

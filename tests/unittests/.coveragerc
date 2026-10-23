@@ -1,0 +1,8 @@
+[run]
+# Measuring arbitrary Python children requires coverage.py 7.10 or later.
+patch = subprocess
+
+[paths]
+xpra =
+    ${XPRA_SOURCE_DIR}/xpra
+    */site-packages/xpra

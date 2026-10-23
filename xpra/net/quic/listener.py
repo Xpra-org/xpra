@@ -29,7 +29,7 @@ from xpra.net.quic.session_ticket_store import SessionTicketStore
 from xpra.net.aio.thread import get_threaded_loop
 from xpra.net.websockets.protocol import WebSocketProtocol
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.util.str_fn import Ellipsizer, std
 from xpra.log import Logger

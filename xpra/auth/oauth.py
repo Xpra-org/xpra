@@ -122,8 +122,7 @@ class Authenticator(SysAuthenticator):
 
     def get_token(self, caps: typedict) -> str:
         auth_header = get_header(self.headers, self.header)
-        token = get_bearer_token(auth_header)
-        if token:
+        if token := get_bearer_token(auth_header):
             return token
         return caps.strget(self.capability, "")
 
@@ -202,7 +201,6 @@ class Authenticator(SysAuthenticator):
                 log.warn(" token audience does not contain %r", self.audience)
                 return False
         if self.username_claim:
-            username = token_info.get(self.username_claim, "")
-            if username:
+            if username := token_info.get(self.username_claim, ""):
                 self.username = str(username)
         return True

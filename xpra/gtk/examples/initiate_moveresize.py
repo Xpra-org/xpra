@@ -41,8 +41,7 @@ def make_window() -> Gtk.Window:
     window.set_title("Window Move Resize")
     window.set_position(Gtk.WindowPosition.CENTER)
     window.connect("delete_event", Gtk.main_quit)
-    icon = get_icon_pixbuf("windows.png")
-    if icon:
+    if icon := get_icon_pixbuf("windows.png"):
         window.set_icon(icon)
 
     can_move = True

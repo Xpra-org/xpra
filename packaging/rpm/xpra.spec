@@ -168,7 +168,7 @@ including the python client, server and HTML5 client.
 
 %package -n xpra-filesystem
 Summary:			Common filesystem files for all xpra packages
-Provides:           %{package_prefix}-filesystem
+Provides:           %{package_prefix}-filesystem = %{version}-%{release}
 BuildArch:          noarch
 Requires(post):     coreutils
 %if 0%{?fedora}
@@ -187,7 +187,7 @@ This package is independent of the python version used.
 %package -n %{package_prefix}-common
 Summary:			Common files for xpra packages
 Group:				Networking
-Provides:           %{package_prefix}-common
+Provides:           %{package_prefix}-common = %{version}-%{release}
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 6
 Obsoletes:			xpra-common-client < 6
@@ -247,7 +247,7 @@ This package contains the files which are shared between the xpra client and ser
 
 %package -n %{package_prefix}-codecs
 Summary:			Picture and video codecs for xpra clients and servers.
-Provides:           %{package_prefix}-codecs
+Provides:           %{package_prefix}-codecs = %{version}-%{release}
 Suggests:			%{package_prefix}-codecs-extra
 Suggests:			%{package_prefix}-codecs-amd
 Suggests:			%{package_prefix}-codecs-nvidia
@@ -304,7 +304,7 @@ This package contains extra picture and video codecs used by xpra clients and se
 
 %package -n %{package_prefix}-codecs-extras
 Summary:			Extra picture and video codecs for xpra clients and servers.
-Provides:           %{package_prefix}-codecs-extra
+Provides:           %{package_prefix}-codecs-extra = %{version}-%{release}
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 %if ! 0%{?el10}
 %ifnarch riscv64
@@ -328,7 +328,7 @@ These codecs may have patent or licensing issues.
 %if 0%{amf_codecs}
 %package -n %{package_prefix}-codecs-amd
 Summary:			AMF video codecs for AMD GPUs
-Provides:           %{package_prefix}-codecs-amd
+Provides:           %{package_prefix}-codecs-amd = %{version}-%{release}
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 Requires:			libamdenc-amdgpu-pro
 %description -n %{package_prefix}-codecs-amd
@@ -340,7 +340,7 @@ this is used by both xpra clients and servers.
 %if 0%{?nvidia_codecs}
 %package -n %{package_prefix}-codecs-nvidia
 Summary:			Picture and video codecs that rely on NVidia GPUs and CUDA.
-Provides:           %{package_prefix}-codecs-nvidia
+Provides:           %{package_prefix}-codecs-nvidia = %{version}-%{release}
 BuildRequires:		cuda
 Requires:			%{package_prefix}-codecs = %{version}-%{release}
 Requires:			%{py3rpmname}-pycuda
@@ -353,7 +353,7 @@ this is used by both xpra clients and servers.
 
 %package -n %{package_prefix}-audio
 Summary:			%{py3rpmname} build of xpra audio support
-Provides:           %{package_prefix}-audio
+Provides:           %{package_prefix}-audio = %{version}-%{release}
 Conflicts:			python3-xpra-audio < 6
 Obsoletes:			python3-xpra-audio < 6
 Requires:			%{package_prefix}-common = %{version}-%{release}
@@ -370,7 +370,7 @@ This package contains audio support for xpra.
 
 %package -n %{package_prefix}-audio-server
 Summary:			%{py3rpmname} build of xpra audio server support
-Provides:           %{package_prefix}-audio-server
+Provides:           %{package_prefix}-audio-server = %{version}-%{release}
 Requires:			%{package_prefix}-audio = %{version}-%{release}
 Requires:			pulseaudio
 Requires:			pulseaudio-module-x11
@@ -388,7 +388,7 @@ This package contains audio support for xpra servers.
 
 %package -n %{package_prefix}-client
 Summary:			xpra client
-Provides:           %{package_prefix}-client
+Provides:           %{package_prefix}-client = %{version}-%{release}
 Conflicts:			python3-xpra-client < 6
 Obsoletes:			python3-xpra-client < 6
 Requires:			xpra-filesystem >= 5
@@ -408,7 +408,7 @@ This package contains the xpra client.
 
 %package -n %{package_prefix}-client-gtk3
 Summary:			GTK3 xpra client
-Provides:           %{package_prefix}-client-gtk3
+Provides:           %{package_prefix}-client-gtk3 = %{version}-%{release}
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			gtk3
 # the Gtk typelibs need the cairo typelib, which nothing else pulls in since glib 2.80:
@@ -442,7 +442,7 @@ This package contains the GTK3 xpra client.
 %if 0%{?pyqt6}
 %package -n %{package_prefix}-client-qt6
 Summary:			Experimental xpra Qt6 client
-Provides:           %{package_prefix}-client-qt6
+Provides:           %{package_prefix}-client-qt6 = %{version}-%{release}
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{py3rpmname}-pyqt6
 %description -n %{package_prefix}-client-qt6
@@ -452,7 +452,7 @@ This package contains an experimental client using the Qt6 toolkit.
 %if 0%{?pyglet}
 %package -n %{package_prefix}-client-pyglet
 Summary:			Experimental xpra pyglet client
-Provides:           %{package_prefix}-client-pyglet
+Provides:           %{package_prefix}-client-pyglet = %{version}-%{release}
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{py3rpmname}-pyglet
 %description -n %{package_prefix}-client-pyglet
@@ -462,7 +462,7 @@ This package contains an experimental client using the pyglet toolkit.
 
 %package -n %{package_prefix}-client-tk
 Summary:			Experimental xpra tk client
-Provides:           %{package_prefix}-client-tk
+Provides:           %{package_prefix}-client-tk = %{version}-%{release}
 Requires:			%{package_prefix}-client = %{version}-%{release}
 Requires:			%{py3rpmname}-tkinter
 Requires:			%{py3rpmname}-pillow-tk
@@ -472,7 +472,7 @@ This package contains an experimental client using the tkinter toolkit.
 
 %package -n %{package_prefix}-client-terminal
 Summary:			xpra terminal client
-Provides:           %{package_prefix}-client-terminal
+Provides:           %{package_prefix}-client-terminal = %{version}-%{release}
 # the shared `xpra/client/gui` and `xpra/client/subsystem` modules
 # are packaged with the GTK3 client:
 Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
@@ -483,7 +483,7 @@ using the kitty graphics protocol.
 
 %package -n %{package_prefix}-client-gnome
 Summary:			Gnome integration for the xpra client
-Provides:           %{package_prefix}-client-gnome
+Provides:           %{package_prefix}-client-gnome = %{version}-%{release}
 Requires:			%{package_prefix}-client-gtk3 = %{version}-%{release}
 %if 0%{?el8}
 # sadly removed from Fedora and RHEL9
@@ -502,7 +502,7 @@ is required for querying and activating keyboard input sources.
 
 %package -n %{package_prefix}-x11
 Summary:			X11 bindings
-Provides:           %{package_prefix}-x11
+Provides:           %{package_prefix}-x11 = %{version}-%{release}
 BuildRequires:		pkgconfig(xkbfile)
 BuildRequires:		pkgconfig(xtst)
 BuildRequires:		pkgconfig(xcomposite)
@@ -557,7 +557,7 @@ This package contains the x11 bindings
 
 %package -n %{package_prefix}-server
 Summary:			xpra server
-Provides:           %{package_prefix}-server
+Provides:           %{package_prefix}-server = %{version}-%{release}
 Conflicts:			python3-xpra-server < 6
 Obsoletes:			python3-xpra-server < 6
 Requires:			xpra-filesystem >= 5
@@ -638,7 +638,7 @@ This package contains the xpra server.
 
 %package -n %{package_prefix}-wayland
 Summary:			xpra wayland support
-Provides:           %{package_prefix}-wayland
+Provides:           %{package_prefix}-wayland = %{version}-%{release}
 Requires:			%{package_prefix}-common = %{version}-%{release}
 # used by the `xpra wait-for-wayland` subcommand:
 BuildRequires:		wayland-devel
@@ -651,7 +651,7 @@ including the `xpra wait-for-wayland` subcommand.
 %if 0%{?wayland}
 %package -n %{package_prefix}-server-wayland
 Summary:			xpra wayland server
-Provides:           %{package_prefix}-server-wayland
+Provides:           %{package_prefix}-server-wayland = %{version}-%{release}
 Conflicts:			python3-xpra-server < 6
 Obsoletes:			python3-xpra-server < 6
 Requires:			%{package_prefix}-server = %{version}-%{release}
@@ -836,6 +836,7 @@ rm -rf $RPM_BUILD_ROOT
 %endif
 %{python3_sitearch}/xpra/auth/
 %{python3_sitearch}/xpra/challenge/
+%{python3_sitearch}/xpra/config/
 %{python3_sitearch}/xpra/buffers/
 %{python3_sitearch}/xpra/clipboard/
 %{python3_sitearch}/xpra/gstreamer/
@@ -1032,6 +1033,13 @@ do
 	  /usr/sbin/semodule -s ${selinuxvariant} -i \
 	    %{_datadir}/selinux/${selinuxvariant}/${mod}.pp &> /dev/null || :
 	done
+done
+# the 'xpra' module used to be called 'xpra_socketactivation',
+# remove it after installing the new one, which declares the same types:
+# (this can be removed once the packages from before 2026-01 are no longer in use, ie: in 2027)
+for selinuxvariant in %{selinux_variants}
+do
+	/usr/sbin/semodule -s ${selinuxvariant} -r xpra_socketactivation &> /dev/null || :
 done
 semanage port -a -t xpra_port_t -p tcp 14500 2>&1 | grep -v "already defined" || :
 restorecon -R /etc/xpra /usr/lib/systemd/system/xpra* /usr/bin/xpra* || :

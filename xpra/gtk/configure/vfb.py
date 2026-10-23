@@ -9,7 +9,7 @@ from xpra.os_util import gi_import
 from xpra.gtk.configure.common import ConfigureGUIWindow, run_gui
 from xpra.util.config import update_config_attribute, with_config
 from xpra.util.io import which
-from xpra.util.system import is_Debian, is_Ubuntu
+from xpra.util.system import is_DEB, is_DEB_Xdummy_safe
 from xpra.gtk.dialogs.common_style import add_style_class
 from xpra.gtk.widget import label as gtk_label, setfont
 from xpra.util.i18n import _
@@ -31,8 +31,8 @@ XDUMMY_INFO = [
     "runs a full `Xorg` server",
     "supports multi-monitor virtualization and DPI emulation",
 ]
-if is_Debian() or is_Ubuntu():
-    XDUMMY_INFO.append("should not be used on Debian or Ubuntu due to severe bugs")
+if is_DEB() and not is_DEB_Xdummy_safe():
+    XDUMMY_INFO.append("should not be used on this version of Debian or Ubuntu due to severe bugs")
 
 
 VFB_BACKENDS: dict[str, tuple[Sequence[str], Sequence[str]]] = {

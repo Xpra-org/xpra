@@ -96,8 +96,7 @@ class StubClientSubsystem(SubsystemPacketHandlers, SignalEmitter):
         When there is no `decode` subsystem to defer to (bare / standalone use,
         eg: in a unit test), run it inline.
         """
-        decode = self.get_subsystem("decode")
-        if decode:
+        if decode := self.get_subsystem("decode"):
             decode.add_work(fn, *args)
         else:
             fn(*args)
@@ -173,8 +172,7 @@ class StubClientSubsystem(SubsystemPacketHandlers, SignalEmitter):
         standalone use, eg: in a unit test) falls back to an uncompressed
         wrapper below.
         """
-        network = self.get_subsystem("network")
-        if network:
+        if network := self.get_subsystem("network"):
             return network.compressed_wrapper(datatype, data, level=level, **kwargs)
         assert level >= 0
         return Compressed("raw %s" % datatype, data)

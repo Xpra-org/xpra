@@ -100,10 +100,8 @@ class GrabWindow(GtkStubWindow):
             log("keyboard_ungrab: keyboard is not grabbed")
             return
         if gdkwin := self.get_window():
-            d = gdkwin.get_display()
-            if d:
-                seat = d.get_default_seat()
-                if seat:
+            if d := gdkwin.get_display():
+                if seat := d.get_default_seat():
                     seat.ungrab()
                     kb.grabbed = False
 
@@ -114,10 +112,8 @@ class GrabWindow(GtkStubWindow):
         seat = None
         if gdkwin:
             self.add_events(Gdk.EventMask.ALL_EVENTS_MASK)
-            d = gdkwin.get_display()
-            if d:
-                seat = d.get_default_seat()
-                if seat:
+            if d := gdkwin.get_display():
+                if seat := d.get_default_seat():
                     capabilities = Gdk.SeatCapabilities.KEYBOARD
                     owner_events = True
                     cursor = None
@@ -164,8 +160,7 @@ class GrabWindow(GtkStubWindow):
             args, self.get_subsystem("window").pointer_grabbed)
         self.get_subsystem("window").pointer_grabbed = None
         if gdkwin := self.get_window():
-            d = gdkwin.get_display()
-            if d:
+            if d := gdkwin.get_display():
                 d.pointer_ungrab(Gdk.CURRENT_TIME)
 
     def toggle_pointer_grab(self) -> None:

@@ -28,7 +28,7 @@ from xpra.audio.gstreamer_util import (
 )
 from xpra.util.gobject import one_arg_signal
 from xpra.net.compression import decompress_by_name
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.common import SizedBuffer
 from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
@@ -201,8 +201,7 @@ class AudioSink(AudioPipeline):
         return "AudioSink('%s' - %s)" % (self.pipeline_str, self.state)
 
     def cleanup(self) -> None:
-        dm = self.device_monitor
-        if dm:
+        if dm := self.device_monitor:
             self.device_monitor = None
             dm.stop()
         super().cleanup()

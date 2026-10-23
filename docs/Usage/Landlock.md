@@ -14,6 +14,9 @@ xpra start :100 --landlock=strict
 | `default` | Broad system and user reads; writes limited to application directories. |
 | `strict` | Reads limited to required resources; writes limited to dedicated application directories. |
 
+Append `+gpu` to either enabled mode to allow access to the GPU devices, ie: `--landlock=strict+gpu`,
+see [GPU devices](#gpu-devices).
+
 The option also works as `landlock = MODE` in configuration. Command line
 settings override configuration. Values are case insensitive.
 `no`, `false`, `0` and `off` select `no`; `yes`, `true`, `1` and `on` select `default`.
@@ -103,13 +106,30 @@ The PulseAudio server started by Xpra is granted socket lookup in its whole dire
 because its socket does not exist yet when the policy is installed.
 Likewise for the `ibus` socket directory, and the directory containing its address files is readable.
 
-Both modes allow graphics devices below `/dev/dri` and `/dev/accel`, and standard
-devices such as `/dev/null`, `/dev/urandom` and pseudo-terminals. Device entries cannot be created,
-removed or renamed. Strict permits the process's own procfs directory and public
+Both modes allow standard devices such as `/dev/null`, `/dev/urandom` and pseudo-terminals.
+Device entries cannot be created, removed or renamed. Strict permits the process's own procfs directory and public
 kernel and graphics-driver version files.
 Unless explicitly configured otherwise, strict uses the in-memory GSettings
 backend so desktop settings do not require shared dconf writes. Directory rules
 also permit removing the emptied server session directory.
+
+<div class="docs-section-heading" markdown="1">
+
+### GPU devices
+
+</div>
+
+The GPU devices are not accessible unless the `gpu` flag is added to the mode,
+ie: `--landlock=default+gpu` or `--landlock=strict+gpu`.
+The kernel GPU drivers are a large attack surface, and most processes do not need them,
+so they must be enabled explicitly, for:
+* hardware accelerated video encoders and decoders: NVENC, NVDEC, nvJPEG, VA-API, oneVPL, AMF
+* hardware accelerated OpenGL rendering in the client
+
+The `gpu` flag grants read, write and `ioctl` access to the devices below `/dev/dri` and `/dev/accel`,
+and to the NVIDIA devices required by CUDA: `/dev/nvidiactl`, `/dev/nvidia-uvm` and `/dev/nvidia0`, `/dev/nvidia1`, etc.
+Without it, the policy logs a hint when GPU devices are present, as the codec errors may not mention Landlock,
+ie: CUDA fails with `no CUDA-capable device is detected`.
 
 For local mmap connections involving strict confinement, configure the same
 dedicated shared directory explicitly on both peers, for example

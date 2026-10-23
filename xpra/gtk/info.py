@@ -29,8 +29,7 @@ def get_screen_info(display, screen) -> dict[str, Any]:
     info = {}
     if not WIN32:
         try:
-            w = screen.get_root_window()
-            if w:
+            if w := screen.get_root_window():
                 info["root"] = w.get_geometry()
         except Exception:
             pass
@@ -56,8 +55,7 @@ def get_screen_info(display, screen) -> dict[str, Any]:
     vinfo = info.setdefault("visual", {})
 
     def visual(name, v):
-        i = get_visual_info(v)
-        if i:
+        if i := get_visual_info(v):
             vinfo[name] = i
 
     visual("rgba", screen.get_rgba_visual())
@@ -335,8 +333,7 @@ def get_display_info(xscale=1, yscale=1) -> dict[str, Any]:
             "pointer_is_grabbed": display.pointer_is_grabbed(),
         }
     if not WIN32:
-        rw = get_default_root_window()
-        if rw:
+        if rw := get_default_root_window():
             info["root"] = rw.get_geometry()
     sinfo = info.setdefault("supports", {})
     for x in ("composite", "cursor_alpha", "cursor_color", "selection_notification", "clipboard_persistence", "shapes"):

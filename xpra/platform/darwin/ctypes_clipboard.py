@@ -212,8 +212,7 @@ class OSXClipboardProxy(ClipboardProxyCore):
 
     def cleanup(self) -> None:
         super().cleanup()
-        w = get_ui_watcher()
-        if w:
+        if w := get_ui_watcher():
             try:
                 w.remove_alive_callback(self.timer_clipboard_check)
             except (KeyError, ValueError):

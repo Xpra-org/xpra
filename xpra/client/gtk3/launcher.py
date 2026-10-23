@@ -19,7 +19,9 @@ import traceback
 from typing import Any
 from collections.abc import Callable
 
-from xpra.scripts.config import read_config, make_defaults_struct, validate_config, save_config
+from xpra.config.io import read_config, save_config
+from xpra.config.defaults import make_defaults_struct
+from xpra.config.validation import validate_config
 from xpra.util.glib import register_os_signals
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import (
@@ -172,8 +174,7 @@ def button(tooltip, icon_name, callback) -> Gtk.Button:
     except Exception:
         pixbuf = None
     if not pixbuf:
-        pixbuf = get_icon_pixbuf(f"{icon_name}.png")
-        if pixbuf:
+        if pixbuf := get_icon_pixbuf(f"{icon_name}.png"):
             with IgnoreWarningsContext():
                 for size in (16, 32, 48):
                     scaled = pixbuf.scale_simple(size, size, GdkPixbuf.InterpType.BILINEAR)
@@ -253,8 +254,7 @@ class ApplicationWindow:
         with IgnoreWarningsContext():
             self.window.set_wmclass("xpra-launcher-gui", "Xpra-Launcher-GUI")
         add_close_accel(self.window, accel_close)
-        icon = get_icon_pixbuf("connect.png")
-        if icon:
+        if icon := get_icon_pixbuf("connect.png"):
             self.window.set_icon(icon)
 
         hb = Gtk.HeaderBar()
@@ -491,8 +491,7 @@ class ApplicationWindow:
         # Connect button:
         self.connect_btn = Gtk.Button(label="Connect")
         self.connect_btn.connect("clicked", self.connect_clicked)
-        connect_icon = get_icon_pixbuf("retry.png")
-        if connect_icon:
+        if connect_icon := get_icon_pixbuf("retry.png"):
             self.connect_btn.set_image(scaled_image(connect_icon, 24))
         hbox.pack_start(self.connect_btn)
 
@@ -655,8 +654,7 @@ class ApplicationWindow:
             if sshtossh:
                 self.check_boxes_hbox.hide()
                 self.proxy_password_hbox.hide()
-        can_use_path = mode in ("ws", "wss")
-        if can_use_path:
+        if mode in ("ws", "wss"):
             self.path_entry.show()
         else:
             self.path_entry.hide()
@@ -863,8 +861,7 @@ class ApplicationWindow:
         self.client.init_ui(self.config)
         self.client.load()
         self.client.display_desc = display_desc
-        challenge = self.client.get_subsystem("challenge")
-        if challenge:
+        if challenge := self.client.get_subsystem("challenge"):
             challenge.username = display_desc.get("username")
 
         def handshake_complete(*_args) -> None:
@@ -923,10 +920,8 @@ class ApplicationWindow:
         self.set_info_text("Network connection established")
         log("start_XpraClient() client initialized")
 
-        password = display_desc.get("password", "")
-        if password:
-            challenge = self.client.get_subsystem("challenge")
-            if challenge:
+        if password := display_desc.get("password", ""):
+            if challenge := self.client.get_subsystem("challenge"):
                 challenge.password = password
 
         def do_quit(*args) -> None:
@@ -1210,8 +1205,7 @@ def do_main(argv: list[str]) -> int:
     try:
         from xpra.scripts.parsing import parse_cmdline, fixup_debug_option
         options, args = parse_cmdline(argv)
-        debug = fixup_debug_option(options.debug)
-        if debug:
+        if debug := fixup_debug_option(options.debug):
             enable_debug_for(*debug.split(","))
     except InitInfo as e:
         print(str(e))
@@ -1223,7 +1217,7 @@ def do_main(argv: list[str]) -> int:
         return 1
 
     # allow config to be debugged:
-    from xpra.scripts import config
+    from xpra import config
     config.debug = log.debug
 
     try:
@@ -1231,8 +1225,7 @@ def do_main(argv: list[str]) -> int:
 
         def handle_signal(signum) -> None:
             app.show()
-            client = app.client
-            if client:
+            if client := app.client:
                 client.cleanup()
             else:
                 Gtk.main_quit()
@@ -1246,8 +1239,7 @@ def do_main(argv: list[str]) -> int:
             # so apply them now:
             configure_env(app.config.env)
             configure_network(app.config)
-        debug = fixup_debug_option(app.config.debug)
-        if debug:
+        if debug := fixup_debug_option(app.config.debug):
             enable_debug_for(*debug.split(","))
         app.create_window_with_config()
     except Exception:

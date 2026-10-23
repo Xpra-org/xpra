@@ -5,12 +5,50 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from unittest.mock import MagicMock
+from types import SimpleNamespace
+from unittest.mock import MagicMock, Mock, patch
 
 from xpra.os_util import POSIX, WIN32
 from xpra.util.objects import typedict
 from xpra.util.io import pollwait
 from unit.server_test_util import ServerTestUtil, log
+
+
+class ProxyControlTest(unittest.TestCase):
+
+    def test_proxy_stop_control_command(self):
+        from xpra.server.core import ServerCore
+        from xpra.server.proxy.server import ProxyServer
+        from xpra.server.subsystem.control import ControlHandler
+        for enabled in (True, False, None):
+            with self.subTest(control=enabled):
+                server = ProxyServer.__new__(ProxyServer)
+                server.hello_request_handlers = {}
+                server.subsystems = {}
+                server.session_registry_name = "auth"
+                if enabled is not None:
+                    control = ControlHandler(server)
+                    server.subsystems["control"] = control
+                    control.init(SimpleNamespace(control=enabled))
+                    control.setup()
+                registry = object()
+                with patch.object(ServerCore, "setup") as setup, \
+                     patch("xpra.server.proxy.server.load_session_registry", return_value=registry) as load_registry:
+                    server.setup()
+                setup.assert_called_once_with()
+                load_registry.assert_called_once_with("auth", uuid="")
+                self.assertIs(server.session_registry, registry)
+                if enabled is None:
+                    continue
+                self.assertEqual("stop" in control.commands, enabled)
+                if enabled:
+                    self.assertIn("readonly", control.commands)
+                    self.assertIn("client-readonly", control.commands)
+                    instance = Mock(pid=123)
+                    server.instances = {instance: (True, ":100", None)}
+                    server.stop_proxy = Mock()
+                    self.assertEqual(control.commands["stop"].run(":100"), "stopped proxy instance for display :100")
+                    server.stop_proxy.assert_called_once_with(instance)
 
 
 class ProxyServerTest(ServerTestUtil):
@@ -32,16 +70,6 @@ class ProxyServerTest(ServerTestUtil):
         self.assertIn("command", instance.hello_request_handlers)
         if POSIX:
             self.assertEqual(instance._start_method, "fork")
-
-    def test_proxy_stop_control_command(self):
-        from xpra.server.proxy.server import ProxyServer
-        server = ProxyServer()
-        control = server.subsystems.get("control")
-        if not control:
-            return
-        control.enabled = True
-        server.add_core_control_commands()
-        self.assertIn("stop", control.commands)
 
     def test_proxy_start_stop(self):
         display = self.find_free_display()

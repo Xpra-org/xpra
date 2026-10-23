@@ -7,7 +7,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from xpra.log import Logger
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.util.objects import merge_dicts
 
 log = Logger("subsystems")
@@ -55,7 +55,6 @@ def first_truthy(subsystems: Mapping[str, Any], method: str, *args) -> Any:
         fn = getattr(sub, method, None)
         if not callable(fn):
             continue
-        result = fn(*args)
-        if result:
+        if result := fn(*args):
             return result
     return None

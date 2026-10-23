@@ -156,8 +156,7 @@ class InvalidPacketEncodingException(Exception):
 
 
 def pack_one_packet(packet: tuple) -> bytes:
-    ee = get_enabled_encoders()
-    if ee:
+    if ee := get_enabled_encoders():
         e = get_encoder(ee[0])
         data, flags = e(packet)
         return pack_header(flags, 0, 0, len(data)) + data
@@ -168,8 +167,7 @@ def decode(data, protocol_flags: int):
     if isinstance(data, memoryview):
         data = data.tobytes()
     ptype = get_packet_encoding_type(protocol_flags)
-    e = ENCODERS.get(ptype)
-    if e:
+    if e := ENCODERS.get(ptype):
         return e.decode(data)
     raise InvalidPacketEncodingException(f"{ptype!r} decoder is not available")
 

@@ -542,8 +542,7 @@ class UIXpraClient(XpraClientBase):
         self.redraw_timer = self.timeout_add(100, timer_redraw)
 
     def cancel_redraw_timer(self) -> None:
-        rt = self.redraw_timer
-        if rt:
+        if rt := self.redraw_timer:
             self.redraw_timer = 0
             self.source_remove(rt)
 

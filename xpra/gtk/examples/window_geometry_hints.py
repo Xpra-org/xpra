@@ -24,8 +24,7 @@ class HintedWindows(Gtk.Window):
         self.set_title(title or "")
         add_close_accel(self, self.delete_event)
         self.connect("delete_event", self.delete_event)
-        icon = get_icon_pixbuf("windows.png")
-        if icon:
+        if icon := get_icon_pixbuf("windows.png"):
             self.set_icon(icon)
 
         if kwargs.pop("headerbar", False):
@@ -80,8 +79,7 @@ class OptionWindow(Gtk.Window):
         self.set_default_size(320, 200)
         self.set_border_width(20)
         self.set_position(Gtk.WindowPosition.CENTER)
-        icon = get_icon_pixbuf("windows.png")
-        if icon:
+        if icon := get_icon_pixbuf("windows.png"):
             self.set_icon(icon)
 
         grid = Gtk.Grid()

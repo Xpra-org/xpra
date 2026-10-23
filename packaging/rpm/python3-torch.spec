@@ -29,7 +29,7 @@
 
 Name:           %{python3}-torch-cuda
 Version:        2.14.1
-Release:        1
+Release:        2
 URL:            https://github.com/pytorch/pytorch
 Summary:        PyTorch provides tensor computation with strong GPU acceleration and deep neural networks built on a tape-based autograd system
 License:        BSD-3
@@ -58,16 +58,14 @@ BuildRequires:  %{python3}-mpmath
 BuildRequires:  %{python3}-markupsafe
 BuildRequires:  %{python3}-yaml
 BuildRequires:  cuda
+Requires:       %{python3}
+Requires:       %{python3}-numpy
+Requires:       cuda
 
 %description
 PyTorch is a Python package that provides two high-level features:
 * Tensor computation (like NumPy) with strong GPU acceleration
 * Deep neural networks built on a tape-based autograd system
-
-
-Requires:       %{python3}
-Requires:       %{python3}-numpy
-Requires:       cuda
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
@@ -165,6 +163,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/functorch
 
 %changelog
+* Wed Oct 21 2026 Antoine Martin <antoine@xpra.org> - 2.14.1-2
+- the package dependencies were part of the description
+
 * Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 2.14.1-1
 - new upstream release
 

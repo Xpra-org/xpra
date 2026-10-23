@@ -55,8 +55,7 @@ class DesktopGreeter(Gtk.Window):
         self.set_title("Start Desktop Environment")
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_size_request(640, 300)
-        icon = get_icon_pixbuf("xpra.png")
-        if icon:
+        if icon := get_icon_pixbuf("xpra.png"):
             self.set_icon(icon)
         self.connect("delete-event", self.quit)
         add_close_accel(self, self.quit)
@@ -134,8 +133,7 @@ class DesktopGreeter(Gtk.Window):
             #    'IconType': 'svg'
             #    }
             for k in ("command", "Exec", "TryExec"):
-                cmd = session.get(k)
-                if cmd:
+                if cmd := session.get(k):
                     break
         if cmd and not os.path.isabs(cmd):
             cmd = which(cmd)

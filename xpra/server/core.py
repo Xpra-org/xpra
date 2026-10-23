@@ -189,37 +189,13 @@ class ServerCore(GLibServer):
         dispatch.call(self.subsystems, "init", opts)
 
     def setup(self) -> None:
+        log("starting component init")
         # the `landlock` subsystem comes first, so its `setup` confines the server
         # after all the `early_setup` calls and before any other `setup`:
         dispatch.call(self.subsystems, "early_setup")
         dispatch.call(self.subsystems, "setup")
         self.network.start_listen_sockets()
         self.init_packet_handlers()
-        self.add_core_control_commands()
-
-    def add_core_control_commands(self) -> None:
-        from xpra.net.control.common import parse_boolean_value
-        self.args_control("readonly", "set global readonly state", min_args=1, max_args=1,
-                          validation=[parse_boolean_value])
-        self.args_control("client-readonly", "set readonly state for client(s)", min_args=2, max_args=2,
-                          validation=[str, parse_boolean_value])
-
-    def args_control(self, name: str, descr: str, **kwargs) -> None:
-        control = self.subsystems.get("control")
-        if not control:
-            return
-        run = getattr(self, "control_command_%s" % name.replace("-", "_"), noop)
-        if run == noop:
-            log.warn("Warning: control command %r not found on %s", name, self)
-            return
-        kwargs["run"] = run
-        from xpra.net.control.common import add_args_control_command
-        add_args_control_command(control, name, descr, **kwargs)
-
-    def add_control_command(self, name: str, control) -> None:
-        control_subsystem = self.subsystems.get("control")
-        if control_subsystem:
-            control_subsystem.add_control_command(name, control)
 
     ######################################################################
     # run / stop:
@@ -331,17 +307,13 @@ class ServerCore(GLibServer):
             settings.setting_changed(setting, value)
 
     def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
-        if client_session := self.get_subsystem("client-session"):
-            return client_session.dispatch_parse_hello(ss, caps)
-        return ""
+        return dispatch.first_truthy(self.subsystems, "parse_hello", ss, caps) or ""
 
     def add_new_client(self, ss, caps: typedict) -> None:
-        if client_session := self.get_subsystem("client-session"):
-            client_session.dispatch_add_new_client(ss, caps)
+        dispatch.call(self.subsystems, "add_new_client", ss, caps)
 
     def send_initial_data(self, ss) -> None:
-        if client_session := self.get_subsystem("client-session"):
-            client_session.dispatch_send_initial_data(ss)
+        dispatch.call(self.subsystems, "send_initial_data", ss)
 
     def client_startup_complete(self, ss) -> None:
         if client_session := self.get_subsystem("client-session"):
@@ -363,11 +335,6 @@ class ServerCore(GLibServer):
     def last_client_exited(self) -> None:
         if client_session := self.get_subsystem("client-session"):
             client_session.last_client_exited()
-
-    def get_sources_info(self, proto, server_sources=()) -> dict[str, Any]:
-        if client_session := self.get_subsystem("client-session"):
-            return client_session.get_sources_info(proto, server_sources)
-        return {}
 
     def cleanup(self) -> None:
         dispatch.call(self.subsystems, "cleanup", reverse=True)
@@ -459,8 +426,7 @@ class ServerCore(GLibServer):
             return
         # the client may require a more recent server version,
         # (peers that do not expose it are older than v7, the version check above rejects them)
-        perr = protocol_compat_check(c.inttupleget("protocol-version"))
-        if perr:
+        if perr := protocol_compat_check(c.inttupleget("protocol-version")):
             self.network.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {perr!r}")
             proto.close()
             return
@@ -473,8 +439,7 @@ class ServerCore(GLibServer):
             options = conn.options
             if options.get("ssl-upgrade", "yes").lower() in TRUE_OPTIONS:
                 ssl_options = self.network.get_ssl_socket_options(options)
-                cert = ssl_options.get("cert", "")
-                if cert:
+                if cert := ssl_options.get("cert", ""):
                     log.info(f"sending ssl upgrade for {conn}")
 
                     # read the certificate from disk on the main thread, not the parse
@@ -597,8 +562,10 @@ class ServerCore(GLibServer):
         return capabilities
 
     def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
+        """Collect information that must be queried from the UI thread."""
         info: dict[str, Any] = {}
         subsystems = kwargs.get("subsystems", ())
+        log("ServerCore.get_ui_info(%s, %s) subsystems=%s", proto, kwargs, subsystems)
         for prefix, sub in self.subsystems.items():
             if subsystems and prefix not in subsystems:
                 continue
@@ -608,10 +575,10 @@ class ServerCore(GLibServer):
             try:
                 # noinspection calling-non-callable
                 mixin_info = fn(proto, **kwargs)
+                log("%s.get_ui_info(%s, ..)=%r", prefix, proto, Ellipsizer(mixin_info))
+                merge_dicts(info, mixin_info)
             except Exception:
-                log.warn(f"Error: in {sub}.get_ui_info", exc_info=True)
-                continue
-            merge_dicts(info, mixin_info)
+                log.warn("Error collecting UI info from %s", prefix, exc_info=True)
         return info
 
     def get_server_features(self, source=None) -> dict[str, Any]:
@@ -625,8 +592,7 @@ class ServerCore(GLibServer):
         if FULL_INFO:
             from xpra.scripts.parsing import get_subcommands
             caps["subcommands"] = get_subcommands()
-        server_log = os.environ.get("XPRA_SERVER_LOG", "")
-        if server_log:
+        if server_log := os.environ.get("XPRA_SERVER_LOG", ""):
             caps["server-log"] = server_log
         return caps
 
@@ -700,33 +666,3 @@ class ServerCore(GLibServer):
             netlog.error(f" received from {proto}")
         if not ss:
             proto.close()
-
-    #########################################
-    # Control Commands
-    #########################################
-
-    def control_command_readonly(self, onoff) -> str:
-        log("control_command_readonly(%s)", onoff)
-        self.readonly = onoff
-        self.setting_changed("readonly", onoff)
-        msg = f"server readonly: {onoff}"
-        log.info(msg)
-        return msg
-
-    def control_command_client_readonly(self, client_uuids: str, onoff) -> str:
-        log("control_command_client_readonly(%s, %s)", client_uuids, onoff)
-        sources = self.get_sources_by_type()
-        if client_uuids != "*":
-            uuids = tuple(x.strip() for x in client_uuids.split(",") if x.strip())
-            sources = tuple(ss for ss in sources if getattr(ss, "uuid", "") in uuids)
-        count = 0
-        for ss in sources:
-            if not hasattr(ss, "set_control_readonly"):
-                continue
-            ss.set_control_readonly(onoff)
-            ss.send_setting_change("readonly", ss.server_enforced_readonly())
-            self.emit("setting-changed", "readonly", ss.effective_readonly(), ss)
-            count += 1
-        msg = f"set client readonly={onoff} for {count} client(s)"
-        log.info(msg)
-        return msg

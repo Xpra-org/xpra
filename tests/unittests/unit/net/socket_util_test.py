@@ -8,6 +8,7 @@ import socket
 import sys
 import tempfile
 import os
+import importlib.util
 import unittest
 
 from xpra.os_util import POSIX, WIN32
@@ -30,7 +31,7 @@ from xpra.net.socket_util import (
     setup_tcp_socket,
     setup_udp_socket,
 )
-from xpra.scripts.config import InitException
+from xpra.config import InitException
 from xpra.net.protocol.header import FLAGS_RENCODEPLUS
 
 
@@ -183,6 +184,10 @@ class TestNormalizeLocalDisplayName(unittest.TestCase):
 
     def test_absolute_path(self):
         assert normalize_local_display_name("/tmp/mysocket") == "/tmp/mysocket"
+
+    def test_runner_and_encoder(self):
+        assert normalize_local_display_name("runner-123") == "runner-123"
+        assert normalize_local_display_name("encoder-123") == "encoder-123"
 
     def test_invalid_char(self):
         try:
@@ -418,6 +423,10 @@ class TestSetupUdpSocket(unittest.TestCase):
             sl.cleanup()
 
 
+VSOCK = importlib.util.find_spec("xpra.net.vsock") is not None
+
+
+@unittest.skipUnless(VSOCK, "vsock is not available")
 class TestParseBindVsock(unittest.TestCase):
 
     def test_empty(self):
@@ -490,12 +499,14 @@ class TestParseBindOptions(unittest.TestCase):
         self.assertIn("tcp", result)
         self.assertIn(("127.0.0.1", 10000), result["tcp"])
 
+    @unittest.skipUnless(VSOCK, "vsock is not available")
     def test_vsock(self):
         opts = self._make_opts(bind_vsock=["3:5000"])
         result = parse_bind_options(opts)
         self.assertIn("vsock", result)
         self.assertIn((3, 5000), result["vsock"])
 
+    @unittest.skipUnless(VSOCK, "vsock is not available")
     def test_vsock_invalid_ignored(self):
         # invalid vsock format raises ValueError in parse_bind_vsock;
         # parse_bind_options should propagate it
@@ -577,8 +588,33 @@ class TestUnixDomainSocket(unittest.TestCase):
                 cleanup()
             assert not os.path.exists(sockpath)
 
+    def create_socket_lchown(self, group_id: int, groups: list[int], egid: int = -1, uid: int = 1000) -> list:
+        from unittest.mock import patch
+        from xpra.net.socket_util import create_unix_domain_socket
+        calls = []
+        with tempfile.TemporaryDirectory() as tmpdir, \
+                patch("xpra.net.socket_util.get_group_id", return_value=group_id), \
+                patch("xpra.net.socket_util.getuid", return_value=uid), \
+                patch("os.getgroups", return_value=groups), \
+                patch("os.getegid", return_value=egid), \
+                patch("os.lchown", side_effect=lambda *args: calls.append(args)):
+            sockpath = os.path.join(tmpdir, "test.sock")
+            sock, cleanup = create_unix_domain_socket(sockpath, 0o600)
+            cleanup()
+        return [gid for _path, _uid, gid in calls]
 
-@unittest.skipUnless(POSIX, "abstract sockets only on POSIX")
+    def test_xpra_group(self):
+        # only set the group if this process is a member of it,
+        # whatever the user database says (ie: a container started with `--user=1000:1000`):
+        self.assertEqual(self.create_socket_lchown(995, [1000]), [])
+        self.assertEqual(self.create_socket_lchown(995, [1000, 995]), [995])
+        self.assertEqual(self.create_socket_lchown(995, [], egid=995), [995])
+        self.assertEqual(self.create_socket_lchown(995, [], uid=0), [995])
+        # no such group:
+        self.assertEqual(self.create_socket_lchown(-1, [1000], uid=0), [])
+
+
+@unittest.skipUnless(POSIX and sys.platform.startswith("linux"), "abstract sockets are Linux only")
 class TestCreateAbstractSocket(unittest.TestCase):
 
     def test_valid_path(self):
@@ -833,7 +869,7 @@ class TestSetupQuicSocket(unittest.TestCase):
     def test_no_aioquic_raises_init_exit(self):
         import sys
         from xpra.net.socket_util import setup_quic_socket
-        from xpra.scripts.config import InitExit
+        from xpra.config import InitExit
         saved = sys.modules.get("aioquic", ...)
         sys.modules["aioquic"] = None
         try:

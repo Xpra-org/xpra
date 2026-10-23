@@ -85,8 +85,7 @@ class XSettingsHelper:
         log("Fetching current XSettings data, owner=%s", owner)
         if not owner:
             return None
-        data = raw_prop_get(owner, XSETTINGS, "_XSETTINGS_SETTINGS", ignore_errors=True, raise_xerrors=False)
-        if data:
+        if data := raw_prop_get(owner, XSETTINGS, "_XSETTINGS_SETTINGS", ignore_errors=True, raise_xerrors=False):
             return bytes_to_xsettings(data)
         return None
 

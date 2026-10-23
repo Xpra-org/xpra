@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 
 from xpra.client.base import aes
 from xpra.client.base.aes import AES
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.util.objects import typedict
 from unit.test_util import stubbable
 

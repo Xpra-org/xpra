@@ -15,7 +15,7 @@ from xpra.client.gui.menu_helper import MenuHelper, ImageMenuItem, MenuItem
 from xpra.codecs.icon_util import INKSCAPE_RE
 from xpra.codecs.image_type import get_image_type
 from xpra.gtk.widget import scaled_image, menuitem
-from xpra.gtk.pixbuf import get_pixbuf_from_data
+from xpra.gtk.pixbuf import get_pixbuf_from_data, load_pixbuf
 from xpra.gtk.dialogs.about import close_about
 from xpra.platform.paths import get_icon_dir
 from xpra.util.i18n import _
@@ -94,13 +94,6 @@ def set_sensitive(widget, sensitive: bool) -> None:
         else:
             widget.hide()
     widget.set_sensitive(sensitive)
-
-
-def load_pixbuf(data) -> GdkPixbuf.Pixbuf:
-    loader = GdkPixbuf.PixbufLoader()
-    loader.write(data)
-    loader.close()
-    return loader.get_pixbuf()
 
 
 def get_appimage(app_name: str, icondata=b"", menu_icon_size=24, encodings=()) -> Gtk.Image | None:
@@ -198,17 +191,14 @@ def ensure_item_selected(submenu, item, recurse=True):
     def get_active_item(items) -> int:
         for x in items:
             if isinstance(x, Gtk.MenuItem):
-                submenu = x.get_submenu()
-                if submenu:
-                    a = get_active_item(submenu.get_children())
-                    if a:
+                if submenu := x.get_submenu():
+                    if a := get_active_item(submenu.get_children()):
                         return a
             if isinstance(x, Gtk.CheckMenuItem) and x.get_active():
                 return x
         return 0
 
-    active = get_active_item(submenu.get_children())
-    if active:
+    if active := get_active_item(submenu.get_children()):
         return active
     # if not then keep this one active:
     item.set_active(True)
@@ -394,8 +384,7 @@ def gen_non_none_menu_items(*gen: Callable[[], Gtk.ImageMenuItem | Gtk.MenuItem 
     log("get_menu_items(%s)", gen)
     items: list[Gtk.ImageMenuItem | Gtk.MenuItem] = []
     for gen in gen:
-        item = gen()
-        if item:
+        if item := gen():
             items.append(item)
     log("get_menu_items()=%s", items)
     return items

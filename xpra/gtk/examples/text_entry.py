@@ -24,8 +24,7 @@ def make_window() -> Gtk.Window:
     window.set_default_size(320, -1)
     window.set_border_width(40)
     window.set_position(Gtk.WindowPosition.CENTER)
-    icon = get_icon_pixbuf("font.png")
-    if icon:
+    if icon := get_icon_pixbuf("font.png"):
         window.set_icon(icon)
 
     vbox = Gtk.VBox(homogeneous=False, spacing=10)

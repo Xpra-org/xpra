@@ -507,8 +507,7 @@ class ControlWindow:
         win.connect("delete-event", lambda *_: replay.quit(ExitCode.OK))
         self.window = win
 
-        icon = get_icon_pixbuf("gears")
-        if icon:
+        if icon := get_icon_pixbuf("gears"):
             self.window.set_icon(icon)
 
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -605,7 +604,7 @@ def do_main(options) -> int:
 
 
 def main() -> int:
-    from xpra.scripts.config import make_defaults_struct
+    from xpra.config.defaults import make_defaults_struct
     options = make_defaults_struct()
     return do_main(options)
 

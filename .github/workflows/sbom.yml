@@ -1,0 +1,87 @@
+name: SBOM vulnerabilities
+
+# Scan the SBOMs of the latest MS Windows builds for known vulnerabilities.
+# New vulnerabilities appear in already published builds, so this runs every day,
+# and fails when it finds one which is not recorded in `docs/Build/CVE.md`.
+on:
+  schedule:
+    - cron: "37 5 * * *"
+  workflow_dispatch:
+  push:
+    paths:
+      - "docs/Build/CVE.md"
+      - "packaging/MSWindows/msys2_sbom.py"
+      - "packaging/MSWindows/sbom_vulnerabilities.py"
+      - ".github/workflows/sbom.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        # add `beta`, and `lts` once 7.0 is released
+        branch: [stable]
+        variant: [Xpra, Xpra-Light]
+    env:
+      NAME: ${{ matrix.branch }}-${{ matrix.variant }}
+    steps:
+      - uses: actions/checkout@v7
+
+      # `Xpra.json` is the same file as the latest versioned one, ie: `Xpra-x86_64_6.5.5-r0.json`,
+      # which tells us the xpra version:
+      - name: Download SBOM
+        id: download
+        run: |
+          URL="https://xpra.org/${{ matrix.branch }}/windows/"
+          FILENAME=$(curl -sSfL "$URL" | grep -o "${{ matrix.variant }}-x86_64_[0-9][^\"/]*\.json\"" | tr -d '"' | sort -uV | tail -n 1)
+          if [ -z "$FILENAME" ]; then
+            echo "::error::no ${{ matrix.variant }} SBOM found in $URL"
+            exit 1
+          fi
+          curl -sSfL -o sbom.json "$URL$FILENAME"
+          VERSION="${FILENAME#${{ matrix.variant }}-x86_64_}"
+          echo "version=${VERSION%.json}" >> "$GITHUB_OUTPUT"
+
+      # SBOMs generated without the MSYS2 references cannot be matched by scanners:
+      - name: Add MSYS2 references
+        run: python3 packaging/MSWindows/msys2_sbom.py sbom.json sbom-references.json
+
+      - name: Scan
+        id: scan
+        uses: anchore/scan-action@v7
+        with:
+          sbom: sbom-references.json
+          output-format: json
+          fail-build: false
+          by-cve: true
+          cache-db: true
+        env:
+          # grype does not use CPEs for PyPI and Cargo packages by default,
+          # which misses vulnerabilities that only NVD knows about:
+          GRYPE_MATCH_PYTHON_USING_CPES: true
+          GRYPE_MATCH_RUST_USING_CPES: true
+
+      - name: Report
+        id: report
+        run: |
+          python3 packaging/MSWindows/sbom_vulnerabilities.py --scan "${{ steps.download.outputs.version }}" "${{ steps.scan.outputs.json }}" > report.md
+          { echo "# ${NAME} ${{ steps.download.outputs.version }}"; echo; cat report.md; } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sbom-vulnerabilities-${{ env.NAME }}
+          path: |
+            sbom-references.json
+            ${{ steps.scan.outputs.json }}
+            report.md
+
+      - name: Check for new vulnerabilities
+        if: steps.report.outputs.new != '0'
+        run: |
+          echo "::error::${{ steps.report.outputs.new }} vulnerabilities found in ${NAME} which are not recorded in docs/Build/CVE.md, see the job summary"
+          exit 1

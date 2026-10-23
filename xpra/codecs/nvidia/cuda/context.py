@@ -353,8 +353,7 @@ def select_device(preferred_device_id=-1, min_compute=0) -> tuple[int, Any]:
     log("select_device(%s, %s)", preferred_device_id, min_compute)
     for device_id in (preferred_device_id, get_pref("device-id")):
         if device_id is not None and device_id >= 0:
-            dct = make_device_context(device_id)
-            if dct:
+            if dct := make_device_context(device_id):
                 device, context, tpct = dct
                 context.pop()
                 context.detach()
@@ -586,14 +585,17 @@ class cuda_device_context:
         self.free()
 
     def free(self) -> None:
-        c = self.context
-        if log:
-            log("free() context=%s", c)
-        if c:
-            self.device_id = 0
-            self.device = None
-            self.context = None
-            with self.lock:
+        # the lock must be acquired before clearing the context:
+        # another thread may be using it, ie: nvenc's `threaded-clean`,
+        # and it must still be able to pop the context it has pushed
+        with self.lock:
+            c = self.context
+            if log:
+                log("free() context=%s", c)
+            if c:
+                self.device_id = 0
+                self.device = None
+                self.context = None
                 c.detach()
 
 

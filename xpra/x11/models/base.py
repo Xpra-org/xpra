@@ -476,8 +476,7 @@ class BaseWindowModel(CoreX11WindowModel):
             add_work_item(self.guess_content_type)
         metalog("_update_content_type() %s", content_type)
         content_types = content_type.replace("+", ",").split(",") if content_type else ()
-        invalid = get_invalid_content_types(content_types)
-        if invalid:
+        if invalid := get_invalid_content_types(content_types):
             metalog.warn("Warning: ignoring invalid _XPRA_CONTENT_TYPE value%s: %s",
                          "s" if len(invalid) != 1 else "", ", ".join(invalid))
         content_types = valid_content_types(content_types)

@@ -15,8 +15,7 @@ AUTH_OPTION_KEYS = "_auth_option_keys"
 
 def warn_unused_auth_options(authenticator, kwargs: dict) -> None:
     option_keys = kwargs.pop(AUTH_OPTION_KEYS, ())
-    unused = sorted(set(option_keys).intersection(kwargs))
-    if unused:
+    if unused := sorted(set(option_keys).intersection(kwargs)):
         suffix = "s" if len(unused) != 1 else ""
         log.warn(f"Warning: unused {authenticator!r} authentication option{suffix}:")
         log.warn(" %s", csv(repr(x) for x in unused))

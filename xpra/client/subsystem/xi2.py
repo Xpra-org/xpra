@@ -81,8 +81,7 @@ class XI2Client(StubClientSubsystem):
     def send_xi2_devices(self) -> None:
         from xpra.x11.bindings.xi2 import X11XI2Bindings  # @UnresolvedImport
         XI2 = X11XI2Bindings()
-        devices = XI2.get_devices()
-        if devices:
+        if devices := XI2.get_devices():
             window = self.get_subsystem("window")
             window.send_input_devices("xi", devices)
 

@@ -6,7 +6,7 @@
 import os
 import time
 import operator
-from math import sqrt, ceil
+from math import ceil
 from functools import reduce
 from time import monotonic
 from typing import Any
@@ -31,8 +31,15 @@ from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_EOS
 from xpra.util.rectangle import rectangle, merge_all
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
-from xpra.server.window.video_scoring import get_pipeline_score
-from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder, CSCSpec
+from xpra.server.window.video_pipeline import (
+    PipelineSettings, PipelineCodecState, get_pipeline_options, get_pipeline_quality,
+)
+from xpra.server.window.video_scoring import PipelineScore
+from xpra.server.window.scaling import (
+    DEFAULT_SCALING_OPTIONS, ScalingSettings, ScalingState,
+    get_scaling_override, calculate_scaling as calculate_video_scaling,
+)
+from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder
 from xpra.codecs.protocols import VideoEncoder
 from xpra.codecs.loader import has_codec
 from xpra.common import roundup
@@ -76,7 +83,6 @@ SCALING = envbool("XPRA_SCALING", True)
 SCALING_HARDCODED = parse_scaling_value(os.environ.get("XPRA_SCALING_HARDCODED", ""))
 SCALING_PPS_TARGET = envint("XPRA_SCALING_PPS_TARGET", 25*1920*1080)
 SCALING_MIN_PPS = envint("XPRA_SCALING_MIN_PPS", 25*320*240)
-DEFAULT_SCALING_OPTIONS = (1, 10), (1, 5), (1, 4), (1, 3), (1, 2), (2, 3), (1, 1)
 
 ALWAYS_FREEZE = envbool("XPRA_IMAGE_ALWAYS_FREEZE", False)
 
@@ -209,7 +215,7 @@ class WindowVideoSource(WindowSource):
         self.actual_scaling = (1, 1)
 
         self.last_pipeline_params : tuple = ()
-        self.last_pipeline_scores : tuple = ()
+        self.last_pipeline_scores: tuple[PipelineScore, ...] = ()
         self.last_pipeline_time: float = 0.0
 
         self.video_subregion = VideoSubregion(self.refresh_subregion, self.auto_refresh_delay, VIDEO_SUBREGION)
@@ -570,7 +576,7 @@ class WindowVideoSource(WindowSource):
             # if we have a hardware video encoder, use video more:
             self.update_pipeline_scores()
             for i, score_data in enumerate(self.last_pipeline_scores):
-                encoder_spec = score_data[-1]
+                encoder_spec = score_data.encoder_spec
                 if encoder_spec.gpu_cost > encoder_spec.cpu_cost:
                     videolog(f"found GPU accelerated encoder {encoder_spec}")
                     video_hint += 1+int(i == 0)
@@ -863,8 +869,7 @@ class WindowVideoSource(WindowSource):
         else:
             # find how many pixels are within the region (roughly):
             # find all unique regions that intersect with it:
-            inter = tuple(x for x in (vr.intersection_rect(r) for r in regions) if x is not None)
-            if inter:
+            if inter := tuple(x for x in (vr.intersection_rect(r) for r in regions) if x is not None):
                 # merge all regions into one:
                 in_region = merge_all(inter)
                 pixels_in_region = vr.width*vr.height
@@ -1194,14 +1199,14 @@ class WindowVideoSource(WindowSource):
             if old is None or old != newrect:
                 refreshlog("identified new video region: %s", newrect)
                 # figure out if the new region had pending regular refreshes:
-                subregion_needs_refresh = any(newrect.intersects_rect(x) for x in self.refresh_regions)
+                subregion_needs_refresh = any(newrect.intersects_rect(x) for x in self.refresh_controller.regions)
                 if old:
                     # we don't bother subtracting new and old (too complicated)
                     refreshlog("scheduling refresh of old region: %s", old)
                     # this may also schedule a refresh:
                     super().add_refresh_region(old)
                 super().remove_refresh_region(newrect)
-                if not self.refresh_regions:
+                if not self.refresh_controller.regions:
                     self.cancel_refresh_timer()
                 if subregion_needs_refresh:
                     vs.add_video_refresh(newrect)
@@ -1278,8 +1283,7 @@ class WindowVideoSource(WindowSource):
         w = ww & self.width_mask
         h = wh & self.height_mask
         if vs := self.video_subregion:
-            r = vs.rectangle
-            if r:
+            if r := vs.rectangle:
                 w = r.width & self.width_mask
                 h = r.height & self.width_mask
         if w < self.min_w or w > self.max_w or h < self.min_h or h > self.max_h:
@@ -1324,195 +1328,92 @@ class WindowVideoSource(WindowSource):
         scorelog("verify_csc_and_encoder() scores=%s", scores)
         if not scores:
             return False
-        _, _, _, csc_width, csc_height, csc_spec, enc_in_format, encoder_scaling, enc_width, enc_height, encoder_spec = scores[0]
+        best = scores[0]
+        if not isinstance(best, PipelineScore):
+            best = PipelineScore(*best)
         if csce := self._csc_encoder:
-            if csc_spec is None:
+            if best.csc_spec is None:
                 scorelog(f" csc {csce} is no longer needed")
                 return False
             if csce.is_closed():
                 scorelog(f" csc {csce} is closed")
                 return False
-            if csce.get_dst_format() != enc_in_format:
-                scorelog(f" change of csc output format from {csce.get_dst_format()} to {enc_in_format}")
+            if csce.get_dst_format() != best.enc_in_format:
+                scorelog(f" change of csc output format from {csce.get_dst_format()} to {best.enc_in_format}")
                 return False
-            if csce.get_src_width() != csc_width or csce.get_src_height() != csc_height:
+            if csce.get_src_width() != best.csc_width or csce.get_src_height() != best.csc_height:
                 scorelog(" change of csc input dimensions from %ix%i to %ix%i",
-                         csce.get_src_width(), csce.get_src_height(), csc_width, csc_height)
+                         csce.get_src_width(), csce.get_src_height(), best.csc_width, best.csc_height)
                 return False
-            if csce.get_dst_width() != enc_width or csce.get_dst_height() != enc_height:
+            if csce.get_dst_width() != best.enc_width or csce.get_dst_height() != best.enc_height:
                 scorelog(" change of csc output dimensions from %ix%i to %ix%i",
-                         csce.get_dst_width(), csce.get_dst_height(), enc_width, enc_height)
+                         csce.get_dst_width(), csce.get_dst_height(), best.enc_width, best.enc_height)
                 return False
         if ve := self._video_encoder:
             if ve.is_closed():
                 scorelog(f" {ve} is closed")
                 return False
-            if ve.get_src_format() != enc_in_format:
+            if ve.get_src_format() != best.enc_in_format:
                 scorelog(" change of video input format from %s to %s",
-                         ve.get_src_format(), enc_in_format)
+                         ve.get_src_format(), best.enc_in_format)
                 return False
-            if ve.get_width() != enc_width or ve.get_height() != enc_height:
+            if ve.get_width() != best.enc_width or ve.get_height() != best.enc_height:
                 scorelog(" change of video input dimensions from %ix%i to %ix%i",
-                         ve.get_width(), ve.get_height(), enc_width, enc_height)
+                         ve.get_width(), ve.get_height(), best.enc_width, best.enc_height)
                 return False
-            if ve.get_type() != encoder_spec.codec_type:
-                scorelog(f" found a better video encoder type than {ve.get_type()}: {encoder_spec.codec_type}")
+            if ve.get_type() != best.encoder_spec.codec_type:
+                scorelog(f" found a better video encoder type than {ve.get_type()}: {best.encoder_spec.codec_type}")
                 return False
-        if self.actual_scaling != encoder_scaling:
-            scorelog(" change of scaling from %s to %s", self.actual_scaling, encoder_scaling)
+        if self.actual_scaling != best.encoder_scaling:
+            scorelog(" change of scaling from %s to %s", self.actual_scaling, best.encoder_scaling)
             return False
         # everything is still valid:
         return True
 
-    def get_video_pipeline_options(self, encodings: Iterable[str], width: int, height: int, src_format: str) -> tuple:
-        """
-            Given a picture format (width, height and src pixel format),
-            we find all the pipeline options that will allow us to compress
-            it using the given encodings.
-            First, we try with direct encoders (for those that support the
-            source pixel format natively), then we try all the combinations
-            using csc encoders to convert to an intermediary format.
-            Each solution is rated, and we return all of them in descending
-            score (the best solution comes first).
-            Because this function is expensive to call, we cache the results.
-            This allows it to run more often from the timer thread.
-
-            Can be called from any thread.
-        """
+    def get_video_pipeline_options(self, encodings: Iterable[str], width: int, height: int, src_format: str) -> tuple[PipelineScore, ...]:
+        """Gather selection inputs and publish scored pipelines. May run from any thread."""
         vh = self.video_helper
         if vh is None:
-            return ()       # closing down
+            return ()       # closing down: retain the existing cache and timestamp
 
         target_q = int(self._current_quality)
         min_q = self._fixed_min_quality
         target_s = int(self._current_speed)
         min_s = self._fixed_min_speed
         text_hint = "text" in self.content_types
-        if text_hint:
-            vmw = vmh = 16384
-        else:
-            vmw, vmh = self.video_max_size
-        # tune quality target for (non-)video region:
+        max_size = (16384, 16384) if text_hint else self.video_max_size
         vr = self.matches_video_subregion(width, height)
         if vr and target_q < 100 and not text_hint:
-            if self.subregion_is_video():
-                # lower quality a bit more:
-                fps = self.video_subregion.fps
-                f = min(90, 2*fps)
-                target_q = max(min_q, int(target_q*(100-f)//100))
-                scorelog("lowering quality target %i by %i%% for video %s (fps=%i)", target_q, f, vr, fps)
-            else:
-                # not the video region, or not really video content, raise quality a bit:
-                target_q = int(sqrt(target_q/100.0)*100)
-                scorelog("raising quality for video encoding of non-video region")
-        scorelog("get_video_pipeline_options%s speed: %s (min %s), quality: %s (min %s)",
-                 (encodings, width, height, src_format), target_s, min_s, target_q, min_q)
+            video_fps = self.video_subregion.fps if self.subregion_is_video() else None
+            target_q = get_pipeline_quality(target_q, min_q, video_fps)
+            scorelog("adjusted quality target to %i for region %s (video fps=%s)", target_q, vr, video_fps)
+        settings = PipelineSettings(
+            quality=target_q, min_quality=min_q, speed=target_s, min_speed=min_s,
+            max_size=max_size, text_hint=text_hint, is_shadow=self.is_shadow,
+            force_csc=FORCE_CSC, force_csc_mode=FORCE_CSC_MODE, preferred_encodings=PREFERRED_ENCODING_ORDER,
+        )
 
-        ffps = self.get_video_fps(width, height)
-        cached_w = cached_h = 4096
-        cached_scaling = [cached_w, cached_h, self.calculate_scaling(width, height, cached_w, cached_h)]
-        scores = []
-        all_no_match = {}
-        csc_specs = vh.get_csc_specs(src_format)
-        scorelog(f"csc for {src_format} source format: {csc_specs}")
-        if FORCE_CSC:
-            csc_specs = {FORCE_CSC_MODE : csc_specs.get(FORCE_CSC_MODE, ())}
-            scorelog(f"{FORCE_CSC_MODE=} : {csc_specs=}")
-        for encoding in encodings:
-            # these are the CSC modes the client can handle for this encoding:
-            # we must check that the output csc mode for each encoder is one of those
-            supported_csc_modes = self.full_csc_modes.strtupleget(encoding)
-            if not supported_csc_modes:
-                scorelog(" no supported csc modes for %s", encoding)
-                continue
-            encoder_specs = vh.get_encoder_specs(encoding)
-            if not encoder_specs:
-                scorelog(" no encoder specs for %s", encoding)
-                continue
-            scorelog(f"encoders({encoding})={encoder_specs}, {supported_csc_modes=}")
-            # if not specified as an encoding option,
-            # discount encodings further down the list of preferred encodings:
-            # (ie: prefer h264 to vp9)
-            try:
-                encoding_score_delta = len(PREFERRED_ENCODING_ORDER)//2-list(PREFERRED_ENCODING_ORDER).index(encoding)
-            except ValueError:
-                encoding_score_delta = 0
-            encoding_score_delta = self.encoding_options.get(f"{encoding}.score-delta", encoding_score_delta)
-            no_match = []
+        def get_codec_state() -> PipelineCodecState:
+            # These objects may change during enumeration. Read them for each score,
+            # at the same point as before, rather than freezing codec state at entry.
+            vs = self.video_subregion
+            detection = bool(vs) and vs.detection
+            return PipelineCodecState(self._csc_encoder, self._video_encoder, detection)
 
-            def add_scores(info, csc_spec: CSCSpec | None, enc_in_format) -> None:
-                # find encoders that take 'enc_in_format' as input:
-                colorspace_specs = encoder_specs.get(enc_in_format)
-                if not colorspace_specs:
-                    scorelog(f"no encoders for {enc_in_format}")
-                    no_match.append(info)
-                    return
-                # log("%s encoding from %s: %s", info, pixel_format, colorspace_specs)
-                for encoder_spec in colorspace_specs:
-                    # ensure that the output of the encoder can be processed by the client:
-                    matches = tuple(x for x in encoder_spec.output_colorspaces if x in supported_csc_modes)
-                    if not matches or self.is_cancelled():
-                        scorelog(f"output colorspaces {encoder_spec.output_colorspaces} not supported")
-                        no_match.append(encoder_spec.codec_type+" "+info)
-                        continue
-                    max_w = min(encoder_spec.max_w, vmw)
-                    max_h = min(encoder_spec.max_h, vmh)
-                    if (csc_spec and csc_spec.can_scale) or encoder_spec.can_scale:
-                        if (
-                            width <= max_w and height <= max_h
-                            and cached_scaling[0] >= width and cached_scaling[1] >= height
-                        ):
-                            scaling = cached_scaling[2]
-                        else:
-                            scaling = self.calculate_scaling(width, height, max_w, max_h)
-                    else:
-                        scaling = (1, 1)
-                    score_delta = encoding_score_delta
-                    lossy_csc = enc_in_format in ("NV12", "YUV420P", "YUV422P")
-                    if scaling != (1, 1) or lossy_csc:
-                        if text_hint:
-                            # we should not be using scaling or csc with text!
-                            score_delta -= 500
-                        elif target_q >= 100:
-                            # we want lossless, this would be far from it!
-                            score_delta -= 250
-                    if self.is_shadow and lossy_csc and scaling == (1, 1):
-                        # avoid subsampling with shadow servers:
-                        score_delta -= 40
-                    vs = self.video_subregion
-                    detection = bool(vs) and vs.detection
-                    score_data = get_pipeline_score(enc_in_format, csc_spec, encoder_spec, width, height, scaling,
-                                                    target_q, min_q, target_s, min_s,
-                                                    self._csc_encoder, self._video_encoder,
-                                                    score_delta, ffps, detection)
-                    if score_data:
-                        scores.append(score_data)
-                    else:
-                        scorelog(" no score data for %s",
-                                 (enc_in_format, csc_spec, encoder_spec, width, height, scaling, ".."))
-            if not FORCE_CSC or src_format == FORCE_CSC_MODE:
-                add_scores(f"direct (no csc) {src_format}", None, src_format)
-
-            # now add those that require a csc step:
-            # log("%s can also be converted to %s using %s",
-            #    pixel_format, [x[0] for x in csc_specs], set(x[1] for x in csc_specs))
-            # we have csc module(s) that can get us from pixel_format to out_csc:
-            for out_csc, l in csc_specs.items():
-                for csc_spec in l:
-                    add_scores(f"via {out_csc}", csc_spec, out_csc)
-            all_no_match[encoding] = no_match
-        if all_no_match:
-            scorelog("no matching colorspace specs for %s", all_no_match)
-        s = tuple(sorted(scores, key=lambda x: -x[0]))
-        scorelog("get_video_pipeline_options%s scores=%s", (encodings, width, height, src_format), s)
+        scores = get_pipeline_options(
+            encodings, width, height, src_format, settings, vh,
+            lambda encoding: self.full_csc_modes.strtupleget(encoding), self.encoding_options,
+            self.calculate_scaling, self.is_cancelled, get_codec_state, self.get_video_fps(width, height),
+        )
+        scorelog("get_video_pipeline_options%s scores=%s", (encodings, width, height, src_format), scores)
         if self.is_cancelled():
             self.last_pipeline_params = ()
             self.last_pipeline_scores = ()
         else:
             self.last_pipeline_params = (encodings, width, height, src_format)
-            self.last_pipeline_scores = s
+            self.last_pipeline_scores = scores
         self.last_pipeline_time = monotonic()
-        return s
+        return scores
 
     def get_video_fps(self, width: int, height: int) -> int:
         mvsub = self.matches_video_subregion(width, height)
@@ -1539,200 +1440,43 @@ class WindowVideoSource(WindowSource):
     def calculate_scaling(self, width: int, height: int, max_w: int = 4096, max_h: int = 4096) -> tuple[int, int]:
         if width == 0 or height == 0:
             return 1, 1
-        now = monotonic()
-        crs = (0, 0)
-        if DOWNSCALE:
-            crs = self.client_render_size
-
-        def get_min_required_scaling(default_value=(1, 1)) -> tuple[int, int]:
-            mw = max_w
-            mh = max_h
-            if crs != (0, 0):
-                # if the client is going to downscale things anyway,
-                # then there is no need to send at a higher resolution than that:
-                crsw, crsh = crs
-                if crsw < max_w:
-                    mw = crsw
-                if crsh < max_h:
-                    mh = crsh
-            if width <= mw and height <= mh:
-                return default_value    # no problem
-            # most encoders can't deal with that!
-            # sort them from the smallest scaling value to the highest:
-            sopts = {}
-            for num, den in SCALING_OPTIONS:
-                sopts[num/den] = num, den
-            for ratio in reversed(sorted(sopts.keys())):
-                num, den = sopts[ratio]
-                if num == 1 and den == 1:
-                    continue
-                if width*num/den <= mw and height*num/den <= mh:
-                    return num, den
-            raise ValueError(f"BUG: failed to find a scaling value for window size {width}x{height}")
-
-        def mrs(v=(1, 1), info="using minimum required scaling") -> tuple[int, int]:
-            sv = get_min_required_scaling(v)
-            if info:
-                scalinglog("%s: %s", info, sv)
-            return sv
         if not SCALING:
             if (width > max_w or height > max_h) and first_time("scaling-required"):
-                if not SCALING:
-                    scalinglog.warn("Warning: video scaling is disabled")
-                else:
-                    scalinglog.warn("Warning: video scaling is not supported by the client")
+                scalinglog.warn("Warning: video scaling is disabled")
                 scalinglog.warn(f" but the video size is too large: {width}x{height}")
                 scalinglog.warn(f" the maximum supported is {max_w}x{max_h}")
             return 1, 1
-        if SCALING_HARDCODED:
-            return mrs(tuple(SCALING_HARDCODED), "using hardcoded scaling value")
-        if self.scaling_control == 0:
-            # video-scaling is disabled, only use scaling if we really have to:
-            return mrs(info="scaling is disabled, using minimum")
-        if self.scaling:
-            # honour value requested for this window, unless we must scale more:
-            return mrs(self.scaling, info="using scaling specified")
-        if now-self.statistics.last_resized < 0.5:
-            return mrs(self.actual_scaling, "unchanged scaling during resizing")
-        if now-self.last_scroll_time < 5:
-            return mrs(self.actual_scaling, "unchanged scaling during scrolling")
-        if self.statistics.damage_events_count <= 50:
-            # not enough data yet:
-            return mrs(info="waiting for more events, using minimum")
-        if "text" in self.content_types and TEXT_QUALITY > 90:
-            return mrs(info="not downscaling text")
-
-        # use heuristics to choose the best scaling ratio:
-        mvsub = self.matches_video_subregion(width, height)
-        video = "video" in self.content_types or (bool(mvsub) and self.subregion_is_video())
-        ffps = self.get_video_fps(width, height)
-        q = self._current_quality
-        s = self._current_speed
-        if self.scaling_control is None:
-            # None == auto mode, derive from quality and speed only:
-            # increase threshold when handling video
-            q_noscaling = 65 + int(video)*30
-            if q >= q_noscaling or ffps == 0:
-                scaling = get_min_required_scaling()
-            else:
-                pps = ffps*width*height                 # Pixels/s
-                if self.bandwidth_limit > 0:
-                    # assume video compresses pixel data by ~95% (size is 20 times smaller)
-                    # (and convert to bytes per second)
-                    # ie: 240p minimum target
-                    target = max(SCALING_MIN_PPS, self.bandwidth_limit//8*20)
-                else:
-                    target = SCALING_PPS_TARGET             # ie: 1080p
-                if self.is_shadow:
-                    # shadow servers look ugly when scaled:
-                    target *= 16
-                elif "text" in self.content_types:
-                    # try to avoid scaling:
-                    target *= 4
-                elif not video:
-                    # downscale non-video content less:
-                    target *= 2
-                if self.image_depth == 30:
-                    # high bit depth is normally used for high quality
-                    target *= 10
-                # high quality means less scaling:
-                target = target * (100+max(0, q-video*30))**2 // 200**2
-                # high speed means more scaling:
-                target = target * 60**2 // (s+20)**2
-                sscaling = {}
-                mrs_num, mrs_den = get_min_required_scaling()
-                min_ratio = mrs_num/mrs_den
-                denom_mult = 1
-                if crs:
-                    # if the client will be downscaling to paint the window
-                    # use this downscaling as minimum value:
-                    crsw, crsh = crs
-                    if crsw > 0 and crsh > 0 and width-crsw > DOWNSCALE_THRESHOLD and height-crsh > DOWNSCALE_THRESHOLD:
-                        if width/crsw > height/crsh:
-                            denom_mult = width/crsw
-                        else:
-                            denom_mult = height/crsh
-                for num, denom in SCALING_OPTIONS:
-                    # noinspection PyChainedComparisons
-                    if denom_mult > 1.0 and 0.5 < (num/denom) < 1.0:
-                        # skip ratios like 2/3
-                        # since we want a whole multiple of the client scaling value
-                        continue
-                    # scaled pixels per second value:
-                    denom *= denom_mult
-                    spps = pps*(num**2)/(denom**2)
-                    ratio = target/spps
-                    # ideal ratio is 1, measure distance from 1:
-                    score = round(abs(1-ratio)*100)
-                    if self.actual_scaling == (num, denom):
-                        # try to stick to the same settings longer:
-                        # give it a score boost (lowest score wins):
-                        elapsed = min(16.0, max(0.0, now - self.last_pipeline_time))
-                        # gain will range from 4 (after 0 seconds) to 1 (after 9 seconds)
-                        gain = sqrt(17 - elapsed)
-                        score = round(score / gain)
-                    if num/denom > min_ratio:
-                        # higher than minimum, should not be used unless we have no choice:
-                        score = round(score*100)
-                    sscaling[score] = (num, denom)
-                scalinglog("scaling scores%s wid=%#x, current=%s, pps=%s, target=%s, fps=%s, denom_mult=%s, scores=%s",
-                           (width, height, max_w, max_h),
-                           self.wid, self.actual_scaling, pps, target, ffps, denom_mult, sscaling)
-                if sscaling:
-                    highscore = sorted(sscaling.keys())[0]
-                    scaling = sscaling[highscore]
-                else:
-                    scaling = get_min_required_scaling()
-        else:
-            # calculate scaling based on the "video-scaling" command line option,
-            # which is named "scaling_control" here.
-            # (from 1 to 100, from least to most aggressive)
-            if mvsub:
-                if video:
-                    # enable scaling more aggressively
-                    sc = (self.scaling_control+50)*2
-                else:
-                    sc = (self.scaling_control+25)
-            else:
-                # not the video region, so much less aggressive scaling:
-                sc = max(0, (self.scaling_control-50)//2)
-
-            # if scaling_control is high (scaling_control=100 -> er=2)
-            # then we will match the heuristics more quickly:
-            er = sc/50.0
-            if self.actual_scaling != (1, 1):
-                # if we are already downscaling, boost the score so we will stick with it a bit longer:
-                # more so if we are downscaling a lot (1/3 -> er=1.5 + ..)
-                er += (0.5 * self.actual_scaling[1] / self.actual_scaling[0])
-            qs = s > (q-er*10) and q < (50+er*15)
-            # scalinglog("calculate_scaling: er=%.1f, qs=%s, ffps=%s", er, qs, ffps)
-            if self.fullscreen and (qs or ffps >= max(2, round(10-er*3))):
-                scaling = 1, 3
-            elif self.maximized and (qs or ffps >= max(2, round(10-er*3))):
-                scaling = 1, 2
-            elif width*height >= (2560-er*768)*1600 and (qs or ffps >= max(4, round(25-er*5))):
-                scaling = 1, 3
-            elif width*height >= (1920-er*384)*1200 and (qs or ffps >= max(5, round(30-er*10))):
-                scaling = 2, 3
-            elif width*height >= (1200-er*256)*1024 and (qs or ffps >= max(10, round(50-er*15))):
-                scaling = 2, 3
-            else:
-                scaling = 1, 1
-            if scaling:
-                scalinglog("calculate_scaling value %s enabled by heuristics for %ix%i q=%i, s=%i, er=%.1f, qs=%s, ffps=%i, scaling-control(%i)=%i",   # noqa: E501
-                           scaling, width, height, q, s, er, qs, ffps, self.scaling_control, sc)
-        # sanity checks:
+        now = monotonic()
+        state = ScalingState(
+            width=width, height=height, max_width=max_w, max_height=max_h,
+            client_render_size=self.client_render_size,
+            control=self.scaling_control, requested_scaling=self.scaling,
+            actual_scaling=self.actual_scaling,
+            time_since_resize=now-self.statistics.last_resized,
+            time_since_scroll=now-self.last_scroll_time,
+            time_since_pipeline=now-self.last_pipeline_time,
+            damage_events_count=self.statistics.damage_events_count,
+            content_types=tuple(self.content_types),
+            quality=self._current_quality, speed=self._current_speed,
+            bandwidth_limit=self.bandwidth_limit, is_shadow=self.is_shadow,
+            image_depth=self.image_depth, fullscreen=self.fullscreen, maximized=self.maximized,
+        )
+        settings = ScalingSettings(
+            forced_scaling=SCALING_HARDCODED, options=SCALING_OPTIONS,
+            pps_target=SCALING_PPS_TARGET, min_pps=SCALING_MIN_PPS,
+            downscale=DOWNSCALE, downscale_threshold=DOWNSCALE_THRESHOLD, text_quality=TEXT_QUALITY,
+        )
+        scaling = get_scaling_override(state, settings)
         if scaling is None:
-            scaling = 1, 1
-        v, u = scaling
-        if v/u > 1.0:
-            # never upscale before encoding!
-            scaling = 1, 1
-        elif v/u < 0.1:
-            # don't downscale more than 10 times! (for each dimension - that's 100 times!)
-            scaling = 1, 10
+            # FPS measurements can walk the damage history. Keep them off the fast paths.
+            matches_subregion = bool(self.matches_video_subregion(width, height))
+            subregion_is_video = "video" not in state.content_types and matches_subregion and self.subregion_is_video()
+            scaling = calculate_video_scaling(
+                state, settings, fps=self.get_video_fps(width, height),
+                matches_subregion=matches_subregion, subregion_is_video=subregion_is_video,
+            )
         scalinglog("calculate_scaling%s=%s (q=%s, s=%s, scaling_control=%s)",
-                   (width, height, max_w, max_h), scaling, q, s, self.scaling_control)
+                   (width, height, max_w, max_h), scaling, state.quality, state.speed, state.control)
         return scaling
 
     def check_pipeline(self, encodings: Sequence[str], width: int, height: int, src_format: str) -> bool:
@@ -1763,7 +1507,7 @@ class WindowVideoSource(WindowSource):
 
         if self._current_quality == 100:
             # discard options with negative scores (usually subsampled or downscaled)
-            positive_scores = tuple(filter(lambda option: option[0] >= 0, scores))
+            positive_scores = tuple(option for option in scores if option.score >= 0)
             if not positive_scores:
                 videolog(f"no pipeline scores above 0 for quality={self._current_quality}, cannot use video")
                 return False
@@ -2191,8 +1935,7 @@ class WindowVideoSource(WindowSource):
             # window may have been resized
             pass
         else:
-            v = scroll_data.get_scroll_values()
-            if v:
+            if v := scroll_data.get_scroll_values():
                 raw_scroll, non_scroll = v
                 if len(raw_scroll) >= max_zones or len(non_scroll) >= max_zones:
                     # avoid fragmentation, which is too costly
@@ -2301,30 +2044,28 @@ class WindowVideoSource(WindowSource):
 
     def do_schedule_auto_refresh(self, encoding: str, region, client_options: dict, options: typedict) -> None:
         # for scroll encoding, data is a LargeStructure wrapper:
-        scroll_data = client_options.get("scroll", ())
-        if scroll_data:
-            if not self.refresh_regions:
+        if scroll_data := client_options.get("scroll", ()):
+            if not self.refresh_controller.regions:
                 return
             # check if any pending refreshes intersect the area containing the scroll data:
-            if not any(region.intersects_rect(r) for r in self.refresh_regions):
+            if not any(region.intersects_rect(r) for r in self.refresh_controller.regions):
                 # nothing to do!
                 return
             pixels_added = 0
             for x, y, w, h, dx, dy in scroll_data:
                 # the region that moved
                 src_rect = rectangle(x, y, w, h)
-                for rect in self.refresh_regions:
-                    inter = src_rect.intersection_rect(rect)
-                    if inter:
+                for rect in self.refresh_controller.regions:
+                    if inter := src_rect.intersection_rect(rect):
                         dst_rect = rectangle(inter.x+dx, inter.y+dy, inter.width, inter.height)
                         pixels_added += self.add_refresh_region(dst_rect)
             if pixels_added:
                 # if we end up with too many rectangles,
                 # bail out and simplify:
-                if len(self.refresh_regions) >= 200:
-                    self.refresh_regions = [merge_all(self.refresh_regions)]
+                if len(self.refresh_controller.regions) >= 200:
+                    self.refresh_controller.regions = [merge_all(self.refresh_controller.regions)]
                 refreshlog("updated refresh regions with scroll data: %i pixels added", pixels_added)
-                refreshlog(" refresh_regions=%s", self.refresh_regions)
+                refreshlog(" refresh_regions=%s", self.refresh_controller.regions)
             # we don't change any of the refresh scheduling
             # if there are non-scroll packets following this one, they will
             # and if not then we're OK anyway
@@ -2580,8 +2321,7 @@ class WindowVideoSource(WindowSource):
         h = ve.get_height()
         encoding = ve.get_encoding()
         v = ve.flush(frame)
-        closed = ve.is_closed()
-        if closed:
+        if closed := ve.is_closed():
             videolog("do_flush_video_encoder encoder %s is closed following the flush", ve)
         try:
             if not v:

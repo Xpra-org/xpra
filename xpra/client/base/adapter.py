@@ -7,18 +7,20 @@
 import os
 import uuid
 from typing import Any
+from collections.abc import Callable
 from threading import Event
 
-from xpra import __version__
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.io import is_socket, load_binary_file
 from xpra.util.env import envint, osexpand
 from xpra.util.objects import typedict
 from xpra.util.thread import start_thread
+from xpra.util.version import XPRA_VERSION, vparts, min_version_check, protocol_compat_check
 from xpra.net.connect import connect_to
 from xpra.scripts.parsing import parse_display_name
-from xpra.scripts.config import InitExit, make_defaults_struct
-from xpra.net.common import PacketElement, Packet, FULL_INFO
+from xpra.config import InitExit
+from xpra.config.defaults import make_defaults_struct
+from xpra.net.common import PacketElement, Packet, FULL_INFO, REMOTE_CODEC_PROTOCOL_VERSION, connection_close_info
 from xpra.net.packet_type import ENCODING_SET
 from xpra.log import Logger
 
@@ -28,6 +30,14 @@ SERVER_TIMEOUT = envint("XPRA_REMOTE_SERVER_TIMEOUT", 5)
 SERVER_SOCKET_TIMEOUT = envint("XPRA_REMOTE_SERVER_SOCKET_TIMEOUT", 1)
 RECONNECT_DELAY = envint("XPRA_REMOTE_RECONNECT_DELAY", 2000)
 CONNECT_POLL_DELAY = envint("XPRA_REMOTE_CONNECT_POLL_DELAY", 10000)
+
+
+def check_server_version(version: str, protocol_version) -> str:
+    """
+    Returns an error message if the server's version is not compatible.
+    """
+    # the server may require a more recent client:
+    return protocol_compat_check(protocol_version) or min_version_check(version, REMOTE_CODEC_PROTOCOL_VERSION)
 
 
 try:
@@ -71,8 +81,7 @@ def find_server_uri(sessions_dir: str, mode="encoder", system_socket_path="") ->
         path = os.path.join(sessions_dir, sdir)
         if path == session_dir:
             continue
-        encoder_socket = get_server_socket_path(path, mode, system_socket_path)
-        if encoder_socket:
+        if encoder_socket := get_server_socket_path(path, mode, system_socket_path):
             encoder_sockets.append(encoder_socket)
     if not encoder_sockets:
         return ""
@@ -99,7 +108,7 @@ class RemoteServerAdapter(baseclass):
     __slots__ = (
         "_ordinary_packets", "connect_event", "connect_poll_delay", "connect_timer", "connecting",
         "protocol", "reconnect_delay", "server_socket_timeout", "server_timeout", "sessions_dir",
-        "system_socket_path", "uri",
+        "system_socket_path", "uri", "logged_errors",
     )
     SYSTEM_SOCKET_PATH = ""
     PACKET_TYPES = [
@@ -119,13 +128,20 @@ class RemoteServerAdapter(baseclass):
         self.reconnect_delay = to.intget("reconnect-delay", RECONNECT_DELAY)
         self.connect_poll_delay = to.intget("connect-poll-delay", CONNECT_POLL_DELAY)
         self.system_socket_path = to.strget("system-socket", self.SYSTEM_SOCKET_PATH)   # NOSONAR @SuppressWarnings("python:S1845")
-        self.sessions_dir = osexpand(to.strget("sessions-dir", options.sessions_dir))
+        # `options` only contains the codec options, ie: "remote:uri=...,mmap=...",
+        # everything else comes from the defaults:
+        opts = make_defaults_struct()
+        self.sessions_dir = osexpand(to.strget("sessions-dir", opts.sessions_dir))
+        opts.mmap = to.strget("mmap", opts.mmap)
+        opts.mmap_group = to.strget("mmap-group", opts.mmap_group)
         self.connect_timer = 0
         self.connecting = False
         self.protocol = None
         self._ordinary_packets = []
         self.connect_event = Event()
-        super().init(options)
+        # we reconnect when the connection fails, only log each error once:
+        self.logged_errors: set[str] = set()
+        self.init(opts)
 
     def cleanup(self) -> None:
         self.cancel_schedule_connect()
@@ -187,6 +203,8 @@ class RemoteServerAdapter(baseclass):
             desc["quiet"] = True
             log(f"EncoderClient.do_connect() server desc={desc!r}")
             conn = connect_to(desc)
+            # the mmap areas are freed when we lose the connection, so create new ones for each connection:
+            self.load()
             super().setup_connection(conn)
             self.protocol = self.make_protocol(conn)
             self.send_hello()
@@ -236,7 +254,9 @@ class RemoteServerAdapter(baseclass):
 
     def make_hello(self) -> dict[str, Any]:
         return {
-            "version": __version__[:FULL_INFO+1],
+            "version": vparts(XPRA_VERSION, FULL_INFO + 1),
+            # the minimum version we are willing to talk to:
+            "protocol-version": REMOTE_CODEC_PROTOCOL_VERSION,
             # "client_type": "encode",
             "uuid": uuid.uuid4().hex,
         }
@@ -244,10 +264,8 @@ class RemoteServerAdapter(baseclass):
     def send_hello(self) -> None:
         caps = self.make_hello()
         caps.update(super().get_caps())
-        from xpra.net.packet_encoding import get_packet_encoding_caps
-        caps.update(get_packet_encoding_caps(0))
-        from xpra.net.compression import get_compression_caps
-        caps.update(get_compression_caps(0))
+        from xpra.net.net_util import get_network_caps
+        caps.update(get_network_caps(0))
         log(f"sending hello={caps!r}")
         self.send("hello", caps)
         self.connect_event.clear()
@@ -257,13 +275,32 @@ class RemoteServerAdapter(baseclass):
     def _process_hello(self, packet: Packet) -> None:
         caps = packet.get_dict(1)
         log("got hello: %s", Ellipsizer(caps))
-        if not super().parse_server_capabilities(typedict(caps)):
+        tcaps = typedict(caps)
+        version = tcaps.strget("version")
+        if err := check_server_version(version, tcaps.inttupleget("protocol-version")):
+            self.log_once(log.error, f"Error: incompatible encoder server version {version!r}", err)
+            self.disconnect()
+            # don't wait for `startup-complete`:
+            self.connect_event.set()
+            return
+        if not super().parse_server_capabilities(tcaps):
             raise RuntimeError("failed to parse capabilities")
-        version = caps.get("version")
         log.info("connected to encoder server version %s", version)
 
-    def _process_connection_close(self, _packet: Packet) -> None:
-        log("disconnected from server %s", self.protocol)
+    def log_once(self, logfn: Callable, message: str, *details: str) -> None:
+        key = "\n".join((message, *details))
+        if key in self.logged_errors:
+            log("%s", key)
+            return
+        self.logged_errors.add(key)
+        logfn("%s", message)
+        for detail in details:
+            logfn(" %s", detail)
+
+    def _process_connection_close(self, packet: Packet) -> None:
+        log("disconnected from server %s: %s", self.protocol, packet)
+        if info := connection_close_info(packet):
+            self.log_once(log.warn, "Warning: the encoder server closed the connection:", *info)
         self.server_connection_cleanup()
 
     def _process_connection_lost(self, _packet: Packet) -> None:

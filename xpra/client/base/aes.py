@@ -9,7 +9,7 @@ from typing import Any
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.util.str_fn import csv, strtobytes, Ellipsizer
 from xpra.util.io import filedata_nocrlf
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.exit_codes import ExitCode
 from xpra.net.crypto import (
@@ -180,13 +180,11 @@ class AES(StubClientSubsystem):
         log(f"get_encryption_key() connection options keydata={Ellipsizer(keydata)}")
         if keydata:
             return keydata
-        keyfile = conn.options.get("encryption-keyfile") or conn.options.get("keyfile") or self.encryption_keyfile
-        if keyfile:
+        if keyfile := conn.options.get("encryption-keyfile") or conn.options.get("keyfile") or self.encryption_keyfile:
             if not os.path.isabs(keyfile):
                 keyfile = os.path.abspath(keyfile)
             if os.path.exists(keyfile):
-                keydata = filedata_nocrlf(keyfile)
-                if keydata:
+                if keydata := filedata_nocrlf(keyfile):
                     log("get_encryption_key() loaded %i bytes from '%s'", len(keydata or b""), keyfile)
                     return keydata
                 log(f"get_encryption_key() keyfile {keyfile!r} is empty")

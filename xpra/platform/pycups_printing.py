@@ -206,8 +206,7 @@ def get_printer_definitions() -> dict[str, list[str]]:
                 if not x:
                     log.warn("Warning: unknown mimetype '%s', cannot find printer definition", mt)
                     continue
-                drv = get_lpinfo_drv(x)
-                if drv:
+                if drv := get_lpinfo_drv(x):
                     # ie: ["-m", "drv:///sample.drv/generic.ppd"]
                     PRINTER_DEF[mt] = ["-m", drv]
         # fallback to locating ppd files:
@@ -218,8 +217,7 @@ def get_printer_definitions() -> dict[str, list[str]]:
             if not x:
                 log.warn("Warning: unknown mimetype '%s', cannot find corresponding PPD file", mt)
                 continue
-            f = find_ppd_file(mt.replace("application/", "").upper(), x)
-            if f:
+            if f := find_ppd_file(mt.replace("application/", "").upper(), x):
                 # ie: ["-P", "/usr/share/cups/model/Generic-PDF_Printer-PDF.ppd"]
                 PRINTER_DEF[mt] = ["-P", f]
         log("pycups settings: PRINTER_DEF=%s", PRINTER_DEF)
@@ -284,8 +282,7 @@ def add_printer(name: str, options: typedict, info: str, location: str,
     mimetype, printer_def = None, None
     defs = get_printer_definitions()
     for mt in mimetypes:
-        printer_def = defs.get(mt)
-        if printer_def:
+        if printer_def := defs.get(mt):
             log("using printer definition '%s' for %s", printer_def, mt)
             # ie: printer_def = ["-P", "/path/to/CUPS-PDF.ppd"]
             mimetype = mt

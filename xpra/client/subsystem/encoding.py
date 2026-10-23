@@ -80,8 +80,7 @@ def get_batch_caps() -> dict[str, Any]:
     # batch options:
     caps = {}
     for bprop in ("always", "min_delay", "max_delay", "delay", "max_events", "max_pixels", "time_unit"):
-        evalue = os.environ.get(f"XPRA_BATCH_{bprop.upper()}")
-        if evalue:
+        if evalue := os.environ.get(f"XPRA_BATCH_{bprop.upper()}"):
             try:
                 caps[f"batch.{bprop}"] = int(evalue)
             except ValueError:
@@ -380,8 +379,7 @@ class Encodings(StubClientSubsystem):
                     ("YUV422P", ""),
                     ("YUV444P", ""),
             ):
-                profile = os.environ.get(f"XPRA_H264_{csc_name}_PROFILE", default_profile)
-                if profile:
+                if profile := os.environ.get(f"XPRA_H264_{csc_name}_PROFILE", default_profile):
                     h264_caps[f"{csc_name}.profile"] = profile
             h264_caps["fast-decode"] = envbool("XPRA_X264_FAST_DECODE", False)
             log("x264 encoding options: %s", h264_caps)
@@ -393,8 +391,7 @@ class Encodings(StubClientSubsystem):
         for encoding in VIDEO_LEVELS:
             if encoding not in self.get_core_encodings():
                 continue
-            level = os.environ.get(f"XPRA_{encoding.upper()}_LEVEL", "")
-            if level:
+            if level := os.environ.get(f"XPRA_{encoding.upper()}_LEVEL", ""):
                 enc_caps = caps.setdefault(encoding, {})
                 enc_caps["level"] = level
                 log("%s encoding level: %s", encoding, level)

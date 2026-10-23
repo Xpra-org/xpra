@@ -174,8 +174,7 @@ class Keyboard(KeyboardBase):
             if all_keyboards:
                 layouts = []
                 for k in all_keyboards:
-                    code = APPLE_LAYOUTS.get(k.split(".")[-1])
-                    if code:
+                    if code := APPLE_LAYOUTS.get(k.split(".")[-1]):
                         layouts.append(code)
                 if not layouts:
                     layouts.append("us")

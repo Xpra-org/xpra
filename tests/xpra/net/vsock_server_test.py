@@ -30,8 +30,7 @@ def main(args):
         import time
         start = time.time()
         while True:
-            buf = connection.recv(1024*1024)
-            if buf:
+            if buf := connection.recv(1024*1024):
                 log("got data: %s" % len(buf))
                 l += len(buf)
                 now = time.time()

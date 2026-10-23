@@ -59,8 +59,7 @@ def get_server_exec_info() -> dict[str, Any]:
         "executable": sys.executable,
         "pid": os.getpid(),
     }
-    logfile = os.environ.get("XPRA_SERVER_LOG", "")
-    if logfile:
+    if logfile := os.environ.get("XPRA_SERVER_LOG", ""):
         info["log-file"] = logfile
     return info
 

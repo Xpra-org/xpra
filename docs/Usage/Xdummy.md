@@ -101,7 +101,8 @@ This saves the setting in `~/.config/xpra/conf.d/90_configure_tool.conf`, or in
 ### Xdummy with Xpra packages
 
 Official Xpra packages normally configure Xdummy automatically. Debian and
-Ubuntu do not enable it by default because of distribution bugs.
+Ubuntu only enable it by default from Debian `trixie` and Ubuntu `resolute`
+onwards, because of distribution bugs in older releases.
 
 At [build time](../Build/README.md), select Xdummy with the
 `--with-Xdummy` or `--without-Xdummy` build switch. If a package does not
@@ -249,10 +250,17 @@ Alternatively, disable OpenGL; see [#580](https://github.com/Xpra-org/xpra/issue
 
 ### Debian and Ubuntu
 
-Their Xorg packaging can prevent Xdummy from running because of TTY permission
-issues. It may also interfere with other sessions that should be isolated;
+On older releases (before Debian `trixie` and Ubuntu `resolute`), their Xorg
+packaging can prevent Xdummy from running because of TTY permission issues.
+It may also interfere with other sessions that should be isolated;
 [crashing other X11 sessions](https://github.com/Xpra-org/xpra/issues/2834) is a
-serious security issue.
+serious security issue, so these releases use Xvfb by default.
+
+Xpra runs the non-setuid `/usr/lib/xorg/Xorg` binary directly, not the
+`/usr/bin/Xorg` script which may execute the setuid `Xorg.wrap` from the
+`xserver-xorg-legacy` package.
+If you see this problem on a newer release, please report it and switch back to Xvfb
+using `xvfb = Xvfb` in `/etc/xpra/conf.d/55_server_x11.conf`.
 
 </section>
 

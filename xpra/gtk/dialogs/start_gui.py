@@ -23,7 +23,8 @@ from xpra.common import noop
 from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.system import platform_name, is_X11
 from xpra.util.stats import std_unit_dec
-from xpra.scripts.config import get_defaults, OPTION_TYPES
+from xpra.config.defaults import get_defaults
+from xpra.config.types import OPTION_TYPES
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, str_to_bool
 from xpra.client.gtk3.menu_helper import BANDWIDTH_MENU_OPTIONS
 from xpra.util.objects import AtomicInteger
@@ -112,8 +113,7 @@ class StartSession(Gtk.Window):
         self.set_title(_("Start Xpra Session"))
         self.set_position(Gtk.WindowPosition.CENTER)
         self.set_size_request(640, 300)
-        icon = get_icon_pixbuf("xpra.png")
-        if icon:
+        if icon := get_icon_pixbuf("xpra.png"):
             self.set_icon(icon)
         self.connect("delete-event", self.quit)
         add_close_accel(self, self.quit)
@@ -651,8 +651,7 @@ class StartSession(Gtk.Window):
         # only hide after reading the form:
         self.hide()
         log("do_run(%s) cmd=%s", attach, cmd)
-        proc = exec_command(cmd)
-        if proc:
+        if proc := exec_command(cmd):
             start_thread(self.wait_for_subprocess, "wait-%i" % proc.pid, daemon=True, args=(proc,))
 
     def wait_for_subprocess(self, proc: Popen) -> None:
@@ -774,8 +773,7 @@ class SessionOptions(Gtk.Window):
         self.set_modal(True)
         add_close_accel(self, self.close)
         self.connect("delete_event", self.close)
-        icon = get_icon_pixbuf(icon_name)
-        if icon:
+        if icon := get_icon_pixbuf(icon_name):
             self.set_icon(icon)
 
         self.vbox = Gtk.VBox(homogeneous=False, spacing=0)

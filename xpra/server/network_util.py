@@ -415,8 +415,7 @@ def get_protocol_info(protocol) -> str:
     try:
         conn = protocol._conn
         info = conn.get_info()
-        endpoint = info.get("endpoint")
-        if endpoint:
+        if endpoint := info.get("endpoint"):
             proto_info = " " + pretty_socket(endpoint)
         else:
             proto_info = " " + pretty_socket(conn.local)
@@ -458,8 +457,7 @@ def get_socket_info(sockets: Sequence[SocketListener], websocket=False, ssl=Fals
         if socktype not in ("tcp", "ssl", "ws", "wss", "ssh"):
             # we expose addresses only for TCP sockets
             continue
-        upnp_address = sock.options.get("upnp-address", ())
-        if upnp_address:
+        if upnp_address := sock.options.get("upnp-address", ()):
             add_address(socktype, *upnp_address)
         if len(address) != 2 or not isinstance(address[0], str) or not isinstance(address[1], int):
             # unsupported listener info format

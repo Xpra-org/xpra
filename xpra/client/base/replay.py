@@ -75,8 +75,7 @@ def may_load(event: dict) -> None:
 
 
 def may_load_blob(event: dict, ext="", warn=True) -> bytes:
-    data = event.get("data", b"")
-    if data:
+    if data := event.get("data", b""):
         # we already have the data
         return data
     # this data should have been saved separately,
@@ -196,8 +195,7 @@ class WindowReplay:
         return self.load_event(max(self.events.keys(), default=-1))
 
     def load_event(self, index: int) -> dict:
-        event = self.events.get(index, {})
-        if event:
+        if event := self.events.get(index, {}):
             may_load(event)
         return event
 
@@ -283,8 +281,7 @@ class WindowReplay:
                 self.window.show_pointer_overlay((rx, ry, 10, monotonic()))
         elif etype == "pointer-button":
             pressed = event.boolget("pressed")
-            button = event.intget("button", 0)
-            if button:
+            if button := event.intget("button", 0):
                 event_info(f"button {button} {'pressed' if pressed else 'released'}")
         elif etype == "pointer-wheel":
             button = event.intget("button", 0)
@@ -297,8 +294,7 @@ class WindowReplay:
         elif etype == "clipboard":
             log("clipboard: %s", event.get("data"))
             # only "clipboard-contents" packets generate this file:
-            contents = may_load_blob(event, "contents", False)
-            if contents:
+            if contents := may_load_blob(event, "contents", False):
                 event_info("contents: %s" % (contents,))
         elif etype == "sync":
             log("sync point")
@@ -362,8 +358,7 @@ class WindowReplay:
         """
         `new` and `sync` events carry the session-wide stacking order.
         """
-        stacking = event.inttupleget("stacking", ())
-        if stacking:
+        if stacking := event.inttupleget("stacking", ()):
             self.client.set_stacking(stacking)
 
     def may_focus(self, event: typedict) -> None:
@@ -560,8 +555,7 @@ class Replay(GObjectClientAdapter):
     def process_input_event(self, event: typedict, notify: bool = True) -> None:
         etype = event.strget("event", "")
         if etype == "pointer-button":
-            button = event.intget("button", 0)
-            if button:
+            if button := event.intget("button", 0):
                 if event.boolget("pressed"):
                     self.pressed_pointer_buttons.add(button)
                 else:
@@ -772,7 +766,7 @@ def do_main(config) -> int:
 
 
 def main() -> int:
-    from xpra.scripts.config import make_defaults_struct
+    from xpra.config.defaults import make_defaults_struct
     return do_main(make_defaults_struct())
 
 

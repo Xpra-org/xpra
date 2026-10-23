@@ -76,8 +76,7 @@ def load_subdir(d: str) -> dict[str, dict[str, str]]:
         if os.path.isdir(name):
             menu.update(load_subdir(name))
         elif name.endswith(".lnk"):
-            exe = read_link(name)
-            if exe:
+            if exe := read_link(name):
                 menu[x[:-4]] = {
                     "command": exe,
                 }
@@ -93,15 +92,13 @@ def load_dir(d: str) -> dict[str, dict[str, Any]]:
             continue
         name = os.path.join(d, x)
         if os.path.isdir(name):
-            subdirmenu = load_subdir(name)
-            if subdirmenu:
+            if subdirmenu := load_subdir(name):
                 menu[x] = {
                     "Entries": subdirmenu,
                 }
         elif name.endswith(".lnk"):
             # add them to the "Shortcuts" submenu:
-            exe = read_link(name)
-            if exe:
+            if exe := read_link(name):
                 menu.setdefault("Shortcuts", {}).setdefault("Entries", {})[x[:-4]] = {
                     "command": exe,
                 }

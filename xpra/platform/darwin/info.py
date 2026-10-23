@@ -16,7 +16,6 @@ def get_pyobjc_version():
 
 def get_version_info() -> dict[str, Any]:
     d = {}
-    v = get_pyobjc_version()
-    if v:
+    if v := get_pyobjc_version():
         d["pyobjc.version"] = v
     return d

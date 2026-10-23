@@ -11,7 +11,7 @@ from weakref import WeakValueDictionary
 
 from xpra.util.str_fn import Ellipsizer, print_nested_dict
 from xpra.util.objects import typedict
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.net.common import Packet, MmapPointerError
 from xpra.codecs.constants import VideoSpec, CodecStateException
 from xpra.codecs.image import ImageWrapper, PlanarFormat
@@ -23,10 +23,17 @@ log = Logger("encoder", "remote")
 ENCODINGS = tuple(x for x in os.environ.get("XPRA_REMOTE_ENCODINGS", "h264,vp8,vp9").split(",") if x)
 
 
+def safe_value(v) -> bool:
+    if isinstance(v, (int, str, bool)):
+        return True
+    # ie: "dst-formats", which the video encoders require
+    return isinstance(v, (tuple, list)) and all(isinstance(x, (int, str, bool)) for x in v)
+
+
 def safe_dict(opts: dict | typedict) -> dict:
     # a simple dictionary suitable for sending via rencodeplus
     # (removes floats and other illegal values - floats are not strictly illegal, but we don't use them)
-    return dict((k, v) for k, v in opts.items() if isinstance(k, str) and isinstance(v, (int, str, bool)))
+    return dict((k, v) for k, v in opts.items() if isinstance(k, str) and safe_value(v))
 
 
 class EncoderClient(RemoteCodecClient):
@@ -101,8 +108,7 @@ class EncoderClient(RemoteCodecClient):
             else:
                 pixels = [compress(plane) for plane in pixels]
 
-        mmap_write_area = getattr(self, "mmap_write_area", None)
-        if mmap_write_area:
+        if mmap_write_area := getattr(self, "mmap_write_area", None):
             try:
                 if nplanes == PlanarFormat.PACKED:
                     mmap_data = mmap_write_area.write_data(pixels)
@@ -160,15 +166,13 @@ def init_module(options: dict) -> None:
     log(f"encoder.init_module({options})")
     # single server syntax uses "uri=protocol://host:port/.."
     # or one can use multiple servers with "uris=protocol://host1/?attr=value&,protocol://host2/"
-    uris = options.get("uris", "")
-    if uris:
+    if uris := options.get("uris", ""):
         for uri in uris.split(";"):
             uri_override = options.copy()
             uri_override["uri"] = uri
             add_server(uri_override)
     # single uri:
-    uri = options.get("uri", "")
-    if uri:
+    if uri := options.get("uri", ""):
         add_server(options)
 
 

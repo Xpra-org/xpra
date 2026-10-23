@@ -67,8 +67,7 @@ def get_all_x11_layouts() -> dict[str, str]:
         log("get_all_x11_layouts() returncode=%s", proc.returncode)
         if proc.wait() == 0:
             for line in out.splitlines():
-                layout = line.decode().split("/")[-1]
-                if layout:
+                if layout := line.decode().split("/")[-1]:
                     x11_layouts[layout] = layout
             return x11_layouts
     except OSError:
@@ -224,8 +223,7 @@ class Keyboard(KeyboardBase):
                         meanings[keyname] = modifier
                 # probably a GTK bug? but easier to put here
                 mod_missing: list[str] = []
-                numlock_mod = meanings.get("Num_Lock", "")
-                if numlock_mod:
+                if numlock_mod := meanings.get("Num_Lock", ""):
                     mod_missing.append(numlock_mod)
                 return meanings, [], mod_missing
         return {}, [], []
@@ -245,8 +243,7 @@ class Keyboard(KeyboardBase):
             locale = get_locale_status()
             query_struct = {}
             if locale:
-                layout = locale.get("X11 Layout")
-                if layout:
+                if layout := locale.get("X11 Layout"):
                     query_struct["layout"] = layout
             log("query_struct(%s)=%s", locale, query_struct)
             return query_struct

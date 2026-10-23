@@ -114,8 +114,7 @@ class Registry(SessionRegistry):
 
         if client_caps is None:
             return hints
-        session = client_caps.dictget("session")
-        if session:
+        if session := client_caps.dictget("session"):
             sd = typedict(session)
             for key in ("name", "uuid", "display"):
                 add(sd.strget(key))

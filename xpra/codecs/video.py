@@ -160,11 +160,9 @@ def filt(prefix: str, name: str,
         inclist = apl(all_fn())
     lists = exclist + inclist
     all_list = apl(all_options)
-    unknown = tuple(x for x in lists if noopt(x) not in CODEC_TO_MODULE and x.lower() != "none")
-    if unknown:
+    if unknown := tuple(x for x in lists if noopt(x) not in CODEC_TO_MODULE and x.lower() != "none"):
         log.warn(f"Warning: ignoring unknown {name}: "+csv(unknown))
-    notfound = tuple(x for x in lists if (x and noopt(x) not in all_list and x not in unknown and x != "none"))
-    if notfound:
+    if notfound := tuple(x for x in lists if (x and noopt(x) not in all_list and x not in unknown and x != "none")):
         log.warn(f"Warning: {name} not found: "+csv(notfound))
     allowed = apl(x for x in inclist if noopt(x) in all_list and noopt(x) not in exclist and x != "none")
     log(f"{inclist=}, {exclist=}, {all_list=} -> {allowed=}")

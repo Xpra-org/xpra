@@ -389,8 +389,7 @@ class ChildCommandServer(StubSubsystem):
             cmd_info = "ibus-daemon" if is_ibus_daemon else cmd_str
             log.info(f"started command `{cmd_info}` with pid {proc.pid}")
             self.children_started.append(procinfo)
-            session_dir = os.environ.get("XPRA_SESSION_DIR", "")
-            if session_dir:
+            if session_dir := os.environ.get("XPRA_SESSION_DIR", ""):
                 pidname = name.split(" ")[0]
                 if pidname.find(os.sep) >= 0:
                     pidname = pidname.split(os.sep)[-1]

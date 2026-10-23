@@ -29,14 +29,12 @@ from xpra.exit_codes import ExitCode
 from xpra.net.constants import DEFAULT_PORT, DEFAULT_PORTS, SOCKET_TYPES, IP_SOCKTYPES, URL_MODES
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.util.io import warn
-from xpra.scripts.config import (
-    XpraConfig,
-    OPTION_TYPES, InitException, InitInfo, InitExit,
-    fixup_debug_option, fixup_options,
-    find_docs_path, find_html5_path,
-    make_defaults_struct, validate_config, name_to_field,
-    URL_SAFE_OPTIONS,
-)
+from xpra.config.types import XpraConfig, OPTION_TYPES, name_to_field, URL_SAFE_OPTIONS
+from xpra.config import InitException, InitInfo, InitExit
+from xpra.config.fixup import fixup_debug_option, fixup_options
+from xpra.config.paths import find_docs_path, find_html5_path
+from xpra.config.defaults import make_defaults_struct
+from xpra.config.validation import validate_config
 
 MODE_ALIAS: dict[str, str] = {
     "start": "seamless",
@@ -342,8 +340,7 @@ def parse_display_name(opts, display_name: str, cmdline=(),
     )
 
     def add_credentials() -> None:
-        username = parsed.username or opts.username or os.environ.get("XPRA_USERNAME", "")
-        if username:
+        if username := parsed.username or opts.username or os.environ.get("XPRA_USERNAME", ""):
             desc["username"] = username
             opts.username = username
         password = parsed.password or opts.password
@@ -477,8 +474,7 @@ def parse_display_name(opts, display_name: str, cmdline=(),
         add_host_port(0)
         add_path()
         add_query()
-        display = desc.get("display", "")
-        if display:
+        if display := desc.get("display", ""):
             args = desc.setdefault("display_as_args", [display])
         else:
             args = desc.setdefault("display_as_args", [])
@@ -550,8 +546,7 @@ def parse_display_name(opts, display_name: str, cmdline=(),
         proxy = desc.get("proxy")
         if proxy == "auto":
             for scheme in (protocol, alt_scheme):
-                pprops = auto_proxy(scheme, host)
-                if pprops:
+                if pprops := auto_proxy(scheme, host):
                     desc.update(pprops)
                     break
         return desc
@@ -1329,13 +1324,13 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
     legacy_bool_parse("file-transfer")
     legacy_bool_parse("open-files")
     legacy_bool_parse("open-url")
-    group.add_option("--file-transfer", action="store", metavar="yes|no|ask",
+    group.add_option("--file-transfer", action="store", metavar="yes|no|ask|auto",
                      dest="file_transfer", default=defaults.file_transfer,
-                     help="Support file transfers. Default: %s." % enabled_str(defaults.file_transfer))
-    group.add_option("--open-files", action="store", metavar="yes|no|ask",
+                     help="Support file transfers. Default: '%default'.")
+    group.add_option("--open-files", action="store", metavar="yes|no|ask|auto",
                      dest="open_files", default=defaults.open_files,
                      help="Automatically open uploaded files (potentially dangerous). Default: '%default'.")
-    group.add_option("--open-url", action="store", metavar="yes|no|ask",
+    group.add_option("--open-url", action="store", metavar="yes|no|ask|auto",
                      dest="open_url", default=defaults.open_url,
                      help="Automatically open URL (potentially dangerous). Default: '%default'.")
     group.add_option("--printing", action="store", metavar="yes|no|ask",
@@ -1937,6 +1932,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Restrict client and server filesystem access with Linux Landlock"
                           " (Linux only, no effect elsewhere). Values: 'no', 'default' (broad reads),"
                           " 'strict' (required resources and dedicated writable directories)."
+                          " Append '+gpu' to allow access to the GPU devices, ie: 'strict+gpu'."
                           " Values are case insensitive; boolean values select 'no' or 'default'."
                           " Both enabled modes require Landlock ABI 9 or newer. Default: '%default'.")
     group.add_option("--seccomp", action="store",
@@ -2263,16 +2259,14 @@ def show_audio_codec_help(is_server: bool, speaker_codecs, microphone_codecs) ->
     codec_help = []
     all_speaker_codecs = props.strtupleget("encoders" if is_server else "decoders")
     invalid_sc = [x for x in speaker_codecs if x not in all_speaker_codecs]
-    hs = "help" in speaker_codecs
-    if hs:
+    if "help" in speaker_codecs:
         codec_help.append("speaker codecs available: " + csv(all_speaker_codecs))
     elif invalid_sc:
         codec_help.append("WARNING: some of the specified speaker codecs are not available: " + csv(invalid_sc))
 
     all_microphone_codecs = props.strtupleget("decoders" if is_server else "encoders")
     invalid_mc = [x for x in microphone_codecs if x not in all_microphone_codecs]
-    hm = "help" in microphone_codecs
-    if hm:
+    if "help" in microphone_codecs:
         codec_help.append("microphone codecs available: " + csv(all_microphone_codecs))
     elif invalid_mc:
         codec_help.append("WARNING: some of the specified microphone codecs are not available:" + " " + csv(invalid_mc))

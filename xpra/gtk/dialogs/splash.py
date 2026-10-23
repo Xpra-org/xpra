@@ -150,8 +150,7 @@ class SplashScreen(Gtk.Window):
             hbox.pack_start(image, False, False, 20)
 
             def set_icon(filename: str) -> None:
-                icon = get_icon_pixbuf(filename)
-                if icon:
+                if icon := get_icon_pixbuf(filename):
                     image.set_from_pixbuf(icon)
 
             if icon_name.startswith("http"):
@@ -197,8 +196,7 @@ class SplashScreen(Gtk.Window):
         frame.add(vbox)
         self.add(frame)
         install_signal_handlers("Splash", self.handle_signal)
-        sigpipe = getattr(signal, "SIGPIPE", None)
-        if sigpipe:  # ie: POSIX
+        if sigpipe := getattr(signal, "SIGPIPE", None):  # ie: POSIX
             signal.signal(sigpipe, self.handle_signal)
         self.opacity = 100
         self.pct = 0

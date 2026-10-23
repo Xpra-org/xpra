@@ -230,8 +230,7 @@ def get_icc_data() -> dict[str, bytes | str | int]:
         "source": "_ICC_PROFILE",
         "data": profile,
     }
-    version = get_icc_version()
-    if version:
+    if version := get_icc_version():
         icc["version"] = version
     return icc
 

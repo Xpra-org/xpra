@@ -1703,6 +1703,7 @@ external_excludes = [
     "nose", "pytest", "_pytest", "pluggy", "more_itertools", "apipkg", "py", "funcsigs",
     "Cython", "cython", "pyximport",
     "pydoc_data",
+    "imaplib", "poplib",
 ]
 if not crypto_ENABLED:
     external_excludes += ["ssl", "_ssl", "uvloop"]
@@ -1809,7 +1810,7 @@ def toggle_packages(enabled: bool, *module_names: str) -> None:
 
 # always included:
 if modules_ENABLED:
-    add_packages("xpra.util", "xpra.net")
+    add_packages("xpra.config", "xpra.util", "xpra.net")
     add_modules("xpra",
                 "xpra.platform",
                 "xpra.scripts.common",
@@ -2087,6 +2088,9 @@ def exec_pkgconfig(*pkgs_options, **ekw) -> dict:
             add_to_keywords(kw, 'extra_compile_args', cflag)
     if OSX:
         add_to_keywords(kw, 'extra_compile_args', "-Wno-nullability-completeness")
+    if OPENBSD:
+        add_to_keywords(kw, "include_dirs", "/usr/local/include")
+        add_to_keywords(kw, "library_dirs", "/usr/local/lib")
 
     def hascflag(s: str) -> bool:
         return s in kw.get("extra_compile_args", [])
@@ -2213,18 +2217,20 @@ def get_conf_dir(install_dir: str, stripbuildroot=True) -> str:
 
 def detect_xorg_setup(install_dir="") -> "Sequence[str]":
     # pylint: disable=import-outside-toplevel
-    from xpra.scripts import config
+    from xpra import config
     config.debug = config.warn
     conf_dir = get_conf_dir(install_dir)
-    return config.detect_xvfb_command(conf_dir, None, Xdummy_ENABLED, Xdummy_wrapper_ENABLED)
+    from xpra.config.vfb import detect_xvfb_command
+    return detect_xvfb_command(conf_dir, None, Xdummy_ENABLED, Xdummy_wrapper_ENABLED)
 
 
 def detect_xdummy_setup(install_dir="") -> "Sequence":
     # pylint: disable=import-outside-toplevel
-    from xpra.scripts import config
+    from xpra import config
     config.debug = config.warn
     conf_dir = get_conf_dir(install_dir)
-    return config.detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
+    from xpra.config.vfb import detect_xdummy_command
+    return detect_xdummy_command(conf_dir, None, Xdummy_wrapper_ENABLED)
 
 
 def convert_templates(install_dir: str, subs: "dict[str, str]", subdirs: "Sequence[str]" = ()) -> None:
@@ -2291,9 +2297,9 @@ def build_xpra_conf(install_dir: str, runtime_dir="") -> None:
     conf_dir = get_conf_dir(runtime_dir)
     print(f"get_conf_dir({runtime_dir})={conf_dir}")
     from xpra.platform.paths import get_socket_dirs
-    from xpra.scripts.config import (
-        wrap_cmd_str, unexpand,
-        get_default_key_shortcuts, get_default_systemd_run, get_default_env, get_default_start_env,
+    from xpra.config.vfb import wrap_cmd_str
+    from xpra.config.defaults import (
+        unexpand, get_default_key_shortcuts, get_default_systemd_run, get_default_env, get_default_start_env,
         DEFAULT_POSTSCRIPT_PRINTER, DEFAULT_PULSEAUDIO,
     )
     default_env = "\n".join(f"env = {x}" for x in get_default_env())
@@ -2850,7 +2856,7 @@ if WIN32:
             if client_ENABLED or server_ENABLED:
                 add_console_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_cmd")
                 add_gui_exe("xpra/platform/win32/scripts/execfile.py", "python.ico", "Python_execfile_gui")
-                add_console_exe("xpra/scripts/config.py",           "gears.ico",        "Config_info")
+                add_console_exe("xpra/config/__main__.py",           "gears.ico",        "Config_info")
             if server_ENABLED:
                 add_console_exe("xpra/auth/sqlite.py",  "sqlite.ico",        "SQLite_auth_tool")
                 add_console_exe("xpra/auth/sql.py",     "sql.ico",           "SQL_auth_tool")
@@ -3145,7 +3151,7 @@ else:
             if printing_ENABLED and POSIX:
                 # install "/usr/lib/cups/backend" with 0700 permissions:
                 lib_cups = "lib/cups"
-                if FREEBSD:
+                if FREEBSD or OPENBSD:
                     lib_cups = "libexec/cups"
                 self.copytodir("fs/lib/cups/backend/xpraforwarder", f"{lib_cups}/backend", chmod=0o700)
 
@@ -3293,7 +3299,7 @@ else:
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
         if data_ENABLED:
             # not supported by all distros, but doesn't hurt to install them anyway:
-            if not FREEBSD:
+            if not (FREEBSD or OPENBSD or NETBSD):
                 for x in ("tmpfiles.d", "sysusers.d"):
                     add_data_files(f"lib/{x}", [f"fs/lib/{x}/xpra.conf"])
             if uinput_ENABLED:
@@ -3474,7 +3480,6 @@ toggle_packages(clipboard_ENABLED, "xpra.clipboard")
 toggle_packages(x11_ENABLED, "xpra.x11.selection")
 toggle_packages(x11_ENABLED and dbus_ENABLED, "xpra.x11.dbus")
 toggle_packages(uinput_ENABLED, "xpra.uinput")
-toggle_packages(uinput_ENABLED and x11_ENABLED, "xpra.x11.uinput")
 toggle_packages(notifications_ENABLED, "xpra.notification")
 
 # cannot use toggle here as cx_Freeze will complain if we try to exclude this module:
@@ -3882,10 +3887,10 @@ if wayland_server_ENABLED:
     ace("xpra.wayland.server.compositor", f"{WLROOTS_PKG_CONFIG},libdrm,wayland-server,pixman-1", extra_compile_args=wlr_args)
 
 if cythonize_more_ENABLED:
-    def ax(base):
+    def ax(base, skip=("__init__.py",)):
         dirname = base.replace(".", os.path.sep)
         for x in glob(f"{dirname}/*.py"):
-            if not x.endswith("__init__.py"):
+            if os.path.basename(x) not in skip:
                 mod = x[:-3].replace(os.path.sep, ".")
                 ace(mod)
 
@@ -3978,7 +3983,8 @@ if cythonize_more_ENABLED:
     if LINUX:
         ace("xpra.platform.posix.shadow_server")
     if scripts_ENABLED:
-        ax("xpra.scripts")
+        # The configuration compatibility entry point must still support python -m.
+        ax("xpra.scripts", skip=("__init__.py", "config.py"))
     if WIN32 and service_ENABLED:
         ace("xpra.platform.win32.service")
         ace("xpra.platform.win32.shadow")
@@ -4012,8 +4018,6 @@ if cythonize_more_ENABLED:
             ax("xpra.x11.subsystem")
             if server_ENABLED:
                 ax("xpra.x11.server")
-        if uinput_ENABLED:
-            ax("xpra.x11.uinput")
     if uinput_ENABLED:
         ax("xpra.uinput")
     if wayland_client_ENABLED:
@@ -4021,6 +4025,7 @@ if cythonize_more_ENABLED:
     if wayland_server_ENABLED:
         ax("xpra.wayland.server")
 
+    ax("xpra.config", skip=("__init__.py", "__main__.py"))
     ax("xpra.util")
     ace("xpra.common")
     ace("xpra.exit_codes")

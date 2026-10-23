@@ -67,7 +67,7 @@ class ServerBorderTest(unittest.TestCase):
 
     def test_default_uses_server_border(self):
         from xpra.util.objects import typedict
-        from xpra.scripts.config import DEFAULT_BORDER
+        from xpra.config.defaults import DEFAULT_BORDER
         bc, callbacks = self.make_client(DEFAULT_BORDER)
         assert not bc.border.shown
         bc.parse_server_capabilities(typedict({"border": "red,10"}))

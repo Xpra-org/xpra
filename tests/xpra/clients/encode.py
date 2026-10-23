@@ -47,8 +47,7 @@ def main(args):
 
         def recv() -> tuple:
             while True:
-                packet = parse()
-                if packet:
+                if packet := parse():
                     return packet
                 data = sock.recv(1024)
                 if not data:

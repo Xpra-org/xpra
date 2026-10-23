@@ -558,7 +558,7 @@ work inline on the parse thread instead (the previous behaviour).
 
 </div>
 
-`tests/unittests/unit/seccomp_test.py` checks the policies themselves.
+`tests/unittests/unit/seccomp/` checks the policies themselves.
 To find out what a real session needs, the integration tests can be run with every
 xpra server, client and command they start sandboxed:
 

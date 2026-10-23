@@ -74,8 +74,7 @@ class FakeGLib:
 
     def fire_all(self) -> None:
         for timer in tuple(self.timers):
-            armed = self.timers.pop(timer, None)
-            if armed:
+            if armed := self.timers.pop(timer, None):
                 _delay, callback, args = armed
                 callback(*args)
 

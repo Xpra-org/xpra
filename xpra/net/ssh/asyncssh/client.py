@@ -21,7 +21,7 @@ from xpra.net.ssh.asyncssh.connection import SSHStreamConnection
 from xpra.platform.info import get_username
 from xpra.platform.paths import get_ssh_known_hosts_files
 from xpra.scripts.args import shellquote
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.scripts.pinentry import confirm, input_pass
 from xpra.util.env import envbool, envint
 from xpra.util.io import umask_context
@@ -294,8 +294,7 @@ def configbool(config: dict[str, Any], key: str, default_value=True) -> bool:
 
 
 def get_auth_modes(config: dict[str, Any]) -> list[str]:
-    auth = config.get("auth")
-    if auth:
+    if auth := config.get("auth"):
         return [mode.strip().lower() for mode in str(auth).split("+") if mode.strip()]
     return [mode.strip().lower() for mode in AUTH_MODES if mode.strip()]
 
@@ -339,8 +338,7 @@ def build_connection_options(display_desc: dict[str, Any], prefix: str = "") -> 
     }
     if client_factory:
         options["client_factory"] = client_factory
-    config_files = get_ssh_config_files()
-    if config_files:
+    if config_files := get_ssh_config_files():
         options["config"] = config_files
     if username:
         options["username"] = username
@@ -456,8 +454,7 @@ def build_remote_command(xpra_cmd: str, proxy_command: Sequence[str],
 
 
 async def open_xpra_stream(connection, display_desc: dict[str, Any]):
-    remote_port = int(display_desc.get("remote_port", 0))
-    if remote_port:
+    if remote_port := int(display_desc.get("remote_port", 0)):
         reader, writer = await connection.open_connection("localhost", remote_port, window=WINDOW_SIZE)
         return reader, writer, None
     remote_xpra = display_desc["remote_xpra"]
@@ -480,8 +477,7 @@ async def open_xpra_stream(connection, display_desc: dict[str, Any]):
     async def log_stderr() -> None:
         try:
             while line := await process.stderr.readline():
-                text = line.rstrip(b"\r\n").decode("utf8", "replace")
-                if text:
+                if text := line.rstrip(b"\r\n").decode("utf8", "replace"):
                     log.info(" SSH: %r", text)
         except Exception:
             log("asyncssh stderr reader", exc_info=True)

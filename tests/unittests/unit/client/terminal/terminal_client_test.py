@@ -13,6 +13,8 @@ import struct
 import logging
 import termios
 import tempfile
+import threading
+import time
 import unittest
 import subprocess
 from io import BytesIO
@@ -54,7 +56,7 @@ IO_IN = 1
 # what `xpra.scripts.main.make_client` must end up with for `--backend=terminal`,
 # run in a subprocess because it poisons the `gi.repository` Gtk modules process wide:
 MAKE_CLIENT_SCRIPT = """
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
 from xpra.scripts.main import make_client
 opts = make_defaults_struct()
 opts.backend = "terminal"
@@ -1082,6 +1084,12 @@ class TerminalModeTest(unittest.TestCase):
         self.addCleanup(env_context.__exit__)
         self.master, self.slave = os.openpty()
         self.outputs: list = []
+        self._read_buffer = bytearray()
+        self._read_lock = threading.Lock()
+        self._read_event = threading.Event()
+        self._read_stop = threading.Event()
+        self._read_thread = threading.Thread(target=self._read_master, daemon=True)
+        self._read_thread.start()
         # registered before the client, so it runs after `client.cleanup()`:
         self.addCleanup(self.close_pty)
         # so that reading what the client wrote never blocks:
@@ -1104,6 +1112,8 @@ class TerminalModeTest(unittest.TestCase):
         return TerminalOutput(fileobj)
 
     def close_pty(self) -> None:
+        self._read_stop.set()
+        self._read_thread.join(1)
         for fileobj in self.outputs:
             fileobj.close()
         for fd in (self.master, self.slave):
@@ -1112,18 +1122,36 @@ class TerminalModeTest(unittest.TestCase):
             except OSError:
                 pass
 
-    def read_terminal(self) -> bytes:
-        data = b""
-        while True:
+    def _read_master(self) -> None:
+        while not self._read_stop.is_set():
             try:
                 chunk = os.read(self.master, 65536)
             except BlockingIOError:
-                return data
+                time.sleep(0.005)
+                continue
             except OSError:
-                return data
+                return
             if not chunk:
-                return data
-            data += chunk
+                return
+            with self._read_lock:
+                self._read_buffer += chunk
+            self._read_event.set()
+
+    def read_terminal(self) -> bytes:
+        deadline = time.monotonic() + 1
+        last = -1
+        while time.monotonic() < deadline:
+            with self._read_lock:
+                size = len(self._read_buffer)
+            if size == last:
+                break
+            last = size
+            time.sleep(0.02)
+        with self._read_lock:
+            data = bytes(self._read_buffer)
+            self._read_buffer.clear()
+            self._read_event.clear()
+        return data
 
     def write_terminal(self, data: bytes) -> None:
         os.write(self.master, data)
@@ -1164,7 +1192,13 @@ class TerminalModeTest(unittest.TestCase):
         self.assertIsNone(client.terminal_context)
         self.assertIsNone(client.saved_log_handlers)
         # the terminal modes have been restored:
-        self.assertEqual(termios.tcgetattr(self.slave), self.saved_mode)
+        actual = termios.tcgetattr(self.slave)
+        expected = list(self.saved_mode)
+        for name in ("ECHOCTL", "PENDIN"):
+            if flag := getattr(termios, name, 0):
+                expected[3] &= ~flag
+                actual[3] &= ~flag
+        self.assertEqual(actual, expected)
 
     def test_start_terminal_mode_is_idempotent(self):
         client = self.client

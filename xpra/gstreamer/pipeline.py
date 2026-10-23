@@ -37,8 +37,7 @@ def warning_messages(warnings: Sequence) -> list[str]:
                 if l.startswith("\n"):
                     l = l.strip("\n") + " "
                     for lp in l.split(". "):
-                        lp = lp.strip()
-                        if lp:
+                        if lp := lp.strip():
                             messages.append(" %s" % lp)
                 else:
                     messages.append("                  %s" % l.strip("\n\r"))

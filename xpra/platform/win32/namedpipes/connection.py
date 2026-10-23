@@ -125,8 +125,7 @@ class NamedPipeConnection(Connection):
         if code == errno.WSAEWOULDBLOCK:  # @UndefinedVariable pylint: disable=no-member
             return "WSAEWOULDBLOCK"
         # convert those to a connection closed:
-        closed = CONNECTION_CLOSED_ERRORS.get(code)
-        if closed:
+        if CONNECTION_CLOSED_ERRORS.get(code):
             raise ConnectionClosedException(e) from None
         return False
 
@@ -136,8 +135,7 @@ class NamedPipeConnection(Connection):
         except Exception as e:
             code = GetLastError()
             log("untilConcludes(%s, ) exception: %s, error code=%s", fn, e, code, exc_info=True)
-            closed = CONNECTION_CLOSED_ERRORS.get(code)
-            if closed:
+            if CONNECTION_CLOSED_ERRORS.get(code):
                 return None
             raise OSError("%s: %s" % (e, code)) from None
 

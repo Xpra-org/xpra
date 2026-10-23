@@ -136,8 +136,7 @@ class Registry(SessionRegistry):
         if hints:
             return None
         for group in groups.values():
-            session = self._session_from_group(group, authenticator, self._selected_display(group))
-            if session:
+            if session := self._session_from_group(group, authenticator, self._selected_display(group)):
                 return session
         return None
 
@@ -176,8 +175,7 @@ class Registry(SessionRegistry):
         if client_caps is None:
             return hints
         # new-style: a top-level "session" sub-dict from `XpraClientBase.get_session_caps`
-        session = client_caps.dictget("session")
-        if session:
+        if session := client_caps.dictget("session"):
             sd = typedict(session)
             for key in ("name", "uuid", "display"):
                 add(sd.strget(key))

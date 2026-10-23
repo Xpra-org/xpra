@@ -92,8 +92,7 @@ def may_handle_key_event(keyboard, scan_code: int, vk_code: int, pressed: bool) 
     }.items():
         if GetKeyState(vk):
             for modkeyname in modkeynames:
-                mod = modifier_keys.get(modkeyname)
-                if mod:
+                if mod := modifier_keys.get(modkeyname):
                     modifiers.append(mod)
                     break
     grablog("vk_code=%s, scan_code=%s, keyname=%s, keycode=%s, modifiers=%s",
@@ -165,8 +164,7 @@ class Win32KeyboardHookWatcher:
                     key_event_type = ALL_KEY_EVENTS.get(wparam)
                     if self.keyboard.grabbed and focused and trap and key_event_type:
                         pressed = wparam in KEY_DOWN_EVENTS
-                        key_event = may_handle_key_event(kh.keyboard, scan_code, vk_code, pressed)
-                        if key_event:
+                        if key_event := may_handle_key_event(kh.keyboard, scan_code, vk_code, pressed):
                             grablog("grab key, sending %s", key_event)
                             kh.send_key_action(focused, key_event)
                             # swallow this event:

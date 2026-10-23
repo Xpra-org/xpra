@@ -16,12 +16,18 @@ from xpra.os_util import POSIX, getuid, getgid
 from xpra.net.constants import SOCKET_TYPES
 from xpra.util.str_fn import is_valid_hostname, csv
 from xpra.scripts.parsing import REVERSE_MODE_ALIAS
-from xpra.scripts.config import (
-    OPTION_TYPES, NON_COMMAND_LINE_OPTIONS, CLIENT_ONLY_OPTIONS,
-    START_COMMAND_OPTIONS, BIND_OPTIONS, OPTIONS_ADDED_SINCE_V5, OPTIONS_COMPAT_NAMES,
-    InitException,
-    fixup_options, make_defaults_struct,
+from xpra.config.types import (
+    OPTION_TYPES,
+    NON_COMMAND_LINE_OPTIONS,
+    CLIENT_ONLY_OPTIONS,
+    START_COMMAND_OPTIONS,
+    BIND_OPTIONS,
+    OPTIONS_ADDED_SINCE_V5,
+    OPTIONS_COMPAT_NAMES,
 )
+from xpra.config import InitException
+from xpra.config.fixup import fixup_options
+from xpra.config.defaults import make_defaults_struct
 
 
 def shellquote(s: str) -> str:

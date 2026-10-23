@@ -70,8 +70,7 @@ class LoggingClient(StubClientSubsystem):
         if self.remote_logging.lower() in ("send", "both", "yes", "true", "on") and receive:
             # check for debug:
             from xpra.log import is_debug_enabled
-            conflict = tuple(v for v in ("network", "crypto", "websocket", "quic") if is_debug_enabled(v))
-            if conflict:
+            if conflict := tuple(v for v in ("network", "crypto", "websocket", "quic") if is_debug_enabled(v)):
                 log.warn("Warning: cannot enable remote logging")
                 log.warn(" because debug logging is enabled for: %s", csv(conflict))
                 return True

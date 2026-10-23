@@ -100,8 +100,7 @@ class Handler(AuthenticationHandler):
                     key_handle_filenames.append(os.path.join(d, f"fido2-keyhandle{hostinfo}.hex"))
             for filename in key_handle_filenames:
                 p = osexpand(filename)
-                data = load_binary_file(p)
-                if data:
+                if data := load_binary_file(p):
                     key_handle_str = data.rstrip(b" \n\r").decode("latin1")
                     log("key_handle_str(%s)=%s", p, key_handle_str)
                     break

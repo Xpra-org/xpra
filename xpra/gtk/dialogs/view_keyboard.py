@@ -60,8 +60,7 @@ class KeyboardStateInfoWindow:
         keymap.connect("keys-changed", self.keymap_changed)
         self.show_keymap("current keymap")
 
-        icon = get_icon_pixbuf("keyboard.png")
-        if icon:
+        if icon := get_icon_pixbuf("keyboard.png"):
             self.window.set_icon(icon)
 
     def init_constants(self) -> None:

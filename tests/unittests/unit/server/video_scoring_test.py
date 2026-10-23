@@ -5,15 +5,29 @@
 # later version. See the file COPYING for details.
 
 import unittest
+import pickle
 
+from xpra.codecs.constants import VideoSpec
 from xpra.util.objects import AdHocStruct
 from xpra.server.window.video_scoring import (
     get_quality_score, get_speed_score,
-    get_pipeline_score, get_encoder_dimensions,
+    get_pipeline_score, get_encoder_dimensions, PipelineScore,
 )
 
 
 class TestVideoScoring(unittest.TestCase):
+
+    def test_pipeline_score_preserves_tuple_contract(self):
+        spec = VideoSpec(codec_class=AdHocStruct, codec_type="test")
+        result = get_pipeline_score("RGB", None, spec, 640, 480, (1, 1), 50, 0, 50, 0, None, None, 0, 20)
+        self.assertIsInstance(result, PipelineScore)
+        self.assertIsInstance(result, tuple)
+        expected = (result.score, (1, 1), None, 0, 0, None, "RGB", (1, 1), 640, 480, spec)
+        self.assertEqual(result, expected)
+        self.assertEqual(len(result), 11)
+        self.assertIs(result.encoder_spec, result[-1])
+        self.assertEqual((result.csc_width, result.csc_height, result.enc_width, result.enc_height), (0, 0, 640, 480))
+        self.assertEqual(tuple(pickle.loads(pickle.dumps(result))), expected)
 
     def test_quality_score(self):
         csc_spec = AdHocStruct()

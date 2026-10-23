@@ -34,6 +34,12 @@ class ControlHandler(StubSubsystem):
 
     def setup(self) -> None:
         self.add_default_control_commands()
+        # Proxy worker processes use only add_default_control_commands():
+        # these commands operate on a full server and its client sources.
+        self.args_control("readonly", "set global readonly state", min_args=1, max_args=1,
+                          validation=[parse_boolean_value])
+        self.args_control("client-readonly", "set readonly state for client(s)", min_args=2, max_args=2,
+                          validation=[str, parse_boolean_value])
 
     def add_default_control_commands(self) -> None:
         # for things that can take longer:
@@ -97,6 +103,32 @@ class ControlHandler(StubSubsystem):
     #########################################
     # Control Commands
     #########################################
+
+    def control_command_readonly(self, onoff) -> str:
+        log("control_command_readonly(%s)", onoff)
+        self.server.readonly = onoff
+        self.setting_changed("readonly", onoff)
+        msg = f"server readonly: {onoff}"
+        log.info(msg)
+        return msg
+
+    def control_command_client_readonly(self, client_uuids: str, onoff) -> str:
+        log("control_command_client_readonly(%s, %s)", client_uuids, onoff)
+        sources = self.get_sources_by_type()
+        if client_uuids != "*":
+            uuids = tuple(x.strip() for x in client_uuids.split(",") if x.strip())
+            sources = tuple(ss for ss in sources if getattr(ss, "uuid", "") in uuids)
+        count = 0
+        for ss in sources:
+            if not hasattr(ss, "set_control_readonly"):
+                continue
+            ss.set_control_readonly(onoff)
+            ss.send_setting_change("readonly", ss.server_enforced_readonly())
+            self.server.emit("setting-changed", "readonly", ss.effective_readonly(), ss)
+            count += 1
+        msg = f"set client readonly={onoff} for {count} client(s)"
+        log.info(msg)
+        return msg
 
     def control_command_client(self, command: str, *args: PacketElement) -> str:
         try:

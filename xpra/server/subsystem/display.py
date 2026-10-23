@@ -59,8 +59,7 @@ def set_window_refresh_rate(ss, rrate: int):
         ss.global_batch_config.match_vrefresh(rrate)
     if hasattr(ss, "all_window_sources"):
         for window_source in ss.all_window_sources():
-            bc = window_source.batch_config
-            if bc:
+            if bc := window_source.batch_config:
                 bc.match_vrefresh(rrate)
 
 
@@ -217,8 +216,7 @@ class DisplayManager(StubSubsystem):
     def get_display_caps(self, source) -> dict[str, Any]:
         caps: dict[str, Any] = {}
         # with `sharing=combine`, each client only sees its own area of the virtual display:
-        area_size = getattr(source, "get_display_area_size", lambda: ())()
-        if area_size:
+        if area_size := getattr(source, "get_display_area_size", lambda: ())():
             sharinglog("get_display_caps(%s) using display area size %s", source, area_size)
         if root_size := (area_size or self.get_display_size()):
             caps |= {
@@ -365,8 +363,7 @@ class DisplayManager(StubSubsystem):
         # policy below - the client only cooks the value it applies to its own display:
         if ss.monitors:
             for mdef in ss.monitors.values():
-                v = mdef.get("refresh-rate", 0)
-                if v:
+                if v := mdef.get("refresh-rate", 0):
                     vrefresh.append(v)
         if not vrefresh and getattr(ss, "vrefresh", 0) > 0:
             vrefresh.append(ss.vrefresh * 1000)
@@ -446,13 +443,11 @@ class DisplayManager(StubSubsystem):
         if dpi_changed:
             # the display may not have been resized, or not resized to the exact size requested:
             self.apply_dpi()
-        desktop_names = attrs.strtupleget("desktop-names")
-        if desktop_names:
+        if desktop_names := attrs.strtupleget("desktop-names"):
             ss.set_desktops(attrs.intget("desktops", len(desktop_names)), desktop_names)
             self.server.calculate_desktops()
         # soft dependency on ICC:
-        iccdata = attrs.dictget("icc")
-        if iccdata:
+        if iccdata := attrs.dictget("icc"):
             if icc := self.get_subsystem("icc"):
                 icc.process_icc(ss, iccdata)
         self.apply_refresh_rate(ss)
@@ -513,8 +508,7 @@ class DisplayManager(StubSubsystem):
             ox, oy = ss.get_display_origin()
             for client_workarea in ss.get_client_workareas():
                 wx, wy, ww, wh = client_workarea
-                common = screen.intersection_rect(rectangle(wx + ox, wy + oy, ww, wh))
-                if common:
+                if common := screen.intersection_rect(rectangle(wx + ox, wy + oy, ww, wh)):
                     workareas.append((common.x, common.y, common.width, common.height))
         log("calculate_workareas(%s, %s) workareas=%s", maxw, maxh, workareas)
         return workareas

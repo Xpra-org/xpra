@@ -64,8 +64,7 @@ class ShadowCursorManager(CursorManager):
                     diff.append(fields[i])
             cursorlog("poll_cursor() attributes changed: %s", diff)
         if SAVE_CURSORS and curr:
-            ci = curr[0]
-            if ci:
+            if ci := curr[0]:
                 w = ci[2]
                 h = ci[3]
                 serial = ci[6]

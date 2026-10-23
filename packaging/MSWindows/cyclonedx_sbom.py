@@ -7,15 +7,24 @@
 
 import sys
 from xpra.build_info import packages
+from msys2_sbom import (
+    load_msys2_references, get_upstream_version, get_identifiers,
+    PACKAGE_VERSION_PROPERTY, EXTRA_CPE_PROPERTY,
+)
 
+from packageurl import PackageURL
 from packageurl.contrib import url2purl
 
 from cyclonedx.builder.this import this_component as cdx_lib_component
 from cyclonedx.factory.license import LicenseFactory
+from cyclonedx.model import Property
 from cyclonedx.model.bom import Bom
 from cyclonedx.model.component import Component, ComponentType
 from cyclonedx.output.json import JsonV1Dot5
 
+
+# add the CPE and PURL references maintained by MSYS2, so that vulnerability scanners can match our components:
+msys2_references = load_msys2_references()
 
 lc_factory = LicenseFactory()
 
@@ -38,18 +47,30 @@ components = {}
 # resolve full mingw64 prefixed package names to short version:
 names = {}
 dependencies = {}
+unidentified = []
 for package_name, info in packages.items():
     license_names = []
     licenses = [
         lc_factory.make_from_string(license_name)
         for license_name in [info.get("Licenses", "")]
+        if license_name
     ]
+    package_version = info.get("Version", "")
+    # scanners compare the component version with the upstream versions affected by a vulnerability,
+    # and "48.0.1-1" would be a post-release of "48.0.1" for PyPI packages:
+    version = get_upstream_version(package_version)
+    cpes, purls = get_identifiers(msys2_references, package_name, version)
+    if msys2_references and version and not (cpes or purls):
+        unidentified.append(package_name)
+    properties = [Property(name=PACKAGE_VERSION_PROPERTY, value=package_version)] if package_version != version else []
     component = Component(
         type=ComponentType.LIBRARY,
         name=package_name,
-        version=info.get("Version", ""),
+        version=version,
         licenses=licenses,
-        purl=url2purl.get_purl(info.get("URL", "")),
+        purl=PackageURL.from_string(purls[0]) if purls else url2purl.get_purl(info.get("URL", "")),
+        cpe=cpes[0] if cpes else None,
+        properties=properties + [Property(name=EXTRA_CPE_PROPERTY, value=cpe) for cpe in cpes[1:]],
     )
     bom.components.add(component)
     components[package_name] = component
@@ -114,11 +135,14 @@ for package_name, deps in dependencies.items():
     if dep_components:
         bom.register_dependency(component, dep_components)
 
-json = JsonV1Dot5(bom).output_as_string(indent=2)
+if unidentified:
+    sys.stderr.write(f"Warning: no CPE or PURL found for {len(unidentified)} packages: {', '.join(unidentified)}\n")
+
+bom_json = JsonV1Dot5(bom).output_as_string(indent=2)
 
 if len(sys.argv) > 1:
     filename = sys.argv[1]
     with open(filename, "w") as f:
-        f.write(json)
+        f.write(bom_json)
 else:
-    print(json)
+    print(bom_json)

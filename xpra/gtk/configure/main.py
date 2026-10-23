@@ -8,7 +8,7 @@ from importlib import import_module
 
 from xpra.platform import program_context
 from xpra.util.config import get_user_config_file
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.exit_codes import ExitCode, ExitValue
 
 

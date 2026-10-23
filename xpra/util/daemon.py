@@ -8,7 +8,7 @@ import sys
 
 from xpra.os_util import POSIX
 from xpra.platform.dotxpra import norm_makefilename
-from xpra.scripts.config import InitException
+from xpra.config import InitException
 from xpra.util.env import shellsub
 from xpra.util.io import get_util_logger
 

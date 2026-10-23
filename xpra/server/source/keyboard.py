@@ -65,11 +65,9 @@ class KeyboardConnection(StubClientConnection):
         caps: dict[str, Any] = {}
         # expose the "modifier_client_keycodes" defined in the X11 server keyboard config object,
         # so clients can figure out which modifiers map to which keys:
-        mck = getattr(self.keyboard_config, "modifier_client_keycodes", None)
-        if mck:
+        if mck := getattr(self.keyboard_config, "modifier_client_keycodes", None):
             caps["modifier_keycodes"] = mck
-        modifiers = getattr(self.keyboard_config, "keynames_for_mod", {})
-        if modifiers:
+        if modifiers := getattr(self.keyboard_config, "keynames_for_mod", {}):
             caps["modifiers-keynames"] = modifiers
         return caps
 

@@ -7,12 +7,43 @@
 import sys
 import time
 import shutil
+import shlex
 import os.path
+import importlib.util
 import subprocess
 from argparse import ArgumentParser
 
 TEST_COVERAGE = os.environ.get("XPRA_TEST_COVERAGE", "1") == "1"
-COVERAGE = os.environ.get("COVERAGE", shutil.which("coverage") or shutil.which("python3-coverage"))
+
+
+def get_coverage_launcher() -> list[str]:
+    if envvalue := os.environ.get("COVERAGE", ""):
+        return shlex.split(envvalue)
+    # the `coverage` scripts print a deprecation banner on stdout with newer coverage.py versions,
+    # which would end up in the output of every command we run through it:
+    if importlib.util.find_spec("coverage"):
+        return [sys.executable, "-m", "coverage"]
+    found = shutil.which("coverage") or shutil.which("python3-coverage")
+    return [found] if found else []
+
+
+COVERAGE = get_coverage_launcher()
+
+# tests whose name starts with one of these prefixes are only run if the module they test was built:
+REQUIRED_MODULES = {
+    "unit.wayland.": "xpra.wayland.server",
+    "unit.seccomp.": "xpra.seccomp",
+    "unit.uinput_test": "xpra.uinput",
+    "unit.codecs.pipewire_capture_test": "xpra.codecs.pipewire",
+    "unit.server.portal_shadow_capture_test": "xpra.codecs.pipewire",
+}
+
+
+def has_module(module: str) -> bool:
+    try:
+        return importlib.util.find_spec(module) is not None
+    except ModuleNotFoundError:
+        return False
 
 
 def getargs() -> ArgumentParser:
@@ -24,29 +55,36 @@ def getargs() -> ArgumentParser:
     return P
 
 
+def get_coverage_command(unittests_dir: str) -> list[str]:
+    import xpra
+    source_dir = os.path.dirname(os.path.dirname(unittests_dir))
+    os.environ["XPRA_SOURCE_DIR"] = source_dir
+    xpra_mod_dir = os.environ.get("XPRA_MODULE_DIR", "") or os.path.dirname(xpra.__file__)
+    data_file = os.path.abspath(os.environ.get("COVERAGE_FILE", os.path.join(unittests_dir, ".coverage")))
+    rcfile = os.path.abspath(os.environ.get("COVERAGE_RCFILE", os.path.join(unittests_dir, ".coveragerc")))
+    # Children may change directory, and their temporary cwd may be removed before `coverage combine`.
+    return COVERAGE + ["run", "--parallel-mode", f"--data-file={data_file}", f"--rcfile={rcfile}",
+                       f"--include={xpra_mod_dir}/*,{source_dir}/xpra/*"]
+
+
 def main(args) -> int:
+    unit_dir = os.path.abspath(os.path.dirname(__file__))
+    unittests_dir = os.path.dirname(unit_dir)
     if TEST_COVERAGE:
-        # pylint: disable=import-outside-toplevel
-        #only include xpra in the report,
-        #and to do that, we need the path to the module (weird):
-        import xpra
-        xpra_mod_dir = os.environ.get("XPRA_MODULE_DIR", "") or os.path.dirname(xpra.__file__)
-        run_cmd = [COVERAGE, "run", "--parallel-mode", "--include=%s/*" % xpra_mod_dir]
+        run_cmd = get_coverage_command(unittests_dir)
         #make sure we continue to use coverage to run sub-commands:
         xpra_cmd = os.environ.get("XPRA_COMMAND", shutil.which("xpra")) or "xpra"
         if xpra_cmd.find("coverage") < 0:
-            os.environ["XPRA_COMMAND"] = " ".join(run_cmd + [xpra_cmd])
+            os.environ["XPRA_COMMAND"] = shlex.join(run_cmd + shlex.split(xpra_cmd))
     else:
         run_cmd = [os.environ.get("PYTHON", "python3")]
 
     #ie: unit_dir = "/path/to/Xpra/trunk/src/unittests/unit"
-    unit_dir = os.path.abspath(os.path.dirname(__file__))
     paths = args.test or [unit_dir]
     skip_fail = set(args.skip_fail)
     skip_slow = set(args.skip_slow)
 
     #ie: unittests_dir = "/path/to/Xpra/trunk/src/unittests"
-    unittests_dir = os.path.dirname(unit_dir)
     sys.path.append(unittests_dir)
 
     #now look for tests to run
@@ -93,6 +131,11 @@ def main(args) -> int:
             write(f"skipped slow test as requested: {p}")
             skipped.append(name)
             return 0
+        for prefix, module in REQUIRED_MODULES.items():
+            if name.startswith(prefix) and not has_module(module):
+                write(f"skipped test, {module!r} is not available: {p}")
+                skipped.append(name)
+                return 0
         write(f"running {name} from {tfile}\n")
         cmd = run_cmd + [p]
         T0 = time.monotonic()
@@ -126,8 +169,7 @@ def main(args) -> int:
             if os.path.isfile(p) and p.endswith("test.py"):
                 v = run_file(p)
             elif os.path.isdir(p):
-                fp = os.path.join(d, p)
-                v = add_recursive(fp)
+                v = add_recursive(p)
             if v != 0:
                 ret = v
         return ret

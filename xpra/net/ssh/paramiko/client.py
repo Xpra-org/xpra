@@ -301,8 +301,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
 
     def get_keyfiles(config_name="key") -> list[str]:
         keyfiles: list[str] = safeget("identityfile", [])
-        keyfile = paramiko_config.get(config_name, "")
-        if keyfile:
+        if keyfile := paramiko_config.get(config_name, ""):
             keyfiles.insert(0, keyfile)
         if not configbool("identitiesonly", False):
             keyfiles += get_default_keyfiles()
@@ -319,8 +318,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
             port = int(port)
         except (TypeError, ValueError):
             raise InitExit(ExitCode.SSH_FAILURE, f"invalid ssh port specified: {port!r}") from None
-        proxycommand = host_config.get("proxycommand", "")
-        if proxycommand:
+        if proxycommand := host_config.get("proxycommand", ""):
             log(f"found proxycommand={proxycommand!r} for host {host!r}")
             from paramiko import ProxyCommand
             sock = ProxyCommand(proxycommand)
@@ -431,8 +429,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
             "key": display_desc.get("proxy_key", ""),
         }])
 
-    jumphosts = parse_proxyjump(configvalue("proxyjump", "") or "")
-    if jumphosts:
+    if jumphosts := parse_proxyjump(configvalue("proxyjump", "") or ""):
         log(f"found ProxyJump jump hosts for {host!r}: {jumphosts}")
         return connect_via_jumphosts(jumphosts)
 
@@ -512,8 +509,7 @@ def get_auth_modes(paramiko_config, host_config: dict, password: str) -> list[st
     def configbool(key: str, default_value=True) -> bool:
         return str_to_bool(configvalue(key), default_value)
 
-    auth_str = configvalue("auth")
-    if auth_str:
+    if auth_str := configvalue("auth"):
         return auth_str.split("+")
     auth = []
     identitiesonly = configbool("identitiesonly", False)
@@ -770,8 +766,7 @@ class AuthenticationManager:
         host = self.host
         if port != 22:
             host = f"[{host}]:{port}"  # this is how the host is stored in known_hosts for non-standard ports
-        err = verify_hostkey(host, host_key, verifyhostkeydns, stricthostkeychecking, addkey)
-        if err:
+        if err := verify_hostkey(host, host_key, verifyhostkeydns, stricthostkeychecking, addkey):
             self.transport.close()
             raise InitExit(ExitCode.SSH_KEY_FAILURE, err)
 
@@ -1073,8 +1068,7 @@ class ChannelRunFactory:
             return ""
         lines = r[0]
         for line in lines:
-            qmatch = re.search(r"InstallPath\s*\w*\s*(.*)", line)
-            if qmatch:
+            if qmatch := re.search(r"InstallPath\s*\w*\s*(.*)", line):
                 return qmatch.group(1).rstrip("\n\r")
         return ""
 

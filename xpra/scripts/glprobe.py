@@ -16,7 +16,7 @@ from importlib.util import find_spec
 from typing import Any, NoReturn
 
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.scripts.config import XpraConfig
+from xpra.config.types import XpraConfig
 from xpra.os_util import POSIX, OSX, is_admin, force_quit
 from xpra.util.env import OSEnvContext, get_exec_env, envint, envbool
 from xpra.util.io import stderr_print, use_tty
@@ -138,8 +138,7 @@ def run_glprobe(opts: XpraConfig, show=False) -> ExitValue:
         force_quit(128 - signum)
 
     for name in ("ABRT", "BUS", "FPE", "HUP", "ILL", "INT", "PIPE", "SEGV", "TERM"):
-        value = getattr(signal, f"SIG{name}", 0)
-        if value:
+        if value := getattr(signal, f"SIG{name}", 0):
             signal.signal(value, signal_handler)
 
     props = do_run_glcheck(opts, show)
@@ -290,8 +289,7 @@ def probe_opengl(opts: XpraConfig) -> tuple[str, str]:
         opts.opengl = f"probe-{probe}"
     log(f"probe_opengl(..) opengl={opts.opengl!r}")
     r = probe  # ie: "success"
-    renderer = glinfo.strget("renderer")
-    if renderer:
+    if renderer := glinfo.strget("renderer"):
         # ie: "AMD Radeon RX 570 Series (polaris10, LLVM 14.0.0, DRM 3.47, 5.19.10-200.fc36.x86_64)"
         parts = renderer.split("(")
         if len(parts) > 1 and len(parts[0]) > 10:

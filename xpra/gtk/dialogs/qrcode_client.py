@@ -126,8 +126,7 @@ class QRCodeWindow(Gtk.Window):
         self.set_title(title)
         self.set_size_request(512 * n, 580)
         self.set_position(Gtk.WindowPosition.CENTER)
-        icon = get_icon_pixbuf("xpra.png")
-        if icon:
+        if icon := get_icon_pixbuf("xpra.png"):
             self.set_icon(icon)
         hbox = Gtk.HBox(homogeneous=True, spacing=20)
         for uri in uris:
@@ -175,7 +174,7 @@ def do_main(opts):
 
 
 def main(_args):
-    from xpra.scripts.config import make_defaults_struct
+    from xpra.config.defaults import make_defaults_struct
     defaults = make_defaults_struct()
     return do_main(defaults)
 

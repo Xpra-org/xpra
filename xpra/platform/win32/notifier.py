@@ -21,8 +21,7 @@ if GTK_NOTIFIER:
 
 def do_notify(*args):
     # if GLib is loaded, use it to ensure we use the UI thread:
-    GLib = sys.modules.get("gi.repository.GLib", None)
-    if GLib:
+    if GLib := sys.modules.get("gi.repository.GLib", None):
         GLib.idle_add(notify, *args)
     else:
         notify(*args)

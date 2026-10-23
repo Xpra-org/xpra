@@ -66,8 +66,7 @@ def get_layout_defs() -> dict[str, int]:
                     kbid = (hkl & mask) >> bitshift
                     if kbid in WIN32_LAYOUTS:
                         break
-                win32_layout = WIN32_LAYOUTS.get(kbid)
-                if win32_layout:
+                if win32_layout := WIN32_LAYOUTS.get(kbid):
                     code, _, _, _, layout, variants = win32_layout
                     log("found keyboard layout '%s' / %#x with variants=%s, code '%s' for kbid=%#x",
                         layout, kbid, variants, code, hkl)
@@ -395,8 +394,7 @@ class Keyboard(KeyboardBase):
         layout_code = 0
 
         descr = None
-        ival = get_layout_name_value()
-        if ival:
+        if ival := get_layout_name_value():
             sublang = (ival & 0xfc00) >> 10
             log("sublang(%#x)=%#x", ival, sublang)
             for mask in LAYOUT_MASKS:
@@ -460,12 +458,10 @@ class Keyboard(KeyboardBase):
         if not klid:
             return {}
         native: dict[str, Any] = {"platform": "win32", "code": klid}
-        name = get_layout_text(klid) or WIN32_KEYBOARDS.get(klid, ("", "", ""))[2]
-        if name:
+        if name := get_layout_text(klid) or WIN32_KEYBOARDS.get(klid, ("", "", ""))[2]:
             native["name"] = name
         try:
-            hkl = get_window_layout()
-            if hkl:
+            if hkl := get_window_layout():
                 hkl_info = get_hkl_info(hkl)
                 for k in ("hkl", "language", "locale", "ime"):
                     if k in hkl_info:

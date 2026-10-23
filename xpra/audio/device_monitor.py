@@ -40,8 +40,7 @@ class AudioDeviceMonitor:
         return False
 
     def stop(self) -> bool:
-        monitor = self.monitor
-        if monitor:
+        if monitor := self.monitor:
             try:
                 result = monitor.stop()
             except Exception:

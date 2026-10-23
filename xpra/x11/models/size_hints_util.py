@@ -36,8 +36,7 @@ def sanitize_size_hints(size_hints: dict[str, Any]) -> None:
                 log.warn("Warning: clearing invalid aspect hint value for %s: %s", attr, v)
                 del size_hints[attr]
     for attr in ("minimum-aspect-ratio", "maximum-aspect-ratio"):
-        v = size_hints.get(attr)
-        if v:
+        if v := size_hints.get(attr):
             if v[1] == 0:
                 f = None
             else:
@@ -68,16 +67,14 @@ def sanitize_size_hints(size_hints: dict[str, Any]) -> None:
 def sanitize_min_max(size_hints: dict[str, Any]) -> None:
     # if max-size is smaller than min-size (bogus), clamp it..
     clamped = False
-    mins = size_hints.get("minimum-size")
-    if mins:
+    if mins := size_hints.get("minimum-size"):
         minw, minh = mins
         if minw <= 0 and minh <= 0:
             # doesn't do anything
             size_hints.pop("minimum-size")
             mins = None
             clamped = True
-    maxs = size_hints.get("maximum-size")
-    if maxs:
+    if maxs := size_hints.get("maximum-size"):
         maxw, maxh = maxs
         if maxw <= 0 and maxh <= 0:
             # doesn't make sense!

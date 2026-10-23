@@ -79,8 +79,7 @@ class ConfigureGUI(ConfigureGUIWindow):
         self.add_widget(grid)
 
         for i, (icon_name, subsystem, description, module) in enumerate(FEATURES):
-            icon = get_icon_pixbuf(icon_name)
-            if icon:
+            if icon := get_icon_pixbuf(icon_name):
                 image = Gtk.Image.new_from_pixbuf(icon)
                 add_style_class(image, "configure-icon")
                 grid.attach(image, 0, i, 1, 1)

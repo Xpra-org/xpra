@@ -159,8 +159,7 @@ class WebcamServer(StubSubsystem):
     # Webcam-client connection attach (regular client flow)
 
     def add_new_client(self, ss, c: typedict) -> None:
-        wc = c.dictget("webcam-client")
-        if wc:
+        if wc := c.dictget("webcam-client"):
             device_id = typedict(wc).intget("device", -1)
             self.add_new_webcam_client(ss, device_id)
 

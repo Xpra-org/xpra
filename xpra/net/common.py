@@ -15,7 +15,7 @@ from xpra.net.compression import Compressed, Compressible, LargeStructure
 from xpra.common import noop, SizedBuffer
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import LINUX, WIN32, OSX
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.util.parsing import str_to_bool
 from xpra.util.system import platform_name
 from xpra.util.str_fn import std, csv, single_line, truncate
@@ -34,6 +34,9 @@ BACKWARDS_COMPATIBLE = envbool("XPRA_BACKWARDS_COMPATIBLE", True)
 MIN_PROTOCOL_VERSION: tuple[int, ...] = (7, 0) if BACKWARDS_COMPATIBLE else (8, 0)
 # peers that don't expose their minimum protocol version are treated as:
 DEFAULT_PROTOCOL_VERSION: tuple[int, ...] = (7, 0)
+# the remote codec clients and the encoder server only use the modern packet type names,
+# so they cannot talk to v7 peers, even when we are `BACKWARDS_COMPATIBLE`:
+REMOTE_CODEC_PROTOCOL_VERSION: tuple[int, ...] = (8, 0)
 FULL_INFO: int = envint("XPRA_FULL_INFO", 1)
 assert FULL_INFO >= 0
 
@@ -538,8 +541,7 @@ def open_html_url(html: str = "open", mode: str = "tcp", bind: str = "127.0.0.1"
     if html.lower() not in ("open", "connect"):
         # is a command?
         from xpra.util.io import which
-        open_cmd = which(html)
-        if open_cmd:
+        if open_cmd := which(html):
             log.info(f"opening html5 client using {html!r} at URL {url!r}")
             exec_open(open_cmd, url)
             return

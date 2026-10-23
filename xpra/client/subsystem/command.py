@@ -20,7 +20,7 @@ from xpra.log import Logger
 log = Logger("exec")
 
 MAX_MENU_CATEGORIES = envint("XPRA_MAX_MENU_CATEGORIES", 16)
-MAX_MENU_ENTRIES = envint("XPRA_MAX_MENU_ENTRIES", 32)
+MAX_MENU_ENTRIES = envint("XPRA_MAX_MENU_ENTRIES", 100)
 MAX_MENU_NAME = 64
 
 
@@ -49,8 +49,9 @@ def validated_menu(menu) -> tuple[dict, bool]:
         if isinstance(entries, dict):
             entries = sorted((menu_name(name), cp) for name, cp in entries.items() if isinstance(cp, dict))
             if len(entries) > MAX_MENU_ENTRIES:
-                log.warn("Warning: the server's start menu category %r has too many entries", category)
-                log.warn(" only using the first %i out of %i", MAX_MENU_ENTRIES, len(entries))
+                if first_time(f"start-menu-category-{category}"):
+                    log.warn("Warning: the server's start menu category %r has too many entries", category)
+                    log.warn(" only using the first %i out of %i", MAX_MENU_ENTRIES, len(entries))
                 entries = entries[:MAX_MENU_ENTRIES]
                 trimmed = True
             props = dict(props) | {"Entries": dict(entries)}
@@ -82,7 +83,7 @@ class CommandClient(StubClientSubsystem):
         self.start_new_commands = str_to_bool(opts.start_new_commands)
         if self.start_new_commands and (opts.start or opts.start_child):
             from xpra.scripts.args import strip_defaults_start_child
-            from xpra.scripts.config import make_defaults_struct
+            from xpra.config.defaults import make_defaults_struct
             defaults = make_defaults_struct()
             self.request_start = strip_defaults_start_child(opts.start, defaults.start)
             self.request_start_child = strip_defaults_start_child(opts.start_child, defaults.start_child)

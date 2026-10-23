@@ -254,8 +254,7 @@ class WindowServer(StubSubsystem):
         pass
 
     def send_initial_data(self, ss) -> None:
-        iswc = isinstance(ss, WindowsConnection)
-        if iswc:
+        if isinstance(ss, WindowsConnection):
             windows_clients = self.window_sources(ss)
             self.send_initial_windows(ss, len(windows_clients) > 0)
 
@@ -389,15 +388,13 @@ class WindowServer(StubSubsystem):
             x, y, w, h = geometry
             # adjust if the transient-for window is not mapped in the same place by the client we send to:
             if "transient-for" in window.get_property_names():
-                transient_for = window.get_property("transient-for")
-                if transient_for:
+                if transient_for := window.get_property("transient-for"):
                     parent = self._id_to_window.get(transient_for)
                     parent_ws = ss.get_window_source(transient_for)
                     pos = self.get_window_position(parent)
                     geomlog("transient-for=%#x : %s, ws=%s, pos=%s", transient_for, parent, parent_ws, pos)
                     if pos and parent and parent_ws:
-                        mapped_at = parent_ws.mapped_at
-                        if mapped_at:
+                        if mapped_at := parent_ws.mapped_at:
                             wx, wy = pos
                             cx, cy = mapped_at[:2]
                             if wx != cx or wy != cy:

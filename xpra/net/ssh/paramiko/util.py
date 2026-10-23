@@ -85,8 +85,7 @@ def get_key_fingerprints(keyfiles: Sequence[str]) -> list[str]:
     failed: dict[str, str] = {}
     for keyfile in keyfiles:
         try:
-            fingerprint = get_sha256_fingerprint_for_keyfile(keyfile)
-            if fingerprint:
+            if fingerprint := get_sha256_fingerprint_for_keyfile(keyfile):
                 allowed_key_fingerprints.append(fingerprint)
         except (ValueError, OSError) as e:
             if os.path.exists(keyfile):
@@ -152,8 +151,7 @@ def load_private_key(keyfile_path: str):
             return key
         except PasswordRequiredException as e:
             log(f"{keyfile_path!r} keyfile requires a passphrase: {e}")
-            key = load_encrypted_private_key(pkey_class, keyfile_path)
-            if key:
+            if key := load_encrypted_private_key(pkey_class, keyfile_path):
                 log(f"{keyfile_path!r} as {pkey_classname}: {keymd5(key)}")
                 log.info(f"loaded {pkey_classname} private key from {keyfile_path!r}")
                 return key
@@ -187,8 +185,7 @@ class SSHSocketConnection(SocketConnection):
                 if LOG_EOF and self.active:
                     log.info("SSH EOF on stderr of %s", chan.get_name())
                 break
-            s = v.rstrip(b"\n\r").decode()
-            if s:
+            if s := v.rstrip(b"\n\r").decode():
                 log.info(" SSH: %r", s)
 
     def peek(self, n) -> bytes:
@@ -201,8 +198,7 @@ class SSHSocketConnection(SocketConnection):
 
     def _channel_recv_into(self, buf) -> int:
         data = self._socket.recv(len(buf))
-        n = len(data)
-        if n:
+        if n := len(data):
             buf[:n] = data
         return n
 

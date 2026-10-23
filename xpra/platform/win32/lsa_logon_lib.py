@@ -285,8 +285,7 @@ class ContiguousUnicode(Structure):
         wchar_size = sizeof(WCHAR)
         s = getattr(self, '_%s' % name)
         length = s.Length // wchar_size
-        buf = s.Buffer
-        if buf:
+        if buf := s.Buffer:
             return buf[:length]
         return None
 
@@ -344,8 +343,7 @@ class ContiguousUnicode(Structure):
         delta = addressof(x) - address
         for n in cls._string_names_:
             ustr = getattr(x, '_%s' % n)
-            addr = c_void_p.from_buffer(ustr.Buffer)
-            if addr:
+            if addr := c_void_p.from_buffer(ustr.Buffer):
                 addr.value += delta
         return x
 

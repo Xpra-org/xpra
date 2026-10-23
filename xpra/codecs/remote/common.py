@@ -11,7 +11,7 @@ from collections.abc import Sequence
 
 from xpra.util.env import envint
 from xpra.util.objects import typedict, AtomicInteger
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.client.base.adapter import RemoteServerAdapter
 from xpra.codecs.constants import VideoSpec, TransientCodecException
 from xpra.log import Logger

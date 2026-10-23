@@ -66,8 +66,7 @@ def load_keymap(filename: str) -> dict[str, Any]:
     if isinstance(x11_keycodes, dict):
         keymap["x11_keycodes"] = {int(keycode): keysyms for keycode, keysyms in x11_keycodes.items()}
     # and the keycode definitions are tuples, not lists:
-    keycodes = keymap.get("keycodes")
-    if keycodes:
+    if keycodes := keymap.get("keycodes"):
         keymap["keycodes"] = tuple(tuple(kdef) for kdef in keycodes)
     return keymap
 

@@ -483,8 +483,7 @@ class PulseaudioServer(StubSubsystem):
                     log.error(" '%s'", self.private_dir)
                     log.estr(e)
                     try:
-                        files = os.listdir(path)
-                        if files:
+                        if files := os.listdir(path):
                             log.error(f" found %i files in {path!r}:", len(files))
                             for f in files:
                                 log.error(f" - {f!r}")

@@ -22,7 +22,7 @@
 
 Name:           %{python3}-torch-vision
 Version:        0.29.1
-Release:        1
+Release:        2
 URL:            https://github.com/pytorch/vision
 Summary:        The torchvision package consists of popular datasets, model architectures, and common image transformations for computer vision
 License:        BSD-3
@@ -40,17 +40,14 @@ BuildRequires:  pkgconfig(libpng)
 BuildRequires:  pkgconfig(libturbojpeg)
 BuildRequires:  %{python3}-setuptools
 BuildRequires:  %{python3}-torch
+Requires:       %{python3}
+Requires:       %{python3}-torch
+Requires:       libwebp
+Requires:       libpng
+Requires:       turbojpeg
 
 %description
 The torchvision package consists of popular datasets, model architectures, and common image transformations for computer vision
-
-
-Requires:       %{python3}
-Requires:       %{python3}-torch
-Requires:   	libwebp
-Requires:   	libpng
-Requires:   	turbojpeg
-
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
@@ -75,6 +72,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/torchvision-*%{version}-*egg-info
 
 %changelog
+* Wed Oct 21 2026 Antoine Martin <antoine@xpra.org> - 0.29.1-2
+- the package dependencies were part of the description
+
 * Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 0.29.1-1
 - new upstream release
 

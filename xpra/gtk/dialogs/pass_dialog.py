@@ -36,8 +36,7 @@ class PasswordInputDialogWindow(Gtk.Dialog):
         add_close_accel(self, self.cancel)
         self.password = ""
 
-        icon_pixbuf = get_icon_pixbuf(icon)
-        if icon_pixbuf:
+        if icon_pixbuf := get_icon_pixbuf(icon):
             self.set_icon(icon_pixbuf)
 
         vbox = self.get_content_area()
@@ -130,8 +129,7 @@ def show_pass_dialog(argv):
     register_os_signals(app.signal_quit, "Password Dialog")
     gui_ready()
     app.show()
-    p = app.run()
-    if p:
+    if p := app.run():
         sys.stdout.write(p)
         sys.stdout.flush()
         return 0

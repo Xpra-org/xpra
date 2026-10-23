@@ -223,7 +223,7 @@ def add_codec_version(name: str, top_module, version: str = "get_version()", alt
         for fieldname in fieldnames:
             f = fieldname
             if f.endswith("()"):
-                f = version[:-2]
+                f = fieldname[:-2]
             module = import_module(top_module)
             if not hasattr(module, f):
                 continue

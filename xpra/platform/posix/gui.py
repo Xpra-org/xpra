@@ -409,8 +409,7 @@ def remove_window_hooks(window):
 def get_info() -> dict[str, Any]:
     from xpra.platform.gui import get_info_base  # pylint: disable=import-outside-toplevel
     i = get_info_base()
-    s = _get_xsettings()
-    if s:
+    if s := _get_xsettings():
         serial, values = s
         xi = {"serial": serial}
         for _, name, value, _ in values:

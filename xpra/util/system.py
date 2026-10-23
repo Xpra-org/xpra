@@ -121,6 +121,7 @@ def get_platform_icon_name(platform: str) -> str:
         "darwin": "osx",
         "linux": "linux",
         "freebsd": "freebsd",
+        "openbsd": "openbsd",
     }.items():
         if platform.startswith(p):
             return i
@@ -199,6 +200,28 @@ def is_Debian() -> bool:
 
 def is_DEB() -> bool:
     return is_Debian() or is_Ubuntu() or is_LinuxMint()
+
+
+def is_DEB_Xdummy_safe() -> bool:
+    """
+    Older Debian and Ubuntu releases could interfere with other X11 sessions when using Xdummy,
+    see ticket #2834. This is assumed to be fixed from Debian trixie and Ubuntu resolute onwards.
+    Derivatives (ie: Linux Mint) are not detected and keep using Xvfb.
+    """
+    version_id = get_distribution_version_id()
+    if is_Ubuntu():
+        min_version = (26, 4)
+    elif is_Debian():
+        if not version_id:
+            # testing and sid do not set `VERSION_ID`:
+            return True
+        min_version = (13, )
+    else:
+        return False
+    try:
+        return tuple(int(x) for x in version_id.split(".")) >= min_version
+    except ValueError:
+        return False
 
 
 def is_RPM() -> bool:
@@ -294,8 +317,7 @@ def is_WSL() -> bool:
     if not POSIX:
         return False
     for f in ("/proc/sys/kernel/osrelease", "/proc/version"):
-        r = load_binary_file(f)
-        if r:
+        if r := load_binary_file(f):
             return r.find(b"Microsoft") >= 0
     return False
 
@@ -306,6 +328,7 @@ def get_generic_os_name() -> str:
         "darwin": "MacOS",
         "win": "MS Windows",
         "freebsd": "FreeBSD",
+        "openbsd": "OpenBSD",
     }.items():
         if sys.platform.startswith(k):
             return v
@@ -441,6 +464,7 @@ def platform_name(sys_platform=sys.platform, release="") -> str:
         "linux.*": "Linux",
         "darwin": "Mac OS X",
         "freebsd.*": "FreeBSD",
+        "openbsd.*": "OpenBSD",
         "os2": "OS/2",
     }
 
@@ -535,14 +559,12 @@ def get_run_info(subcommand="server") -> Sequence[str]:
     run_info.append(" running with pid %s%s" % (os.getpid(), osinfo))
     from xpra.net.common import FULL_INFO
     vinfo = ".".join(str(x) for x in sys.version_info[:FULL_INFO + 1])
-    arch = pinfo.get("machine", "")
-    if arch:
+    if arch := pinfo.get("machine", ""):
         vinfo += f" {arch}"
     if is_free_threaded():
         vinfo += " free-threaded"
     run_info.append(f" {sys.implementation.name} {vinfo}")
-    mem_bytes = get_mem_size()
-    if mem_bytes:
+    if mem_bytes := get_mem_size():
         LOW_MEM_LIMIT = 1024 * 1024 * 1024
         if mem_bytes and mem_bytes <= LOW_MEM_LIMIT:
             log.warn("Warning: only %iMB total system memory available", mem_bytes // (1024 ** 2))

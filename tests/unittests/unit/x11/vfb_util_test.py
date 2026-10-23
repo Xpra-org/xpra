@@ -152,10 +152,38 @@ class TestVfbUtil(unittest.TestCase):
 
     def test_patch_uinput_config_last_raises(self):
         from xpra.x11.vfb_util import patch_uinput
-        from xpra.scripts.config import InitException
+        from xpra.config import InitException
         cmd = ["/usr/bin/Xorg", "-config"]
         with self.assertRaises(InitException):
             patch_uinput(cmd)
+
+    def test_check_xorg_config(self):
+        from xpra.x11.vfb_util import check_xorg_config
+        from xpra.config import InitException
+        with tempfile.NamedTemporaryFile(suffix=".conf") as f:
+            for cmd in (["Xvfb"], ["Xorg", "-config"], ["Xorg", "-config", "xorg.conf"], ["Xorg", "-config", f.name]):
+                check_xorg_config(cmd)
+        with self.assertRaises(InitException):
+            check_xorg_config(["Xorg", "-config", f.name])
+
+    def test_start_xvfb_checks_expanded_xorg_config(self):
+        # the default command uses "${XORG_CONFIG_PREFIX}", which must be expanded before checking:
+        from xpra.x11.vfb_util import start_Xvfb
+        from xpra.config import InitException
+        cmd = ["Xorg", "-config", "${XORG_CONFIG_PREFIX}/etc/xpra/xorg.conf"]
+        with tempfile.TemporaryDirectory() as prefix:
+            xorg_conf = os.path.join(prefix, "etc", "xpra", "xorg.conf")
+            with patch.dict(os.environ, {"XORG_CONFIG_PREFIX": prefix}), \
+                    patch("xpra.x11.vfb_util.get_xvfb_env", return_value={}), \
+                    patch("xpra.x11.vfb_util.Popen", return_value=Mock(pid=1234)) as popen:
+                with self.assertRaises(InitException):
+                    start_Xvfb(cmd, (), 0, 0, ":42", "/tmp", os.getuid(), os.getgid(), "")
+                popen.assert_not_called()
+                os.makedirs(os.path.dirname(xorg_conf))
+                with open(xorg_conf, "w", encoding="utf8"):
+                    pass
+                start_Xvfb(cmd, (), 0, 0, ":42", "/tmp", os.getuid(), os.getgid(), "")
+                self.assertIn(xorg_conf, popen.call_args[0][0])
 
     def test_start_xvfb_prepares_uinput_before_launch(self):
         from xpra.x11.vfb_util import start_Xvfb
@@ -212,7 +240,7 @@ class TestVfbUtil(unittest.TestCase):
 
     def test_patch_depth_last_raises(self):
         from xpra.x11.vfb_util import patch_pixel_depth
-        from xpra.scripts.config import InitException
+        from xpra.config import InitException
         cmd = ["/usr/bin/Xvfb", "-depth"]
         with self.assertRaises(InitException):
             patch_pixel_depth(cmd, 24)
@@ -229,7 +257,7 @@ class TestVfbUtil(unittest.TestCase):
 
     def test_get_logfile_arg_last_raises(self):
         from xpra.x11.vfb_util import get_logfile_arg
-        from xpra.scripts.config import InitException
+        from xpra.config import InitException
         with self.assertRaises(InitException):
             get_logfile_arg(["/usr/bin/Xorg", "-logfile"])
 

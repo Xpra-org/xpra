@@ -11,7 +11,7 @@ from typing import Any, NoReturn
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.server.common import get_sources_by_type
 from xpra.server.source.display import DisplayConnection
 from xpra.util.env import envbool
@@ -142,7 +142,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
                 with xsync:
                     wm_name = f"{get_wm_name()!r}"
                 err = f"{wm_name} is already active on display {display}"
-                from xpra.scripts.config import InitException  # pylint: disable=import-outside-toplevel
+                from xpra.config import InitException
                 raise InitException(err) from None
             except XError as e:
                 x11_errors.append(e)
@@ -159,8 +159,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
         window_sub._wm.connect("x11-focus-in-event", window_sub._x11_focus_in_event)
 
     def do_cleanup(self) -> None:
-        window_sub = self.subsystems.get("window")
-        if window_sub:
+        if window_sub := self.subsystems.get("window"):
             window_sub.cancel_all_configure_damage()
             if window_sub._wm:
                 window_sub._wm.cleanup()
@@ -190,8 +189,7 @@ class SeamlessServer(GObject.GObject, ServerBase):
     def get_server_features(self, server_source=None) -> dict[str, Any]:
         capabilities = super().get_server_features(server_source)
         capabilities.setdefault("pointer", {})["grabs"] = True
-        window_sub = self.subsystems.get("window")
-        if window_sub:
+        if self.subsystems.get("window"):
             # only import the window subsystem if it is enabled:
             # `--windows=no` blocks the module (it is set to `None` in `sys.modules`),
             # and there are no window capabilities to advertise anyway

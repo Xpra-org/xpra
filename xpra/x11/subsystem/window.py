@@ -187,8 +187,7 @@ class SeamlessWindowServer(WindowServer):
                 geometry = monitors[index].get("geometry")
                 if geometry and len(geometry) == 4:
                     # the screen may be smaller than the client's monitors:
-                    area = screen.intersection(*geometry)
-                    if area:
+                    if area := screen.intersection(*geometry):
                         areas.append(area)
         return areas or [screen]
 
@@ -310,11 +309,9 @@ class SeamlessWindowServer(WindowServer):
         window.managed_connect("unmanaged", self._lost_window)
         window.managed_connect("grab", self._window_grab)
         window.managed_connect("ungrab", self._window_ungrab)
-        bell = self.get_subsystem("bell")
-        if bell:
+        if bell := self.get_subsystem("bell"):
             window.managed_connect("bell", bell._bell_signaled)
-        pointer = self.get_subsystem("pointer")
-        if pointer:
+        if pointer := self.get_subsystem("pointer"):
             window.managed_connect("motion", pointer._motion_signaled)
         window.managed_connect("x11-property-changed", self._x11_property_changed)
         if not window.is_tray():
@@ -346,8 +343,7 @@ class SeamlessWindowServer(WindowServer):
         self._send_new_window_packet(window)
         if PRE_MAP:
             # pre-map the window if any client will be showing it
-            window_sources = self.get_sources_by_type(WindowsConnection)
-            if window_sources:
+            if window_sources := self.get_sources_by_type(WindowsConnection):
                 log("pre-mapping window %#x for %s at %s", wid, window_sources, geometry)
                 geometry = clamp_window(*geometry)[1]
                 self.client_configure_window(window, geometry)
@@ -893,8 +889,7 @@ class SeamlessWindowServer(WindowServer):
             self.server.set_ui_driver(ss)
         is_ui_driver = self.server.ui_driver == ss.uuid
 
-        properties = config.dictget("properties")
-        if properties:
+        if properties := config.dictget("properties"):
             metadatalog("window client properties updates: %s", properties)
             self._set_client_properties(proto, wid, window, properties)
 
@@ -904,8 +899,7 @@ class SeamlessWindowServer(WindowServer):
             sharinglog("ignoring configure of hidden window %#x from %s", wid, ss)
             config = typedict({k: v for k, v in config.items() if k in ("pointer", "modifiers")})
 
-        geometry = config.inttupleget("geometry")
-        if geometry:
+        if geometry := config.inttupleget("geometry"):
             geomlog("window %i at %s for %s", wid, geometry, proto)
             self._window_mapped_at(proto, wid, window, geometry)
 
@@ -1087,6 +1081,5 @@ class SeamlessWindowServer(WindowServer):
 
     def refresh_window_area(self, window, x: int, y: int, width: int, height: int, options=None) -> None:
         super().refresh_window_area(window, x, y, width, height, options)
-        root_overlay = self.get_subsystem("root-overlay")
-        if root_overlay:
+        if root_overlay := self.get_subsystem("root-overlay"):
             root_overlay.update_window(window, x, y, width, height)

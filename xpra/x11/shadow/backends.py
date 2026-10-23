@@ -24,8 +24,7 @@ def setup_nvfbc_capture():
         return None
     try:
         from xpra.codecs.nvidia.nvfbc.capture import get_capture_module, get_capture_instance
-        nvfbc = get_capture_module()
-        if nvfbc:
+        if nvfbc := get_capture_module():
             nvfbc.init_nvfbc_library()
         from xpra.gtk.util import get_default_root_window
         root = get_default_root_window()

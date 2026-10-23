@@ -192,8 +192,7 @@ def find_background_path(fmt="png") -> str:
     paths = get_desktop_background_paths()
     path = ""
     for p in paths:
-        matches = glob.glob(p)
-        if matches:
+        if matches := glob.glob(p):
             path = matches[0]
             break
     session_dir = os.environ.get("XPRA_SESSION_DIR", "")
@@ -548,8 +547,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
     def send_error(self, code, message=None, explain=None) -> None:
         custom = os.path.join(self.web_root, f"{code}.html")
         if os.path.exists(custom) and os.path.isfile(custom):
-            body = load_binary_file(custom)
-            if body:
+            if body := load_binary_file(custom):
                 self.send_response(code, message)
                 self.send_header('Connection', 'close')
                 self.send_header("Content-Type", self.error_content_type)
@@ -613,8 +611,7 @@ class HTTPRequestHandler(BaseHTTPRequestHandler):
         try:
             accept_encoding = self.headers.get("accept-encoding", "").split(",")
             code, extra_headers, content = load_path(accept_encoding, path)
-            lm = extra_headers.get("Last-Modified")
-            if lm:
+            if lm := extra_headers.get("Last-Modified"):
                 extra_headers["Last-Modified"] = self.date_time_string(lm)
             self.send_response(code)
             self.extra_headers.update(extra_headers)

@@ -11,7 +11,7 @@ import unittest
 from unittest.mock import patch
 
 from xpra.platform.posix import security
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
 
 
 class FakeCall:
@@ -60,6 +60,27 @@ class PosixSecurityTest(unittest.TestCase):
             security.enforce_landlock("strict", (directory,), read_paths=required, required_paths=required,
                                       allow_socket_creation=False)
         restrict.assert_not_called()
+
+    def test_gpu_devices(self):
+        # the GPU devices are only accessible with the `gpu` flag:
+        paths = security.get_landlock_device_paths()
+        gpu_paths = security.get_landlock_gpu_device_paths()
+        for path in ("/dev/dri", "/dev/accel", "/dev/nvidiactl", "/dev/nvidia-uvm"):
+            self.assertIn(path, gpu_paths)
+            self.assertNotIn(path, paths)
+        self.assertFalse(any(path.startswith("/dev/nvidia") for path in paths))
+        self.assertEqual(security.get_landlock_device_paths(True), paths + gpu_paths)
+        for path in gpu_paths:
+            # not the display or profiling devices:
+            self.assertNotIn(path, ("/dev/nvidia-modeset", "/dev/nvidia-uvm-tools", "/dev/nvidia-caps"))
+
+    def test_gpu_flag(self):
+        for gpu in (False, True):
+            with tempfile.TemporaryDirectory() as directory, \
+                 patch("xpra.platform.posix.landlock.restrict_paths", return_value=9) as restrict:
+                security.enforce_landlock("default", (directory,), allow_socket_creation=False, gpu=gpu)
+                devices = restrict.call_args.kwargs["device_paths"]
+                self.assertEqual("/dev/dri" in devices, gpu)
 
     def test_no_policy(self):
         with patch("xpra.platform.posix.landlock.restrict_paths") as restrict:

@@ -91,8 +91,7 @@ class ZeroconfMulticast:
                 if af == socket.AF_INET6 and not IPV6_LO:
                     if first_time(f"zeroconf-{host}"):
                         log.info(f"python-zeroconf: {host!r} IPv6 loopback address is not supported")
-                        mode = (text_dict or {}).get("mode")
-                        if mode:
+                        if mode := (text_dict or {}).get("mode"):
                             log.info(f" unable to publish mDNS record for {mode} connections")
                         log("try XPRA_ZEROCONF_IPV6_LOOPBACK=1 to enable it at your own risk")
                     # means that IPV6 is False and "::" is not supported
@@ -106,8 +105,7 @@ class ZeroconfMulticast:
                 def add_iface(iface: str, addresses: dict) -> None:
                     log("%r %s: %s", iface, af, addresses.get(af, {}))
                     for defs in addresses.get(af, ()):
-                        addr = defs.get("addr")
-                        if addr:
+                        if addr := defs.get("addr"):
                             add_address(addr, port, af)
 
                 log(f"interface addresses: {iaddr!r}")
@@ -166,8 +164,7 @@ class ZeroconfMulticast:
         regname += "." + st
 
         # all the addresses for the same name are advertised by a single record:
-        existing = self.services_by_name.get(regname)
-        if existing:
+        if existing := self.services_by_name.get(regname):
             if address not in existing.kwargs["addresses"]:
                 existing.kwargs["addresses"].append(address)
             if host not in existing.hosts:

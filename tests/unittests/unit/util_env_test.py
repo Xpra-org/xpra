@@ -5,9 +5,15 @@
 # later version. See the file COPYING for details.
 
 import os
+import sys
+import tempfile
+from pathlib import Path
+from threading import Lock
 import warnings
 import unittest
+from unittest.mock import Mock, patch
 
+from xpra.util import env
 from xpra.util.env import (
     OSEnvContext,
     hasenv, unsetenv,
@@ -284,6 +290,127 @@ class TestSavedEnv(unittest.TestCase):
         env1["MUTATED"] = "yes"
         env2 = get_saved_env()
         self.assertNotIn("MUTATED", env2)
+
+
+class TestEnvironmentRestoration(unittest.TestCase):
+
+    def test_script_wrapper_values_are_restored_and_removed(self):
+        values = {"_PYTHON_WRAPPER_VARS": "PATH NEW ABSENT", "PATH": "bundle", "_PATH": "/bin",
+                  "NEW": "bundle", "_NEW": "", "_ABSENT": "", "KEEP": "yes"}
+        self.assertIs(env.restore_script_env(values), values)
+        self.assertEqual(values, {"PATH": "/bin", "KEEP": "yes"})
+        self.assertEqual(env.restore_script_env(values), values)
+
+    def test_filter_patterns_and_unencodable_values(self):
+        values = {"KEEP_ONE": "yes", "KEEP_TWO": "no", "DROP": "discard", "KEEP_BAD": "\udcff"}
+        self.assertEqual(env.filter_env(values, remove=("KEEP_TWO",), keep=("KEEP_",)),
+                         {"KEEP_BAD": "\udcff", "KEEP_ONE": "yes", "XPRA_SKIP_UI": "1", "XPRA_FORCE_COLOR_LOG": "1"})
+
+    def test_failed_shell_substitution(self):
+        value = Mock()
+        value.__str__ = Mock(side_effect=ValueError("cannot format"))
+        with self.assertRaisesRegex(ValueError, "failed to substitute"):
+            shellsub("$VALUE", {"VALUE": value})
+
+    def test_warning_options_are_respected(self):
+        with patch.object(sys, "warnoptions", ["default"]):
+            context = SilenceWarningsContext(DeprecationWarning)
+            self.assertEqual(context.categories, ())
+            with context:
+                pass
+
+
+class TestSourceEnvironment(unittest.TestCase):
+
+    def test_shell_and_binary_output_decoding(self):
+        cases = (
+            (b"#!/bin/sh\n", b'{"EXPORTED":"value","":"discard"}', {"EXPORTED": "value", "STDERR_FLAG": "ok"}),
+            (b"\x7fELF\0", b"EXPORTED=value\n=discard\n", {"EXPORTED": "value", "STDERR_FLAG": "ok"}),
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            filename = Path(directory) / "source-env"
+            for header, output, expected in cases:
+                filename.write_bytes(header)
+                proc = Mock(returncode=0)
+                proc.communicate.return_value = output, b"STDERR_FLAG=ok\n"
+                with self.subTest(header=header), patch.object(env, "Popen", return_value=proc) as popen, \
+                        patch("xpra.platform.paths.get_python_exec_command", return_value=["python3", "-c"]), \
+                        patch("xpra.util.io.which", return_value="/bin/bash"):
+                    self.assertEqual(env.env_from_sourcing(str(filename), include_unexported_variables=True), expected)
+                    command = popen.call_args.args[0]
+                    if header.startswith(b"#!"):
+                        self.assertEqual(command[:2], ["/bin/bash", "-c"])
+                        self.assertIn(f"set -a && . {filename}", command[2])
+                    else:
+                        self.assertEqual(command, [str(filename)])
+
+    def test_sourcing_failures_and_malformed_output(self):
+        with tempfile.TemporaryDirectory() as directory, patch("xpra.log.Logger"):
+            filename = Path(directory) / "source-env"
+            with patch.object(env, "Popen") as popen:
+                self.assertEqual(env.env_from_sourcing(str(filename)), {})
+                popen.assert_not_called()
+            filename.write_text("#!/bin/sh\n")
+            for output in (b"not json", b"\xff"):
+                proc = Mock(returncode=1)
+                proc.communicate.return_value = output, b"\xff"
+                with self.subTest(output=output), patch.object(env, "Popen", return_value=proc):
+                    self.assertEqual(env.env_from_sourcing(str(filename)), {})
+            with patch.object(env, "Popen", side_effect=OSError("cannot start")):
+                self.assertEqual(env.env_from_sourcing(str(filename)), {})
+            proc = Mock(returncode=1)
+            proc.communicate.side_effect = OSError("cannot read")
+            with patch.object(env, "Popen", return_value=proc):
+                self.assertEqual(env.env_from_sourcing(str(filename)), {})
+            with patch("xpra.util.io.which", return_value=""), patch("builtins.open", side_effect=OSError("unreadable")), \
+                    patch.object(env, "Popen", side_effect=OSError("missing")):
+                self.assertEqual(env.env_from_sourcing("missing-command"), {})
+
+    def test_source_list_skips_disabled_entries_and_continues_after_failure(self):
+        with patch.object(env, "env_from_sourcing", side_effect=[ValueError("bad"), {"OK": "yes"}]) as source, \
+                patch("xpra.log.Logger"):
+            self.assertEqual(env.source_env(["", "no", "bad", "good"]), {"OK": "yes"})
+            self.assertEqual([call.args[0] for call in source.call_args_list], ["bad", "good"])
+
+
+class TestNumpyImportContext(unittest.TestCase):
+
+    def test_lock_is_released_after_an_exception(self):
+        lock = Mock()
+        with patch.object(env, "numpy_import_lock", lock), patch("time.sleep"), \
+                patch.dict(os.environ, {"XPRA_NUMPY_LOCK_SLEEP": "0"}):
+            with self.assertRaisesRegex(ValueError, "callback failed"):
+                with env.NumpyImportContext("test"):
+                    self.assertEqual(os.environ["XPRA_NUMPY_IMPORT"], "1")
+                    raise ValueError("callback failed")
+            self.assertNotIn("XPRA_NUMPY_IMPORT", os.environ)
+            lock.acquire.assert_called_once_with(blocking=False)
+            lock.release.assert_called_once_with()
+
+    def test_contended_nonblocking_lock_fails_without_releasing_the_owner(self):
+        lock = Lock()
+        lock.acquire()
+        self.addCleanup(lock.release)
+        with patch.object(env, "numpy_import_lock", lock), patch("xpra.log.Logger"):
+            with self.assertRaisesRegex(RuntimeError, "already held"):
+                with env.NumpyImportContext("owner"):
+                    self.fail("the import context must not run")
+        self.assertTrue(lock.locked())
+
+    def test_subsystem_override_and_module_restoration(self):
+        saved = object()
+        with patch.dict(sys.modules, {"numpy": saved}), patch.dict(os.environ, {"XPRA_NUMPY": "0", "XPRA_OPENGL_NUMPY": "0"}):
+            with env.numpy_import_context("OpenGL: renderer"):
+                self.assertIsNone(sys.modules["numpy"])
+            self.assertIs(sys.modules["numpy"], saved)
+            os.environ["XPRA_OPENGL_NUMPY"] = "1"
+            self.assertIsInstance(env.numpy_import_context("OpenGL: renderer"), env.NumpyImportContext)
+        name = "_xpra_test_absent_module"
+        with patch.dict(sys.modules):
+            sys.modules.pop(name, None)
+            with env.nomodule_context(name):
+                self.assertIsNone(sys.modules[name])
+            self.assertNotIn(name, sys.modules)
 
 
 def main():

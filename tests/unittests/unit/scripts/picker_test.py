@@ -17,7 +17,7 @@ from xpra.scripts.picker import (
     find_session_by_name,
 )
 from xpra.net.constants import SocketState
-from xpra.scripts.config import InitException, InitExit
+from xpra.config import InitException, InitExit
 from xpra.exit_codes import ExitCode
 
 

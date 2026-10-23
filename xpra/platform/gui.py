@@ -119,8 +119,7 @@ def get_icc_info() -> dict[str, Any]:
 
 
 def default_get_icc_info() -> dict[str, Any]:
-    ENV_ICC_DATA = os.environ.get("XPRA_ICC_DATA", "")
-    if ENV_ICC_DATA:
+    if ENV_ICC_DATA := os.environ.get("XPRA_ICC_DATA", ""):
         return {
             "source": "environment-override",
             "data": binascii.unhexlify(ENV_ICC_DATA),
@@ -140,8 +139,7 @@ def get_pillow_icc_info() -> dict[str, Any]:
     try:
         INTENT_STR: dict[Any, str] = {}
         for x in ("PERCEPTUAL", "RELATIVE_COLORIMETRIC", "SATURATION", "ABSOLUTE_COLORIMETRIC"):
-            intent = getattr(ImageCms, "Intent", None)
-            if intent:
+            if intent := getattr(ImageCms, "Intent", None):
                 v = getattr(intent, x, None)
             else:
                 v = getattr(ImageCms, "INTENT_%s" % x, None)

@@ -16,6 +16,63 @@ XDISPLAY=":10"
 APP_NETWORK="${APP_NETWORK:-0}"
 # the clipboard is disabled unless a direction is specified: `to-server`, `to-client` or `both`:
 CLIPBOARD="${CLIPBOARD:-none}"
+# video encoder acceleration:
+# * `none`: only the CPU encoders in the 'xpra' container
+# * `encoder`: use an xpra encoder server running on the host, see `../encoder`
+# * `gpu`: give the 'xpra' container access to the GPU devices, see `../gpu`
+ACCEL="${ACCEL:-none}"
+# with `ACCEL=encoder`, the video encoders used by the host encoder server, ie: `nvenc`:
+ENCODERS="${ENCODERS:-all}"
+# with `ACCEL=gpu`, the devices to give to the 'xpra' container: `auto`, `nvidia` or `dri`:
+GPU="${GPU:-auto}"
+case "${ACCEL}" in
+  none|encoder|gpu) ;;
+  *) echo "invalid ACCEL value '${ACCEL}', use 'none', 'encoder' or 'gpu'" >&2; exit 1;;
+esac
+# the DRI render nodes, except the ones from the NVIDIA driver:
+# VA-API cannot use them, NVENC requires the NVIDIA devices and libraries instead (`GPU=nvidia`)
+RENDER_NODES=()
+for device in /dev/dri/renderD*; do
+  [ -e "${device}" ] || continue
+  driver=$(readlink -f "/sys/class/drm/$(basename "${device}")/device/driver")
+  if [ "$(basename "${driver}")" != "nvidia" ]; then
+    RENDER_NODES+=("${device}")
+  fi
+done
+NVIDIA_CDI_HELP="install the NVIDIA Container Toolkit and run:
+ sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml"
+if [ "${ACCEL}" == "gpu" ]; then
+  if [ "${GPU}" == "auto" ]; then
+    if ls /etc/cdi/*nvidia* /var/run/cdi/*nvidia* &> /dev/null; then
+      GPU="nvidia"
+    elif [ "${#RENDER_NODES[@]}" -gt 0 ]; then
+      GPU="dri"
+    elif [ -e /dev/nvidiactl ]; then
+      echo "no NVIDIA CDI specification found, ${NVIDIA_CDI_HELP}" >&2
+      exit 1
+    else
+      echo "no GPU found, use 'GPU=nvidia' or 'GPU=dri'" >&2
+      exit 1
+    fi
+  fi
+  case "${GPU}" in
+    nvidia)
+      # the driver libraries must match the kernel module,
+      # the NVIDIA Container Toolkit's CDI specification injects the host's libraries and devices:
+      if ! ls /etc/cdi/*nvidia* /var/run/cdi/*nvidia* &> /dev/null; then
+        echo "no NVIDIA CDI specification found, ${NVIDIA_CDI_HELP}" >&2
+        exit 1
+      fi
+      ;;
+    dri)
+      if [ "${#RENDER_NODES[@]}" -eq 0 ]; then
+        echo "no DRI render nodes found, except for NVIDIA GPUs: use 'GPU=nvidia'" >&2
+        exit 1
+      fi
+      ;;
+    *) echo "invalid GPU value '${GPU}', use 'auto', 'nvidia' or 'dri'" >&2; exit 1;;
+  esac
+fi
 
 # ensure that the images we need exist,
 # the 'xvfb' and 'xpra' images are the ones used by the 'split' pod:
@@ -26,6 +83,14 @@ if ! podman image inspect --format '{{.Config.Env}}' xvfb 2> /dev/null | grep -q
 fi
 if ! buildah inspect -t image xpra &> /dev/null; then
   (cd "$SPLIT_DIR" && bash ./xpra.sh)
+fi
+XPRA_IMAGE="xpra"
+if [ "${ACCEL}" == "gpu" ]; then
+  # the 'xpra' image with the GPU codecs and drivers:
+  XPRA_IMAGE="xpra-gpu"
+  if ! buildah inspect -t image xpra-gpu &> /dev/null; then
+    (cd "$(dirname "$0")/../gpu" && bash ./xpra.sh)
+  fi
 fi
 if ! buildah inspect -t image app &> /dev/null; then
   (cd "$(dirname "$0")" && bash ./app.sh)
@@ -92,6 +157,35 @@ HARDEN=(
 C1=$((RANDOM % 512))
 C2=$((512 + RANDOM % 512))
 XPRA_LABEL="--security-opt=label=level:s0:c${C1},c${C2}"
+# with `ACCEL=encoder`, the 'xpra' container shares files with the encoder server running as the current user,
+# so its uid 1000 must be the current user (`keep-id`),
+# and the 'xvfb' container must use the same mapping: the X server can only use the `XShm` segments of the same user.
+# SELinux does not allow containers to connect to a socket which belongs to an unconfined process,
+# so the encoder server runs in the `xpra_encoder_t` domain from xpra's SELinux policy, which containers can connect to.
+# Without this policy, 'xvfb' and 'xpra' are not confined by SELinux either,
+# they must use the same label to share `XShm` segments. The 'app' container is still confined.
+USERNS_ARGS=()
+ENCODER_RUNCON=()
+ENCODER_VOLUME="rw"
+if [ "${ACCEL}" == "encoder" ]; then
+  USERNS_ARGS=("--userns=keep-id:uid=1000,gid=1000")
+  if selinuxenabled &> /dev/null; then
+    if runcon -t xpra_encoder_t -l s0 xpra --version &> /dev/null; then
+      # the encoder server uses the lowest level, which the level of the containers dominates,
+      # its directory is relabelled so that they can use it, without any categories (`z`):
+      ENCODER_RUNCON=(runcon -t xpra_encoder_t -l s0)
+      ENCODER_VOLUME="rw,z"
+    else
+      echo "Warning: the 'xpra_encoder_t' SELinux domain is not available, install xpra's SELinux policy" >&2
+      echo " the 'xvfb' and 'xpra' containers will not be confined by SELinux" >&2
+      XPRA_LABEL="--security-opt=label=disable"
+    fi
+  fi
+elif [ "${ACCEL}" == "gpu" ] && [ "${GPU}" == "nvidia" ] && selinuxenabled &> /dev/null && ! getsebool container_use_devices 2> /dev/null | grep -q " on$"; then
+  # likewise, SELinux does not allow containers to use the NVIDIA devices,
+  # unless the `container_use_devices` boolean is enabled - for all the containers and all the devices:
+  XPRA_LABEL="--security-opt=label=disable"
+fi
 
 # Start the X server, with access control, without any network access or abstract socket.
 # 'RECORD' lets any client capture all the input events, but it cannot be disabled:
@@ -104,6 +198,7 @@ podman run -dt \
   --hostname xvfb \
   --network=none \
   --ipc=shareable \
+  "${USERNS_ARGS[@]}" \
   "${HARDEN[@]}" \
   --cap-add=SETUID,SETGID \
   --memory=2g \
@@ -113,6 +208,65 @@ podman run -dt \
   --env "XARGS=-nolisten local" \
   --volume "${X11_VOLUME}:/tmp/.X11-unix:rw,z" \
   xvfb
+
+# the options which give the 'xpra' container access to a video encoder accelerator:
+ACCEL_ARGS=()
+VIDEO_ARGS=()
+XPRA_LANDLOCK="strict"
+if [ "${ACCEL}" == "encoder" ]; then
+  # the encoder server runs on the host, as the current user, so it can use the GPU,
+  # the 'xpra' container only gets access to its socket and to the directory where it creates the mmap areas
+  # used for sending the pixels and receiving the compressed frames.
+  # the files are created by the 'xpra' container and opened by the encoder server,
+  # so they must belong to the same user, see `USERNS_ARGS`.
+  ENCODER_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/xpra-secure-encoder"
+  ENCODER_UNIT="xpra-secure-encoder"
+  # stop the encoder server from a previous session:
+  systemctl --user stop "${ENCODER_UNIT}" &> /dev/null || true
+  if [ -s "${ENCODER_DIR}/pid" ]; then
+    kill "$(cat "${ENCODER_DIR}/pid")" &> /dev/null || true
+  fi
+  rm -fr "${ENCODER_DIR}"
+  mkdir -m 0700 "${ENCODER_DIR}" "${ENCODER_DIR}/mmap"
+  # the encoder server only accepts connections from the current user (`auth=peercred`),
+  # it does not listen anywhere else, and it is sandboxed like the xpra server in the container:
+  ENCODER_CMD=(
+    "${ENCODER_RUNCON[@]}"
+    xpra encoder --daemon=no
+    --bind=none "--bind=${ENCODER_DIR}/socket,auth=peercred" --socket-permissions=600
+    --mdns=no --html=no --websocket-upgrade=no --ssl-upgrade=no --ssh-upgrade=no
+    "--mmap=${ENCODER_DIR}/mmap"
+    "--video-encoders=${ENCODERS}"
+    # `+gpu` gives access to the GPU devices, which the encoders need:
+    --seccomp=strict --landlock=strict+gpu
+  )
+  if ! systemd-run --user --quiet --collect --unit="${ENCODER_UNIT}" -- "${ENCODER_CMD[@]}" 2> /dev/null; then
+    # no systemd user session:
+    setsid "${ENCODER_CMD[@]}" &> "${ENCODER_DIR}/encoder.log" < /dev/null &
+    echo $! > "${ENCODER_DIR}/pid"
+  fi
+  echo "Waiting for the encoder server"
+  for _ in $(seq 300); do test -S "${ENCODER_DIR}/socket" && break; sleep 0.1; done
+  if [ ! -S "${ENCODER_DIR}/socket" ]; then
+    echo "the encoder server failed to start" >&2
+    exit 1
+  fi
+  ACCEL_ARGS=(--volume "${ENCODER_DIR}:/run/xpra-encoder:${ENCODER_VOLUME}")
+  VIDEO_ARGS=("--video-encoders=remote:uri=socket:///run/xpra-encoder/socket,mmap=/run/xpra-encoder/mmap:/run/xpra-encoder/mmap")
+elif [ "${ACCEL}" == "gpu" ]; then
+  # the GPU devices are not accessible with Landlock unless the `gpu` flag is used:
+  XPRA_LANDLOCK="strict+gpu"
+  if [ "${GPU}" == "nvidia" ]; then
+    ACCEL_ARGS=(--device nvidia.com/gpu=all)
+  else
+    # only the render nodes, not the display devices ('/dev/dri/card*'),
+    # `keep-groups` keeps the 'render' and 'video' groups of the current user, which may be needed to access them:
+    for device in "${RENDER_NODES[@]}"; do
+      ACCEL_ARGS+=(--device "${device}")
+    done
+    ACCEL_ARGS+=(--group-add keep-groups)
+  fi
+fi
 
 # Start xpra, with `--minimal=yes` to disable all the features which are not strictly required:
 # no audio, clipboard, file transfers, printing, notifications, dbus, start menu, starting commands, etc
@@ -134,8 +288,8 @@ podman run -dt \
   --user 1000:1000 \
   --ipc=container:xpra-secure-xvfb \
   --network "$PUBLIC_NET" \
-  -p ${HOST_ADDRESS}:${PORT}:${PORT}/tcp \
-  -p ${HOST_ADDRESS}:${PORT}:${PORT}/udp \
+  -p "${HOST_ADDRESS}:${PORT}:${PORT}/tcp" \
+  -p "${HOST_ADDRESS}:${PORT}:${PORT}/udp" \
   "${HARDEN[@]}" \
   --memory=2g \
   "$XPRA_LABEL" \
@@ -147,15 +301,18 @@ podman run -dt \
   --env XPRA_VFB_WAIT=30 \
   --env XPRA_POWER_EVENTS=0 \
   --volume "${X11_VOLUME}:/tmp/.X11-unix:rw,z" \
+  "${USERNS_ARGS[@]}" \
+  "${ACCEL_ARGS[@]}" \
   --entrypoint '["/usr/bin/xpra"]' \
-  xpra \
+  "${XPRA_IMAGE}" \
   seamless "${XDISPLAY}" --use-display=yes --no-daemon \
   --minimal=yes \
   "--bind-tcp=0.0.0.0:${PORT},${AUTH}" "--bind-quic=0.0.0.0:${PORT},${AUTH}" \
   --socket-dirs=/run/user/1000/xpra \
   --websocket-upgrade=yes --cursors=yes --mousewheel=on --video=yes --encodings=all \
   "${CLIPBOARD_ARGS[@]}" \
-  --border=red,5 --seccomp=strict --landlock=strict \
+  "${VIDEO_ARGS[@]}" \
+  --border=red,5 --seccomp=strict "--landlock=${XPRA_LANDLOCK}" \
   --exit-with-windows=yes
 
 # Start the application:
@@ -185,7 +342,7 @@ echo
 
 echo "Waiting for port ${PORT}"
 if curl --version >& /dev/null; then
-  while ! curl --output /dev/null --silent --head --fail http://127.0.0.1:$PORT; do
+  while ! curl --output /dev/null --silent --head --fail "http://127.0.0.1:${PORT}"; do
     sleep 1 && echo -n .
   done
   echo

@@ -29,8 +29,7 @@ ConfParser: TypeAlias = Callable[[Sequence[str]], ConfDict]
 def validate_content_type(content_type: str, source: str) -> str:
     """Discard unknown content hints obtained from configuration or XDG data."""
     content_types = tuple(x for x in content_type.replace("+", ",").split(",") if x)
-    invalid = get_invalid_content_types(content_types)
-    if invalid:
+    if invalid := get_invalid_content_types(content_types):
         log.warn("Warning: ignoring invalid content-type value%s from %s: %s",
                  "s" if len(invalid) != 1 else "", source, ", ".join(invalid))
     return "+".join(valid_content_types(content_types))
@@ -85,7 +84,7 @@ def _merge_defs(target: ConfDict, source: ConfDict, source_first: bool = False) 
 def _load_dict_dir(d: str, parser: ConfParser) -> ConfDict:
     # load all the .conf files from the directory.
     # do_get_user_conf_dirs returns paths with literal '~' so they can be expanded
-    # against the target user when osexpand is called (e.g. xpra/scripts/config.py
+    # against the target user when osexpand is called (e.g. xpra/config/defaults.py
     # for multi-user proxies). This loader is server-side, called as the user the
     # rules belong to, so a plain expanduser is the right resolution here.
     d = os.path.expanduser(d)
@@ -291,8 +290,7 @@ def do_load_command_to_type() -> dict[str, str] | None:
 
     def find_category_type(categories) -> str:
         for c in categories:
-            ctype = categories_to_type.get(c.lower(), "")
-            if ctype:
+            if ctype := categories_to_type.get(c.lower(), ""):
                 return ctype
             # try a more fuzzy match:
             for category_name, ct in categories_to_type.items():
@@ -310,8 +308,7 @@ def do_load_command_to_type() -> dict[str, str] | None:
                 log("Entry '%s': command=%s, categories=%s", name, command, categories)
                 cmd = os.path.basename(command.split(" ")[0])
                 if cmd and categories:
-                    ctype = find_category_type(categories)
-                    if ctype:
+                    if ctype := find_category_type(categories):
                         c2t[cmd] = str(ctype)
     log("do_load_command_to_type()=%s", c2t)
     return c2t

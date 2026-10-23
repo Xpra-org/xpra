@@ -66,8 +66,7 @@ class WaylandPointerManager(PointerManager):
             self.server.compositor.flush()
 
     def _update_modifiers(self, proto, wid: int, modifiers: Sequence[str]) -> None:
-        keyboard = self.server.subsystems.get("keyboard")
-        if keyboard:
+        if keyboard := self.server.subsystems.get("keyboard"):
             keyboard.update_keyboard_modifiers(modifiers)
         super()._update_modifiers(proto, wid, modifiers)
 

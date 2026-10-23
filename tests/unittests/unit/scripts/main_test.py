@@ -23,7 +23,7 @@ from xpra.util.io import pollwait
 from xpra.util.objects import AdHocStruct
 from xpra.platform.paths import get_xpra_command
 from xpra.common import noop, noerr
-from xpra.scripts.config import InitException, InitExit, InitInfo
+from xpra.config import InitException, InitExit, InitInfo
 from xpra.scripts.main import (
     nox, use_systemd_run, systemd_run_command, systemd_run_wrap,
     handle_client_encoding_option, normalize_client_encoding_option,
@@ -184,6 +184,13 @@ class TestMain(unittest.TestCase):
                     self.assertEqual(configure_landlock(str(value).upper()), expected)
                     # the commands started from the session must not inherit the mode:
                     self.assertNotIn("XPRA_LANDLOCK", os.environ)
+        for value, expected in (("strict+gpu", "strict+gpu"), ("Default+GPU", "default+gpu"),
+                                ("yes+gpu", "default+gpu"), (" strict + gpu ", "strict+gpu")):
+            with self.subTest(value=value):
+                self.assertEqual(configure_landlock(value), expected)
+        for value in ("no+gpu", "strict+foo", "strict+", "+gpu"):
+            with self.subTest(value=value), self.assertRaises(InitException):
+                configure_landlock(value)
 
     def test_landlock_unsupported_backends(self):
         for backend in ("qt", "pyglet", "tk"):
@@ -233,7 +240,7 @@ class TestMain(unittest.TestCase):
         glib.idle_add.assert_called_once()
 
     def test_remote_start_connects_after_run_hooks(self):
-        from xpra.scripts.config import make_defaults_struct
+        from xpra.config.defaults import make_defaults_struct
         from xpra.scripts.main import run_remote_server
         opts = make_defaults_struct()
         opts.attach = False
@@ -305,8 +312,7 @@ class TestMain(unittest.TestCase):
             os.environ["XPRA_LOG_SYSTEMD_WRAP"] = "0"
             os.environ["XPRA_LOG_SYSTEMD_WRAP_COMMAND"] = "0"
             cmd = get_xpra_command()+["--version"]
-            r = systemd_run_wrap("unused", cmd, user=getuid()!=0, stdout=DEVNULL, stderr=DEVNULL)
-            if r:
+            if r := systemd_run_wrap("unused", cmd, user=getuid()!=0, stdout=DEVNULL, stderr=DEVNULL):
                 raise ValueError(f"expected return code 0 but got {r} running {cmd}")
 
     def test_display_type_check(self):
@@ -460,8 +466,7 @@ class TestMain(unittest.TestCase):
 
     @staticmethod
     def _close_subcommand_output(proc) -> None:
-        output = getattr(proc, "subcommand_output", None)
-        if output:
+        if output := getattr(proc, "subcommand_output", None):
             noerr(output.close)
 
     def _check_xpra_command(self) -> None:

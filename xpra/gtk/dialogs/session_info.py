@@ -262,8 +262,7 @@ def make_os_str(sys_platform, platform_release, platform_platform, platform_linu
 def get_client_server_last_info(client) -> dict:
     # `last_info` is owned by the `info` subsystem on a full UI client;
     # standalone monitor clients (`InfoTimerClient`) fake it directly on themselves:
-    si = client.get_subsystem("info")
-    if si:
+    if si := client.get_subsystem("info"):
         return si.last_info
     return getattr(client, "server_last_info", {}) or {}
 
@@ -380,8 +379,7 @@ def get_server_revision_str(client) -> str:
     def cattr(name):
         return remote_attr(client, name, "")
 
-    build_info = get_client_server_last_info(client).get("server", {}).get("build", {})
-    if build_info:
+    if build_info := get_client_server_last_info(client).get("server", {}).get("build", {}):
         return caps_to_revision(typedict(build_info))
 
     return make_revision_str(
@@ -396,8 +394,7 @@ def get_glbuffering_info(opengl_props: dict) -> str:
     info = []
     tprops = typedict(opengl_props)
     display_mode = tprops.strtupleget("display_mode")
-    bit_depth = tprops.intget("depth", 0)
-    if bit_depth:
+    if bit_depth := tprops.intget("depth", 0):
         info.append("%i-bit" % bit_depth)
     buffering = "unknown"
     if "double-buffered" in tprops:
@@ -506,8 +503,7 @@ class SessionInfo(Gtk.Window):
         self.set_destroy_with_parent(True)
         self.set_resizable(True)
         self.set_decorated(True)
-        window_icon_pixbuf = get_icon_pixbuf("statistics.png") or get_icon_pixbuf("xpra.png")
-        if window_icon_pixbuf:
+        if window_icon_pixbuf := get_icon_pixbuf("statistics.png") or get_icon_pixbuf("xpra.png"):
             self.set_icon(window_icon_pixbuf)
         self.set_position(Gtk.WindowPosition.CENTER)
 
@@ -600,10 +596,8 @@ class SessionInfo(Gtk.Window):
         if c := self.client:
             if c.session_name or c.server_session_name:
                 t.append(c.session_name or c.server_session_name)
-            p = c._protocol
-            if p:
-                conn = getattr(p, "_conn", None)
-                if conn:
+            if p := c._protocol:
+                if conn := getattr(p, "_conn", None):
                     cinfo = conn.get_info()
                     t.append(cinfo.get("endpoint", bytestostr(conn.target)))
         v = " - ".join(str(x) for x in t)
@@ -718,8 +712,7 @@ class SessionInfo(Gtk.Window):
 
     def populate_all(self) -> None:
         for tab in self.tabs:
-            p_cb = tab[3]
-            if p_cb:
+            if p_cb := tab[3]:
                 p_cb()
 
     def add_graph_button(self, tooltip: str = "", click_cb: Callable = noop) -> Gtk.Image:
@@ -752,8 +745,7 @@ class SessionInfo(Gtk.Window):
         audio = self.get_client_subsystem("audio")
         ss = audio.sink if audio else None
         if SHOW_SOUND_STATS and ss:
-            info = ss.get_info()
-            if info:
+            if info := ss.get_info():
                 info = typedict(info)
 
                 def qlookup(attr) -> int:
@@ -830,8 +822,7 @@ class SessionInfo(Gtk.Window):
                 )
 
             def addavg(l, *names) -> None:
-                v = getavg(*names)
-                if v:
+                if v := getavg(*names):
                     l.append(v)
 
             addavg(self.avg_batch_delay, "batch", "delay")
@@ -842,8 +833,7 @@ class SessionInfo(Gtk.Window):
             if spl and cpl:
                 self.avg_ping_latency.append(round(sum(spl + cpl) / len(spl + cpl)))
             if features.window and self.show_client:
-                pc = self.get_window_pixel_counter()
-                if pc:
+                if pc := self.get_window_pixel_counter():
                     tsize = 0
                     ttime = 0
                     for start_time, end_time, size in pc:
@@ -1002,8 +992,7 @@ class SessionInfo(Gtk.Window):
                 bool_icon(self.server_randr_icon, server_randr)
         else:
             size_info = "unknown"
-            unknown = get_icon_pixbuf("unknown.png")
-            if unknown:
+            if unknown := get_icon_pixbuf("unknown.png"):
                 self.server_randr_icon.set_from_pixbuf(unknown)
         self.server_randr_label.set_text("%s" % size_info)
         if self.show_client:
@@ -1081,8 +1070,7 @@ class SessionInfo(Gtk.Window):
             return ", ".join(codecs or ())
 
         if features.audio:
-            c = self.get_client_subsystem("audio")
-            if c:
+            if c := self.get_client_subsystem("audio"):
                 if self.show_server:
                     self.server_speaker_codecs_label.set_text(codec_info(c.server_send, c.server_encoders))
                 if self.show_client:
@@ -1166,8 +1154,7 @@ class SessionInfo(Gtk.Window):
         self.microphone_label, self.microphone_details = add_audio_row(_("Microphone"))
 
     def populate_connection(self) -> bool:
-        server_load = self.get_subsystem_attr("ping", "server_load", ())
-        if server_load:
+        if server_load := self.get_subsystem_attr("ping", "server_load", ()):
             self.server_load_label.set_text("  ".join("%.1f" % (x / 1000.0) for x in server_load))
         server_start_time = self.get_subsystem_attr("remote-info", "server_start_time", 0)
         if server_start_time > 0:
@@ -1182,8 +1169,7 @@ class SessionInfo(Gtk.Window):
         if p is None:
             # no longer connected!
             return False
-        c = p._conn
-        if c:
+        if c := p._conn:
             self.input_packets_label.set_text(std_unit_dec(p.input_packetcount))
             self.input_bytes_label.set_text(std_unit_dec(c.input_bytecount))
             self.output_packets_label.set_text(std_unit_dec(p.output_packetcount))
@@ -1231,8 +1217,7 @@ class SessionInfo(Gtk.Window):
                     if widget:
                         widget.set_tooltip_text("\n".join(tooltip) or None)
 
-            audio = self.get_client_subsystem("audio")
-            if audio:
+            if audio := self.get_client_subsystem("audio"):
                 server_audio = typedict(get_server_source_info(self.client).get("audio") or {})
                 set_audio_info(self.speaker_label, self.speaker_details,
                                audio.speaker_enabled, audio.sink, "speaker")
@@ -1405,8 +1390,7 @@ class SessionInfo(Gtk.Window):
             rps = []
             pps = []
             decoding_latency = []
-            pixel_counter = self.get_window_pixel_counter()
-            if pixel_counter:
+            if pixel_counter := self.get_window_pixel_counter():
                 min_time = 0.0
                 max_time = 0.0
                 regions_per_second = {}
@@ -1525,8 +1509,7 @@ class SessionInfo(Gtk.Window):
             for k, v in window_dict.items():
                 with log.trap_error("Error: cannot lookup window dict"):
                     wid = int(k)
-                    encoder_stats = v.get("encoder")
-                    if encoder_stats:
+                    if encoder_stats := v.get("encoder"):
                         # video encoder is active
                         stats = dict(encoder_stats)
                         stats["_video"] = True
@@ -1737,8 +1720,7 @@ class SessionInfoClient(InfoTimerClient):
         self.send_ping = noop
         self.server_start_time = 0
         super().setup_connection(conn)
-        audio = self.get_subsystem("audio")
-        if audio:
+        if audio := self.get_subsystem("audio"):
             audio.server_send = audio.server_receive = True
             audio.server_encoders = audio.server_decoders = []
         self.window = None
@@ -1767,21 +1749,16 @@ class SessionInfoClient(InfoTimerClient):
         from xpra.client.base.remoteinfo import get_remote_lib_versions
 
         feature_info = rtdict("features")
-        clipboard = self.get_subsystem("clipboard")
-        if clipboard:
+        if clipboard := self.get_subsystem("clipboard"):
             clipboard.server_clipboard = feature_info.boolget("clipboard")
-        notification = self.get_subsystem("notification")
-        if notification:
+        if notification := self.get_subsystem("notification"):
             notification.server = feature_info.boolget("notification")
         display_info = rtdict("display")
-        window = self.get_subsystem("window")
-        if window:
+        if window := self.get_subsystem("window"):
             window.server_bell = display_info.boolget("bell")
-        cursor = self.get_subsystem("cursor")
-        if cursor:
+        if cursor := self.get_subsystem("cursor"):
             cursor.server_enabled = display_info.boolget("cursors")
-        display = self.get_subsystem("display")
-        if display:
+        if display := self.get_subsystem("display"):
             display.server_opengl = rtdict("display", "opengl")
             display.server_randr = display_info.boolget("randr")
         server = rtdict("server")

@@ -26,8 +26,7 @@ def make_window() -> Gtk.Window:
     window.set_size_request(400, 100)
     window.set_position(Gtk.WindowPosition.CENTER)
     window.connect("delete_event", Gtk.main_quit)
-    icon = get_icon_pixbuf("font.png")
-    if icon:
+    if icon := get_icon_pixbuf("font.png"):
         window.set_icon(icon)
     entry = Gtk.Entry()
     entry.set_max_length(50)

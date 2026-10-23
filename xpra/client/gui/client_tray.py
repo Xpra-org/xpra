@@ -121,8 +121,7 @@ class ClientTray(ClientWidgetBase):
                 "encodings.rgb_formats": ["RGBA", "RGB", "RGBX"],
             }
             if tw:
-                orientation = tw.get_orientation()
-                if orientation:
+                if orientation := tw.get_orientation():
                     client_properties["orientation"] = orientation
             # scale to server coordinates
             display = self._client.get_subsystem("display")

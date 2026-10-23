@@ -363,8 +363,7 @@ class KeyboardManager(StubSubsystem):
         ss = self.get_server_source(proto)
         if not hasattr(ss, "keyboard_config"):
             return
-        kc = ss.keyboard_config
-        if kc:
+        if kc := ss.keyboard_config:
             kc.sync = packet.get_bool(1)
             log("toggled keyboard-sync to %s for %s", kc.sync, ss)
 

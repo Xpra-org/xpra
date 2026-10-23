@@ -54,15 +54,12 @@ def window_matches(wspec, model_class):
         commands: dict[int, str] = {}
         classes: dict[int, str] = {}
         for wxid in allw:
-            name = prop_get(wxid, "_NET_WM_NAME", "utf8", True) or prop_get(wxid, "WM_NAME", "latin1", True)
-            if name:
+            if name := prop_get(wxid, "_NET_WM_NAME", "utf8", True) or prop_get(wxid, "WM_NAME", "latin1", True):
                 names[wxid] = name
-            command = prop_get(wxid, "WM_COMMAND", "latin1", True)
-            if command:
+            if command := prop_get(wxid, "WM_COMMAND", "latin1", True):
                 commands[wxid] = command.strip("\0")
             from xpra.x11.bindings.classhint import XClassHintBindings
-            class_instance = XClassHintBindings().getClassHint(wxid)
-            if class_instance:
+            if class_instance := XClassHintBindings().getClassHint(wxid):
                 classes[wxid] = class_instance[0].decode("latin1")
 
         windows: list[int] = []
@@ -71,12 +68,10 @@ def window_matches(wspec, model_class):
             xids = []
             if m.startswith("xid="):
                 m = m[4:]
-            xid = i(m)
-            if xid:
+            if xid := i(m):
                 xids.append(xid)
             elif m.startswith("pid="):
-                pid = i(m[4:])
-                if pid:
+                if pid := i(m[4:]):
                     for xid in names:
                         if get_pid(xid) == pid:
                             xids.append(xid)
@@ -127,8 +122,7 @@ def position_models(models: dict[int, Any]) -> None:
             rel_parent = None
             while parent > 0:
                 parent = wb.getParent(parent)
-                rel_parent = models.get(parent)
-                if rel_parent:
+                if rel_parent := models.get(parent):
                     log.warn(f"Warning: {rel_parent} is the parent of {model}")
                     break
         model.parent = rel_parent

@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/env bash
 set -e
 
 die() { echo "$*" 1>&2 ; exit 1; }
@@ -20,6 +20,9 @@ export NO_AT_BRIDGE=1
 UNITTESTS_DIR=`dirname $(readlink -f $0)`
 TESTS_DIR=`dirname $UNITTESTS_DIR`
 SRC_DIR=`dirname $TESTS_DIR`
+export XPRA_SOURCE_DIR="$SRC_DIR"
+export COVERAGE_RCFILE="${COVERAGE_RCFILE:-$UNITTESTS_DIR/.coveragerc}"
+export COVERAGE_FILE="${COVERAGE_FILE:-$UNITTESTS_DIR/.coverage}"
 
 PYTHON_VERSION=`$PYTHON --version | awk '{print $2}' | awk -F. '{print $1"."$2}'`
 
@@ -27,16 +30,17 @@ PYTHON_VERSION=`$PYTHON --version | awk '{print $2}' | awk -F. '{print $1"."$2}'
 INSTALL_ROOT="$SRC_DIR/dist/python${PYTHON_VERSION}"
 rm -fr $INSTALL_ROOT
 pushd $SRC_DIR
-$PYTHON ./setup.py install --without-nvidia --without-printing --without-docs --with-scripts --without-cython_tracing --${CYTHONIZE_MORE:-without}-cythonize_more --prefix=/usr --root=$INSTALL_ROOT $EXTRA_ARGS || die "failed to build"
+# Debian's Python installs to `/usr/local` (`posix_local` scheme) unless we opt out:
+DEB_PYTHON_INSTALL_LAYOUT=deb $PYTHON ./setup.py install --without-nvidia --without-printing --without-docs --with-scripts --without-cython_tracing --${CYTHONIZE_MORE:-without}-cythonize_more --prefix=/usr --root=$INSTALL_ROOT $EXTRA_ARGS || die "failed to build"
 popd
 
-# workaround for the prefix not being honoured:
-if [ -d "$INSTALL_ROOT/usr/local" ]; then
-    # install_data may already have created directories under usr (for example
-    # usr/lib for the Wireshark dissector), so merge rather than move entries
-    # at the top level.
-    rsync -a --remove-source-files "$INSTALL_ROOT/usr/local/" "$INSTALL_ROOT/usr/"
-    find "$INSTALL_ROOT/usr/local" -depth -type d -empty -delete
+# the xvfb command in the generated config uses the runtime path of xorg.conf,
+# which does not exist when testing from the install root:
+XORG_CONF=`find "$INSTALL_ROOT" -path "*/etc/xpra/xorg.conf" | head -n 1`
+if [ -n "$XORG_CONF" ]; then
+    XORG_CONF_DIR=`dirname "$XORG_CONF"`
+    find "$INSTALL_ROOT" -name "55_server_x11.conf" -exec \
+        sed -i 's+\${XORG_CONFIG_PREFIX}/etc/xpra/+'"${XORG_CONF_DIR}"'/+g' {} +
 fi
 
 if [ `uname` == "Linux" ]; then
@@ -44,7 +48,7 @@ if [ `uname` == "Linux" ]; then
 fi
 #why is every workaround for setuptools so cumbersome?
 
-export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d -wholename "*/site-packages/xpra"`
+export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d -path "*/site-packages/xpra" -o -name xpra -type d -path "*/dist-packages/xpra"`
 if [ -z "${XPRA_MODULE_DIR}" ]; then
 	export XPRA_MODULE_DIR=`find $INSTALL_ROOT -name xpra -type d | egrep -v "etc/xpra|libexec/xpra|share/xpra" | head -n 1 | tr -d '\n'`
 fi
@@ -62,8 +66,9 @@ echo "<html><head><title>fake html client</title></head><body>nothing here</body
 
 pushd $UNITTESTS_DIR
 if [ "${XPRA_TEST_COVERAGE}" == "1" ]; then
-    COVERAGE=`which coverage || which python3-coverage`
-    if [ -z "${COVERAGE}" ]; then
+    # not the `coverage` script, which prints a deprecation banner with newer coverage.py versions:
+    COVERAGE="$PYTHON -m coverage"
+    if ! $PYTHON -c "import coverage" >& /dev/null; then
       echo "python3-coverage is not installed, turning off coverage report"
       XPRA_TEST_COVERAGE=0
     fi

@@ -161,8 +161,7 @@ def get_target_speed(window_dimensions: tuple[int, int], batch,
     else:
         # calculate a target latency and try to get close to it
         avg_delay = batch.delay
-        delays = tuple(batch.last_actual_delays)
-        if delays:
+        if delays := tuple(batch.last_actual_delays):
             # average recent actual delay:
             avg_delay = time_weighted_average(delays)
         # and average that with the current delay (which is lower or equal):
@@ -340,8 +339,7 @@ def get_target_quality(window_dimensions: tuple[int, int], batch,
     # raise the quality when there are not many recent damage events:
     ww, wh = window_dimensions
     if ww > 0 and wh > 0:
-        lde = tuple(statistics.last_damage_events)
-        if lde:
+        if lde := tuple(statistics.last_damage_events):
             now = monotonic()
             damage_pixel_count = tuple((lim, sum(w * h for t, _, _, w, h in lde if now - lim <= t < now - lim + 1))
                                        for lim in range(1, 11))

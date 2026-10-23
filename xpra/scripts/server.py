@@ -20,13 +20,11 @@ from xpra.util.parsing import FALSE_OPTIONS, parse_str_dict, str_to_bool, parse_
 from xpra.scripts.parsing import MODE_ALIAS
 from xpra.scripts.main import nox, parse_env
 from xpra.scripts.sessions import get_xpra_sessions
-from xpra.scripts.config import (
-    InitException, InitInfo, InitExit,
-    OPTION_TYPES, CLIENT_OPTIONS,
-    fixup_options,
-)
+from xpra.config import InitException, InitInfo, InitExit
+from xpra.config.types import OPTION_TYPES, CLIENT_OPTIONS
+from xpra.config.fixup import fixup_options
 from xpra.common import noerr
-from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY
+from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY, is_virtual_session
 from xpra.net.constants import SocketState, ConnectionMessage
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import POSIX, WIN32, OSX, LINUX, getuid, get_hex_uuid
@@ -408,8 +406,8 @@ def has_child_arg(opts) -> bool:
     ))
 
 
-def sanitize_dbus_env(dbus: str) -> None:
-    if str(dbus).lower() in ("keep", "wait"):
+def sanitize_dbus_env(dbus: str, mode: str = "seamless") -> None:
+    if not is_virtual_session(mode) or str(dbus).lower() in ("keep", "wait"):
         return
     # remove anything pointing to dbus from the current env
     # (so we only detect a dbus instance started by pam,
@@ -424,9 +422,13 @@ def resolve_server_display_name(opts, extra_args: list[str], desktop_display: st
                                 upgrading: bool, proxying: bool, encoder: bool,
                                 use_display: bool | None) -> tuple[str, str]:
     display_options = ""
-    if (shadowing or expanding or runner) and not extra_args:
+    if (shadowing or expanding or runner or encoder) and not extra_args:
         if runner:
             display_name = "runner-%i" % os.getpid()
+        elif encoder:
+            # the encoder does not have a display,
+            # and it may not create a socket in the socket directories (`--bind=none`):
+            display_name = "encoder-%i" % os.getpid()
         elif WIN32 or OSX:
             # just a virtual name for the only display available:
             display_name = "Main"
@@ -447,7 +449,7 @@ def resolve_server_display_name(opts, extra_args: list[str], desktop_display: st
             if not shadowing and not upgrading and not use_display:
                 display_name_check(display_name)
         else:
-            if proxying or encoder or runner:
+            if proxying:
                 # find a free display number:
                 dotxpra = DotXpra(opts.socket_dirs)
                 all_displays = dotxpra.sockets()
@@ -571,7 +573,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     save_env.update(parse_env(opts.env))
     env_script = xpra_env_shell_script(opts.socket_dirs, save_env)
 
-    sanitize_dbus_env(opts.dbus)
+    sanitize_dbus_env(opts.dbus, mode)
     if (upgrading or shadowing) and opts.pulseaudio is None:
         # there should already be one running
         # so change None ('auto') to False
@@ -627,7 +629,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
     if runner_display:
         protected_env["DISPLAY"] = runner_display
 
-    if str_to_bool(opts.dbus):
+    if str_to_bool(opts.dbus) and is_virtual_session(mode):
         start_dbus()
         os.environ["DBUS_SYSTEM_BUS_ADDRESS"] = f"unix:path={SYSTEM_DBUS_SOCKET}"
         protected_env["DBUS_SYSTEM_BUS_ADDRESS"] = f"unix:path={SYSTEM_DBUS_SOCKET}"
@@ -834,8 +836,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
 def attach_client(options, defaults) -> None:
     from xpra.platform.paths import get_xpra_command
     cmd = get_xpra_command() + ["attach"]
-    display_name = os.environ.get("DISPLAY", "")
-    if display_name:
+    if display_name := os.environ.get("DISPLAY", ""):
         cmd += [display_name]
     # options has been "fixed up", make sure this has too:
     fixup_options(defaults)

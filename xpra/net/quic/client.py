@@ -29,7 +29,7 @@ from aioquic.quic.connection import QuicConnection
 from aioquic.asyncio.protocol import QuicConnectionProtocol
 
 from xpra.os_util import POSIX
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.net.common import pretty_socket
 from xpra.net.socket_util import create_udp_socket
@@ -304,8 +304,7 @@ def _make_quic_configuration(ssl_cert: str, ssl_key: str, ssl_key_password: str,
         max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,
     )
     configuration.verify_mode = parse_ssl_verify_mode(ssl_server_verify_mode)
-    ssl_ca_certs = pyopenssl_ca_certs(ssl_ca_certs)
-    if ssl_ca_certs:
+    if ssl_ca_certs := pyopenssl_ca_certs(ssl_ca_certs):
         configuration.load_verify_locations(ssl_ca_certs)
     if ssl_cert:
         from pathlib import Path
@@ -339,8 +338,7 @@ def pyopenssl_ca_certs(ca_certs: str) -> str:
         pass
     # frozen build: cacert.pem is next to the executable in lib/certifi/
     import sys
-    exe_dir = os.path.dirname(getattr(sys, "executable", ""))
-    if exe_dir:
+    if exe_dir := os.path.dirname(getattr(sys, "executable", "")):
         ca_candidates.append(os.path.join(exe_dir, "lib", "certifi", "cacert.pem"))
     for ca_path in ca_candidates:
         if ca_path and os.path.exists(ca_path):
@@ -418,8 +416,7 @@ def _quic_connect(create_protocol, host: str, port: int, path: str, fast_open: b
             # try to get a more meaningful exception message:
             einfo = str(e)
             if not einfo:
-                quic_conn = getattr(protocol, "_quic", None)
-                if quic_conn:
+                if quic_conn := getattr(protocol, "_quic", None):
                     close_event = getattr(quic_conn, "_close_event", None)
                     log(f"{close_event=}, {dir(close_event)}")
                     if close_event:

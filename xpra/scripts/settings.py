@@ -13,13 +13,11 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.os_util import POSIX, OSX, WIN32, getuid, getgid
 from xpra.util.str_fn import nonl, csv
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.scripts.config import (
-    OPTION_TYPES,
-    InitException,
-    dict_to_validated_config, fixup_options,
-    get_xpra_defaults_dirs, get_defaults, read_xpra_conf,
-    name_to_field,
-)
+from xpra.config.types import OPTION_TYPES, name_to_field
+from xpra.config import InitException
+from xpra.config.defaults import dict_to_validated_config, get_defaults
+from xpra.config.fixup import fixup_options
+from xpra.config.io import get_xpra_defaults_dirs, read_xpra_conf
 from xpra.log import Logger
 
 
@@ -50,8 +48,7 @@ def run_showconfig(options, args) -> ExitValue:
         try:
             from xpra.platform.pycups_printing import get_printer_definition
             for mimetype in ("pdf", "postscript"):
-                pdef = get_printer_definition(mimetype)
-                if pdef:
+                if pdef := get_printer_definition(mimetype):
                     # ie: d.pdf_printer = "/usr/share/ppd/cupsfilters/Generic-PDF_Printer-PDF.ppd"
                     setattr(d, f"{mimetype}_printer", pdef)
         except Exception:

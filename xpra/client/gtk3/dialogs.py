@@ -15,7 +15,7 @@ from xpra.exit_codes import ExitCode
 from xpra.gtk.widget import FILE_CHOOSER_NATIVE, label
 from xpra.net.common import pretty_socket
 from xpra.os_util import gi_import, OSX
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.util.child_reaper import get_child_reaper
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
@@ -93,8 +93,7 @@ class GTKDialogClient(StubClientSubsystem):
         self.pinentry_proc = proc
         q = f"Enter {prompt}"
         if p := self.client._protocol:
-            conn = getattr(p, "_conn", None)
-            if conn:
+            if conn := getattr(p, "_conn", None):
                 cinfo = conn.get_info()
                 endpoint = pretty_socket(cinfo.get("endpoint", conn.target)).split("?")[0]
                 q += f"\n at {endpoint}"
@@ -425,8 +424,7 @@ class GTKDialogClient(StubClientSubsystem):
         self.sub_dialogs["session-info"] = dialog
 
     def show_bug_report(self, *_args) -> None:
-        info_request = self.get_subsystem("info")
-        if info_request:
+        if info_request := self.get_subsystem("info"):
             info_request.send_info_request()
 
         if dialog := self.sub_dialogs.get("bug-report"):

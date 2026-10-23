@@ -30,11 +30,9 @@ def get_glinfo_message(opengl: typedict) -> str:
         msg += "disabled"
     else:
         msg += "enabled"
-        backend = std(opengl.strget("backend"))
-        if backend:
+        if backend := std(opengl.strget("backend")):
             msg += f" using {backend} backend"
-        driver_info = opengl.strget("renderer") or opengl.strget("vendor")
-        if driver_info:
+        if driver_info := opengl.strget("renderer") or opengl.strget("vendor"):
             msg += f" with {std(driver_info)}"
     return msg
 
@@ -116,8 +114,7 @@ class ClientInfoConnection(StubClientConnection):
             log.info("%s%s", ["", " "][int(i > 0)], ci)
         if self.client_proxy:
             from xpra.util.version import version_compat_check
-            msg = version_compat_check(self.proxy_version)
-            if msg:
+            if msg := version_compat_check(self.proxy_version):
                 proxylog = Logger("proxy")
                 proxylog.warn("Warning: proxy version may not be compatible: %s", msg)
 

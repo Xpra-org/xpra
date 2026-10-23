@@ -8,7 +8,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.util import subsystem as dispatch
 
 

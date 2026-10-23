@@ -67,8 +67,7 @@ def log_windows_info(windows: tuple) -> None:
     log("log_windows_info(%s)", windows)
     msg = "running"
     trays = sum(1 for w in windows if w.is_tray())
-    wins = sum(1 for w in windows if not w.is_tray())
-    if wins:
+    if wins := sum(1 for w in windows if not w.is_tray()):
         msg += f", {wins} windows"
     if trays:
         msg += f", {trays} tray"
@@ -556,8 +555,7 @@ class WindowManagerClient(StubClientSubsystem):
             if backing:
                 video_decoder = backing._video_decoder
                 csc_decoder = backing._csc_decoder
-                decoder_lock = backing._decoder_lock
-                if decoder_lock:
+                if decoder_lock := backing._decoder_lock:
                     decoder_lock.acquire()
                     log("reinit_windows() will preserve video=%s and csc=%s for %s", video_decoder, csc_decoder, wid)
                     backing._video_decoder = None

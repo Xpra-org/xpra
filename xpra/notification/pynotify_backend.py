@@ -15,8 +15,7 @@ from xpra.notification.common import IconData
 
 
 def close_notify(nid: NID) -> None:
-    n = PyNotifyNotifier.CACHE.pop(int(nid), None)
-    if n:
+    if n := PyNotifyNotifier.CACHE.pop(int(nid), None):
         n.close()
 
 

@@ -117,7 +117,8 @@ per-file-ignores = """
     xpra/codecs/checks.py:E501
     xpra/gtk/versions.py:E241
     xpra/client/gui/paint_colors.py:E241
-    xpra/scripts/config.py:E241
+    xpra/config/defaults.py:E241
+    xpra/config/types.py:E241
     xpra/net/rfb/d3des.py:E241
     xpra/server/source/source_stats.py:E116,E501
     xpra/server/window/compress.py:E501

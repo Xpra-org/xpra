@@ -196,8 +196,7 @@ def patch_find_library() -> None:
     orig_util_find_library = util.find_library
 
     def new_util_find_library(name):
-        res = orig_util_find_library(name)
-        if res:
+        if res := orig_util_find_library(name):
             return res
         return '/System/Library/Frameworks/' + name + '.framework/' + name
 

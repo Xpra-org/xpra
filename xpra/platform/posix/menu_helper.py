@@ -238,8 +238,7 @@ def load_entry_icon(props: dict):
     icondata = None
     if filename:
         props["IconFile"] = filename
-        icondata = icon_util.load_icon_from_file(filename)
-        if icondata:
+        if icondata := icon_util.load_icon_from_file(filename):
             bdata, ext = icondata
             if ext == "svg":
                 icondata = load_cached_svg(bdata)
@@ -334,8 +333,7 @@ def add_entry_icon(entry_props: dict[str, Any], category: str):
         return
     names = []
     for prop in ("Name", "GenericName", "Exec", "TryExec"):
-        value = entry_props.get(prop, "")
-        if value:
+        if value := entry_props.get(prop, ""):
             names.append(str(value))
     eicon = find_glob_icon(*names, category)
     if not eicon:
@@ -375,8 +373,7 @@ def find_glob_icon(*names: str, category: str = "categories", extensions=EXTENSI
         log("glob(%s) matches %i filenames", pathname, len(filenames))
         if filenames:
             for f in filenames:
-                v = icon_util.load_icon_from_file(f)
-                if v:
+                if icon_util.load_icon_from_file(f):
                     log(f"found icon for {names} with glob {pathname!r}: {f}")
                     return f
     return ""
@@ -514,8 +511,7 @@ def load_menu(force_reload=False) -> dict[str, dict[str, Any]]:
             submenus = len(menu_cache)
             elapsed = end - start
             log.info(f"loaded {count} start menu entries from {submenus} sub-menus in {elapsed:.1f} seconds")
-        n_large = len(icon_util.large_icons)
-        if n_large:
+        if n_large := len(icon_util.large_icons):
             log.warn(f"Warning: found {n_large} large icons:")
             for filename, size in icon_util.large_icons:
                 log.warn(f" {filename!r} ({size // 1024} KB)")
@@ -546,8 +542,7 @@ def load_xdg_menu_data() -> dict:
             log(f" submenu {name!r} is not visible")
             continue
         try:
-            md = load_xdg_menu(submenu)
-            if md:
+            if md := load_xdg_menu(submenu):
                 menu_data[name] = md
             else:
                 log(" no menu data for %s", name)
@@ -555,11 +550,9 @@ def load_xdg_menu_data() -> dict:
             log("load_xdg_menu_data()", exc_info=True)
             log.error("Error loading submenu '%s':", name)
             log.estr(e)
-    entries = load_applications(menu_data)
-    if entries:
+    if entries := load_applications(menu_data):
         # add an 'Applications' menu if we don't have one:
-        app_menu = menu_data.get("Applications")
-        if app_menu:
+        if app_menu := menu_data.get("Applications"):
             app_menu.setdefault("Entries", {}).update(entries)
         else:
             menu_data["Applications"] = {
@@ -611,11 +604,9 @@ def do_load_xdg_menu_data():
             prefixes = [None, ""]
             # we sanitize the environment,
             # but perhaps the value from the existing environment was useful:
-            prefix = get_saved_env().get("XDG_MENU_PREFIX")
-            if prefix:
+            if prefix := get_saved_env().get("XDG_MENU_PREFIX"):
                 prefixes.append(prefix)
-            desktop = os.environ.get("XDG_SESSION_DESKTOP", "")
-            if desktop:
+            if desktop := os.environ.get("XDG_SESSION_DESKTOP", ""):
                 prefixes.append(f"{desktop}-")  # ie: "gnome-"
             for d in config_dirs:
                 for path in glob.glob(f"{d}/menus/*applications.menu"):
@@ -704,11 +695,9 @@ def load_desktop_sessions() -> dict[str, Any]:
                 name = de.getName()
                 if not entry.get("IconData"):
                     names = get_icon_names_for_session(name.lower())
-                    icon_filename = do_find_icon(*names)
-                    if icon_filename:
+                    if icon_filename := do_find_icon(*names):
                         entry["IconFile"] = icon_filename
-                        icondata = icon_util.load_icon_from_file(icon_filename)
-                        if icondata:
+                        if icondata := icon_util.load_icon_from_file(icon_filename):
                             if icondata[1] == "svg":
                                 icondata = load_cached_svg(icondata[0])
                             if icondata:

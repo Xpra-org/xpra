@@ -5,6 +5,33 @@
 
 <div class="docs-section-heading" markdown="1">
 
+## OpenBSD
+
+</div>
+Xpra builds and runs on OpenBSD 7.9 with the X11 server and tools from the base system.
+
+Install the build and runtime dependencies:
+```shell
+doas pkg_add py3-setuptools py3-cython py3-gobject3 py3-cairo py3-numpy \
+  py3-Pillow py3-lz4 py3-brotli py3-cryptography py3-dbus py3-yaml \
+  py3-rencode py3-gstreamer1 py3-opengl xxhash x264 libvpx libwebp \
+  libavif libde265 openh264 dav1d aom libqrencode zstd libnotify gtk+3
+```
+
+Build and install:
+```shell
+git clone https://github.com/Xpra-org/xpra
+cd xpra
+doas python3 setup.py install --without-nvidia --without-printing --prefix=/usr/local
+```
+
+`Xvfb`, `xauth` and `xkbcomp` are part of the base system in `/usr/X11R6/bin`.
+Xdummy is not supported on OpenBSD, so Xpra uses `Xvfb` for virtual displays.
+
+Install `xdg-utils` for `xpra open` support.
+
+<div class="docs-section-heading" markdown="1">
+
 ## [FreeBSD Ports](https://www.freebsd.org/ports/)
 
 </div>

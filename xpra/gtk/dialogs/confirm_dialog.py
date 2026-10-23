@@ -35,8 +35,7 @@ class ConfirmDialogWindow(Gtk.Dialog):
         self.set_title(title)
         add_close_accel(self, self.quit)
 
-        icon_pixbuf = get_icon_pixbuf(icon)
-        if icon_pixbuf:
+        if icon_pixbuf := get_icon_pixbuf(icon):
             self.set_icon(icon_pixbuf)
 
         vbox = self.get_content_area()

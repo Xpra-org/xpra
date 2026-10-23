@@ -12,7 +12,7 @@ For more details, see [#494](https://github.com/Xpra-org/xpra/issues/494) and [#
 ## Client to Server
 
 </div>
-Assuming that file-transfers are enabled (which is the default - see configuration options below), the client can send files to the server using the system tray upload menu:
+Assuming that file-transfers are enabled - which is the default (`auto`: transfers are enabled, and users are prompted for confirmation wherever a user interface is available, see configuration options below) - the client can send files to the server using the system tray upload menu:
 
 ![Upload Example](../images/upload.png)
 
@@ -39,9 +39,10 @@ Depending on the client configuration, the `open` flag may not be honoured by th
 ## Configuration Options
 
 </div>
-* `file-transfer` enables or disables all file transfers
+* `file-transfer` enables or disables all file transfers: `yes`, `no`, `ask` or `auto` (the default)
 * `file-size-limit` the maximum size for file transfers
-* `open-files` allows files to be opened after being received - which may be a security risk
+* `open-files` allows files to be opened after being received - which may be a security risk: `yes`, `no`, `ask` or `auto` (the default)
+* `open-url` allows URLs to be opened - which may also be a security risk: `yes`, `no`, `ask` or `auto` (the default)
 * `open-command` the command to use for opening files
 
 <div class="docs-section-heading" markdown="1">

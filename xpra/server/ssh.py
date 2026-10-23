@@ -43,11 +43,9 @@ def get_keyclass(keytype: str):
     # 'dsa' -> 'DSS'
     if keytype == "dsa" and hasattr(paramiko, "DSSKey"):
         return paramiko.DSSKey
-    keyclass = getattr(paramiko, keytype.upper() + "Key", None)
-    if keyclass:
+    if keyclass := getattr(paramiko, keytype.upper() + "Key", None):
         return keyclass
-    keyclass = getattr(paramiko, keytype.upper() + "Key", None)
-    if keyclass:
+    if keyclass := getattr(paramiko, keytype.upper() + "Key", None):
         return keyclass
     # Ed25519Key
     return getattr(paramiko, keytype[:1].upper() + keytype[1:] + "Key", None)
@@ -387,8 +385,7 @@ class SSHServer(paramiko.ServerInterface):
             # we're ready to use this socket as an xpra channel
             self._run_proxy(channel)
             return True
-        proxy_cmd = detect_ssh_stanza(cmd)
-        if proxy_cmd:
+        if proxy_cmd := detect_ssh_stanza(cmd):
             self.setup_agent(proxy_cmd)
             self._run_proxy(channel)
             return True
@@ -551,8 +548,7 @@ def make_ssh_server_connection(conn, socket_options: dict,
             log.warn(" closing connection from " + pretty_socket(conn.target))
             close()
             return None
-        proxy_channel = ssh_server.proxy_channel
-        if proxy_channel:
+        if proxy_channel := ssh_server.proxy_channel:
             if getattr(proxy_channel, "proxy_process", None):
                 log("proxy channel is handled using a subprocess")
                 return None

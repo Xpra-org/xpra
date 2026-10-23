@@ -44,8 +44,7 @@ def btn(label, tooltip, callback, icon_name="") -> Gtk.Button:
     style_button(b)
     b.set_tooltip_text(tooltip)
     b.connect("clicked", callback)
-    icon = get_icon_pixbuf(icon_name)
-    if icon:
+    if icon := get_icon_pixbuf(icon_name):
         b.set_image(scaled_image(icon, 24))
     return b
 
@@ -64,8 +63,7 @@ class StartNewCommand:
 
         self.prefs = load_config()
 
-        icon_pixbuf = get_icon_pixbuf("forward.png")
-        if icon_pixbuf:
+        if icon_pixbuf := get_icon_pixbuf("forward.png"):
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(Gtk.WindowPosition.CENTER)
 

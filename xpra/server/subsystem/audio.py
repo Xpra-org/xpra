@@ -340,8 +340,7 @@ class AudioServer(StubSubsystem):
                     log.info("Audio subsystem query failed, is GStreamer installed?")
                     noaudio()
                     return
-                gstv = audio_properties.strtupleget("gst.version")
-                if gstv:
+                if gstv := audio_properties.strtupleget("gst.version"):
                     log.info("GStreamer version %s", ".".join(gstv[:3]))
                 else:
                     log.info("GStreamer loaded")

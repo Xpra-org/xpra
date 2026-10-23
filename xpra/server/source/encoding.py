@@ -176,8 +176,7 @@ class EncodingsConnection(StubClientConnection):
         if not conn:
             return
         # we can't assume that 'self' is a full ClientConnection object:
-        stats = getattr(self, "statistics", None)
-        if stats:
+        if stats := getattr(self, "statistics", None):
             stats.bytes_sent.append((now, conn.output_bytecount))
             if getattr(conn, "socktype_wrapped", "") in TCP_SOCKTYPES:
                 try:
@@ -440,8 +439,7 @@ class EncodingsConnection(StubClientConnection):
         if set(wss).issuperset(self.all_window_sources()):
             log("resetting global stats")
             # we can't assume that 'self' is a full ClientConnection object:
-            stats = getattr(self, "statistics", None)
-            if stats:
+            if stats := getattr(self, "statistics", None):
                 stats.reset()
             self.global_batch_config = self.default_batch_config.clone()
         for ws in wss:

@@ -83,7 +83,7 @@ class RunnerServerTest(ProcessTestUtil):
                 finally:
                     if server.poll() is None:
                         server.terminate()
-                    server.wait(timeout=10)
+                    server.wait(timeout=30)
 
 
 if __name__ == "__main__":

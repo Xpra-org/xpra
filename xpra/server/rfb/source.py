@@ -523,8 +523,7 @@ class RFBSource(PointerSource):
             return
         encoded_regions: list[tuple[SizedBuffer, ...]] = []
         for image, x, y, w, h, encoding in regions:
-            packets = self.encode_region(image, x, y, w, h, encoding)
-            if packets:
+            if packets := self.encode_region(image, x, y, w, h, encoding):
                 encoded_regions.append((packets[0][4:],) + tuple(packets[1:]))
         if not encoded_regions:
             return

@@ -124,8 +124,7 @@ def add_handler(event: str, handler: Callable) -> None:
             log.estr(e)
 
     def add(*args) -> None:
-        cleanup = add_bus_handler(*args)
-        if cleanup:
+        if cleanup := add_bus_handler(*args):
             bus_signal_match.setdefault((event, handler), []).append(cleanup)
 
     # (deprecated - may not be available) UPower events:

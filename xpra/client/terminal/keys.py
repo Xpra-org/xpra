@@ -135,8 +135,7 @@ MODIFIER_CODE_BITS: Final[dict[int, int]] = {
 
 def keysym_name_for(code: int, text: str) -> str:
     """ the X11 keysym name for a key reported by the terminal """
-    name = FUNCTIONAL_KEYSYMS.get(code, "")
-    if name:
+    if name := FUNCTIONAL_KEYSYMS.get(code, ""):
         return name
     if text:
         return keysym_name(text)

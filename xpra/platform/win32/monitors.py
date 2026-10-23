@@ -80,8 +80,7 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
             minfo["manufacturer"] = dcfg["manufacturer"]
         if dcfg.get("model"):
             minfo["model"] = dcfg["model"]
-        src = dcfg.get("source")
-        if src:
+        if src := dcfg.get("source"):
             sx, sy = src["position"]
             sw, sh = src["width"], src["height"]
             minfo["geometry"] = (xs(sx), ys(sy), xs(sw), ys(sh))
@@ -97,8 +96,7 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
                 xs(round((wright - wleft) * fx)),
                 ys(round((wbottom - wtop) * fy)),
             )
-        tgt = dcfg.get("target")
-        if tgt:
+        if tgt := dcfg.get("target"):
             # the actual scanout raster of the panel, in true device pixels
             # (not subject to the client `xscale`/`yscale` - this is hardware):
             minfo["scanout"] = {
@@ -115,8 +113,7 @@ def get_monitors_info(xscale: float = 1.0, yscale: float = 1.0) -> dict[int, Any
             # `name` is the normalized, human-friendly form (ie: "DISPLAY1"):
             minfo["device"] = device
             minfo["name"] = prettify_plug_name(device)
-            dc = _get_device_dc(device)
-            if dc:
+            if dc := _get_device_dc(device):
                 try:
                     wmm = GetDeviceCaps(dc, win32con.HORZSIZE)
                     hmm = GetDeviceCaps(dc, win32con.VERTSIZE)

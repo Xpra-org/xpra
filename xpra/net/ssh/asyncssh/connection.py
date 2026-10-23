@@ -70,8 +70,7 @@ class SSHStreamConnection(Connection):
             await self._writer.wait_closed()
         except Exception:
             log("closing asyncssh channel", exc_info=True)
-        connection = self._ssh_connection
-        if connection:
+        if connection := self._ssh_connection:
             connection.close()
             try:
                 await connection.wait_closed()
@@ -92,8 +91,7 @@ class SSHStreamConnection(Connection):
 
     def get_info(self) -> dict[str, Any]:
         info = super().get_info()
-        connection = self._ssh_connection
-        if connection:
+        if connection := self._ssh_connection:
             info["asyncssh"] = {
                 "client-version": connection.get_extra_info("client_version", ""),
                 "server-version": connection.get_extra_info("server_version", ""),

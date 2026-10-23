@@ -9,7 +9,7 @@ import Quartz.CoreGraphics as CG
 
 from xpra.util.env import envbool
 from xpra.util.str_fn import memoryview_to_bytes
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.scripts.main import check_display
 from xpra.exit_codes import ExitCode
 from xpra.codecs.image import ImageWrapper

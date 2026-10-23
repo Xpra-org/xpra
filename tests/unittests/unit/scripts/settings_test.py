@@ -9,7 +9,7 @@ from unittest.mock import Mock, patch
 
 from xpra.exit_codes import ExitCode
 from xpra.scripts import settings
-from xpra.scripts.config import InitException
+from xpra.config import InitException
 
 
 class SettingsTest(unittest.TestCase):

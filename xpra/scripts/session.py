@@ -18,7 +18,7 @@ CLEAN_SESSION_FILES = envbool("XPRA_CLEAN_SESSION_FILES", True)
 # the session directory name is derived from the display name,
 # so restrict it to a conservative character set to prevent path traversal
 # or otherwise unexpected paths. All the display names we generate fit within
-# this set: X11 ":N" / ":N.S", wayland "wayland-N", "runner-PID", "SPID",
+# this set: X11 ":N" / ":N.S", wayland "wayland-N", "runner-PID", "encoder-PID", "SPID",
 # "Main", shadow-device "vdd:0" (-> "vdd_0"), ...
 # (matches `VALID_DISPLAY` in `xpra.net.session_discovery` and `UUID_CHARS`)
 UNSAFE_DISPLAY_CHARS = re.compile(r"[^A-Za-z0-9._-]")
@@ -119,17 +119,18 @@ def pidexists(pid: int) -> bool:
         return False
     try:
         os.kill(pid, 0)
-        return os.path.exists(f"/proc/{pid}")
     except OSError:
         return False
+    if os.path.isdir("/proc"):
+        return os.path.exists(f"/proc/{pid}")
+    return True
 
 
 def clean_session_dir(session_dir: str) -> bool:
     from xpra.log import Logger
     log = Logger("server")
 
-    pidmap = clean_pidfiles(session_dir)
-    if pidmap:
+    if pidmap := clean_pidfiles(session_dir):
         log.error(f"Error: cannot remove the session directory {session_dir!r},")
         log.error(f" {len(pidmap)} commands are still running:")
         for fname, (pid, command) in pidmap.items():
@@ -159,8 +160,7 @@ def clean_session_dir(session_dir: str) -> bool:
         "tmp",
     ]
     ALL_KNOWN = KNOWN_SERVER_FILES + KNOWN_SERVER_DIRS
-    unknown_files = [x for x in session_files if x not in ALL_KNOWN]
-    if unknown_files:
+    if unknown_files := [x for x in session_files if x not in ALL_KNOWN]:
         from xpra.util.str_fn import csv
         log.error("Error: found some unexpected session files:")
         log.error(" " + csv(unknown_files))
@@ -263,8 +263,7 @@ def clean_session_path(path: str) -> None:
         log.error(f"Error removing session path {path}")
         log.estr(e)
         if os.path.isdir(path):
-            files = os.listdir(path)
-            if files:
+            if files := os.listdir(path):
                 log.error(" this directory still contains some files:")
                 for file in files:
                     finfo = repr(file)

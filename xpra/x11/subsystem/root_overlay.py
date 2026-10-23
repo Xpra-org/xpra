@@ -128,7 +128,6 @@ class RootOverlay(StubSubsystem):
     def update_window(self, window, x: int, y: int, width: int, height: int) -> None:
         if not self.root_overlay:
             return
-        image = window.get_image(x, y, width, height)
-        if image:
+        if image := window.get_image(x, y, width, height):
             from xpra.x11.server.root_overlay import update_root_overlay
             update_root_overlay(self.root_overlay, window, x, y, image)

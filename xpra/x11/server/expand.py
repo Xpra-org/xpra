@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.os_util import gi_import
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.x11.shadow.server import ShadowX11Server
 from xpra.server.shadow.root_window_model import CaptureWindowModel

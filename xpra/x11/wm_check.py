@@ -25,8 +25,7 @@ def get_ewmh_xid() -> int:
     with xlog:
         X11Window = X11WindowBindings()
         root_xid = get_root_xid()
-        ewmh_xid = prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True)
-        if ewmh_xid:
+        if ewmh_xid := prop_get(root_xid, "_NET_SUPPORTING_WM_CHECK", "window", ignore_errors=True):
             try:
                 with xsync:
                     if X11Window.getGeometry(ewmh_xid):
@@ -45,14 +44,11 @@ def get_wm_info() -> dict[str, Any]:
             "root": root_xid,
             "display": get_display_name(),
         }
-        s0 = X11Window.XGetSelectionOwner(WM_S0)
-        if s0:
+        if s0 := X11Window.XGetSelectionOwner(WM_S0):
             info["WM_S0"] = s0
-        s0 = X11Window.XGetSelectionOwner(_NET_WM_CM_S0)
-        if s0:
+        if s0 := X11Window.XGetSelectionOwner(_NET_WM_CM_S0):
             info["_NET_WM_CM_S0"] = s0
-    ewmh_xid = get_ewmh_xid()
-    if ewmh_xid:
+    if ewmh_xid := get_ewmh_xid():
         info["_NET_SUPPORTING_WM_CHECK"] = ewmh_xid
         with xlog:
             wm_name = prop_get(ewmh_xid, "_NET_WM_NAME", "utf8", ignore_errors=True)

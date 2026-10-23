@@ -160,8 +160,7 @@ class KeyboardConfig(KeyboardConfigBase):
                 modinfo[mod] = mod_name
         info["x11_keycode"] = self.x11_keycodes
         for x in ("layout", "variant", "options", "mod_managed", "mod_pointermissing", "raw", "layout_groups"):
-            v = getattr(self, x)
-            if v:
+            if v := getattr(self, x):
                 info[x] = v
         modsinfo = {
             "nuisance": tuple(self.mod_nuisance or []),
@@ -604,8 +603,7 @@ class KeyboardConfig(KeyboardConfigBase):
         if self.raw or self.query_struct or not is_usable_keysym(X11Keyboard.parse_keysym(keyname)):
             return -1
         with xlog:
-            free_keycodes = get_free_keycodes()
-            if free_keycodes:
+            if free_keycodes := get_free_keycodes():
                 keycode = free_keycodes[0]
             else:
                 # never re-use a key that is still pressed, or its release would send the wrong keysym:
@@ -739,8 +737,7 @@ class KeyboardConfig(KeyboardConfigBase):
                         break
             if keycode < 0:
                 lowercase = dict((x.lower(), x) for x in self.keycode_translation.keys() if isinstance(x, str))
-                match = lowercase.get(keyname, "")
-                if match:
+                if match := lowercase.get(keyname, ""):
                     keycode = self.keycode_translation.get(match, -1)
         # noinspection PyChainedComparisons
         if keycode < 0 and keyval > 0:

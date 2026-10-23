@@ -102,8 +102,7 @@ def do_crypto_backend_init():
             # cythonized code can bind None for missing imports
             raise ImportError("cryptography submodules")
         validate_backend()
-        name = getattr(backend, "name", "")
-        if name:
+        if name := getattr(backend, "name", ""):
             log.info(f"cryptography {cryptography.__version__} using {name!r} backend")
         return cryptography
     except ImportError:

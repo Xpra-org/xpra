@@ -161,8 +161,7 @@ _wait_for_input = False
 
 
 def should_wait_for_input() -> bool:
-    wfi = os.environ.get("XPRA_WAIT_FOR_INPUT", "")
-    if wfi:
+    if wfi := os.environ.get("XPRA_WAIT_FOR_INPUT", ""):
         return wfi != "0"
     if is_wine():
         # don't wait for input when running under wine

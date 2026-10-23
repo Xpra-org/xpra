@@ -154,8 +154,7 @@ def logon(username: str, password: str) -> int:
     getErrorCode = desktop_logon.getErrorCode
     getErrorCode.argtypes = []
     getErrorCode.restype = c_int
-    r = getErrorCode()
-    if r:
+    if r := getErrorCode():
         from xpra.log import Logger
         log = Logger("win32")
         log.warn(f"Warning: `DesktopLogon` error {r}")
@@ -164,8 +163,7 @@ def logon(username: str, password: str) -> int:
             header, msg = msg.split(":", 1)
             log.warn(f" {header}:")
         for line in msg.split("."):
-            line = line.strip()
-            if line:
+            if line := line.strip():
                 log.warn(f"  {line}")
     return r
 

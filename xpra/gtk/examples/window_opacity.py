@@ -22,8 +22,7 @@ def make_window() -> Gtk.Window:
     win.set_position(Gtk.WindowPosition.CENTER)
     win.set_title('Opacity Test')
     win.connect('delete-event', Gtk.main_quit)
-    icon = get_icon_pixbuf("windows.png")
-    if icon:
+    if icon := get_icon_pixbuf("windows.png"):
         win.set_icon(icon)
 
     btn = Gtk.Button(label="Change Opacity")

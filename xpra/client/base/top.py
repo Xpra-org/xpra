@@ -130,8 +130,7 @@ def get_window_info(wi: typedict) -> Sequence[tuple[str, int]]:
     # version info:
     geom = wi.inttupleget("geometry")
     g_str = "%ix%i at %i,%i" % (geom[2], geom[3], geom[0], geom[1])
-    sc = wi.dictget("size-constraints")
-    if sc:
+    if sc := wi.dictget("size-constraints"):
         def sc_str(k, v):
             if k == "gravity":
                 v = gravity_str(v)
@@ -139,11 +138,9 @@ def get_window_info(wi: typedict) -> Sequence[tuple[str, int]]:
 
         g_str += " - %s" % csv(sc_str(k, v) for k, v in sc.items())
     line1 = ""
-    pid = wi.intget("pid", 0)
-    if pid:
+    if pid := wi.intget("pid", 0):
         line1 = f"pid {pid}: "
-    title = wi.strget("title")
-    if title:
+    if title := wi.strget("title"):
         line1 += f' "{title}"'
     attrs = [
         x for x in (
@@ -375,8 +372,7 @@ class TopClient:
             name = d.get("session-name")
             uuid = d.get("uuid")
             stype = d.get("session-type")
-            error = d.get("error")
-            if error:
+            if error := d.get("error"):
                 info[0] = f"{display}  {error}"
             else:
                 info[0] = f"{display}  {name}"
@@ -643,8 +639,7 @@ class TopSessionClient(InfoTimerClient):
         now = datetime.now()
         uptime = ""
         server_info = self.slidictget("server")
-        elapsed_time = server_info.intget("elapsed_time")
-        if elapsed_time:
+        if elapsed_time := server_info.intget("elapsed_time"):
             td = timedelta(seconds=elapsed_time)
             uptime = " up " + str(td).lstrip("0:")
         clients_info = self.slidictget("clients")
@@ -661,8 +656,7 @@ class TopSessionClient(InfoTimerClient):
         thread_count = thread_info.intget("count")
         rinfo = f"{thread_count} threads"
         server_info = self.slidictget("server")
-        server_pid = server_info.intget("pid", 0)
-        if server_pid:
+        if server_pid := server_info.intget("pid", 0):
             rinfo += f", pid {server_pid}"
             machine_id = server_info.get("machine-id")
             if machine_id is None or machine_id == get_machine_id():
@@ -707,8 +701,7 @@ class TopSessionClient(InfoTimerClient):
         if cursor_info := self.slidictget("cursor"):
             cx, cy = cursor_info.inttupleget("position", (0, 0))
             dinfo.append(f"cursor at {cx}x{cy}")
-        pid = display_info.intget("pid")
-        if pid:
+        if pid := display_info.intget("pid"):
             dinfo.append(f"pid {pid}")
         return csv(dinfo)
 
@@ -755,8 +748,7 @@ class TopSessionClient(InfoTimerClient):
         conn_info = ""
         if chost:
             conn_info = f"connected from {chost} "
-        cinfo = ci.dictget("connection")
-        if cinfo:
+        if cinfo := ci.dictget("connection"):
             cinfo = self.td(cinfo)
             conn_info += "using %s %s" % (cinfo.strget("type"), cinfo.strget("protocol-type"))
             conn_info += ", with %s and %s" % (cinfo.strget("encoder"), cinfo.strget("compressor"))
@@ -818,8 +810,7 @@ class TopSessionClient(InfoTimerClient):
         minfo = self.td(minfo)
         descr = minfo.strget("codec_description") or minfo.strget("codec") or minfo.strget("state", "unknown")
         audio_info = f"{mode}: {descr}"
-        bitrate = minfo.intget("bitrate")
-        if bitrate:
+        if bitrate := minfo.intget("bitrate"):
             audio_info += f" {std_unit(bitrate)}bps"
         return audio_info
 
@@ -856,8 +847,7 @@ class TopSessionClient(InfoTimerClient):
         depth = gli.intget("depth")
         if depth not in (0, 24):
             gl_info += f", {depth}bits"
-        modes = gli.get("display_mode")
-        if modes:
+        if gli.get("display_mode"):
             gl_info += " - " + strget("display_mode", ", ")
         return gl_info
 

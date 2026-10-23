@@ -13,7 +13,7 @@ from importlib.util import find_spec
 from dataclasses import dataclass
 
 from xpra.common import noerr, SizedBuffer, noop
-from xpra.scripts.config import InitException, InitExit
+from xpra.config import InitException, InitExit
 from xpra.exit_codes import ExitCode
 from xpra.net.constants import DEFAULT_PORT, DEFAULT_PORTS, ABSTRACT_SOCKET_PREFIX, AUTO_ABSTRACT_SOCKET, SocketState
 from xpra.net.bytestreams import set_socket_timeout, SocketConnection, SOCKET_TIMEOUT
@@ -138,22 +138,20 @@ def create_unix_domain_socket(sockpath: str, socket_permissions: int = 0o600) ->
         inode = os.stat(sockpath).st_ino
     except OSError:
         inode = -1
-    # set to the "xpra" group if we are a member of it, or if running as root:
-    uid = getuid()
-    username = get_username_for_uid(uid)
-    groups = get_groups(username)
+    # set to the "xpra" group if this process is a member of it, or if running as root:
+    # (the user database may list groups which this process does not have,
+    # ie: before logging in again, or in a container started with `--user=uid:gid`)
     xpra_group = get_xpra_group()
-    if uid == 0 or xpra_group in groups:
-        group_id = get_group_id(xpra_group)
-        if group_id >= 0:
-            try:
-                os.lchown(sockpath, -1, group_id)
-            except Exception as e:
-                log.warn("Warning: failed to set '%s' group ownership", xpra_group)
-                log.warn(" on socket '%s':", sockpath)
-                log.warn(" %s", e)
-            # don't know why this doesn't work:
-            # os.fchown(listener.fileno(), -1, group_id)
+    group_id = get_group_id(xpra_group)
+    if group_id >= 0 and (getuid() == 0 or group_id == os.getegid() or group_id in os.getgroups()):
+        try:
+            os.lchown(sockpath, -1, group_id)
+        except Exception as e:
+            log.warn("Warning: failed to set '%s' group ownership", xpra_group)
+            log.warn(" on socket '%s':", sockpath)
+            log.warn(" %s", e)
+        # don't know why this doesn't work:
+        # os.fchown(listener.fileno(), -1, group_id)
 
     def cleanup_socket() -> None:
         close_socket_listener(sock)
@@ -277,8 +275,7 @@ def peek_connection(conn, timeout: int = PEEK_TIMEOUT_MS, size: int = PEEK_SIZE)
     set_socket_timeout(conn, timeout / 1000)
     while elapsed <= timeout:
         try:
-            peek_data = conn.peek(size)
-            if peek_data:
+            if peek_data := conn.peek(size):
                 break
         except OSError:
             log("peek_connection(%s, %i) failed", conn, timeout, exc_info=True)
@@ -449,8 +446,7 @@ def parse_bind_options(opts) -> dict[str, Any]:
     min_port = int(opts.min_port)
     bind_options: dict[str, Any] = {}
     for mode in BIND_OPTION_TYPES:
-        value = getattr(opts, "bind_%s" % mode, ())
-        if value:
+        if value := getattr(opts, "bind_%s" % mode, ()):
             if mode == "vsock":
                 value = parse_bind_vsock(value)
             else:
@@ -574,8 +570,7 @@ def create_udp_socket(host: str, iport: int, family: socket.AddressFamily=socket
             raise RuntimeError("specified an IPv6 address but this is not supported on this system")
         if host.startswith("[") and host.endswith("]"):
             host = host[1:-1]
-    res = socket.getaddrinfo(host, iport, family=family, type=socket.SOCK_DGRAM)
-    if res:
+    if res := socket.getaddrinfo(host, iport, family=family, type=socket.SOCK_DGRAM):
         sockaddr = res[0][4]
     else:
         sockaddr = (host, iport)
@@ -717,7 +712,7 @@ def setup_sd_listen_socket(stype: str, sock, addr) -> SocketListener:
 def normalize_local_display_name(local_display_name: str) -> str:
     if local_display_name.startswith("wayland-") or os.path.isabs(local_display_name):
         return local_display_name
-    if local_display_name.startswith("runner"):
+    if local_display_name.startswith(("runner", "encoder-")):
         return local_display_name
     pos = local_display_name.find(":")
     if pos < 0:
@@ -940,8 +935,7 @@ def show_sockets(created: list[SocketListener]) -> None:
         log.info("created unix domain sockets:")
         for cpath in unix:
             log.info(f" {cpath!r}")
-    abstract = [address for address in addresses if address.startswith("@")]
-    if abstract:
+    if abstract := [address for address in addresses if address.startswith("@")]:
         log.info("created abstract sockets:")
         for cpath in abstract:
             log.info(f" {cpath!r}")

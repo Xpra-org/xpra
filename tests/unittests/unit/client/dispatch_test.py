@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 
 from xpra.client.base.client import XpraClientBase
 from xpra.exit_codes import ExitCode
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 
 
 class SubsystemDispatchTest(unittest.TestCase):

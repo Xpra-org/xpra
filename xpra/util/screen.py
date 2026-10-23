@@ -81,8 +81,7 @@ class MonitorLayout:
             except (TypeError, ValueError):
                 continue
             mdef = dict(monitor)
-            geometry = self.geometries.get(index)
-            if geometry:
+            if geometry := self.geometries.get(index):
                 x, y, width, height = geometry
                 mdef["geometry"] = x - self.min_x, y - self.min_y, width, height
                 # the workarea uses the same coordinate space as the geometry:

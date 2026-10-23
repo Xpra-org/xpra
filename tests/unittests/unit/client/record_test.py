@@ -15,7 +15,7 @@ from unittest.mock import patch
 from xpra.client.base import record as record_module
 from xpra.client.base.record import RecordClient, can_focus
 from xpra.net.common import Packet
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
 from xpra.util.objects import typedict
 from unit.test_util import silence_warn
 
@@ -68,8 +68,7 @@ class RecordClientTest(unittest.TestCase):
         """
         for handlers in (self.client._authenticated_ui_packet_handlers,
                          self.client._authenticated_packet_handlers):
-            handler = handlers.get(packet_type)
-            if handler:
+            if handler := handlers.get(packet_type):
                 return handler
         raise AssertionError(f"no handler registered for {packet_type!r}")
 

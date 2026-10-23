@@ -13,6 +13,7 @@ import unittest
 from unittest.mock import patch
 
 import xpra
+from xpra.os_util import LINUX
 from xpra.platform.posix import landlock
 
 
@@ -36,6 +37,7 @@ class FakeNative:
         self.sync_threads = sync_threads
 
 
+@unittest.skipUnless(LINUX, "Landlock is Linux only")
 class LandlockTest(unittest.TestCase):
 
     def test_access_for_abi(self):
@@ -127,7 +129,7 @@ from types import SimpleNamespace
 from xpra.client.base.landlock import LandLock
 from xpra.common import noop
 from xpra.platform.paths import get_mmap_dir
-from xpra.scripts.config import make_defaults_struct
+from xpra.config.defaults import make_defaults_struct
 home, downloads, credential = sys.argv[1:]
 secret = os.path.join(home, "secret")
 ready = threading.Event()

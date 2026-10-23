@@ -23,7 +23,7 @@ from xpra.util.io import pollwait
 from xpra.platform.paths import get_xpra_command
 from xpra.platform.dotxpra import DISPLAY_PREFIX
 from xpra.scripts.display import X11_SOCKET_DIR, stat_display_socket
-from xpra.scripts.config import get_defaults
+from xpra.config.defaults import get_defaults
 
 from xpra.log import Logger
 
@@ -51,8 +51,7 @@ def proc_pipes_str(proc) -> str:
     out = ""
     for filetype in ("stdout", "stderr"):
         fileobj = getattr(proc, f"{filetype}_file", None)
-        text = read_proc_pipe(fileobj, filetype)
-        if text:
+        if text := read_proc_pipe(fileobj, filetype):
             out += f"\n----- {filetype} ({fileobj.name}) -----\n{text}"
         else:
             out += f"\n----- no {filetype} -----"
@@ -186,14 +185,12 @@ class ProcessTestUtil(unittest.TestCase):
             try:
                 if x.poll() is None:
                     x.terminate()
-                stdout_file = getattr(x, "stdout_file", None)
-                if stdout_file:
+                if stdout_file := getattr(x, "stdout_file", None):
                     try:
                         stdout_file.close()
                     except OSError:
                         pass
-                stderr_file = getattr(x, "stderr_file", None)
-                if stderr_file:
+                if stderr_file := getattr(x, "stderr_file", None):
                     try:
                         stderr_file.close()
                     except OSError:
@@ -219,7 +216,7 @@ class ProcessTestUtil(unittest.TestCase):
 
     @classmethod
     def get_default_run_env(cls):
-        env = dict((k, v) for k, v in cls.default_env.items() if k.startswith("XPRA") or k in (
+        env = dict((k, v) for k, v in cls.default_env.items() if k.startswith(("XPRA", "COVERAGE_")) or k in (
             "HOME", "HOSTNAME", "SHELL", "TERM",
             "USER", "USERNAME", "PATH",
             "XAUTHORITY", "PWD",
@@ -376,8 +373,13 @@ class ProcessTestUtil(unittest.TestCase):
             ):  #DBUS_SESSION_BUS_ADDRESS
                 #keep it
                 env[x] = os.environ.get(x)
-        from xpra.scripts.config import xvfb_command
+        from xpra.config.vfb import xvfb_command
         cmd = xvfb_command(cls.test_xvfb_command, depth=depth, dpi=0, fps=0)
+        if not os.environ.get("XAUTHORITY"):
+            for i, arg in enumerate(cmd):
+                if arg == "-auth":
+                    del cmd[i:i+2]
+                    break
         cmd.append(display)
         tmpdir = tempfile.gettempdir()
         env["XPRA_LOG_DIR"] = tmpdir

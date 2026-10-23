@@ -578,8 +578,7 @@ class _SSHTestServer:
         if not ssh_server.event.wait(10):
             return
         # handle exec_response (mirrors make_ssh_server_connection loop)
-        exec_response = getattr(chan, "exec_response", None)
-        if exec_response:
+        if exec_response := getattr(chan, "exec_response", None):
             exit_status, out, err = exec_response
             if out:
                 data = out.encode() if isinstance(out, str) else out

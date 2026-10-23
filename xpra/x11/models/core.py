@@ -699,8 +699,7 @@ class CoreX11WindowModel(WindowModelStub):
                     metalog("_handle_property_change(%s) property type=%s", name, prop_type)
                     if prop_type:
                         dtype, dformat = prop_type
-                        ptype = PYTHON_TYPES.get(dtype, "")
-                        if ptype:
+                        if ptype := PYTHON_TYPES.get(dtype, ""):
                             value = self.prop_get(name, ptype, ignore_errors=True)
                             if value is None:
                                 # retry using scalar type:
@@ -776,8 +775,7 @@ class CoreX11WindowModel(WindowModelStub):
     def _handle_class_change(self) -> None:
         try:
             from xpra.x11.bindings.classhint import XClassHintBindings
-            class_instance = XClassHintBindings().getClassHint(self.xid)
-            if class_instance:
+            if class_instance := XClassHintBindings().getClassHint(self.xid):
                 class_instance = tuple(v.decode("latin1") for v in class_instance)
         except ImportError as e:
             if first_time("x11-class-hint"):

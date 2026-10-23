@@ -88,8 +88,7 @@ def _get_pwd():
 
 
 def get_username() -> str:
-    p = _get_pwd()
-    if p:
+    if p := _get_pwd():
         return p.pw_name
     # pragma: no cover
     try:
@@ -101,8 +100,7 @@ def get_username() -> str:
 
 
 def get_name() -> str:
-    p = _get_pwd()
-    if p:
+    if p := _get_pwd():
         return p.pw_gecos.replace(",", "")
     # pragma: no cover
     return ""

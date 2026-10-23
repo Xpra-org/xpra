@@ -39,8 +39,7 @@ class UpdateStatusWindow:
         self.window.set_default_size(400, 200)
         self.window.set_title(_("Xpra Version Check"))
 
-        icon = get_icon_pixbuf("update.png")
-        if icon:
+        if icon := get_icon_pixbuf("update.png"):
             self.window.set_icon(icon)
         self.window.set_position(Gtk.WindowPosition.CENTER)
 
@@ -66,8 +65,7 @@ class UpdateStatusWindow:
             style_button(btn, primary=label == _("Download"))
             btn.set_tooltip_text(tooltip)
             btn.connect("clicked", callback)
-            icon = get_icon_pixbuf(icon_name)
-            if icon:
+            if icon := get_icon_pixbuf(icon_name):
                 btn.set_image(scaled_image(icon, 24))
             hbox.pack_start(btn)
             return btn

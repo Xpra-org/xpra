@@ -68,8 +68,7 @@ class OpenRequestsWindow:
         self.window.set_default_size(400, 150)
         self.window.set_title("Transfers")
 
-        icon_pixbuf = get_icon_pixbuf("download.png")
-        if icon_pixbuf:
+        if icon_pixbuf := get_icon_pixbuf("download.png"):
             self.window.set_icon(icon_pixbuf)
         self.window.set_position(Gtk.WindowPosition.CENTER)
 
@@ -92,8 +91,7 @@ class OpenRequestsWindow:
         if self.show_file_upload_cb != noop:
             btn("Upload", self.show_file_upload_cb, "upload.png")
         btn("Close", self.close, "quit.png")
-        downloads = get_download_dir()
-        if downloads:
+        if get_download_dir():
             btn("Show Downloads Folder", self.show_downloads, "browse.png")
 
         def accel_close(*_args) -> None:
@@ -112,8 +110,7 @@ class OpenRequestsWindow:
         settings.set_property('gtk-button-images', True)
         btn.connect("clicked", callback)
         if icon_name:
-            icon = get_icon_pixbuf(icon_name)
-            if icon:
+            if icon := get_icon_pixbuf(icon_name):
                 btn.set_image(scaled_image(icon, 24))
         return btn
 

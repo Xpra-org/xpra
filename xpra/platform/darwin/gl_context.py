@@ -32,8 +32,7 @@ ACCELERATED = envbool("XPRA_OPENGL_ACCELERATED", False)
 def set_nsview_transparent(nsview) -> None:
     # equivalent to the former `gdk3_bindings.enable_transparency`, but derived
     # from the `NSView` (via its `NSWindow`) so we only need the view pointer:
-    nswindow = nsview.window()
-    if nswindow:
+    if nswindow := nsview.window():
         nswindow.setBackgroundColor_(NSColor.clearColor())
         nswindow.setOpaque_(False)
 

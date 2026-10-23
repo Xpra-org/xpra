@@ -85,8 +85,7 @@ class MonitorDesktopModel(DesktopModelBase):
         #                       'damage': '2097157', 'x': '313', 'y': '174', 'width': '6', 'height': '13'}>)
         damaged_area = rectangle(event.x, event.y, event.width, event.height)
         x, y, width, height = self.monitor_geometry
-        monitor_damaged_area = damaged_area.intersection(x, y, width, height)
-        if monitor_damaged_area:
+        if monitor_damaged_area := damaged_area.intersection(x, y, width, height):
             # use an event relative to this monitor's coordinates:
             mod_event = MonitorDamageNotify(monitor_damaged_area.x - x, monitor_damaged_area.y - y,
                                             monitor_damaged_area.width, monitor_damaged_area.height)
@@ -95,8 +94,7 @@ class MonitorDesktopModel(DesktopModelBase):
     def get_image(self, x: int, y: int, width: int, height: int):
         # adjust the coordinates with the monitor's position:
         mx, my = self.monitor_geometry[:2]
-        image = super().get_image(mx + x, my + y, width, height)
-        if image:
+        if image := super().get_image(mx + x, my + y, width, height):
             image.set_target_x(x)
             image.set_target_y(y)
         return image

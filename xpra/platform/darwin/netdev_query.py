@@ -28,18 +28,14 @@ def get_interface_info(_fd: int, iface) -> dict[str, Any]:
 
 def do_get_interface_info(scnetworkinterface) -> dict[str, Any]:
     info: dict[str, Any] = {}
-    bsdname = SCNetworkInterfaceGetBSDName(scnetworkinterface)
-    if bsdname:
+    if bsdname := SCNetworkInterfaceGetBSDName(scnetworkinterface):
         info["name"] = str(bsdname)
-    hw = SCNetworkInterfaceGetHardwareAddressString(scnetworkinterface)
-    if hw:
+    if hw := SCNetworkInterfaceGetHardwareAddressString(scnetworkinterface):
         info["hardware-address"] = str(hw)
-    t = SCNetworkInterfaceGetInterfaceType(scnetworkinterface)
-    if t:
+    if t := SCNetworkInterfaceGetInterfaceType(scnetworkinterface):
         info["adapter-type"] = str(t)
     # SCNetworkInterfaceGetLocalizedDisplayName
-    p = SCNetworkInterfaceGetSupportedProtocolTypes(scnetworkinterface)
-    if p:
+    if p := SCNetworkInterfaceGetSupportedProtocolTypes(scnetworkinterface):
         info["protocols"] = tuple(str(x) for x in p)
     return info
 

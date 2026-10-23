@@ -9,20 +9,22 @@ from xpra.client.base.stub import StubClientSubsystem
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.log import Logger
 from xpra.os_util import LINUX
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
+from xpra.config.validation import split_landlock_option
 
 log = Logger("landlock")
 
 
 class LandLock(StubClientSubsystem):
     """Own the client's process-wide filesystem confinement and startup state."""
-    __slots__ = ("abi", "enforced", "mode", "download_path", "write_paths", "auth_paths",
+    __slots__ = ("abi", "enforced", "gpu", "mode", "download_path", "write_paths", "auth_paths",
                  "temp_dir", "temp_dir_owner")
     PREFIX = "landlock"
 
     def __init__(self, client=None):
         super().__init__(client)
         self.mode = "no"
+        self.gpu = False
         self.download_path = ""
         self.write_paths: tuple[str, ...] = ()
         self.auth_paths: tuple[str, ...] = ()
@@ -32,7 +34,8 @@ class LandLock(StubClientSubsystem):
         self.temp_dir_owner = 0
 
     def init(self, opts) -> None:
-        self.mode = opts.landlock or "no"
+        # ie: "strict+gpu" -> "strict", True
+        self.mode, self.gpu = split_landlock_option(opts.landlock or "no")
         self.download_path = opts.download_path
         if LINUX and self.mode != "no":
             try:
@@ -72,7 +75,8 @@ class LandLock(StubClientSubsystem):
                 self.temp_dir, self.temp_dir_owner = prepare_landlock_temp_dir(self.download_path)
             self.abi = enforce_landlock(self.mode, self.write_paths, read_paths=read_paths,
                                         required_paths=required_paths, socket_paths=socket_paths, socket_dirs=socket_dirs,
-                                        temp_dir=self.temp_dir, allow_socket_creation=self.mode == "default")
+                                        temp_dir=self.temp_dir, allow_socket_creation=self.mode == "default",
+                                        gpu=self.gpu)
             # File transfers resolve this environment variable, rather than opts.
             os.environ["XPRA_DOWNLOAD_DIR"] = self.download_path
             self.enforced = True
@@ -83,7 +87,7 @@ class LandLock(StubClientSubsystem):
 
     def get_info(self) -> dict:
         return {LandLock.PREFIX: {
-            "mode": self.mode, "enforced": self.enforced, "abi": self.abi,
+            "mode": self.mode, "gpu": self.gpu, "enforced": self.enforced, "abi": self.abi,
             "temp-dir": self.temp_dir,
         }}
 

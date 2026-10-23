@@ -10,7 +10,7 @@ import unittest
 from contextlib import nullcontext
 
 from xpra.net.packet_type import COMMAND_START
-from xpra.os_util import POSIX
+from xpra.os_util import POSIX, OPENBSD
 from xpra.util.child_reaper import get_child_reaper
 from xpra.util.objects import AdHocStruct
 from unit.test_util import silence_info
@@ -19,6 +19,7 @@ from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 class ChildCommandMixinTest(ServerMixinTest):
 
+    @unittest.skipIf(OPENBSD, "signal delivery to child commands differs on OpenBSD")
     def test_command_server(self):
         try:
             from xpra.platform.posix.xdg_helper import log

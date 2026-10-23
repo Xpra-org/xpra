@@ -507,8 +507,7 @@ class SocketConnection(Connection):
                     info["path"] = pretty_socket(s.getsockname())
                 except OSError:
                     pass
-                cred_info = get_peercred_info(s)
-                if cred_info:
+                if cred_info := get_peercred_info(s):
                     info["peercred"] = cred_info
             elif (peer_uid := self.get_peer_uid()) >= 0:
                 info["peercred"] = {"uid": peer_uid}

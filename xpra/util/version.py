@@ -141,6 +141,22 @@ def protocol_compat_check(remote_protocol_version) -> str:
     return ""
 
 
+def min_version_check(remote_version: str, min_version: tuple[int, ...]) -> str:
+    """
+    Verify that the peer's version is at least `min_version`,
+    the version may be truncated, ie: "8" for "8.0.1".
+    Returns an error message, or an empty string if it is recent enough.
+    """
+    mstr = ".".join(str(part) for part in min_version)
+    rv = parse_version(remote_version)
+    try:
+        if not rv or (rv + (0, ) * len(min_version))[:len(min_version)] < min_version:
+            return f"version {mstr} or later is required, not {remote_version!r}"
+    except TypeError:
+        return f"invalid version {remote_version!r}"
+    return ""
+
+
 def version_compat_check(remote_version) -> str | None:
     if not remote_version:
         msg = "remote version is not available"
@@ -191,8 +207,7 @@ def get_host_info(full_info: int = 1) -> dict[str, Any]:
     if full_info > 0:
         try:
             import socket
-            hostname = socket.gethostname()
-            if hostname:
+            if hostname := socket.gethostname():
                 info["hostname"] = hostname
         except OSError:
             pass
@@ -374,8 +389,7 @@ PLATFORM_FRIENDLY_NAMES: dict[str, str] = {
 
 
 def get_branch() -> str:
-    BRANCH = os.environ.get("XPRA_CURRENT_VERSION_BRANCH", "")
-    if BRANCH:
+    if BRANCH := os.environ.get("XPRA_CURRENT_VERSION_BRANCH", ""):
         return BRANCH
     try:
         from xpra.src_info import BRANCH
@@ -405,8 +419,7 @@ def get_latest_version() -> bool | None | tuple[int, ...]:
             f"{CURRENT_VERSION_URL}{branch_str}_{platname}?{XPRA_VERSION}",
             f"{CURRENT_VERSION_URL}{branch_str}?{XPRA_VERSION}",
         ):
-            latest_version_no = get_version_from_url(url)
-            if latest_version_no:
+            if latest_version_no := get_version_from_url(url):
                 return latest_version_no
     return ()
 

@@ -280,8 +280,7 @@ class SocketProtocol:
 
     def is_sending_encrypted(self) -> bool:
         options = getattr(self._conn, "options", {})
-        trusted = options.get("trusted")
-        if trusted:
+        if trusted := options.get("trusted"):
             return trusted.lower() in TRUE_OPTIONS
         http_headers = options.get("http-headers", {})
         if http_headers and isinstance(http_headers, dict):
@@ -669,8 +668,7 @@ class SocketProtocol:
         log(f"enable_encoder({e}): {self._encoder}")
 
     def enable_default_compressor(self) -> None:
-        opts = compression.get_enabled_compressors()
-        if opts:
+        if opts := compression.get_enabled_compressors():
             self.enable_compressor(opts[0])
         else:
             self.enable_compressor("none")
@@ -1011,8 +1009,7 @@ class SocketProtocol:
     def _invalid_header(self, proto, data: SizedBuffer, msg="invalid packet header") -> None:
         log("invalid_header(%s, %s bytes: '%s', %s)",
             proto, len(data or ""), msg, Ellipsizer(data))
-        guess = guess_packet_type(data)
-        if guess:
+        if guess := guess_packet_type(data):
             err = f"{msg}: {guess}"
         else:
             err = "%s: 0x%s" % (msg, hexstr(data[:HEADER_SIZE]))

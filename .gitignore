@@ -201,7 +201,7 @@ tests/unittests/test-file*
 /xpra/x11/server/*.c
 /xpra/x11/gtk/error.c
 /xpra/x11/subsystem/*.c
-/xpra/x11/uinput/*.c
+/xpra/uinput/*.c
 /xpra/x11/*.c
 /xpra/wayland/*.c
 /xpra/wayland/client/*.c
@@ -223,3 +223,6 @@ tests/unittests/test-file*
 
 # a place where we can stash local files without polluting:
 /local
+
+# macos build logs:
+/packaging/MacOS/logs/

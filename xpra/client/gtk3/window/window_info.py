@@ -65,8 +65,7 @@ def get_window_attributes(w) -> str:
         opacity = w.get_opacity()
     if opacity < 1:
         attr["opacity"] = opacity
-    role = w.get_role()
-    if role:
+    if role := w.get_role():
         attr["role"] = role
     # get_type_hint
     return dict_str(attr)

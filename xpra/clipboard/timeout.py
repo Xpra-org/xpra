@@ -35,8 +35,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         # reply to all the outstanding requests with "no data":
         # `_clipboard_got_contents` cancels the timer and removes each request as it answers it,
         # so the dictionary must not be cleared before they have all been served
-        cor = self._clipboard_outstanding_requests
-        if cor:
+        if cor := self._clipboard_outstanding_requests:
             log.info("cancelling %i clipboard requests", len(cor))
         for request_id in tuple(cor):
             self._clipboard_got_contents(request_id)

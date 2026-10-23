@@ -8,7 +8,7 @@ from collections import namedtuple
 
 from xpra.common import noop
 from xpra.client.gui.window_border import WindowBorder
-from xpra.scripts.config import DEFAULT_BORDER
+from xpra.config.types import DEFAULT_BORDER
 from xpra.util.objects import typedict
 from xpra.util.env import first_time
 from xpra.client.base.stub import StubClientSubsystem

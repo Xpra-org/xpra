@@ -107,15 +107,13 @@ class Handler(AuthenticationHandler):
             return str(self.password)
         while self.password_files:
             filename = os.path.expanduser(self.password_files.pop(0))
-            data = load_binary_file(filename)
-            if data:
+            if data := load_binary_file(filename):
                 return data.decode("utf8")
         if password := os.environ.get("XPRA_PASSWORD"):
             return password
         if self.challenge_prompt_function:
             # noinspection calling-non-callable
-            password = self.challenge_prompt_function(prompt)
-            if password:
+            if password := self.challenge_prompt_function(prompt):
                 return str(password)
         return ""
 

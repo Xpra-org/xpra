@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch
 
 from xpra.exit_codes import ExitCode
 from xpra.net.tls import common
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 
 
 class TLSCommonTest(unittest.TestCase):

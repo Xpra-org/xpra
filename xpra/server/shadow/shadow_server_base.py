@@ -11,8 +11,9 @@ from xpra.server.common import get_sources_by_type
 from xpra.server.shadow.common import parse_geometries
 from xpra.server.window import batch_config
 from xpra.server.base import ServerBase
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.platform.paths import get_icon_dir
+from xpra.os_util import POSIX, OSX
 from xpra.server import features
 from xpra.exit_codes import ExitCode
 from xpra.codecs.constants import TransientCodecException, CodecStateException
@@ -206,7 +207,12 @@ class ShadowServerBase(ServerBase):
         if not NATIVE_NOTIFIER:
             return []
         from xpra.platform.notification import get_backends
-        ncs: list[Callable] = list(get_backends())
+        native = not POSIX or OSX
+        if POSIX and not OSX and features.dbus:
+            from xpra.dbus.common import find_session_bus_address
+            native = bool(find_session_bus_address())
+        # Native D-Bus backends would autolaunch a bus if the desktop has none.
+        ncs: list[Callable] = list(get_backends()) if native else []
         if self.get_subsystem("gtk"):
             # if the gtk subsystem is already loaded, we can load GTKNotifier safely:
             try:
@@ -472,8 +478,7 @@ class ShadowServerBase(ServerBase):
     ############################################################################
 
     def sanity_checks(self, _proto, c) -> bool:
-        server_uuid = c.strget("server_uuid")
-        if server_uuid:
+        if server_uuid := c.strget("server_uuid"):
             if server_uuid == self.subsystems["id"].uuid:
                 log.warn("Warning: shadowing your own display can be quite confusing")
                 clipboard = self.get_subsystem("clipboard")
@@ -496,13 +501,11 @@ class ShadowServerBase(ServerBase):
             # parse the display options as a dictionary:
             from xpra.util.parsing import parse_simple_dict
             opt_dict = parse_simple_dict(self.display_options)
-            windows = opt_dict.get("windows")
-            if windows:
+            if windows := opt_dict.get("windows"):
                 self.window_matches = windows.split("/")
                 return self.makeDynamicWindowModels()
             match_str = opt_dict.get("plug")
-            geometries_str = opt_dict.get("geometry", "")
-            if geometries_str:
+            if geometries_str := opt_dict.get("geometry", ""):
                 geometries = parse_geometries(geometries_str)
         else:
             try:

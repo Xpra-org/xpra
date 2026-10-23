@@ -10,7 +10,7 @@ from importlib import import_module
 
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.platform.info import get_username
-from xpra.scripts.config import InitExit
+from xpra.config import InitExit
 from xpra.net.digest import get_salt, gendigest, get_digests, get_salt_digests
 from xpra.net.common import Packet, pretty_socket
 from xpra.common import may_show_progress

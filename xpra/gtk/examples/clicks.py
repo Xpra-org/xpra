@@ -27,8 +27,7 @@ class TestForm:
         self.window.set_default_size(320, 200)
         self.window.set_border_width(20)
         self.window.set_position(Gtk.WindowPosition.CENTER)
-        icon = get_icon_pixbuf("pointer.png")
-        if icon:
+        if icon := get_icon_pixbuf("pointer.png"):
             self.window.set_icon(icon)
 
         vbox = Gtk.VBox()

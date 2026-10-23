@@ -131,8 +131,7 @@ class Win32WindowStackingWatcher:
             if window.is_tray():
                 # a system tray icon is not a window of its own: it has no `HWND`
                 continue
-            hwnd = window.get_window_handle()
-            if hwnd:
+            if hwnd := window.get_window_handle():
                 hwnd_to_wid[hwnd] = wid
         # `EnumWindows` returns the topmost window first, the server expects the reverse:
         hwnds = get_hwnd_stacking(hwnd_to_wid)

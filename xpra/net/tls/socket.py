@@ -19,7 +19,7 @@ from xpra.net.tls.file import (
 from xpra.net.tls.parsing import (
     parse_ssl_options_mask, parse_ssl_verify_mask, parse_ssl_protocol, parse_ssl_verify_mode,
 )
-from xpra.scripts.config import InitExit, InitException
+from xpra.config import InitExit, InitException
 from xpra.util.env import envbool, envint
 from xpra.util.parsing import parse_encoded_bin_data
 from xpra.util.str_fn import print_nested_dict, Ellipsizer
@@ -38,8 +38,7 @@ def ssl_wrap_socket(sock, **kwargs):
 def log_ssl_info(ssl_sock) -> None:
     log = get_ssl_logger()
     log("server_hostname=%s", ssl_sock.server_hostname)
-    cipher = ssl_sock.cipher()
-    if cipher:
+    if cipher := ssl_sock.cipher():
         log.info(" %s, %s bits", cipher[0], cipher[2])
     try:
         cert = ssl_sock.getpeercert()

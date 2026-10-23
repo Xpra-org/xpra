@@ -112,8 +112,7 @@ def get_dummy_window(icon):
 
 
 def do_ready() -> None:
-    osxapp = get_OSXApplication()
-    if osxapp:
+    if osxapp := get_OSXApplication():
         log("%s()", osxapp.ready)
         osxapp.ready()
 
@@ -472,8 +471,7 @@ def add_monitor_colour_info(minfo: dict[str, Any], adid) -> None:
         cs = None
         log("CGDisplayCopyColorSpace(%#x) failed", adid, exc_info=True)
     if cs:
-        name = get_colorspace_info(cs).get("name")
-        if name:
+        if name := get_colorspace_info(cs).get("name"):
             minfo["colorspace"] = name
     # colour depth and HDR (EDR) capability from the matching NSScreen:
     screen = get_nsscreen_for_display(adid)
@@ -542,15 +540,13 @@ def get_nsview(window) -> int:
 
 def add_window_hooks(window) -> None:
     if WHEEL:
-        nsview = get_nsview(window)
-        if nsview:
+        if nsview := get_nsview(window):
             VIEW_TO_WINDOW[nsview] = window
 
 
 def remove_window_hooks(window) -> None:
     if WHEEL:
-        nsview = get_nsview(window)
-        if nsview:
+        if nsview := get_nsview(window):
             VIEW_TO_WINDOW.pop(nsview, None)
 
 

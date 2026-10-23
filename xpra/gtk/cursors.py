@@ -95,8 +95,7 @@ def get_local_cursor(cursor_name: str):
     # some cursors exist but have no image we can use (win32 does that),
     # so keep trying the aliases until we find one we can paint:
     for name in (cursor_name, ) + CURSOR_ALIASES.get(cursor_name.lower(), ()):
-        cursor = new_cursor(display, name)
-        if cursor:
+        if cursor := new_cursor(display, name):
             pixbuf = cursor.get_image()
             log("%s.get_image()=%s", name, pixbuf)
             # #2498: gtk3 on MS Windows hands out empty pixel buffers,

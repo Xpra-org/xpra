@@ -1,7 +1,8 @@
 Xdummy
 ------
 
-By default, the Debian packages no longer use Xdummy.
+Xdummy is used by default from Debian trixie and Ubuntu resolute onwards,
+older releases use Xvfb instead (see https://github.com/Xpra-org/xpra/issues/2834).
 
 This can be changed by modifying the configuration file
 /etc/xpra/conf.d/55_server_x11.conf
