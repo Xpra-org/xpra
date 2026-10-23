@@ -27,7 +27,6 @@ from xpra.util.env import envint, envbool, filter_env, save_env, get_saved_env
 from xpra.util.parsing import (
     ALL_BOOLEAN_OPTIONS,
     parse_scaling, str_to_bool, parse_bool_or,
-    FALSE_OPTIONS,
 )
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import getuid, getgid, gi_import, WIN32, OSX, POSIX, LINUX
@@ -43,7 +42,7 @@ from xpra.scripts.parsing import (
 from xpra.config.types import XpraConfig, CLIENT_OPTIONS, START_COMMAND_OPTIONS, PROXY_START_OVERRIDABLE_OPTIONS
 from xpra.config import InitException, InitInfo, InitExit
 from xpra.config.fixup import fixup_options
-from xpra.config.validation import parse_landlock_option, split_landlock_option
+from xpra.config.validation import parse_landlock_option, split_landlock_option, parse_seccomp_option
 from xpra.config.paths import find_docs_path, find_html5_path
 from xpra.config.defaults import get_defaults, make_defaults_struct, has_audio_support
 from xpra.net.constants import SOCKET_TYPES, SocketState
@@ -306,66 +305,6 @@ def configure_network(options) -> None:
     # verify that at least one real encoder is available:
     if not ees:
         raise InitException("at least one valid packet encoder must be enabled")
-
-
-SECCOMP_THREADS: tuple[str, ...] = ("decode", "parse", "rfb", "menu")
-SECCOMP_ACTIONS: tuple[str, ...] = (
-    "kill", "kill_thread", "kill-thread", "kill_process", "kill-process", "errno", "log", "allow",
-)
-
-
-def parse_seccomp_option(value: str) -> dict[str, str]:
-    """
-    Convert a `--seccomp=...` option value into the environment variables
-    that gate the per-thread seccomp filters (decode / parse / rfb / menu).
-    Returns an empty dict for an empty / "auto" value (leave the environment untouched).
-    Raises `ValueError` for invalid values.
-    """
-    value = (value or "").strip().lower()
-    if value in ("", "auto"):
-        return {}
-    env: dict[str, str] = {}
-    if value in FALSE_OPTIONS:
-        # force everything off (including the global fallback flag):
-        env["XPRA_SECCOMP"] = "0"
-        for thread in SECCOMP_THREADS:
-            env[f"XPRA_SECCOMP_{thread.upper()}"] = "0"
-        return env
-    if value in ("default", "strict"):
-        # enable all the filters, `default` is non-fatal (errno), `strict` kills the process:
-        action = "errno" if value == "default" else "kill_process"
-        for thread in SECCOMP_THREADS:
-            env[f"XPRA_SECCOMP_{thread.upper()}"] = "1"
-            env[f"XPRA_SECCOMP_{thread.upper()}_ACTION"] = action
-        return env
-    # explicit list of threads, ie: "decode,parse" or "decode:errno,parse:kill":
-    actions: dict[str, str] = {}
-    for part in value.split(","):
-        part = part.strip()
-        if not part:
-            continue
-        thread, _, action = part.partition(":")
-        thread = thread.strip()
-        action = action.strip()
-        if thread not in SECCOMP_THREADS:
-            raise ValueError(f"invalid seccomp thread {thread!r}, must be one of: {csv(SECCOMP_THREADS)} or 'default', 'strict'")
-        if action and action not in SECCOMP_ACTIONS:
-            raise ValueError(f"invalid seccomp action {action!r}, must be one of: {csv(SECCOMP_ACTIONS)}")
-        actions[thread] = action
-    if not actions:
-        raise ValueError(f"no valid seccomp threads found in {value!r}")
-    # deliberately do not set the global `XPRA_SECCOMP` flag here:
-    # the decode filter reads it as its primary gate, so setting it would override
-    # the per-thread flags below. Enable / disable each thread explicitly instead:
-    for thread in SECCOMP_THREADS:
-        var = f"XPRA_SECCOMP_{thread.upper()}"
-        if thread in actions:
-            env[var] = "1"
-            if actions[thread]:
-                env[f"{var}_ACTION"] = actions[thread]
-        else:
-            env[var] = "0"
-    return env
 
 
 def configure_seccomp(value: str) -> None:

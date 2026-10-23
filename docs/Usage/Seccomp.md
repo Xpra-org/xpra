@@ -248,7 +248,7 @@ in `xpra/seccomp/`:
   parsing platform menu data (`xpra/server/menu_provider.py`).
 
 The `--seccomp` option is turned into the `XPRA_SECCOMP*` environment variables by
-`parse_seccomp_option()` / `configure_seccomp()` in `xpra/scripts/main.py`. This
+`parse_seccomp_option()` in `xpra/config/validation.py` and `configure_seccomp()` in `xpra/scripts/main.py`. This
 runs in `run_mode` right after `configure_env`, before the client / server object
 and its threads are created, and only sets variables that are not already defined.
 The list form deliberately does **not** set the global `XPRA_SECCOMP` flag: the
