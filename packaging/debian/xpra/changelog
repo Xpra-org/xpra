@@ -1,22 +1,90 @@
 xpra (5.1.7-1) UNRELEASED; urgency=low
-  * Platforms, build and packaging:
+  * 🔧 Platforms, build and packaging:
+    honour `--root ROOT` when installing
+    better install prefix detection
+    fix OpenBSD dependency and CUPS paths, and omit systemd files on BSD
+    recognize OpenBSD in operating system names and platform icons
     RPM packages could lack the cairo typelib required by Gtk and Rsvg
-    MS Windows SBOM generation failed when Python was installed outside `Python312`
-    MS Windows builds and server socket tests failed to parse on Python 3.6 / 3.7
     X11 window tests failed to import on Python 3.6
     verify deb packages before copying to the repo
     stop building DEBs on any failure
     Fedora 45 package list
-    MSYS2 builds no longer require obsolete Soup and croco dependencies
     almalinux build failures and rockylinux
     missing default build list - unused arm64 list
     RHEL builds need our private openh264 and CentOS
     Python 3.6 syntax compatibility
-    no pyopengl to build here
+    no `pyopengl` to build here
     Ubuntu Stonking packaging
     googlesource downloads are not reliable
     macOS: always enable logging to file when spawned from the GUI
-  * Encodings:
+    macOS menu fixes
+    restore Python 3.6+ compatibility
+    `xserver-xorg-video-dummy` failed on Debian `arm64`
+    ignore cython generated shared objects in source tree
+    recognize `OpenBSD` platform names
+    `OpenBSD` build paths
+    `is_arm` should match all 64-bit arm`
+    enable speaker forwarding on `arm`
+    oudated `raspbian` workaround
+    don't start Xorg if its config file is missing
+  * 📦 RPM:
+    RPM dependency fixes
+    prevent version conflicts
+    `pytools 2026.1.1`, `2022.1.12` for RHEL 8 + build dependencies on RHEL8:
+    `typing-extensions 4.1.1`
+    `platformdirs 2.4.0`
+    `siphash24 1.6` + update build lists
+    `libfakeXinerama` build flags and license
+    `pylsqpack 0.3.23`, `0.3.16` on RHEL8
+    `pyu2f 0.1.5`
+    `uinput 1.0.1`
+    `wheel 0.41.3`
+    `openh264 2.7.0
+    `pycuda` missing package dependencies
+  * ⚠️ Major:
+    don't leave the client waiting when an authentication module raises
+    prevent an endless window info lookup when a parent window disappears
+    numeric list options could return a single integer instead of the converted list
+    clients failed to connect to shadow servers because the server's hello packet could not be encoded
+    drag-and-drop can get wedged and stop working
+    Gtk clients fail to restack a window above or below another window
+    don't reconfigure monitors unless required
+    resizing desktop sessions has no effect on Xvfb displays
+    X11 error callbacks could use Python state without holding the GIL
+    X11 events could stop being routed after unmatched filter cleanup or shared filter use
+    X11 32-bit sign extension of property values
+    handle duplicated mode attribute in session files
+    allow upgrades on displays where no window manager is left
+    chunked file transfer early rejection errors out
+    wheel events may land in the wrong location
+    misnamed X11 atoms
+    macOS client crash with audio enabled or speaker state changes
+    nvenc: choose a profile matching the chroma format
+    remove `AES-CFB`
+    crashes with sharing and disconnections
+    paint issues when pointer overlay and border are used together
+    misplaced transient windows with desktop scaling
+    child reaper detects the wrong exit code
+  * ⊞ MS Windows:
+    SBOM generation failed when Python was installed outside `Python312`
+    SBOM: skip empty licenses
+    builds and server socket tests failed to parse on Python 3.6 / 3.7
+    builds don't need the service tool
+    try harder to find `nvcc`
+    remove obsolete `soup` and `croco` dependencies, `gnutls` and `crypto++`
+    remove unused GStreamer video codecs
+    console commands redirected their output to a log file
+    object leak querying desktop name
+    object leak querying cursors
+    avoid using comtypes
+    `mmap` uses unavailable API calls
+    clipboard memory handle bugs
+    don't forward the ssh agent
+  * 🌈 Encodings:
+    auto-refresh is delayed too long
+    load the `libcuda` runtime soname
+    `cuda` context free race crash
+    validate `jpeg` and `vpx` dimensions and strides decoded from untrusted systems
     unreliable GStreamer video decoders were enabled by default
     nvenc: set hevc level
     nvenc: only advertise YUV444 output when the device supports it for h264 / h265
@@ -30,40 +98,17 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     swapped colour channels, miscalculated rowstride
     prefer BGRX / BGRA by default
     cairo: discard alpha from 32-bit data when needed
-  * MS Windows:
-    console commands redirected their output to a log file
-    object leak querying desktop name
-    object leak querying cursors
-    avoid using comtypes
-    `mmap` uses unavailable API calls
-    clipboard memory handle bugs
-  * Mmap:
-    confine client-named files to the server mmap directory and reject symlinks
-    use the actual mmap area size
-    validate control header pointers and disconnect clients that corrupt them
-    validate chunks supplied by the peer
-    validate chunks before freeing data for a window that is gone
-    reject missing server mmap tokens
-    limit is actually 4GB
-    validate the token location and size
-  * Major:
-    clients failed to connect to shadow servers because the server's hello packet could not be encoded
-    keyboard layout group could be wrong after a keymap or keyboard state reset
-    drag-and-drop can get wedged and stop working
-    Gtk clients fail to restack a window above or below another window
-    don't reconfigure monitors unless required
-    resizing desktop sessions has no effect on Xvfb displays
-    X11 error callbacks could use Python state without holding the GIL
-    X11 events could stop being routed after unmatched filter cleanup or shared filter use
-    handle duplicated mode attribute in session files
-    allow upgrades on displays where no window manager is left
-    chunked file transfer early rejection errors out
-    wheel events may land in the wrong location
-    misnamed X11 atoms
-    macOS client crash with audio enabled or speaker state changes
-    nvenc: choose a profile matching the chroma format
-    remove `AES-CFB`
-  * Network:
+  * 📬 Notifications:
+    only forward icon theme names as `app_icon`
+    remove images and links from the body
+    escape the notification summary in Gtk fallback notifier
+    strip unsafe markup
+    dbus retry loop
+    forget notifications closed by the client
+    detect loops via the service name
+    try the next notifier backend when one fails
+    skip notification warnings during cleanup
+  * 🖧 Network:
     socket leaks when the proxy connection fails
     don't mask exceptions raised without arguments
     don't block forever on a websocket upgrade that never completes
@@ -94,13 +139,11 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     don't leave failed SSL connections dangling
     don't pass encrypted peek data to the protocol after an SSL upgrade
     silence macOS legacy SSL warnings
-  * Notifications:
-    dbus retry loop
-    forget notifications closed by the client
-    detect loops via the service name
-    try the next notifier backend when one fails
-    skip notification warnings during cleanup
-  * Clipboard:
+  * ⌨ Keyboard:
+    keyboard layout group could be wrong after a keymap or keyboard state reset
+    unicode keysyms parsing
+    comma-separated keyboard layouts were parsed as individual characters
+  * 📋 Clipboard:
     fail the requests waiting on an incremental transfer which times out
     give incremental transfers longer than `CONVERT_TIMEOUT` to complete
     test must wait for synchronization to occur
@@ -112,6 +155,15 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     raw atoms cause connection to drop
     blinking for every pending transfer is excessive
     don't ask the server for progress updates
+  * Mmap:
+    confine client-named files to the server mmap directory and reject symlinks
+    use the actual mmap area size
+    validate control header pointers and disconnect clients that corrupt them
+    validate chunks supplied by the peer
+    validate chunks before freeing data for a window that is gone
+    reject missing server mmap tokens
+    limit is actually 4GB
+    validate the token location and size
   * OpenGL:
     verify the rgb buffer size
     Gtk X11 clients errors
@@ -120,6 +172,7 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     discard alpha padding in RGBX uploads
     include unit test
   * Minor:
+    fully transparent opacity is not unset
     busy loop while waiting for the X11 server to start
     PulseAudio failed to start in read-only containers
     read-only Gtk clients failed to resize windows
@@ -142,7 +195,6 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     GStreamer initialization failed with newer PyGObject versions
     runtime directory creation could race concurrent server starts
     video maximum-size overrides ignored the requested height
-    comma-separated keyboard layouts were parsed as individual characters
     dangling SSH agent symlinks were left behind on session cleanup
     `xpra clean-sockets` could skip every socket
     clean dead ssh agent symlinks
@@ -154,7 +206,11 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     UI watcher resume never fires
     drop audio `removesilence` since it never worked properly
     cursor logging errors
-  * Cosmetic:
+    missing type conversion
+    windows can disappear as we inspect them
+  * 💄 Cosmetic:
+    incorrect library versions reported
+    skip video warnings for clients without video support
     HTTP request timeouts were logged as errors before Python 3.10
     proxy destination regression test
     indentation
@@ -167,8 +223,10 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     consistent attribute initialization
     remove unavailable test commands
     fix ignored test
+    X11 tests failed due to invalid xauth cookie
+    tests now stop the `dbus-daemon`s left behind
 
- -- Antoine Martin <antoine@xpra.org>  Thu, 08 Oct 2026 18:40:33 +0700
+ -- Antoine Martin <antoine@xpra.org>  Fri, 23 Oct 2026 19:23:59 +0700
 
 xpra (5.1.6-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:
