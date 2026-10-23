@@ -6,7 +6,9 @@
 
 import os
 import sys
+import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, call, patch
 
@@ -188,6 +190,65 @@ class ConnectionAdapterTest(unittest.TestCase):
             parsing.parse_display_name(opts, "unknown://alice:secret@host/")
         self.assertEqual(raised.exception.status, ExitCode.UNSUPPORTED)
         self.assertEqual((opts.username, opts.password, opts.display), ("", "", "original"))
+
+    def test_backend_selection_and_fallback(self):
+        for windows, expected in ((False, ["ssh", "-x"]), (True, ["plink.exe", "-ssh", "-agent"])):
+            with self.subTest(windows=windows), patch.object(parsing, "WIN32", windows):
+                with patch.dict(sys.modules, {"paramiko": None}):
+                    self.assertEqual(parsing.parse_ssh_option("auto"), expected)
+                with patch.dict(sys.modules, {"paramiko": SimpleNamespace()}):
+                    self.assertEqual(parsing.parse_ssh_option("auto"), ["paramiko"])
+        for setting in ("paramiko", "asyncssh", "ssh -x"):
+            with patch.dict(sys.modules, {"paramiko": None, "asyncssh": None}):
+                self.assertEqual(parsing.parse_ssh_option(setting), setting.split())
+        with self.assertRaises(ValueError):
+            parsing.parse_ssh_option('ssh "unterminated')
+
+    def test_password_file_contents_and_failures(self):
+        with tempfile.TemporaryDirectory() as directory:
+            password_file = Path(directory) / "password"
+            password_file.write_text("secret\n", encoding="utf8")
+            opts = make_options(password_file=[str(password_file)])
+            desc = parsing.parse_display_name(opts, "tcp://host/")
+            self.assertEqual(desc["password"], "secret\n")
+            self.assertEqual(opts.password, "secret\n")
+            with patch.object(parsing, "warn") as warning:
+                self.assertEqual(parsing.load_password_file(""), "")
+                self.assertEqual(parsing.load_password_file(str(password_file.with_name("missing"))), "")
+                self.assertEqual(parsing.load_password_file(directory), "")
+            self.assertEqual(warning.call_count, 3)
+
+    def test_proxy_discovery(self):
+        factory = Mock()
+        module = SimpleNamespace(ProxyFactory=lambda: factory)
+        for proxies, expected in (([], {}), (["direct://"], {}), (["invalid"], {}),
+                                  (["http://bob:secret@proxy:8080", "http://unused"],
+                                   {"proxy-host": "proxy", "proxy-port": 8080, "proxy-username": "bob", "proxy-password": "secret"})):
+            factory.getProxies.return_value = proxies
+            with self.subTest(proxies=proxies), patch.dict(sys.modules, {"xpra.net.libproxy": module}):
+                self.assertEqual(parsing.auto_proxy("tcp", "host"), expected)
+            factory.getProxies.assert_called_with("tcp://host")
+        with patch.dict(sys.modules, {"xpra.net.libproxy": None}), patch.object(parsing, "warn") as warning:
+            self.assertEqual(parsing.auto_proxy("tcp", "host"), {})
+        self.assertEqual(warning.call_count, 2)
+
+    def test_tls_configuration_precedence(self):
+        tls = SimpleNamespace(
+            load_ssl_options=Mock(return_value={"verify-flags": "saved", "check-hostname": "saved"}),
+            get_ssl_attributes=Mock(return_value={"verify-flags": "configured", "check-hostname": False, "ciphers": "configured"}),
+        )
+        opts = make_options(ssl_server_hostname="tls-host")
+        desc = {"host": "host", "port": 1234, "strict-host-check": False}
+        defaults = {"ciphers": "upgrade-default"}
+        with patch.dict(sys.modules, {"xpra.net.tls.file": tls}):
+            result = parsing.get_ssl_options(desc, opts, ["--ssl-check-hostname=no"], defaults)
+        self.assertEqual(result, {"verify-flags": "saved", "check-hostname": False, "ciphers": "upgrade-default",
+                                  "server-hostname": "tls-host", "server-verify-mode": "none"})
+        tls.load_ssl_options.assert_called_once_with("tls-host", 1234)
+        tls.get_ssl_attributes.assert_called_once_with(opts, server_side=False, overrides=desc)
+        with patch.dict(sys.modules, {"xpra.net.tls.file": None}), self.assertRaises(InitExit) as raised:
+            parsing.get_ssl_options(desc, opts, [])
+        self.assertEqual(raised.exception.status, ExitCode.UNSUPPORTED)
 
 
 if __name__ == "__main__":
