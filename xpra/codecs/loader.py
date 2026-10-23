@@ -613,5 +613,9 @@ def print_codecs(list_codecs: Sequence[str]) -> None:
     print_nested_dict(codec_versions, vformat=forcever, print_fn=out.info)
 
 
+def run_encoding(args: list[str]) -> int:
+    return main(["encoding"] + args)
+
+
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

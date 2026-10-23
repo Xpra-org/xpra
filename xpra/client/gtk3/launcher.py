@@ -1291,5 +1291,9 @@ def do_main(argv: list[str]) -> int:
     return 0
 
 
+def run_launcher(args: list[str]) -> int:
+    return main(["launcher.py"] + args)
+
+
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

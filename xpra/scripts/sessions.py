@@ -461,6 +461,14 @@ def run_stopexit(mode: str, opts, extra_args: list[str], cmdline: list[str]) -> 
     return e
 
 
+def run_stop(opts, extra_args: list[str], cmdline: list[str]) -> ExitValue:
+    return run_stopexit("stop", opts, extra_args, cmdline)
+
+
+def run_exit(opts, extra_args: list[str], cmdline: list[str]) -> ExitValue:
+    return run_stopexit("exit", opts, extra_args, cmdline)
+
+
 def show_final_state(display_desc: dict[str, Any]) -> int:
     # this is for local sockets only!
     display = display_desc["display"]

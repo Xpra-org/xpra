@@ -212,6 +212,10 @@ def do_run_glcheck(opts: XpraConfig, show=False) -> dict[str, Any]:
             logging.root.setLevel(saved_level)
 
 
+def run_gltest(opts: XpraConfig) -> ExitValue:
+    return run_glprobe(opts, True)
+
+
 def run_glcheck(opts: XpraConfig) -> ExitValue:
     # cheap easy check first:
     log = Logger("opengl")

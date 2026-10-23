@@ -447,5 +447,9 @@ def main(argv=()) -> int:
     return 0
 
 
+def run_bug_report(args: list[str]) -> int:
+    return main(["bug_report.py"] + args)
+
+
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

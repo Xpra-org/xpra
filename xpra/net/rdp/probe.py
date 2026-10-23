@@ -80,5 +80,9 @@ def main(argv) -> int:
     return 1
 
 
+def run_rdp_probe(args: list[str]) -> int:
+    return main(["xpra rdp"] + args)
+
+
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

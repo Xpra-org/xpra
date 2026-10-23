@@ -181,5 +181,9 @@ def main(argv: list[str]) -> int:
     return 0
 
 
+def run_webcam(args: list[str]) -> int:
+    return main(["show_webcam.py"] + args)
+
+
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

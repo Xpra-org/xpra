@@ -48,7 +48,7 @@ from xpra.config.defaults import get_defaults, make_defaults_struct, has_audio_s
 from xpra.net.constants import SOCKET_TYPES, SocketState
 from xpra.log import is_debug_enabled, Logger, get_debug_args, enable_format, inject_debug_logging
 from xpra.scripts.display import get_displays_info
-from xpra.scripts.sessions import identify_new_socket, run_stopexit, run_recover
+from xpra.scripts.sessions import identify_new_socket, run_recover
 from xpra.scripts.args import (
     strip_defaults_start_child,
     split_display_arg,
@@ -653,15 +653,8 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         return get_mode_handler(mode, args, *entry)(options, args)
     if entry := OPTIONS_ARGS_CMDLINE_MODES.get(mode):
         return get_mode_handler(mode, args, *entry)(options, args, cmdline)
-    if mode in ("stop", "exit"):
-        no_gtk()
-        return run_stopexit(mode, options, args, cmdline)
     if mode == "recover":
         return run_recover(script_file, cmdline, options, args, defaults)
-    if mode == "launcher":
-        check_gtk_client()
-        from xpra.client.gtk3.launcher import main as launcher_main
-        return launcher_main(["launcher.py"] + args)
     if mode == "gui":
         try:
             check_gtk_client()
@@ -682,10 +675,6 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
             warn(f"Warning: the xpra client gui component is not installed: {e}")
             run_help(script_file)
             return ExitCode.COMPONENT_MISSING
-    if mode == "bug-report":
-        check_gtk_client()
-        from xpra.gtk.dialogs import bug_report
-        return bug_report.main(["bug_report.py"] + args)
     if mode in ("_proxy_run", "_proxy_exec"):
         nox()
         return run_proxy_run(options, script_file, cmdline, args, "exec" if mode == "_proxy_exec" else "run")
@@ -697,24 +686,8 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
             raise InitExit(ExitCode.COMPONENT_MISSING, "no audio support!")
         from xpra.audio.wrapper import run_audio
         return run_audio(mode, args)
-    if mode == "input_pass":
-        check_gtk_client()
-        from xpra.scripts.pinentry import input_pass
-        password = input_pass((args + ["password"])[0])
-        return len(password) > 0
-    if mode == "opengl-test":
-        check_gtk_client()
-        from xpra.scripts.glprobe import run_glprobe
-        return run_glprobe(options, True)
     if mode == "autostart":
         return run_autostart(script_file, args)
-    if mode == "encoding":
-        from xpra.codecs import loader
-        return loader.main([script_file] + args)
-    if mode == "webcam":
-        check_gtk("webcam")
-        from xpra.gtk.dialogs import show_webcam
-        return show_webcam.main(["show_webcam.py"] + args)
     if mode == "webcam-client":
         check_gtk("webcam-client")
         if not args:
@@ -742,17 +715,8 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
             check_gtk("gui-info")
         from xpra.platform import gui as platform_gui
         return platform_gui.main(cmdline)
-    if mode == "rdp":
-        from xpra.net.rdp import probe
-        return probe.main(["xpra rdp"] + args)
     if mode == "initenv":
         raise InitExit(ExitCode.UNSUPPORTED, "initenv is no longer supported")
-    if mode in ("set", "setting"):
-        from xpra.scripts.settings import run_setting
-        return run_setting(True, args)
-    if mode == "unset":
-        from xpra.scripts.settings import run_setting
-        return run_setting(False, args)
     if mode != "help":
         print(f"Invalid subcommand {mode!r}")
         try:
@@ -2404,6 +2368,7 @@ OPTIONS_MODES: dict[str, tuple[str, Callable | str]] = {
     "mdns-gui": ("no_extra_args,gtk_client", "xpra.gtk.dialogs.mdns_gui:run_mdns_gui"),
     "sessions": ("no_extra_args,gtk_client", "xpra.gtk.dialogs.sessions_gui:run_sessions_gui"),
     "replay": ("no_extra_args", "xpra.gtk.dialogs.replay:do_main"),
+    "opengl-test": ("no_extra_args,gtk_client", "xpra.scripts.glprobe:run_gltest"),
     "start-gui": ("no_extra_args,gtk_client", "xpra.gtk.dialogs.start_gui:main"),
     "opengl": ("no_extra_args", "xpra.scripts.glprobe:run_glcheck"),
     "opengl-probe": ("no_extra_args,gtk_client", "xpra.scripts.glprobe:run_glprobe"),
@@ -2436,6 +2401,15 @@ ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
     "wait-for-wayland": ("max_one_arg", "xpra.wayland.client.wait:main"),
     "sbom": ("", run_sbom),
     "showsetting": ("requires_args", "xpra.scripts.settings:run_showsetting"),
+    "set": ("requires_args", "xpra.scripts.settings:run_set"),
+    "setting": ("requires_args", "xpra.scripts.settings:run_set"),
+    "unset": ("requires_args", "xpra.scripts.settings:run_unset"),
+    "launcher": ("gtk_client", "xpra.client.gtk3.launcher:run_launcher"),
+    "bug-report": ("gtk_client", "xpra.gtk.dialogs.bug_report:run_bug_report"),
+    "input_pass": ("max_one_arg,gtk_client", "xpra.scripts.pinentry:run_input_pass"),
+    "webcam": ("max_one_arg,gtk", "xpra.gtk.dialogs.show_webcam:run_webcam"),
+    "encoding": ("", "xpra.codecs.loader:run_encoding"),
+    "rdp": ("requires_args,max_one_arg", "xpra.net.rdp.probe:run_rdp_probe"),
 }
 CMDLINE_MODES: dict[str, tuple[str, Callable | str]] = {
     "keyboard": ("", "xpra.platform.keyboard:main"),
@@ -2460,6 +2434,8 @@ OPTIONS_ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
 }
 OPTIONS_ARGS_CMDLINE_MODES: dict[str, tuple[str, Callable | str]] = {
     "top": ("no_gtk", run_top),
+    "stop": ("no_gtk", "xpra.scripts.sessions:run_stop"),
+    "exit": ("no_gtk", "xpra.scripts.sessions:run_exit"),
     "encode": ("requires_args,no_gtk", run_encode),
     "session-info": ("gtk_client", run_session_info),
     "setup-ssl": ("max_one_arg", "xpra.net.tls.common:setup_ssl"),
