@@ -3288,7 +3288,7 @@ else:
         if webcam_ENABLED:
             external_includes += ["AVFoundation", "CoreMedia", "Quartz", "libdispatch"]
         # OSX package names (ie: gdk-x11-2.0 -> gdk-2.0, etc)
-        add_packages("xpra.platform.darwin")
+        add_packages("xpra.platform.darwin", "xpra.platform.darwin.shadow")
         remove_packages("xpra.platform.win32", "xpra.platform.posix")
         # to support GStreamer 1.x we need this:
         modules += ["importlib", "mimetypes"]
@@ -3296,7 +3296,7 @@ else:
         if audio_ENABLED:
             external_includes.append("typing_extensions")
     else:
-        add_packages("xpra.platform.posix")
+        add_packages("xpra.platform.posix", "xpra.platform.posix.shadow")
         remove_packages("xpra.platform.win32", "xpra.platform.darwin")
         if data_ENABLED:
             # not supported by all distros, but doesn't hurt to install them anyway:
@@ -3984,7 +3984,7 @@ if cythonize_more_ENABLED:
     ace("xpra.platform.paths")
     ace("xpra.util.ui_thread_watcher")
     if LINUX:
-        ace("xpra.platform.posix.shadow_server")
+        ace("xpra.platform.posix.shadow.server")
     if scripts_ENABLED:
         # The configuration compatibility entry point must still support python -m.
         ax("xpra.scripts", skip=("__init__.py", "config.py"))

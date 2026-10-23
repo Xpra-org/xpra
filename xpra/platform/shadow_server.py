@@ -14,7 +14,7 @@ def ShadowServer(*_args):  # pragma: no cover
     raise NotImplementedError()
 
 
-platform_import(globals(), "shadow_server", True,
+platform_import(globals(), "shadow.server", True,
                 "ShadowServer",
                 "SHADOW_OPTIONS",
                 )

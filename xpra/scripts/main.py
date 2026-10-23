@@ -10,13 +10,12 @@ import sys
 import os.path
 import time
 import logging
-from time import monotonic
 from importlib.util import find_spec
 
 from subprocess import Popen, PIPE, run
 import signal
 import traceback
-from typing import Any, NoReturn
+from typing import NoReturn
 from collections.abc import Callable
 
 from xpra.common import noerr, may_show_progress
@@ -29,7 +28,7 @@ from xpra.util.parsing import (
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import getuid, getgid, gi_import, WIN32, OSX, POSIX, LINUX
 from xpra.util.io import stderr_print, info, warn, error, clean_std_pipes
-from xpra.util.system import is_Wayland, set_proc_title, stop_proc
+from xpra.util.system import is_Wayland, set_proc_title
 from xpra.util.systemd import use_systemd_run, systemd_run_wrap
 from xpra.scripts.parsing import (
     get_usage,
@@ -67,7 +66,6 @@ from xpra.scripts.clients import run_client, get_client_app, make_client, connec
 assert callable(error), "used by modules importing this function from here"
 
 NO_ROOT_WARNING: bool = envbool("XPRA_NO_ROOT_WARNING", False)
-WAIT_SERVER_TIMEOUT: int = envint("WAIT_SERVER_TIMEOUT", 90)
 OPENGL_PROBE_TIMEOUT: int = envint("XPRA_OPENGL_PROBE_TIMEOUT", 5)
 VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
 
@@ -1105,89 +1103,6 @@ def run_autostart(args) -> ExitValue:
     return 0
 
 
-def start_macos_shadow(cmd, env, cwd) -> None:
-    # launch the shadow server via launchctl,
-    # so it can have GUI access:
-    LAUNCH_AGENT = "org.xpra.Agent"
-    LAUNCH_AGENT_FILE = f"/Library/LaunchAgents/{LAUNCH_AGENT}.plist"
-    try:
-        os.stat(LAUNCH_AGENT_FILE)
-    except Exception as e:
-        # ignore access denied error, launchctl runs as root
-        import errno
-        if e.args[0] != errno.EACCES:
-            warn("Error: shadow may not start,\n"
-                 f" the launch agent file {LAUNCH_AGENT_FILE!r} seems to be missing:{e}.\n")
-    argfile = os.path.expanduser("~/.xpra/shadow-args")
-    with open(argfile, "w", encoding="utf8") as f:
-        f.write('["Xpra", "--no-daemon"')
-        for x in cmd[1:]:
-            f.write(f', "{x}"')
-        f.write(']')
-    launch_commands = [
-        ["launchctl", "unload", LAUNCH_AGENT_FILE],
-        ["launchctl", "load", "-S", "Aqua", LAUNCH_AGENT_FILE],
-        ["launchctl", "start", LAUNCH_AGENT],
-    ]
-    log = get_logger()
-    log("start_macos_shadow: launch_commands=%s", launch_commands)
-    for x in launch_commands:
-        Popen(x, env=env, cwd=cwd).wait()
-
-
-def proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name) -> tuple[Any, str, str]:
-    log = Logger("server")
-    from xpra.platform.paths import get_app_dir
-    app_dir = get_app_dir()
-    cwd = app_dir
-    env = os.environ.copy()
-    exe = script_file
-    cmd = []
-    if envbool("XPRA_PAEXEC", True):
-        # use paexec to access the GUI session:
-        paexec = os.path.join(app_dir, "paexec.exe")
-        if os.path.exists(paexec) and os.path.isfile(paexec):
-            from xpra.platform.win32.wtsapi import find_session
-            from xpra.platform.info import get_username
-            username = get_username()
-            if session_info := find_session(username):
-                cmd = [
-                    "paexec.exe",
-                    "-i", str(session_info["SessionID"]), "-s",
-                ]
-                exe = paexec
-                # don't show a cmd window:
-                script_file = script_file.replace("Xpra_cmd.exe", "Xpra.exe")
-            else:
-                log("session not found for user '%s', not using paexec", username)
-    cmd += [script_file, "shadow"] + args
-    cmd += get_start_server_args(opts)
-    debug_args = os.environ.get("XPRA_SHADOW_DEBUG")
-    if debug_args is None:
-        debug_args = ",".join(get_debug_args())
-    if debug_args:
-        cmd.append(f"--debug={debug_args}")
-    log(f"proxy shadow start command: {cmd}")
-    proc = Popen(cmd, executable=exe, env=env, cwd=cwd)
-    start = monotonic()
-    elapsed = 0.0
-    while elapsed < WAIT_SERVER_TIMEOUT:
-        state = dotxpra.get_display_state(display_name)
-        if state == SocketState.LIVE:
-            log("found live server '%s'", display_name)
-            # give it a bit of time:
-            # FIXME: poll until the server is ready instead
-            time.sleep(1)
-            return proc, f"named-pipe://{display_name}", display_name
-        log(f"get_display_state({display_name})={state} (waiting)")
-        if proc.poll() not in (None, 0):
-            raise RuntimeError(f"shadow subprocess command returned {proc.returncode}")
-        time.sleep(0.10)
-        elapsed = monotonic() - start
-    stop_proc(proc, "shadow server")
-    raise RuntimeError(f"timeout: failed to identify the new shadow server {display_name!r}")
-
-
 def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
                             username="", uid=getuid(), gid=getgid(), env=None, cwd=None):
     log = Logger("server", "exec")
@@ -1229,6 +1144,7 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
         if not mode.startswith("shadow"):
             raise ValueError(f"invalid mode {mode!r} for MS Windows")
         assert display_name
+        from xpra.platform.win32.shadow.main import proxy_start_win32_shadow
         return proxy_start_win32_shadow(script_file, args, opts, dotxpra, display_name)
 
     # get the current list of existing sockets,
@@ -1255,6 +1171,7 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
         new_server_uuid = get_hex_uuid()
         cmd.append(f"--env=XPRA_PROXY_START_UUID={new_server_uuid}")
     if mode.startswith("shadow") and OSX:
+        from xpra.platform.darwin.shadow.main import start_macos_shadow
         start_macos_shadow(cmd, env, cwd)
         proc = None
     else:

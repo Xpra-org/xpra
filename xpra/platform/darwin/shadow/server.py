@@ -112,19 +112,19 @@ class ShadowServer(ShadowServerBase):
         super().__init__(attrs)
 
     def get_display_subsystem_class(self) -> type:
-        from xpra.platform.darwin.shadow_display import DarwinShadowDisplayManager
+        from xpra.platform.darwin.shadow.display import DarwinShadowDisplayManager
         return DarwinShadowDisplayManager
 
     def get_keyboard_subsystem_class(self) -> type:
-        from xpra.platform.darwin.shadow_keyboard import DarwinShadowKeyboardManager
+        from xpra.platform.darwin.shadow.keyboard import DarwinShadowKeyboardManager
         return DarwinShadowKeyboardManager
 
     def get_pointer_subsystem_class(self) -> type:
-        from xpra.platform.darwin.shadow_pointer import DarwinShadowPointerManager
+        from xpra.platform.darwin.shadow.pointer import DarwinShadowPointerManager
         return DarwinShadowPointerManager
 
     def get_cursor_subsystem_class(self) -> type:
-        from xpra.platform.darwin.shadow_cursor import DarwinShadowCursorManager
+        from xpra.platform.darwin.shadow.cursor import DarwinShadowCursorManager
         return DarwinShadowCursorManager
 
     def init(self, opts) -> None:

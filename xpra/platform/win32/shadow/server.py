@@ -174,19 +174,19 @@ class ShadowServer(ShadowServerBase):
         log.info("shadow-device vdd:%i -> monitor %r", slot, monitor)
 
     def get_display_subsystem_class(self) -> type:
-        from xpra.platform.win32.shadow_display import Win32ShadowDisplayManager
+        from xpra.platform.win32.shadow.display import Win32ShadowDisplayManager
         return Win32ShadowDisplayManager
 
     def get_keyboard_subsystem_class(self) -> type:
-        from xpra.platform.win32.shadow_keyboard import Win32ShadowKeyboardManager
+        from xpra.platform.win32.shadow.keyboard import Win32ShadowKeyboardManager
         return Win32ShadowKeyboardManager
 
     def get_pointer_subsystem_class(self) -> type:
-        from xpra.platform.win32.shadow_pointer import Win32ShadowPointerManager
+        from xpra.platform.win32.shadow.pointer import Win32ShadowPointerManager
         return Win32ShadowPointerManager
 
     def get_cursor_subsystem_class(self) -> type:
-        from xpra.platform.win32.shadow_cursor import Win32ShadowCursorManager
+        from xpra.platform.win32.shadow.cursor import Win32ShadowCursorManager
         return Win32ShadowCursorManager
 
     def init(self, opts) -> None:

@@ -46,7 +46,7 @@ class TerminalDisplayClientTest(ClientMixinTest):
         # the terminal client never initializes an X11 display source, so the platform
         # queries used by the display capabilities (`get_wm_name`, `get_vrefresh`, ...)
         # must not go looking for one - the client declares that with `XPRA_NOX11`,
-        # just like `xpra.platform.posix.shadow_server` does:
+        # just like `xpra.platform.posix.shadow.server` does:
         env_context = OSEnvContext(XPRA_NOX11="1")
         env_context.__enter__()
         self.addCleanup(env_context.__exit__)
