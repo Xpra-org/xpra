@@ -485,13 +485,6 @@ def platform_name(sys_platform=sys.platform, release="") -> str:
     return rel(sys_platform)
 
 
-def is_systemd_pid1() -> bool:
-    if not POSIX:
-        return False
-    d = load_binary_file("/proc/1/cmdline")
-    return d.find(b"/systemd") >= 0
-
-
 def get_processor_name() -> str:
     import platform
     sysname = platform.system()

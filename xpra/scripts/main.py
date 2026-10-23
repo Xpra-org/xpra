@@ -14,14 +14,13 @@ from time import monotonic
 from importlib.util import find_spec
 from collections.abc import Sequence
 
-from subprocess import Popen, PIPE, TimeoutExpired, run
+from subprocess import Popen, PIPE, run
 import signal
-import shlex
 import traceback
 from typing import Any, NoReturn
 from collections.abc import Callable
 
-from xpra.common import noerr, noop, may_show_progress, may_notify_client, set_progress_process
+from xpra.common import noerr, may_show_progress, may_notify_client, set_progress_process
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, filter_env, save_env, get_saved_env
 from xpra.util.parsing import (
@@ -31,7 +30,8 @@ from xpra.util.parsing import (
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import getuid, getgid, gi_import, WIN32, OSX, POSIX, LINUX
 from xpra.util.io import load_binary_file, stderr_print, info, warn, error, clean_std_pipes
-from xpra.util.system import is_Wayland, set_proc_title, is_systemd_pid1, stop_proc
+from xpra.util.system import is_Wayland, set_proc_title, stop_proc
+from xpra.util.systemd import use_systemd_run, systemd_run_wrap
 from xpra.scripts.parsing import (
     get_usage,
     parse_display_name, parse_env,
@@ -70,7 +70,6 @@ assert callable(error), "used by modules importing this function from here"
 NO_ROOT_WARNING: bool = envbool("XPRA_NO_ROOT_WARNING", False)
 WAIT_SERVER_TIMEOUT: int = envint("WAIT_SERVER_TIMEOUT", 90)
 OPENGL_PROBE_TIMEOUT: int = envint("XPRA_OPENGL_PROBE_TIMEOUT", 5)
-SYSTEMD_RUN: bool = envbool("XPRA_SYSTEMD_RUN", True)
 VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
 SPLASH_EXIT_DELAY: int = envint("XPRA_SPLASH_EXIT_DELAY", 4)
 SPLASH_KEEPALIVE_INTERVAL: int = max(0, envint("XPRA_SPLASH_KEEPALIVE_INTERVAL", 5))
@@ -338,34 +337,6 @@ def configure_env(env_str) -> None:
         os.environ.update(env)
 
 
-def systemd_run_command(mode: str, systemd_run_args="", user: bool = True) -> list[str]:
-    cmd = ["systemd-run", "--description", "xpra-%s" % mode, "--scope"]
-    if user:
-        cmd.append("--user")
-    log_systemd_wrap = envbool("XPRA_LOG_SYSTEMD_WRAP", True)
-    if not log_systemd_wrap:
-        cmd.append("--quiet")
-    if systemd_run_args:
-        cmd += shlex.split(systemd_run_args)
-    return cmd
-
-
-def systemd_run_wrap(mode: str, args, systemd_run_args="", user: bool = True, **kwargs) -> int:
-    cmd = systemd_run_command(mode, systemd_run_args, user)
-    cmd += args
-    cmd.append("--systemd-run=no")
-    errwrite = getattr(sys.stderr, "write", noop)
-    if envbool("XPRA_LOG_SYSTEMD_WRAP", True):
-        noerr(errwrite, f"using systemd-run to wrap {mode!r} xpra server subcommand\n")
-    if envbool("XPRA_LOG_SYSTEMD_WRAP_COMMAND", False):
-        noerr(errwrite, "%s\n" % " ".join(["'%s'" % x for x in cmd]))
-    try:
-        with Popen(cmd, **kwargs) as p:
-            return p.wait()
-    except KeyboardInterrupt:
-        return 128 + signal.SIGINT
-
-
 def isdisplaytype(args, *dtypes) -> bool:
     if not args:
         return False
@@ -444,39 +415,6 @@ def check_display() -> None:
     from xpra.platform.gui import can_access_display
     if not can_access_display():  # pragma: no cover
         raise InitExit(ExitCode.NO_DISPLAY, "cannot access display")
-
-
-def use_systemd_run(s) -> bool:
-    if not SYSTEMD_RUN or not POSIX or OSX:
-        return False  # pragma: no cover
-    systemd_run = parse_bool_or("systemd-run", s)
-    if systemd_run in (True, False):
-        return systemd_run
-    # detect if we should use it:
-    if os.environ.get("SSH_TTY") or os.environ.get("SSH_CLIENT"):  # pragma: no cover
-        # would fail
-        return False
-    if not is_systemd_pid1():
-        return False  # pragma: no cover
-    # test it:
-    cmd = ["systemd-run", "--quiet"]
-    if getuid() != 0:
-        cmd += ["--user"]
-    cmd += ["--scope", "--", "true"]
-    proc = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=False)
-    try:
-        proc.communicate(timeout=2)
-        r = proc.returncode
-    except TimeoutExpired:  # pragma: no cover
-        r = None
-    if r is None:
-        stop_proc(proc, "systemd-run")
-        if proc.poll() is None:
-            try:
-                proc.communicate(timeout=1)
-            except TimeoutExpired:  # pragma: no cover
-                r = None
-    return r == 0
 
 
 def verify_gir() -> None:

@@ -24,8 +24,9 @@ from xpra.util.objects import AdHocStruct
 from xpra.platform.paths import get_xpra_command
 from xpra.common import noop, noerr
 from xpra.config import InitException, InitExit, InitInfo
+from xpra.util.systemd import use_systemd_run, systemd_run_command, systemd_run_wrap
 from xpra.scripts.main import (
-    nox, use_systemd_run, systemd_run_command, systemd_run_wrap,
+    nox,
     handle_client_encoding_option, normalize_client_encoding_option,
     isdisplaytype,
     check_display, check_gtk, check_gtk_client,
