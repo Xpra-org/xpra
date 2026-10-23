@@ -258,7 +258,8 @@ def parse_display_name(opts, display_name: str, cmdline=(),
             raise RuntimeError("X11 / Wayland display names are not supported on this platform: %r" % (display_name, ))
         add_credentials()
         process_query(parsed.query)
-        fields = connection.get_local_display_attributes(display_name, parsed, opts.socket_dirs)
+        socket_dirs = () if display_name.startswith("@") else opts.socket_dirs
+        fields = connection.get_local_display_attributes(display_name, parsed, socket_dirs)
         opts.display = fields["display"]
         desc.update(fields)
         return desc

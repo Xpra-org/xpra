@@ -103,6 +103,12 @@ class ConnectionAdapterTest(unittest.TestCase):
         self.assertIs(desc["local"], True)
         self.assertEqual(opts.display, "10")
 
+    def test_abstract_socket_does_not_read_socket_directories(self):
+        opts = SimpleNamespace(username="", password="", password_file=[])
+        desc = parsing.parse_display_name(opts, "@abstract")
+        self.assertEqual(desc["socket_path"], "@abstract")
+        self.assertEqual(opts.display, "abstract")
+
     def test_ssh_complete_descriptor(self):
         opts = make_options()
         cmdline = ["--socket-dirs=/sockets"]
