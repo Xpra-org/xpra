@@ -207,7 +207,11 @@ class ModeTableTest(unittest.TestCase):
                 if callable(handler):
                     continue
                 module_name, function_name = handler.split(":")
-                spec = find_spec(module_name)
+                try:
+                    spec = find_spec(module_name)
+                except ModuleNotFoundError:
+                    # Optional parent packages may not be installed.
+                    continue
                 if not spec:
                     # ie: optional components like nvidia
                     continue
