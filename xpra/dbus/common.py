@@ -91,3 +91,17 @@ def init_system_bus():
     import dbus
     _system_bus = dbus.SystemBus()
     return _system_bus
+
+
+def run_dbus_system_list() -> int:
+    import dbus
+    for service in dbus.SystemBus().list_names():
+        print(service)
+    return 0
+
+
+def run_dbus_session_list() -> int:
+    import dbus
+    for service in dbus.SessionBus().list_names():
+        print(service)
+    return 0

@@ -2252,30 +2252,6 @@ def _browser_open_file(file_path) -> ExitValue:
     return 0
 
 
-def run_dbus_system_list() -> ExitValue:
-    import dbus
-    for service in dbus.SystemBus().list_names():
-        print(service)
-    return 0
-
-
-def run_dbus_session_list() -> ExitValue:
-    import dbus
-    for service in dbus.SessionBus().list_names():
-        print(service)
-    return 0
-
-
-def run_u2f(args: list[str]) -> ExitValue:
-    from xpra.gtk.dialogs.u2f_tool import main
-    return main(["u2f_tool.py"] + args)
-
-
-def run_fido2(args: list[str]) -> ExitValue:
-    from xpra.gtk.dialogs.fido2_tool import main
-    return main(["fido2_tool.py"] + args)
-
-
 def run_version_check(args) -> ExitValue:
     if gtk_init_check():
         check_display()
@@ -2339,8 +2315,8 @@ NO_ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
     "crypto-info": ("no_extra_args", "xpra.net.crypto:main"),
     "compression": ("no_extra_args", "xpra.net.compression:main"),
     "packet-encoding": ("no_extra_args", "xpra.net.packet_encoding:main"),
-    "dbus-system-list": ("no_extra_args", run_dbus_system_list),
-    "dbus-session-list": ("no_extra_args", run_dbus_session_list),
+    "dbus-system-list": ("no_extra_args", "xpra.dbus.common:run_dbus_system_list"),
+    "dbus-session-list": ("no_extra_args", "xpra.dbus.common:run_dbus_session_list"),
     "applications-menu": ("no_extra_args", "xpra.server.menu_provider:run_applications_menu"),
     "sessions-menu": ("no_extra_args", "xpra.server.menu_provider:run_sessions_menu"),
     "menu-cache": ("no_extra_args", "xpra.platform.menu_helper:run_menu_cache"),
@@ -2374,8 +2350,8 @@ ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
     "toolbox": ("gtk_client", "xpra.gtk.dialogs.toolbox:main"),
     "auth": ("requires_args", "xpra.auth.auth_helper:run_auth"),
     "notify": ("requires_args", "xpra.notification.dbus_backend:run_notify"),
-    "u2f": ("", run_u2f),
-    "fido2": ("", run_fido2),
+    "u2f": ("", "xpra.gtk.dialogs.u2f_tool:run_u2f"),
+    "fido2": ("", "xpra.gtk.dialogs.fido2_tool:run_fido2"),
     "otp": ("", "xpra.gtk.dialogs.otp:main"),
     "configure": ("", "xpra.gtk.configure.main:do_main"),
     "wait-for-x11": ("max_one_arg", "xpra.x11.wait:main"),
