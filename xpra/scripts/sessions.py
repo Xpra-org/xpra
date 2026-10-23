@@ -711,5 +711,5 @@ def run_recover(script_file: str, cmdline: list[str], options, args: list[str], 
     # use the existing display:
     options.use_display = "yes"
     no_gtk()
-    from xpra.scripts.main import run_server
+    from xpra.scripts.start import run_server
     return run_server(script_file, cmdline, options, args, mode, defaults)

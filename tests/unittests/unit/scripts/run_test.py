@@ -19,7 +19,8 @@ from xpra.net.constants import SocketState
 from xpra.config import InitExit
 from xpra.config.defaults import make_defaults_struct
 from xpra.scripts import main
-from xpra.scripts.main import do_run_mode, run_server_mode, split_start_child_args, get_mode_handler
+from xpra.scripts.main import do_run_mode, get_mode_handler
+from xpra.scripts.start import run_server_mode, split_start_child_args
 from xpra.scripts.proxy import run_proxy_run
 from xpra.scripts.clients import connect_client_app, create_client_app
 from xpra.scripts.parsing import mode_needs_ssh_agent, get_usage, MODE_ALIAS
@@ -99,7 +100,7 @@ class StartChildArgsTest(unittest.TestCase):
         for k, v in kwargs.items():
             setattr(opts, k, v)
         with patch.dict(os.environ, env or {}, clear=True), \
-             patch("xpra.scripts.main.OSX", False), patch("xpra.scripts.main.WIN32", False):
+             patch("xpra.scripts.start.OSX", False), patch("xpra.scripts.start.WIN32", False):
             return split_start_child_args(list(cmdline), opts, args), opts
 
     def test_connection_args_only(self):
@@ -136,10 +137,10 @@ class ServerModeTest(unittest.TestCase):
     def run_server_mode(self, args, state=SocketState.UNKNOWN, mode="seamless", attach="yes"):
         opts = make_defaults_struct()
         opts.attach = attach
-        with patch("xpra.scripts.main.run_remote_server", return_value="remote") as remote, \
-             patch("xpra.scripts.main.run_server", return_value="server") as server, \
-             patch("xpra.scripts.main.run_client", return_value="client") as client, \
-             patch("xpra.scripts.main.pick_display", return_value={"display_name": ":10"}), \
+        with patch("xpra.scripts.start.run_remote_server", return_value="remote") as remote, \
+             patch("xpra.scripts.start.run_server", return_value="server") as server, \
+             patch("xpra.scripts.start.run_client", return_value="client") as client, \
+             patch("xpra.scripts.start.pick_display", return_value={"display_name": ":10"}), \
              patch("xpra.platform.dotxpra.DotXpra") as dotxpra:
             dotxpra.return_value.get_display_state.return_value = state
             r = run_server_mode("xpra", [], opts, args, mode, mode, None)

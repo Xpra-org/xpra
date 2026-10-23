@@ -1819,6 +1819,7 @@ if modules_ENABLED:
                 "xpra.scripts.args",
                 "xpra.scripts.clients",
                 "xpra.scripts.proxy",
+                "xpra.scripts.start",
                 "xpra.scripts.sessions",
                 "xpra.scripts.settings",
                 "xpra.scripts.picker",

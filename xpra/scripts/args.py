@@ -206,3 +206,10 @@ def find_mode_pos(args, mode: str) -> int:
         except ValueError:
             pass
     raise InitException(f"mode {mode!r} not found in command line arguments {args}")
+
+
+def isdisplaytype(args, *dtypes) -> bool:
+    if not args:
+        return False
+    d = args[0]
+    return any(d.startswith(f"{dtype}/") or d.startswith(f"{dtype}:") for dtype in dtypes)

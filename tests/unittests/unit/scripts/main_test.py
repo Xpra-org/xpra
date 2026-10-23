@@ -164,7 +164,7 @@ class TestMain(unittest.TestCase):
 
     def test_remote_start_connects_after_run_hooks(self):
         from xpra.config.defaults import make_defaults_struct
-        from xpra.scripts.main import run_remote_server
+        from xpra.scripts.start import run_remote_server
         opts = make_defaults_struct()
         opts.attach = False
         opts.reconnect = False
@@ -182,7 +182,7 @@ class TestMain(unittest.TestCase):
 
         app.run = run
         glib = SimpleNamespace(idle_add=lambda fn, *args: queued.append(lambda: fn(*args)))
-        with patch("xpra.scripts.main.parse_display_name", return_value=desc), \
+        with patch("xpra.scripts.start.parse_display_name", return_value=desc), \
              patch("xpra.client.base.command.RequestStartClient", return_value=app), \
              patch("xpra.scripts.clients.gi_import", return_value=glib), \
              patch("xpra.util.thread.start_thread", side_effect=lambda fn, *a, **kw: fn()), \
