@@ -134,3 +134,16 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
         if pixbuf := self._pixbuf:
             Gdk.cairo_set_source_pixbuf(ctx, pixbuf, 0, 0)
             ctx.paint()
+
+
+def run_webcam_client(options, args: list[str], cmdline: list[str]) -> ExitValue:
+    from xpra.client.base.features import set_client_features
+    from xpra.scripts.parsing import parse_display_name
+    from xpra.scripts.main import basic_client_features, connect_to_server, do_run_client
+    set_client_features(options)
+    basic_client_features()
+    display_desc = parse_display_name(options, args[0], cmdline)
+    app = WebcamClient(display_desc)
+    app.init(options)
+    connect_to_server(app, display_desc, options)
+    return do_run_client(app)

@@ -178,7 +178,7 @@ MODE_TABLES = (
     main.NO_ARGS_MODES, main.OPTIONS_MODES, main.ARGS_MODES, main.CMDLINE_MODES,
     main.OPTIONS_ARGS_MODES, main.OPTIONS_ARGS_CMDLINE_MODES,
 )
-FLAGS = ("no_extra_args", "max_one_arg", "requires_args", "posix", "x11", "no_gtk", "gtk_client", "gtk")
+FLAGS = ("no_extra_args", "max_one_arg", "requires_args", "posix", "audio", "x11", "no_gtk", "gtk_client", "gtk")
 
 
 def explicit_modes() -> set[str]:
@@ -262,6 +262,14 @@ class ModeTableTest(unittest.TestCase):
             with patch(f"xpra.scripts.main.{fn}") as guard:
                 get_mode_handler("test", [], flag, print)
             guard.assert_called_once_with(*call_args)
+
+    def test_audio_flag(self):
+        with patch("xpra.scripts.main.has_audio_support", return_value=False):
+            with self.assertRaises(InitExit) as cm:
+                get_mode_handler("test", [], "audio", print)
+            self.assertEqual(cm.exception.status, ExitCode.COMPONENT_MISSING)
+        with patch("xpra.scripts.main.has_audio_support", return_value=True):
+            self.assertIs(get_mode_handler("test", [], "audio", print), print)
 
     def test_lazy_handler(self):
         from xpra.scripts.sessions import run_list

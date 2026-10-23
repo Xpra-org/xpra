@@ -92,7 +92,7 @@ NO_NETWORK_SUBCOMMANDS = (
     "gtk-info", "gui-info", "network-info", "monitor-info",
     "compression", "packet-encoding", "path-info",
     "printing-info", "version-info", "version-check", "toolbox",
-    "initenv", "setup-ssl", "show-ssl",
+    "setup-ssl", "show-ssl",
     "auth",
     "notify",
     "dbus-system-list", "dbus-session-list",
@@ -602,6 +602,9 @@ def check_mode_flags(mode: str, flags: str, args: list[str]) -> None:
         elif flag == "posix":
             if not POSIX or OSX:
                 raise InitExit(ExitCode.UNSUPPORTED, f"{mode!r} is not supported on this platform")
+        elif flag == "audio":
+            if not has_audio_support():
+                raise InitExit(ExitCode.COMPONENT_MISSING, "no audio support!")
         elif flag == "x11":
             reqx11(mode)
         elif flag == "no_gtk":
@@ -681,26 +684,6 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
     if mode == "_proxy" or mode.startswith("_proxy_"):
         nox()
         return run_proxy(options, script_file, cmdline, args, mode, defaults)
-    if mode in ("_audio_record", "_audio_play", "_audio_meter", "_audio_query"):
-        if not has_audio_support():
-            raise InitExit(ExitCode.COMPONENT_MISSING, "no audio support!")
-        from xpra.audio.wrapper import run_audio
-        return run_audio(mode, args)
-    if mode == "autostart":
-        return run_autostart(script_file, args)
-    if mode == "webcam-client":
-        check_gtk("webcam-client")
-        if not args:
-            raise InitExit(ExitCode.SERVER_NOT_FOUND, "webcam-client requires a server URI")
-        from xpra.client.base.features import set_client_features
-        set_client_features(options)
-        basic_client_features()
-        display_desc = parse_display_name(options, args[0], cmdline)
-        from xpra.client.gtk3.webcam_window import WebcamClient
-        app = WebcamClient(display_desc)
-        app.init(options)
-        connect_to_server(app, display_desc, options)
-        return do_run_client(app)
     if mode in ("keymap", "keymap-test"):
         # dumping the keymap of this system requires gtk,
         # `keymap-test` only needs it if no keymap file is specified:
@@ -715,8 +698,6 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
             check_gtk("gui-info")
         from xpra.platform import gui as platform_gui
         return platform_gui.main(cmdline)
-    if mode == "initenv":
-        raise InitExit(ExitCode.UNSUPPORTED, "initenv is no longer supported")
     if mode != "help":
         print(f"Invalid subcommand {mode!r}")
         try:
@@ -1790,10 +1771,10 @@ def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults
     return r
 
 
-def run_autostart(script_file, args) -> ExitValue:
+def run_autostart(args) -> ExitValue:
     def err(msg) -> int:
         print(msg)
-        print(f"Usage: {script_file!r} autostart enable|disable|status")
+        print("Usage: xpra autostart enable|disable|status")
         return 1
 
     # no CLI argument: show the GUI
@@ -2401,6 +2382,11 @@ ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
     "wait-for-wayland": ("max_one_arg", "xpra.wayland.client.wait:main"),
     "sbom": ("", run_sbom),
     "showsetting": ("requires_args", "xpra.scripts.settings:run_showsetting"),
+    "autostart": ("", run_autostart),
+    "_audio_record": ("audio", "xpra.audio.wrapper:run_audio_record"),
+    "_audio_play": ("audio", "xpra.audio.wrapper:run_audio_play"),
+    "_audio_meter": ("audio", "xpra.audio.wrapper:run_audio_meter"),
+    "_audio_query": ("audio", "xpra.audio.wrapper:run_audio_query"),
     "set": ("requires_args", "xpra.scripts.settings:run_set"),
     "setting": ("requires_args", "xpra.scripts.settings:run_set"),
     "unset": ("requires_args", "xpra.scripts.settings:run_unset"),
@@ -2440,6 +2426,7 @@ OPTIONS_ARGS_CMDLINE_MODES: dict[str, tuple[str, Callable | str]] = {
     "session-info": ("gtk_client", run_session_info),
     "setup-ssl": ("max_one_arg", "xpra.net.tls.common:setup_ssl"),
     "show-ssl": ("max_one_arg", "xpra.net.tls.common:show_ssl"),
+    "webcam-client": ("requires_args,gtk", "xpra.client.gtk3.webcam_window:run_webcam_client"),
 }
 
 

@@ -410,7 +410,6 @@ class TestMain(unittest.TestCase):
     def test_nongui_subcommands(self):
         self._check_xpra_command()
         for args in (
-            "initenv",
             "list",
             "list-windows",
             "showconfig",
