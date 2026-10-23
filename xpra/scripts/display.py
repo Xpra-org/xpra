@@ -8,20 +8,26 @@
 # the full main module (GTK, GLib, server/client startup logic, etc.).
 
 import os
+import sys
 import glob
+import time
+import signal
 import stat
 import shlex
 from subprocess import Popen, PIPE
 from importlib.util import find_spec
 from typing import Any, Final
 
-from xpra.os_util import getuid, getgid, WIN32, OSX
+from xpra.exit_codes import ExitCode, ExitValue
+from xpra.os_util import getuid, getgid, gi_import, WIN32, OSX, POSIX
 from xpra.util.env import envint, osexpand, OSEnvContext
-from xpra.util.io import is_socket, wait_for_socket, warn
+from xpra.util.io import is_socket, wait_for_socket, warn, load_binary_file
+from xpra.util.parsing import adjust_monitor_refresh_rate, validated_monitor_data
 from xpra.util.str_fn import sorted_nicely, csv
 from xpra.util.pid import load_pid
 from xpra.log import Logger
 from xpra.config import InitExit
+from xpra.scripts.common import no_gtk, reqx11
 
 VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
 
@@ -416,3 +422,231 @@ def get_displays(dotxpra=None, display_names=None, backend="") -> dict[str, Any]
     }
     log(f"get_displays({dotxpra}, {display_names})={displays} (xpra_sessions={xpra_sessions})")
     return displays
+
+
+def countdown(what: str, wait=5) -> None:
+    print(f"{what} will be forcibly terminated in {wait} seconds")
+    print("Press Control-C to abort")
+    for _ in range(wait):
+        sys.stdout.write(".")
+        sys.stdout.flush()
+        time.sleep(1)
+    print(flush=True)
+
+
+def run_displays(options, args) -> ExitValue:
+    # dotxpra = DotXpra(opts.socket_dirs+opts.client_socket_dirs)
+    displays = get_displays_info(display_names=args if args else None, sessions_dir=options.sessions_dir)
+    print(f"Found {len(displays)} displays:")
+    if args:
+        print(" matching " + csv(args))
+    SHOW = {
+        "xwayland": "XWayland",
+        "xpra-server-mode": "mode",
+        "uid": "uid",
+        "gid": "gid",
+    }
+    for display, descr in displays.items():
+        state = descr.pop("state", "LIVE")
+        info_str = ""
+        if wmname := descr.get("wmname"):
+            info_str += f"{wmname}: "
+
+        def show(name: str, value) -> str:
+            if value is True:
+                return name
+            return f"{name}={value}"
+
+        info_str += csv(show(v, descr.get(k)) for k, v in SHOW.items() if k in descr)
+        print("%10s    %-8s    %s" % (display, state, info_str))
+    return 0
+
+
+def run_clean_displays(options, args) -> ExitValue:
+    if not POSIX or OSX:
+        raise InitExit(ExitCode.UNSUPPORTED, "clean-displays is not supported on this platform")
+    displays = get_displays_info(sessions_dir=options.sessions_dir)
+    dead_displays = tuple(display for display, descr in displays.items() if descr.get("state") == "DEAD")
+    if not dead_displays:
+        print("No dead displays found")
+        if args:
+            print(" matching %s" % csv(args))
+        return 0
+    # now find the processes that own these dead displays:
+    display_pids = get_display_pids(*dead_displays)
+    if not display_pids:
+        print("No pids found for dead displays " + csv(sorted_nicely(dead_displays)))
+        if args:
+            print(" matching %s" % csv(args))
+        return ExitCode.FILE_NOT_FOUND
+    print("Found %i dead display pids:" % len(display_pids))
+    if args:
+        print(" matching %s" % csv(args))
+    for display, (pid, cmd) in sorted_nicely(display_pids.items()):
+        print("%4s    %-8s    %s" % (display, pid, cmd))
+    print()
+    countdown("These displays")
+    for display, (pid, cmd) in display_pids.items():
+        try:
+            os.kill(pid, signal.SIGINT)
+        except OSError as e:
+            print(f"Unable to send SIGINT to {pid}: {e}")
+    print("Done")
+    return 0
+
+
+def display_wm_info(args) -> dict[str, Any]:
+    reqx11("wminfo")
+    if not find_spec("xpra.x11") or not find_spec("xpra.x11.gtk"):
+        raise InitExit(ExitCode.UNSUPPORTED, "wminfo is not supported on this platform")
+    no_gtk()
+    if len(args) == 1:
+        os.environ["DISPLAY"] = args[0]
+    elif not args and os.environ.get("DISPLAY"):
+        # just use the current one
+        pass
+    else:
+        raise InitExit(ExitCode.NO_DISPLAY, "you must specify a display")
+    with OSEnvContext(GDK_BACKEND="x11"):
+        from xpra.x11.gtk.display_source import init_gdk_display_source
+        init_gdk_display_source()
+        from xpra.x11.wm_check import get_wm_info
+        info = get_wm_info()
+        gdk = gi_import("Gdk")
+        display = gdk.Display.get_default()
+        info["display"] = display.get_name()
+        return info
+
+
+def run_xshm(args) -> ExitValue:
+    if not find_spec("xpra.x11"):
+        raise RuntimeError("xshm subcommand is not supported on this platform")
+    no_gtk()
+    if len(args) == 1:
+        os.environ["DISPLAY"] = args[0]
+    elif not args and os.environ.get("DISPLAY"):
+        # just use the current one
+        pass
+    else:
+        raise InitExit(ExitCode.NO_DISPLAY, "you must specify a display")
+    with OSEnvContext(GDK_BACKEND="x11"):
+        from xpra.x11.bindings.display_source import init_display_source
+        init_display_source()
+        from xpra.x11.bindings.core import get_root_xid
+        from xpra.x11.bindings.shm import XShmBindings
+        XShm = XShmBindings()
+        if xshm := XShm.has_XShm():
+            # try to use it:
+            rxid = get_root_xid()
+            if w := XShm.get_XShmWrapper(rxid):
+                res = w.setup()
+                if not res[0]:
+                    warn("XShm access failed")
+                    xshm = False
+            else:
+                warn(f"failed to create XShm wrapper for root window {rxid:x}")
+                xshm = False
+        else:
+            warn("XShm extension is not available")
+        return ExitCode.OK if xshm else ExitCode.UNSUPPORTED
+
+
+def run_xwait(args) -> ExitValue:
+    from xpra.x11.bindings.xwait import main as xwait_main  # pylint: disable=no-name-in-module
+    xwait_main(args)
+    return 0
+
+
+def run_xinfo(args) -> ExitValue:
+    from xpra.x11.bindings.info import main as xinfo_main  # pylint: disable=no-name-in-module
+    return xinfo_main(args)
+
+
+def run_wminfo(args) -> ExitValue:
+    for k, v in display_wm_info(args).items():
+        print(f"{k}={v}")
+    return 0
+
+
+def run_wmname(args) -> ExitValue:
+    if name := display_wm_info(args).get("wmname", ""):
+        print(name)
+    return 0
+
+
+def _monitors_args(args: list[str], require_monitor_data: bool = True) -> tuple[str, str]:
+    from xpra.log import consume_verbose_argv
+    consume_verbose_argv(args, "screen", "randr")
+    jsondata = ""
+    display = ""
+    for arg in args:
+        if arg.startswith(":"):
+            if display:
+                raise InitExit(ExitCode.FAILURE, "duplicated display on command line")
+            display = arg
+        else:
+            if jsondata:
+                raise InitExit(ExitCode.FAILURE, "duplicated monitor data on command line")
+            jsondata = arg
+    if not jsondata:
+        if require_monitor_data:
+            raise InitExit(ExitCode.FAILURE, "missing JSON monitor data argument")
+        jsondata = "-"
+    display = display or os.environ.get("DISPLAY", "")
+    if not display and not (WIN32 or OSX):
+        raise InitExit(ExitCode.FAILURE, "missing display argument")
+    return display, jsondata
+
+
+def run_monitor_info(options, args: list[str]) -> int:
+    # should we honour desktop scaling here?
+    # parse_scaling(options.desktop_scaling, w, h)
+    display, jsondata = _monitors_args(args, require_monitor_data=False)
+    backend = options.backend or "gtk"
+    if backend == "win32":
+        from xpra.scripts.main import no_gi_gtk_modules
+        no_gi_gtk_modules()
+        from xpra.platform.win32.monitors import get_monitors_info
+    else:
+        if display:
+            from xpra.gtk.util import open_gdk_display
+            open_gdk_display(display)
+        from xpra.gtk.info import get_monitors_info
+    import json
+    monitors = get_monitors_info()
+    data = adjust_monitor_refresh_rate(options.refresh_rate, monitors)
+    minfo = json.dumps(data, indent="\t")
+    if jsondata == "-":
+        sys.stdout.write(minfo)
+    else:
+        with open(jsondata, "wb") as f:
+            f.write(minfo.encode("utf8"))
+    return 0
+
+
+def run_set_monitor(options, args: list[str]) -> int:
+    display, jsondata = _monitors_args(args)
+    if jsondata == "-":
+        mdata = sys.stdin.read()
+    elif os.path.isfile(jsondata):
+        mdata = load_binary_file(jsondata)
+    else:
+        # assume this is the json data:
+        mdata = jsondata
+    import json
+    monitors = json.loads(mdata)
+    mdef = validated_monitor_data(monitors)
+    if not mdef:
+        raise InitExit(ExitCode.FAILURE, "invalid monitor data")
+
+    from xpra.util.parsing import adjust_monitor_refresh_rate
+    mdef = adjust_monitor_refresh_rate(options.refresh_rate, mdef)
+
+    from xpra.x11.bindings.display_source import set_display_name, init_display_source
+    set_display_name(display)
+    init_display_source()
+    from xpra.x11.bindings.randr import RandRBindings
+    from xpra.x11.error import xsync
+    with xsync:
+        RandRBindings().set_crtc_config(mdef)
+    return 0

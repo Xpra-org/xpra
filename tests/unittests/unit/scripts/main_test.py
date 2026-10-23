@@ -33,8 +33,8 @@ from xpra.scripts.main import (
     connect_to_server,
     configure_landlock,
     make_progress_process,
-    _monitors_args,
 )
+from xpra.scripts.display import _monitors_args
 from xpra.scripts.picker import find_session_by_name
 from xpra.scripts.args import find_mode_pos, strip_attach_extra_positional_args
 from xpra.net.connect import connect_to, get_host_target_string

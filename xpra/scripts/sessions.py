@@ -14,15 +14,20 @@ from math import ceil
 from time import monotonic
 from subprocess import Popen, PIPE, TimeoutExpired
 from typing import Any
+from collections.abc import Iterable
 
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import getuid, get_username_for_uid, WIN32
-from xpra.util.io import warn
+from xpra.os_util import getuid, get_username_for_uid, WIN32, OSX, POSIX
+from xpra.util.io import warn, error, load_binary_file
+from xpra.util.pid import load_pid, kill_pid
 from xpra.util.str_fn import csv, sort_human
-from xpra.util.env import envint
+from xpra.util.env import envint, osexpand
 from xpra.net.constants import SocketState
 from xpra.log import Logger
 from xpra.config import InitException, InitInfo, InitExit
+from xpra.scripts.common import no_gtk
+from xpra.scripts.display import countdown, x11_display_socket, stat_display_socket, get_xvfb_pid
+from xpra.scripts.picker import pick_display, get_sockpath
 
 # pylint: disable=import-outside-toplevel
 
@@ -385,3 +390,279 @@ def run_list_clients(opts, extra_args) -> ExitValue:
             sys.stdout.write(f"{istr}\n")
             sys.stdout.flush()
     return 0
+
+
+def run_stopexit(mode: str, opts, extra_args: list[str], cmdline: list[str]) -> ExitValue:
+    assert mode in ("stop", "exit")
+    no_gtk()
+
+    def multimode(displays: list[str]) -> int:
+        sys.stdout.write(f"Trying to {mode} {len(displays)} displays:\n")
+        sys.stdout.write(" %s\n" % csv(displays))
+        procs = []
+        # ["xpra", "stop", ..]
+        from xpra.platform.paths import get_nodock_command
+        cmd = get_nodock_command() + [mode]
+        socket_dirs = list(opts.socket_dirs)
+        # TODO: this still relies on the deprecated primary socket-dir value.
+        if opts.socket_dir and opts.socket_dir not in socket_dirs:
+            socket_dirs.insert(0, opts.socket_dir)
+        for x in socket_dirs:
+            if x:
+                cmd.append(f"--socket-dirs={x}")
+        # use a subprocess per display:
+        for display in displays:
+            dcmd = cmd + [display]
+            proc = Popen(dcmd)
+            procs.append(proc)
+        start = monotonic()
+        live = procs
+        while monotonic() - start < 10 and live:
+            live = [x for x in procs if x.poll() is None]
+        return 0
+
+    if len(extra_args) == 1 and extra_args[0] == "all":
+        # stop or exit all
+        from xpra.platform.dotxpra import DotXpra
+        dotxpra = DotXpra(opts.socket_dirs)
+        displays = dotxpra.displays(check_uid=getuid(), matching_state=SocketState.LIVE)
+        if not displays:
+            sys.stdout.write("No xpra sessions found\n")
+            return 1
+        if len(displays) == 1:
+            # fall through, but use the display we found:
+            extra_args = displays
+        else:
+            assert len(displays) > 1
+            return multimode(displays)
+    elif len(extra_args) > 1:
+        return multimode(extra_args)
+
+    if mode == "stop" and len(extra_args) == 1 and POSIX and not OSX:
+        # the server may be gone (`xpra exit` or a crash), but not the processes it started:
+        r = stop_dead_session(opts, extra_args[0])
+        if r is not None:
+            return r
+
+    display_desc = pick_display(opts, extra_args, cmdline)
+    app = None
+    try:
+        if mode == "stop":
+            from xpra.client.base.command import StopXpraClient
+            app = StopXpraClient(opts)
+        else:
+            assert mode == "exit"
+            from xpra.client.base.command import ExitXpraClient
+            app = ExitXpraClient(opts)
+        app.display_desc = display_desc
+        from xpra.scripts.main import connect_to_server
+        connect_to_server(app, display_desc, opts)
+        e = app.run()
+    except ImportError as e:
+        sys.stderr.write(f"Error: unable to use the {mode!r} subcommand:\n")
+        sys.stderr.write(f" the 'xpra-client' component is not installed: {e}\n")
+        return ExitCode.COMPONENT_MISSING
+    finally:
+        if app:
+            app.cleanup()
+    if e == 0:
+        if display_desc["local"] and display_desc.get("display"):
+            show_final_state(display_desc)
+        else:
+            print(f"Sent {mode} command")
+    return e
+
+
+def show_final_state(display_desc: dict[str, Any]) -> int:
+    # this is for local sockets only!
+    display = display_desc["display"]
+    sockdirs = list(display_desc.get("socket_dirs", ()))
+    sockdir = display_desc.get("socket_dir", "")
+    if sockdir and sockdir not in sockdirs:
+        sockdirs.insert(0, sockdir)
+    from xpra.platform.dotxpra import DotXpra
+    sockdir = DotXpra(sockdirs)
+    try:
+        sockfile = get_sockpath(display_desc, 0)
+    except (InitException, InitExit):
+        # could be a named-pipe:
+        sockfile = display_desc.get("named-pipe", "")
+    if sockfile and os.path.isabs(sockfile):
+        # first 5 seconds: just check if the socket still exists:
+        # without connecting (avoid warnings and log messages on server)
+        for _ in range(25):
+            if not os.path.exists(sockfile):
+                break
+            time.sleep(0.2)
+    final_state = SocketState.UNKNOWN
+    if sockfile:
+        # next 5 seconds: actually try to connect
+        final_state = SocketState.UNKNOWN
+        for _ in range(5):
+            final_state = sockdir.get_server_state(sockfile, 1)
+            if final_state is SocketState.DEAD:
+                break
+            time.sleep(1)
+    if final_state is SocketState.DEAD:
+        print(f"xpra at {display} has exited.")
+        return 0
+    if final_state is SocketState.UNKNOWN:
+        print(f"How odd... I'm not sure what's going on with xpra at {display}")
+        return 1
+    if final_state is SocketState.LIVE:
+        print(f"Failed to shutdown xpra at {display}")
+        return 1
+    raise RuntimeError(f"invalid state: {final_state}")
+
+
+def stop_dead_session(opts, display: str) -> ExitValue | None:
+    """
+    terminate the processes left behind by a server that is no longer running,
+    returns `None` if this does not look like a dead local session
+    """
+    if not display.lstrip(":").isdigit():
+        return None
+    display = ":" + display.lstrip(":")
+    uid = getuid()
+    from xpra.platform.dotxpra import DotXpra
+    dotxpra = DotXpra(opts.socket_dirs)
+    if display in dotxpra.displays(check_uid=uid, matching_state=SocketState.LIVE):
+        return None
+    from xpra.scripts.session import get_session_dir
+    session_dir = get_session_dir("", opts.sessions_dir, display, uid)
+    if not os.path.isdir(session_dir):
+        return None
+    server_pid = load_pid(os.path.join(session_dir, "server.pid"))
+    if server_pid and os.path.exists(f"/proc/{server_pid}"):
+        # the server is still running, even if we cannot see its socket:
+        return None
+    pids: dict[int, str] = {}
+    for fname in sorted(os.listdir(session_dir)):
+        if not fname.endswith(".pid") or fname == "server.pid":
+            continue
+        pid = load_pid(os.path.join(session_dir, fname))
+        try:
+            if not pid or os.stat(f"/proc/{pid}").st_uid != uid:
+                continue
+        except OSError:
+            continue
+        cmd = (load_binary_file(f"/proc/{pid}/cmdline") or b"").replace(b"\0", b" ").decode("latin1").strip()
+        pids[pid] = cmd or fname[:-4]
+    if pids:
+        print(f"The server for session {display} is no longer running, found {len(pids)} processes left behind:")
+        for pid, cmd in pids.items():
+            print("%8i    %s" % (pid, cmd))
+        print()
+        countdown("These processes")
+        for pid, cmd in pids.items():
+            kill_pid(pid, cmd)
+        start = monotonic()
+        while monotonic() - start < 5 and any(os.path.exists(f"/proc/{pid}") for pid in pids):
+            time.sleep(0.1)
+    # remove the session directory and sockets:
+    return run_clean(opts, [display])
+
+
+def run_clean(opts, args: Iterable[str]) -> ExitValue:
+    no_gtk()
+    try:
+        uid = int(opts.uid)
+    except (ValueError, TypeError):
+        uid = getuid()
+    from xpra.scripts.session import get_session_dir, clean_session_dir
+    clean: dict[str, str] = {}
+    if args:
+        for display in args:
+            session_dir = get_session_dir("", opts.sessions_dir, display, uid)
+            if not os.path.exists(session_dir) or not os.path.isdir(session_dir):
+                print(f"session {display} not found")
+            else:
+                clean[display] = session_dir
+        # the user specified the sessions to clean,
+        # so we can also kill the display:
+        kill_displays = True
+    else:
+        session_dir = osexpand(opts.sessions_dir)
+        if not os.path.exists(session_dir):
+            raise ValueError(f"cannot find sessions directory {opts.sessions_dir}")
+        # try to find all the session directories:
+        for x in os.listdir(session_dir):
+            d = os.path.join(session_dir, x)
+            if not os.path.isdir(d):
+                continue
+            try:
+                int(x)
+            except ValueError:
+                continue
+            else:
+                clean[x] = d
+        kill_displays = False
+
+    def load_session_pid(pidfile: str) -> int:
+        return load_pid(os.path.join(session_dir, pidfile))
+
+    # also clean client sockets?
+    from xpra.platform.dotxpra import DotXpra
+    dotxpra = DotXpra(opts.socket_dirs)
+    for display, session_dir in clean.items():
+        if not os.path.exists(session_dir):
+            print(f"session {display} not found")
+            continue
+        sockpath = os.path.join(session_dir, "socket")
+        state = dotxpra.is_socket_match(sockpath, check_uid=uid)
+        if state in (SocketState.LIVE, SocketState.INACCESSIBLE):
+            # this session is still active
+            # do not try to clean it!
+            if args:
+                print(f"session {display} is {state}")
+                print(f" the session directory {session_dir} has not been removed")
+            continue
+        server_pid = load_session_pid("server.pid")
+        if server_pid and POSIX and not OSX and os.path.exists(f"/proc/{server_pid}"):
+            print(f"server process for session {display} is still running with pid {server_pid}")
+            print(f" the session directory {session_dir!r} has not been removed")
+            continue
+        x11_socket = x11_display_socket(display)
+        x11_live = stat_display_socket(x11_socket)
+        xvfb_pid = get_xvfb_pid(display, session_dir)
+        if x11_live:
+            if xvfb_pid and kill_displays:
+                kill_pid(xvfb_pid, "xvfb")
+            else:
+                print(f"X11 server :{display} is still running ")
+                if xvfb_pid:
+                    print(" run clean-displays to terminate it")
+                print(" cowardly refusing to clean the session")
+                continue
+        clean_session_dir(session_dir)
+        # remove the other sockets:
+        socket_paths = dotxpra.socket_paths(check_uid=uid, matching_display=display)
+        for filename in socket_paths:
+            try:
+                os.unlink(filename)
+            except OSError as rme:
+                error(f"Error removing socket {filename!r}: {rme}")
+    return 0
+
+
+def run_clean_sockets(opts, args) -> ExitValue:
+    no_gtk()
+    matching_display = None
+    if args:
+        if len(args) == 1:
+            matching_display = args[0]
+        else:
+            raise InitInfo("too many arguments for 'clean' mode")
+    from xpra.platform.dotxpra import DotXpra
+    dotxpra = DotXpra(opts.socket_dirs + opts.client_socket_dirs)
+    results = dotxpra.socket_details(check_uid=getuid(),
+                                     matching_state=SocketState.UNKNOWN,
+                                     matching_display=matching_display)
+    if matching_display and not results:
+        raise InitInfo(f"no UNKNOWN socket for display {matching_display!r}")
+    # `socket_details` returns a dict of socket_dir -> [(state, display, sockpath), ..],
+    # but `clean_sockets` wants a list of (socket_dir, display, sockpath):
+    sockets = [(socket_dir, display, sockpath)
+               for socket_dir, values in results.items() for _, display, sockpath in values]
+    clean_sockets(dotxpra, sockets)
+    return ExitCode.OK

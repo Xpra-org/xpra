@@ -19,16 +19,15 @@ import signal
 import shlex
 import traceback
 from typing import Any, NoReturn
-from collections.abc import Callable, Iterable
+from collections.abc import Callable
 
 from xpra.common import noerr, noop, may_show_progress, may_notify_client, set_progress_process
-from xpra.util.pid import load_pid, kill_pid
-from xpra.util.str_fn import csv, print_nested_dict, sorted_nicely, bytestostr
-from xpra.util.env import envint, envbool, osexpand, filter_env, save_env, get_saved_env, OSEnvContext
+from xpra.util.str_fn import csv, print_nested_dict, bytestostr
+from xpra.util.env import envint, envbool, filter_env, save_env, get_saved_env
 from xpra.util.parsing import (
     ALL_BOOLEAN_OPTIONS,
     parse_scaling, str_to_bool, parse_bool_or,
-    get_refresh_rate_for_value, adjust_monitor_refresh_rate, validated_monitor_data, FALSE_OPTIONS,
+    get_refresh_rate_for_value, FALSE_OPTIONS,
 )
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import getuid, getgid, gi_import, WIN32, OSX, POSIX, LINUX
@@ -51,16 +50,16 @@ from xpra.config.vfb import xvfb_command
 from xpra.net.constants import SOCKET_TYPES, SocketState
 from xpra.log import is_debug_enabled, Logger, get_debug_args, enable_format, inject_debug_logging
 from xpra.scripts.display import (
-    stat_display_socket,
-    x11_display_socket, get_xvfb_pid,
-    get_display_pids,
     get_display_info, get_displays_info,
+    run_displays, run_clean_displays,
+    run_xshm, run_xwait, run_xinfo, run_wminfo, run_wmname,
+    run_monitor_info, run_set_monitor,
 )
 from xpra.scripts.sessions import (
     identify_new_socket,
     run_list_sessions,
-    run_list, clean_sockets,
-    run_list_windows, run_list_clients,
+    run_list, run_list_windows, run_list_clients,
+    run_stopexit, run_clean, run_clean_sockets,
 )
 from xpra.scripts.args import (
     strip_defaults_start_child,
@@ -75,9 +74,8 @@ from xpra.scripts.picker import (
     pick_display,
     do_pick_display,
     connect_or_fail,
-    get_sockpath,
 )
-from xpra.scripts.common import bypass_no_gtk, no_gtk
+from xpra.scripts.common import bypass_no_gtk, no_gtk, reqx11
 
 assert callable(error), "used by modules importing this function from here"
 
@@ -163,20 +161,6 @@ def nox() -> str:
     import warnings
     warnings.filterwarnings("error", "could not open display")
     return str(DISPLAY or "") or os.environ.get("WAYLAND_DISPLAY", "")
-
-
-def reqx11(mode: str) -> None:
-    if OSX:
-        # need to import gtk module early, not sure why!
-        import xpra.gtk.util
-        if not xpra.gtk.util:
-            # cythonized code can bind None for missing imports
-            raise ImportError("xpra.gtk.util")
-    if find_spec("xpra.x11"):
-        return
-    if OSX or WIN32:
-        raise InitExit(ExitCode.UNSUPPORTED, f"{mode} requires a build with the X11 bindings")
-    raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use {mode!r}")
 
 
 def werr(*msg) -> None:
@@ -1027,6 +1011,7 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         from xpra.net.tls.common import show_ssl
         return show_ssl(options, args, cmdline)
     if mode == "auth":
+        from xpra.auth.auth_helper import run_auth
         return run_auth(args)
     if mode == "notify":
         return run_notify(args)
@@ -1761,83 +1746,6 @@ def make_progress_process(title="Xpra") -> Popen | None:
         from xpra.util.thread import start_thread
         start_thread(keepalive, "splash-keepalive", daemon=True)
     return progress_process
-
-
-def _monitors_args(args: list[str], require_monitor_data: bool = True) -> tuple[str, str]:
-    from xpra.log import consume_verbose_argv
-    consume_verbose_argv(args, "screen", "randr")
-    jsondata = ""
-    display = ""
-    for arg in args:
-        if arg.startswith(":"):
-            if display:
-                raise InitExit(ExitCode.FAILURE, "duplicated display on command line")
-            display = arg
-        else:
-            if jsondata:
-                raise InitExit(ExitCode.FAILURE, "duplicated monitor data on command line")
-            jsondata = arg
-    if not jsondata:
-        if require_monitor_data:
-            raise InitExit(ExitCode.FAILURE, "missing JSON monitor data argument")
-        jsondata = "-"
-    display = display or os.environ.get("DISPLAY", "")
-    if not display and not (WIN32 or OSX):
-        raise InitExit(ExitCode.FAILURE, "missing display argument")
-    return display, jsondata
-
-
-def run_monitor_info(options, args: list[str]) -> int:
-    # should we honour desktop scaling here?
-    # parse_scaling(options.desktop_scaling, w, h)
-    display, jsondata = _monitors_args(args, require_monitor_data=False)
-    backend = options.backend or "gtk"
-    if backend == "win32":
-        no_gi_gtk_modules()
-        from xpra.platform.win32.monitors import get_monitors_info
-    else:
-        if display:
-            from xpra.gtk.util import open_gdk_display
-            open_gdk_display(display)
-        from xpra.gtk.info import get_monitors_info
-    import json
-    monitors = get_monitors_info()
-    data = adjust_monitor_refresh_rate(options.refresh_rate, monitors)
-    minfo = json.dumps(data, indent="\t")
-    if jsondata == "-":
-        sys.stdout.write(minfo)
-    else:
-        with open(jsondata, "wb") as f:
-            f.write(minfo.encode("utf8"))
-    return 0
-
-
-def run_set_monitor(options, args: list[str]) -> int:
-    display, jsondata = _monitors_args(args)
-    if jsondata == "-":
-        mdata = sys.stdin.read()
-    elif os.path.isfile(jsondata):
-        mdata = load_binary_file(jsondata)
-    else:
-        # assume this is the json data:
-        mdata = jsondata
-    import json
-    monitors = json.loads(mdata)
-    mdef = validated_monitor_data(monitors)
-    if not mdef:
-        raise InitExit(ExitCode.FAILURE, "invalid monitor data")
-
-    from xpra.util.parsing import adjust_monitor_refresh_rate
-    mdef = adjust_monitor_refresh_rate(options.refresh_rate, mdef)
-
-    from xpra.x11.bindings.display_source import set_display_name, init_display_source
-    set_display_name(display)
-    init_display_source()
-    from xpra.x11.bindings.randr import RandRBindings
-    from xpra.x11.error import xsync
-    with xsync:
-        RandRBindings().set_crtc_config(mdef)
-    return 0
 
 
 NOGI = ("Gtk", "Gdk", "GdkX11", "GdkPixbuf", "GtkosxApplication") if not OSX else ("GdkX11", )
@@ -2703,126 +2611,6 @@ def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode:
             noerr(os.unlink, delpath)
 
 
-def show_final_state(display_desc: dict[str, Any]) -> int:
-    # this is for local sockets only!
-    display = display_desc["display"]
-    sockdirs = list(display_desc.get("socket_dirs", ()))
-    sockdir = display_desc.get("socket_dir", "")
-    if sockdir and sockdir not in sockdirs:
-        sockdirs.insert(0, sockdir)
-    sockdir = DotXpra(sockdirs)
-    try:
-        sockfile = get_sockpath(display_desc, 0)
-    except (InitException, InitExit):
-        # could be a named-pipe:
-        sockfile = display_desc.get("named-pipe", "")
-    if sockfile and os.path.isabs(sockfile):
-        # first 5 seconds: just check if the socket still exists:
-        # without connecting (avoid warnings and log messages on server)
-        for _ in range(25):
-            if not os.path.exists(sockfile):
-                break
-            time.sleep(0.2)
-    final_state = SocketState.UNKNOWN
-    if sockfile:
-        # next 5 seconds: actually try to connect
-        final_state = SocketState.UNKNOWN
-        for _ in range(5):
-            final_state = sockdir.get_server_state(sockfile, 1)
-            if final_state is SocketState.DEAD:
-                break
-            time.sleep(1)
-    if final_state is SocketState.DEAD:
-        print(f"xpra at {display} has exited.")
-        return 0
-    if final_state is SocketState.UNKNOWN:
-        print(f"How odd... I'm not sure what's going on with xpra at {display}")
-        return 1
-    if final_state is SocketState.LIVE:
-        print(f"Failed to shutdown xpra at {display}")
-        return 1
-    raise RuntimeError(f"invalid state: {final_state}")
-
-
-def run_stopexit(mode: str, opts, extra_args: list[str], cmdline: list[str]) -> ExitValue:
-    assert mode in ("stop", "exit")
-    no_gtk()
-
-    def multimode(displays: list[str]) -> int:
-        sys.stdout.write(f"Trying to {mode} {len(displays)} displays:\n")
-        sys.stdout.write(" %s\n" % csv(displays))
-        procs = []
-        # ["xpra", "stop", ..]
-        from xpra.platform.paths import get_nodock_command
-        cmd = get_nodock_command() + [mode]
-        socket_dirs = list(opts.socket_dirs)
-        # TODO: this still relies on the deprecated primary socket-dir value.
-        if opts.socket_dir and opts.socket_dir not in socket_dirs:
-            socket_dirs.insert(0, opts.socket_dir)
-        for x in socket_dirs:
-            if x:
-                cmd.append(f"--socket-dirs={x}")
-        # use a subprocess per display:
-        for display in displays:
-            dcmd = cmd + [display]
-            proc = Popen(dcmd)
-            procs.append(proc)
-        start = monotonic()
-        live = procs
-        while monotonic() - start < 10 and live:
-            live = [x for x in procs if x.poll() is None]
-        return 0
-
-    if len(extra_args) == 1 and extra_args[0] == "all":
-        # stop or exit all
-        dotxpra = DotXpra(opts.socket_dirs)
-        displays = dotxpra.displays(check_uid=getuid(), matching_state=SocketState.LIVE)
-        if not displays:
-            sys.stdout.write("No xpra sessions found\n")
-            return 1
-        if len(displays) == 1:
-            # fall through, but use the display we found:
-            extra_args = displays
-        else:
-            assert len(displays) > 1
-            return multimode(displays)
-    elif len(extra_args) > 1:
-        return multimode(extra_args)
-
-    if mode == "stop" and len(extra_args) == 1 and POSIX and not OSX:
-        # the server may be gone (`xpra exit` or a crash), but not the processes it started:
-        r = stop_dead_session(opts, extra_args[0])
-        if r is not None:
-            return r
-
-    display_desc = pick_display(opts, extra_args, cmdline)
-    app = None
-    try:
-        if mode == "stop":
-            from xpra.client.base.command import StopXpraClient
-            app = StopXpraClient(opts)
-        else:
-            assert mode == "exit"
-            from xpra.client.base.command import ExitXpraClient
-            app = ExitXpraClient(opts)
-        app.display_desc = display_desc
-        connect_to_server(app, display_desc, opts)
-        e = app.run()
-    except ImportError as e:
-        sys.stderr.write(f"Error: unable to use the {mode!r} subcommand:\n")
-        sys.stderr.write(f" the 'xpra-client' component is not installed: {e}\n")
-        return ExitCode.COMPONENT_MISSING
-    finally:
-        if app:
-            app.cleanup()
-    if e == 0:
-        if display_desc["local"] and display_desc.get("display"):
-            show_final_state(display_desc)
-        else:
-            print(f"Sent {mode} command")
-    return e
-
-
 def _has_display() -> bool:
     if WIN32 or OSX:
         return True
@@ -2969,109 +2757,6 @@ def run_mdns_gui(options) -> ExitValue:
     return mdns_gui.do_main(options)
 
 
-def run_clean(opts, args: Iterable[str]) -> ExitValue:
-    no_gtk()
-    try:
-        uid = int(opts.uid)
-    except (ValueError, TypeError):
-        uid = getuid()
-    from xpra.scripts.session import get_session_dir, clean_session_dir
-    clean: dict[str, str] = {}
-    if args:
-        for display in args:
-            session_dir = get_session_dir("", opts.sessions_dir, display, uid)
-            if not os.path.exists(session_dir) or not os.path.isdir(session_dir):
-                print(f"session {display} not found")
-            else:
-                clean[display] = session_dir
-        # the user specified the sessions to clean,
-        # so we can also kill the display:
-        kill_displays = True
-    else:
-        session_dir = osexpand(opts.sessions_dir)
-        if not os.path.exists(session_dir):
-            raise ValueError(f"cannot find sessions directory {opts.sessions_dir}")
-        # try to find all the session directories:
-        for x in os.listdir(session_dir):
-            d = os.path.join(session_dir, x)
-            if not os.path.isdir(d):
-                continue
-            try:
-                int(x)
-            except ValueError:
-                continue
-            else:
-                clean[x] = d
-        kill_displays = False
-
-    def load_session_pid(pidfile: str) -> int:
-        return load_pid(os.path.join(session_dir, pidfile))
-
-    # also clean client sockets?
-    dotxpra = DotXpra(opts.socket_dirs)
-    for display, session_dir in clean.items():
-        if not os.path.exists(session_dir):
-            print(f"session {display} not found")
-            continue
-        sockpath = os.path.join(session_dir, "socket")
-        state = dotxpra.is_socket_match(sockpath, check_uid=uid)
-        if state in (SocketState.LIVE, SocketState.INACCESSIBLE):
-            # this session is still active
-            # do not try to clean it!
-            if args:
-                print(f"session {display} is {state}")
-                print(f" the session directory {session_dir} has not been removed")
-            continue
-        server_pid = load_session_pid("server.pid")
-        if server_pid and POSIX and not OSX and os.path.exists(f"/proc/{server_pid}"):
-            print(f"server process for session {display} is still running with pid {server_pid}")
-            print(f" the session directory {session_dir!r} has not been removed")
-            continue
-        x11_socket = x11_display_socket(display)
-        x11_live = stat_display_socket(x11_socket)
-        xvfb_pid = get_xvfb_pid(display, session_dir)
-        if x11_live:
-            if xvfb_pid and kill_displays:
-                kill_pid(xvfb_pid, "xvfb")
-            else:
-                print(f"X11 server :{display} is still running ")
-                if xvfb_pid:
-                    print(" run clean-displays to terminate it")
-                print(" cowardly refusing to clean the session")
-                continue
-        clean_session_dir(session_dir)
-        # remove the other sockets:
-        socket_paths = dotxpra.socket_paths(check_uid=uid, matching_display=display)
-        for filename in socket_paths:
-            try:
-                os.unlink(filename)
-            except OSError as rme:
-                error(f"Error removing socket {filename!r}: {rme}")
-    return 0
-
-
-def run_clean_sockets(opts, args) -> ExitValue:
-    no_gtk()
-    matching_display = None
-    if args:
-        if len(args) == 1:
-            matching_display = args[0]
-        else:
-            raise InitInfo("too many arguments for 'clean' mode")
-    dotxpra = DotXpra(opts.socket_dirs + opts.client_socket_dirs)
-    results = dotxpra.socket_details(check_uid=getuid(),
-                                     matching_state=SocketState.UNKNOWN,
-                                     matching_display=matching_display)
-    if matching_display and not results:
-        raise InitInfo(f"no UNKNOWN socket for display {matching_display!r}")
-    # `socket_details` returns a dict of socket_dir -> [(state, display, sockpath), ..],
-    # but `clean_sockets` wants a list of (socket_dir, display, sockpath):
-    sockets = [(socket_dir, display, sockpath)
-               for socket_dir, values in results.items() for _, display, sockpath in values]
-    clean_sockets(dotxpra, sockets)
-    return ExitCode.OK
-
-
 def run_recover(script_file: str, cmdline: list[str], options, args: list[str], defaults) -> ExitValue:
     if not POSIX or OSX:
         raise InitExit(ExitCode.UNSUPPORTED, "the 'xpra recover' subcommand is not supported on this platform")
@@ -3129,203 +2814,6 @@ def run_recover(script_file: str, cmdline: list[str], options, args: list[str], 
     return run_server(script_file, cmdline, options, args, mode, defaults)
 
 
-def run_displays(options, args) -> ExitValue:
-    # dotxpra = DotXpra(opts.socket_dirs+opts.client_socket_dirs)
-    displays = get_displays_info(display_names=args if args else None, sessions_dir=options.sessions_dir)
-    print(f"Found {len(displays)} displays:")
-    if args:
-        print(" matching " + csv(args))
-    SHOW = {
-        "xwayland": "XWayland",
-        "xpra-server-mode": "mode",
-        "uid": "uid",
-        "gid": "gid",
-    }
-    for display, descr in displays.items():
-        state = descr.pop("state", "LIVE")
-        info_str = ""
-        if wmname := descr.get("wmname"):
-            info_str += f"{wmname}: "
-
-        def show(name: str, value) -> str:
-            if value is True:
-                return name
-            return f"{name}={value}"
-
-        info_str += csv(show(v, descr.get(k)) for k, v in SHOW.items() if k in descr)
-        print("%10s    %-8s    %s" % (display, state, info_str))
-    return 0
-
-
-def countdown(what: str, wait=5) -> None:
-    print(f"{what} will be forcibly terminated in {wait} seconds")
-    print("Press Control-C to abort")
-    for _ in range(wait):
-        sys.stdout.write(".")
-        sys.stdout.flush()
-        time.sleep(1)
-    print(flush=True)
-
-
-def stop_dead_session(opts, display: str) -> ExitValue | None:
-    """
-    terminate the processes left behind by a server that is no longer running,
-    returns `None` if this does not look like a dead local session
-    """
-    if not display.lstrip(":").isdigit():
-        return None
-    display = ":" + display.lstrip(":")
-    uid = getuid()
-    dotxpra = DotXpra(opts.socket_dirs)
-    if display in dotxpra.displays(check_uid=uid, matching_state=SocketState.LIVE):
-        return None
-    from xpra.scripts.session import get_session_dir
-    session_dir = get_session_dir("", opts.sessions_dir, display, uid)
-    if not os.path.isdir(session_dir):
-        return None
-    server_pid = load_pid(os.path.join(session_dir, "server.pid"))
-    if server_pid and os.path.exists(f"/proc/{server_pid}"):
-        # the server is still running, even if we cannot see its socket:
-        return None
-    pids: dict[int, str] = {}
-    for fname in sorted(os.listdir(session_dir)):
-        if not fname.endswith(".pid") or fname == "server.pid":
-            continue
-        pid = load_pid(os.path.join(session_dir, fname))
-        try:
-            if not pid or os.stat(f"/proc/{pid}").st_uid != uid:
-                continue
-        except OSError:
-            continue
-        cmd = (load_binary_file(f"/proc/{pid}/cmdline") or b"").replace(b"\0", b" ").decode("latin1").strip()
-        pids[pid] = cmd or fname[:-4]
-    if pids:
-        print(f"The server for session {display} is no longer running, found {len(pids)} processes left behind:")
-        for pid, cmd in pids.items():
-            print("%8i    %s" % (pid, cmd))
-        print()
-        countdown("These processes")
-        for pid, cmd in pids.items():
-            kill_pid(pid, cmd)
-        start = monotonic()
-        while monotonic() - start < 5 and any(os.path.exists(f"/proc/{pid}") for pid in pids):
-            time.sleep(0.1)
-    # remove the session directory and sockets:
-    return run_clean(opts, [display])
-
-
-def run_clean_displays(options, args) -> ExitValue:
-    if not POSIX or OSX:
-        raise InitExit(ExitCode.UNSUPPORTED, "clean-displays is not supported on this platform")
-    displays = get_displays_info(sessions_dir=options.sessions_dir)
-    dead_displays = tuple(display for display, descr in displays.items() if descr.get("state") == "DEAD")
-    if not dead_displays:
-        print("No dead displays found")
-        if args:
-            print(" matching %s" % csv(args))
-        return 0
-    # now find the processes that own these dead displays:
-    display_pids = get_display_pids(*dead_displays)
-    if not display_pids:
-        print("No pids found for dead displays " + csv(sorted_nicely(dead_displays)))
-        if args:
-            print(" matching %s" % csv(args))
-        return ExitCode.FILE_NOT_FOUND
-    print("Found %i dead display pids:" % len(display_pids))
-    if args:
-        print(" matching %s" % csv(args))
-    for display, (pid, cmd) in sorted_nicely(display_pids.items()):
-        print("%4s    %-8s    %s" % (display, pid, cmd))
-    print()
-    countdown("These displays")
-    for display, (pid, cmd) in display_pids.items():
-        try:
-            os.kill(pid, signal.SIGINT)
-        except OSError as e:
-            print(f"Unable to send SIGINT to {pid}: {e}")
-    print("Done")
-    return 0
-
-
-def display_wm_info(args) -> dict[str, Any]:
-    reqx11("wminfo")
-    if not find_spec("xpra.x11") or not find_spec("xpra.x11.gtk"):
-        raise InitExit(ExitCode.UNSUPPORTED, "wminfo is not supported on this platform")
-    no_gtk()
-    if len(args) == 1:
-        os.environ["DISPLAY"] = args[0]
-    elif not args and os.environ.get("DISPLAY"):
-        # just use the current one
-        pass
-    else:
-        raise InitExit(ExitCode.NO_DISPLAY, "you must specify a display")
-    with OSEnvContext(GDK_BACKEND="x11"):
-        from xpra.x11.gtk.display_source import init_gdk_display_source
-        init_gdk_display_source()
-        from xpra.x11.wm_check import get_wm_info
-        info = get_wm_info()
-        gdk = gi_import("Gdk")
-        display = gdk.Display.get_default()
-        info["display"] = display.get_name()
-        return info
-
-
-def run_xshm(args) -> ExitValue:
-    if not find_spec("xpra.x11"):
-        raise RuntimeError("xshm subcommand is not supported on this platform")
-    no_gtk()
-    if len(args) == 1:
-        os.environ["DISPLAY"] = args[0]
-    elif not args and os.environ.get("DISPLAY"):
-        # just use the current one
-        pass
-    else:
-        raise InitExit(ExitCode.NO_DISPLAY, "you must specify a display")
-    with OSEnvContext(GDK_BACKEND="x11"):
-        from xpra.x11.bindings.display_source import init_display_source
-        init_display_source()
-        from xpra.x11.bindings.core import get_root_xid
-        from xpra.x11.bindings.shm import XShmBindings
-        XShm = XShmBindings()
-        if xshm := XShm.has_XShm():
-            # try to use it:
-            rxid = get_root_xid()
-            if w := XShm.get_XShmWrapper(rxid):
-                res = w.setup()
-                if not res[0]:
-                    warn("XShm access failed")
-                    xshm = False
-            else:
-                warn(f"failed to create XShm wrapper for root window {rxid:x}")
-                xshm = False
-        else:
-            warn("XShm extension is not available")
-        return ExitCode.OK if xshm else ExitCode.UNSUPPORTED
-
-
-def run_xwait(args) -> ExitValue:
-    from xpra.x11.bindings.xwait import main as xwait_main  # pylint: disable=no-name-in-module
-    xwait_main(args)
-    return 0
-
-
-def run_xinfo(args) -> ExitValue:
-    from xpra.x11.bindings.info import main as xinfo_main  # pylint: disable=no-name-in-module
-    return xinfo_main(args)
-
-
-def run_wminfo(args) -> ExitValue:
-    for k, v in display_wm_info(args).items():
-        print(f"{k}={v}")
-    return 0
-
-
-def run_wmname(args) -> ExitValue:
-    if name := display_wm_info(args).get("wmname", ""):
-        print(name)
-    return 0
-
-
 def run_dbus_system_list() -> ExitValue:
     import dbus
     for service in dbus.SystemBus().list_names():
@@ -3364,21 +2852,6 @@ def run_notify(args: list[str]) -> ExitValue:
     GLib.timeout_add(5 * 1000, loop.quit)
     loop.run()
     return 0
-
-
-def run_auth(args: list[str]) -> ExitValue:
-    if not args:
-        raise InitException("missing module argument")
-    auth_str = args[0]
-    from xpra.auth.auth_helper import get_auth_module
-    auth, auth_module = get_auth_module(auth_str)[:2]
-    # see if the module has a "main" entry point:
-    main_fn = getattr(auth_module, "main", None)
-    if not callable(main_fn):
-        raise InitExit(ExitCode.UNSUPPORTED, f"no command line utility for {auth!r} authentication module")
-    argv = [auth_module.__file__] + args[1:]
-    # noinspection calling-non-callable
-    return main_fn(argv)
 
 
 def run_u2f(args: list[str]) -> ExitValue:
