@@ -555,6 +555,8 @@ def split_start_child_args(cmdline: list[str], options, args: list[str]) -> list
 
 def run_server_mode(script_file: str, cmdline: list[str], options, args: list[str], mode: str, full_mode: str, defaults) -> ExitValue:
     if mode in ("seamless", "desktop", "monitor", "expand", "shadow", "shadow-screen"):
+        if args and mode in ("seamless", "desktop", "monitor"):
+            args = split_start_child_args(cmdline, options, args)
         if isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic"):
             # ie: "xpra start ssh://USER@HOST:SSHPORT/DISPLAY --start-child=xterm"
             return run_remote_server(script_file, cmdline, options, args, mode, defaults)
@@ -631,8 +633,6 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
     # keep the (normalized) mode on the options so that subsystems which only get `opts`
     # (ie: `parse_display_name`) can adjust their behaviour, ie: ssh agent forwarding:
     options.mode = mode
-    if args and mode in ("seamless", "desktop", "monitor"):
-        args = split_start_child_args(cmdline, options, args)
     if mode in SERVER_SUBCOMMANDS:
         return run_server_mode(script_file, cmdline, options, args, mode, full_mode, defaults)
     if mode in ("run", "exec") and args and args[0].startswith(":"):
