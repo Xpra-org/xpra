@@ -714,16 +714,6 @@ def run_help(script_file: str) -> int:
     return 1
 
 
-def run_dialog(extra_args) -> ExitValue:
-    from xpra.gtk.dialogs.confirm_dialog import show_confirm_dialog
-    return show_confirm_dialog(extra_args)
-
-
-def run_pass(extra_args) -> ExitValue:
-    from xpra.gtk.dialogs.pass_dialog import show_pass_dialog
-    return show_pass_dialog(extra_args)
-
-
 def run_send_file(extra_args) -> ExitValue:
     sockpath = os.environ.get("XPRA_SERVER_SOCKET")
     if not sockpath:
@@ -1514,8 +1504,8 @@ ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
     "wminfo": ("x11,no_gtk", "xpra.scripts.display:run_wminfo"),
     "wmname": ("x11,no_gtk", "xpra.scripts.display:run_wmname"),
     "pinentry": ("gtk_client", "xpra.scripts.pinentry:run_pinentry"),
-    "_dialog": ("gtk_client", run_dialog),
-    "_pass": ("gtk_client", run_pass),
+    "_dialog": ("gtk_client", "xpra.gtk.dialogs.confirm_dialog:show_confirm_dialog"),
+    "_pass": ("gtk_client", "xpra.gtk.dialogs.pass_dialog:show_pass_dialog"),
     "send-file": ("gtk", run_send_file),
     "splash": ("gtk", "xpra.gtk.dialogs.splash:main"),
     "example": ("gtk_client", "xpra.gtk.examples.run:run_example"),
