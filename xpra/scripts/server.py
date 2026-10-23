@@ -27,7 +27,7 @@ from xpra.common import noerr
 from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY, is_virtual_session
 from xpra.net.constants import SocketState, ConnectionMessage
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import POSIX, WIN32, OSX, LINUX, getuid, get_hex_uuid
+from xpra.os_util import POSIX, WIN32, OSX, getuid, get_hex_uuid
 from xpra.util.str_fn import csv
 from xpra.util.io import stderr_print
 from xpra.util.env import envbool, envint, osexpand, get_saved_env, get_saved_env_var, OSEnvContext
@@ -508,24 +508,6 @@ def init_virtual_devices(app, devices: dict) -> None:
         pointer.init_virtual_devices(devices)
 
 
-def harden_server_process() -> None:
-    if WIN32:
-        # best effort: the mitigation policies log their own warnings and never raise
-        from xpra.platform.win32.security import harden_process as win32_harden_process
-        win32_harden_process()
-        return
-    if OSX:
-        from xpra.platform.darwin.security import harden_process
-    elif LINUX:
-        from xpra.platform.posix.security import harden_process
-    else:
-        return
-    try:
-        harden_process()
-    except OSError as e:
-        raise InitException(f"failed to harden the server process: {e}") from None
-
-
 def do_run_server(script_file: str, cmdline: list[str], opts,
                   extra_args: list[str], full_mode: str, defaults) -> ExitValue:
     if opts.encoding == "help" or "help" in opts.encodings:
@@ -643,7 +625,10 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         daemonize()
 
     clobber = int(upgrading) * CLOBBER_UPGRADE | int(use_display or 0) * CLOBBER_USE_DISPLAY
-    start_vfb: bool = not (shadowing or proxying or clobber or expanding or encoder or runner) and opts.xvfb.lower() not in FALSE_OPTIONS and opts.backend != "wayland"
+    start_vfb: bool = (
+        not (shadowing or proxying or clobber or expanding or encoder or runner)
+        and opts.xvfb.lower() not in FALSE_OPTIONS and opts.backend != "wayland"
+    )
     xauth_data: str = get_hex_uuid() if start_vfb else ""
     if start_vfb and opts.sync_xvfb is None and any(x in opts.xvfb for x in ("Xephyr", "Xnest")):
         # automatically enable sync-xvfb for Xephyr and Xnest:
@@ -771,7 +756,11 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         process.setup()
     # setuid makes a process dumpable again, so harden only after privileges
     # have reached their final state and before accepting client traffic.
-    harden_server_process()
+    from xpra.platform.security import harden_process
+    try:
+        harden_process()
+    except OSError as e:
+        raise InitException(f"failed to harden the server process: {e}") from None
     display_name = vfb_result.display_name
     app.init_subsystems()
 

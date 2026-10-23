@@ -75,7 +75,7 @@ def disable_core_dumps() -> None:
 
 
 def harden_process() -> None:
-    """Protect server credentials and encryption keys held in process memory."""
+    """Protect credentials and encryption keys held in process memory."""
     disable_core_dumps()
     if DENY_ATTACH:
         deny_attach()

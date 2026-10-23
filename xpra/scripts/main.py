@@ -1378,29 +1378,6 @@ def allow_gi_gtk_modules(mods=NOGI) -> None:
             del sys.modules[mod_path]
 
 
-client_hardened = False
-
-
-def harden_client_process() -> None:
-    # the launcher can create more than one client in the same process,
-    # the process only needs to be hardened once:
-    global client_hardened
-    if client_hardened:
-        return
-    if WIN32:
-        client_hardened = True
-        # best effort: the mitigation policies log their own warnings and never raise
-        from xpra.platform.win32.security import harden_process
-        harden_process()
-    elif OSX:
-        client_hardened = True
-        from xpra.platform.darwin.security import harden_process
-        try:
-            harden_process()
-        except OSError as e:
-            warn(f"Warning: failed to harden the client process: {e}")
-
-
 def make_client(opts):
     backend = opts.backend or "gtk"
     if backend == "auto" and not _has_display() and sys.stdout.isatty() and sys.stdin.isatty():
@@ -1415,7 +1392,11 @@ def make_client(opts):
     if LINUX and backend in ("qt", "pyglet", "tk") and (opts.landlock or "no") != "no":
         raise InitExit(ExitCode.UNSUPPORTED, f"the {backend} client does not support Landlock; use --landlock=no")
     # before importing the toolkits, so that their DLLs are loaded with the restricted search order:
-    harden_client_process()
+    from xpra.platform.security import harden_process
+    try:
+        harden_process()
+    except OSError as e:
+        warn(f"Warning: failed to harden the client process: {e}")
     if backend == "qt":
         no_gi_gtk_modules()
         try:

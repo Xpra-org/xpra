@@ -4,14 +4,18 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import json
 import mmap
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 from unittest.mock import patch
 
 from xpra.platform.posix import security
 from xpra.config.defaults import make_defaults_struct
+from xpra.os_util import LINUX
 
 
 class FakeCall:
@@ -176,13 +180,47 @@ malformed rw-p 00000000 00:00 0
         self.assertEqual(libc.madvise.calls, [(0x1000, 0x2000, 16)])
 
     def test_harden_process(self):
-        with patch.object(security, "disable_ptrace") as disable_ptrace, \
+        with patch.object(security, "LINUX", True), \
+             patch.object(security, "disable_ptrace") as disable_ptrace, \
              patch.object(security, "disable_core_dumps") as disable_core_dumps, \
              patch.object(security, "mark_memory_nondumpable", return_value=(3, 0)) as dontdump:
             security.harden_process()
         disable_ptrace.assert_called_once_with()
         disable_core_dumps.assert_called_once_with()
         dontdump.assert_called_once_with()
+
+    def test_harden_process_non_linux(self):
+        with patch.object(security, "LINUX", False), \
+             patch.object(security, "disable_ptrace") as disable_ptrace, \
+             patch.object(security, "disable_core_dumps") as disable_core_dumps, \
+             patch.object(security, "mark_memory_nondumpable") as dontdump:
+            security.harden_process()
+        disable_ptrace.assert_not_called()
+        disable_core_dumps.assert_not_called()
+        dontdump.assert_not_called()
+
+    @unittest.skipUnless(LINUX, "Linux only")
+    def test_harden_process_repeated(self):
+        # Apply the real restrictions in a subprocess so the test runner is unaffected.
+        script = """
+import ctypes
+import json
+import resource
+from xpra.platform.security import harden_process
+libc = ctypes.CDLL(None)
+states = []
+for _ in range(2):
+    harden_process()
+    states.append({
+        "dumpable": libc.prctl(3, 0, 0, 0, 0),  # PR_GET_DUMPABLE
+        "core": resource.getrlimit(resource.RLIMIT_CORE),
+    })
+print(json.dumps(states))
+"""
+        env = os.environ.copy()
+        env["PYTHONPATH"] = os.pathsep.join(sys.path)
+        result = subprocess.run([sys.executable, "-c", script], env=env, capture_output=True, text=True, check=True)
+        self.assertEqual(json.loads(result.stdout), [{"dumpable": 0, "core": [0, 0]}] * 2)
 
 
 def main():
