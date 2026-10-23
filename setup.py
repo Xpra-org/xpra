@@ -3592,6 +3592,7 @@ if client_ENABLED or server_ENABLED:
     add_modules(
         "xpra.scripts.config",
         "xpra.scripts.parsing",
+        "xpra.scripts.connection",
         "xpra.scripts.exec_util",
         "xpra.scripts.fdproxy",
         "xpra.scripts.version",
