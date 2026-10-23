@@ -25,7 +25,11 @@ from xpra.util.env import envint, osexpand
 from xpra.net.constants import SocketState
 from xpra.log import Logger
 from xpra.config import InitException, InitInfo, InitExit
-from xpra.scripts.display import countdown, x11_display_socket, stat_display_socket, get_xvfb_pid
+from xpra.scripts.common import no_gtk
+from xpra.scripts.display import (
+    countdown, x11_display_socket, stat_display_socket, get_xvfb_pid,
+    get_display_info, get_displays_info,
+)
 from xpra.scripts.picker import pick_display, get_sockpath
 
 # pylint: disable=import-outside-toplevel
@@ -643,3 +647,61 @@ def run_clean_sockets(opts, args) -> ExitValue:
                for socket_dir, values in results.items() for _, display, sockpath in values]
     clean_sockets(dotxpra, sockets)
     return ExitCode.OK
+
+
+def run_recover(script_file: str, cmdline: list[str], options, args: list[str], defaults) -> ExitValue:
+    if not POSIX or OSX:
+        raise InitExit(ExitCode.UNSUPPORTED, "the 'xpra recover' subcommand is not supported on this platform")
+    no_gtk()
+    display_descr: dict = {}
+    ALL = len(args) == 1 and args[0].lower() == "all"
+    if not ALL and len(args) == 1:
+        try:
+            display_descr = pick_display(options, args, cmdline)
+            args = []
+        except Exception:
+            pass
+    if display_descr:
+        display = display_descr.get("display")
+        # args are enough to identify the display,
+        # get the `display_info` so that we know the mode to use:
+        descr = get_display_info(display, options.sessions_dir)
+    else:
+
+        def recover_many(displays) -> int:
+            from xpra.platform.paths import get_xpra_command  # pylint: disable=import-outside-toplevel
+            for display in displays:
+                cmd = get_xpra_command() + ["recover", display]
+                Popen(cmd)
+            return 0
+
+        if len(args) > 1:
+            return recover_many(args)
+        displays = get_displays_info(sessions_dir=options.sessions_dir)
+        # find the 'DEAD' ones:
+        dead_displays = tuple(display for display, descr in displays.items() if descr.get("state") == "DEAD")
+        if not dead_displays:
+            print("No dead displays found, see 'xpra displays'")
+            return ExitCode.NO_DISPLAY
+        if len(dead_displays) > 1:
+            if ALL:
+                return recover_many(dead_displays)
+            print("More than one 'DEAD' display found, see 'xpra displays'")
+            print(" you can use 'xpra recover all',")
+            print(" or specify a display")
+            return ExitCode.NO_DISPLAY
+        display = dead_displays[0]
+        descr = displays[display]
+    args = [display]
+    # figure out what mode was used:
+    mode = descr.get("xpra-server-mode", "seamless")
+    for m in ("seamless", "desktop", "proxy", "shadow", "shadow-screen"):
+        if mode.find(m) >= 0:
+            mode = m
+            break
+    print(f"Recovering display {display!r} as a {mode} server")
+    # use the existing display:
+    options.use_display = "yes"
+    no_gtk()
+    from xpra.scripts.main import run_server
+    return run_server(script_file, cmdline, options, args, mode, defaults)

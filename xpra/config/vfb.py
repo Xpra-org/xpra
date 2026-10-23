@@ -231,3 +231,11 @@ def wrap_cmd_str(cmd) -> str:
             xvfb_str += cr
         xvfb_str += s
     return xvfb_str
+
+
+def run_xvfb_command(options) -> int:
+    import shlex
+    from xpra.util.parsing import get_refresh_rate_for_value
+    fps = get_refresh_rate_for_value(options.refresh_rate, 60) if options.refresh_rate else 0
+    print(shlex.join(xvfb_command(options.xvfb, options.pixel_depth, options.dpi, fps)))
+    return 0

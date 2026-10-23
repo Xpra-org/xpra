@@ -103,5 +103,11 @@ def main() -> int:
     return 0
 
 
+def run_license() -> int:
+    from xpra.util.io import stderr_print
+    stderr_print(load_license())
+    return 0
+
+
 if __name__ == "__main__":
     main()

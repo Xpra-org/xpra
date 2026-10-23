@@ -22,12 +22,12 @@ from typing import Any, NoReturn
 from collections.abc import Callable
 
 from xpra.common import noerr, noop, may_show_progress, may_notify_client, set_progress_process
-from xpra.util.str_fn import csv, print_nested_dict, bytestostr
+from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envint, envbool, filter_env, save_env, get_saved_env
 from xpra.util.parsing import (
     ALL_BOOLEAN_OPTIONS,
     parse_scaling, str_to_bool, parse_bool_or,
-    get_refresh_rate_for_value, FALSE_OPTIONS,
+    FALSE_OPTIONS,
 )
 from xpra.exit_codes import ExitCode, ExitValue, RETRY_EXIT_CODES, exit_str
 from xpra.os_util import getuid, getgid, gi_import, WIN32, OSX, POSIX, LINUX
@@ -46,11 +46,10 @@ from xpra.config.fixup import fixup_options
 from xpra.config.validation import parse_landlock_option, split_landlock_option
 from xpra.config.paths import find_docs_path, find_html5_path
 from xpra.config.defaults import get_defaults, make_defaults_struct, has_audio_support
-from xpra.config.vfb import xvfb_command
 from xpra.net.constants import SOCKET_TYPES, SocketState
 from xpra.log import is_debug_enabled, Logger, get_debug_args, enable_format, inject_debug_logging
-from xpra.scripts.display import get_display_info, get_displays_info
-from xpra.scripts.sessions import identify_new_socket, run_stopexit
+from xpra.scripts.display import get_displays_info
+from xpra.scripts.sessions import identify_new_socket, run_stopexit, run_recover
 from xpra.scripts.args import (
     strip_defaults_start_child,
     split_display_arg,
@@ -812,10 +811,6 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         check_gtk_client()
         from xpra.gtk.dialogs import bug_report
         return bug_report.main(["bug_report.py"] + args)
-    if mode == "license":
-        from xpra.gtk.dialogs.about import load_license
-        stderr_print(load_license())
-        return 0
     if mode in ("_proxy_run", "_proxy_exec"):
         nox()
         return run_proxy_run(options, script_file, cmdline, args, "exec" if mode == "_proxy_exec" else "run")
@@ -841,22 +836,6 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
     if mode == "encoding":
         from xpra.codecs import loader
         return loader.main([script_file] + args)
-    if mode in ("applications-menu", "sessions-menu"):
-        from xpra.server.menu_provider import MenuProvider
-        if mode == "applications-menu":
-            data = MenuProvider().get_menu_data(remove_icons=True)
-        else:
-            data = MenuProvider().get_desktop_sessions(remove_icons=True)
-        if not data:
-            print("no menu data available")
-            return ExitCode.FAILURE
-        print_nested_dict(data)
-        return ExitCode.OK
-    if mode == "menu-cache":
-        from xpra.platform.menu_helper import cache_menu_icons
-        modified = cache_menu_icons()
-        print(f"modified={modified}")
-        return ExitCode.OK
     if mode == "webcam":
         check_gtk("webcam")
         from xpra.gtk.dialogs import show_webcam
@@ -881,17 +860,6 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
             check_gtk(mode)
         from xpra.scripts import keymap_tool
         return keymap_tool.main(mode, args, cmdline)
-    if mode == "root-size":
-        backend = options.backend or "gtk"
-        if backend == "win32":
-            no_gi_gtk_modules()
-            from xpra.platform.win32.gui import get_display_size
-            size = get_display_size()
-        else:
-            from xpra.gtk.util import get_root_size
-            size = get_root_size((0, 0))
-        sys.stdout.write("%ix%i\n" % size)
-        return ExitCode.OK
     if mode == "gui-info":
         if (options.backend or "gtk") == "win32":
             no_gi_gtk_modules()
@@ -904,22 +872,6 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         return probe.main(["xpra rdp"] + args)
     if mode == "initenv":
         raise InitExit(ExitCode.UNSUPPORTED, "initenv is no longer supported")
-    if mode == "xvfb-command":
-        fps = get_refresh_rate_for_value(options.refresh_rate, 60) if options.refresh_rate else 0
-        print(shlex.join(xvfb_command(options.xvfb, options.pixel_depth, options.dpi, fps)))
-        return ExitCode.OK
-    if mode == "xvfb":
-        if len(args) > 1:
-            raise ValueError("too many arguments")
-        display = "S" + str(os.getpid())
-        if args:
-            display = args[0]
-            if not display.startswith(":"):
-                raise ValueError(f"invalid display format {display!r}")
-        fps = get_refresh_rate_for_value(options.refresh_rate, 60) if options.refresh_rate else 0
-        xvfb_cmd = xvfb_command(options.xvfb, options.pixel_depth, options.dpi, fps)
-        from xpra.x11.vfb_util import start_xvfb_standalone
-        return start_xvfb_standalone(xvfb_cmd, options.sessions_dir, options.pixel_depth, fps, display, options.daemon)
     if mode in ("set", "setting"):
         from xpra.scripts.settings import run_setting
         return run_setting(True, args)
@@ -2581,88 +2533,6 @@ def _browser_open_file(file_path) -> ExitValue:
     return 0
 
 
-def run_sessions_gui(options) -> ExitValue:
-    mdns = options.mdns
-    if mdns and not find_spec("xpra.net.mdns"):
-        mdns = False
-    if mdns:
-        from xpra.net.mdns import get_listener_class
-        if get_listener_class():
-            from xpra.gtk.dialogs import mdns_gui
-            return mdns_gui.do_main(options)
-        else:
-            warn("Warning: no mDNS support")
-            warn(" only local sessions will be shown")
-    from xpra.gtk.dialogs import sessions_gui
-    return sessions_gui.do_main(options)
-
-
-def run_mdns_gui(options) -> ExitValue:
-    from xpra.net.mdns import get_listener_class
-    listener = get_listener_class()
-    if not listener:
-        raise InitException("sorry, 'mdns-gui' is not supported on this platform yet")
-    from xpra.gtk.dialogs import mdns_gui
-    return mdns_gui.do_main(options)
-
-
-def run_recover(script_file: str, cmdline: list[str], options, args: list[str], defaults) -> ExitValue:
-    if not POSIX or OSX:
-        raise InitExit(ExitCode.UNSUPPORTED, "the 'xpra recover' subcommand is not supported on this platform")
-    no_gtk()
-    display_descr: dict = {}
-    ALL = len(args) == 1 and args[0].lower() == "all"
-    if not ALL and len(args) == 1:
-        try:
-            display_descr = pick_display(options, args, cmdline)
-            args = []
-        except Exception:
-            pass
-    if display_descr:
-        display = display_descr.get("display")
-        # args are enough to identify the display,
-        # get the `display_info` so that we know the mode to use:
-        descr = get_display_info(display, options.sessions_dir)
-    else:
-
-        def recover_many(displays) -> int:
-            from xpra.platform.paths import get_xpra_command  # pylint: disable=import-outside-toplevel
-            for display in displays:
-                cmd = get_xpra_command() + ["recover", display]
-                Popen(cmd)
-            return 0
-
-        if len(args) > 1:
-            return recover_many(args)
-        displays = get_displays_info(sessions_dir=options.sessions_dir)
-        # find the 'DEAD' ones:
-        dead_displays = tuple(display for display, descr in displays.items() if descr.get("state") == "DEAD")
-        if not dead_displays:
-            print("No dead displays found, see 'xpra displays'")
-            return ExitCode.NO_DISPLAY
-        if len(dead_displays) > 1:
-            if ALL:
-                return recover_many(dead_displays)
-            print("More than one 'DEAD' display found, see 'xpra displays'")
-            print(" you can use 'xpra recover all',")
-            print(" or specify a display")
-            return ExitCode.NO_DISPLAY
-        display = dead_displays[0]
-        descr = displays[display]
-    args = [display]
-    # figure out what mode was used:
-    mode = descr.get("xpra-server-mode", "seamless")
-    for m in ("seamless", "desktop", "proxy", "shadow", "shadow-screen"):
-        if mode.find(m) >= 0:
-            mode = m
-            break
-    print(f"Recovering display {display!r} as a {mode} server")
-    # use the existing display:
-    options.use_display = "yes"
-    no_gtk()
-    return run_server(script_file, cmdline, options, args, mode, defaults)
-
-
 def run_dbus_system_list() -> ExitValue:
     import dbus
     for service in dbus.SystemBus().list_names():
@@ -2674,30 +2544,6 @@ def run_dbus_session_list() -> ExitValue:
     import dbus
     for service in dbus.SessionBus().list_names():
         print(service)
-    return 0
-
-
-def run_notify(args: list[str]) -> ExitValue:
-    title = args[0]
-    body = args[1] if len(args) >= 2 else ""
-    from xpra.notification.dbus_backend import DBUSNotifier, log
-    log.enable_debug()
-    notifier = DBUSNotifier()
-    notifier.app_name_format = "%s"
-    actions = ()  # ("0", "Hello", "1", "Goodbye")
-    hints = {
-        "image-path": "/usr/share/xpra/icons/encoding.png",
-    }
-    nid = int(monotonic()) % 2**16
-    notifier.show_notify("dbus-id", None, nid, "xpra test app", 0, "",
-                         title, body,
-                         actions, hints, 60*1000, None)
-    nid += 1
-    from xpra.os_util import gi_import
-    GLib = gi_import("GLib")
-    loop = GLib.MainLoop()
-    GLib.timeout_add(5 * 1000, loop.quit)
-    loop.run()
     return 0
 
 
@@ -2766,6 +2612,7 @@ NO_ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
     "docs": ("no_extra_args", run_docs),
     "documentation": ("no_extra_args", run_docs),
     "about": ("no_extra_args", run_about),
+    "license": ("no_extra_args", "xpra.gtk.dialogs.about:run_license"),
     "html5": ("no_extra_args", run_html5),
     "opengl-save-probe": ("no_extra_args,gtk_client", "xpra.scripts.glprobe:run_glsaveprobe"),
     "video": ("no_extra_args", "xpra.codecs.video:main"),
@@ -2775,14 +2622,19 @@ NO_ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
     "packet-encoding": ("no_extra_args", "xpra.net.packet_encoding:main"),
     "dbus-system-list": ("no_extra_args", run_dbus_system_list),
     "dbus-session-list": ("no_extra_args", run_dbus_session_list),
+    "applications-menu": ("no_extra_args", "xpra.server.menu_provider:run_applications_menu"),
+    "sessions-menu": ("no_extra_args", "xpra.server.menu_provider:run_sessions_menu"),
+    "menu-cache": ("no_extra_args", "xpra.platform.menu_helper:run_menu_cache"),
 }
 OPTIONS_MODES: dict[str, tuple[str, Callable | str]] = {
-    "mdns-gui": ("no_extra_args,gtk_client", run_mdns_gui),
-    "sessions": ("no_extra_args,gtk_client", run_sessions_gui),
+    "mdns-gui": ("no_extra_args,gtk_client", "xpra.gtk.dialogs.mdns_gui:run_mdns_gui"),
+    "sessions": ("no_extra_args,gtk_client", "xpra.gtk.dialogs.sessions_gui:run_sessions_gui"),
     "replay": ("no_extra_args", "xpra.gtk.dialogs.replay:do_main"),
     "start-gui": ("no_extra_args,gtk_client", "xpra.gtk.dialogs.start_gui:main"),
     "opengl": ("no_extra_args", "xpra.scripts.glprobe:run_glcheck"),
     "opengl-probe": ("no_extra_args,gtk_client", "xpra.scripts.glprobe:run_glprobe"),
+    "root-size": ("no_extra_args", "xpra.scripts.display:run_root_size"),
+    "xvfb-command": ("no_extra_args", "xpra.config.vfb:run_xvfb_command"),
 }
 ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
     "list-mdns": ("max_one_arg,no_gtk", "xpra.net.mdns.list:run_list_mdns"),
@@ -2801,7 +2653,7 @@ ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
     "version-check": ("", run_version_check),
     "toolbox": ("gtk_client", "xpra.gtk.dialogs.toolbox:main"),
     "auth": ("requires_args", "xpra.auth.auth_helper:run_auth"),
-    "notify": ("requires_args", run_notify),
+    "notify": ("requires_args", "xpra.notification.dbus_backend:run_notify"),
     "u2f": ("", run_u2f),
     "fido2": ("", run_fido2),
     "otp": ("", "xpra.gtk.dialogs.otp:main"),
@@ -2830,6 +2682,7 @@ OPTIONS_ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
     "monitor-info": ("", "xpra.scripts.display:run_monitor_info"),
     "set-monitor": ("", "xpra.scripts.display:run_set_monitor"),
     "showconfig": ("", "xpra.scripts.settings:run_showconfig"),
+    "xvfb": ("max_one_arg,x11", "xpra.x11.vfb_util:run_xvfb"),
 }
 OPTIONS_ARGS_CMDLINE_MODES: dict[str, tuple[str, Callable | str]] = {
     "top": ("no_gtk", run_top),

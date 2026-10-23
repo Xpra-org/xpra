@@ -6,6 +6,7 @@
 import sys
 
 from xpra.exit_codes import ExitValue
+from xpra.config import InitException
 from xpra.config.types import XpraConfig
 from xpra.gtk.dialogs.sessions_gui import SessionsGUI
 from xpra.net.mdns import XPRA_TCP_MDNS_TYPE, XPRA_UDP_MDNS_TYPE, get_listener_class
@@ -125,6 +126,15 @@ def main(argv: list[str]) -> ExitValue:
     opts = make_defaults_struct()
     consume_verbose_argv(argv, "mdns")
     return do_main(opts)
+
+
+def run_mdns_gui(options) -> ExitValue:
+    from xpra.net.mdns import get_listener_class
+    listener = get_listener_class()
+    if not listener:
+        raise InitException("sorry, 'mdns-gui' is not supported on this platform yet")
+    from xpra.gtk.dialogs import mdns_gui
+    return mdns_gui.do_main(options)
 
 
 if __name__ == "__main__":

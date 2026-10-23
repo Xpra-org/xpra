@@ -642,3 +642,16 @@ def run_set_monitor(options, args: list[str]) -> int:
     with xsync:
         RandRBindings().set_crtc_config(mdef)
     return 0
+
+
+def run_root_size(options) -> ExitValue:
+    if (options.backend or "gtk") == "win32":
+        from xpra.scripts.main import no_gi_gtk_modules
+        no_gi_gtk_modules()
+        from xpra.platform.win32.gui import get_display_size
+        size = get_display_size()
+    else:
+        from xpra.gtk.util import get_root_size
+        size = get_root_size((0, 0))
+    sys.stdout.write("%ix%i\n" % size)
+    return ExitCode.OK

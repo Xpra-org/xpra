@@ -318,3 +318,20 @@ def get_menu_provider() -> MenuProvider:
         singleton = MenuProvider()
     assert singleton
     return singleton
+
+
+def print_menu_data(data: dict[str, Any] | None) -> int:
+    if not data:
+        print("no menu data available")
+        return 1
+    from xpra.util.str_fn import print_nested_dict
+    print_nested_dict(data)
+    return 0
+
+
+def run_applications_menu() -> int:
+    return print_menu_data(MenuProvider().get_menu_data(remove_icons=True))
+
+
+def run_sessions_menu() -> int:
+    return print_menu_data(MenuProvider().get_desktop_sessions(remove_icons=True))

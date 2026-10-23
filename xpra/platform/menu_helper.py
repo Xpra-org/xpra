@@ -68,6 +68,14 @@ def main() -> int:
     return 0
 
 
+def run_menu_cache() -> int:
+    from xpra.log import Logger
+    log = Logger("menu")
+    modified = cache_menu_icons()
+    log(f"cache_menu_icons()={modified}")
+    return 0
+
+
 if __name__ == "__main__":
     r = main()
     sys.exit(r)
