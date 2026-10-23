@@ -139,7 +139,7 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
 def run_webcam_client(options, args: list[str], cmdline: list[str]) -> ExitValue:
     from xpra.client.base.features import set_client_features
     from xpra.scripts.parsing import parse_display_name
-    from xpra.scripts.main import basic_client_features, connect_to_server, do_run_client
+    from xpra.scripts.clients import basic_client_features, connect_to_server, do_run_client
     set_client_features(options)
     basic_client_features()
     display_desc = parse_display_name(options, args[0], cmdline)

@@ -596,7 +596,7 @@ def run_monitor_info(options, args: list[str]) -> int:
     display, jsondata = _monitors_args(args, require_monitor_data=False)
     backend = options.backend or "gtk"
     if backend == "win32":
-        from xpra.scripts.main import no_gi_gtk_modules
+        from xpra.scripts.common import no_gi_gtk_modules
         no_gi_gtk_modules()
         from xpra.platform.win32.monitors import get_monitors_info
     else:
@@ -646,7 +646,7 @@ def run_set_monitor(options, args: list[str]) -> int:
 
 def run_root_size(options) -> ExitValue:
     if (options.backend or "gtk") == "win32":
-        from xpra.scripts.main import no_gi_gtk_modules
+        from xpra.scripts.common import no_gi_gtk_modules
         no_gi_gtk_modules()
         from xpra.platform.win32.gui import get_display_size
         size = get_display_size()

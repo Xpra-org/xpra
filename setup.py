@@ -1817,6 +1817,7 @@ if modules_ENABLED:
                 "xpra.scripts.display",
                 "xpra.scripts.glprobe",
                 "xpra.scripts.args",
+                "xpra.scripts.clients",
                 "xpra.scripts.sessions",
                 "xpra.scripts.settings",
                 "xpra.scripts.picker",

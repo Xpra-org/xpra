@@ -243,7 +243,7 @@ class TestSSLVerifyFailure(unittest.TestCase):
         self.server_context.load_cert_chain(cert, key)
 
     def check_changed(self, ssl_options: dict, accept: bool) -> None:
-        from xpra.scripts.main import apply_ssl_retry
+        from xpra.scripts.clients import apply_ssl_retry
         display_desc = dict(self.display_desc, **{"ssl-options": ssl_options})
         with (
             patch("xpra.scripts.pinentry.confirm", return_value=accept) as confirm,
@@ -309,7 +309,7 @@ class TestSSLVerifyFailure(unittest.TestCase):
             self.test_changed_certificate_without_saved_options()
 
     def test_retry_only_with_new_options(self) -> None:
-        from xpra.scripts.main import apply_ssl_retry
+        from xpra.scripts.clients import apply_ssl_retry
         e = self.verify_failure()
         self.assertTrue(apply_ssl_retry(e, self.display_desc))
         self.assertNotEqual(self.display_desc["ssl-options"]["ca-certs"], "default")

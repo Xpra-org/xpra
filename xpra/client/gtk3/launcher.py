@@ -39,10 +39,8 @@ from xpra.gtk.util import gtk_main
 from xpra.gtk.dialogs.about import about
 from xpra.gtk.dialogs.util import hb_button
 from xpra.scripts.common import bypass_no_gtk
-from xpra.scripts.main import (
-    make_client,
-    configure_network, configure_env, configure_logging,
-)
+from xpra.scripts.main import configure_network, configure_env, configure_logging
+from xpra.scripts.clients import make_client
 from xpra.net.connect import connect_to
 from xpra.common import noop, may_show_progress
 from xpra.scripts.connection import is_local, parse_URL

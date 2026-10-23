@@ -45,3 +45,27 @@ def reqx11(mode: str) -> None:
     if OSX or WIN32:
         raise InitExit(ExitCode.UNSUPPORTED, f"{mode} requires a build with the X11 bindings")
     raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use {mode!r}")
+
+
+NOGI = ("Gtk", "Gdk", "GdkX11", "GdkPixbuf", "GtkosxApplication") if not OSX else ("GdkX11", )
+
+
+def no_gi_gtk_modules(mods=NOGI) -> None:
+    for mod in mods:
+        mod_path = f"gi.repository.{mod}"
+        if sys.modules.get(mod_path):
+            raise RuntimeError(f"gi module {mod!r} is already loaded!")
+        # noinspection PyTypeChecker
+        sys.modules[mod_path] = None
+
+
+def allow_gi_gtk_modules(mods=NOGI) -> None:
+    """
+    Undo `no_gi_gtk_modules`: it only poisons the `sys.modules` entries
+    (nothing was ever imported), so removing them restores importability.
+    Used by the Gtk-free backends to load Gtk lazily for menus and dialogs.
+    """
+    for mod in mods:
+        mod_path = f"gi.repository.{mod}"
+        if mod_path in sys.modules and sys.modules[mod_path] is None:
+            del sys.modules[mod_path]

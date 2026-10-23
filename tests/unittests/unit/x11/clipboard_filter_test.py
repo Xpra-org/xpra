@@ -145,7 +145,7 @@ print("done")
 # so the clipboard must not reach for the gtk bindings there.
 NO_GTK_CHECKS = r"""
 import sys
-from xpra.scripts.main import no_gi_gtk_modules
+from xpra.scripts.common import no_gi_gtk_modules
 from xpra.x11.bindings.display_source import init_display_source
 from xpra.x11.bindings.loop import register_glib_source
 from xpra.os_util import gi_import

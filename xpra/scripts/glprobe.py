@@ -228,7 +228,7 @@ def run_glcheck(opts: XpraConfig) -> ExitValue:
     else:
         if opts.backend == "win32":
             # keep this subprocess as Gtk-free as the client it is probing for:
-            from xpra.scripts.main import no_gi_gtk_modules
+            from xpra.scripts.common import no_gi_gtk_modules
             no_gi_gtk_modules()
         else:
             from xpra.scripts.main import check_gtk_client

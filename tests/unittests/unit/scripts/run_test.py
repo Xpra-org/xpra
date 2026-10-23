@@ -19,17 +19,15 @@ from xpra.net.constants import SocketState
 from xpra.config import InitExit
 from xpra.config.defaults import make_defaults_struct
 from xpra.scripts import main
-from xpra.scripts.main import (
-    connect_client_app, create_client_app, do_run_mode, run_proxy_run, run_server_mode, split_start_child_args,
-    get_mode_handler,
-)
+from xpra.scripts.main import do_run_mode, run_proxy_run, run_server_mode, split_start_child_args, get_mode_handler
+from xpra.scripts.clients import connect_client_app, create_client_app
 from xpra.scripts.parsing import mode_needs_ssh_agent, get_usage, MODE_ALIAS
 
 
 class RunRoutingTest(unittest.TestCase):
     def test_client_dispatch(self):
         for mode in ("run", "exec"):
-            with patch("xpra.scripts.main.basic_client_features"):
+            with patch("xpra.scripts.clients.basic_client_features"):
                 client, displays, command = create_client_app(make_defaults_struct(), ["socket:///tmp/test", "echo", "hi"], mode)
             self.assertIsInstance(client, RunClient)
             self.assertEqual(client.exec_mode, mode == "exec")
@@ -43,9 +41,9 @@ class RunRoutingTest(unittest.TestCase):
             opts.backend = "gtk"
             desc = {"type": "ssh", "display_as_args": [":100"]}
             client = Mock()
-            with patch("xpra.scripts.main.do_pick_display", return_value=desc), \
-                 patch("xpra.scripts.main.may_show_progress"), \
-                 patch("xpra.scripts.main.connect_to_server") as connect:
+            with patch("xpra.scripts.clients.do_pick_display", return_value=desc), \
+                 patch("xpra.scripts.clients.may_show_progress"), \
+                 patch("xpra.scripts.clients.connect_to_server") as connect:
                 connect_client_app(client, [], opts, ["ssh://host/100"], mode, ["echo", "hi"])
             self.assertEqual(desc["proxy_command"], ["_proxy_exec"] if mode == "exec" else ["_proxy_run"])
             self.assertNotIn("--env=XPRA_RUN_WAIT_TIME=0", desc["display_as_args"])

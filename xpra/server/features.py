@@ -212,6 +212,6 @@ def enforce_server_features() -> None:
         "systray": "xpra.x11.subsystem.systray",
     })
     if not features.gtk:
-        from xpra.scripts.main import no_gi_gtk_modules
+        from xpra.scripts.common import no_gi_gtk_modules
         no_gi_gtk_modules()
     may_block_numpy()

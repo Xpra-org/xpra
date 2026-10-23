@@ -26,12 +26,14 @@ from xpra.config import InitException, InitExit, InitInfo
 from xpra.util.systemd import use_systemd_run, systemd_run_command, systemd_run_wrap
 from xpra.scripts.main import (
     nox,
-    handle_client_encoding_option, normalize_client_encoding_option,
     isdisplaytype,
     check_display, check_gtk, check_gtk_client,
+    configure_landlock,
+)
+from xpra.scripts.clients import (
+    handle_client_encoding_option, normalize_client_encoding_option,
     make_client, do_run_client,
     connect_to_server,
-    configure_landlock,
 )
 from xpra.scripts.display import _monitors_args
 from xpra.scripts.picker import find_session_by_name
@@ -121,7 +123,7 @@ class TestMain(unittest.TestCase):
     def test_landlock_unsupported_backends(self):
         for backend in ("qt", "pyglet", "tk"):
             opts = SimpleNamespace(landlock="strict", backend=backend)
-            with self.subTest(backend=backend), patch("xpra.scripts.main.LINUX", True), \
+            with self.subTest(backend=backend), patch("xpra.scripts.clients.LINUX", True), \
                  self.assertRaisesRegex(InitExit, "does not support Landlock") as raised:
                 make_client(opts)
             self.assertEqual(raised.exception.status, ExitCode.UNSUPPORTED)
@@ -130,7 +132,7 @@ class TestMain(unittest.TestCase):
         calls = []
         opts = SimpleNamespace(landlock="no", backend="qt")
         with patch("xpra.platform.security.harden_process", lambda: calls.append("harden")), \
-             patch("xpra.scripts.main.no_gi_gtk_modules", lambda: calls.append("backend")), \
+             patch("xpra.scripts.clients.no_gi_gtk_modules", lambda: calls.append("backend")), \
              patch.dict(sys.modules, {"xpra.client.qt6.client": None}):
             for _ in range(2):
                 with self.assertRaises(InitExit):
@@ -140,8 +142,8 @@ class TestMain(unittest.TestCase):
     def test_make_client_hardening_failure_is_not_fatal(self):
         opts = SimpleNamespace(landlock="no", backend="qt")
         with patch("xpra.platform.security.harden_process", side_effect=OSError("not permitted")), \
-             patch("xpra.scripts.main.warn") as warn, \
-             patch("xpra.scripts.main.no_gi_gtk_modules") as backend, \
+             patch("xpra.scripts.clients.warn") as warn, \
+             patch("xpra.scripts.clients.no_gi_gtk_modules") as backend, \
              patch.dict(sys.modules, {"xpra.client.qt6.client": None}), \
              self.assertRaises(InitExit):
             make_client(opts)
@@ -153,8 +155,8 @@ class TestMain(unittest.TestCase):
         app = SimpleNamespace()
         opts = SimpleNamespace(backend="gtk", display=":100")
         glib = SimpleNamespace(idle_add=Mock())
-        with patch("xpra.scripts.main.gi_import", return_value=glib), \
-             patch("xpra.scripts.main.connect_or_fail") as connect:
+        with patch("xpra.scripts.clients.gi_import", return_value=glib), \
+             patch("xpra.scripts.clients.connect_or_fail") as connect:
             connect_to_server(app, desc, opts)
         self.assertIs(app.display_desc, desc)
         connect.assert_not_called()
@@ -182,9 +184,9 @@ class TestMain(unittest.TestCase):
         glib = SimpleNamespace(idle_add=lambda fn, *args: queued.append(lambda: fn(*args)))
         with patch("xpra.scripts.main.parse_display_name", return_value=desc), \
              patch("xpra.client.base.command.RequestStartClient", return_value=app), \
-             patch("xpra.scripts.main.gi_import", return_value=glib), \
+             patch("xpra.scripts.clients.gi_import", return_value=glib), \
              patch("xpra.util.thread.start_thread", side_effect=lambda fn, *a, **kw: fn()), \
-             patch("xpra.scripts.main.connect_or_fail", side_effect=lambda target: events.append("connect") or object()):
+             patch("xpra.scripts.clients.connect_or_fail", side_effect=lambda target: events.append("connect") or object()):
             result = run_remote_server("xpra", [], opts, ["tcp://localhost:12345/"], "desktop", make_defaults_struct())
         self.assertEqual(result, ExitCode.OK)
         self.assertIs(app.display_desc, desc)
@@ -310,16 +312,16 @@ class TestMain(unittest.TestCase):
         def fd(d):
             try:
                 #silence errors since we're expecting them:
-                from xpra.scripts import main as xpra_main
+                from xpra.scripts import clients as xpra_clients
                 from xpra.net import connect as xpra_connect
                 saved_timeout = xpra_connect.CONNECT_TIMEOUT
-                saved_werr = xpra_main.werr
+                saved_werr = xpra_clients.werr
                 try:
                     xpra_connect.CONNECT_TIMEOUT = 5
-                    xpra_main.werr = noop
+                    xpra_clients.werr = noop
                     conn = connect_to(d)
                 finally:
-                    xpra_main.werr = saved_werr
+                    xpra_clients.werr = saved_werr
                     xpra_connect.CONNECT_TIMEOUT = saved_timeout
             except Exception:
                 #from xpra.util import get_util_logger

@@ -443,7 +443,7 @@ def run_stopexit(mode: str, opts, extra_args: list[str], cmdline: list[str]) -> 
             from xpra.client.base.command import ExitXpraClient
             app = ExitXpraClient(opts)
         app.display_desc = display_desc
-        from xpra.scripts.main import connect_to_server
+        from xpra.scripts.clients import connect_to_server
         connect_to_server(app, display_desc, opts)
         e = app.run()
     except ImportError as e:

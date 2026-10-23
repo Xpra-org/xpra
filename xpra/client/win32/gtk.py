@@ -70,7 +70,7 @@ def load_gtk() -> bool:
         return _loaded
     _loaded = False
     try:
-        from xpra.scripts.main import allow_gi_gtk_modules
+        from xpra.scripts.common import allow_gi_gtk_modules
         allow_gi_gtk_modules()
         context = GLib.MainContext.default()
         # `Gtk.init_check` attaches `Gdk`'s event source to the default context,
