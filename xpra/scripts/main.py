@@ -496,11 +496,6 @@ def run_mode(script_file: str, cmdline: list[str], options, args: list[str], ful
         return 128 + signal.SIGINT
 
 
-def DotXpra(*args, **kwargs):
-    from xpra.platform import dotxpra
-    return dotxpra.DotXpra(*args, **kwargs)
-
-
 def split_start_child_args(cmdline: list[str], options, args: list[str]) -> list[str]:
     """
     all args that aren't specifying a connection will be interpreted as a start-child command:
@@ -550,6 +545,7 @@ def run_server_mode(script_file: str, cmdline: list[str], options, args: list[st
             except Exception:
                 pass
             else:
+                from xpra.platform.dotxpra import DotXpra
                 dotxpra = DotXpra(options.socket_dirs)
                 if display_name := display.get("display_name"):
                     state = dotxpra.get_display_state(display_name)
@@ -788,6 +784,7 @@ def run_server(script_file, cmdline: list[str], options, args: list[str], full_m
         except (ValueError, InitException, InitExit):
             pass
         else:
+            from xpra.platform.dotxpra import DotXpra
             dotxpra = DotXpra(options.socket_dirs)
             if display := display_desc.get("display_name"):
                 state = dotxpra.get_display_state(display)

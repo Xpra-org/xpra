@@ -75,7 +75,7 @@ class RunRoutingTest(unittest.TestCase):
         opts = SimpleNamespace(socket_dirs=[], sessions_dir="", backend="auto")
         for live in (True, False):
             with patch("xpra.scripts.proxy.pick_display", return_value={"display_name": ":100"}), \
-                 patch("xpra.scripts.proxy.DotXpra") as dotxpra, \
+                 patch("xpra.platform.dotxpra.DotXpra") as dotxpra, \
                  patch("xpra.scripts.proxy.run_client", return_value=0) as client, \
                  patch("xpra.scripts.proxy.run_daemon") as daemon:
                 dotxpra.return_value.get_display_state.return_value = SocketState.LIVE if live else SocketState.UNKNOWN
@@ -140,7 +140,7 @@ class ServerModeTest(unittest.TestCase):
              patch("xpra.scripts.main.run_server", return_value="server") as server, \
              patch("xpra.scripts.main.run_client", return_value="client") as client, \
              patch("xpra.scripts.main.pick_display", return_value={"display_name": ":10"}), \
-             patch("xpra.scripts.main.DotXpra") as dotxpra:
+             patch("xpra.platform.dotxpra.DotXpra") as dotxpra:
             dotxpra.return_value.get_display_state.return_value = state
             r = run_server_mode("xpra", [], opts, args, mode, mode, None)
         return r, opts, remote, server, client

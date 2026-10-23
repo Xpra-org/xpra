@@ -30,11 +30,6 @@ from xpra.scripts.clients import run_client, get_client_app, do_run_client
 # pylint: disable=import-outside-toplevel
 
 
-def DotXpra(*args, **kwargs):
-    from xpra.platform import dotxpra
-    return dotxpra.DotXpra(*args, **kwargs)
-
-
 def add_process(*args, **kwargs):
     from xpra.util.child_reaper import get_child_reaper
     return get_child_reaper().add_process(*args, **kwargs)
@@ -136,6 +131,7 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
         else:
             matching_display = display_name
 
+    from xpra.platform.dotxpra import DotXpra
     dotxpra = DotXpra(opts.socket_dirs, username, uid=uid, gid=gid)
     if WIN32:
         if not mode.startswith("shadow"):
@@ -222,6 +218,7 @@ def run_proxy_run(options, script_file: str, cmdline: list[str], args: list[str]
     # print(f"{display_args=} {cmd_args=}")
 
     def is_live(display: str) -> bool:
+        from xpra.platform.dotxpra import DotXpra
         dotxpra = DotXpra(options.socket_dirs)
         return dotxpra.get_display_state(display) == SocketState.LIVE
 
@@ -283,6 +280,7 @@ def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode:
         state = SocketState.UNKNOWN
         if attach is not False:
             # maybe this server already exists?
+            from xpra.platform.dotxpra import DotXpra
             dotxpra = DotXpra(opts.socket_dirs)
             if not args and server_mode in ("shadow", "shadow-screen", "expand"):
                 try:
