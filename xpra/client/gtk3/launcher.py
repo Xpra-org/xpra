@@ -224,7 +224,7 @@ class ApplicationWindow:
                                            extras_validation=get_launcher_validation())
         self.parse_ssh()
         # TODO: the fixup does not belong here?
-        from xpra.scripts.main import fixup_options
+        from xpra.config.fixup import fixup_options
         fixup_options(self.config)
         # what we save by default:
         self.config_keys = set(SAVED_FIELDS)

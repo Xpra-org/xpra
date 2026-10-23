@@ -19,7 +19,8 @@ from xpra.net.constants import SocketState
 from xpra.config import InitExit
 from xpra.config.defaults import make_defaults_struct
 from xpra.scripts import main
-from xpra.scripts.main import do_run_mode, run_proxy_run, run_server_mode, split_start_child_args, get_mode_handler
+from xpra.scripts.main import do_run_mode, run_server_mode, split_start_child_args, get_mode_handler
+from xpra.scripts.proxy import run_proxy_run
 from xpra.scripts.clients import connect_client_app, create_client_app
 from xpra.scripts.parsing import mode_needs_ssh_agent, get_usage, MODE_ALIAS
 
@@ -73,10 +74,10 @@ class RunRoutingTest(unittest.TestCase):
     def test_proxy_exec_live_server_and_fallback(self):
         opts = SimpleNamespace(socket_dirs=[], sessions_dir="", backend="auto")
         for live in (True, False):
-            with patch("xpra.scripts.main.pick_display", return_value={"display_name": ":100"}), \
-                 patch("xpra.scripts.main.DotXpra") as dotxpra, \
-                 patch("xpra.scripts.main.run_client", return_value=0) as client, \
-                 patch("xpra.scripts.main.run_daemon") as daemon:
+            with patch("xpra.scripts.proxy.pick_display", return_value={"display_name": ":100"}), \
+                 patch("xpra.scripts.proxy.DotXpra") as dotxpra, \
+                 patch("xpra.scripts.proxy.run_client", return_value=0) as client, \
+                 patch("xpra.scripts.proxy.run_daemon") as daemon:
                 dotxpra.return_value.get_display_state.return_value = SocketState.LIVE if live else SocketState.UNKNOWN
                 run_proxy_run(opts, "xpra", [], [":100", "true"], "exec")
             if live:
