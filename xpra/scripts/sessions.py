@@ -185,7 +185,7 @@ def get_session_details(session_dir: str, attrs: dict[str, Any]) -> dict[str, st
     return details
 
 
-def run_list_sessions(args, options) -> ExitValue:
+def run_list_sessions(options, args) -> ExitValue:
     if args:
         raise InitInfo("too many arguments for 'list-sessions' mode")
     from xpra.platform.dotxpra import DotXpra

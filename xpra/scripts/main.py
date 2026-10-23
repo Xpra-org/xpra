@@ -101,7 +101,7 @@ NO_NETWORK_SUBCOMMANDS = (
     "desktop-greeter", "gui", "start-gui",
     "docs", "documentation", "about", "html5",
     "pinentry", "input_pass", "_dialog", "_pass",
-    "opengl", "opengl-probe", "opengl-test", "opengl-save",
+    "opengl", "opengl-probe", "opengl-test", "opengl-save-probe",
     "autostart",
     "encoding", "video",
     "nvinfo", "webcam",
@@ -774,7 +774,7 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         return run_mdns_gui(options)
     if mode == "list-sessions":
         no_gtk()
-        return run_list_sessions(args, options)
+        return run_list_sessions(options, args)
     if mode == "sessions":
         check_gtk_client()
         return run_sessions_gui(options)
@@ -886,9 +886,6 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
     if mode == "send-file":
         check_gtk("send-file")
         return run_send_file(args)
-    if mode == "qrcode":
-        check_gtk("qrcode")
-        return run_qrcode(args)
     if mode == "splash":
         check_gtk("splash")
         return run_splash(args)
@@ -1030,9 +1027,9 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         from xpra.net.tls.common import show_ssl
         return show_ssl(options, args, cmdline)
     if mode == "auth":
-        return run_auth(options, args)
+        return run_auth(args)
     if mode == "notify":
-        return run_notify(options, args)
+        return run_notify(args)
     if mode == "dbus-system-list":
         return run_dbus_system_list()
     if mode == "dbus-session-list":
@@ -2361,11 +2358,6 @@ def run_autostart(script_file, args) -> ExitValue:
     return 0
 
 
-def run_qrcode(args) -> ExitValue:
-    from xpra.gtk.dialogs import qrcode_client
-    return qrcode_client.main(args)
-
-
 def run_splash(args) -> ExitValue:
     from xpra.gtk.dialogs import splash
     return splash.main(args)
@@ -3348,7 +3340,7 @@ def run_dbus_session_list() -> ExitValue:
     return 0
 
 
-def run_notify(_options, args) -> ExitValue:
+def run_notify(args: list[str]) -> ExitValue:
     if not args:
         raise InitException("specify notification text")
     title = args[0]
@@ -3374,7 +3366,7 @@ def run_notify(_options, args) -> ExitValue:
     return 0
 
 
-def run_auth(_options, args) -> ExitValue:
+def run_auth(args: list[str]) -> ExitValue:
     if not args:
         raise InitException("missing module argument")
     auth_str = args[0]
