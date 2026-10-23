@@ -3593,6 +3593,7 @@ if client_ENABLED or server_ENABLED:
         "xpra.scripts.config",
         "xpra.scripts.parsing",
         "xpra.scripts.connection",
+        "xpra.scripts.ssh_args",
         "xpra.scripts.exec_util",
         "xpra.scripts.fdproxy",
         "xpra.scripts.version",

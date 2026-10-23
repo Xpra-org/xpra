@@ -45,7 +45,8 @@ from xpra.scripts.main import (
 )
 from xpra.net.connect import connect_to
 from xpra.common import noop, may_show_progress
-from xpra.scripts.parsing import is_local, get_ssh_args, parse_ssh_option, get_ssh_proxy_args, get_ssl_options
+from xpra.scripts.connection import is_local, parse_URL
+from xpra.scripts.parsing import get_ssh_args, parse_ssh_option, get_ssh_proxy_args, get_ssl_options
 from xpra.exit_codes import RETRY_EXIT_CODES, ExitCode, ExitValue, exit_str
 from xpra.platform.info import get_username
 from xpra.log import Logger, enable_debug_for
@@ -1107,7 +1108,6 @@ class ApplicationWindow:
         return False
 
     def update_options_from_url(self, url: str) -> None:
-        from xpra.scripts.parsing import parse_URL
         address, props = parse_URL(url, getattr(self.config, "attach_urls", "yes"))
         pa = address.split("://")
         if pa[0] in (MODE_TCP, MODE_SSH, MODE_SSL, MODE_QUIC, MODE_WS, MODE_WSS) and len(pa) >= 2:

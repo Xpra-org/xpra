@@ -8,10 +8,8 @@
 
 # pylint: disable=import-outside-toplevel
 
-import shlex
 import os.path
 import optparse
-from fnmatch import fnmatch
 from urllib import parse
 from typing import Any, NoReturn
 from collections.abc import Callable, Sequence
@@ -20,7 +18,7 @@ from importlib.util import find_spec
 from xpra.util.str_fn import csv
 from xpra.util.version import full_version_str
 from xpra.util.parsing import (
-    parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS, SYNC_SUBSYSTEMS,
+    FALSE_OPTIONS, SYNC_SUBSYSTEMS,
     str_to_bool, parse_bool_or, parse_number, print_number,
 )
 from xpra.util.env import envbool
@@ -34,7 +32,7 @@ from xpra.config.fixup import fixup_debug_option, fixup_options
 from xpra.config.paths import find_docs_path, find_html5_path
 from xpra.config.defaults import make_defaults_struct
 from xpra.config.validation import validate_config
-from xpra.scripts import connection
+from xpra.scripts import connection, ssh_args
 
 MODE_ALIAS: dict[str, str] = {
     "start": "seamless",
@@ -370,7 +368,7 @@ def get_ssl_options(desc, opts, cmdline, defaults: dict[str, Any] | None = None)
 
 
 def parse_ssh_option(ssh_setting: str) -> list[str]:
-    ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
+    ssh_cmd = ssh_args.split_ssh_command(ssh_setting, windows=WIN32)
     if ssh_cmd[0] == "auto":
         fallback_ssh_command = "plink.exe -ssh -agent" if WIN32 else "ssh -x"
         # try paramiko:
@@ -389,63 +387,22 @@ def parse_ssh_option(ssh_setting: str) -> list[str]:
             if is_debug_enabled("ssh") or isinstance(e, AttributeError):
                 log.info(f"{e}")
                 log.info(f"paramiko not found, using {fallback_ssh_command}")
-        ssh_cmd = shlex.split(fallback_ssh_command)
+        ssh_cmd = ssh_args.split_ssh_command(fallback_ssh_command, windows=False)
     return ssh_cmd
 
 
-# command and query modes that just run a single request through the proxy
-# and have no session that needs the ssh agent:
-# for these, agent forwarding should not be enabled by default
-# (an explicit `-A`, `XPRA_SSH_AGENT=1` or a builtin backend's `agent=yes` is still honoured).
-# `fnmatch` patterns are used so that whole families (ie: `list-*`, `*-info`) are covered,
-# even for modes that don't support the ssh transport yet:
-NO_SSH_AGENT_MODES = (
-    "run", "exec", "_proxy_run", "_proxy_exec",
-    "stop", "exit",
-    "list", "list-*",
-    "request-*",
-    "setup-ssl", "show-ssl",
-    "showconfig", "showsetting",
-    "help",
-    "info", "*-info",
-    "version", "id", "sbom",
-    "control",
-    "print", "send-file",
-)
+NO_SSH_AGENT_MODES = ssh_args.NO_SSH_AGENT_MODES
 
 
 def mode_needs_ssh_agent(mode: str) -> bool:
-    # unknown / empty modes keep the historical default of enabling agent forwarding:
-    return not any(fnmatch(mode, pattern) for pattern in NO_SSH_AGENT_MODES)
+    return ssh_args.mode_needs_ssh_agent(mode)
 
 
 def get_ssh_display_attributes(args, ssh_option="auto", mode="") -> dict[str, Any]:
-    # ie: ssh=["/usr/bin/ssh", "-v"]
     ssh = parse_ssh_option(ssh_option)
-    ssh_cmd = ssh[0].lower()
-    is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
-    is_paramiko = ssh_cmd.split(":")[0] == "paramiko"
-    is_asyncssh = ssh_cmd.split(":")[0] == "asyncssh"
     agent_forwarding = envbool("XPRA_SSH_AGENT", "-A" in ssh)
-    desc: dict[str, Any] = {}
-    if is_paramiko or is_asyncssh:
-        backend = "asyncssh" if is_asyncssh else "paramiko"
-        ssh[0] = backend
-        desc[f"is_{backend}"] = True
-        backend_config = {}
-        if ssh_option.find(":") > 0:
-            backend_config = parse_simple_dict(ssh_option.split(":", 1)[1])
-            desc[f"{backend}-config"] = backend_config
-        default_agent = "yes" if mode_needs_ssh_agent(mode) else "no"
-        agent_forwarding |= backend_config.get("agent", default_agent).lower() in TRUE_OPTIONS
-        backend_config["agent"] = str(agent_forwarding)
-    elif is_putty:
-        desc["is_putty"] = True
-    desc["agent"] = agent_forwarding
-    if agent_forwarding:
-        # tell the remote proxy command which user uuid we're going to use,
-        # so it can set up the ssh agent symlink at a location
-        # that the server can find with just the uuid:
+    desc = ssh_args.get_ssh_display_attributes(ssh, ssh_option, mode, agent_forwarding)
+    if desc["agent"]:
         uuid = get_user_uuid()
         args.append(f"--env=SSH_AGENT_UUID={uuid}")
         desc["ssh-agent-uuid"] = uuid
@@ -453,55 +410,18 @@ def get_ssh_display_attributes(args, ssh_option="auto", mode="") -> dict[str, An
 
 
 def get_ssh_args(desc, ssh=("paramiko",), prefix: str = "") -> list[str]:
-    ssh_cmd = ssh[0]
-    ssh_port = desc.get(f"{prefix}port", 22)
-    username = desc.get(f"{prefix}username")
-    password = desc.get(f"{prefix}password")
-    host = desc.get(f"{prefix}host")
-    if not host:
-        raise RuntimeError(f"missing host from session descriptor {desc}")
+    key_path = ""
     key = desc.get(f"{prefix}key")
-    is_putty = any(ssh_cmd.lower().endswith(x) for x in ("plink", "plink.exe", "putty", "putty.exe"))
-    is_builtin = ssh_cmd in ("asyncssh", "paramiko")
-    args = []
-    if password and is_putty:
-        args += ["-pw", password]
-    if username and not is_builtin:
-        args += ["-l", username]
-    if ssh_port and ssh_port != 22:
-        # grr, why bother doing it different?
-        if is_putty:
-            args += ["-P", str(ssh_port)]
-        elif not is_builtin:
-            args += ["-p", str(ssh_port)]
-    if not is_builtin:
-        args += ["-T", host]
-        if key:
-            key_path = os.path.abspath(key)
-            if WIN32 and is_putty:
-                # tortoise plink works with either slash, backslash needs too much escaping
-                # because of the weird way it's passed through as a ProxyCommand
-                key_path = "\"" + key.replace("\\", "/") + "\""  # pragma: no cover
-            args += ["-i", key_path]
-    return args
+    if key and desc.get(f"{prefix}host") and ssh[0] not in ("asyncssh", "paramiko"):
+        key_path = os.path.abspath(key)
+        if WIN32 and any(ssh[0].lower().endswith(x) for x in ("plink", "plink.exe", "putty", "putty.exe")):
+            # PuTTY proxy commands require forward slashes and quoted key paths.
+            key_path = '"' + key.replace("\\", "/") + '"'
+    return ssh_args.get_ssh_args(desc, ssh, prefix, key_path=key_path)
 
 
 def get_ssh_proxy_args(desc, ssh) -> list[str]:
-    is_putty = ssh[0].endswith("plink") or ssh[0].endswith("plink.exe")
-    is_builtin = ssh[0] in ("asyncssh", "paramiko")
-    args = []
-    proxyline = ssh
-    if is_putty:
-        proxyline += ["-nc", "%host:%port"]
-    elif not is_builtin:
-        proxyline += ["-W", "%h:%p"]
-    # the double quotes are in case the password has something like "&"
-    proxyline += get_ssh_args(desc, ssh, prefix="proxy_")
-    if is_putty:
-        args += ["-proxycmd", " ".join(proxyline)]
-    elif not is_builtin:
-        args += ["-o", "ProxyCommand " + " ".join(proxyline)]
-    return args
+    return ssh_args.get_ssh_proxy_args(desc, ssh, get_args=get_ssh_args)
 
 
 def has_module(name: str) -> bool:
