@@ -37,6 +37,9 @@ MSYSTEM_CARCH = os.environ.get("MSYSTEM_CARCH", "x86_64")
 PACKAGE_PREFIX = os.environ.get("MINGW_PACKAGE_PREFIX", f"mingw-w64-{MSYSTEM_CARCH}") + "-"
 MSYS2_PACKAGE_PREFIX = "msys2-"
 MSYS_DLL_PREFIX = "msys-"
+# VA-API Compatibility Pack, keep in sync with `VACP_VERSION` in `SETUP.sh`:
+VACP_PACKAGE = "microsoft.direct3d.videoaccelerationcompatibilitypack"
+VACP_VERSION = "1.0.2"
 
 X11_DLL_DIR = os.environ.get("X11_DLL_DIR", "E:/vcxsrv")
 
@@ -1041,7 +1044,7 @@ def get_py_lib_dirs() -> list[str]:
         path = get_path(k)
         if os.path.exists(path) and path not in py_lib_dirs:
             py_lib_dirs.append(path)
-            for extra in ("lib-dynload", "win32", "pywin32_system32"):
+            for extra in ("lib-dynload", "win32", "pywin32_system32", "pythonwin"):
                 epath = os.path.join(path, extra)
                 if os.path.exists(epath) and epath not in py_lib_dirs:
                     py_lib_dirs.append(epath)
@@ -1171,9 +1174,23 @@ def rec_sbom() -> None:
             debug(f"ignoring {path!r} (.NET SDK)")
         elif path in ("DesktopLogon.dll", ):
             debug(f"ignoring {path!r} (one of ours)")
+        elif os.path.basename(path) == "vaon12_drv_video.dll":
+            # installed from NuGet by `SETUP.sh`, not by pacman:
+            rec = {
+                "package": VACP_PACKAGE,
+                "version": VACP_VERSION,
+            }
+            add_size_checksum(rec, os.path.join(DIST, path))
+            sbom[path] = rec
         else:
             rec = sbom_rec(path)
-            if rec:
+            name = os.path.basename(path)
+            if not rec and name.find("py") >= 0:
+                # ie: "lib/pywintypes314.dll" from "site-packages/pywin32_system32":
+                rec = find_prefixed_sbom_rec(name, py_lib_dirs)
+                if rec:
+                    sbom[path] = rec
+            elif rec:
                 package = rec["package"]
                 version = rec["version"]
                 debug(f" * {path!r}: {package!r}, {version!r}")
@@ -1197,6 +1214,7 @@ def rec_sbom() -> None:
     # and we don't want to start unpacking a large ZIP file and converting .pyc to .py
     # just for one filename:
     rec_py_lib(os.path.join("lib", "decorator.py"))
+    rec_py_lib(os.path.join("lib", "typing_extensions.py"))
 
     # summary: list of packages
     packages = tuple(sorted(set(rec["package"] for rec in sbom.values())))
@@ -1206,6 +1224,13 @@ def rec_sbom() -> None:
         package = shorten_package_name(package_name)
         # keep only the keys relevant to the sbom:
         info = get_pacman_package_info(package_name) or get_pip_package_info(package_name)
+        if not info and package_name == VACP_PACKAGE:
+            info = {
+                "Name": VACP_PACKAGE,
+                "Version": VACP_VERSION,
+                "Description": "Microsoft Direct3D 12 VA-API driver",
+                "URL": f"https://www.nuget.org/packages/{VACP_PACKAGE}/{VACP_VERSION}",
+            }
         exported_info = {}
         for key in (
             "Name", "Version", "Description",
@@ -1253,6 +1278,11 @@ def export_sbom() -> None:
     delfile(output)
     env = os.environ.copy()
     env["PYTHONPATH"] = "."
+    # the Windows certificate store may not have the root CA for downloading the MSYS2 SBOMs yet,
+    # (Windows only installs them when it first needs them), so use the MSYS2 bundle instead:
+    cert_file = f"{MINGW_PREFIX}/etc/ssl/cert.pem"
+    if "SSL_CERT_FILE" not in env and os.path.exists(cert_file):
+        env["SSL_CERT_FILE"] = cert_file
     log_command([WIN_PYTHON, SBOM_SCRIPT, output], "export-sbom.log", env=env)
     # make a copy that can be distributed separately:
     SBOM_FILENAME = f"Xpra{version_info.extra}{version_info.arch_info}_{version_info.full_string}.json"

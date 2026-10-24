@@ -2766,7 +2766,8 @@ if WIN32:
             "packages"          : packages,
             "include_files"     : data_files,
             "excludes"          : excludes,
-            "include_msvcr"     : True,
+            # our binaries use the OS UCRT, not the MSVC runtime:
+            "include_msvcr"     : False,
             "bin_excludes"      : bin_excludes,
         }
         # cx_Freeze v5 workarounds:

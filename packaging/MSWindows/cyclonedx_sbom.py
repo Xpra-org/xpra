@@ -5,6 +5,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import re
 import sys
 from xpra.build_info import packages
 from msys2_sbom import (
@@ -86,11 +87,33 @@ for package_name, info in packages.items():
         dependencies[package_name] = deps
 
 
+# meta packages without any files, which we resolve to the packages they depend on:
+META_PACKAGES = {
+    "cc-libs": ("libgcc", "libstdc++"),
+    "gcc-libs": ("libgcc", "libstdc++"),
+}
+
+
+def expand_deps(deps: list[str]) -> list[str]:
+    expanded = []
+    for dep in deps:
+        # strip the version constraint, ie: "mingw-w64-ucrt-x86_64-libgcc=16.2.0-6"
+        dep = re.split(r"[<>=]", dep, 1)[0]
+        for meta, replacements in META_PACKAGES.items():
+            if dep.endswith(f"-{meta}"):
+                prefix = dep[:-len(meta)]
+                expanded += [prefix + replacement for replacement in replacements]
+                break
+        else:
+            expanded.append(dep)
+    return expanded
+
+
 # now resolve the intra component dependencies:
 for package_name, deps in dependencies.items():
     component = components[package_name]
     dep_components = []
-    for dep in deps:
+    for dep in expand_deps(deps):
         dep_package_name = names.get(dep, dep)
         dep_component = components.get(dep_package_name)
         if dep_component:
@@ -128,6 +151,14 @@ for package_name, deps in dependencies.items():
                 "libsystre",
                 # sqlite tools use this, but we don't ship them:
                 "readline",
+                # optional dependencies, none of the libraries we ship link against them:
+                "c-ares", "gdbm", "libltdl", "libb2",
+                # pcre2 tools use this, but we don't ship them:
+                "wineditline",
+                # python-fido2 talks to the devices directly:
+                "libfido2",
+                # removed from light builds:
+                "libavif",
             )
             ):
                 continue
