@@ -158,6 +158,38 @@ class X11WindowTest(ServerTestUtil):
         self.assertIsNone(proc.poll())
         self.assertEqual(probe(), (0, 0))
 
+    def test_managed_configure_request_coordinates(self):
+        """Use real X11 windows to keep root geometry off the reparented child."""
+        from types import SimpleNamespace
+        from xpra.x11.models import window
+        from xpra.x11.bindings.core import X11CoreBindings
+        from xpra.x11.bindings.window import X11WindowBindings
+
+        model = self.manage_window(self.start_window())
+        x11 = X11WindowBindings()
+        expected = [200, 300, 413, 229]
+        for mask, values in (
+                (window.CONFIGURE_GEOMETRY_MASK, (200, 300, 413, 229)),
+                (window.CWX, (240, 0, 1, 1)),
+                (window.CWY, (0, 350, 1, 1)),
+                (window.CWWidth, (0, 0, 500, 1)),
+                (window.CWHeight, (0, 0, 1, 270)),
+                (window.CWX | window.CWY, (0, 0, 1, 1)),
+                (window.CONFIGURE_GEOMETRY_MASK, (250, 200, 420, 240)),
+                (window.CWX, (-30, 0, 1, 1)),
+        ):
+            with self.subTest(mask=mask, request=values):
+                for index, flag in enumerate((window.CWX, window.CWY, window.CWWidth, window.CWHeight)):
+                    if mask & flag:
+                        expected[index] = values[index]
+                event = SimpleNamespace(value_mask=mask, x=values[0], y=values[1], width=values[2], height=values[3])
+                model.do_x11_child_configure_request_event(event)
+                X11CoreBindings().XSync()
+                self.assertEqual(model.get_property("geometry"), tuple(expected))
+                self.assertEqual(x11.getGeometry(model.corral_xid)[:4], tuple(expected))
+                self.assertEqual(x11.getGeometry(model.xid)[:4], (0, 0, *expected[2:]))
+                self.assertEqual(x11.get_absolute_position(model.xid), tuple(expected[:2]))
+
     def test_dismiss_popup_guards(self):
         from xpra.x11.subsystem.window import SeamlessWindowServer
 
