@@ -6,8 +6,8 @@
 
 import os
 import ast
-import inspect
 import unittest
+from pathlib import Path
 from importlib.util import find_spec
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -183,7 +183,11 @@ FLAGS = ("no_extra_args", "max_one_arg", "requires_args", "posix", "audio", "x11
 
 def explicit_modes() -> set[str]:
     # the modes that `do_run_mode` compares against, ie: `mode == "gui"` or `mode in ("set", "setting")`
-    tree = ast.parse(inspect.getsource(do_run_mode))
+    # parse the source tree rather than using `inspect.getsource`, which fails when main.py is cythonized:
+    path = next(parent / "xpra/scripts/main.py" for parent in Path(__file__).resolve().parents
+                if (parent / "xpra/scripts/main.py").is_file())
+    tree = next(node for node in ast.parse(path.read_text(encoding="utf8")).body
+                if isinstance(node, ast.FunctionDef) and node.name == "do_run_mode")
     modes = set()
     for node in ast.walk(tree):
         if isinstance(node, ast.Compare) and isinstance(node.left, ast.Name) and node.left.id == "mode":
