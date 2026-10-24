@@ -189,10 +189,11 @@ class SeamlessServer(GObject.GObject, ServerBase):
                 window_sub._wm.cleanup()
                 window_sub._wm = None
             if window_sub._has_grab:
+                from xpra.x11.subsystem.display import x11_ungrab
                 # normally we set this value when we receive the NotifyUngrab
                 # but at this point in the cleanup, we probably won't, so force set it:
                 window_sub._has_grab = 0
-                self.x11_ungrab()
+                x11_ungrab()
         super().do_cleanup()
 
     def last_client_exited(self) -> None:
@@ -200,8 +201,9 @@ class SeamlessServer(GObject.GObject, ServerBase):
         super().last_client_exited()
         window_sub = self.subsystems.get("window")
         if window_sub and window_sub._has_grab:
+            from xpra.x11.subsystem.display import x11_ungrab
             window_sub._has_grab = 0
-            self.x11_ungrab()
+            x11_ungrab()
 
     def __repr__(self):
         return "X11-Seamless-Server"
