@@ -639,5 +639,18 @@ def main() -> None:
     print("OK")
 
 
+def run_xvfb(options, args: list[str]) -> int:
+    display = "S" + str(os.getpid())
+    if args:
+        display = args[0]
+        if not display.startswith(":"):
+            raise ValueError(f"invalid display format {display!r}")
+    from xpra.util.parsing import get_refresh_rate_for_value
+    from xpra.config.vfb import xvfb_command
+    fps = get_refresh_rate_for_value(options.refresh_rate, 60) if options.refresh_rate else 0
+    xvfb_cmd = xvfb_command(options.xvfb, options.pixel_depth, options.dpi, fps)
+    return start_xvfb_standalone(xvfb_cmd, options.sessions_dir, options.pixel_depth, fps, display, options.daemon)
+
+
 if __name__ == "__main__":
     main()

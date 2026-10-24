@@ -18,8 +18,9 @@ import tempfile
 from collections.abc import Iterator
 
 from xpra.log import Logger
+from xpra.os_util import LINUX
 
-log = Logger("server")
+log = Logger("util")
 
 PR_SET_DUMPABLE = 4
 
@@ -101,7 +102,9 @@ def mark_memory_nondumpable(libc=None, maps_path: str = "/proc/self/maps") -> tu
 
 
 def harden_process() -> None:
-    """Protect server credentials and encryption keys held in process memory."""
+    """Protect credentials and encryption keys held in process memory."""
+    if not LINUX:
+        return
     disable_ptrace()
     disable_core_dumps()
     try:

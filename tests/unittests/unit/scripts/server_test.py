@@ -21,7 +21,7 @@ from xpra.scripts.session import save_session_file
 from xpra.scripts.server import (
     VFBStartResult,
     add_desktop_greeter,
-    harden_server_process,
+    do_run_server,
     has_child_arg,
     init_virtual_devices,
     is_splash_enabled,
@@ -70,39 +70,46 @@ class TestMain(unittest.TestCase):
         assert xrd == ""
         mkdir.assert_not_called()
 
-    def test_harden_server_process(self):
-        harden_process = Mock()
-        security_module = ModuleType("xpra.platform.posix.security")
-        security_module.harden_process = harden_process
-        with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
-             patch("xpra.scripts.server.WIN32", False), \
-             patch("xpra.scripts.server.LINUX", False):
-            harden_server_process()
-        harden_process.assert_not_called()
-        with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
-             patch("xpra.scripts.server.WIN32", False), \
-             patch("xpra.scripts.server.LINUX", True):
-            harden_server_process()
-        harden_process.assert_called_once_with()
+    def test_server_hardening_order_and_failure(self):
+        for error in (None, OSError("not permitted")):
+            events = []
+            opts = make_defaults_struct()
+            opts.backend = "x11"
+            opts.daemon = opts.dbus = opts.printing = False
+            process = Mock(pam=None, protected_env={})
+            process.setup.side_effect = lambda: events.append("drop privileges")
+            subsystems = {"process": process, "session-files": Mock(), "daemon": Mock()}
+            app = Mock()
+            app.get_subsystem.side_effect = subsystems.get
+            app.add_subsystem.return_value.use_display = False
+            app.add_subsystem.return_value.setup_vfb.return_value = VFBStartResult(None, 0, {}, ":100", (), 0)
 
-    def test_harden_server_process_failure(self):
-        security_module = ModuleType("xpra.platform.posix.security")
-        security_module.harden_process = Mock(side_effect=OSError(1, "not permitted"))
-        with patch.dict(sys.modules, {"xpra.platform.posix.security": security_module}), \
-             patch("xpra.scripts.server.WIN32", False), \
-             patch("xpra.scripts.server.LINUX", True), \
-             self.assertRaisesRegex(InitException, "failed to harden the server process"):
-            harden_server_process()
+            def harden():
+                events.append("harden")
+                if error:
+                    raise error
 
-    def test_harden_server_process_win32(self):
-        harden_process = Mock()
-        security_module = ModuleType("xpra.platform.win32.security")
-        security_module.harden_process = harden_process
-        with patch.dict(sys.modules, {"xpra.platform.win32.security": security_module}), \
-             patch("xpra.scripts.server.WIN32", True), \
-             patch("xpra.scripts.server.LINUX", False):
-            harden_server_process()
-        harden_process.assert_called_once_with()
+            def init_subsystems():
+                events.append("init subsystems")
+                raise RuntimeError("stop startup")
+
+            app.init_subsystems.side_effect = init_subsystems
+            exception = InitException if error else RuntimeError
+            message = "failed to harden the server process: not permitted" if error else "stop startup"
+            with self.subTest(error=error), patch.dict(os.environ), \
+                 patch("xpra.scripts.server.nox", return_value=""), \
+                 patch("xpra.scripts.server.sanitize_dbus_env"), \
+                 patch("xpra.scripts.server.resolve_server_display_name", return_value=(":100", {})), \
+                 patch("xpra.server.features.set_server_features"), \
+                 patch("xpra.scripts.server.make_server_app", return_value=app), \
+                 patch("xpra.platform.security.harden_process", side_effect=harden) as harden_process, \
+                 self.assertRaisesRegex(exception, message):
+                do_run_server("xpra", ["xpra", "proxy"], opts, [], "proxy", make_defaults_struct())
+            harden_process.assert_called_once_with()
+            expected = ["drop privileges", "harden"]
+            if not error:
+                expected.append("init subsystems")
+            self.assertEqual(events, expected)
 
     def test_splash_enabled(self):
         assert is_splash_enabled("foo", False, False, ":10") is False, "splash should not be enabled for splash=False"

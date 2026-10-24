@@ -107,9 +107,6 @@ def run_showconfig(options, args) -> ExitValue:
 
 
 def run_showsetting(args) -> ExitValue:
-    if not args:
-        raise InitException("specify a setting to display")
-
     log = get_logger()
 
     settings = []
@@ -186,3 +183,11 @@ def run_setting(setunset: bool, args) -> ExitValue:
         return ExitCode.FILE_NOT_FOUND
     get_logger().info(f"updated {conf_file!r}: {setting}={value}")
     return ExitCode.OK
+
+
+def run_set(args) -> ExitValue:
+    return run_setting(True, args)
+
+
+def run_unset(args) -> ExitValue:
+    return run_setting(False, args)

@@ -39,13 +39,12 @@ from xpra.gtk.util import gtk_main
 from xpra.gtk.dialogs.about import about
 from xpra.gtk.dialogs.util import hb_button
 from xpra.scripts.common import bypass_no_gtk
-from xpra.scripts.main import (
-    make_client,
-    configure_network, configure_env, configure_logging,
-)
+from xpra.scripts.main import configure_network, configure_env, configure_logging
+from xpra.scripts.clients import make_client
 from xpra.net.connect import connect_to
 from xpra.common import noop, may_show_progress
-from xpra.scripts.parsing import is_local, get_ssh_args, parse_ssh_option, get_ssh_proxy_args, get_ssl_options
+from xpra.scripts.connection import is_local, parse_URL
+from xpra.scripts.parsing import get_ssh_args, parse_ssh_option, get_ssh_proxy_args, get_ssl_options
 from xpra.exit_codes import RETRY_EXIT_CODES, ExitCode, ExitValue, exit_str
 from xpra.platform.info import get_username
 from xpra.log import Logger, enable_debug_for
@@ -225,7 +224,7 @@ class ApplicationWindow:
                                            extras_validation=get_launcher_validation())
         self.parse_ssh()
         # TODO: the fixup does not belong here?
-        from xpra.scripts.main import fixup_options
+        from xpra.config.fixup import fixup_options
         fixup_options(self.config)
         # what we save by default:
         self.config_keys = set(SAVED_FIELDS)
@@ -1107,7 +1106,6 @@ class ApplicationWindow:
         return False
 
     def update_options_from_url(self, url: str) -> None:
-        from xpra.scripts.parsing import parse_URL
         address, props = parse_URL(url, getattr(self.config, "attach_urls", "yes"))
         pa = address.split("://")
         if pa[0] in (MODE_TCP, MODE_SSH, MODE_SSL, MODE_QUIC, MODE_WS, MODE_WSS) and len(pa) >= 2:
@@ -1289,6 +1287,10 @@ def do_main(argv: list[str]) -> int:
     except KeyboardInterrupt:
         pass
     return 0
+
+
+def run_launcher(args: list[str]) -> int:
+    return main(["launcher.py"] + args)
 
 
 if __name__ == "__main__":

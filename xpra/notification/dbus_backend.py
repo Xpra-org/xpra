@@ -4,9 +4,11 @@
 # later version. See the file COPYING for details.
 
 import os
+from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.exit_codes import ExitValue
 from xpra.dbus.notifications import validated_hints
 from xpra.notification.common import IconData, decompress_image_data, PROXY_NAME
 from xpra.util.env import first_time
@@ -296,6 +298,29 @@ def main():
     GLib.idle_add(show)
     GLib.timeout_add(20000, Gtk.main_quit)
     gtk_main()
+
+
+def run_notify(args: list[str]) -> ExitValue:
+    title = args[0]
+    body = args[1] if len(args) >= 2 else ""
+    log.enable_debug()
+    notifier = DBUSNotifier()
+    notifier.app_name_format = "%s"
+    actions = ()  # ("0", "Hello", "1", "Goodbye")
+    hints = {
+        "image-path": "/usr/share/xpra/icons/encoding.png",
+    }
+    nid = int(monotonic()) % 2**16
+    notifier.show_notify("dbus-id", None, nid, "xpra test app", 0, "",
+                         title, body,
+                         actions, hints, 60*1000, None)
+    nid += 1
+    from xpra.os_util import gi_import
+    GLib = gi_import("GLib")
+    loop = GLib.MainLoop()
+    GLib.timeout_add(5 * 1000, loop.quit)
+    loop.run()
+    return 0
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ from subprocess import TimeoutExpired
 from unittest.mock import patch, MagicMock
 
 from xpra.net.constants import SocketState
-from xpra.config import InitException, InitInfo
+from xpra.config import InitException
 from xpra.scripts.sessions import (
     WAIT_SERVER_TIMEOUT,
     LIST_REPROBE_TIMEOUT,
@@ -434,17 +434,12 @@ class TestCleanSockets(unittest.TestCase):
 
 class TestRunListSessions(unittest.TestCase):
 
-    def test_extra_args_raises_init_info(self):
-        opts = MagicMock()
-        with self.assertRaises(InitInfo):
-            run_list_sessions(["unexpected-arg"], opts)
-
     def test_empty_sessions_prints_found_zero(self):
         opts = MagicMock()
         opts.sessions_dir = ""
         with patch("xpra.scripts.sessions.get_xpra_sessions", return_value={}), \
              patch("xpra.platform.dotxpra.DotXpra"):
-            _, out = _capture(run_list_sessions, [], opts)
+            _, out = _capture(run_list_sessions, opts, [])
         assert "0" in out
 
     def test_session_row_printed(self):
@@ -460,7 +455,7 @@ class TestRunListSessions(unittest.TestCase):
         }
         with patch("xpra.scripts.sessions.get_xpra_sessions", return_value=sessions), \
              patch("xpra.platform.dotxpra.DotXpra"):
-            _, out = _capture(run_list_sessions, [], opts)
+            _, out = _capture(run_list_sessions, opts, [])
         assert ":5" in out
         assert "alice" in out
         assert "mywork" in out
@@ -488,7 +483,7 @@ class TestRunListSessions(unittest.TestCase):
             with patch("xpra.scripts.sessions.get_xpra_sessions", return_value=sessions), \
                  patch("xpra.platform.dotxpra.DotXpra"), \
                  patch("xpra.util.io.get_proc_cmdline", return_value=("Xvfb", ":5")):
-                _, out = _capture(run_list_sessions, [], opts)
+                _, out = _capture(run_list_sessions, opts, [])
         assert sockpath in out
         assert "/run/xpra/host-5" in out
         assert f"session-dir: {session_dir}" in out

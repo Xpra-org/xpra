@@ -38,7 +38,8 @@ from xpra.util.parsing import str_to_bool
 from xpra.config import InitException, InitExit
 from xpra.config.defaults import make_defaults_struct
 from xpra.config.types import PROXY_START_OVERRIDABLE_OPTIONS, OPTION_TYPES
-from xpra.scripts.main import parse_display_name, start_server_subprocess
+from xpra.scripts.parsing import parse_display_name
+from xpra.scripts.proxy import start_server_subprocess
 from xpra.net.connect import connect_to
 from xpra.util.thread import start_thread
 from xpra.log import Logger

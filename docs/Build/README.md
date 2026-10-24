@@ -5,6 +5,9 @@ installation, or packages for a platform not covered by the usual downloads.
 Start with the platform guide, then install dependencies before running the
 build commands.
 
+Implementation notes: [configuration modules](Configuration.md) and
+[connection parsing](ConnectionParsing.md).
+
 <div class="docs-section-heading" markdown="1">
 
 ## Platform guides

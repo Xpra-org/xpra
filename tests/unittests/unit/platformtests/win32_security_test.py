@@ -39,7 +39,7 @@ import sys
 from ctypes import WinDLL, c_void_p, c_wchar_p, cast
 from ctypes.wintypes import BOOL, HANDLE, HWND, UINT
 if sys.argv[1:] == ["harden"]:
-    from xpra.platform.win32.security import harden_process
+    from xpra.platform.security import harden_process
     harden_process()
 user32 = WinDLL("user32")
 kernel32 = WinDLL("kernel32")
@@ -92,7 +92,7 @@ class Win32SecurityTest(unittest.TestCase):
         # the whole sequence, including the opt-in policy, must not fail or crash:
         os.environ["XPRA_WIN32_DISABLE_EXTENSION_POINTS"] = "1"
         try:
-            out = run_python("from xpra.platform.win32.security import harden_process; harden_process(); print('ok')")
+            out = run_python("from xpra.platform.security import harden_process; harden_process(); harden_process(); print('ok')")
         finally:
             os.environ.pop("XPRA_WIN32_DISABLE_EXTENSION_POINTS", None)
         self.assertEqual(out.strip(), "ok")

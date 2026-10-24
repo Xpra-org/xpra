@@ -154,5 +154,9 @@ def main(argv: list[str]) -> int:
         return ExitCode.OK
 
 
+def run_fido2(args: list[str]) -> int:
+    return main(["fido2_tool.py"] + args)
+
+
 if __name__ == "__main__":
     sys.exit(int(main(sys.argv)))

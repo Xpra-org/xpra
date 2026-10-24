@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from xpra.platform.posix.fd_portal_shadow import PortalShadow
+from xpra.platform.posix.shadow.fd_portal import PortalShadow
 from xpra.log import Logger
 
 log = Logger("shadow")

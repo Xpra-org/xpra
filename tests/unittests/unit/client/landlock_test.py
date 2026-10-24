@@ -93,7 +93,7 @@ class LandLockTest(unittest.TestCase):
 
     def test_listen_mode_uses_listener_lifecycle(self):
         from xpra.client.subsystem.socket import NetworkListener
-        from xpra.scripts.main import enable_listen_mode, get_client_app
+        from xpra.scripts.clients import enable_listen_mode, get_client_app
         client, _landlock, opts = self.make_landlock("strict")
         opts.bind = ["auto", "/reverse/client"]
         opts.socket_dirs = ["/reverse"]
@@ -120,14 +120,14 @@ class LandLockTest(unittest.TestCase):
         self.assertEqual(security.enforce_landlock.call_args.kwargs["socket_dirs"], ["/reverse"])
         self.assertIsNot(listener.connection_handler, listener._new_connection)
         self.assertTrue(listener.get_info()["listener"]["listen-mode"])
-        with patch("xpra.scripts.main.create_client_app", return_value=(client, [], [])), \
-             patch("xpra.scripts.main.connect_client_app") as connect:
+        with patch("xpra.scripts.clients.create_client_app", return_value=(client, [], [])), \
+             patch("xpra.scripts.clients.connect_client_app") as connect:
             self.assertIs(get_client_app([], opts, [], "listen"), client)
         connect.assert_not_called()
 
     def test_listen_mode_accepts_a_server_with_no_initial_data(self):
         from xpra.client.subsystem.socket import NetworkListener
-        from xpra.scripts.main import enable_listen_mode
+        from xpra.scripts.clients import enable_listen_mode
         client, _landlock, opts = self.make_landlock("strict")
         client.idle_add = lambda fn, *args: fn(*args)
         listener = NetworkListener(client)

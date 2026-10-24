@@ -16,12 +16,8 @@ from unit.server.window.video_pipeline_test_util import encoder_spec, csc_spec, 
 class VideoPipelineSourceTest(unittest.TestCase):
 
     def setUp(self):
-        self.settings = patch.multiple(video_compress, FORCE_CSC=False, FORCE_CSC_MODE="", PREFERRED_ENCODING_ORDER=("h264", "vp9"))
-        self.settings.start()
-        self.addCleanup(self.settings.stop)
-        scoring = patch.multiple(video_scoring, GPU_BIAS=100, MIN_FPS_COST=4)
-        scoring.start()
-        self.addCleanup(scoring.stop)
+        self.enterContext(patch.multiple(video_compress, FORCE_CSC=False, FORCE_CSC_MODE="", PREFERRED_ENCODING_ORDER=("h264", "vp9")))
+        self.enterContext(patch.multiple(video_scoring, GPU_BIAS=100, MIN_FPS_COST=4))
 
     @staticmethod
     def select(source, encodings=("h264",), width=640, height=480, src_format="RGB"):

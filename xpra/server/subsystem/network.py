@@ -148,7 +148,7 @@ class NetworkServer(StubSubsystem):
         self._html, self._www_dir, self._http_headers_dirs = find_www_dir(html, www_dir)
 
     def parse_socket_options(self, opts) -> None:
-        from xpra.scripts.main import validate_encryption
+        from xpra.scripts.parsing import validate_encryption
         validate_encryption(opts)
         opts.ssh_upgrade = check_ssh_upgrades(opts.ssh_upgrade)
         if opts.mode not in ("shadow", "desktop", "monitor"):

@@ -8,11 +8,8 @@
 
 # pylint: disable=import-outside-toplevel
 
-import uuid
-import shlex
 import os.path
 import optparse
-from fnmatch import fnmatch
 from urllib import parse
 from typing import Any, NoReturn
 from collections.abc import Callable, Sequence
@@ -21,20 +18,21 @@ from importlib.util import find_spec
 from xpra.util.str_fn import csv
 from xpra.util.version import full_version_str
 from xpra.util.parsing import (
-    parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS, SYNC_SUBSYSTEMS,
+    FALSE_OPTIONS, SYNC_SUBSYSTEMS,
     str_to_bool, parse_bool_or, parse_number, print_number,
 )
 from xpra.util.env import envbool
 from xpra.exit_codes import ExitCode
-from xpra.net.constants import DEFAULT_PORT, DEFAULT_PORTS, SOCKET_TYPES, IP_SOCKTYPES, URL_MODES
+from xpra.net.constants import DEFAULT_PORT, DEFAULT_PORTS, SOCKET_TYPES
 from xpra.os_util import WIN32, OSX, POSIX, get_user_uuid
 from xpra.util.io import warn
-from xpra.config.types import XpraConfig, OPTION_TYPES, name_to_field, URL_SAFE_OPTIONS
+from xpra.config.types import XpraConfig, OPTION_TYPES, name_to_field
 from xpra.config import InitException, InitInfo, InitExit
 from xpra.config.fixup import fixup_debug_option, fixup_options
 from xpra.config.paths import find_docs_path, find_html5_path
 from xpra.config.defaults import make_defaults_struct
 from xpra.config.validation import validate_config
+from xpra.scripts import connection, ssh_args
 
 MODE_ALIAS: dict[str, str] = {
     "start": "seamless",
@@ -151,52 +149,11 @@ def parse_env(env) -> dict[str, str]:
 
 
 def parse_URL(url: str, attach_urls="yes") -> tuple[str, dict]:
-    if attach_urls not in ("yes", "no", "strict"):
-        raise InitException(f"invalid value for `attach-urls`: {attach_urls!r} (must be `yes`, `no` or `strict`)")
-    if attach_urls == "no":
-        raise InitException(f"URLs are not allowed: {url!r} (see the `attach-urls` option)")
-    from urllib.parse import urlparse, parse_qs
-    up = urlparse(url)
-    address = str(up.netloc)
-    qpos = url.find("?")
-    options = {}
-    if qpos > 0:
-        params_str = url[qpos + 1:]
-        params = parse_qs(params_str, keep_blank_values=True)
-        f_params: dict[str, Any] = {}
-        for k, v in params.items():
-            # URLs are untrusted: only allow a safe subset of options,
-            # never commands, environment, file paths, auth or encryption settings:
-            # with `attach-urls=strict`, no options at all are allowed,
-            # only the address part of the URL is used:
-            if attach_urls == "strict" or k not in URL_SAFE_OPTIONS:
-                warn(f"Warning: option {k!r} is not allowed in URLs and will be ignored")
-                continue
-            t = OPTION_TYPES.get(k)
-            if t is not None and t not in (list, tuple):
-                f_params[k] = v[0]
-            else:
-                f_params[k] = v
-        options = validate_config(f_params)
-    scheme = up.scheme
-    if scheme.startswith("xpra+"):
-        scheme = scheme.removeprefix("xpra+")
-    if scheme in IP_SOCKTYPES:
-        address = f"{scheme}://{address}"
-    if up.path:
-        address += "/"+up.path
-    return address, options
+    return connection.parse_URL(url, attach_urls, warn=warn)
 
 
 def _sep_pos(display_name) -> int:
-    # split the display name on ":" or "/"
-    scpos = display_name.find(":")
-    slpos = display_name.find("/")
-    if scpos < 0:
-        return slpos
-    if slpos < 0:
-        return scpos
-    return min(scpos, slpos)
+    return connection._sep_pos(display_name)
 
 
 def auto_proxy(scheme, host: str) -> dict[str, Any]:
@@ -241,100 +198,33 @@ def load_password_file(password_file: str) -> str:
 
 
 def normalize_display_name(display_name: str) -> str:
-    if not display_name:
-        raise ValueError("no display name specified")
-    if display_name.startswith("@"):
-        return display_name
-    if POSIX and display_name.startswith("/"):
-        return "socket://" + display_name
-    # URL mode aliases (ie: "xpra+tcp://host:port")
-    for alias, prefix in URL_MODES.items():
-        falias = f"{alias}:"
-        parts = display_name.split(falias, 1)
-        if len(parts) == 2:
-            display_name = prefix + ":" + parts[1]
-            break
-    if display_name.startswith("socket://"):
-        # if the URL uses the form:
-        # "socket://username:password/somepath/dfsdff/fd/fd")
-        # instead of:
-        # "socket://username:password@/somepath/dfsdff/fd/fd")
-        # then the username and password aren't parsed properly!
-        pass
-
-    # workaround missing [] around IPv6 addresses:
-    try:
-        netloc = parse.urlparse(display_name).netloc
-        if netloc.find("@") > 0:
-            netloc = netloc.split("@", 1)[1]
-        if not netloc.startswith("[") and not netloc.endswith("]"):
-            pos = display_name.find(netloc)
-            parts = netloc.split(":")
-            if pos > 0 and len(parts) > 2:
-                newnetloc = "[" + (":".join(parts[:-1])) + "]:" + parts[-1]
-                display_name = display_name[:pos] + newnetloc + display_name[pos + len(netloc):]
-    except (ValueError, AttributeError, TypeError):
-        pass
-    # workaround for vsock 'VMADDR_PORT_ANY':
-    # "any" or "auto" is not a valid port number
-    if POSIX and not OSX and display_name.startswith("vsock://") and len(display_name) > len("vsock://"):
-        # hackish pre-parsing:
-        # extract location: "vsock://10:any/foo?arg=20" -> "10:any"
-        parts = display_name.removeprefix("vsock://").split("/", 1)
-        netloc = parts[0]
-        extra = parts[1] if len(parts) > 1 else ""
-        for s in ("any", "auto"):
-            if netloc.lower().endswith(s):
-                # use "0" for auto
-                # ie: "vsock://10:0/foo?arg=20"
-                return "vsock://" + netloc[:-len(s)] + "0/" + extra
-        return display_name
-    # maybe this is just the display number without the ":" prefix?
-    # (the "." allows for a screen number: "10.0")
-    # only do this if the whole string is numeric, so that a session name
-    # which happens to start with a digit can still be looked up by name
-    if display_name and display_name.replace(".", "").isnumeric() and POSIX:
-        return ":" + display_name
-    if WIN32 and display_name[0].isalpha() and display_name.find(":") < 0:
-        # pragma: no cover
+    pipe_prefix = ""
+    if WIN32 and display_name and display_name[0].isalpha() and ":" not in display_name:
         from xpra.platform.win32.dotxpra import PIPE_PREFIX
-        return f"named-pipe://{PIPE_PREFIX}{display_name}"
-    return display_name
+        pipe_prefix = PIPE_PREFIX
+    return connection.normalize_display_name(display_name, posix=POSIX, windows=WIN32, osx=OSX, pipe_prefix=pipe_prefix)
 
 
 def parse_display_name(opts, display_name: str, cmdline=(),
                        find_session_by_name: Callable | None = None) -> dict[str, Any]:
+    """Resolve a connection using address grammar, configuration and lazy transport probes."""
     display_name = normalize_display_name(display_name)
-    # last chance to find it by name:
-    if display_name.find(":") < 0 and display_name.find("wayland-") < 0 and not display_name.startswith("@"):
+    if ":" not in display_name and "wayland-" not in display_name and not display_name.startswith("@"):
         if not find_session_by_name:
             raise ValueError(f"invalid display name {display_name!r}")
-        r = find_session_by_name(opts, display_name)
-        if not r:
+        resolved = find_session_by_name(opts, display_name)
+        if not resolved:
             raise ValueError(f"no session found matching name {display_name!r}")
-        display_name = r
+        display_name = resolved
 
-    # add our URL schemes once:
-    # (should we remove them afterwards?)
-
-    def addschemes(array: Sequence[str]) -> None:
-        for x in SOCKET_TYPES:
-            if x not in array:
-                array.append(x)
-
-    addschemes(parse.uses_params)
-    addschemes(parse.uses_netloc)
-    addschemes(parse.uses_query)
-    addschemes(parse.uses_relative)
-    # now we're ready to parse:
-    parsed = parse.urlparse(display_name)
+    # Retain urllib's process-wide scheme registration for existing URL callers.
+    for schemes in (parse.uses_params, parse.uses_netloc, parse.uses_query, parse.uses_relative):
+        for scheme in SOCKET_TYPES:
+            if scheme not in schemes:
+                schemes.append(scheme)
+    parsed = connection.parse_connection_url(display_name)
     protocol = parsed.scheme
-
-    desc = {
-        "display_name": display_name,
-        "cmdline": cmdline,
-        "type": protocol,
-    }
+    desc = {"display_name": display_name, "cmdline": cmdline, "type": protocol}
     socket_dirs_in_cmdline = ("--socket-dir" in cmdline or "--socket-dirs" in cmdline or any(
         c.startswith("--socket-dir=") or c.startswith("--socket-dirs=") for c in cmdline)
     )
@@ -350,148 +240,61 @@ def parse_display_name(opts, display_name: str, cmdline=(),
             desc["password"] = password
             opts.password = password
 
-    def add_host_port(default_port=DEFAULT_PORT) -> tuple[str, int]:
-        host = parsed.hostname or "127.0.0.1"
-        port = parsed.port or default_port
-        desc["host"] = host
-        desc["local"] = is_local(host)
-        if port:
-            desc["port"] = port
-        return host, port
+    def process_query(query: str) -> None:
+        connection.add_query(desc, parsed, query, strict=envbool("XPRA_PARSING_STRICT", False), warn=warn)
 
-    def add_path() -> None:
-        if parsed.path:
-            path = parsed.path.lstrip("/")
-            if path.find(",") > 0:
-                # ie: path="100,foo=bar
-                path, extra = path.split(",", 1)
-                process_query_string(extra)
-            elif path.find("=") > 0:
-                # ie: path="foo=bar"
-                process_query_string(path)
-                return
-            # the path can be a session name, which may contain characters
-            # that have to be percent-encoded in a URI:
-            # ie: "ssh://host/my%20session" -> "my session"
-            # ("," and "=" are consumed above, so use "%2C" and "%3D" for those)
-            desc["display"] = parse.unquote(path)
+    def add_host_path_query(default_port: int) -> str:
+        fields = connection.get_host_port(parsed, default_port)
+        desc.update(fields)
+        connection.add_path(desc, parsed.path, process_query)
+        process_query(parsed.query)
+        return fields["host"]
 
-    def process_query_string(s) -> None:
-        # query strings can carry connection options (ie: "tcp://host/?proxy-host=...").
-        # most callers feed this trusted command-line input, but to harden any path that
-        # may pass untrusted data we can restrict it to the same allow-list as `parse_URL`.
-        # this is gated behind `XPRA_PARSING_STRICT` (off by default) as it would otherwise
-        # reject legitimate options that are not in the URL allow-list:
-        strict = envbool("XPRA_PARSING_STRICT", False)
-        r = parse.parse_qs(s)
-        for k, v in r.items():
-            if k in desc:
-                warn(f"ignoring {k} override from query string")
-                continue
-            if strict and k not in URL_SAFE_OPTIONS:
-                warn(f"Warning: option {k!r} is not allowed in connection strings and will be ignored")
-                continue
-            if len(v) == 1:
-                desc[k] = v[0]
-            else:
-                desc[k] = v
-        if parsed.params:
-            desc["params"] = parsed.params
-        if parsed.fragment:
-            desc["fragment"] = parsed.fragment
-
-    def add_query() -> None:
-        process_query_string(parsed.query)
-
-    if display_name.startswith(":") or display_name.startswith("wayland-") or display_name.startswith("@"):
+    if display_name.startswith((":", "wayland-", "@")):
         if display_name.startswith("@"):
             if WIN32:
                 raise ValueError("abstract sockets are not supported on MS Windows: %r" % (display_name,))
         elif WIN32 or OSX:
             raise RuntimeError("X11 / Wayland display names are not supported on this platform: %r" % (display_name, ))
         add_credentials()
-        add_query()
-        if display_name.startswith("@"):
-            display = parsed.path[1:]
-            desc["socket_path"] = parsed.path
-        else:
-            display = parsed.path.lstrip(":")
-            if opts.socket_dirs:
-                desc["socket_dirs"] = opts.socket_dirs
-        opts.display = display
-        desc.update({
-            "type": "socket",
-            "local": True,
-            "display": display,
-        })
+        process_query(parsed.query)
+        socket_dirs = () if display_name.startswith("@") else opts.socket_dirs
+        fields = connection.get_local_display_attributes(display_name, parsed, socket_dirs)
+        opts.display = fields["display"]
+        desc.update(fields)
         return desc
 
     if protocol == "vsock":
         add_credentials()
-        add_query()
+        process_query(parsed.query)
         cid = parse_vsock_cid(parsed.hostname or "")
         from xpra.net.vsock.vsock import PORT_ANY  # pylint: disable=no-name-in-module
         port = parsed.port or PORT_ANY
-        desc.update(
-            {
-                "local": False,
-                "display": display_name,
-                "vsock": (cid, port),
-            }
-        )
+        desc.update({"local": False, "display": display_name, "vsock": (cid, port)})
         opts.display = display_name
         return desc
 
     if protocol == "hyperv":
         add_credentials()
-        add_query()
+        process_query(parsed.query)
         vmid = parse_hyperv_vmid(parsed.hostname)
         service = parse_hyperv_serviceid(parsed.port)
         from xpra.net.common import verify_hyperv_available
         verify_hyperv_available()
-        desc.update(
-            {
-                "local": False,
-                "display": display_name,
-                "hyperv": (vmid, service),
-            }
-        )
+        desc.update({"local": False, "display": display_name, "hyperv": (vmid, service)})
         opts.display = display_name
         return desc
 
     if protocol in ("ssh", "vnc+ssh"):
-        desc.update(
-            {
-                "proxy_command": ["_proxy"],
-                "exit_ssh": opts.exit_ssh,
-            }
-        )
+        desc.update({"proxy_command": ["_proxy"], "exit_ssh": opts.exit_ssh})
         if socket_dirs_in_cmdline and opts.socket_dirs:
             desc["socket_dirs"] = opts.socket_dirs
         if opts.remote_xpra:
             desc["remote_xpra"] = opts.remote_xpra
         add_credentials()
-        add_host_port(0)
-        add_path()
-        add_query()
-        if display := desc.get("display", ""):
-            args = desc.setdefault("display_as_args", [display])
-        else:
-            args = desc.setdefault("display_as_args", [])
-        if protocol == "vnc+ssh" and display:
-            # ie: "vnc+ssh://host/10" -> path="/10"
-            # use a vnc display string with the proxy command
-            # and specify the vnc port if we know the display number:
-            vnc_uri = "vnc://localhost"
-            try:
-                vnc_port = 5900 + int(display)
-                desc["remote_port"] = vnc_port
-                vnc_uri += f":{vnc_port}/"
-            except ValueError:
-                vnc_uri += "/"
-            args.append(vnc_uri)
-        ssh_desc = get_ssh_display_attributes(args, opts.ssh, getattr(opts, "mode", ""))
-        desc.update(ssh_desc)
+        add_host_path_query(0)
+        args = connection.get_ssh_display_args(desc, protocol)
+        desc.update(get_ssh_display_attributes(args, opts.ssh, getattr(opts, "mode", "")))
         ssh = parse_ssh_option(opts.ssh)
         full_ssh = ssh + get_ssh_args(desc, ssh)
         if "proxy_host" in desc:
@@ -505,94 +308,34 @@ def parse_display_name(opts, display_name: str, cmdline=(),
         if not parsed.path:
             raise ValueError("missing socket path")
         add_credentials()
-        add_query()
-        desc.update(
-            {
-                "type": "socket",
-                "local": True,
-                "socket_dir": os.path.basename(parsed.path),
-                "socket_dirs": opts.socket_dirs,
-                "socket_path": parsed.path,
-            }
-        )
+        process_query(parsed.query)
+        desc.update(connection.get_socket_path_attributes(parsed, opts.socket_dirs))
         opts.display = None
         return desc
 
-    if protocol == "wt":
+    if protocol in ("wt", "tcp", "ssl", "ws", "wss", "vnc", "quic"):
         add_credentials()
-        add_host_port(DEFAULT_PORTS.get("wt", DEFAULT_PORT))
-        add_path()
-        add_query()
-        desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
-        return desc
-
-    if protocol in ("tcp", "ssl", "ws", "wss", "vnc", "quic"):
-        add_credentials()
-        host, port = add_host_port(DEFAULT_PORTS.get(protocol, DEFAULT_PORT))
-        add_path()
-        add_query()
-        # parse ssl options when ssl is mandatory for this protocol,
-        # or when the connection may be auto-upgraded to ssl;
-        # avoid importing the ssl libraries otherwise:
-        if protocol in ("ssl", "wss", "quic"):
+        host = add_host_path_query(DEFAULT_PORTS.get(protocol, DEFAULT_PORT))
+        if protocol in ("wt", "ssl", "wss", "quic"):
             desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
         elif str(opts.ssl_upgrade).lower() not in FALSE_OPTIONS:
             from xpra.net.tls.common import SSL_UPGRADE_DEFAULTS
             desc["ssl-options"] = get_ssl_options(desc, opts, cmdline, SSL_UPGRADE_DEFAULTS)
-        if protocol in ("ssl", "wss", "quic"):
-            alt_scheme = "https"
-        else:
-            alt_scheme = "http"
-        proxy = desc.get("proxy")
-        if proxy == "auto":
+        if protocol != "wt" and desc.get("proxy") == "auto":
+            alt_scheme = "https" if protocol in ("ssl", "wss", "quic") else "http"
             for scheme in (protocol, alt_scheme):
-                if pprops := auto_proxy(scheme, host):
-                    desc.update(pprops)
+                if properties := auto_proxy(scheme, host):
+                    desc.update(properties)
                     break
         return desc
 
-    if protocol == "named-pipe":  # pragma: no cover
+    if protocol == "named-pipe":
         if not WIN32:
             raise RuntimeError(f"{protocol} is not supported on this platform")
         add_credentials()
-        add_query()
+        process_query(parsed.query)
         from xpra.platform.win32.dotxpra import PIPE_PREFIX, PIPE_ROOT
-        raw_path = parsed.path or ""
-        combined = parsed.netloc + raw_path
-
-        def with_prefix(name: str) -> str:
-            return name if name.startswith(PIPE_PREFIX) else f"{PIPE_PREFIX}{name}"
-
-        # an explicit host (anything other than "" or ".") routes over SMB / IPC$,
-        # even for 127.0.0.1 or the local hostname - that is what makes remote
-        # access testable on a single machine.
-        if "\\pipe\\" in combined.lower() or combined.startswith("\\"):
-            # a full UNC path was given (urlparse mangles the backslashes into netloc):
-            # \\HOST\pipe\Xpra\Main  (or \\.\pipe\... for local)
-            unc = combined.lstrip("\\")
-            named_pipe = PIPE_ROOT + unc
-            host = unc.split("\\", 1)[0] if unc else "."
-            local = host in ("", ".")
-        elif parsed.netloc and raw_path.strip("/"):
-            # remote form: named-pipe://HOST/Main
-            host = parsed.netloc
-            pipe_name = with_prefix(raw_path.strip("/"))
-            local = host in ("", ".")
-            named_pipe = pipe_name if local else f"{PIPE_ROOT}{host}\\pipe\\{pipe_name}"
-        else:
-            # local form: named-pipe://Main
-            host = ""
-            local = True
-            named_pipe = with_prefix(parsed.netloc)
-        if host and not local:
-            desc["host"] = host
-        desc.update(
-            {
-                "local": local,
-                "display": "DISPLAY",
-                "named-pipe": named_pipe,
-            }
-        )
+        desc.update(connection.get_named_pipe_attributes(parsed, PIPE_PREFIX, PIPE_ROOT))
         opts.display = display_name
         return desc
 
@@ -626,7 +369,7 @@ def get_ssl_options(desc, opts, cmdline, defaults: dict[str, Any] | None = None)
 
 
 def parse_ssh_option(ssh_setting: str) -> list[str]:
-    ssh_cmd = shlex.split(ssh_setting, posix=not WIN32)
+    ssh_cmd = ssh_args.split_ssh_command(ssh_setting, windows=WIN32)
     if ssh_cmd[0] == "auto":
         fallback_ssh_command = "plink.exe -ssh -agent" if WIN32 else "ssh -x"
         # try paramiko:
@@ -645,63 +388,22 @@ def parse_ssh_option(ssh_setting: str) -> list[str]:
             if is_debug_enabled("ssh") or isinstance(e, AttributeError):
                 log.info(f"{e}")
                 log.info(f"paramiko not found, using {fallback_ssh_command}")
-        ssh_cmd = shlex.split(fallback_ssh_command)
+        ssh_cmd = ssh_args.split_ssh_command(fallback_ssh_command, windows=False)
     return ssh_cmd
 
 
-# command and query modes that just run a single request through the proxy
-# and have no session that needs the ssh agent:
-# for these, agent forwarding should not be enabled by default
-# (an explicit `-A`, `XPRA_SSH_AGENT=1` or a builtin backend's `agent=yes` is still honoured).
-# `fnmatch` patterns are used so that whole families (ie: `list-*`, `*-info`) are covered,
-# even for modes that don't support the ssh transport yet:
-NO_SSH_AGENT_MODES = (
-    "run", "exec", "_proxy_run", "_proxy_exec",
-    "stop", "exit",
-    "list", "list-*",
-    "request-*",
-    "setup-ssl", "show-ssl",
-    "showconfig", "showsetting",
-    "help",
-    "info", "*-info",
-    "version", "id", "sbom",
-    "control",
-    "print", "send-file",
-)
+NO_SSH_AGENT_MODES = ssh_args.NO_SSH_AGENT_MODES
 
 
 def mode_needs_ssh_agent(mode: str) -> bool:
-    # unknown / empty modes keep the historical default of enabling agent forwarding:
-    return not any(fnmatch(mode, pattern) for pattern in NO_SSH_AGENT_MODES)
+    return ssh_args.mode_needs_ssh_agent(mode)
 
 
 def get_ssh_display_attributes(args, ssh_option="auto", mode="") -> dict[str, Any]:
-    # ie: ssh=["/usr/bin/ssh", "-v"]
     ssh = parse_ssh_option(ssh_option)
-    ssh_cmd = ssh[0].lower()
-    is_putty = ssh_cmd.endswith("plink") or ssh_cmd.endswith("plink.exe")
-    is_paramiko = ssh_cmd.split(":")[0] == "paramiko"
-    is_asyncssh = ssh_cmd.split(":")[0] == "asyncssh"
     agent_forwarding = envbool("XPRA_SSH_AGENT", "-A" in ssh)
-    desc: dict[str, Any] = {}
-    if is_paramiko or is_asyncssh:
-        backend = "asyncssh" if is_asyncssh else "paramiko"
-        ssh[0] = backend
-        desc[f"is_{backend}"] = True
-        backend_config = {}
-        if ssh_option.find(":") > 0:
-            backend_config = parse_simple_dict(ssh_option.split(":", 1)[1])
-            desc[f"{backend}-config"] = backend_config
-        default_agent = "yes" if mode_needs_ssh_agent(mode) else "no"
-        agent_forwarding |= backend_config.get("agent", default_agent).lower() in TRUE_OPTIONS
-        backend_config["agent"] = str(agent_forwarding)
-    elif is_putty:
-        desc["is_putty"] = True
-    desc["agent"] = agent_forwarding
-    if agent_forwarding:
-        # tell the remote proxy command which user uuid we're going to use,
-        # so it can set up the ssh agent symlink at a location
-        # that the server can find with just the uuid:
+    desc = ssh_args.get_ssh_display_attributes(ssh, ssh_option, mode, agent_forwarding)
+    if desc["agent"]:
         uuid = get_user_uuid()
         args.append(f"--env=SSH_AGENT_UUID={uuid}")
         desc["ssh-agent-uuid"] = uuid
@@ -709,55 +411,18 @@ def get_ssh_display_attributes(args, ssh_option="auto", mode="") -> dict[str, An
 
 
 def get_ssh_args(desc, ssh=("paramiko",), prefix: str = "") -> list[str]:
-    ssh_cmd = ssh[0]
-    ssh_port = desc.get(f"{prefix}port", 22)
-    username = desc.get(f"{prefix}username")
-    password = desc.get(f"{prefix}password")
-    host = desc.get(f"{prefix}host")
-    if not host:
-        raise RuntimeError(f"missing host from session descriptor {desc}")
+    key_path = ""
     key = desc.get(f"{prefix}key")
-    is_putty = any(ssh_cmd.lower().endswith(x) for x in ("plink", "plink.exe", "putty", "putty.exe"))
-    is_builtin = ssh_cmd in ("asyncssh", "paramiko")
-    args = []
-    if password and is_putty:
-        args += ["-pw", password]
-    if username and not is_builtin:
-        args += ["-l", username]
-    if ssh_port and ssh_port != 22:
-        # grr, why bother doing it different?
-        if is_putty:
-            args += ["-P", str(ssh_port)]
-        elif not is_builtin:
-            args += ["-p", str(ssh_port)]
-    if not is_builtin:
-        args += ["-T", host]
-        if key:
-            key_path = os.path.abspath(key)
-            if WIN32 and is_putty:
-                # tortoise plink works with either slash, backslash needs too much escaping
-                # because of the weird way it's passed through as a ProxyCommand
-                key_path = "\"" + key.replace("\\", "/") + "\""  # pragma: no cover
-            args += ["-i", key_path]
-    return args
+    if key and desc.get(f"{prefix}host") and ssh[0] not in ("asyncssh", "paramiko"):
+        key_path = os.path.abspath(key)
+        if WIN32 and any(ssh[0].lower().endswith(x) for x in ("plink", "plink.exe", "putty", "putty.exe")):
+            # PuTTY proxy commands require forward slashes and quoted key paths.
+            key_path = '"' + key.replace("\\", "/") + '"'
+    return ssh_args.get_ssh_args(desc, ssh, prefix, key_path=key_path)
 
 
 def get_ssh_proxy_args(desc, ssh) -> list[str]:
-    is_putty = ssh[0].endswith("plink") or ssh[0].endswith("plink.exe")
-    is_builtin = ssh[0] in ("asyncssh", "paramiko")
-    args = []
-    proxyline = ssh
-    if is_putty:
-        proxyline += ["-nc", "%host:%port"]
-    elif not is_builtin:
-        proxyline += ["-W", "%h:%p"]
-    # the double quotes are in case the password has something like "&"
-    proxyline += get_ssh_args(desc, ssh, prefix="proxy_")
-    if is_putty:
-        args += ["-proxycmd", " ".join(proxyline)]
-    elif not is_builtin:
-        args += ["-o", "ProxyCommand " + " ".join(proxyline)]
-    return args
+    return ssh_args.get_ssh_proxy_args(desc, ssh, get_args=get_ssh_args)
 
 
 def has_module(name: str) -> bool:
@@ -2287,27 +1952,11 @@ def parse_vsock_cid(cid_str: str) -> int:
 
 
 def parse_uuid(name: str, value: str) -> str:
-    try:
-        return str(uuid.UUID(value))
-    except ValueError as e:
-        raise ValueError(f"{name} {value!r} is not a valid uuid: {e}") from None
+    return connection.parse_uuid(name, value)
 
 
 def parse_hyperv_serviceid(serviceid: str | int) -> str:
-    # we support plain port numbers,
-    # as used with linux servers vsock style interfaces
-    # or uuid strings for hyper-v native addresses
-    if isinstance(serviceid, int) or len(serviceid) < 6:
-        # ie: "20000"
-        try:
-            port = int(serviceid)
-        except ValueError:
-            raise ValueError(f"short serviceid {serviceid!r} is not numeric") from None
-        if port < 0 or port > 65535:
-            raise ValueError(f"short serviceid {port} is out of range")
-        # assume that this is a Linux vsock port:
-        return f"{port:08x}-facb-11e6-bd58-64006a7986d3"
-    return parse_uuid("serviceid", serviceid)
+    return connection.parse_hyperv_serviceid(serviceid)
 
 
 def parse_hyperv_vmid(vmid: str) -> str:
@@ -2327,4 +1976,4 @@ def parse_hyperv_vmid(vmid: str) -> str:
 
 
 def is_local(host: str) -> bool:
-    return host.lower() in ("localhost", "127.0.0.1", "::1")
+    return connection.is_local(host)

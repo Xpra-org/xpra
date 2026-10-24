@@ -270,7 +270,7 @@ class SeccompTest(unittest.TestCase):
         self.assertTrue(set(seccomp_decode.FILE_SYSCALLS).issubset(set(seccomp_rfb.RFB_SYSCALLS)))
 
     def test_parse_seccomp_option(self):
-        from xpra.scripts.main import parse_seccomp_option as p
+        from xpra.config.validation import parse_seccomp_option as p
         self.assertEqual(p(""), {})
         self.assertEqual(p("auto"), {})
         self.assertEqual(p("no"), {

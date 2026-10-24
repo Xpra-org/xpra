@@ -13,8 +13,7 @@ class TestX11Info(unittest.TestCase):
 
     def setUp(self):
         for p in (patch("xpra.x11.error.Xenter"), patch("xpra.x11.error.Xexit", return_value=0)):
-            p.start()
-            self.addCleanup(p.stop)
+            self.enterContext(p)
 
     def test_destroyed_parent_stops_lookup(self):
         from xpra.x11 import info

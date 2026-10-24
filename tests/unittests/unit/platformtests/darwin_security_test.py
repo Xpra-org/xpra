@@ -21,8 +21,10 @@ HARDENED = """
 import json
 import resource
 from xpra.platform.darwin import security as s
+from xpra.platform.security import harden_process
 traced = s.is_traced()
-s.harden_process()
+harden_process()
+harden_process()
 print(json.dumps({
     "traced": traced,
     "core": resource.getrlimit(resource.RLIMIT_CORE),
@@ -64,7 +66,7 @@ class DarwinSecurityTest(unittest.TestCase):
 
     def test_deny_attach(self):
         # the hardened process waits on stdin until we have tried to attach to it:
-        script = "from xpra.platform.darwin.security import harden_process; harden_process(); print('ok', flush=True); input()"
+        script = "from xpra.platform.security import harden_process; harden_process(); print('ok', flush=True); input()"
         proc = subprocess.Popen([sys.executable, "-c", script], env=python_env(),
                                 stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True)
         try:

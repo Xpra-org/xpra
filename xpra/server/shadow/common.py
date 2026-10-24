@@ -13,7 +13,7 @@ log = Logger("screen")
 # the capture backends that can be selected with `--backend=NAME`,
 # the first string is a short description, the others are extra details.
 # (not all backends are available on all platforms,
-# see `SHADOW_OPTIONS` in the platform specific `shadow_server` module)
+# see `SHADOW_OPTIONS` in the platform specific `shadow.server` module)
 SHADOW_BACKENDS: dict[str, Sequence[str]] = {
     "auto": (
         "Automatic runtime detection",

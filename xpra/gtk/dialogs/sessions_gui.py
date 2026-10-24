@@ -7,6 +7,7 @@ import sys
 import socket
 import shlex
 import subprocess
+from importlib.util import find_spec
 
 from xpra.platform.paths import get_xpra_command, get_nodock_command
 from xpra.platform.dotxpra import DotXpra
@@ -28,6 +29,7 @@ from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.system import stop_proc, get_platform_icon_name
 from xpra.os_util import gi_import, WIN32, getuid, getgid
 from xpra.util.env import IgnoreWarningsContext, get_saved_env
+from xpra.util.io import warn
 from xpra.util.i18n import _
 from xpra.util.thread import check_main_thread
 from xpra.log import Logger
@@ -564,6 +566,22 @@ def main() -> ExitValue:  # pragma: no cover
     from xpra.config.defaults import make_defaults_struct
     opts = make_defaults_struct()
     return do_main(opts)
+
+
+def run_sessions_gui(options) -> ExitValue:
+    mdns = options.mdns
+    if mdns and not find_spec("xpra.net.mdns"):
+        mdns = False
+    if mdns:
+        from xpra.net.mdns import get_listener_class
+        if get_listener_class():
+            from xpra.gtk.dialogs import mdns_gui
+            return mdns_gui.do_main(options)
+        else:
+            warn("Warning: no mDNS support")
+            warn(" only local sessions will be shown")
+    from xpra.gtk.dialogs import sessions_gui
+    return sessions_gui.do_main(options)
 
 
 if __name__ == "__main__":  # pragma: no cover

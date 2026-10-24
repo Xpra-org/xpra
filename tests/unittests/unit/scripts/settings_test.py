@@ -59,8 +59,6 @@ class SettingsTest(unittest.TestCase):
             self.assertEqual(settings.run_showsetting(("daemon", "invalid")), 0)
         self.assertGreaterEqual(logger.info.call_count, 4)
         logger.warn.assert_called_once()
-        with self.assertRaises(InitException):
-            settings.run_showsetting(())
 
 
 if __name__ == "__main__":

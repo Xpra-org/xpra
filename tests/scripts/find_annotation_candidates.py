@@ -74,7 +74,7 @@ CYTHONIZE_MORE_PACKAGES = {
 CYTHONIZE_MORE_MODULES = {
     "xpra.common", "xpra.exit_codes", "xpra.gtk.dialogs.qrcode", "xpra.log",
     "xpra.os_util", "xpra.platform.dotxpra_common", "xpra.platform.paths",
-    "xpra.platform.posix.shadow_server", "xpra.platform.win32.service",
+    "xpra.platform.posix.shadow.server", "xpra.platform.win32.service",
     "xpra.platform.win32.shadow", "xpra.util.ui_thread_watcher",
 }
 

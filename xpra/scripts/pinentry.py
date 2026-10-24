@@ -294,6 +294,11 @@ def input_pass(prompt: str) -> str:
         sys.exit(128 + signal.SIGINT)
 
 
+def run_input_pass(args: list[str]) -> int:
+    password = input_pass((args + ["password"])[0])
+    return len(password) > 0
+
+
 def main() -> int:
     from xpra.platform import program_context
     with program_context("Pinentry-Dialog", "Pinentry Dialog"):

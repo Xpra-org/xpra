@@ -258,6 +258,22 @@ def run_audio(mode: str, args: list[str]) -> int:
                 ss.stop()
 
 
+def run_audio_record(args: list[str]) -> int:
+    return run_audio("_audio_record", args)
+
+
+def run_audio_play(args: list[str]) -> int:
+    return run_audio("_audio_play", args)
+
+
+def run_audio_meter(args: list[str]) -> int:
+    return run_audio("_audio_meter", args)
+
+
+def run_audio_query(args: list[str]) -> int:
+    return run_audio("_audio_query", args)
+
+
 def _add_debug_args(command: list[str]) -> None:
     from xpra.log import debug_enabled_categories
     debug = list(SUBPROCESS_DEBUG)

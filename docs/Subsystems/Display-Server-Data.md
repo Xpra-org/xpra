@@ -176,7 +176,7 @@ Cursor packet construction is visible in
 and macOS acquisition are in
 [`xpra/platform/win32/shadow/cursor.py`](../../xpra/platform/win32/shadow/cursor.py)
 and
-[`xpra/platform/darwin/shadow_cursor.py`](../../xpra/platform/darwin/shadow_cursor.py).
+[`xpra/platform/darwin/shadow/cursor.py`](../../xpra/platform/darwin/shadow/cursor.py).
 
 <div class="docs-section-heading" markdown="1">
 
@@ -504,7 +504,7 @@ PipeWire stream and frame descriptors:
 * frame counter and pixel-format descriptor.
 
 The portal response path is in
-[`xpra/platform/posix/fd_portal_shadow.py`](../../xpra/platform/posix/fd_portal_shadow.py),
+[`xpra/platform/posix/shadow/fd_portal.py`](../../xpra/platform/posix/shadow/fd_portal.py),
 and native frame descriptors are constructed in
 [`xpra/codecs/pipewire/_native.pyx`](../../xpra/codecs/pipewire/_native.pyx).
 

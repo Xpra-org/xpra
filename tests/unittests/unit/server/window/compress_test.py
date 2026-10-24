@@ -255,12 +255,10 @@ class CompressTest(unittest.TestCase):
 class EncodingPolicyWrapperTest(unittest.TestCase):
 
     def setUp(self):
-        settings = patch.multiple(
+        self.enterContext(patch.multiple(
             compress, HARDCODED_ENCODING="", WEBP_EFFICIENCY_CUTOFF=512*1024,
             TRANSPARENCY_ENCODINGS=("webp", "png", "rgb32", "jpega"),
-        )
-        settings.start()
-        self.addCleanup(settings.stop)
+        ))
 
     @staticmethod
     def make_source(**changes):

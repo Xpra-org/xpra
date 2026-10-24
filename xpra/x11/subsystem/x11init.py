@@ -50,7 +50,7 @@ class X11Init(StubSubsystem):
         X11CoreBindings().show_server_info()
         from xpra.x11.window_filters import init_x11_window_filters
         init_x11_window_filters()
-        from xpra.scripts.main import no_gi_gtk_modules
+        from xpra.scripts.common import no_gi_gtk_modules
         no_gi_gtk_modules()
 
     def cleanup(self) -> None:

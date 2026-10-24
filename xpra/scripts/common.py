@@ -3,10 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import sys
+from importlib.util import find_spec
 
-from xpra.os_util import OSX
-from xpra.config import InitException
+from xpra.os_util import OSX, WIN32
+from xpra.exit_codes import ExitCode
+from xpra.config import InitException, InitExit
 
 
 no_gtk_bypass = False
@@ -29,3 +32,52 @@ def no_gtk() -> None:
         # all good, not loaded
         return
     raise InitException("the Gtk module is already loaded: %s" % Gtk)
+
+
+def nox() -> str:
+    DISPLAY = os.environ.get("DISPLAY")
+    if DISPLAY is not None:
+        del os.environ["DISPLAY"]
+    # This is an error on Fedora/RH, so make it an error everywhere
+    # to ensure that it will be noticed:
+    import warnings
+    warnings.filterwarnings("error", "could not open display")
+    return str(DISPLAY or "") or os.environ.get("WAYLAND_DISPLAY", "")
+
+
+def reqx11(mode: str) -> None:
+    if OSX:
+        # need to import gtk module early, not sure why!
+        import xpra.gtk.util
+        if not xpra.gtk.util:
+            # cythonized code can bind None for missing imports
+            raise ImportError("xpra.gtk.util")
+    if find_spec("xpra.x11"):
+        return
+    if OSX or WIN32:
+        raise InitExit(ExitCode.UNSUPPORTED, f"{mode} requires a build with the X11 bindings")
+    raise InitExit(ExitCode.UNSUPPORTED, f"you must install `xpra-x11` to use {mode!r}")
+
+
+NOGI = ("Gtk", "Gdk", "GdkX11", "GdkPixbuf", "GtkosxApplication") if not OSX else ("GdkX11", )
+
+
+def no_gi_gtk_modules(mods=NOGI) -> None:
+    for mod in mods:
+        mod_path = f"gi.repository.{mod}"
+        if sys.modules.get(mod_path):
+            raise RuntimeError(f"gi module {mod!r} is already loaded!")
+        # noinspection PyTypeChecker
+        sys.modules[mod_path] = None
+
+
+def allow_gi_gtk_modules(mods=NOGI) -> None:
+    """
+    Undo `no_gi_gtk_modules`: it only poisons the `sys.modules` entries
+    (nothing was ever imported), so removing them restores importability.
+    Used by the Gtk-free backends to load Gtk lazily for menus and dialogs.
+    """
+    for mod in mods:
+        mod_path = f"gi.repository.{mod}"
+        if mod_path in sys.modules and sys.modules[mod_path] is None:
+            del sys.modules[mod_path]

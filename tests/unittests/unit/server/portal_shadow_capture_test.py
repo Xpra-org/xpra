@@ -3,7 +3,7 @@
 import unittest
 from unittest.mock import patch
 
-from xpra.platform.posix.fd_portal_shadow import PortalShadow
+from xpra.platform.posix.shadow.fd_portal import PortalShadow
 
 
 class FakeCapture:
@@ -30,7 +30,7 @@ class PortalShadowCaptureTest(unittest.TestCase):
         first.node_id = 11
         server.captures = {11: first, 12: second}
         server.get_window = lambda _wid: None
-        with patch("xpra.platform.posix.fd_portal_shadow.get_sources_by_type", return_value=()):
+        with patch("xpra.platform.posix.shadow.fd_portal.get_sources_by_type", return_value=()):
             server.capture_error(first, "stream failed")
         self.assertEqual(first.cleaned, 1)
         self.assertEqual(server.captures, {12: second})

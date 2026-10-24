@@ -7,7 +7,7 @@ import os
 
 from xpra.config import InitException
 from xpra.constants import XPRA_APP_ID
-from xpra.platform.win32.shadow_server import ShadowServer
+from xpra.platform.win32.shadow.server import ShadowServer
 from xpra.log import Logger
 
 log = Logger("server", "win32")

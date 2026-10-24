@@ -11,7 +11,6 @@ import signal
 import sys
 import tempfile
 import unittest
-from io import BytesIO
 from subprocess import Popen, DEVNULL, PIPE, run
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
@@ -24,17 +23,19 @@ from xpra.util.objects import AdHocStruct
 from xpra.platform.paths import get_xpra_command
 from xpra.common import noop, noerr
 from xpra.config import InitException, InitExit, InitInfo
+from xpra.util.systemd import use_systemd_run, systemd_run_command, systemd_run_wrap
 from xpra.scripts.main import (
-    nox, use_systemd_run, systemd_run_command, systemd_run_wrap,
-    handle_client_encoding_option, normalize_client_encoding_option,
+    nox,
     isdisplaytype,
     check_display, check_gtk, check_gtk_client,
+    configure_landlock,
+)
+from xpra.scripts.clients import (
+    handle_client_encoding_option, normalize_client_encoding_option,
     make_client, do_run_client,
     connect_to_server,
-    configure_landlock,
-    make_progress_process,
-    _monitors_args,
 )
+from xpra.scripts.display import _monitors_args
 from xpra.scripts.picker import find_session_by_name
 from xpra.scripts.args import find_mode_pos, strip_attach_extra_positional_args
 from xpra.net.connect import connect_to, get_host_target_string
@@ -98,81 +99,8 @@ class TestGtkBackend(unittest.TestCase):
                 check_gtk("splash")
                 self.assertEqual(os.environ.get("GDK_BACKEND", ""), expected)
 
-    def test_splash_preserves_saved_display_environment(self):
-        for backend in ("", "wayland", "x11", "wayland,x11"):
-            saved_env = {"DISPLAY": ":0", "WAYLAND_DISPLAY": "wayland-1", "XDG_SESSION_TYPE": "x11"}
-            if backend:
-                saved_env["GDK_BACKEND"] = backend
-            process = Mock()
-            process.poll.return_value = None
-            with self.subTest(backend=backend), \
-                 patch.dict(os.environ, {"DISPLAY": ":100", "WAYLAND_DISPLAY": "wayland-100", "GDK_BACKEND": "x11"}, clear=True), \
-                 patch("xpra.scripts.main.get_saved_env", return_value=saved_env), \
-                 patch("xpra.scripts.main.Popen", return_value=process) as popen, \
-                 patch("xpra.scripts.main.add_process"), patch("xpra.scripts.main.SPLASH_KEEPALIVE_INTERVAL", 0):
-                self.assertIs(make_progress_process("test"), process)
-                splash_env = popen.call_args.kwargs["env"]
-                self.assertEqual(splash_env["DISPLAY"], ":0")
-                self.assertEqual(splash_env["WAYLAND_DISPLAY"], "wayland-1")
-                self.assertEqual(splash_env.get("GDK_BACKEND", ""), backend)
-                self.assertEqual(os.environ["DISPLAY"], ":100")
-                self.assertEqual(os.environ["GDK_BACKEND"], "x11")
-
 
 class TestMain(unittest.TestCase):
-
-    def test_splash_keepalive_sender(self):
-        class ProgressProcess:
-            def __init__(self):
-                self.stdin = BytesIO()
-                self.returncode = None
-
-            def poll(self):
-                return self.returncode
-
-            def terminate(self):
-                self.returncode = -signal.SIGTERM
-
-        class StopEvent:
-            def __init__(self):
-                self.stopped = False
-                self.wait_delays = []
-
-            def set(self):
-                self.stopped = True
-
-            def is_set(self):
-                return self.stopped
-
-            def wait(self, delay):
-                self.wait_delays.append(delay)
-                return len(self.wait_delays) >= 2
-
-        process = ProgressProcess()
-        stop_event = StopEvent()
-        keepalive_threads = []
-
-        def capture_thread(target, name, daemon=False, args=()):
-            keepalive_threads.append((target, name, daemon, args))
-            return Mock()
-
-        with patch("xpra.scripts.main.Popen", return_value=process), \
-             patch("xpra.scripts.main.add_process"), \
-             patch("xpra.scripts.main.SPLASH_KEEPALIVE_INTERVAL", 1), \
-             patch("threading.Event", return_value=stop_event), \
-             patch("xpra.util.thread.start_thread", side_effect=capture_thread):
-            assert make_progress_process("test") is process
-            assert len(keepalive_threads) == 1
-            target, name, daemon, args = keepalive_threads[0]
-            assert name == "splash-keepalive"
-            assert daemon is True
-            assert not args
-            target()
-            data = process.stdin.getvalue()
-            assert data.count(b"keepalive\n") == 2
-            assert stop_event.wait_delays == [1, 1]
-            process.terminate()
-            assert stop_event.stopped
 
     def test_landlock_mode(self):
         with self.assertRaises(InitException):
@@ -195,45 +123,40 @@ class TestMain(unittest.TestCase):
     def test_landlock_unsupported_backends(self):
         for backend in ("qt", "pyglet", "tk"):
             opts = SimpleNamespace(landlock="strict", backend=backend)
-            with self.subTest(backend=backend), patch("xpra.scripts.main.LINUX", True), \
+            with self.subTest(backend=backend), patch("xpra.scripts.clients.LINUX", True), \
                  self.assertRaisesRegex(InitExit, "does not support Landlock") as raised:
                 make_client(opts)
             self.assertEqual(raised.exception.status, ExitCode.UNSUPPORTED)
 
-    def test_harden_client_process(self):
-        from types import ModuleType
-        from xpra.scripts import main
-        harden_process = Mock()
-        security_module = ModuleType("xpra.platform.win32.security")
-        security_module.harden_process = harden_process
-        with patch.dict(sys.modules, {"xpra.platform.win32.security": security_module}), \
-             patch("xpra.scripts.main.client_hardened", False):
-            with patch("xpra.scripts.main.WIN32", False):
-                main.harden_client_process()
-            harden_process.assert_not_called()
-            with patch("xpra.scripts.main.WIN32", True):
-                main.harden_client_process()
-                # only once per process:
-                main.harden_client_process()
-            harden_process.assert_called_once_with()
-
     def test_make_client_hardens_before_backend(self):
         calls = []
         opts = SimpleNamespace(landlock="no", backend="qt")
-        with patch("xpra.scripts.main.harden_client_process", lambda: calls.append("harden")), \
-             patch("xpra.scripts.main.no_gi_gtk_modules", lambda: calls.append("backend")), \
+        with patch("xpra.platform.security.harden_process", lambda: calls.append("harden")), \
+             patch("xpra.scripts.clients.no_gi_gtk_modules", lambda: calls.append("backend")), \
+             patch.dict(sys.modules, {"xpra.client.qt6.client": None}):
+            for _ in range(2):
+                with self.assertRaises(InitExit):
+                    make_client(opts)
+        self.assertEqual(calls, ["harden", "backend"] * 2)
+
+    def test_make_client_hardening_failure_is_not_fatal(self):
+        opts = SimpleNamespace(landlock="no", backend="qt")
+        with patch("xpra.platform.security.harden_process", side_effect=OSError("not permitted")), \
+             patch("xpra.scripts.clients.warn") as warn, \
+             patch("xpra.scripts.clients.no_gi_gtk_modules") as backend, \
              patch.dict(sys.modules, {"xpra.client.qt6.client": None}), \
              self.assertRaises(InitExit):
             make_client(opts)
-        self.assertEqual(calls, ["harden", "backend"])
+        warn.assert_called_once_with("Warning: failed to harden the client process: not permitted")
+        backend.assert_called_once_with()
 
     def test_landlock_connection_is_deferred_until_run(self):
         desc = {"type": "tcp"}
         app = SimpleNamespace()
         opts = SimpleNamespace(backend="gtk", display=":100")
         glib = SimpleNamespace(idle_add=Mock())
-        with patch("xpra.scripts.main.gi_import", return_value=glib), \
-             patch("xpra.scripts.main.connect_or_fail") as connect:
+        with patch("xpra.scripts.clients.gi_import", return_value=glib), \
+             patch("xpra.scripts.clients.connect_or_fail") as connect:
             connect_to_server(app, desc, opts)
         self.assertIs(app.display_desc, desc)
         connect.assert_not_called()
@@ -241,7 +164,7 @@ class TestMain(unittest.TestCase):
 
     def test_remote_start_connects_after_run_hooks(self):
         from xpra.config.defaults import make_defaults_struct
-        from xpra.scripts.main import run_remote_server
+        from xpra.scripts.start import run_remote_server
         opts = make_defaults_struct()
         opts.attach = False
         opts.reconnect = False
@@ -259,11 +182,11 @@ class TestMain(unittest.TestCase):
 
         app.run = run
         glib = SimpleNamespace(idle_add=lambda fn, *args: queued.append(lambda: fn(*args)))
-        with patch("xpra.scripts.main.parse_display_name", return_value=desc), \
+        with patch("xpra.scripts.start.parse_display_name", return_value=desc), \
              patch("xpra.client.base.command.RequestStartClient", return_value=app), \
-             patch("xpra.scripts.main.gi_import", return_value=glib), \
+             patch("xpra.scripts.clients.gi_import", return_value=glib), \
              patch("xpra.util.thread.start_thread", side_effect=lambda fn, *a, **kw: fn()), \
-             patch("xpra.scripts.main.connect_or_fail", side_effect=lambda target: events.append("connect") or object()):
+             patch("xpra.scripts.clients.connect_or_fail", side_effect=lambda target: events.append("connect") or object()):
             result = run_remote_server("xpra", [], opts, ["tcp://localhost:12345/"], "desktop", make_defaults_struct())
         self.assertEqual(result, ExitCode.OK)
         self.assertIs(app.display_desc, desc)
@@ -389,16 +312,16 @@ class TestMain(unittest.TestCase):
         def fd(d):
             try:
                 #silence errors since we're expecting them:
-                from xpra.scripts import main as xpra_main
+                from xpra.scripts import clients as xpra_clients
                 from xpra.net import connect as xpra_connect
                 saved_timeout = xpra_connect.CONNECT_TIMEOUT
-                saved_werr = xpra_main.werr
+                saved_werr = xpra_clients.werr
                 try:
                     xpra_connect.CONNECT_TIMEOUT = 5
-                    xpra_main.werr = noop
+                    xpra_clients.werr = noop
                     conn = connect_to(d)
                 finally:
-                    xpra_main.werr = saved_werr
+                    xpra_clients.werr = saved_werr
                     xpra_connect.CONNECT_TIMEOUT = saved_timeout
             except Exception:
                 #from xpra.util import get_util_logger
@@ -489,7 +412,6 @@ class TestMain(unittest.TestCase):
     def test_nongui_subcommands(self):
         self._check_xpra_command()
         for args in (
-            "initenv",
             "list",
             "list-windows",
             "showconfig",

@@ -10,7 +10,7 @@ from subprocess import Popen
 from xpra import __version__
 from xpra.common import noop
 from xpra.os_util import POSIX, OSX
-from xpra.scripts.main import SPLASH_EXIT_DELAY, make_progress_process
+from xpra.scripts.splash import SPLASH_EXIT_DELAY, make_progress_process
 from xpra.util.io import stderr_print
 from xpra.util.env import envbool, get_saved_env_var
 from xpra.log import Logger

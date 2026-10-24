@@ -10,7 +10,8 @@ from typing import Any, TypeAlias
 
 from xpra.util.parsing import parse_simple_dict
 from xpra.os_util import WIN32
-from xpra.config import InitException
+from xpra.exit_codes import ExitCode, ExitValue
+from xpra.config import InitException, InitExit
 from xpra.log import Logger
 
 log = Logger("auth")
@@ -67,3 +68,16 @@ def get_auth_module(auth_str: str, cwd=os.getcwd(), **auth_options) -> AuthDef:
     except Exception as e:
         log("cannot access authenticator class", exc_info=True)
         raise InitException(f"authentication setup error in {auth_module}: {e}") from None
+
+
+def run_auth(args: list[str]) -> ExitValue:
+    auth_str = args[0]
+    from xpra.auth.auth_helper import get_auth_module
+    auth, auth_module = get_auth_module(auth_str)[:2]
+    # see if the module has a "main" entry point:
+    main_fn = getattr(auth_module, "main", None)
+    if not callable(main_fn):
+        raise InitExit(ExitCode.UNSUPPORTED, f"no command line utility for {auth!r} authentication module")
+    argv = [auth_module.__file__] + args[1:]
+    # noinspection calling-non-callable
+    return main_fn(argv)

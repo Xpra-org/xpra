@@ -212,6 +212,10 @@ def do_run_glcheck(opts: XpraConfig, show=False) -> dict[str, Any]:
             logging.root.setLevel(saved_level)
 
 
+def run_gltest(opts: XpraConfig) -> ExitValue:
+    return run_glprobe(opts, True)
+
+
 def run_glcheck(opts: XpraConfig) -> ExitValue:
     # cheap easy check first:
     log = Logger("opengl")
@@ -224,7 +228,7 @@ def run_glcheck(opts: XpraConfig) -> ExitValue:
     else:
         if opts.backend == "win32":
             # keep this subprocess as Gtk-free as the client it is probing for:
-            from xpra.scripts.main import no_gi_gtk_modules
+            from xpra.scripts.common import no_gi_gtk_modules
             no_gi_gtk_modules()
         else:
             from xpra.scripts.main import check_gtk_client

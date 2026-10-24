@@ -15,7 +15,7 @@ from xpra.os_util import OSX, WIN32, gi_import
 from xpra.util.system import SIGNAMES
 from xpra.util.thread import check_main_thread, start_thread
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.scripts.main import SPLASH_EXIT_DELAY, SPLASH_KEEPALIVE_INTERVAL
+from xpra.scripts.splash import SPLASH_EXIT_DELAY, SPLASH_KEEPALIVE_INTERVAL
 from xpra.gtk.widget import label
 from xpra.gtk.css_overrides import add_screen_css
 from xpra.gtk.pixbuf import get_icon_pixbuf

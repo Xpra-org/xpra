@@ -38,9 +38,7 @@ class VideoPipelineTest(unittest.TestCase):
                                 preferred_encodings=("h264", "vp9"))
 
     def setUp(self):
-        scoring = patch.multiple(video_scoring, GPU_BIAS=100, MIN_FPS_COST=4)
-        scoring.start()
-        self.addCleanup(scoring.stop)
+        self.enterContext(patch.multiple(video_scoring, GPU_BIAS=100, MIN_FPS_COST=4))
         self.encoder = encoder_spec()
         self.encoders = {"h264": {"RGB": (self.encoder,)}}
         self.converters = {}

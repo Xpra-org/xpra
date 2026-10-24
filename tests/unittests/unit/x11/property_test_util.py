@@ -71,5 +71,4 @@ class PropertyTestCase(unittest.TestCase):
             patch("xpra.x11.error.Xenter"),
             patch("xpra.x11.error.Xexit", return_value=0),
         ):
-            p.start()
-            self.addCleanup(p.stop)
+            self.enterContext(p)

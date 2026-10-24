@@ -53,11 +53,11 @@ except ImportError:
 # `GLib.IO_IN`, spelled out so that this test package never imports `gi`:
 IO_IN = 1
 
-# what `xpra.scripts.main.make_client` must end up with for `--backend=terminal`,
+# what `xpra.scripts.clients.make_client` must end up with for `--backend=terminal`,
 # run in a subprocess because it poisons the `gi.repository` Gtk modules process wide:
 MAKE_CLIENT_SCRIPT = """
 from xpra.config.defaults import make_defaults_struct
-from xpra.scripts.main import make_client
+from xpra.scripts.clients import make_client
 opts = make_defaults_struct()
 opts.backend = "terminal"
 client = make_client(opts)
@@ -219,7 +219,7 @@ class TerminalClientTest(unittest.TestCase):
 
     def test_get_encodings(self):
         client = self.make_client()
-        # `xpra.scripts.main.handle_client_encoding_option` calls this:
+        # `xpra.scripts.clients.handle_client_encoding_option` calls this:
         self.assertIsInstance(client.get_encodings(), Sequence)
         client.subsystems["encoding"] = FakeEncodingSubsystem()
         self.assertEqual(tuple(client.get_encodings()), ("png", "rgb"))
@@ -304,7 +304,7 @@ class TerminalClientTest(unittest.TestCase):
                 Packet("window-create", 10, 0, 0, 24, 24, metadata)))
 
     def test_make_client_never_looks_at_the_x11_display(self):
-        # this is what `xpra.scripts.main.make_client` calls, and the only thing
+        # this is what `xpra.scripts.clients.make_client` calls, and the only thing
         # keeping the display subsystem's probes away from the X11 bindings:
         with OSEnvContext():
             os.environ.pop("XPRA_NOX11", None)
