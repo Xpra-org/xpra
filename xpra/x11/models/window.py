@@ -743,17 +743,21 @@ class WindowModel(BaseWindowModel):
 
         geomlog("do_x11_child_configure_request_event updated requested geometry from %s to %s",
                 (ox, oy, ow, oh), (x, y, w, h))
-        mask = 0
-        if ox != x:
-            mask |= CWX
-        if oy != y:
-            mask |= CWY
-        if ow != w:
-            mask |= CWWidth
-        if oh != h:
-            mask |= CWHeight
+        # the request uses root coordinates: the position belongs to the corral,
+        # the client window stays at (0, 0) and only follows the size
+        moved = ox != x or oy != y
+        resized = ow != w or oh != h
         with xlog:
-            X11Window.configure(self.xid, x, y, w, h, mask)
+            if moved and resized:
+                X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
+                X11Window.ResizeWindow(self.xid, w, h)
+            elif moved:
+                # ICCCM 4.2.3
+                X11Window.MoveWindow(self.corral_xid, x, y)
+                X11Window.sendConfigureNotify(self.xid)
+            else:
+                X11Window.ResizeWindow(self.corral_xid, w, h)
+                X11Window.ResizeWindow(self.xid, w, h)
         # FIXME: consider handling attempts to change stacking order here.
         # (In particular, I believe that a request to jump to the top is
         # meaningful and should perhaps even be respected.)
