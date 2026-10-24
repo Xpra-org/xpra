@@ -691,6 +691,8 @@ def trim_pillow() -> None:
         os.unlink(filename)
     debug(f"removed: {csv(removed)}")
     debug(f"kept: {csv(kept)}")
+    # we never parse avif via pillow, `xpra.codecs.avif` uses libavif directly:
+    delete_libs("PIL/_avif*")
 
 
 def trim_python_libs() -> None:
