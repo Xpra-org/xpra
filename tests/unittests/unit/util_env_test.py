@@ -16,7 +16,7 @@ from unittest.mock import Mock, patch
 from xpra.util import env
 from xpra.util.env import (
     OSEnvContext,
-    hasenv, unsetenv,
+    hasenv, unsetenv, set_environ,
     envint, envbool, envfloat,
     shellsub,
     decode_dict,
@@ -53,6 +53,30 @@ class TestHasEnvUnsetenv(unittest.TestCase):
         with OSEnvContext():
             os.environ.pop(_TEST_VAR, None)
             unsetenv(_TEST_VAR)   # must not raise
+
+
+class TestSetEnviron(unittest.TestCase):
+
+    def test_matches_target(self):
+        with OSEnvContext():
+            target = dict(os.environ)
+            target.pop("PATH", None)
+            target[_TEST_VAR] = "new"
+            set_environ(target)
+            self.assertEqual(dict(os.environ), target)
+
+    def test_only_touches_differences(self):
+        with OSEnvContext():
+            os.environ[_TEST_VAR + "_DROP"] = "1"
+            target = dict(os.environ)
+            del target[_TEST_VAR + "_DROP"]
+            target[_TEST_VAR] = "1"
+            # `os.environ` calls the libc through the `os` module's `putenv` and `unsetenv`:
+            with patch("os.putenv") as putenv, patch("os.unsetenv") as unset:
+                set_environ(target)
+            self.assertEqual(putenv.call_count, 1)
+            self.assertEqual(unset.call_count, 1)
+            self.assertEqual(dict(os.environ), target)
 
 
 class TestEnvint(unittest.TestCase):

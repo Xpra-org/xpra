@@ -15,7 +15,7 @@ import subprocess
 from typing import NoReturn
 
 from xpra.util.str_fn import repr_ellipsized, bytestostr
-from xpra.util.env import envint, envbool, osexpand, OSEnvContext
+from xpra.util.env import envint, envbool, osexpand, set_environ, OSEnvContext
 from xpra.os_util import (
     OSX, POSIX,
 )
@@ -211,8 +211,7 @@ class ProcessTestUtil(unittest.TestCase):
             wait_for = get_wait_for()
 
     def setUp(self):
-        os.environ.clear()
-        os.environ.update(self.default_env)
+        set_environ(self.default_env)
 
     @classmethod
     def get_default_run_env(cls):

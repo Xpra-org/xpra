@@ -20,6 +20,21 @@ def unsetenv(*varnames) -> None:
         os.environ.pop(x, None)
 
 
+def set_environ(env: dict[str, str]) -> None:
+    """
+    Make `os.environ` match `env`, only touching the variables that differ.
+    `os.environ.clear()` followed by `os.environ.update(env)` would unset and re-add every variable,
+    and the libc environment is not thread safe: some libcs (e.g. OpenBSD) reallocate the `environ` array
+    when a variable is added, which crashes any native thread calling `getenv()` at the same time.
+    """
+    for k in tuple(os.environ.keys()):
+        if k not in env:
+            del os.environ[k]
+    for k, v in env.items():
+        if os.environ.get(k) != v:
+            os.environ[k] = v
+
+
 def hasenv(name: str) -> bool:
     return os.environ.get(name) is not None
 
@@ -262,8 +277,7 @@ class OSEnvContext:
         os.environ.update(self.kwargs)
 
     def __exit__(self, *_args):
-        os.environ.clear()
-        os.environ.update(self.env)
+        set_environ(self.env)
 
     def __repr__(self):
         return "OSEnvContext"
