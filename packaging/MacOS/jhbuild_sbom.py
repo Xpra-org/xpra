@@ -177,7 +177,7 @@ def jhbuild(*args: str) -> str:
     env.pop("PYTHONNOUSERSITE", None)
     proc = subprocess.run(["jhbuild"] + list(args), cwd=cwd, env=env, capture_output=True, text=True)
     if proc.returncode != 0:
-        raise RuntimeError(f"`jhbuild {' '.join(args)}` failed and returned {proc.returncode}")
+        raise RuntimeError(f"`jhbuild {' '.join(args)}` failed and returned {proc.returncode}: {proc.stderr.strip()}")
     return proc.stdout
 
 
@@ -239,7 +239,7 @@ def get_module_info(modules: Iterable[str]) -> dict[str, dict[str, str]]:
     """
     try:
         output = jhbuild("info", *sorted(modules))
-    except RuntimeError:
+    except RuntimeError as e:
         # one of the modules is not found in the modulesets, so query them one at a time:
         output = ""
         for module in sorted(modules):
@@ -248,6 +248,9 @@ def get_module_info(modules: Iterable[str]) -> dict[str, dict[str, str]]:
             except RuntimeError:
                 # ie: the bootstrap modules
                 warn(f"{module!r} is not found in the modulesets, only recording its installed version")
+        if not output:
+            # without the URLs, the python modules don't get a `pkg:pypi` PURL
+            raise RuntimeError(f"`jhbuild info` failed for all modules: {e}") from None
     info: dict[str, dict[str, str]] = {}
     current: dict[str, str] = {}
     for line in output.splitlines():
