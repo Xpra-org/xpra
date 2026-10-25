@@ -35,6 +35,10 @@ if OSX:
     )
 if OSX or WIN32:
     SETTINGS.append(
+        ("Clipboard", "Clipboard selections to synchronize", "clipboard",
+         (("auto", "both CLIPBOARD and PRIMARY"), ("yes", "CLIPBOARD only"), "no"))
+    )
+    SETTINGS.append(
         ("Remote Clipboard", "Remote clipboard selection to be synchronized with", "remote-clipboard",
          ("CLIPBOARD", "PRIMARY", "SECONDARY"))
     )
@@ -92,17 +96,20 @@ class ConfigureGUI(ConfigureGUIWindow):
             config_value = getattr(config, setting.replace("-", "_")) or "auto"
             log(f"{setting}={config_value!r}")
             values = []
-            for index, value in enumerate(options):
+            for index, option in enumerate(options):
+                # options can be a value, or a `(value, label)` pair:
+                value, text = option if isinstance(option, tuple) else (option, option)
                 if not value and config_value:
-                    value = config_value
+                    value = text = config_value
                 values.append(value)
-                combo.append_text(_(value))
+                combo.append_text(_(text))
                 matches = config_value == value
                 if value in TRUE_OPTIONS:
                     matches |= str(config_value).lower() in TRUE_OPTIONS
                 if value in FALSE_OPTIONS:
                     matches |= str(config_value).lower() in FALSE_OPTIONS
-                combo.set_active(matches)
+                if matches:
+                    combo.set_active(index)
             combo.connect("changed", self.setting_changed, setting, values)
         return False
 
