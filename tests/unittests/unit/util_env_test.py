@@ -7,6 +7,7 @@
 import os
 import warnings
 import unittest
+from unittest.mock import patch
 
 from xpra.util.env import (
     OSEnvContext,
