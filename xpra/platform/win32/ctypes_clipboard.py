@@ -6,7 +6,6 @@
 import os
 import struct
 from typing import Any
-from io import BytesIO
 from collections.abc import Sequence, Callable
 from ctypes import (
     get_last_error, WinError, FormatError,  # @UnresolvedImport
@@ -150,6 +149,8 @@ NOSYNC_DELAY = envint("XPRA_CLIPBOARD_NOSYNC_DELAY", 500)
 log("BLOCKLISTED_CLIPBOARD_CLIENTS=%s", BLOCKLISTED_CLIPBOARD_CLIENTS)
 log("SYNCDELAY_CLIPBOARD_CLIENTS=%s", SYNCDELAY_CLIPBOARD_CLIENTS)
 COMPRESSED_IMAGES = envbool("XPRA_CLIPBOARD_COMPRESSED_IMAGES", True)
+# the image formats we accept from the peer, detected from the data itself:
+IMAGE_FORMATS = tuple(x for x in os.environ.get("XPRA_CLIPBOARD_IMAGE_FORMATS", "png,jpeg,webp,xpm,bmp,ico,ppm").split(",") if x)
 
 # TIFF remains supported by the shared clipboard conversion code, but it is
 # deliberately excluded from native Windows advertisement and negotiation.
@@ -360,10 +361,7 @@ def wrap_CF_HTML(html: bytes) -> bytes:
     return head.encode("latin1") + pre + html + post
 
 
-def data_to_bitmap(img_data) -> HBITMAP:
-    from PIL import Image
-    buf = BytesIO(img_data)
-    img = Image.open(buf)
+def image_to_bitmap(img) -> HBITMAP:
     if img.mode != "RGBA":
         img = img.convert("RGBA")
     rgba_data = img.tobytes("raw", "BGRA")
@@ -938,6 +936,16 @@ class Win32ClipboardProxy(ClipboardProxyCore):
         return False
 
     def set_clipboard_image(self, img_format: str, img_data) -> None:
+        from xpra.codecs.pillow.decoder import open_only
+        try:
+            img = open_only(img_data, IMAGE_FORMATS)
+        except Exception as e:
+            log("open_only(%s, %s)", Ellipsizer(img_data), IMAGE_FORMATS, exc_info=True)
+            log.warn("Warning: rejecting %r clipboard image data", img_format)
+            log.warn(" %s", e)
+            return
+        # use the format we actually detected, not the one the peer claims:
+        img_format = (img.format or img_format).lower()
         image_formats: dict[int, int] = {}
         if COMPRESSED_IMAGES:
             # first save it as binary compressed data:
@@ -951,10 +959,10 @@ class Win32ClipboardProxy(ClipboardProxyCore):
                     log.error("Error: cannot copy %i bytes of %r data", len(img_data), img_format)
                     log.estr(e)
         try:
-            if bitmap := data_to_bitmap(img_data):
+            if bitmap := image_to_bitmap(img):
                 image_formats[win32con.CF_BITMAP] = bitmap
         except Exception as e:
-            log("data_to_bitmap(%s)", Ellipsizer(img_data), exc_info=True)
+            log("image_to_bitmap(%s)", img, exc_info=True)
             log.error("Error: cannot convert %r data to a bitmap", img_format)
             log.estr(e)
             # don't leak the handles we allocated above:

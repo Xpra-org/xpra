@@ -110,9 +110,8 @@ def get_session_icon(sockpath: str, socktype: str):
         log("get_session_icon(%s) returncode(%s)=%s, %i bytes", sockpath, cmd, p.returncode, len(blob or b""))
         if p.returncode != 0 or not blob:
             return None
-        from io import BytesIO
-        from PIL import Image
-        return Image.open(BytesIO(blob))
+        from xpra.codecs.pillow.decoder import open_only
+        return open_only(blob, ("png", "jpeg", "webp"))
     except Exception as e:
         log("get_session_icon(%s)", sockpath, exc_info=True)
         log.warn("Warning: failed to load session icon for %s: %s", sockpath, e)

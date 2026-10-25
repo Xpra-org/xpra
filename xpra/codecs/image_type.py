@@ -85,6 +85,34 @@ def is_bmp(data: bytes) -> bool:
     return data[:2] == BMP_HEADER and struct.unpack_from("<I", data, 14)[0] in BMP_DIB_HEADER_SIZES
 
 
+ICO_HEADER = b"\0\0\1\0"
+
+
+def is_ico(data: bytes) -> bool:
+    # followed by the number of images, which cannot be zero:
+    return data[:4] == ICO_HEADER and struct.unpack_from("<H", data, 4)[0] > 0
+
+
+def is_ppm(data: bytes) -> bool:
+    # "P1" to "P6", followed by whitespace:
+    return data[:1] == b"P" and data[1:2] in (b"1", b"2", b"3", b"4", b"5", b"6") and data[2:3] in (b" ", b"\t", b"\n", b"\r", b"\v", b"\f")
+
+
+def ico_has_apng(data: SizedBuffer) -> bool:
+    # each 16-byte directory entry after the 6-byte header has the offset of its image,
+    # which Pillow parses as a PNG file if it starts with the PNG signature:
+    view = memoryview(data)
+    count = struct.unpack_from("<H", view, 4)[0]
+    for i in range(count):
+        entry = 6 + i * 16
+        if entry + 16 > len(view):
+            break
+        offset = struct.unpack_from("<I", view, entry + 12)[0]
+        if view[offset:offset + len(PNG_HEADER)] == PNG_HEADER and is_apng(view[offset:]):
+            return True
+    return False
+
+
 HEADERS: dict[Callable[[bytes], bool], str] = {
     is_png: "png",
     is_webp: "webp",
@@ -93,6 +121,8 @@ HEADERS: dict[Callable[[bytes], bool], str] = {
     is_xpm: "xpm",
     is_tiff: "tiff",
     is_bmp: "bmp",
+    is_ico: "ico",
+    is_ppm: "ppm",
 }
 
 
@@ -104,9 +134,9 @@ def get_image_type(data: SizedBuffer) -> str:
     header = memoryview_to_bytes(data[:HEADER_SIZE])
     for fn, encoding in HEADERS.items():
         if fn(header):
-            # APNG must be allowed explicitly,
+            # APNG must be allowed explicitly, even when embedded in an ICO file,
             # Pillow parses the animation chunks in `Image.open()` - see CVE-2026-112399:
-            if encoding == "png" and is_apng(data):
+            if (encoding == "png" and is_apng(data)) or (encoding == "ico" and ico_has_apng(data)):
                 return "apng"
             return encoding
     return ""

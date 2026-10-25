@@ -148,8 +148,8 @@ class ClientWindow(Window):
     def draw(self, x: int, y: int, w: int, h: int, coding: str, data, stride: int) -> None:
         if coding in ("png", "jpeg", "webp"):
             from PIL import Image
-            from io import BytesIO
-            img = Image.open(BytesIO(data))
+            from xpra.codecs.pillow.decoder import open_only
+            img = open_only(data, (coding, ))
             if img.mode == "RGBA":
                 coding = "rgb32"
                 stride = w * 4

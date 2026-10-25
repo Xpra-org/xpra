@@ -37,6 +37,7 @@
   * [paramiko ssh agent forwarding handler](https://github.com/Xpra-org/xpra/issues/4353)
   * [basic RDP handling](https://github.com/Xpra-org/xpra/issues/4476)
 * 🛡️ Security:
+  * [unexpected image formats could reach Pillow through window, icon, webcam and MS Windows clipboard data](https://github.com/Xpra-org/xpra/commit/01b3a5bfa4eb32fc30b498ad47b0831d1eba589d)
   * [unnecessary GdkPixbuf image decoders exposed to untrusted image data](https://github.com/Xpra-org/xpra/commit/d1cdcdc656c01bc4dcd811dcd299c0f9999862b8)
   * [stricter peer data validation](https://github.com/Xpra-org/xpra/issues/5084)
   * [validate notifications](https://github.com/Xpra-org/xpra/issues/5085)
