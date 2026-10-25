@@ -10,7 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, mock_open, patch
 
 import xpra
-from xpra.util import system
+from xpra.util import env, system
 
 # when compiled with Cython, the module caches the builtins it uses,
 # so patching `builtins.open` has no effect on it:
@@ -120,7 +120,8 @@ class DisplayDetectionTest(unittest.TestCase):
                                  ({"GDK_BACKEND": "x11", "WAYLAND_DISPLAY": "wayland-0"}, False)):
             with self.subTest(values=values):
                 self.assertEqual(system.is_Wayland(values), expected)
-        with patch.object(system, "_saved_env", {"GDK_BACKEND": "wayland"}):
+        # patch the module attribute that `save_env()` rebinds, which `is_Wayland()` must see:
+        with patch.object(env, "_saved_env", {"GDK_BACKEND": "wayland"}):
             self.assertTrue(system.is_Wayland())
 
     def test_x11_backend_overrides(self):
