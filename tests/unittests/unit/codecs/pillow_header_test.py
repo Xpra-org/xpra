@@ -46,10 +46,18 @@ class TestPillowHeader(unittest.TestCase):
         chunk = struct.pack(">I4s", len(text), b"tEXt") + text + struct.pack(">I", zlib.crc32(b"tEXt" + text))
         ihdr_end = 8 + 12 + 13
         self.assertEqual(get_image_type(apng[:ihdr_end] + chunk + apng[ihdr_end:]), "apng")
+        # an ICO file can embed it:
+        ico = struct.pack("<HHH", 0, 1, 1) + struct.pack("<BBBBHHII", 16, 16, 0, 0, 1, 32, len(apng), 6 + 16) + apng
+        self.assertEqual(get_image_type(ico), "apng")
+        self.assertEqual(get_image_type(memoryview(ico)), "apng")
         # a single frame is a plain png:
         buf = BytesIO()
         frames[0].save(buf, "PNG")
         self.assertEqual(get_image_type(buf.getvalue()), "png")
+        # and an ICO with png frames is a plain ICO:
+        buf = BytesIO()
+        Image.new("RGBA", (256, 256), "red").save(buf, "ICO", sizes=[(256, 256), (16, 16)], bitmap_format="png")
+        self.assertEqual(get_image_type(buf.getvalue()), "ico")
 
         from xpra.codecs.pillow.decoder import open_only
         with self.assertRaises(ValueError):
@@ -58,6 +66,15 @@ class TestPillowHeader(unittest.TestCase):
             open_only(apng, ("png", ))
         self.assertEqual(open_only(apng, ("apng", )).size, (16, 16))
 
+    def test_pillow_formats(self):
+        from io import BytesIO
+        from PIL import Image
+        img = Image.new("RGB", (16, 16), "red")
+        for encoding in ("png", "jpeg", "webp", "bmp", "ico", "ppm", "tiff"):
+            buf = BytesIO()
+            img.save(buf, encoding)
+            self.assertEqual(get_image_type(buf.getvalue()), encoding)
+
     def test_bad_header(self):
         for x in (b"", None,
                   b"abc",
@@ -65,6 +82,9 @@ class TestPillowHeader(unittest.TestCase):
                   b"RIF",
                   b"RIFF&\x00\x00\x00WEBp",
                   b"BM" + b"\0" * 40,
+                  b"\0\0\1\0\0\0" + b"\0" * 32,
+                  b"P7 " + b"\0" * 32,
+                  b"P6" + b"\0" * 32,
                   binascii.unhexlify("fe0000000000000000000000000000000000000000000000000000"),
                   ):
             if e := get_image_type(x):

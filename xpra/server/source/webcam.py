@@ -50,15 +50,14 @@ class WebcamClientForwarder:
         return f"WebcamClientForwarder({self._device_id}, {self._w}x{self._h})"
 
 
+# the only formats we accept for webcam frames, `open_only` validates the data against them:
+WEBCAM_ENCODINGS = ("png", "jpeg", "webp")
+
+
 def valid_encodings(args: Sequence[str]) -> list[str]:
-    # ensure that the encodings specified can be validated using HEADERS
-    try:
-        from xpra.codecs.image_type import HEADERS  # pylint: disable=import-outside-toplevel
-    except ImportError:
-        return []
     encodings = []
     for x in args:
-        if x not in HEADERS.values():
+        if x not in WEBCAM_ENCODINGS:
             log.warn("Warning: %s is not supported for webcam forwarding", x)
         else:
             encodings.append(x)

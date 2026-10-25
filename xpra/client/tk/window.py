@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from io import BytesIO
 from tkinter import Toplevel, Label
 from PIL import Image, ImageTk
 from xpra.net.packet_type import (
@@ -185,6 +184,7 @@ class ClientWindow(Toplevel):
     def draw(self, x: int, y: int, _w: int, _h: int, coding: str, data, _stride: int) -> None:
         if coding not in ("png", "jpeg", "webp"):
             raise ValueError(f"unsupported format {coding!r}")
-        img = Image.open(BytesIO(data))
+        from xpra.codecs.pillow.decoder import open_only
+        img = open_only(data, (coding, ))
         self.backing.paste(img, (x, y))
         self.photo_image.paste(self.backing)
