@@ -22,6 +22,7 @@ Before changing anything, inspect `git status` and preserve unrelated tracked an
 - Apply commits individually or in small dependency groups with provenance (`-x` when using cherry-pick).
 - Never generate a mailbox by passing a list of revisions directly to `git format-patch`; it can be interpreted as ranges and include unintended history. Use one commit per patch or a verified explicit range.
 - When conflicts arise, port the behaviour rather than blindly taking either side. Preserve target-branch logic that is not part of the fix, especially later local changes around lifecycle, threading, or platform-specific code.
+- When porting test methods or partial file changes, check the source file's imports and helpers, including those introduced by earlier commits. Bring over the dependencies the target needs; a clean cherry-pick does not establish that names used by the tests are defined.
 - Do not restore files deleted or superseded on the target solely to satisfy a source-branch patch. Adapt the affected callers instead, or skip the inapplicable portion.
 - If a proposed regression test depends on a different target test lifecycle or environment, keep the production fix but omit or adapt the test; do not leave a known failing test behind.
 - Update the target release's `docs/CHANGELOG.md` for user-facing fixes. Link each entry to its upstream GitHub commit and describe the observed problem rather than the implementation. Reuse the existing headings; add one only for a clear group, and combine links on one line only for tightly coupled fixes or follow-ups.
@@ -29,6 +30,7 @@ Before changing anything, inspect `git status` and preserve unrelated tracked an
 
 ## Verify and hand off
 
-- Run `git diff --check`, check for unresolved conflict markers, and run focused tests or at least a compile/import check for changed Python modules when relevant.
+- Run `git diff --check` and check for unresolved conflict markers.
+- Run each changed Python test module and lint all changed Python files, including tests, for undefined names using the repository configuration (standalone Flake8 needs `--max-line-length=150`). Compilation and module imports alone miss names resolved only when a test runs, such as a missing `from unittest.mock import patch`. If dependencies prevent a test from running, report it as unverified and still perform the undefined-name check; do not present a compile/import check as equivalent to executing the tests.
 - Report the applied commits, ports/adaptations, intentionally skipped candidates, verification performed, and any tests that could not be used.
 - Preserve pre-existing untracked files and say so when they were present.
