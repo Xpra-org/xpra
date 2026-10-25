@@ -77,8 +77,8 @@ for package_name, info in packages.items():
     package_version = info.get("Version", "")
     version, cpes, purls = identify(package_name, package_version)
     purl = PackageURL.from_string(purls[0]) if purls else url2purl.get_purl(info.get("URL", ""))
-    # scanners can match PyPI packages without a CPE:
-    if identify is not no_identifiers and version and not (cpes or purls or (purl and purl.type == "pypi")):
+    # scanners can match PyPI and NuGet packages without a CPE:
+    if identify is not no_identifiers and version and not (cpes or purls or (purl and purl.type in ("pypi", "nuget"))):
         unidentified.append(package_name)
     properties = [Property(name=PACKAGE_VERSION_PROPERTY, value=package_version)] if package_version != version else []
     component = Component(

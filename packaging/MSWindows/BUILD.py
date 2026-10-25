@@ -1212,10 +1212,10 @@ def rec_sbom() -> None:
         path = os.path.join(LIB_DIR, child)
         if os.path.isdir(path) or path.endswith(".py") or path.endswith(".pyd"):
             rec_py_lib(os.path.join("lib", child))
-    # add this one by hand because cx_Freeze hides it in `library.zip`,
+    # add these by hand because cx_Freeze hides them in `library.zip`,
     # and we don't want to start unpacking a large ZIP file and converting .pyc to .py
-    # just for one filename:
-    rec_py_lib(os.path.join("lib", "decorator.py"))
+    # just for a few filenames:
+    rec_py_lib(os.path.join("lib", "decorator"))
     rec_py_lib(os.path.join("lib", "typing_extensions.py"))
 
     # summary: list of packages

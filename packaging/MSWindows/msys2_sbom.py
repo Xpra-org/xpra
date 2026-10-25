@@ -34,6 +34,8 @@ MSYS2_PKGBASE = {
     "boost-libs": "boost",
     "gettext-runtime": "gettext",
     "gobject-introspection-runtime": "gobject-introspection",
+    "libgcc": "gcc",
+    "libstdc++": "gcc",
     "libwinpthread": "winpthreads",
     "python-cairo": "pycairo",
 }
