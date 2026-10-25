@@ -23,9 +23,13 @@ def add_xi2_method_overrides() -> None:
 
 def xi2_debug() -> None:
     # adds the xi2 event names to X11 event logger:
-    if not is_debug_enabled("x11"):
+    if not is_debug_enabled("x11") or is_Wayland():
         return
     try:
+        from xpra.x11.bindings.display_source import get_display_ptr
+        if not get_display_ptr():
+            xinputlog("xi2_debug() no X11 display source")
+            return
         from xpra.x11.bindings.xi2 import init_xi2_events
         init_xi2_events(False)
     except ImportError:
