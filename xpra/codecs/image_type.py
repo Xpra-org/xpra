@@ -21,6 +21,20 @@ def is_png(data: bytes) -> bool:
     return data.startswith(PNG_HEADER)
 
 
+def is_apng(data: SizedBuffer) -> bool:
+    # an animated PNG has an `acTL` chunk before the first `IDAT`,
+    # which may come after other chunks (ie: `iCCP`), so walk the chunks in the whole buffer:
+    pos = len(PNG_HEADER)
+    while pos + 8 <= len(data):
+        length, ctype = struct.unpack_from(">I4s", data, pos)
+        if ctype == b"acTL":
+            return True
+        if ctype in (b"IDAT", b"IEND"):
+            return False
+        pos += 12 + length
+    return False
+
+
 RIFF_HEADER = b"RIFF"
 WEBP_HEADER = b"WEBP"
 
@@ -90,5 +104,9 @@ def get_image_type(data: SizedBuffer) -> str:
     header = memoryview_to_bytes(data[:HEADER_SIZE])
     for fn, encoding in HEADERS.items():
         if fn(header):
+            # APNG must be allowed explicitly,
+            # Pillow parses the animation chunks in `Image.open()` - see CVE-2026-112399:
+            if encoding == "png" and is_apng(data):
+                return "apng"
             return encoding
     return ""

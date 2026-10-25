@@ -4,6 +4,8 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import zlib
+import struct
 import unittest
 import binascii
 
@@ -29,6 +31,32 @@ class TestPillowHeader(unittest.TestCase):
                   b"Use of this source code is governed by the Apache 2.0 license. -->\n"
         data = comment + b'<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg"></svg>'
         self.assertEqual(get_image_type(data), "svg")
+
+    def test_apng(self):
+        from io import BytesIO
+        from PIL import Image
+        frames = [Image.new("RGB", (16, 16), color) for color in ("red", "blue")]
+        buf = BytesIO()
+        frames[0].save(buf, "PNG", save_all=True, append_images=frames[1:])
+        apng = buf.getvalue()
+        self.assertEqual(get_image_type(apng), "apng")
+        self.assertEqual(get_image_type(memoryview(apng)), "apng")
+        # the `acTL` chunk can come after other chunks, insert a `tEXt` chunk after `IHDR`:
+        text = b"Comment\0" + b"x" * 300
+        chunk = struct.pack(">I4s", len(text), b"tEXt") + text + struct.pack(">I", zlib.crc32(b"tEXt" + text))
+        ihdr_end = 8 + 12 + 13
+        self.assertEqual(get_image_type(apng[:ihdr_end] + chunk + apng[ihdr_end:]), "apng")
+        # a single frame is a plain png:
+        buf = BytesIO()
+        frames[0].save(buf, "PNG")
+        self.assertEqual(get_image_type(buf.getvalue()), "png")
+
+        from xpra.codecs.pillow.decoder import open_only
+        with self.assertRaises(ValueError):
+            open_only(apng)
+        with self.assertRaises(ValueError):
+            open_only(apng, ("png", ))
+        self.assertEqual(open_only(apng, ("apng", )).size, (16, 16))
 
     def test_bad_header(self):
         for x in (b"", None,
