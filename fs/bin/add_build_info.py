@@ -317,39 +317,7 @@ def record_build_info() -> None:
             "libs": get_libs(),
             "python_libs": get_python_libs(),
         })
-    if sys.platform == "darwin" and os.environ.get("XPRA_SBOM", "1") == "1":
-        sbom = {}
-        packages = {}
-        SKIPPED = ("xar", "cpio", "bomutils", )
-        for package_name in get_jhbuild_package_list():
-            if package_name in SKIPPED or package_name.startswith("meta-"):
-                continue
-            if pinfo := get_jhbuild_package_info(package_name):
-                sbom[package_name] = {"package": package_name, "version": pinfo.get("Version", "")}
-                packages[package_name] = {key: value for key, value in pinfo.items() if key in ("Name", "Version", "URL")}
-        props["sbom"] = sbom
-        props["packages"] = packages
     save_properties(props, BUILD_INFO_FILE)
-
-
-def get_jhbuild_package_list() -> "list[str]":
-    output = jhbuild("list")
-    packages = []
-    for line in output.split("\n"):
-        if not line.strip() or line.find(" ") >= 0:
-            continue
-        packages.append(line.strip())
-    return packages
-
-
-def get_jhbuild_package_info(name: str) -> "dict[str, str]":
-    output = jhbuild("info", name)
-    props: dict[str, str] = {}
-    for line in output.split("\n"):
-        parts = line.split(":", 1)
-        if len(parts) == 2:
-            props[parts[0].strip()] = parts[1].strip()
-    return props
 
 
 def get_vcs_props():
