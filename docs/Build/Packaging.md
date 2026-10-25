@@ -24,20 +24,20 @@ For slimmer installations, you may also want to use `apt`'s `--no-install-recomm
 
 </div>
 
-| Package                            | Details                                                                                                                                                                                |
-|------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| <nobr>`xpra-filesystem`</nobr>     | this package contains configuration files and is independent of the python version<br/>See [multiple python targets](https://github.com/Xpra-org/xpra/issues/3945) (version 6 onwards) |
-| <nobr>`xpra-common`</nobr>         | this package is required by all the other sub-packages                                                                                                                                 |
-| <nobr>`xpra-client`</nobr>         | console clients: `xpra stop`, `xpra info`, etc                                                                                                                                         |
-| <nobr>`xpra-client-gtk3`</nobr>    | the main client GUI for connecting to sessions: `xpra attach`, `xpra launcher`, etc                                                                                                    |
-| <nobr>`xpra-server`</nobr>         | for starting sessions locally: `xpra seamless`, `xpra desktop`, `xpra shadow`, etc                                                                                                     |
-| <nobr>`xpra-server-wayland`</nobr> | experimental Wayland seamless server: `xpra seamless --backend=wayland`                                                                                                                |
-| <nobr>`xpra-x11`</nobr>            | required for all X11 server session types (ie: `xpra seamless` and `xpra desktop`) and for X11 clients                                                                                 |
-| <nobr>`xpra-audio`</nobr>          | audio forwarding support for both client and server                                                                                                                                    |
-| <nobr>`xpra-codecs`</nobr>         | core picture compression codecs                                                                                                                                                        |
-| <nobr>`xpra-codecs-extras`</nobr>  | more video compression codecs with heavier footprint and / or licensing requirements                                                                                                   |
-| <nobr>`xpra-codecs-amd`</nobr>     | extra proprietary AMD codecs: `amf` encoder                                                                                                                                            |
-| <nobr>`xpra-codecs-nvidia`</nobr>  | extra proprietary NVidia codecs: `nvenc`, `nvjpeg`, `nvdec`, `nvfbc`, etc                                                                                                              |
+| Package                                       | Details                                                                                                                                                                                |
+|-----------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| <nobr><code>xpra-filesystem</code></nobr>     | this package contains configuration files and is independent of the python version<br/>See [multiple python targets](https://github.com/Xpra-org/xpra/issues/3945) (version 6 onwards) |
+| <nobr><code>xpra-common</code></nobr>         | this package is required by all the other sub-packages                                                                                                                                 |
+| <nobr><code>xpra-client</code></nobr>         | console clients: `xpra stop`, `xpra info`, etc                                                                                                                                         |
+| <nobr><code>xpra-client-gtk3</code></nobr>    | the main client GUI for connecting to sessions: `xpra attach`, `xpra launcher`, etc                                                                                                    |
+| <nobr><code>xpra-server</code></nobr>         | for starting sessions locally: `xpra seamless`, `xpra desktop`, `xpra shadow`, etc                                                                                                     |
+| <nobr><code>xpra-server-wayland</code></nobr> | experimental Wayland seamless server: `xpra seamless --backend=wayland`                                                                                                                |
+| <nobr><code>xpra-x11</code></nobr>            | required for all X11 server session types (ie: `xpra seamless` and `xpra desktop`) and for X11 clients                                                                                 |
+| <nobr><code>xpra-audio</code></nobr>          | audio forwarding support for both client and server                                                                                                                                    |
+| <nobr><code>xpra-codecs</code></nobr>         | core picture compression codecs                                                                                                                                                        |
+| <nobr><code>xpra-codecs-extras</code></nobr>  | more video compression codecs with heavier footprint and / or licensing requirements                                                                                                   |
+| <nobr><code>xpra-codecs-amd</code></nobr>     | extra proprietary AMD codecs: `amf` encoder                                                                                                                                            |
+| <nobr><code>xpra-codecs-nvidia</code></nobr>  | extra proprietary NVidia codecs: `nvenc`, `nvjpeg`, `nvdec`, `nvfbc`, etc                                                                                                              |
 
 Here is a visual representation of the dependencies between the sub-packages:
 
