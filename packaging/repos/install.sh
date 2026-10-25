@@ -59,15 +59,17 @@ get_ubuntu_codename_from_mint() {
   printf '%s\n' "${codename}"
 }
 
+# the repository files are found in ${GITHUB_REPOS}/${DIR}/
+# rpmfusion uses "fedora" for Fedora and "el" for RHEL and its clones
 dnfinstall() {
-  DISTRO=$1
-  distro=${DISTRO,,}
+  DIR=$1
+  RPMFUSION=$2
   echo "adding rpmfusion"
-  sudo dnf install -y "https://mirrors.rpmfusion.org/free/${distro}/rpmfusion-free-release-${MAJOR_VERSION}.noarch.rpm"
+  sudo dnf install -y "https://mirrors.rpmfusion.org/free/${RPMFUSION}/rpmfusion-free-release-${MAJOR_VERSION}.noarch.rpm"
   # alternative:
-  # sudo dnf install -y "https://download1.rpmfusion.org/free/${distro}/rpmfusion-free-release-${MAJOR_VERSION}.noarch.rpm"
+  # sudo dnf install -y "https://download1.rpmfusion.org/free/${RPMFUSION}/rpmfusion-free-release-${MAJOR_VERSION}.noarch.rpm"
   echo "downloading the repository file"
-  download "${GITHUB_REPOS}/${DISTRO}/${REPO}.repo" "/etc/yum.repos.d/${REPO}.repo"
+  download "${GITHUB_REPOS}/${DIR}/${REPO}.repo" "/etc/yum.repos.d/${REPO}.repo"
   echo "installing 'xpra'"
   sudo dnf install -y xpra
   sudo dnf install -y xpra-html5
@@ -75,46 +77,50 @@ dnfinstall() {
   sudo dnf update -y
 }
 
+# RHEL clones: enable 'crb' (called 'powertools' in version 8) and install EPEL
+elprepare() {
+  if [ "${MAJOR_VERSION}" == "8" ]; then
+    sudo dnf config-manager --set-enabled powertools
+  else
+    sudo dnf config-manager --set-enabled crb
+  fi
+  sudo dnf install -y epel-release
+}
+
 if [ "${ID}" == "fedora" ]; then
   echo "installing 'config-manager' plugin"
   sudo dnf install -y dnf-plugins-core --disablerepo='*' --enablerepo='fedora'
   echo "enabling cisco's openh264"
   sudo dnf-3 config-manager --set-enabled fedora-cisco-openh264
-  dnfinstall Fedora
+  dnfinstall Fedora fedora
   exit 0
 fi
 if [ "${ID}" == "rhel" ]; then
-  sudo dnf config-manager --set-enabled crb
-  sudo dnf config-manager --set-enabled epel-release
-  sudo dnf config-manager --set-enabled powertools
-  dnfinstall AlmaLinux
+  sudo subscription-manager repos --enable "codeready-builder-for-rhel-${MAJOR_VERSION}-$(arch)-rpms"
+  sudo dnf install -y "https://dl.fedoraproject.org/pub/epel/epel-release-latest-${MAJOR_VERSION}.noarch.rpm"
+  dnfinstall almalinux el
   exit 0
 fi
 if [ "${ID}" == "centos" ]; then
-  sudo dnf config-manager --set-enabled epel-next-release
-  sudo dnf config-manager --set-enabled powertools
-  dnfinstall CentOS
+  # only CentOS Stream is still supported:
+  elprepare
+  dnfinstall CentOS-Stream el
   exit 0
 fi
 if [ "${ID}" == "almalinux" ]; then
-  sudo dnf config-manager --set-enabled crb
-  sudo dnf config-manager --set-enabled epel-release
-  sudo dnf config-manager --set-enabled powertools
-  dnfinstall AlmaLinux
+  elprepare
+  dnfinstall almalinux el
   exit 0
 fi
-if [ "${ID}" == "rockylinux" ]; then
-  sudo dnf config-manager --set-enabled crb
-  sudo dnf config-manager --set-enabled epel-release
-  sudo dnf config-manager --set-enabled powertools
-  dnfinstall RockyLinux
+if [ "${ID}" == "rocky" ]; then
+  elprepare
+  dnfinstall rockylinux el
   exit 0
 fi
-if [ "${ID}" == "oraclelinux" ]; then
-  sudo dnf config-manager --set-enabled "ol${VERSION_ID}_codeready_builder"
-  sudo dnf config-manager --set-enabled epel-release
-  sudo dnf config-manager --set-enabled powertools
-  dnfinstall OracleLinux
+if [ "${ID}" == "ol" ]; then
+  sudo dnf config-manager --set-enabled "ol${MAJOR_VERSION}_codeready_builder"
+  sudo dnf install -y "oracle-epel-release-el${MAJOR_VERSION}"
+  dnfinstall oraclelinux el
   exit 0
 fi
 
