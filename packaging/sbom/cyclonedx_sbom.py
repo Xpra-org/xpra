@@ -5,13 +5,17 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+# Export the SBOM data recorded in `xpra.build_info` as a CycloneDX JSON document:
+# python3 cyclonedx_sbom.py [--identifiers MODULE] [OUTPUT.json]
+# The identifiers module adds the CPE and PURL identifiers vulnerability scanners need,
+# it must provide a `load_identifiers()` function returning a callable:
+# `identify(package_name, package_version) -> (version, cpes, purls)`
+# ie: `msys2_sbom` for MS Windows, `jhbuild_sbom` for MacOS.
+
 import re
 import sys
+from importlib import import_module
 from xpra.build_info import packages
-from msys2_sbom import (
-    load_msys2_references, get_upstream_version, get_identifiers,
-    PACKAGE_VERSION_PROPERTY, EXTRA_CPE_PROPERTY,
-)
 
 from packageurl import PackageURL
 from packageurl.contrib import url2purl
@@ -24,8 +28,22 @@ from cyclonedx.model.component import Component, ComponentType
 from cyclonedx.output.json import JsonV1Dot5
 
 
-# add the CPE and PURL references maintained by MSYS2, so that vulnerability scanners can match our components:
-msys2_references = load_msys2_references()
+# where we keep the full package version when the component version is the upstream one:
+PACKAGE_VERSION_PROPERTY = "xpra:package-version"
+# the same project is often recorded under different CPE vendors or product names,
+# CycloneDX only has room for one, so add the others the same way that syft does:
+EXTRA_CPE_PROPERTY = "syft:cpe23"
+
+
+def no_identifiers(package_name: str, package_version: str) -> tuple[str, list[str], list[str]]:
+    return package_version, [], []
+
+
+args = sys.argv[1:]
+identify = no_identifiers
+if args[:1] == ["--identifiers"] and len(args) >= 2:
+    identify = import_module(args[1]).load_identifiers()
+    args = args[2:]
 
 lc_factory = LicenseFactory()
 
@@ -57,11 +75,10 @@ for package_name, info in packages.items():
         if license_name
     ]
     package_version = info.get("Version", "")
-    # scanners compare the component version with the upstream versions affected by a vulnerability,
-    # and "48.0.1-1" would be a post-release of "48.0.1" for PyPI packages:
-    version = get_upstream_version(package_version)
-    cpes, purls = get_identifiers(msys2_references, package_name, version)
-    if msys2_references and version and not (cpes or purls):
+    version, cpes, purls = identify(package_name, package_version)
+    purl = PackageURL.from_string(purls[0]) if purls else url2purl.get_purl(info.get("URL", ""))
+    # scanners can match PyPI packages without a CPE:
+    if identify is not no_identifiers and version and not (cpes or purls or (purl and purl.type == "pypi")):
         unidentified.append(package_name)
     properties = [Property(name=PACKAGE_VERSION_PROPERTY, value=package_version)] if package_version != version else []
     component = Component(
@@ -69,7 +86,7 @@ for package_name, info in packages.items():
         name=package_name,
         version=version,
         licenses=licenses,
-        purl=PackageURL.from_string(purls[0]) if purls else url2purl.get_purl(info.get("URL", "")),
+        purl=purl,
         cpe=cpes[0] if cpes else None,
         properties=properties + [Property(name=EXTRA_CPE_PROPERTY, value=cpe) for cpe in cpes[1:]],
     )
@@ -171,8 +188,8 @@ if unidentified:
 
 bom_json = JsonV1Dot5(bom).output_as_string(indent=2)
 
-if len(sys.argv) > 1:
-    filename = sys.argv[1]
+if args:
+    filename = args[0]
     with open(filename, "w") as f:
         f.write(bom_json)
 else:

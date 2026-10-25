@@ -10,7 +10,7 @@
 # https://www.msys2.org/dev/vulnerabilities/
 # we add them to our SBOM components so that vulnerability scanners can match them.
 #
-# Used by `cyclonedx_sbom.py` when generating the SBOM,
+# Used by `cyclonedx_sbom.py --identifiers msys2_sbom` when generating the SBOM,
 # or from the command line to add them to an SBOM generated without them:
 # python3 msys2_sbom.py Xpra.json Xpra-with-references.json
 
@@ -19,6 +19,7 @@ import re
 import sys
 import json
 from collections import defaultdict
+from collections.abc import Callable
 from urllib.request import urlopen
 
 MSYS2_SBOM_URLS = os.environ.get("MSYS2_SBOM_URLS", ",".join((
@@ -90,6 +91,21 @@ def get_identifiers(references: dict[str, list[dict]], package_name: str, upstre
             base = re.match(r"[^?#]*", purl).group(0)
             purls.append(base.split("@", 1)[0] + f"@{upstream_version}" + purl[len(base):])
     return cpes, purls
+
+
+def load_identifiers() -> Callable[[str, str], tuple[str, list[str], list[str]]]:
+    """
+    used by `cyclonedx_sbom.py --identifiers msys2_sbom`
+    """
+    references = load_msys2_references()
+
+    def identify(package_name: str, package_version: str) -> tuple[str, list[str], list[str]]:
+        # scanners compare the component version with the upstream versions affected by a vulnerability,
+        # and "48.0.1-1" would be a post-release of "48.0.1" for PyPI packages:
+        version = get_upstream_version(package_version)
+        cpes, purls = get_identifiers(references, package_name, version)
+        return version, cpes, purls
+    return identify
 
 
 def add_references(bom: dict, references: dict[str, list[dict]]) -> list[str]:

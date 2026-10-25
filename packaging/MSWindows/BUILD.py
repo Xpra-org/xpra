@@ -1275,17 +1275,18 @@ def find_win_python() -> str:
 
 def export_sbom() -> None:
     WIN_PYTHON = find_win_python()
-    SBOM_SCRIPT = "packaging\\MSWindows\\cyclonedx_sbom.py"
+    SBOM_SCRIPT = "packaging\\sbom\\cyclonedx_sbom.py"
     output = f"{DIST}/{SBOM_JSON}"
     delfile(output)
     env = os.environ.copy()
-    env["PYTHONPATH"] = "."
+    # the native Windows interpreter uses ";" as separator, and `msys2_sbom` provides the identifiers:
+    env["PYTHONPATH"] = ".;packaging\\MSWindows"
     # the Windows certificate store may not have the root CA for downloading the MSYS2 SBOMs yet,
     # (Windows only installs them when it first needs them), so use the MSYS2 bundle instead:
     cert_file = f"{MINGW_PREFIX}/etc/ssl/cert.pem"
     if "SSL_CERT_FILE" not in env and os.path.exists(cert_file):
         env["SSL_CERT_FILE"] = cert_file
-    log_command([WIN_PYTHON, SBOM_SCRIPT, output], "export-sbom.log", env=env)
+    log_command([WIN_PYTHON, SBOM_SCRIPT, "--identifiers", "msys2_sbom", output], "export-sbom.log", env=env)
     # make a copy that can be distributed separately:
     SBOM_FILENAME = f"Xpra{version_info.extra}{version_info.arch_info}_{version_info.full_string}.json"
     delfile(SBOM_FILENAME)
