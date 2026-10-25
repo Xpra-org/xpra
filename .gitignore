@@ -73,6 +73,7 @@ packaging/MSWindows/service/DesktopLogon/packages/
 /msi.xml
 *.pxi
 *.html
+!docs/_includes/*.html
 #CUDA:
 *.fatbin
 *.cubin

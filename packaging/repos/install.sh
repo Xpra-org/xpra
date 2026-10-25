@@ -1,7 +1,17 @@
 #!/bin/bash
 
-# other options: "xpra-lts" and "xpra-beta"
-REPO="xpra"
+# choose the channel with the REPO environment variable:
+# "xpra" (stable, the default), "xpra-lts" or "xpra-beta"
+# ie: curl https://xpra.org/get-xpra.sh | REPO=xpra-beta bash
+REPO="${REPO:-xpra}"
+case "${REPO}" in
+  xpra|xpra-lts|xpra-beta)
+    ;;
+  *)
+    echo "invalid REPO '${REPO}', use 'xpra', 'xpra-lts' or 'xpra-beta'"
+    exit 1
+    ;;
+esac
 GITHUB_REPOS="https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos"
 
 # OSNAME=$(grep -e "^NAME=" /etc/os-release | awk -F= '{print $2}' | sed 's/"//g')

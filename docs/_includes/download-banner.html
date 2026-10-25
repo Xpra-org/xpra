@@ -1,0 +1,20 @@
+{%- assign dl = site.data.downloads -%}
+<aside class="dl-banner">
+  <div>
+    <h3>Release channels</h3>
+    <ul>
+    {%- for ch in dl.channels %}
+      <li><a href="{{ dl.base }}/{{ ch.id }}/"><strong>{{ ch.name }}</strong></a> <code>{{ ch.version }}</code>: {{ ch.description }}</li>
+    {%- endfor %}
+    </ul>
+    <p>Client and server can usually run <a href="https://github.com/Xpra-org/xpra/wiki/Versions">different supported versions</a>.
+    See <a href="https://github.com/Xpra-org/xpra/wiki/Platforms">supported platforms</a> and
+    <a href="https://github.com/Xpra-org/xpra/wiki/Build-Status">build status</a>.</p>
+  </div>
+  <div>
+    <h3>Signatures</h3>
+    <p>All binaries are signed with the <a href="{{ dl.signing.key }}">Xpra PGP key</a> <code>{{ dl.signing.id }}</code>,
+    fingerprint <code class="dl-fingerprint">{{ dl.signing.fingerprint }}</code></p>
+    <p>Verify a download with:<br><code>gpg --verify FILE.gpg FILE</code></p>
+  </div>
+</aside>

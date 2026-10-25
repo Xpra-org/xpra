@@ -822,7 +822,10 @@ def convert_doc_dir(src, dst, fmt="html", force=False) -> None:
         os.makedirs(dst, mode=0o755)
     for x in os.listdir(src):
         fsrc = os.path.join(src, x)
-        if os.path.isdir(fsrc):
+        if os.path.isdir(fsrc) and (x == "Download" or x.startswith("_")):
+            # only used by the github pages site (jekyll templates):
+            print(f"ignoring {fsrc!r}")
+        elif os.path.isdir(fsrc):
             fdst = os.path.join(dst, x)
             convert_doc_dir(fsrc, fdst, fmt, force)
         elif fsrc.endswith(".md"):

@@ -33,7 +33,7 @@ explains how those pieces fit together.
 ## Install Xpra
 
 Install Xpra in the WSL distribution using the packages appropriate for that
-distribution; see [Download Xpra](https://github.com/Xpra-org/xpra/wiki/Download).
+distribution; see [Download Xpra](https://xpra-org.github.io/xpra/Download/Linux.html).
 For example, after configuring the Xpra package repository on a Debian or
 Ubuntu system:
 

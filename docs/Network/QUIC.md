@@ -17,7 +17,7 @@ QUIC is a new low-latency encrypted transport protocol, built on top of UDP.
 ## Packaging
 
 </div>
-The [xpra.org RPM repositories](https://github.com/Xpra-org/xpra/wiki/Download) include the dependencies required
+The [xpra.org RPM repositories](https://xpra-org.github.io/xpra/Download/Linux.html) include the dependencies required
 for running QUIC servers and clients for most distributions, namely `aioquic` and its dependencies.
 
 ---

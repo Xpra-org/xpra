@@ -1,0 +1,206 @@
+# Single source of truth for the download pages in docs/Download/
+# The Windows and MacOS URLs are built from:
+#   {{ base }}/{{ channel.id }}/{{ dir }}/{{ arch }}/{{ build file }}
+# ie: https://xpra.org/stable/MSWindows/arm64/Xpra-Light_Setup.exe
+
+base: "https://xpra.org"
+repos: "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos"
+
+channels:
+  - id: lts
+    name: LTS
+    version: "v5.1.x"
+    branch: "https://github.com/Xpra-org/xpra/tree/v5.1.x"
+    description: "long-term support: security and critical fixes only"
+    repo: "xpra-lts"
+  - id: stable
+    name: Stable
+    version: "v6.x"
+    description: "the latest stable release: recommended"
+    repo: "xpra"
+    default: true
+  - id: beta
+    name: Beta
+    version: "development"
+    description: "the newest builds, may be unstable"
+    repo: "xpra-beta"
+
+builds:
+  - id: light
+    name: Light
+    description: "smaller download, client oriented, more limited codec support"
+    default: true
+  - id: full
+    name: Full
+    description: "all codecs and server support, considerably larger"
+
+signing:
+  key: "https://xpra.org/xpra.asc"
+  id: "F18AD6BB"
+  fingerprint: "B499 3B57 3231 48E3 7977 E5D8 7325 4CAD 1797 8FAF"
+
+windows:
+  dir: MSWindows
+  arches:
+    - id: x86_64
+      name: "x86_64"
+      description: "aka AMD64 or x64: most PCs"
+      default: true
+    - id: arm64
+      name: "arm64"
+      description: "more limited hardware support"
+  formats:
+    - id: exe
+      name: EXE
+      description: "general purpose installer"
+      light: "Xpra-Light_Setup.exe"
+      full: "Xpra_Setup.exe"
+    - id: msi
+      name: MSI
+      description: "for unattended installations"
+      light: "Xpra-Light.msi"
+      full: "Xpra.msi"
+    - id: zip
+      name: ZIP
+      description: "portable: no administrator rights needed, no file association"
+      light: "Xpra-Light.zip"
+      full: "Xpra.zip"
+  sbom:
+    light: "Xpra-Light.json"
+    full: "Xpra.json"
+  # "channel/arch/build" combinations without an SBOM:
+  no_sbom:
+    - "beta/arm64/full"
+
+macos:
+  dir: MacOS
+  arches:
+    - id: arm64
+      name: "arm64"
+      description: "Apple silicon: M1 and later"
+      default: true
+    - id: x86_64
+      name: "x86_64"
+      description: "Intel"
+  formats:
+    - id: dmg
+      name: DMG
+      description: "disk image: drag the application to the Applications folder"
+      light: "Xpra-Light.dmg"
+      full: "Xpra.dmg"
+    - id: pkg
+      name: PKG
+      description: "installer package: also installs the file association"
+      light: "Xpra-Light.pkg"
+      full: "Xpra.pkg"
+  sbom:
+    light: "Xpra-Light.json"
+    full: "Xpra.json"
+
+linux:
+  methods:
+    - id: quick
+      name: Automatic setup
+      description: "detect the distribution and install the repository"
+      default: true
+    - id: deb
+      name: DEB
+      description: "Debian, Ubuntu and derivatives"
+    - id: rpm
+      name: RPM
+      description: "Fedora, RHEL and its clones"
+    - id: other
+      name: Other
+      description: "other distributions, source"
+  rpm:
+    - id: fedora
+      name: Fedora
+      dir: Fedora
+      url: "https://fedoraproject.org/"
+      channels: [lts, stable, beta]
+      prepare:
+        - "sudo dnf install https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm"
+    - id: almalinux
+      name: AlmaLinux
+      dir: almalinux
+      url: "https://almalinux.org/"
+      channels: [lts, stable, beta]
+      notes: "enable `crb` and `EPEL`"
+      prepare:
+        - "sudo dnf config-manager --set-enabled crb"
+        - "sudo dnf install epel-release"
+        - "sudo dnf install https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm"
+    - id: rockylinux
+      name: RockyLinux
+      dir: rockylinux
+      url: "https://rockylinux.org/"
+      channels: [lts, stable, beta]
+      notes: "enable `crb` and `EPEL`"
+      prepare:
+        - "sudo dnf config-manager --set-enabled crb"
+        - "sudo dnf install epel-release"
+        - "sudo dnf install https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm"
+    - id: oraclelinux
+      name: OracleLinux
+      dir: oraclelinux
+      url: "https://www.oracle.com/linux/"
+      channels: [lts, stable, beta]
+      notes: "enable `codeready_builder` and `EPEL`"
+      prepare:
+        - "sudo dnf config-manager --set-enabled ol$(rpm -E %rhel)_codeready_builder"
+        - "sudo dnf install oracle-epel-release-el$(rpm -E %rhel)"
+        - "sudo dnf install https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm"
+    - id: rhel
+      name: Red Hat Enterprise Linux
+      dir: almalinux
+      url: "https://www.redhat.com/en/technologies/linux-platforms/enterprise-linux"
+      channels: [lts, stable, beta]
+      notes: "uses the AlmaLinux repository, enable `crb` and `EPEL`"
+      prepare:
+        - "sudo subscription-manager repos --enable codeready-builder-for-rhel-$(rpm -E %rhel)-$(arch)-rpms"
+        - "sudo dnf install https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm"
+        - "sudo dnf install https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm"
+    - id: centos-stream
+      name: CentOS Stream
+      dir: CentOS-Stream
+      url: "https://www.centos.org/"
+      channels: [lts, stable, beta]
+      prepare:
+        - "sudo dnf config-manager --set-enabled crb"
+        - "sudo dnf install epel-release"
+        - "sudo dnf install https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm"
+  deb:
+    - id: trixie
+      name: Debian 13 Trixie
+      url: "https://wiki.debian.org/DebianTrixie"
+      channels: [lts, stable, beta]
+    - id: bookworm
+      name: Debian 12 Bookworm
+      url: "https://www.debian.org/releases/bookworm/"
+      channels: [lts, stable, beta]
+    - id: bullseye
+      name: Debian 11 Bullseye
+      url: "https://wiki.debian.org/DebianBullseye"
+      channels: [lts, beta]
+    - id: forky
+      name: Debian Forky (testing)
+      url: "https://wiki.debian.org/DebianForky"
+      channels: [beta]
+      notes: "no stable ABI: use the beta repository"
+    - id: sid
+      name: Debian Sid (unstable)
+      url: "https://www.debian.org/releases/sid/"
+      channels: [beta]
+      notes: "no stable ABI: use the beta repository"
+    - id: resolute
+      name: Ubuntu 26.04 Resolute Raccoon
+      url: "https://launchpad.net/ubuntu/resolute"
+      channels: [lts, stable, beta]
+    - id: noble
+      name: Ubuntu 24.04 Noble Numbat
+      url: "https://launchpad.net/ubuntu/noble"
+      channels: [lts, stable, beta]
+    - id: jammy
+      name: Ubuntu 22.04 Jammy Jellyfish
+      url: "https://releases.ubuntu.com/22.04/"
+      channels: [lts, stable, beta]

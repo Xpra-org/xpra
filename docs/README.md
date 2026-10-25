@@ -9,7 +9,7 @@ and disconnect and reconnect without losing their state.
 <div class="docs-actions" markdown="1">
 
 [Get started](Usage/README.md)
-[Install Xpra](https://github.com/Xpra-org/xpra/wiki/Download)
+[Install Xpra](https://xpra-org.github.io/xpra/Download/)
 [Read the FAQ](FAQ.md)
 
 </div>
@@ -141,7 +141,7 @@ Build from source or prepare packages for a supported platform.
 
 Find downloads, answers, source code, and ways to support the project.
 
-- [Download Xpra](https://github.com/Xpra-org/xpra/wiki/Download)
+- [Download Xpra](https://xpra-org.github.io/xpra/Download/)
 - [Debugging Xpra](Debugging.md)
 - [Frequently asked questions](FAQ.md)
 - [GitHub repository](https://github.com/Xpra-org/xpra)

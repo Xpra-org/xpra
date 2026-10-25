@@ -1,0 +1,17 @@
+{%- comment -%}
+A segmented control, only shown when javascript is enabled.
+  name:  the selection key, also used in the URL query string
+  label: the legend
+  items: a list of objects with `id`, `name`, `description` and optionally `default`
+{%- endcomment -%}
+<fieldset class="dl-picker" data-key="{{ include.name }}">
+  <legend>{{ include.label }}</legend>
+  <div class="dl-options">
+  {%- for item in include.items %}
+    <label title="{{ item.description }}">
+      <input type="radio" name="{{ include.name }}" value="{{ item.id }}"{% if item.default %} checked{% endif %}>
+      <span>{{ item.name }}{% if item.version %} <small>{{ item.version }}</small>{% endif %}</span>
+    </label>
+  {%- endfor %}
+  </div>
+</fieldset>
