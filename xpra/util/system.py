@@ -14,7 +14,7 @@ from xpra.os_util import POSIX, LINUX, OSX, WIN32, force_quit
 
 if TYPE_CHECKING:
     from subprocess import Popen
-from xpra.util.env import _saved_env, envbool
+from xpra.util.env import get_saved_env, envbool
 from xpra.util.io import load_binary_file, get_util_logger, info
 
 SIGNAMES: dict[int, str] = {}
@@ -128,7 +128,7 @@ def get_platform_icon_name(platform: str) -> str:
 
 
 def is_Wayland(env: Mapping | None = None) -> bool:
-    return _is_Wayland(_saved_env if env is None else env)
+    return _is_Wayland(get_saved_env() if env is None else env)
 
 
 def _is_Wayland(env: Mapping) -> bool:

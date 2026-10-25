@@ -113,6 +113,7 @@
   * [MS Windows native client: keyboard shortcuts](https://github.com/Xpra-org/xpra/commit/74f8442fd422cfc864acec6cdf835089a36b151b), [system menu](https://github.com/Xpra-org/xpra/commit/c5095ec897b7d2e85273e8eb49fc94ef401ae74d), [grabs](https://github.com/Xpra-org/xpra/commit/7b75aec1933f5b0bd79fca748ff839aa265c751f), [dark title bar](https://github.com/Xpra-org/xpra/issues/5062)
   * [tray menu entries for key combinations intercepted locally](https://github.com/Xpra-org/xpra/issues/4994)
 * Wayland:
+  * [Wayland sessions could be misdetected after startup environment changes](https://github.com/Xpra-org/xpra/commit/a109b77cac3b7b93b13deb12ee367affee106b56)
   * [client keyboard layout and variant lists accepted invalid or excessive entries](https://github.com/Xpra-org/xpra/commit/830feefe13bf1123e217098b24d3f362c040474b)
   * [`dmabuf` image wrapper and GPU support for applications](https://github.com/Xpra-org/xpra/issues/4877)
   * [scaled subsurfaces](https://github.com/Xpra-org/xpra/issues/4878)
