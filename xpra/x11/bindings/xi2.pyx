@@ -308,6 +308,9 @@ cdef unsigned int xi_opcode = 0
 
 
 cdef tuple get_xi_version(Display *display, int major=2, int minor=2):
+    if display == NULL:
+        log.warn("Warning: cannot query XI2 version without an X11 display")
+        return 0, 0
     cdef int rmajor = major, rminor = minor
     cdef int rc = XIQueryVersion(display, &rmajor, &rminor)
     if rc == BadRequest:
@@ -603,6 +606,9 @@ cdef dict get_class_info(Display *display, XIAnyClassInfo *class_info):
 
 def init_xi2_events(parse=True) -> bool:
     cdef Display *display = get_display()
+    if display == NULL:
+        log.warn("Warning: cannot initialize XI2 events without an X11 display")
+        return False
     cdef int event_base = 0, error_base = 0
     if get_xi_version(display) < (2, 2):
         log.warn("Warning: XI2 extension is not available")
