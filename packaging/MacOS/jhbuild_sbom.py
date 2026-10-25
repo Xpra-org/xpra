@@ -233,6 +233,10 @@ def load_manifests() -> tuple[dict[str, str], dict[str, str], dict[str, set[str]
 
 
 def get_module_info(modules: Iterable[str]) -> dict[str, dict[str, str]]:
+    """
+    the moduleset data (URL and dependencies), with the version we have installed,
+    which is not the moduleset version if the module has not been rebuilt since it was updated
+    """
     try:
         output = jhbuild("info", *sorted(modules))
     except RuntimeError:
@@ -241,8 +245,9 @@ def get_module_info(modules: Iterable[str]) -> dict[str, dict[str, str]]:
         for module in sorted(modules):
             try:
                 output += jhbuild("info", module)
-            except RuntimeError as e:
-                warn(str(e))
+            except RuntimeError:
+                # ie: the bootstrap modules
+                warn(f"{module!r} is not found in the modulesets, only recording its installed version")
     info: dict[str, dict[str, str]] = {}
     current: dict[str, str] = {}
     for line in output.splitlines():
@@ -253,13 +258,12 @@ def get_module_info(modules: Iterable[str]) -> dict[str, dict[str, str]]:
         if key == "Name":
             current = info[value.strip()] = {}
         current[key] = value.strip()
-    # modules which are no longer in the modulesets, ie: the bootstrap modules,
-    # only have the version they were installed with, ie: "5.8.1-d41d8cd98f00b204e9800998ecf8427e":
+    # ie: "5.8.3-d41d8cd98f00b204e9800998ecf8427e"
     entries = get_installed_entries()
     for module in modules:
-        if module not in info and module in entries:
-            version = re.sub(r"-[0-9a-f]{32}$", "", entries[module].get("version", ""))
-            info[module] = {"Name": module, "Version": version}
+        if module in entries:
+            module_info = info.setdefault(module, {"Name": module})
+            module_info["Version"] = re.sub(r"-[0-9a-f]{32}$", "", entries[module].get("version", ""))
     return info
 
 
