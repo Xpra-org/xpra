@@ -142,7 +142,11 @@ class ProxyInstance:
                 file_large += ["send-file", "send-file-chunk"]
             self.server_protocol.large_packets += file_large
             self.client_protocol.large_packets += file_large
-        self.server_protocol.set_compression_level(int(self.session_options.get("compression_level", 0)))
+        # the client's requested level has already been capped by the proxy's own setting
+        # when its hello was processed, session options can only lower it further:
+        level = self.client_protocol.compression_level
+        level = min(level, sanitize_session_options(self.session_options).get("compression_level", level))
+        self.server_protocol.set_compression_level(max(0, level))
         self.server_protocol.enable_default_encoder()
 
         self.start_network_threads()

@@ -26,7 +26,7 @@ class Network(StubClientSubsystem):
 
     def __init__(self, client=None):
         StubClientSubsystem.__init__(self, client)
-        # legacy:
+        # set from the `-z` option in `init()`, sent to the server and applied once its caps are known:
         self.compression_level: int = 0
         # populated by `init()`/`parse_server_capabilities()`, but `compressed_wrapper()`
         # may be called earlier (eg: logging during startup), so default them here:
@@ -44,6 +44,7 @@ class Network(StubClientSubsystem):
         caps["network-state"] = True
         # the minimum version we are willing to talk to:
         caps["protocol-version"] = MIN_PROTOCOL_VERSION
+        caps["compression_level"] = self.compression_level
         return caps
 
     def parse_server_capabilities(self, caps: typedict) -> bool:
