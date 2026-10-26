@@ -128,6 +128,9 @@ def main(script_file: str, cmdline: list[str]) -> ExitValue:
         # (ie: the frozen `xpra_cmd.exe` wrapper on win32):
         import faulthandler
         faulthandler.enable(all_threads=True)
+    if WIN32 and envbool("XPRA_EXCHNDL", False):
+        from xpra.platform.win32.exchndl import init_exchndl
+        init_exchndl()
     ml = envint("XPRA_MEM_USAGE_LOGGER")
     if ml > 0:
         from xpra.util.pysystem import start_mem_watcher

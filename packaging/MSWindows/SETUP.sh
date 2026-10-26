@@ -28,6 +28,8 @@ $PACMAN ${XPKG}pinentry
 $PACMAN ${XPKG}qrencode
 #python GStreamer bindings:
 $PACMAN ${XPKG}gst-python
+#crash handler (exchndl.dll), loaded with XPRA_EXCHNDL=1:
+$PACMAN ${XPKG}drmingw
 #development tools and libs for building extra packages:
 $PACMAN base-devel ${XPKG}yasm ${XPKG}nasm gcc subversion rsync zip gtk-doc ${XPKG}cmake ${XPKG}gcc ${XPKG}pkgconf ${XPKG}libffi ${XPKG}python-pandocfilters
 #python extensions:

@@ -2849,6 +2849,8 @@ if WIN32:
         if printing_ENABLED:
             add_console_exe("xpra/platform/win32/pdfium.py",    "printer.ico",     "PDFIUM_Print")
             do_add_DLLs("", "pdfium")
+        # Dr. MinGW's crash handler, loaded with `XPRA_EXCHNDL=1`:
+        do_add_DLLs("", "exchndl", "mgwhelp")
         # extra tools:
         # noinspection PyPep8
         if win32_tools_ENABLED:

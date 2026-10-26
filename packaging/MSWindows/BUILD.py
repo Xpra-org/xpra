@@ -595,7 +595,8 @@ def fixup_dlls() -> None:
     find_delete(DIST, "*dll.a")
     debug("moving most DLLs to lib/")
     # but keep the core DLLs in the root (python, gcc, etc):
-    exclude = ("msvcrt", "libpython", "libgcc", "libwinpthread", "pdfium")
+    # (`exchndl` is loaded by name with ctypes, and it loads `mgwhelp` the same way)
+    exclude = ("msvcrt", "libpython", "libgcc", "libwinpthread", "pdfium", "exchndl", "mgwhelp")
     for dll in glob(f"{DIST}/*.dll"):
         if any(dll.find(excl) >= 0 for excl in exclude):
             continue
