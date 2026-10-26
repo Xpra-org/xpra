@@ -285,6 +285,24 @@ class ClipboardCoreTest(unittest.TestCase):
         self.assertFalse(packets[0][2]["greedy"])
         self.assertTrue(packets[1][2]["greedy"])
 
+    def test_remote_clipboard_translation(self):
+        # the client does not pass the list of selections,
+        # only the ones selected with `--local-clipboard` and `--remote-clipboard`:
+        helper = ClipboardHelper(lambda *_packet: None, **{
+            "clipboard.local": "CLIPBOARD",
+            "clipboard.remote": "PRIMARY",
+        })
+        self.assertEqual(helper.local_to_remote("CLIPBOARD"), "PRIMARY")
+        self.assertEqual(helper.remote_to_local("PRIMARY"), "CLIPBOARD")
+        self.assertIn("PRIMARY", helper.get_remote_selections())
+
+    def test_invalid_remote_clipboard(self):
+        helper = ClipboardHelper(lambda *_packet: None, **{
+            "clipboard.local": "CLIPBOARD",
+            "clipboard.remote": "INVALID",
+        })
+        self.assertEqual(helper.local_to_remote("CLIPBOARD"), "CLIPBOARD")
+
 
 def main():
     unittest.main()
