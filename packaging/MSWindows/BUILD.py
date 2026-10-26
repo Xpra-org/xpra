@@ -805,6 +805,7 @@ def add_manifests(light: bool) -> None:
     step("Adding EXE manifests")
     EXES = [
         "Bug_Report", "Xpra-Launcher", "Xpra", "Xpra_cmd", "Configure", "PDFIUM_Print",
+        "Xpra_Audio",
     ]
     if not light:
         EXES += [
@@ -821,7 +822,6 @@ def add_manifests(light: bool) -> None:
             "SystemTray_Test", "U2F_Tool", "Fido2_Tool",
             "SQLite_auth_tool", "SQL_auth_tool",
             "Encoding_info", "Path_info", "Feature_info", "NativeGUI_info",
-            "Xpra_Audio",
             "GStreamer_info", "Audio_Devices",
             "gst-launch-1.0", "gst-inspect-1.0",
             "Webcam_info", "Webcam_Test",
