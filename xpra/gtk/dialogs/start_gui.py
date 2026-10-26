@@ -12,7 +12,7 @@ from collections.abc import Callable
 
 from xpra.util.glib import register_os_signals
 from xpra.gtk.window import add_close_accel
-from xpra.gtk.widget import imagebutton, label, setfont
+from xpra.gtk.widget import imagebutton, label, setfont, switch
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.dialogs.common_style import (
     add_style_class, style_actions, style_body, style_button, style_window,
@@ -831,7 +831,7 @@ class SessionOptions(Gtk.Window):
         self.attach_label(_(text), _(tooltip_text), link)
         fn = option_name.replace("-", "_")
         value = getattr(self.options, fn)
-        cb = Gtk.Switch()
+        cb = switch()
         active = str(value).lower() not in FALSE_OPTIONS
         cb.set_active(active)
         al = xal(cb, xalign=0)

@@ -8,7 +8,7 @@ from xpra.util.parsing import str_to_bool, TRUE_OPTIONS
 from xpra.gtk.configure.common import ConfigureGUIWindow, run_gui
 from xpra.gtk.dialogs.common_style import add_style_class
 from xpra.util.config import update_config_attribute, with_config
-from xpra.gtk.widget import label as gtk_label
+from xpra.gtk.widget import label as gtk_label, switch as gtk_switch
 from xpra.util.i18n import _
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -97,7 +97,7 @@ class ConfigureGUI(ConfigureGUIWindow):
             description_label = plabel(description, tooltip, found, font="sans 10")
             add_style_class(description_label, "configure-description")
             grid.attach(description_label, 2, i, 1, 1)
-            switch = Gtk.Switch()
+            switch = gtk_switch()
             switch.set_sensitive(False)
             grid.attach(switch, 3, i, 1, 1)
             if found:

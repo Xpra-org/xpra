@@ -7,7 +7,7 @@ from xpra.gtk.configure.common import ConfigureGUIWindow, run_gui
 from xpra.gtk.dialogs.common_style import add_style_class
 from xpra.gtk.info import get_average_monitor_refresh_rate
 from xpra.util.config import update_config_attribute, with_config
-from xpra.gtk.widget import label as gtk_label
+from xpra.gtk.widget import label as gtk_label, switch as gtk_switch
 from xpra.util.i18n import _
 from xpra.os_util import gi_import
 from xpra.log import Logger
@@ -141,7 +141,7 @@ class ConfigureGUI(ConfigureGUIWindow):
         grid.set_row_homogeneous(True)
         grid.set_column_homogeneous(False)
         self.add_widget(grid)
-        switch = Gtk.Switch()
+        switch = gtk_switch()
         switch.set_state(config.encoding == "grayscale")
         switch.connect("state-set", self.toggle_grayscale)
         lbl = label("Grayscale Mode")
