@@ -31,33 +31,44 @@ class ZeroconfListener:
 
     def update_service(self, zeroconf, stype: str, name: str) -> None:
         log("update_service%s", (zeroconf, stype, name))
+        # the text record may have changed (ie: the session name),
+        # so replace the records we have with the updated ones:
+        info = zeroconf.get_service_info(stype, name)
+        log("updated service info: %s", info)
+        if info:
+            self.remove_service(zeroconf, stype, name)
+            self.add_info(info)
         self.mdns_update(name, stype)
 
     def remove_service(self, zeroconf, stype: str, name: str) -> None:
         log("remove_service%s", (zeroconf, stype, name))
         domain = "local"
-        self.mdns_remove(0, 0, name, stype, domain, 0)
+        # must match the interface and protocol values used in `add_info`:
+        self.mdns_remove(None, 0, name, stype, domain, 0)
 
     def add_service(self, zeroconf, stype: str, name: str) -> None:
         log("add_service%s", (zeroconf, stype, name))
         info = zeroconf.get_service_info(stype, name)
         log("service info: %s", info)
         if info:
-            interface = None
-            protocol = 0
-            name = info.name
-            stype = info.type
-            domain = "local"
-            server = info.server
-            try:
-                addresses = info.addresses
-            except AttributeError:
-                addresses = [info.address]
-            port = info.port
-            props = info.properties
-            for address in addresses:
-                saddress = socket.inet_ntoa(address)
-                self.mdns_add(interface, protocol, name, stype, domain, server, saddress, port, props)
+            self.add_info(info)
+
+    def add_info(self, info) -> None:
+        interface = None
+        protocol = 0
+        name = info.name
+        stype = info.type
+        domain = "local"
+        server = info.server
+        try:
+            addresses = info.addresses
+        except AttributeError:
+            addresses = [info.address]
+        port = info.port
+        props = info.properties
+        for address in addresses:
+            saddress = socket.inet_ntoa(address)
+            self.mdns_add(interface, protocol, name, stype, domain, server, saddress, port, props)
 
     def start(self) -> None:
         self.browser = ServiceBrowser(self.zeroconf, self.service_type, listener=self)
