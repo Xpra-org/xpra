@@ -207,27 +207,17 @@ class MmapClient(StubClientSubsystem):
         if not self.mmap_supported or not mmap_caps:
             self.clean_areas()
             return True
-        READ_PREFIXES = ("read", )
-        # older versions didn't use a prefix:
-        WRITE_PREFIXES = ("write", )
+        READ_PREFIX = "read"
+        WRITE_PREFIX = "write"
         # parse each area
-        for prefixes, area in (
-            (WRITE_PREFIXES, self.mmap_read_area),
-            (READ_PREFIXES, self.mmap_write_area),
+        for prefix, area in (
+            (WRITE_PREFIX, self.mmap_read_area),
+            (READ_PREFIX, self.mmap_write_area),
         ):
-            log(f"{prefixes} : {area}")
+            log(f"{prefix} : {area}")
             if not area:
                 continue
-            area_caps = {}
-            prefix = ""
-            for prefix in prefixes:
-                if prefix:
-                    area_caps = mmap_caps.dictget(prefix)
-                else:
-                    # older versions only have one mmap area:
-                    area_caps = mmap_caps
-                if area_caps:
-                    break
+            area_caps = mmap_caps.dictget(prefix)
             log(f"caps({prefix!r})={area_caps!r}")
             if area_caps:
                 try:
