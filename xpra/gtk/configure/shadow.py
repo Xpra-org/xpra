@@ -87,6 +87,8 @@ class ConfigureGUI(ConfigureGUIWindow):
             add_style_class(btn, "configure-option")
             self.vbox.add(btn)
             for detail in details[1:]:
+                if not detail:
+                    continue
                 lbl = label(detail)
                 lbl.set_halign(Gtk.Align.START)
                 lbl.set_margin_start(32)
