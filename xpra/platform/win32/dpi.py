@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 
-from ctypes import WinDLL, POINTER, byref, c_int, c_long, get_last_error
+from ctypes import POINTER, byref, get_last_error
 from ctypes.wintypes import BOOL, HANDLE, POINT
 
 from xpra.platform.win32.common import GetSystemMetrics, user32
@@ -31,16 +31,9 @@ DPI_AWARENESS_CONTEXT_SYSTEM_AWARE = -2
 DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE = -3
 DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4
 
-# `PROCESS_DPI_AWARENESS` enum (shcore.dll, win8.1+):
-PROCESS_DPI_UNAWARE = 0
-PROCESS_SYSTEM_DPI_AWARE = 1
-PROCESS_PER_MONITOR_DPI_AWARE = 2
-
 # `GetLastError` value returned when the awareness was already set
 # (ie: via the process manifest) and so cannot be changed at runtime:
 ERROR_ACCESS_DENIED = 5
-# `HRESULT` equivalent returned by `SetProcessDpiAwareness`:
-E_ACCESSDENIED = 0x80070005
 
 # debug-only mapping for `XPRA_DPI_AWARENESS`:
 DEBUG_CONTEXTS: dict[int, int] = {
@@ -75,48 +68,6 @@ def _set_dpi_awareness_context(context: int) -> bool:
     return False
 
 
-def _set_process_dpi_awareness(awareness: int) -> bool:
-    # shcore.dll (win8.1+): `SetProcessDpiAwareness`.
-    # reaches Per-Monitor v1 at best (no v2), used as a fallback:
-    try:
-        shcore = WinDLL("shcore", use_last_error=True)
-        fn = shcore.SetProcessDpiAwareness
-    except (OSError, AttributeError) as e:
-        log("SetProcessDpiAwareness is not available: %s", e)
-        return False
-    fn.argtypes = [c_int]
-    fn.restype = c_long  # HRESULT
-    hr = fn(awareness) & 0xFFFFFFFF
-    log("SetProcessDpiAwareness(%i)=%#x", awareness, hr)
-    # S_OK, or E_ACCESSDENIED if the awareness was already set:
-    return hr in (0, E_ACCESSDENIED)
-
-
-def _set_process_dpi_aware() -> bool:
-    # legacy user32 (vista+): system-dpi aware only, last-resort fallback:
-    try:
-        fn = user32.SetProcessDPIAware  # @UndefinedVariable
-    except AttributeError:
-        log("SetProcessDPIAware is not available")
-        return False
-    fn.restype = BOOL
-    r = bool(fn())
-    log("SetProcessDPIAware()=%s", r)
-    return r
-
-
-def _force_max_awareness() -> bool:
-    # try the fallback chain, strongest first.
-    # any success (including "already set via manifest") stops the chain:
-    if _set_dpi_awareness_context(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2):
-        return True
-    if _set_dpi_awareness_context(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE):
-        return True
-    if _set_process_dpi_awareness(PROCESS_PER_MONITOR_DPI_AWARE):
-        return True
-    return _set_process_dpi_aware()
-
-
 def init_dpi() -> None:
     log("init_dpi() DPI_AWARE=%s, DPI_AWARENESS=%s", DPI_AWARE, DPI_AWARENESS)
     if not DPI_AWARE:
@@ -133,13 +84,13 @@ def init_dpi() -> None:
         log.warn("Warning: forcing DPI awareness context %i via XPRA_DPI_AWARENESS", context)
         ok = _set_dpi_awareness_context(context)
     else:
-        # normal path: force the strongest awareness available so that the
+        # normal path: request Per-Monitor v2 (Windows 10 1703+) so that the
         # coordinates we receive are true physical pixels, irrespective of the
         # system's per-monitor scaling factors. this is a no-op (access-denied,
         # treated as success) when the manifest already declared `PerMonitorV2`:
-        ok = _force_max_awareness()
+        ok = _set_dpi_awareness_context(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
     if not ok:
-        log.warn("Warning: unable to set any DPI awareness level")
+        log.warn("Warning: unable to set DPI awareness context")
         log.warn(" pixel coordinates and monitor geometry may be virtualized by the OS")
     actual_w, actual_h = GetSystemMetrics(0), GetSystemMetrics(1)
     if actual_w != w or actual_h != h:
