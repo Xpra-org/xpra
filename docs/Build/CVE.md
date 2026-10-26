@@ -7,6 +7,7 @@ The [SBOM vulnerabilities workflow](../../.github/workflows/sbom.yml) scans the 
 using the CPE and PURL references maintained by MSYS2 ([`msys2_sbom.py`](../../packaging/MSWindows/msys2_sbom.py)),
 and fails when it finds a vulnerability which is not recorded below,
 unless it only affects one of the [ignored packages](#ignored-packages).
+Packages without any CPE or PURL reference cannot be matched, so their vulnerabilities are not tracked by these scans ([#5097](https://github.com/Xpra-org/xpra/issues/5097)).
 
 | Column | |
 |---|---|
