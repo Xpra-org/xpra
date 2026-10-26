@@ -10,6 +10,7 @@ from collections.abc import MutableSequence, Callable
 from ctypes.wintypes import HWND, BYTE, HICON, HDC, POINT, MSG
 from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER
 
+from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING
 from xpra.client.gui.window.backing import fire_paint_callbacks, get_backing_client_properties
 from xpra.client.gui.window.info import geom_str, hsc, get_backing_info
 from xpra.client.win32.gdi_backing import GDIBacking
@@ -29,6 +30,7 @@ from xpra.platform.win32.common import (
     ShowWindow, UpdateWindow,
     DestroyIcon, CREATESTRUCT,
     AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW, GetWindowRect, SendMessageW,
+    PostMessageW, ReleaseCapture,
     GetKeyState, ToUnicode, MapVirtualKeyW, GetKeyboardLayout,
     PeekMessageW, GetMessageTime,
     SetWindowTextW,
@@ -98,6 +100,26 @@ DECORATION_STYLE = win32con.WS_CAPTION | win32con.WS_THICKFRAME | win32con.WS_SY
 # treated like "skip-taskbar" on win32 (no clean equivalent to X11 dialog/utility
 # window-manager hints, so we just hide them from the taskbar/alt-tab list):
 WINDOW_TYPE_TOOLWINDOW = {"DIALOG", "UTILITY", "SPLASHSCREEN"}
+
+
+# the `WM_SYSCOMMAND` `wparam` that starts the native move / resize loop
+# for each `_NET_WM_MOVERESIZE` direction:
+# (`SC_SIZE` takes a `WMSZ_*` edge in its low bits, `SC_MOVE` + `HTCAPTION` drags with the mouse,
+# whilst plain `SC_SIZE` / `SC_MOVE` are driven by the keyboard)
+WMSZ_LEFT, WMSZ_RIGHT, WMSZ_TOP, WMSZ_TOPLEFT, WMSZ_TOPRIGHT, WMSZ_BOTTOM, WMSZ_BOTTOMLEFT, WMSZ_BOTTOMRIGHT = range(1, 9)
+MOVERESIZE_SYSCOMMAND: dict[int, int] = {
+    MoveResize.SIZE_TOPLEFT: win32con.SC_SIZE | WMSZ_TOPLEFT,
+    MoveResize.SIZE_TOP: win32con.SC_SIZE | WMSZ_TOP,
+    MoveResize.SIZE_TOPRIGHT: win32con.SC_SIZE | WMSZ_TOPRIGHT,
+    MoveResize.SIZE_RIGHT: win32con.SC_SIZE | WMSZ_RIGHT,
+    MoveResize.SIZE_BOTTOMRIGHT: win32con.SC_SIZE | WMSZ_BOTTOMRIGHT,
+    MoveResize.SIZE_BOTTOM: win32con.SC_SIZE | WMSZ_BOTTOM,
+    MoveResize.SIZE_BOTTOMLEFT: win32con.SC_SIZE | WMSZ_BOTTOMLEFT,
+    MoveResize.SIZE_LEFT: win32con.SC_SIZE | WMSZ_LEFT,
+    MoveResize.MOVE: win32con.SC_MOVE | win32con.HTCAPTION,
+    MoveResize.SIZE_KEYBOARD: win32con.SC_SIZE,
+    MoveResize.MOVE_KEYBOARD: win32con.SC_MOVE,
+}
 
 
 SIZE_SUBCOMMAND: dict[int, str] = {
@@ -948,6 +970,30 @@ class ClientWindow(GObject.GObject):
 
     def resize(self, w: int, h: int, resize_counter: int = 0) -> None:
         self.move_resize(self.x, self.y, w, h, resize_counter)
+
+    def initiate_moveresize(self, x_root: int, y_root: int, direction: int, button: int,
+                            source_indication: int) -> None:
+        geomlog("initiate_moveresize%s", (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction),
+                                          button, source_indication))
+        if not self.hwnd:
+            return
+        if direction == MoveResize.CANCEL:
+            # ends the native move / resize loop, if there is one:
+            SendMessageW(self.hwnd, win32con.WM_CANCELMODE, 0, 0)
+            return
+        command = MOVERESIZE_SYSCOMMAND.get(direction, 0)
+        if not command:
+            geomlog.warn("Warning: unsupported moveresize direction %r", direction)
+            return
+        # let the native loop take over the pointer,
+        # and use the current position since the server's coordinates may be stale:
+        ReleaseCapture()
+        pos = POINT()
+        GetCursorPos(byref(pos))
+        lparam = (pos.x & 0xffff) | ((pos.y & 0xffff) << 16)
+        # posted rather than sent, so the modal loop runs from the message pump
+        # and not from within this packet handler:
+        PostMessageW(self.hwnd, win32con.WM_SYSCOMMAND, command, lparam)
 
     def apply_size_constraints(self, lparam) -> None:
         info = cast(lparam, POINTER(MINMAXINFO)).contents
