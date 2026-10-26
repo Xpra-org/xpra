@@ -2821,11 +2821,8 @@ class WindowSource(WindowIconSource):
             log.error(" the client is not using the mmap area correctly, mmap is now disabled")
             self._mmap = None
             return ()
+        # the data we send is the index within the mmap area:
         client_options = {"rgb_format": pf, "chunks": mmap_data}
-        # the data we send is the index within the mmap area
-        # send the list of chunks as both:
-        # * 'chunks' metadata for newer versions
-        # * overloaded 'img_data' for older versions
         bdata = b""
         return (
             "mmap", bdata, client_options,
