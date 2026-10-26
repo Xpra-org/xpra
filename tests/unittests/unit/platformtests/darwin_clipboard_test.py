@@ -205,15 +205,16 @@ class DarwinClipboardTest(unittest.TestCase):
         proxy.got_token(("UTF8_STRING", "text/html", "image/png", "image/tiff", "custom"))
         self.assertEqual(self.requested_targets(packets), ("UTF8_STRING", "text/html", "image/png"))
 
-    def test_missing_formats_are_requested(self):
-        # the legacy packet format can only carry one target,
-        # the others must be requested:
+    def test_token_data_does_not_request_missing_formats(self):
+        # use the formats sent with the token without requesting the rest:
         proxy, packets = self.make_proxy()
         proxy.got_token(("UTF8_STRING", "text/html", "image/png"), {
             "UTF8_STRING": ("UTF8_STRING", 8, b"hello"),
+            "text/html": ("text/html", 8, b"<b>hello</b>"),
         })
-        self.assertEqual(self.requested_targets(packets), ("text/html", "image/png"))
+        self.assertEqual(self.requested_targets(packets), ())
         self.assertEqual(proxy.pasteboard.stringForType_("public.utf8-plain-text"), "hello")
+        self.assertEqual(proxy.pasteboard.stringForType_("public.html"), "<b>hello</b>")
 
     def test_greedy_token_carries_multiple_formats(self):
         proxy, _ = self.make_proxy()
@@ -221,8 +222,6 @@ class DarwinClipboardTest(unittest.TestCase):
             "UTF8_STRING": ("UTF8_STRING", 8, b"hello"),
             "text/html": ("text/html", 8, b"<b>hello</b>"),
         })
-        # (the legacy packet format can only carry one of them,
-        # so we validate the token data before it is encoded)
         tokens = []
         proxy.send_clipboard_token_handler = lambda proxy, token_data: tokens.append(token_data)
         proxy._greedy_client = True

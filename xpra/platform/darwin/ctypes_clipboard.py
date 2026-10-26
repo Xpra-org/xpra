@@ -369,10 +369,6 @@ class OSXClipboardProxy(ClipboardProxyCore):
             if self.target_data:
                 # the peer sent the data with the token: expose all of it at once
                 self.set_clipboard_data(self.target_data)
-                # the token can only carry the formats the peer chose to send
-                # (just one of them with the legacy packet format),
-                # so request the ones we are still missing:
-                self.request_targets(self.targets, self.target_data)
             elif self.targets:
                 self.request_targets(self.targets)
             else:
