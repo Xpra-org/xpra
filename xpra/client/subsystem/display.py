@@ -40,9 +40,6 @@ workspacelog = Logger("client", "workspace")
 scalinglog = Logger("scaling")
 
 MONITOR_CHANGE_REINIT = envbool("XPRA_MONITOR_CHANGE_REINIT", WIN32 or OSX)
-# legacy: send our ICC profile to the server so that it applies it to the vfb.
-# the server now declares the colourspace it renders into instead, see `server_colourspace`.
-SYNC_ICC: bool = envbool("XPRA_SYNC_ICC", False)
 
 
 class DisplayClient(StubClientSubsystem):
@@ -352,7 +349,6 @@ class DisplayClient(StubClientSubsystem):
         # now that we have the server's screen info, allow scale changes:
         self.scale_change_embargo = 0
         self.set_max_packet_size()
-        self.send_icc_data()
 
     def verify_display_size(self):
         log("verify_display_size()")
@@ -381,19 +377,6 @@ class DisplayClient(StubClientSubsystem):
                 log.warn(" server: %sx%s vs client: %sx%s", avail_w, avail_h, self.cx(root_w), self.cy(root_h))
                 log.warn(" you may see strange behavior,")
                 log.warn(" please see https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Xdummy.md")
-
-    def send_icc_data(self) -> None:
-        if SYNC_ICC:
-            # it is now safe to send the colorspace data if we have any:
-            icc = self.get_icc_info()
-            dicc = self.get_display_icc_info()
-            if icc or dicc:
-                self.send(DISPLAY_CONFIGURE, {
-                    "icc": {
-                        "global": icc,
-                        "display": dicc,
-                    },
-                })
 
     # noinspection PyUnreachableCode
     def set_max_packet_size(self) -> None:
