@@ -199,6 +199,11 @@ def get_logger() -> Logger:
 
 def main(script_file: str, cmdline: list[str]) -> ExitValue:
     save_env()
+    if envbool("XPRA_FAULTHANDLER", False):
+        # same as `python -X faulthandler`, for when we can't pass interpreter flags
+        # (ie: the frozen `xpra_cmd.exe` wrapper on win32):
+        import faulthandler
+        faulthandler.enable(all_threads=True)
     ml = envint("XPRA_MEM_USAGE_LOGGER")
     if ml > 0:
         from xpra.util.pysystem import start_mem_watcher
