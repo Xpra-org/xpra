@@ -975,6 +975,7 @@ class ServerCore:
     def get_mdns_info(self) -> Dict[str,Any]:
         mdns_info = {
             "display"  : self.display_name,
+            "hostname" : socket.gethostname(),
             "username" : get_username(),
             "uuid"     : self.uuid,
             "platform" : sys.platform,

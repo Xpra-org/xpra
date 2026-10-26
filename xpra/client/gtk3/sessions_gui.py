@@ -279,6 +279,8 @@ class SessionsGUI(Gtk.Window):
             log("populate_table: record[%i]=%s", i, record)
             uuid = td.strget("uuid", "")
             display = td.strget("display", "")
+            # Prefer the real hostname over the per-service mDNS name.
+            host = td.strget("hostname") or host
             if domain=="local" and host.endswith(".local"):
                 host = host[:-len(".local")]
             if uuid:
