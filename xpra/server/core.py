@@ -401,7 +401,8 @@ class ServerCore(GLibServer):
         if LOG_HELLO:
             netlog.info(f"hello from {proto}:")
             print_nested_dict(c, print_fn=netlog.info)
-        proto.set_compression_level(c.intget("compression_level", self.compression_level))
+        # the client can lower the compression level, but not raise it above ours (CPU cost):
+        proto.set_compression_level(max(0, min(self.compression_level, c.intget("compression_level", self.compression_level))))
         proto.enable_compressor_from_caps(c)
         if not proto.enable_encoder_from_caps(c):
             # this should never happen:
