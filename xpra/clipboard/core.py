@@ -61,10 +61,10 @@ class ClipboardProtocolHelperCore:
         self._clipboard_outstanding_requests: dict[int, tuple[int, str, str]] = {}
         self._local_to_remote: dict[str, str] = {}
         self._remote_to_local: dict[str, str] = {}
-        self.init_translation(kwargs)
+        selections = get_local_selections()
+        self.init_translation(kwargs, selections)
         self._want_targets: tuple[str, ...] = ()
         self.init_packet_handlers()
-        selections = get_local_selections()
         self.init_proxies(d.strtupleget("clipboards.local", selections))
         self.remote_clipboards = d.strtupleget("clipboards.remote", selections)
         self.local_want_targets = tuple(selections) if envbool("XPRA_CLIPBOARD_WANT_TARGETS") else ()
@@ -111,11 +111,17 @@ class ClipboardProtocolHelperCore:
         for selection, proxy in self._clipboard_proxies.items():
             proxy.set_want_targets(self.proxy_want_targets(selection))
 
-    def init_translation(self, kwargs: dict) -> None:
+    def init_translation(self, kwargs: dict, local_selections: Sequence[str]) -> None:
+        # the selections we can translate from and to, unless specified:
+        defaults = {
+            "local": local_selections,
+            "remote": ALL_CLIPBOARDS,
+        }
+
         def getselection(name: str) -> str:
             v = kwargs.get(f"clipboard.{name}")  # ie: clipboard.remote
             env_value = os.environ.get(f"XPRA_TRANSLATEDCLIPBOARD_{name.upper()}_SELECTION")
-            selections = kwargs.get(f"clipboards.{name}", ())  # ie: clipboards.remote
+            selections = kwargs.get(f"clipboards.{name}", defaults[name])  # ie: clipboards.remote
             if not selections:
                 return ""
             for x in (env_value, v):
