@@ -35,6 +35,48 @@ test results from both sides can reveal where a problem originates.
 - [Keyboard debugging](Features/Keyboard.md)
 - [Picture encodings](Usage/Encodings.md)
 
+## Python stack traces on crashes
+
+Set `XPRA_FAULTHANDLER=1` before starting Xpra to enable Python's fault handler.
+It dumps Python stack traces for all threads to standard error when the process
+crashes:
+
+```shell
+XPRA_FAULTHANDLER=1 xpra start :20 --no-daemon
+```
+
+This is equivalent to Python's `-X faulthandler` option and also works with
+frozen Windows executables such as `xpra_cmd.exe`, where interpreter flags
+cannot be passed directly.
+
+## Crash reports on Windows
+
+Set `XPRA_EXCHNDL=1` to enable Dr. MinGW's crash handler. It writes native stack
+traces for every thread to a `.RPT` file when the process crashes. You can
+enable it alongside Python's fault handler in PowerShell:
+
+```powershell
+$env:XPRA_FAULTHANDLER = "1"
+$env:XPRA_EXCHNDL = "1"
+.\xpra_cmd.exe attach tcp://SERVER:14500 2> xpra-crash.log
+```
+
+Replace `SERVER:14500` with your server address. Python crash traces are
+captured in `xpra-crash.log`. Native crash reports are written to the system
+temporary directory as `<executable-name>-<PID>.RPT`, for example
+`xpra_cmd-1234.RPT`. Xpra prints the report path at startup.
+
+To choose a different report path, set `XPRA_EXCHNDL_REPORT` before launching
+Xpra:
+
+```powershell
+$env:XPRA_EXCHNDL_REPORT = "$env:TEMP\xpra-crash.RPT"
+```
+
+The Windows build includes the required `exchndl.dll` and `mgwhelp.dll` beside
+the executable. If Xpra warns that it failed to load `exchndl.dll`, check that
+both DLLs are available.
+
 ## Debugging crashes with GDB
 
 When an Xpra process crashes with “core dumped,” use GDB to obtain a backtrace.
