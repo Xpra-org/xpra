@@ -197,6 +197,8 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
                 self.may_notify(title, message)
                 self.speaker_allowed = False
                 self.microphone_allowed = False
+                self.speaker_enabled = False
+                self.microphone_enabled = False
                 return properties
             try:
                 from xpra.audio import common
