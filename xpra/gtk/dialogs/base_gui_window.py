@@ -192,6 +192,7 @@ class BaseGUIWindow(Gtk.Window):
                     pass
                 else:
                     add_gui("Configure", "features", ConfigureGUI)
+            self.add_headerbar_buttons(add_hb_button)
             hb.show_all()
 
         def rs(rect) -> tuple[int, int]:
@@ -227,6 +228,9 @@ class BaseGUIWindow(Gtk.Window):
 
         add_buttons()
         self.set_titlebar(hb)
+
+    def add_headerbar_buttons(self, add_hb_button: Callable) -> None:
+        """ subclasses can add their own buttons to the header bar """
 
     def ib(self, title="", icon_name="browse.png", tooltip="", callback: Callable = noop, sensitive=True) -> Gtk.Button:
         label_font = "" if self.style_class else "sans 16"
