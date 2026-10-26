@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.gtk.pixbuf import get_icon_pixbuf
-from xpra.util.parsing import str_to_bool
+from xpra.util.parsing import str_to_bool, TRUE_OPTIONS
 from xpra.gtk.configure.common import ConfigureGUIWindow, run_gui
 from xpra.gtk.dialogs.common_style import add_style_class
 from xpra.util.config import update_config_attribute, with_config
@@ -52,6 +52,7 @@ class ConfigureGUI(ConfigureGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
         self.subsystem_switch: dict[str, Gtk.Switch] = {}
+        self.subsystem_values: dict[str, str] = {}
         super().__init__(
             _("Configure Xpra's Features"),
             "features.png",
@@ -111,16 +112,20 @@ class ConfigureGUI(ConfigureGUIWindow):
         for subsystem, switch in self.subsystem_switch.items():
             value = getattr(defaults, subsystem.replace("-", "_"), None)
             log(f"configure_switches: {subsystem}={value}")
-            enabled = str_to_bool(value, False)
+            # values like `auto` or `clipboard=all` are not "off":
+            enabled = value is not None and str_to_bool(value, True)
+            if enabled and str(value).lower() not in TRUE_OPTIONS:
+                # restore this value rather than `True` when the subsystem is turned back on:
+                self.subsystem_values[subsystem] = value
             switch.set_sensitive(True)
             switch.set_state(enabled)
             switch.connect("state-set", self.toggle_subsystem, subsystem)
         return False
 
-    @staticmethod
-    def toggle_subsystem(_widget, state, subsystem: str) -> None:
-        log("toggle_subsystem %s=%s", subsystem, bool(state))
-        update_config_attribute(subsystem, bool(state))
+    def toggle_subsystem(self, _widget, state, subsystem: str) -> None:
+        value = self.subsystem_values.get(subsystem, True) if state else False
+        log("toggle_subsystem %s=%s", subsystem, value)
+        update_config_attribute(subsystem, value)
 
 
 def main(_args) -> int:
