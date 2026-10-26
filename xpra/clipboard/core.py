@@ -18,7 +18,10 @@ from xpra.os_util import POSIX, get_hex_uuid
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, hexstr
 from xpra.util.env import envint, envbool
-from xpra.clipboard.common import get_format_size, sizeof_long, sizeof_short, compile_filters, get_local_selections
+from xpra.clipboard.common import (
+    get_format_size, sizeof_long, sizeof_short, compile_filters, get_local_selections,
+    ALL_CLIPBOARDS,
+)
 from xpra.clipboard.targets import (
     HTML_TARGETS,
     PLAIN_TEXT_TARGETS,
@@ -95,11 +98,11 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         self._clipboard_origins: dict[str, deque[str]] = {}
         self._local_to_remote: dict[str, str] = {}
         self._remote_to_local: dict[str, str] = {}
-        self.init_translation(kwargs)
+        selections = get_local_selections(d.boolget("all-selections"))
+        self.init_translation(kwargs, selections)
         self._want_targets: tuple[str, ...] = ()
         self._greedy: tuple[str, ...] = ()
         self.init_packet_handlers()
-        selections = get_local_selections(d.boolget("all-selections"))
         self.init_proxies(d.strtupleget("clipboards.local", selections))
         self.remote_clipboards = d.strtupleget("clipboards.remote", selections)
         self.local_want_targets = tuple(selections) if envbool("XPRA_CLIPBOARD_WANT_TARGETS") else ()
@@ -154,11 +157,17 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         for selection, proxy in self._clipboard_proxies.items():
             proxy.set_want_targets(self.proxy_want_targets(selection))
 
-    def init_translation(self, kwargs: dict) -> None:
+    def init_translation(self, kwargs: dict, local_selections: Sequence[str]) -> None:
+        # the selections we can translate from and to, unless specified:
+        defaults = {
+            "local": local_selections,
+            "remote": ALL_CLIPBOARDS,
+        }
+
         def getselection(name: str) -> str:
             v = kwargs.get(f"clipboard.{name}")  # ie: clipboard.remote
             env_value = os.environ.get(f"XPRA_TRANSLATEDCLIPBOARD_{name.upper()}_SELECTION")
-            selections = kwargs.get(f"clipboards.{name}", ())  # ie: clipboards.remote
+            selections = kwargs.get(f"clipboards.{name}", defaults[name])  # ie: clipboards.remote
             if not selections:
                 return ""
             for x in (env_value, v):
