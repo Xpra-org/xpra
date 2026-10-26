@@ -7,6 +7,7 @@
 
 import os
 import sys
+import socket
 from typing import Any
 from collections.abc import Sequence, Callable
 
@@ -86,7 +87,6 @@ class MdnsServer(StubSubsystem):
                     if not iport:
                         continue
                     hosts = ["0.0.0.0"]
-                    import socket
                     if socket.has_ipv6:
                         hosts.append("::")
                 else:
@@ -135,6 +135,7 @@ class MdnsServer(StubSubsystem):
         mdns_info = self.extra_info.copy()
         mdns_info |= {
             "display": self.display,
+            "hostname": socket.gethostname(),
             "username": get_username(),
             "uuid": self.get_subsystem("id").uuid,
             "platform": sys.platform,
