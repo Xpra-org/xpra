@@ -257,7 +257,7 @@ setup_options = {
     "data_files"        : data_files,
     "py_modules"        : modules,
     "project_urls"      : {
-        "Documentation" : "https://github.com/Xpra-org/xpra/tree/master/docs",
+        "Documentation" : "https://xpra-org.github.io/xpra/",
         "Funding"       : "https://github.com/sponsors/totaam",
         "Source"        : "https://github.com/Xpra-org/xpra",
     },

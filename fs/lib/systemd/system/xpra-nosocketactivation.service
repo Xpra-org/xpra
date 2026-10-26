@@ -1,7 +1,7 @@
 [Unit]
 Description=Xpra System Server
 Wants=avahi-daemon.socket
-Documentation=https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Service.md man:xpra
+Documentation=https://xpra-org.github.io/xpra/Usage/Service.html man:xpra
 After=network.target
 
 [Service]

@@ -1001,7 +1001,7 @@ class FeaturesWindow(SessionOptions):
         super().__init__("Session Features", "features.png", *args)
 
     def populate_form(self) -> None:
-        btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/README.md",
+        btn = link_btn("https://xpra-org.github.io/xpra/Features/",
                        "Open Features Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
         self.bool_cb("Splash Screen", "splash", "Show a splash screen during startup")
@@ -1019,16 +1019,16 @@ class FeaturesWindow(SessionOptions):
             "force": ("force",),
         })
         self.sep()
-        # "https://github.com/Xpra-org/xpra/blob/master/docs/Features/Notification.md")
+        # "https://xpra-org.github.io/xpra/Features/Notifications.html")
         self.bool_cb("Xpra's System Tray", "tray")
         self.bool_cb("Forward System Trays", "system-tray")
         self.bool_cb("Notifications", "notifications")
-        # "https://github.com/Xpra-org/xpra/blob/master/docs/Features/System-Tray.md")
+        # "https://xpra-org.github.io/xpra/Features/System-Tray.html")
         # self.bool_cb("Cursors", "cursors")
         # self.bool_cb("Bell", "bell")
         self.bool_cb("Modal Windows", "modal-windows")
         self.sep()
-        # "https://github.com/Xpra-org/xpra/blob/master/docs/Features/Image-Depth.md")
+        # "https://xpra-org.github.io/xpra/Features/Image-Depth.html")
         self.combo("Mouse Wheel", "mousewheel", {
             "on": "on",
             "no": "disabled",
@@ -1053,10 +1053,10 @@ class NetworkWindow(SessionOptions):
         super().__init__("Network Options", "connect.png", *args)
 
     def populate_form(self) -> None:
-        btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Network/README.md",
+        btn = link_btn("https://xpra-org.github.io/xpra/Network/",
                        "Open Network Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
-        # "https://github.com/Xpra-org/xpra/blob/master/docs/Network/Multicast-DNS.md")
+        # "https://xpra-org.github.io/xpra/Network/Multicast-DNS.html")
         # `sync` is a client-side option which implies sharing:
         self.radio_cb("Session Sharing", "sharing", options={
             "yes": tuple(TRUE_OPTIONS) + ("sync", ),
@@ -1094,7 +1094,7 @@ class DisplayWindow(SessionOptions):
         super().__init__("Display Settings", "display.png", *args)
 
     def populate_form(self) -> None:
-        btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Display.md",
+        btn = link_btn("https://xpra-org.github.io/xpra/Features/Display.html",
                        "Open Display Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
@@ -1144,7 +1144,7 @@ class EncodingWindow(SessionOptions):
         super().__init__("Picture Encoding", "encoding.png", *args)
 
     def populate_form(self) -> None:
-        btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Encodings.md",
+        btn = link_btn("https://xpra-org.github.io/xpra/Usage/Encodings.html",
                        "Open Encodings Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
@@ -1183,7 +1183,7 @@ class KeyboardWindow(SessionOptions):
         super().__init__("Keyboard Options", "keyboard.png", *args)
 
     def populate_form(self) -> None:
-        btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Keyboard.md",
+        btn = link_btn("https://xpra-org.github.io/xpra/Features/Keyboard.html",
                        "Open Keyboard Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
@@ -1226,7 +1226,7 @@ class AudioWindow(SessionOptions):
         super().__init__("Audio Options", "speaker.png", *args)
 
     def populate_form(self) -> None:
-        btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Audio.md",
+        btn = link_btn("https://xpra-org.github.io/xpra/Features/Audio.html",
                        "Open Audio Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
@@ -1251,7 +1251,7 @@ class WebcamWindow(SessionOptions):
         super().__init__("Webcam", "webcam.png", *args)
 
     def populate_form(self) -> None:
-        btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Webcam.md",
+        btn = link_btn("https://xpra-org.github.io/xpra/Features/Webcam.html",
                        "Open Webcam Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 
@@ -1269,7 +1269,7 @@ class PrintingWindow(SessionOptions):
         super().__init__("Printer", "printer.png", *args)
 
     def populate_form(self) -> None:
-        btn = link_btn("https://github.com/Xpra-org/xpra/blob/master/docs/Features/Printing.md",
+        btn = link_btn("https://xpra-org.github.io/xpra/Features/Printing.html",
                        "Open Printing Documentation", icon_name="")
         self.vbox.pack_start(btn, expand=True, fill=False, padding=20)
 

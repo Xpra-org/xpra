@@ -83,4 +83,4 @@ def warn_blocked(exc: BaseException) -> None:
     log = Logger("seccomp")
     log.warn("Warning: the seccomp filter of the %r thread has probably blocked a system call", name)
     log.warn(" some features may not work, use '--seccomp=no' to disable the filters")
-    log.warn(" see https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Seccomp.md")
+    log.warn(" see https://xpra-org.github.io/xpra/Usage/Seccomp.html")

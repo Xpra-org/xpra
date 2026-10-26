@@ -376,7 +376,7 @@ class DisplayClient(StubClientSubsystem):
                 log.warn("Server's virtual screen is too small")
                 log.warn(" server: %sx%s vs client: %sx%s", avail_w, avail_h, self.cx(root_w), self.cy(root_h))
                 log.warn(" you may see strange behavior,")
-                log.warn(" please see https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Xdummy.md")
+                log.warn(" please see https://xpra-org.github.io/xpra/Usage/Xdummy.html")
 
     # noinspection PyUnreachableCode
     def set_max_packet_size(self) -> None:

@@ -74,7 +74,7 @@ class ConfigureGUI(ConfigureGUIWindow):
 
     def do_populate(self, config) -> bool:
         self.clear_vbox()
-        url = "https://github.com/Xpra-org/xpra/blob/master/docs/Usage/Encodings.md#tuning"
+        url = "https://xpra-org.github.io/xpra/Usage/Encodings.html#tuning"
         self.add_text_lines((
             _("Please read <a href='%s'>the documentation</a>.") % url,
         ))

@@ -54,7 +54,7 @@ please send a request to [security@xpra.org](mailto:security@xpra.org)
 
 ## Bundled libraries
 The MS Windows builds are scanned every day for known vulnerabilities in the libraries they bundle,
-see [CVEs](https://github.com/Xpra-org/xpra/blob/master/docs/Build/CVE.md) for every vulnerability found and whether it applies.
+see [CVEs](https://xpra-org.github.io/xpra/Build/CVE.html) for every vulnerability found and whether it applies.
 
 
 ## False positives
