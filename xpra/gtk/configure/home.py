@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Callable
 from importlib import import_module
 from importlib.util import find_spec
 
@@ -28,7 +29,7 @@ class HomeGUI(ConfigureGUIWindow):
             "toolbox.png",
             wm_class=("xpra-configure-gui", "Xpra Configure GUI"),
             default_size=(520, 600),
-            header_bar=(False, False),
+            header_bar=(True, False),
         )
         self.dialogs: dict[str, BaseGUIWindow] = {}
 
@@ -42,22 +43,26 @@ class HomeGUI(ConfigureGUIWindow):
         self.sub("Features", "features.png", "Enable or disable feature groups", "features")
         self.sub("Settings", "gears.png", "Configure specific settings", "settings")
         self.sub("Picture compression", "encoding.png", "Encodings, speed and quality", "encodings", "xpra.codecs")
-        self.sub("Debugging", "bugs.png", "Configure debug logging", "debug")
-
         self.sub("Shadow Server", "shadow.png", "Configure the Shadow Server", "shadow", "xpra.server")
         if POSIX and not OSX:
             self.sub("Virtual Framebuffer", "monitor.png", "Configure the vfb command", "vfb", "xpra.x11")
         # self.sub("OpenGL acceleration", "opengl.png", "Test and validate OpenGL renderer", "opengl")
 
+    def add_headerbar_buttons(self, add_hb_button: Callable) -> None:
+        add_hb_button(_("Configure debug logging"), "bugs", lambda _btn: self.show_dialog("debug"))
+
+    def show_dialog(self, configure: str) -> None:
+        dialog = self.dialogs.get(configure)
+        if dialog is None:
+            mod = import_module(f"xpra.gtk.configure.{configure}")
+            dialog = mod.ConfigureGUI(self)
+            self.dialogs[configure] = dialog
+        dialog.show()
+
     def sub(self, title="", icon_name="browse.png", tooltip="", configure: str = "", req_module="xpra") -> None:
 
         def callback(_btn) -> None:
-            dialog = self.dialogs.get(configure)
-            if dialog is None:
-                mod = import_module(f"xpra.gtk.configure.{configure}")
-                dialog = mod.ConfigureGUI(self)
-                self.dialogs[configure] = dialog
-            dialog.show()
+            self.show_dialog(configure)
 
         sensitive = not req_module or bool(find_spec(req_module))
         if not sensitive:
