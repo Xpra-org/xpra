@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import win32con
+from threading import Lock
 from ctypes import (
     c_void_p, byref, addressof, sizeof, WinError, get_last_error, memmove, create_string_buffer,
 )
@@ -40,6 +41,10 @@ class GDIBacking(WindowBackingBase):
         self.hwnd = hwnd
         self.size = (width, height)
         self.render_size = (width, height)
+        # the decode thread writes straight into the DIB section's pixels,
+        # while the UI thread may replace or free it (`_resize_backing`, `close`):
+        # this lock keeps `bitmap`, `pixels` and `size` consistent for the writers
+        self._pixels_lock = Lock()
         self.pixels = c_void_p()
         self.bitmap = self.create_bitmap(width, height)
         # the superclass requires this attribute to be set to enable rendering:
@@ -95,6 +100,13 @@ class GDIBacking(WindowBackingBase):
             self._resize_backing(bw, bh)
 
     def _resize_backing(self, width: int, height: int) -> None:
+        # `create_bitmap` updates `self.pixels` before `self.size` is,
+        # and the old pixels are freed with the old bitmap:
+        # the decode thread must not see any of this half done
+        with self._pixels_lock:
+            self._do_resize_backing(width, height)
+
+    def _do_resize_backing(self, width: int, height: int) -> None:
         bitmap = self.bitmap
         if not bitmap:
             raise RuntimeError("GDI backing has already been freed")
@@ -151,10 +163,6 @@ class GDIBacking(WindowBackingBase):
         log("do_paint_rgb%s", (context, encoding, rgb_format, type(img_data),
                                x, y, width, height, render_width, render_height, rowstride,
                                options, callbacks))
-        if not self.bitmap:
-            fire_paint_callbacks(callbacks, False, "window has already been destroyed")
-            return
-
         if len(rgb_format) != 4:
             if rgb_format == "RGB":
                 from xpra.codecs.argb.argb import rgb_to_bgrx
@@ -180,10 +188,6 @@ class GDIBacking(WindowBackingBase):
             from xpra.codecs.argb.argb import rgba_to_bgra
             img_data = rgba_to_bgra(img_data)
 
-        bw, bh = self.size
-        bitmap_stride = bw * 4
-        offset = y * bitmap_stride + x * 4
-        dst = self.pixels.value + offset
         if rowstride < width * 4:
             fire_paint_callbacks(callbacks, False, f"invalid rowstride {rowstride} for {width}x{height} {rgb_format}")
             return
@@ -192,8 +196,6 @@ class GDIBacking(WindowBackingBase):
         # (`ctypes.from_buffer` cannot be used here: it requires a writeable buffer,
         # and the pixel data is often read-only - `bytes`, or a `memoryview` of one)
         with BufferContext(img_data) as bc:
-            src = int(bc)
-            log(f"draw_region {offset=} {src=} - {dst=} {bitmap_stride=} {rowstride=} buffer size={len(bc)}")
             # the pixel data comes from the server, so make sure that the buffer
             # really does contain the pixels we are about to copy from it:
             # (the last row only needs `width * 4` bytes)
@@ -203,15 +205,39 @@ class GDIBacking(WindowBackingBase):
                                      f"not enough pixel data: {len(bc)} bytes, expected {needed}"
                                      f" for {width}x{height} {rgb_format} with {rowstride=}")
                 return
-            if rowstride == bitmap_stride and x == 0 and y >= 0 and width == bw and y + height <= bh:
-                # happy path: copy all at once
-                memmove(dst, src, rowstride * height)
-            else:
-                # slow path: copy each row separately
-                rowlen = min(width, bw - x) * 4
-                for i in range(min(height, bh - y)):
-                    memmove(dst + i * bitmap_stride, src + i * rowstride, rowlen)
+            with self._pixels_lock:
+                if not self.bitmap:
+                    fire_paint_callbacks(callbacks, False, "window has already been destroyed")
+                    return
+                self.copy_pixels(int(bc), x, y, width, height, rowstride)
         fire_paint_callbacks(callbacks)
+
+    def copy_pixels(self, src: int, x: int, y: int, width: int, height: int, rowstride: int) -> None:
+        """
+        Copy the pixels at `src` into the DIB section, at `(x, y)`.
+        The rectangle is clipped to the backing: it may not fit any more if the window
+        was resized since the server encoded it.
+        Must be called with `_pixels_lock` held.
+        """
+        bw, bh = self.size
+        bitmap_stride = bw * 4
+        x1, y1 = max(x, 0), max(y, 0)
+        x2, y2 = min(x + width, bw), min(y + height, bh)
+        if x2 <= x1 or y2 <= y1:
+            log("draw_region %s is outside the backing %s", (x, y, width, height), self.size)
+            return
+        src += (y1 - y) * rowstride + (x1 - x) * 4
+        dst = self.pixels.value + y1 * bitmap_stride + x1 * 4
+        rowlen = (x2 - x1) * 4
+        rows = y2 - y1
+        log(f"draw_region {src=} - {dst=} {bitmap_stride=} {rowstride=} {rowlen=} {rows=}")
+        if rowstride == rowlen == bitmap_stride:
+            # happy path: copy all at once
+            memmove(dst, src, rowstride * rows)
+        else:
+            # slow path: copy each row separately
+            for i in range(rows):
+                memmove(dst + i * bitmap_stride, src + i * rowstride, rowlen)
 
     def paint_scroll(self, img_data, options: typedict, callbacks: PaintCallbacks) -> None:
         # newer servers use an option,
@@ -269,6 +295,10 @@ class GDIBacking(WindowBackingBase):
 
     def do_scroll_paints(self, context, scrolls, callbacks: PaintCallbacks) -> None:
         log("do_scroll_paints%s", (context, scrolls, callbacks))
+        with self._pixels_lock:
+            self._do_scroll_paints(scrolls, callbacks)
+
+    def _do_scroll_paints(self, scrolls, callbacks: PaintCallbacks) -> None:
         if not self.bitmap:
             fire_paint_callbacks(callbacks, False, "window has already been destroyed")
             return
@@ -305,7 +335,8 @@ class GDIBacking(WindowBackingBase):
         fire_paint_callbacks(callbacks)
 
     def close(self) -> None:
-        if bitmap := self.bitmap:
-            self.bitmap = 0
-            DeleteObject(bitmap)
+        with self._pixels_lock:
+            if bitmap := self.bitmap:
+                self.bitmap = 0
+                DeleteObject(bitmap)
         super().close()
