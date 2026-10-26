@@ -187,7 +187,7 @@ class BaseGUIWindow(Gtk.Window):
                     add_gui("Toolbox", "toolbox", ToolboxGUI)
             if configure:
                 try:
-                    from xpra.gtk.configure.main import ConfigureGUI
+                    from xpra.gtk.configure.home import HomeGUI as ConfigureGUI
                 except ImportError:
                     pass
                 else:
