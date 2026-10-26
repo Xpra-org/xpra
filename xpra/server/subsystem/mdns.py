@@ -5,7 +5,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import sys
 import socket
 from typing import Any
@@ -25,7 +24,7 @@ class MdnsServer(StubSubsystem):
     """
         Publishes sockets using mDNS
     """
-    __slots__ = ("display", "enabled", "extra_info", "publishers")
+    __slots__ = ("enabled", "extra_info", "publishers")
     PREFIX = "mdns"
 
     def __init__(self, server=None):
@@ -33,11 +32,16 @@ class MdnsServer(StubSubsystem):
         self.enabled = False
         self.publishers = {}
         self.extra_info = {}
-        self.display = os.environ.get("DISPLAY", "")
 
     def init(self, opts) -> None:
         self.enabled = opts.mdns
         log("ServerCore.init(..) mdns=%s", self.enabled)
+
+    def get_display_name(self) -> str:
+        # the display may only be started after this subsystem is created,
+        # so query the display subsystem when we need it:
+        display = self.get_subsystem("display")
+        return display.get_display_name() if display else ""
 
     def idle_work(self, fn: Callable[[], None]) -> None:
         """
@@ -100,13 +104,14 @@ class MdnsServer(StubSubsystem):
         if not mdns_recs:
             return
         mdns_info = self.get_mdns_info()
+        display_name = mdns_info["display"]
         self.publishers = {}
         log(f"mdns_publish() will publish: {mdns_recs=}")
         from xpra.net.mdns.util import mdns_publish
         for mdns_mode, listen_on in mdns_recs.items():
             info = dict(mdns_info)
             info["mode"] = mdns_mode
-            aps = mdns_publish(self.display, listen_on, info)
+            aps = mdns_publish(display_name, listen_on, info)
             for ap in aps:
                 ap.start()
                 self.publishers[ap] = mdns_mode
@@ -134,7 +139,7 @@ class MdnsServer(StubSubsystem):
     def get_mdns_info(self) -> dict[str, Any]:
         mdns_info = self.extra_info.copy()
         mdns_info |= {
-            "display": self.display,
+            "display": self.get_display_name(),
             "hostname": socket.gethostname(),
             "username": get_username(),
             "uuid": self.get_subsystem("id").uuid,

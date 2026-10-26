@@ -27,6 +27,24 @@ class TestMdnsServer(unittest.TestCase):
 
         self.assertEqual(info["vsock"], "7:10000")
         self.assertEqual(info["uuid"], "uuid-1")
+        self.assertEqual(info["display"], "")
+
+    def test_get_mdns_info_display_from_display_subsystem(self):
+        display = SimpleNamespace(name="")
+        server = SimpleNamespace(
+            session_type="seamless",
+            session_name="",
+            subsystems={
+                "id": SimpleNamespace(uuid="uuid-1"),
+                "display": SimpleNamespace(get_display_name=lambda: display.name),
+            },
+        )
+        mdns = MdnsServer(server)
+        # the display is started after the mdns subsystem is created:
+        display.name = ":10"
+        with patch("xpra.server.subsystem.mdns.get_username", return_value="user"):
+            info = mdns.get_mdns_info()
+        self.assertEqual(info["display"], ":10")
 
 
 def main():
