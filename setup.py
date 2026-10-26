@@ -2837,6 +2837,7 @@ if WIN32:
             add_data_files("lib/", (shutil.which("gst-launch-1.0.exe"), ))
             add_console_exe("packaging/MSWindows/tools/lib_delegate.py", "gstreamer.ico", "gst-inspect-1.0")
             add_data_files("lib/", (shutil.which("gst-inspect-1.0.exe"), ))
+        if audio_ENABLED:
             add_console_exe("fs/bin/xpra", "speaker.ico", "Xpra_Audio")
         if libva_ENABLED:
             do_add_DLLs("", "vaon12_drv_video")
