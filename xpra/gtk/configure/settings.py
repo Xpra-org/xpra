@@ -33,15 +33,35 @@ if OSX:
     SETTINGS.append(
         ("Swap Keys", "Swap the command and control keys", "swap-keys", ("yes", "no"))
     )
+# `clipboard=all` synchronizes all the selections the platform can handle,
+# and not just the default one, see `xpra.client.subsystem.clipboard`:
+ALL_SELECTIONS = "all"
 if OSX or WIN32:
-    SETTINGS.append(
-        ("Clipboard", "Clipboard selections to synchronize", "clipboard",
-         (("auto", "both CLIPBOARD and PRIMARY"), ("yes", "CLIPBOARD only"), "no"))
-    )
+    # these platforms only have a single clipboard,
+    # so choose which remote selection(s) it is synchronized with,
+    # turning the clipboard on or off is done with `xpra configure features`:
     SETTINGS.append(
         ("Remote Clipboard", "Remote clipboard selection to be synchronized with", "remote-clipboard",
-         ("CLIPBOARD", "PRIMARY", "SECONDARY"))
+         ("CLIPBOARD", "PRIMARY", "SECONDARY", (ALL_SELECTIONS, "PRIMARY and CLIPBOARD")))
     )
+
+
+def get_remote_clipboard(config) -> str:
+    # `PRIMARY and CLIPBOARD` is the `clipboard=all` mode:
+    if (config.clipboard or "").lower() == ALL_SELECTIONS:
+        return ALL_SELECTIONS
+    return config.remote_clipboard or "CLIPBOARD"
+
+
+def set_remote_clipboard(value: str, clipboard: str) -> None:
+    if value == ALL_SELECTIONS:
+        # the local `PRIMARY` and `CLIPBOARD` map to the same remote selections:
+        update_config_attribute("clipboard", ALL_SELECTIONS)
+        update_config_attribute("remote-clipboard", "CLIPBOARD")
+        return
+    if clipboard.lower() == ALL_SELECTIONS:
+        update_config_attribute("clipboard", "auto")
+    update_config_attribute("remote-clipboard", value)
 
 
 def plabel(text, tooltip="", sensitive=False, font="sans 12") -> Gtk.Label:
@@ -58,6 +78,7 @@ class ConfigureGUI(ConfigureGUIWindow):
 
     def __init__(self, parent: Gtk.Window | None = None):
         self.settings_combos: dict[str, Gtk.ComboBoxText] = {}
+        self.clipboard = "auto"
         super().__init__(
             _("Configure Xpra Settings"),
             "gears.png",
@@ -94,6 +115,11 @@ class ConfigureGUI(ConfigureGUIWindow):
         for setting, cdata in self.settings_combos.items():
             combo, options = cdata
             config_value = getattr(config, setting.replace("-", "_")) or "auto"
+            if setting == "remote-clipboard":
+                config_value = get_remote_clipboard(config)
+                if str(config.clipboard).lower() in FALSE_OPTIONS:
+                    combo.set_sensitive(False)
+                    combo.set_tooltip_text(_("The clipboard is disabled, see `xpra configure features`"))
             log(f"{setting}={config_value!r}")
             values = []
             for index, option in enumerate(options):
@@ -111,12 +137,16 @@ class ConfigureGUI(ConfigureGUIWindow):
                 if matches:
                     combo.set_active(index)
             combo.connect("changed", self.setting_changed, setting, values)
+        self.clipboard = str(config.clipboard or "auto")
         return False
 
-    @staticmethod
-    def setting_changed(widget, setting: str, values: list[str]) -> None:
+    def setting_changed(self, widget, setting: str, values: list[str]) -> None:
         value = values[widget.get_active()]
         log("setting_changed %s=%s", setting, value)
+        if setting == "remote-clipboard":
+            set_remote_clipboard(value, self.clipboard)
+            self.clipboard = ALL_SELECTIONS if value == ALL_SELECTIONS else "auto"
+            return
         update_config_attribute(setting, value)
 
 
