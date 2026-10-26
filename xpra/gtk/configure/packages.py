@@ -13,7 +13,7 @@ from xpra.util.thread import start_thread
 from xpra.util.io import get_status_output, which
 from xpra.gtk.configure.common import ConfigureGUIWindow
 from xpra.gtk.dialogs.common_style import add_style_class
-from xpra.gtk.widget import label as gtk_label
+from xpra.gtk.widget import label as gtk_label, switch as gtk_switch
 from xpra.util.i18n import _
 from xpra.log import Logger
 
@@ -154,10 +154,8 @@ class ConfigureGUI(ConfigureGUIWindow):
             lbl = label(_(package), tooltip=_(description))
             lbl.set_hexpand(True)
             add_style_class(lbl, "configure-label")
-            # this causes the Switch to be displayed wrong!
-            # lbl.set_halign(Gtk.Align.START)
             grid.attach(lbl, 0, i, 1, 1)
-            switch = Gtk.Switch()
+            switch = gtk_switch()
             switch.set_sensitive(False)
             grid.attach(switch, 1, i, 1, 1)
             self.package_switch[pkg] = switch

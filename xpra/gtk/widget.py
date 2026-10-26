@@ -100,6 +100,11 @@ def label(text="", tooltip="", font="") -> Gtk.Label:
     return widget
 
 
+def switch() -> Gtk.Switch:
+    # Keep the theme's natural size even when the containing row or column is larger.
+    return Gtk.Switch(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+
+
 def setfont(widget, font=""):
     if font:
         with IgnoreWarningsContext():
