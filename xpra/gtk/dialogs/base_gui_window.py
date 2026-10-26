@@ -116,11 +116,22 @@ class BaseGUIWindow(Gtk.Window):
         lbl = label(text, font=font)
         lbl.set_line_wrap(True)
         lbl.set_use_markup(True)
+        lbl.connect("activate-link", self.activate_link)
         if self.style_class:
             lbl.set_halign(Gtk.Align.START)
             lbl.set_justify(Gtk.Justification.LEFT)
             add_style_class(lbl, "xpra-card", "xpra-subtitle")
         self.add_widget(lbl)
+
+    @staticmethod
+    def activate_link(_label, uri: str) -> bool:
+        # GTK's default handler spawns a process via GLib,
+        # which needs the `gspawn` helper executables on MS Windows:
+        log("activate_link(%s)", uri)
+        import webbrowser
+        from xpra.util.thread import start_thread
+        start_thread(webbrowser.open, "open-link", True, args=(uri, ))
+        return True
 
     def add_buttons(self, *buttons) -> list[Gtk.Button]:
         hbox = Gtk.HBox()
