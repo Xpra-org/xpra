@@ -577,16 +577,32 @@ class TestMain(unittest.TestCase):
         xvfb.gid = os.getgid()
         progress = []
         with patch("xpra.server.subsystem.xvfb.no_gtk") as no_gtk, \
-                patch("xpra.server.subsystem.xvfb.verify_display", return_value=True):
+                patch("xpra.server.subsystem.xvfb.verify_display", return_value=True) as verify_display:
             start_vfb, xauth_data, use_display = xvfb.resolve_x11_display(
                 ":42", "/xauth", "abc", True, None, False, False, False, False, None,
                 lambda *args: progress.append(args),
             )
         no_gtk.assert_called_once()
+        verify_display.assert_called_once_with(None, ":42", log_errors=False, timeout=0)
         assert start_vfb is False
         assert xauth_data == "abc"
         assert use_display is None
         assert progress == [(40, "connecting to the display"), (40, "connected to the display")]
+
+    def test_resolve_x11_display_waits_for_existing_display(self):
+        from xpra.server.subsystem.xvfb import XvfbManager
+        xvfb = XvfbManager(SimpleNamespace(subsystems={}))
+        for use_display, upgrading, shadowing in ((None, True, False), (False, True, False),
+                                                  (True, True, False), (None, False, True)):
+            with self.subTest(use_display=use_display, upgrading=upgrading, shadowing=shadowing), \
+                    patch("xpra.server.subsystem.xvfb.no_gtk"), \
+                    patch("xpra.server.subsystem.xvfb.verify_display", return_value=True) as verify_display:
+                start_vfb, _, _ = xvfb.resolve_x11_display(
+                    ":42", "/xauth", "abc", True, use_display, upgrading, shadowing, False, False, None,
+                    lambda *_args: None,
+                )
+                assert start_vfb is False
+                verify_display.assert_called_once_with(None, ":42", log_errors=False, timeout=1)
 
     def test_resolve_x11_display_readds_xauth(self):
         from xpra.server.subsystem.xvfb import XvfbManager
@@ -596,7 +612,7 @@ class TestMain(unittest.TestCase):
         pam = SimpleNamespace(items=[])
         pam.set_items = pam.items.append
         with patch("xpra.server.subsystem.xvfb.no_gtk"), \
-                patch("xpra.server.subsystem.xvfb.verify_display", side_effect=(False, True)), \
+                patch("xpra.server.subsystem.xvfb.verify_display", side_effect=(False, True)) as verify_display, \
                 patch("xpra.server.subsystem.xvfb.stat_display_socket", return_value={"uid": os.getuid()}), \
                 patch("xpra.server.subsystem.xvfb.get_hex_uuid", return_value="uuid"), \
                 patch("xpra.x11.vfb_util.xauth_add") as xauth_add:
@@ -608,6 +624,7 @@ class TestMain(unittest.TestCase):
         assert xauth_data == "uuid"
         assert use_display is None
         assert pam.items == [{"XAUTHDATA": "uuid"}]
+        assert [call.kwargs["timeout"] for call in verify_display.call_args_list] == [0, 1]
         xauth_add.assert_called_once_with("/xauth", ":42", "uuid", os.getuid(), os.getgid())
 
 
