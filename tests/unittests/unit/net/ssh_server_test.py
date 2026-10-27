@@ -721,8 +721,9 @@ class TestSSHServerIntegration(unittest.TestCase):
         try:
             chan = t.open_session()
             # server returns False from check_channel_exec_request and closes channel,
-            # so paramiko raises SSHException or EOFError on the client side
-            self.assertRaises((paramiko.SSHException, EOFError), chan.exec_command, "unknown_command_xyz")
+            # so paramiko raises SSHException or EOFError on the client side,
+            # or ConnectionError if the test server tears down the socket before our channel close reply reaches it
+            self.assertRaises((paramiko.SSHException, EOFError, ConnectionError), chan.exec_command, "unknown_command_xyz")
         finally:
             t.close()
             sock.close()
