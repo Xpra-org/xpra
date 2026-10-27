@@ -46,9 +46,11 @@ DEFAULT_DISPLAY = "100"
 COMMAND_NOT_FOUND = 3
 
 INSTALL_INSTRUCTIONS = (
-    "install xpra in the WSL distribution, ie for Debian and Ubuntu:",
-    " sudo apt update && sudo apt install xpra",
-    "see https://xpra-org.github.io/xpra/Download/Linux.html",
+    "install Xpra in the WSL distribution using the automatic setup script:",
+    " curl https://xpra.org/get-xpra.sh | bash",
+    "the default Debian and Ubuntu repositories provide outdated or broken downstream packages that do not work with current Xpra clients.",
+    "see https://github.com/Xpra-org/xpra/wiki/Distribution-Packages",
+    "for manual repository setup, see https://xpra-org.github.io/xpra/Download/Linux.html",
 )
 
 

@@ -168,7 +168,7 @@ class TestWSLCommands(unittest.TestCase):
         missing = CompletedProcess([], wsl.COMMAND_NOT_FOUND, b"", b"")
         msg, _ = self.run_patched(lambda: wsl.check_xpra("Ubuntu"), missing)
         self.assertIn("'xpra' was not found in Ubuntu", msg)
-        self.assertIn("apt install xpra", msg)
+        self.assertIn("curl https://xpra.org/get-xpra.sh | bash", msg)
         broken = CompletedProcess([], 1, b"", b"There is no distribution with the supplied name.")
         msg, _ = self.run_patched(lambda: wsl.check_xpra("Nope"), broken)
         self.assertIn("no distribution", msg)
@@ -261,13 +261,13 @@ class TestBridge(unittest.TestCase):
         bridge.diagnostics.append("<3>WSL (865 - Relay) ERROR: CreateProcessCommon:875: execvpe(xpra) failed: No such file or directory")
         message = bridge.get_error_message(1, False)
         self.assertIn("execvpe(xpra) failed", message)
-        self.assertIn("apt install xpra", message)
+        self.assertIn("curl https://xpra.org/get-xpra.sh | bash", message)
         # other failures are shown as they are, without installation instructions:
         bridge.diagnostics.clear()
         bridge.diagnostics.append("Error: no such display :100")
         message = bridge.get_error_message(1, False)
         self.assertIn("no such display", message)
-        self.assertNotIn("apt install xpra", message)
+        self.assertNotIn("curl https://xpra.org/get-xpra.sh | bash", message)
 
     def test_server_log_paths(self):
         bridge = wsl.WSLBridge([wsl.WSL_COMMAND, "--distribution", "Ubuntu", "--exec", "xpra", "_proxy_start", ":105"])

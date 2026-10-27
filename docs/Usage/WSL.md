@@ -32,15 +32,18 @@ explains how those pieces fit together.
 
 ## Install Xpra
 
-Install Xpra in the WSL distribution using the packages appropriate for that
-distribution; see [Download Xpra](https://xpra-org.github.io/xpra/Download/Linux.html).
-For example, after configuring the Xpra package repository on a Debian or
-Ubuntu system:
+Install the official Xpra packages in the WSL distribution. The default Debian
+and Ubuntu repositories provide outdated or broken downstream packages that do
+not work with current Xpra clients; see
+[Distribution Packages](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages).
+Run the automatic setup script inside the WSL distribution to configure the
+official repository and install Xpra:
 
 ```shell
-sudo apt update
-sudo apt install xpra
+curl https://xpra.org/get-xpra.sh | bash
 ```
+
+For manual repository setup, see [Download Xpra](https://xpra-org.github.io/xpra/Download/Linux.html).
 
 Install the native Windows Xpra client as well. The packaged `EXE` or `MSI`
 installer is required for Windows integration; see the [client
