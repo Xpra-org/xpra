@@ -84,12 +84,12 @@ class TestStartOnExisting(unittest.TestCase):
         defaults.start_child = []
         result = CompletedProcess([], returncode, b"", b"new command started with pid=1\n")
         with patch("subprocess.run", return_value=result) as run, \
-                patch.object(proxy, "stderr_print") as stderr_print:
+                patch.object(proxy, "stderr_print"):
             proxy.start_commands_on_existing("/usr/bin/xpra", ":100", opts, defaults)
-        return run, stderr_print
+        return run
 
     def test_commands(self):
-        run, _ = self.run_start(start=["xterm -T 'a title'"], start_child=["xclock"], default_start=["ibus-daemon"])
+        run = self.run_start(start=["xterm -T 'a title'"], start_child=["xclock"], default_start=["ibus-daemon"])
         cmds = [c.args[0] for c in run.call_args_list]
         # the defaults from the config files are not started again:
         self.assertEqual(cmds, [
@@ -102,13 +102,16 @@ class TestStartOnExisting(unittest.TestCase):
             self.assertNotIn("stdout", c.kwargs)
 
     def test_nothing_to_start(self):
-        run, _ = self.run_start(default_start=["ibus-daemon"])
+        run = self.run_start(default_start=["ibus-daemon"])
         run.assert_not_called()
 
     def test_failure_reported(self):
-        _, stderr_print = self.run_start(start=["nosuchcommand"], returncode=1)
-        messages = " ".join(str(c.args[0]) for c in stderr_print.call_args_list)
-        self.assertIn("failed to start 'nosuchcommand' on display :100", messages)
+        from xpra.config import InitExit
+        with self.assertRaises(InitExit) as cm:
+            self.run_start(start=["nosuchcommand", "xterm"], returncode=1)
+        # the exit code tells the client that something went wrong:
+        self.assertNotEqual(int(cm.exception.status), 0)
+        self.assertIn("failed to start 'nosuchcommand', 'xterm' on display :100", str(cm.exception))
 
 
 def main():

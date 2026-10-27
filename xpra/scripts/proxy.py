@@ -292,6 +292,7 @@ def start_commands_on_existing(script_file: str, display_name: str, opts, defaul
     log = Logger("server", "exec")
     import shlex
     from subprocess import run, DEVNULL, TimeoutExpired
+    failed: list[str] = []
     for option, subcommand in (("start", "start"), ("start_child", "start-child")):
         for command in strip_defaults_start_child(getattr(opts, option), getattr(defaults, option)):
             if not command:
@@ -304,12 +305,18 @@ def start_commands_on_existing(script_file: str, display_name: str, opts, defaul
                 proc = run(cmd, stdin=DEVNULL, capture_output=True, timeout=CONTROL_TIMEOUT)
             except (OSError, TimeoutExpired) as e:
                 stderr_print(f"Error: failed to start {command!r} on display {display_name}: {e}")
+                failed.append(command)
                 continue
             for line in (proc.stdout + proc.stderr).decode(errors="replace").splitlines():
                 if line.strip():
                     stderr_print(line)
             if proc.returncode:
                 stderr_print(f"Error: failed to start {command!r} on display {display_name}: {exit_str(proc.returncode)}")
+                failed.append(command)
+    if failed:
+        # exit with an error rather than connecting, so the client can tell:
+        commands = csv(repr(x) for x in failed)
+        raise InitExit(ExitCode.FAILURE, f"failed to start {commands} on display {display_name}")
 
 
 def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode: str, defaults) -> ExitValue:
