@@ -226,6 +226,34 @@ def get_xvfb_pid(display: str, session_dir: str) -> int:
     return load_session_pid("xvfb.pid")
 
 
+def get_abstract_socket_paths() -> set[str]:
+    paths: set[str] = set()
+    try:
+        with open("/proc/net/unix", encoding="latin1") as proc_net_unix:
+            for line in proc_net_unix:
+                path = line.rstrip("\n\r").split(" ")[-1]
+                if path.startswith("@"):
+                    paths.add(path[1:])
+    except OSError as e:
+        warn(f"Warning: failed to read the list of abstract sockets: {e}")
+    return paths
+
+
+def find_free_x11_display() -> str:
+    """
+    find a display number that is not in use,
+    without relying on the X11 server's `-displayfd` probing
+    """
+    abstract_sockets = get_abstract_socket_paths()
+    # same range as the X11 server's `-displayfd` probing:
+    for dno in range(65536 - 6000):
+        socket_path = os.path.join(X11_SOCKET_DIR, f"X{dno}")
+        if socket_path in abstract_sockets or os.path.exists(socket_path) or os.path.exists(f"/tmp/.X{dno}-lock"):
+            continue
+        return f":{dno}"
+    raise InitExit(ExitCode.NO_DISPLAY, "no free X11 display number found")
+
+
 def get_display_inodes(*displays: str) -> dict[int, str]:
     inodes_display: dict[int, str] = {}
     for display in sorted_nicely(displays):

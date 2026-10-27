@@ -22,10 +22,11 @@ from xpra.config import InitException
 from xpra.config.vfb import get_Xdummy_confdir
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, shellsub, osexpand, get_exec_env, get_saved_env_var
-from xpra.os_util import getuid, getgid, POSIX, OSX
+from xpra.os_util import getuid, getgid, POSIX, OSX, LINUX
 from xpra.util.daemon import setuidgid
 from xpra.util.io import is_writable, pollwait, osclose, get_status_output
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
+from xpra.scripts.display import X11_SOCKET_DIR, find_free_x11_display
 from xpra.log import Logger
 
 VFB_WAIT = envint("XPRA_VFB_WAIT", 3)
@@ -267,6 +268,13 @@ def mklogdir(xorg_log_file: str, uid: int, gid: int) -> None:
         raise InitException(f"failed to create the Xorg log directory {xorg_log_dir!r}: {e}") from None
 
 
+def x11_socket_dir_writable(uid: int, gid: int) -> bool:
+    if os.path.exists(X11_SOCKET_DIR):
+        return is_writable(X11_SOCKET_DIR, uid, gid)
+    # the X11 server will have to create it:
+    return is_writable(os.path.dirname(X11_SOCKET_DIR), uid, gid)
+
+
 def start_Xvfb(xvfb_cmd: Sequence[str], vfb_geom, pixel_depth: int, fps: int, display_name: str, cwd,
                uid: int, gid: int, username: str, uinput_uuid="",
                prepare_uinput: Callable[[], None] | None = None) -> tuple[Popen, str]:
@@ -306,6 +314,15 @@ def start_Xvfb(xvfb_cmd: Sequence[str], vfb_geom, pixel_depth: int, fps: int, di
             log("xset -q output: %r", out.strip())
             if not os.path.exists("/tmp/.X11-unix"):
                 raise InitException("XQuartz failed to create /tmp/.X11-unix, cannot start Xvfb")
+
+    if use_display_fd and not x11_socket_dir_writable(uid, gid):
+        # in `-displayfd` mode, the X11 server rejects every display number
+        # for which it cannot create the socket file, so we have to choose one for it:
+        if not LINUX:
+            raise InitException(f"{X11_SOCKET_DIR!r} is not writable, cannot start a new display")
+        display_name = find_free_x11_display()
+        log.info(f"{X11_SOCKET_DIR!r} is not writable, using display {display_name}")
+        use_display_fd = False
 
     etc_prefix = os.environ.get("XPRA_INSTALL_PREFIX", "")
     if etc_prefix.endswith("/usr"):
