@@ -32,9 +32,10 @@ def has_mdns() -> bool:
 
 
 def has_server() -> bool:
+    # look for the server without importing it:
+    from importlib.util import find_spec
     try:
-        from xpra.server import util
-        return bool(util)
+        return find_spec("xpra.server.core") is not None
     except ImportError:
         return False
 
