@@ -14,6 +14,8 @@ ARG GID=1000
 ARG PORT=10000
 ARG AUTH_PORT=14500
 ARG MODE=seamless
+# use Xdummy (Xorg with the dummy video driver) instead of Xvfb, set to 0 to keep Xvfb:
+ARG XDUMMY=1
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -41,6 +43,13 @@ RUN apt-get update && \
     { test -s /etc/machine-id || rm -f /etc/machine-id; } && \
     dbus-uuidgen --ensure=/etc/machine-id && \
     ln -sf /etc/machine-id /var/lib/dbus/machine-id
+# the package defaults to Xvfb:
+RUN if [ "${XDUMMY}" = "1" ]; then \
+        apt-get update && \
+        apt-get install -y --no-install-recommends xserver-xorg-core xserver-xorg-video-dummy && \
+        rm -rf /var/lib/apt/lists/* && \
+        xpra set xvfb Xdummy; \
+    fi
 
 ENV UID=$UID
 ENV GID=$GID
