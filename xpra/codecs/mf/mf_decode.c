@@ -412,6 +412,78 @@ retry_output:
     return ret;
 }
 
+/* Cheap sanity check of the start of the bitstream.
+   MFTs accept garbage in ProcessInput without complaint and simply never
+   produce any output, so without this we would only find out after timing out. */
+static MFDecodeStatus check_bitstream(MFDecoder *dec, const uint8_t *data, int data_len) {
+    const char *problem = NULL;
+    if (data_len < 2) {
+        problem = "too short";
+    }
+    else {
+        switch (dec->codec) {
+        case MF_CODEC_H264:
+        case MF_CODEC_HEVC:
+            /* Annex B: 00 00 01 or 00 00 00 01 */
+            if (!(data_len >= 4 && data[0] == 0 && data[1] == 0 &&
+                  (data[2] == 1 || (data[2] == 0 && data[3] == 1))))
+                problem = "missing Annex B start code";
+            break;
+        case MF_CODEC_VP9:
+            /* frame_marker: the 2 most significant bits must be 0b10 */
+            if ((data[0] & 0xC0) != 0x80)
+                problem = "invalid frame marker";
+            break;
+        case MF_CODEC_AV1: {
+            /* OBU header: forbidden bit and reserved bit must be zero,
+               obu_type must be one of the defined types (1-8 or 15) */
+            int obu_type = (data[0] >> 3) & 0xF;
+            if ((data[0] & 0x81) || obu_type == 0 || (obu_type > 8 && obu_type != 15))
+                problem = "invalid OBU header";
+            break;
+        }
+        }
+    }
+    if (!problem)
+        return MF_DEC_OK;
+    dec->last_hr = E_INVALIDARG;
+    snprintf(dec->last_error, sizeof(dec->last_error), "invalid bitstream: %s", problem);
+    mf_log("mf error: %s", dec->last_error);
+    return MF_DEC_ERROR;
+}
+
+/* Poll try_get_output() until a frame comes out, an error occurs or
+   wait_ms has elapsed. Records the reason in last_error on timeout.
+   The Microsoft H.264 MFT decodes on its own worker threads and can take
+   over 100ms to produce a frame, so a single ProcessOutput call may come back
+   empty even though the frame is on its way - and draining at that point
+   loses it. */
+static MFDecodeStatus wait_for_output(MFDecoder *dec, MFDecodedFrame *frame, int wait_ms) {
+    long long start = usec_now();
+    long long elapsed = 0;
+    int attempts = 0;
+    MFDecodeStatus st;
+    while (1) {
+        st = try_get_output(dec, frame);
+        attempts++;
+        if (st != MF_DEC_NEED_MORE_INPUT)
+            break;
+        elapsed = usec_now() - start;
+        if (elapsed >= wait_ms * 1000LL) {
+            dec->last_hr = MF_E_TRANSFORM_NEED_MORE_INPUT;
+            snprintf(dec->last_error, sizeof(dec->last_error),
+                     "no output: waited %lldms, %d attempts",
+                     elapsed / 1000, attempts);
+            mf_log("mf: %s", dec->last_error);
+            return st;
+        }
+        Sleep(1);
+    }
+    if (attempts > 1)
+        mf_log("mf: output ready after %d attempts, %lldus", attempts, usec_now() - start);
+    return st;
+}
+
 /* ── public API ──────────────────────────────────────────────────── */
 
 MFDecodeStatus mf_decode_startup(void) {
@@ -787,7 +859,7 @@ void mf_decoder_destroy(MFDecoder *dec) {
 
 MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
                                   const uint8_t *data, int data_len,
-                                  MFDecodedFrame *frame) {
+                                  MFDecodedFrame *frame, int wait_ms) {
     HRESULT hr;
     IMFSample *sample = NULL;
     IMFMediaBuffer *buf = NULL;
@@ -796,6 +868,11 @@ MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
 
     clear_locked(dec);
     zero_frame(frame);
+    dec->last_hr = S_OK;
+    dec->last_error[0] = '\0';
+
+    if (check_bitstream(dec, data, data_len) != MF_DEC_OK)
+        return MF_DEC_ERROR;
 
     /* wrap input data in an MF sample */
     t_start = usec_now();
@@ -853,6 +930,11 @@ MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
     /* try to pull output */
     {
         MFDecodeStatus st = try_get_output(dec, frame);
+        if (st == MF_DEC_NEED_MORE_INPUT && wait_ms > 0) {
+            /* the frame may still be in flight on the MFT's worker threads */
+            mf_log("mf: need more input, waiting up to %dms for output", wait_ms);
+            st = wait_for_output(dec, frame, wait_ms);
+        }
         if (st == MF_DEC_NEED_MORE_INPUT) {
             /* Hardware AV1/HEVC MFTs often buffer one frame of latency.
                A drain flushes the pipeline without discarding reference frames. */
