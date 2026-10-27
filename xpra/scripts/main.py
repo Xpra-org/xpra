@@ -55,8 +55,7 @@ from xpra.scripts.config import (
 from xpra.net.constants import SOCKET_TYPES, SocketState
 from xpra.log import is_debug_enabled, Logger, get_debug_args, enable_format, inject_debug_logging
 from xpra.scripts.display import (
-    stat_display_socket,
-    x11_display_socket, get_xvfb_pid,
+    x11_display_live, get_xvfb_pid,
     get_display_pids,
     get_display_info, get_displays_info,
 )
@@ -3067,8 +3066,7 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
             print(f"server process for session {display} is still running with pid {server_pid}")
             print(f" the session directory {session_dir!r} has not been removed")
             continue
-        x11_socket = x11_display_socket(display)
-        x11_live = stat_display_socket(x11_socket)
+        x11_live = x11_display_live(display)
         xvfb_pid = get_xvfb_pid(display, session_dir)
         if x11_live:
             if xvfb_pid and kill_displays:
