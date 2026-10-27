@@ -14,6 +14,7 @@ No TCP listener, password or ssh server is involved.
 """
 
 import os
+import re
 import shlex
 from collections import deque
 from collections.abc import Callable, Sequence
@@ -72,6 +73,8 @@ done
 """
 
 DEFAULT_DISPLAY = "100"
+# absolute paths quoted in the server's messages, ie: "Actual log file name is now: '/run/user/1000/xpra/1/server.log'"
+LOG_PATH_RE = re.compile(r"""['"](/[^'"]+)['"]""")
 # exit code used by `check_command`:
 COMMAND_NOT_FOUND = 3
 
@@ -318,20 +321,30 @@ class WSLBridge:
         lines = [message] + list(self.diagnostics)
         if self.command_not_found() or (not had_connected and not self.diagnostics):
             lines += list(INSTALL_INSTRUCTIONS)
+        elif not had_connected and (server_log := self.get_server_log()):
+            # ie: `_proxy_start` gave up because the server failed after daemonizing:
+            lines += ["server log:"] + server_log
         return "\n".join(lines)
 
     def get_server_log_paths(self) -> list[str]:
-        # once the server daemonizes, its errors only go to its log file, which is announced on stderr:
-        # "Entering daemon mode; any further errors will be reported to:"
-        # "  '/run/user/1000/xpra/105/server.log.new'"
-        paths = []
-        for line in self.diagnostics:
-            path = line.strip().strip("'\"")
-            if path.startswith("/") and ".log" in path:
-                paths.append(path)
+        """
+        Once the server daemonizes, its errors only go to its log file, which is announced on stderr:
+          "Entering daemon mode; any further errors will be reported to:"
+          "  '/run/user/1000/xpra/S1394/server.log'"
+        and may be renamed once the server knows its display:
+          "Actual log file name is now: '/run/user/1000/xpra/1/server.log'"
+        Returns the paths found, the most recently announced first.
+        """
+        paths: list[str] = []
+        for line in reversed(self.diagnostics):
+            for path in LOG_PATH_RE.findall(line) or [line.strip().strip("'\"")]:
+                if not path.startswith("/") or ".log" not in path:
+                    continue
+                candidates = [path]
                 if path.endswith(".new"):
                     # the file is renamed once the server has started:
-                    paths.append(path[:-len(".new")])
+                    candidates.append(path[:-len(".new")])
+                paths += [x for x in candidates if x not in paths]
         return paths
 
     def get_server_log(self, lines: int = WSL_SERVER_LOG_LINES) -> list[str]:

@@ -472,6 +472,34 @@ class TestBridge(unittest.TestCase):
         self.assertIn("did not respond", message)
         self.assertIn("invalid port number: 1", message)
 
+    def test_renamed_server_log(self):
+        # the server announces its log file before it knows its display, then renames it:
+        bridge = wsl.WSLBridge([wsl.WSL_COMMAND, "--distribution", "Ubuntu", "--exec", "xpra", "_proxy_start"])
+        for line in (
+            "Entering daemon mode; any further errors will be reported to:",
+            "  '/run/user/1000/xpra/S1394/server.log'",
+            "Actual session directory is now: '/run/user/1000/xpra/1'",
+            "Actual display used: :1",
+            "Actual log file name is now: '/run/user/1000/xpra/1/server.log'",
+            "the server failed to start, check its log file for details",
+        ):
+            bridge.diagnostics.append(line)
+        self.assertEqual(bridge.get_server_log_paths(),
+                         ["/run/user/1000/xpra/1/server.log", "/run/user/1000/xpra/S1394/server.log"])
+        # the log is included when the bridge exits without ever connecting:
+        log_output = CompletedProcess([], 0, b"Xvfb command has terminated! xpra cannot continue\n", b"")
+        with patch.object(wsl, "run", return_value=log_output) as run:
+            message = bridge.get_error_message(18, False)
+        self.assertEqual(run.call_args[0][0][-2:],
+                         ["/run/user/1000/xpra/1/server.log", "/run/user/1000/xpra/S1394/server.log"])
+        self.assertIn("server log:", message)
+        self.assertIn("Xvfb command has terminated", message)
+        # but not once it had connected:
+        with patch.object(wsl, "run", return_value=log_output) as run:
+            message = bridge.get_error_message(1, True)
+        run.assert_not_called()
+        self.assertNotIn("server log:", message)
+
     def test_missing_wsl(self):
         with self.assertRaises(InitExit) as cm:
             self.connect(["this-command-does-not-exist-xpra-wsl.exe"])
