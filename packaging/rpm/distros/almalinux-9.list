@@ -24,5 +24,3 @@ pygobject3
 xpra
 python3-numpy
 python3-pycuda
-python3-torch
-python3-torch-vision
