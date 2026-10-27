@@ -181,8 +181,9 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
             if getuid() == 0 and (uid != 0 or gid != 0):
                 cmd.append(f"--uid={uid}")
                 cmd.append(f"--gid={gid}")
-            if not OSX and not matching_display:
-                # use "--displayfd" switch to tell us which display was chosen:
+            if not OSX and mode in ("seamless", "desktop", "monitor"):
+                # the "--displayfd" switch tells us which display was chosen, once the server is ready,
+                # and we get EOF if it fails - even when we chose the display:
                 r_pipe, w_pipe = os.pipe()
                 log("subprocess displayfd pipes: %s", (r_pipe, w_pipe))
                 cmd.append(f"--displayfd={w_pipe}")
@@ -212,10 +213,11 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
                 log.error("Error: displayfd failed")
                 log.error(f" {msg}")
 
-            n = parse_displayfd(buf, displayfd_err)
-            if n >= 0:
-                matching_display = f":{n}"
-                log(f"displayfd={matching_display}")
+            if not matching_display:
+                n = parse_displayfd(buf, displayfd_err)
+                if n >= 0:
+                    matching_display = f":{n}"
+                    log(f"displayfd={matching_display}")
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets,
                                                matching_display,
                                                new_server_uuid,
