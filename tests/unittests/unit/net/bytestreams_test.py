@@ -370,6 +370,19 @@ class TestLogNewConnection(unittest.TestCase):
         log_new_connection(conn)
 
 
+class TestConnectionDelays(unittest.TestCase):
+
+    def test_environment(self):
+        # the values are read when the module is imported, so check them in a new interpreter:
+        import os
+        import subprocess
+        import sys
+        code = "from xpra.net import bytestreams as b; print(b.CONNECTION_DELAYS['ssh'], b.CONNECTION_DELAYS['wsl'])"
+        env = dict(os.environ, XPRA_SSH_CONNECTION_DELAY="7", XPRA_WSL_CONNECTION_DELAY="9")
+        out = subprocess.run([sys.executable, "-c", code], env=env, capture_output=True, text=True, check=True).stdout
+        self.assertEqual(out.split(), ["7", "9"])
+
+
 def main():
     unittest.main()
 
