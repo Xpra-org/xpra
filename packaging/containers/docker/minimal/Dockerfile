@@ -2,7 +2,7 @@
 
 FROM alpine:latest
 
-ARG HTML5_VERSION=20
+ARG HTML5_VERSION=21
 
 ENV XDG_RUNTIME_DIR=/run/user/0
 
