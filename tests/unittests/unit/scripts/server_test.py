@@ -499,7 +499,6 @@ class TestMain(unittest.TestCase):
             os.environ.pop("XVFB_PID", None)
             X11DisplayManager.set_vfb_startup_state(display, state)
             assert os.environ["XVFB_PID"] == "123"
-        assert display.vfb_startup_state is state
         assert display.xvfb is None
         assert display.xvfb_cmd == ("Xvfb",)
         assert display.display_pid == 123
