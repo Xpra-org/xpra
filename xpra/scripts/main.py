@@ -2582,9 +2582,14 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
             # so that we get EOF if it exits without writing the display:
             noerr(os.close, w_pipe)
         if r_pipe:
-            from xpra.platform.displayfd import read_displayfd, parse_displayfd
+            from xpra.platform.displayfd import read_displayfd, parse_displayfd, pipe_closed
             buf = read_displayfd(r_pipe, proc=None)  # proc daemonizes!
+            closed = not buf and pipe_closed(r_pipe)
             noerr(os.close, r_pipe)
+            if closed:
+                # the server has exited before telling us which display it is using,
+                # and as it daemonizes, its errors are in its log file:
+                raise InitExit(ExitCode.FAILURE, "the server failed to start, check its log file for details")
 
             def displayfd_err(msg: str) -> None:
                 log.error("Error: displayfd failed")

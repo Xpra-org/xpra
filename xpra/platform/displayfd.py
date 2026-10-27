@@ -82,6 +82,20 @@ def read_displayfd(r_pipe: int, timeout=DISPLAY_FD_TIMEOUT, proc=None) -> bytes:
     return buf
 
 
+def pipe_closed(r_pipe: int) -> bool:
+    """
+    `read_displayfd` returns an empty buffer on timeout as well as on EOF,
+    this tells them apart: only EOF makes the pipe readable without any data
+    """
+    import select
+    try:
+        if r_pipe not in select.select([r_pipe], [], [], 0)[0]:
+            return False
+        return os.read(r_pipe, 1) == b""
+    except OSError:
+        return True
+
+
 def parse_displayfd(buf: bytes, err: Callable) -> int:
     if not buf:
         err("did not provide a display number using displayfd")

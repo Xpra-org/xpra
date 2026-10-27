@@ -9,8 +9,9 @@ import tempfile
 import unittest
 from time import monotonic
 
+from xpra.os_util import POSIX
 from xpra.util.io import load_binary_file
-from xpra.platform.displayfd import write_displayfd, read_displayfd, parse_displayfd
+from xpra.platform.displayfd import write_displayfd, read_displayfd, parse_displayfd, pipe_closed
 
 
 class DisplayFDTest(unittest.TestCase):
@@ -45,6 +46,17 @@ class DisplayFDTest(unittest.TestCase):
                     self.assertLess(monotonic() - start, 1, "EOF should return without waiting for the timeout")
                 finally:
                     os.close(r_pipe)
+
+    @unittest.skipUnless(POSIX, "select on pipes requires POSIX")
+    def test_pipe_closed(self):
+        r_pipe, w_pipe = os.pipe()
+        with os.fdopen(r_pipe, "rb", buffering=0) as reader, os.fdopen(w_pipe, "wb", buffering=0) as writer:
+            self.assertFalse(pipe_closed(reader.fileno()))
+            writer.write(b"7")
+            self.assertFalse(pipe_closed(reader.fileno()))
+            writer.close()
+            self.assertTrue(pipe_closed(reader.fileno()))
+        self.assertTrue(pipe_closed(r_pipe))
 
     def test_write(self):
         temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".displayfd-test", delete=False)
