@@ -32,15 +32,18 @@ explains how those pieces fit together.
 
 ## Install Xpra
 
-Install Xpra in the WSL distribution using the packages appropriate for that
-distribution; see [Download Xpra](https://github.com/Xpra-org/xpra/wiki/Download).
-For example, after configuring the Xpra package repository on a Debian or
-Ubuntu system:
+Install the official Xpra packages in the WSL distribution. The default Debian
+and Ubuntu repositories provide outdated or broken downstream packages that do
+not work with current Xpra clients; see
+[Distribution Packages](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages).
+Run the automatic setup script inside the WSL distribution to configure the
+official repository and install Xpra:
 
 ```shell
-sudo apt update
-sudo apt install xpra
+curl https://xpra.org/get-xpra.sh | bash
 ```
+
+For manual repository setup, see [Download Xpra](https://xpra-org.github.io/xpra/Download/Linux.html).
 
 Install the native Windows Xpra client as well. The packaged `EXE` or `MSI`
 installer is required for Windows integration; see the [client
@@ -48,9 +51,70 @@ documentation](Client.md#platform-quirks).
 
 ## Start and connect to a session
 
-For a local Windows client, bind Xpra only to WSL's loopback interface. This
-uses WSL's localhost forwarding and avoids exposing an unencrypted Xpra TCP
-listener to the network.
+The Windows client can reach a WSL distribution directly, using `wsl://` connections:
+`wsl.exe` runs Xpra in the distribution and the Xpra protocol is carried over its pipes.
+There is no TCP port to bind, no password to choose and no SSH server to install.
+
+### From the graphical interface
+
+* **Start Session**: select the `WSL` target, pick a distribution (or leave the
+  default one), optionally enter a Linux user, keep or change the suggested
+  display number (`100`), enter the command to run and click `Start & Attach`.
+  Only seamless sessions are available for WSL at the moment.
+* **Session Launcher** (`Connect`): choose the `WSL` mode, then the same
+  distribution, user and display number to re-attach to a session that is already
+  running. These settings are kept when saving the session to a `.xpra` file.
+
+The list of distributions is obtained from `wsl --list --quiet`.
+Before connecting, the client verifies that `xpra` can be found in the
+distribution and shows installation instructions if it cannot.
+
+### From the command line
+
+```powershell
+# start xterm in a new session on display 100 of the "Ubuntu" distribution:
+Xpra_cmd.exe start wsl://Ubuntu/100 --start=xterm
+# re-attach to it later:
+Xpra_cmd.exe attach wsl://Ubuntu/100
+# the display number can be omitted when only one session is running:
+Xpra_cmd.exe attach wsl://Ubuntu/
+# as a specific Linux user:
+Xpra_cmd.exe attach wsl://alice@Ubuntu/
+# using WSL's default distribution, and its only session:
+Xpra_cmd.exe attach wsl://
+```
+
+When attaching without a display number and more than one session is running,
+the error lists them and one must be specified.
+Starting a session does require a display number: WSLg mounts `/tmp/.X11-unix`
+read-only, which prevents `Xvfb` from choosing a free display by itself.
+
+The distribution name is case-sensitive, names containing special characters
+can be URL-encoded (ie: `wsl://My%20Distro/100`). When the distribution or
+the user is omitted, WSL's configured default is used. Passwords and ports
+are not accepted in `wsl://` addresses.
+
+`Xpra_cmd.exe` is preferable while testing because it prints diagnostics;
+add `-d wsl` for details about the `wsl.exe` process.
+
+### Session lifetime
+
+Closing or disconnecting the client terminates its `wsl.exe` process, but the
+Xpra server keeps running in the distribution, so applications are still there
+when re-attaching - as long as the distribution keeps running.
+The session does not survive `wsl --shutdown` or a Windows restart, and WSL
+also stops a distribution shortly after its last `wsl.exe` process has exited
+(in testing: 25 seconds after the client disconnected), which terminates the
+session. Keeping any other `wsl.exe` process open, ie: a terminal, prevents this.
+See the
+[`.wslconfig` documentation](https://learn.microsoft.com/windows/wsl/wsl-config)
+for the settings controlling this.
+
+### Using TCP instead
+
+TCP connections are still useful for connecting other clients, ie: the HTML5 client.
+Bind Xpra only to WSL's loopback interface. This uses WSL's localhost forwarding
+and avoids exposing an unencrypted Xpra TCP listener to the network.
 
 In WSL, start a session and an application (replace `xterm` with an installed
 application if necessary):
@@ -66,10 +130,6 @@ session:
 $env:XPRA_PASSWORD = 'choose-a-secret'
 Xpra_cmd.exe attach tcp://127.0.0.1:14500
 ```
-
-`Xpra_cmd.exe` is the Windows command-line client and is preferable while
-testing because it prints diagnostics. The graphical launcher can also connect
-to `tcp://127.0.0.1:14500`.
 
 Do not bind to `0.0.0.0` or a LAN address without configuring suitable
 authentication and transport security. For access from another computer,

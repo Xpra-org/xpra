@@ -601,7 +601,7 @@ def run_mode(script_file: str, cmdline: list[str], options, args: list[str], ful
     ) and not NO_ROOT_WARNING:
         warn("\nWarning: running as root\n")
 
-    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic")
+    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic", "wsl")
     if mode.startswith("shadow") and WIN32 and not envbool("XPRA_PAEXEC_WRAP", False):
         # are we started from a non-interactive context?
         from xpra.platform.win32.gui import get_desktop_name
@@ -691,7 +691,7 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
     # keep the (normalized) mode on the options so that subsystems which only get `opts`
     # (ie: `parse_display_name`) can adjust their behaviour, ie: ssh agent forwarding:
     options.mode = mode
-    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic")
+    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic", "wsl")
     if args and mode in ("seamless", "desktop", "monitor"):
         # all args that aren't specifying a connection will be interpreted as a start-child command:
         # ie: "xpra" "seamless" "xterm"
@@ -2083,7 +2083,7 @@ def run_server(script_file, cmdline: list[str], options, args: list[str], full_m
             "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor",
     ):
         reqx11(mode)
-    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock")
+    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "ws", "wss", "vsock", "wsl")
     with_display = mode in ("seamless", "desktop", "monitor", "expand")
     if with_display and str_to_bool(options.attach, False) and args and not display_is_remote:
         # maybe the server is already running for the display specified
@@ -2223,7 +2223,8 @@ def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults
         setattr(opts, fn, v)
     if mode == "seamless":
         match_client_display_size(opts)
-    if isdisplaytype(args, "ssh"):
+    if isdisplaytype(args, "ssh", "wsl"):
+        # ssh and wsl run a proxy subcommand on the remote end,
         # add special flags to "display_as_args"
         proxy_args = params.get("display_as_args", [])
         if params.get("display") is not None:
@@ -2284,8 +2285,8 @@ def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults
     try:
         if opts.attach is False:
             from xpra.client.base.command import WaitForDisconnectXpraClient, RequestStartClient
-            if isdisplaytype(args, "ssh"):
-                # ssh will start the instance we requested,
+            if isdisplaytype(args, "ssh", "wsl"):
+                # ssh or wsl will start the instance we requested,
                 # then we just detach and we're done
                 app = WaitForDisconnectXpraClient(opts)
             else:

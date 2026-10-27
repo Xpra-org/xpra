@@ -61,6 +61,9 @@ MODE_SSL = "ssl"
 MODE_WS = "ws"
 MODE_WSS = "wss"
 MODE_QUIC = "quic"
+MODE_WSL = "wsl"
+
+WSL_DEFAULT_DISTRIBUTION = "Default distribution"
 
 # what we save in the config file:
 SAVED_FIELDS = [
@@ -69,6 +72,7 @@ SAVED_FIELDS = [
     "proxy_port", "proxy_username", "proxy_key", "proxy_password",
     "proxy_host",
     "autoconnect",
+    "wsl_distribution", "wsl_user", "wsl_display",
 ]
 
 # options not normally found in xpra config file
@@ -87,6 +91,9 @@ LAUNCHER_OPTION_TYPES = {
     "proxy_username": str,
     "proxy_password": str,
     "proxy_key": str,
+    "wsl_distribution": str,
+    "wsl_user": str,
+    "wsl_display": str,
 }
 LAUNCHER_DEFAULTS = {
     "host": "",
@@ -102,6 +109,10 @@ LAUNCHER_DEFAULTS = {
     "proxy_username": get_username(),
     "proxy_password": "",
     "proxy_key": "",
+    # an empty distribution or user selects WSL's configured default:
+    "wsl_distribution": "",
+    "wsl_user": "",
+    "wsl_display": "100",
 }
 
 
@@ -155,6 +166,8 @@ def get_connection_modes() -> list[str]:
     modes.append(MODE_TCP)
     modes.append(MODE_WS)
     modes.append(MODE_WSS)
+    if WIN32:
+        modes.append(MODE_WSL)
     return modes
 
 
@@ -397,6 +410,7 @@ class ApplicationWindow:
 
         # Username@Host:Port (main)
         hbox = Gtk.HBox(homogeneous=False, spacing=5)
+        self.server_hbox = hbox
         self.username_entry = Gtk.Entry()
         self.username_entry.set_max_length(128)
         self.username_entry.set_width_chars(16)
@@ -436,6 +450,10 @@ class ApplicationWindow:
         hbox.pack_start(label("/"), False, False)
         hbox.pack_start(self.path_entry, False, False)
         vbox.pack_start(hbox)
+
+        # WSL: distribution, Linux user and display, instead of network credentials
+        self.wsl_vbox = self.create_wsl_widgets()
+        vbox.pack_start(self.wsl_vbox)
 
         # Password
         hbox = Gtk.HBox(homogeneous=False, spacing=5)
@@ -503,8 +521,104 @@ class ApplicationWindow:
         self.window.vbox = vbox
         self.window.add(vbox)
 
+    def create_wsl_widgets(self) -> Gtk.VBox:
+        vbox = Gtk.VBox(homogeneous=False, spacing=10)
+        grid = Gtk.Grid(row_spacing=5, column_spacing=5)
+        self.wsl_distribution_combo = Gtk.ComboBoxText()
+        self.wsl_distribution_combo.append_text(WSL_DEFAULT_DISTRIBUTION)
+        self.wsl_distribution_combo.set_active(0)
+        self.wsl_distribution_combo.set_tooltip_text("The WSL distribution to run the xpra server in")
+        self.wsl_distribution_combo.connect("changed", self.validate)
+        self.wsl_refresh_btn = Gtk.Button(label="Refresh")
+        self.wsl_refresh_btn.set_tooltip_text("Reload the list of installed distributions")
+        self.wsl_refresh_btn.connect("clicked", self.load_wsl_distributions)
+        self.wsl_user_entry = Gtk.Entry()
+        self.wsl_user_entry.set_max_length(128)
+        self.wsl_user_entry.set_width_chars(16)
+        self.wsl_user_entry.set_placeholder_text("default user")
+        self.wsl_user_entry.set_tooltip_text("Linux user (optional), WSL's default user for the distribution otherwise")
+        self.wsl_user_entry.connect("changed", self.validate)
+        self.wsl_user_entry.connect("activate", self.connect_clicked)
+        self.wsl_display_entry = Gtk.Entry()
+        self.wsl_display_entry.set_max_length(5)
+        self.wsl_display_entry.set_width_chars(5)
+        self.wsl_display_entry.set_tooltip_text("Display number of the session")
+        self.wsl_display_entry.connect("changed", self.validate)
+        self.wsl_display_entry.connect("activate", self.connect_clicked)
+        grid.attach(label("Distribution:"), 0, 0, 1, 1)
+        grid.attach(self.wsl_distribution_combo, 1, 0, 1, 1)
+        grid.attach(self.wsl_refresh_btn, 2, 0, 1, 1)
+        grid.attach(label("Linux user:"), 0, 1, 1, 1)
+        grid.attach(self.wsl_user_entry, 1, 1, 1, 1)
+        grid.attach(label("Display:"), 0, 2, 1, 1)
+        grid.attach(self.wsl_display_entry, 1, 2, 1, 1)
+        al = Gtk.Alignment(xalign=0.5, yalign=0.5, xscale=0.0, yscale=0)
+        al.add(grid)
+        vbox.pack_start(al, False, False, 0)
+        self.wsl_distributions_loaded = False
+        return vbox
+
+    def get_wsl_distribution(self) -> str:
+        text = self.wsl_distribution_combo.get_active_text() or ""
+        return "" if text == WSL_DEFAULT_DISTRIBUTION else text
+
+    def set_wsl_distribution(self, distribution: str) -> None:
+        combo = self.wsl_distribution_combo
+        model = combo.get_model()
+        wanted = distribution or WSL_DEFAULT_DISTRIBUTION
+        for i, row in enumerate(model):
+            if row[0] == wanted:
+                combo.set_active(i)
+                return
+        # keep a saved selection, even if it is not installed (yet):
+        combo.append_text(wanted)
+        combo.set_active(len(model) - 1)
+
+    def load_wsl_distributions(self, *_args) -> None:
+        # `wsl.exe` may have to start the WSL service first, so never wait for it on the UI thread:
+        self.wsl_refresh_btn.set_sensitive(False)
+        self.set_info_text("Looking for WSL distributions...")
+        start_thread(self.do_load_wsl_distributions, "wsl-list-distributions", daemon=True)
+
+    def do_load_wsl_distributions(self) -> None:
+        from xpra.net.wsl import list_distributions
+        try:
+            distributions = list_distributions()
+            error = ""
+        except Exception as e:
+            log("list_distributions()", exc_info=True)
+            distributions = []
+            error = str(e)
+        GLib.idle_add(self.populate_wsl_distributions, distributions, error)
+
+    def populate_wsl_distributions(self, distributions: list[str], error: str) -> None:
+        self.wsl_distributions_loaded = not error
+        self.wsl_refresh_btn.set_sensitive(True)
+        selected = self.get_wsl_distribution() or self.config.wsl_distribution
+        self.wsl_distribution_combo.remove_all()
+        self.wsl_distribution_combo.append_text(WSL_DEFAULT_DISTRIBUTION)
+        for distribution in distributions:
+            self.wsl_distribution_combo.append_text(distribution)
+        self.set_wsl_distribution(selected)
+        if error:
+            self.set_info_text(error, True)
+        elif not distributions:
+            self.set_info_text("No WSL distributions found, install one using `wsl --install`", True)
+        else:
+            self.validate()
+
+    def validate_wsl(self) -> list:
+        display = self.wsl_display_entry.get_text()
+        user = self.wsl_user_entry.get_text()
+        return [
+            (self.wsl_display_entry, not (display.isdigit() and int(display) < 2 ** 16), "invalid display number"),
+            (self.wsl_user_entry, any(c in user for c in ":@/ "), "invalid Linux username"),
+        ]
+
     def validate(self, *args) -> list:
         mode = self.mode_combo.get_active_text().lower()
+        if mode == MODE_WSL:
+            return self.show_validation(args, self.validate_wsl())
         ssh = mode == MODE_SSH
         sshtossh = mode == MODE_NESTED_SSH
         errs = []
@@ -569,6 +683,9 @@ class ApplicationWindow:
             errs.append((self.port_entry,
                          port <= 0 or port >= 2 ** 16,
                          "invalid port number"))
+        return self.show_validation(args, errs)
+
+    def show_validation(self, args, errs: list) -> list:
         err_text = []
         for w, e, text in errs:
             set_widget_bg_color(w, e)
@@ -590,6 +707,17 @@ class ApplicationWindow:
 
     def mode_changed(self, *_args) -> None:
         mode = self.mode_combo.get_active_text().lower()
+        wsl = mode == MODE_WSL
+        for widget in (self.server_hbox, self.password_hbox):
+            widget.set_visible(not wsl)
+        self.wsl_vbox.set_visible(wsl)
+        if wsl:
+            self.proxy_vbox.hide()
+            self.nostrict_host_check.hide()
+            if not self.wsl_distributions_loaded:
+                self.load_wsl_distributions()
+            self.validate()
+            return
         ssh = mode == MODE_SSH
         sshtossh = mode == MODE_NESTED_SSH
         if ssh or sshtossh:
@@ -748,6 +876,24 @@ class ApplicationWindow:
             log.error("Error: cannot connect", exc_info=True)
             self.handle_exception(e)
 
+    def get_wsl_params(self) -> dict[str, Any]:
+        from xpra.net.wsl import wsl_target_string
+        distribution = self.config.wsl_distribution
+        username = self.config.wsl_user
+        display = self.config.wsl_display
+        params = {
+            "type": MODE_WSL,
+            "local": False,
+            "distribution": distribution,
+            "display": display,
+            "display_as_args": [display] if display else [],
+            "proxy_command": ["_proxy"],
+            "display_name": wsl_target_string(distribution, username, display),
+        }
+        if username:
+            params["username"] = username
+        return params
+
     def connect_builtin(self) -> None:
         # cooked vars used by connect_to
         username = self.config.username
@@ -755,7 +901,9 @@ class ApplicationWindow:
             "type": self.config.mode,
             "username": username,
         }
-        if self.config.mode in (MODE_SSH, MODE_NESTED_SSH):
+        if self.config.mode == MODE_WSL:
+            params = self.get_wsl_params()
+        elif self.config.mode in (MODE_SSH, MODE_NESTED_SSH):
             if self.config.socket_dir:
                 params["socket_dir"] = self.config.socket_dir
             params["remote_xpra"] = self.config.remote_xpra
@@ -894,6 +1042,8 @@ class ApplicationWindow:
         self.set_info_text("Connecting.")
         self.set_sensitive(False)
         may_show_progress(self.client, 60, "connecting")
+        if display_desc.get("type") == MODE_WSL and not self.check_wsl_xpra(display_desc):
+            return
         try:
             log("calling %s%s", connect_to,
                 (display_desc, self.set_info_text, self.ssh_failed))
@@ -905,6 +1055,18 @@ class ApplicationWindow:
             return
         log("connect_to(..)=%s, hiding launcher window, starting client", conn)
         GLib.idle_add(self.start_xpra_client, conn, display_desc)
+
+    def check_wsl_xpra(self, display_desc: dict) -> bool:
+        # runs in the connect thread, the distribution may need to start:
+        from xpra.net.wsl import check_xpra
+        self.set_info_text("Checking for xpra in WSL...")
+        if message := check_xpra(display_desc.get("distribution", ""), display_desc.get("username", "")):
+            self.current_error = message
+            self.set_info_text(message, True)
+            GLib.idle_add(self.clean_client)
+            self.set_sensitive(True)
+            return False
+        return True
 
     def start_xpra_client(self, conn, display_desc: dict) -> None:
         try:
@@ -1046,13 +1208,16 @@ class ApplicationWindow:
         self.config.proxy_password = self.proxy_password_entry.get_text()
         if self.is_putty:
             self.config.proxy_key = self.proxy_key_entry.get_text()
+        self.config.wsl_distribution = self.get_wsl_distribution()
+        self.config.wsl_user = self.wsl_user_entry.get_text()
+        self.config.wsl_display = self.wsl_display_entry.get_text()
 
         mode_enc = self.mode_combo.get_active_text().lower()
         if mode_enc.startswith(MODE_TCP):
             self.config.mode = MODE_TCP
             if mode_enc.find("aes") > 0:
                 self.config.encryption = "AES-" + mode_enc.split("aes-")[1].upper()
-        elif mode_enc in (MODE_SSL, MODE_QUIC, MODE_SSH, MODE_WS, MODE_WSS, MODE_NESTED_SSH):
+        elif mode_enc in (MODE_SSL, MODE_QUIC, MODE_SSH, MODE_WS, MODE_WSS, MODE_NESTED_SSH, MODE_WSL):
             self.config.mode = mode_enc
             self.config.encryption = ""
         log("update_options_from_gui() %s",
@@ -1100,6 +1265,9 @@ class ApplicationWindow:
         self.password_entry.set_text(password)
         self.host_entry.set_text(self.config.host)
         self.path_entry.set_text(self.config.path)
+        self.set_wsl_distribution(self.config.wsl_distribution)
+        self.wsl_user_entry.set_text(self.config.wsl_user)
+        self.wsl_display_entry.set_text(self.config.wsl_display)
 
     def close_window(self, *_args) -> None:
         if w := self.window:

@@ -64,6 +64,8 @@ WebSocket connections.
   [named pipe](https://github.com/Xpra-org/xpra/issues/1150) on Windows
 - `--bind-vsock` connects Linux hosts and guest virtual machines; see
   [#983](https://github.com/Xpra-org/xpra/issues/983)
+- `wsl://` connects Windows clients to sessions in a WSL distribution,
+  without any listening socket; see [WSL](../Usage/WSL.md)
 
 The default `--bind=auto` also creates
 [abstract sockets](https://github.com/Xpra-org/xpra/issues/4098) on supported

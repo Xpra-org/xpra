@@ -427,6 +427,7 @@ STRUCT_KNOWN_FILTERS: dict[str, dict[str, str]] = {
         "quic"          : "QUIC",
         "ping"          : "ping",
         "vsock"         : "vsock",
+        "wsl"           : "WSL connections",
     },
     "Server": {
         "server"        : "All server code",
