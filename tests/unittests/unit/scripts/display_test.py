@@ -10,13 +10,15 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from xpra.os_util import WIN32, OSX, POSIX
+from xpra.os_util import WIN32, OSX, POSIX, LINUX
 from xpra.util.env import OSEnvContext
 from xpra.scripts.display import (
     X11_SOCKET_DIR,
     x11_display_socket,
     find_x11_display_sockets,
     stat_display_socket,
+    x11_display_live,
+    get_xvfb_pid,
     find_displays,
     find_wayland_display_sockets,
     get_display_info,
@@ -173,6 +175,50 @@ class TestStatDisplaySocket(unittest.TestCase):
                 assert result["gid"] == os.getgid()
             finally:
                 srv.close()
+
+
+def bind_abstract_x11_socket() -> tuple[str, socket.socket]:
+    # listen on the abstract socket only, like an X11 server that could not create its socket file:
+    for dno in range(60000, 61000):
+        socket_path = os.path.join(X11_SOCKET_DIR, f"X{dno}")
+        if os.path.exists(socket_path):
+            continue
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        try:
+            sock.bind("\0" + socket_path)
+        except OSError:
+            sock.close()
+            continue
+        sock.listen(1)
+        return f":{dno}", sock
+    raise RuntimeError("no free abstract X11 socket found")
+
+
+@unittest.skipUnless(LINUX, "abstract sockets are Linux-only")
+class TestX11DisplayLive(unittest.TestCase):
+
+    def test_invalid_display(self):
+        assert not x11_display_live(":abc", timeout=0)
+        assert not x11_display_live("", timeout=0)
+
+    def test_abstract_socket_only(self):
+        display, sock = bind_abstract_x11_socket()
+        try:
+            assert x11_display_live(display, timeout=1)
+        finally:
+            sock.close()
+        assert not x11_display_live(display, timeout=1)
+
+    def test_get_xvfb_pid_abstract_socket_only(self):
+        with tempfile.TemporaryDirectory() as session_dir:
+            with open(os.path.join(session_dir, "xvfb.pid"), "w", encoding="latin1") as f:
+                f.write("12345\n")
+            display, sock = bind_abstract_x11_socket()
+            try:
+                assert get_xvfb_pid(display, session_dir) == 12345
+            finally:
+                sock.close()
+            assert get_xvfb_pid(display, session_dir) == 0
 
 
 class TestFindDisplays(unittest.TestCase):
