@@ -197,6 +197,40 @@ class TestVfbUtil(unittest.TestCase):
                        os.getuid(), os.getgid(), "", "test-uuid", prepare)
         prepare.assert_not_called()
 
+    def test_start_xvfb_read_only_socket_dir(self):
+        # `-displayfd` cannot work, so we choose the display number:
+        from xpra.x11.vfb_util import start_Xvfb
+        with patch("xpra.x11.vfb_util.x11_socket_dir_writable", return_value=False), \
+                patch("xpra.x11.vfb_util.LINUX", True), \
+                patch("xpra.x11.vfb_util.find_free_x11_display", return_value=":77"), \
+                patch("xpra.x11.vfb_util.get_xvfb_env", return_value={}), \
+                patch("xpra.x11.vfb_util.Popen", return_value=Mock(pid=1234)) as popen:
+            _xvfb, display_name = start_Xvfb(["Xvfb"], (), 0, 0, "S123", "/tmp", os.getuid(), os.getgid(), "")
+        self.assertEqual(display_name, ":77")
+        cmd = popen.call_args[0][0]
+        self.assertIn(":77", cmd)
+        self.assertNotIn("-displayfd", cmd)
+
+    def test_start_xvfb_read_only_socket_dir_no_abstract_sockets(self):
+        from xpra.x11.vfb_util import start_Xvfb
+        from xpra.scripts.config import InitException
+        with patch("xpra.x11.vfb_util.x11_socket_dir_writable", return_value=False), \
+                patch("xpra.x11.vfb_util.LINUX", False), \
+                patch("xpra.x11.vfb_util.Popen") as popen:
+            with self.assertRaises(InitException):
+                start_Xvfb(["Xvfb"], (), 0, 0, "S123", "/tmp", os.getuid(), os.getgid(), "")
+        popen.assert_not_called()
+
+    def test_start_xvfb_read_only_socket_dir_explicit_display(self):
+        # an explicit display number does not need the socket file:
+        from xpra.x11.vfb_util import start_Xvfb
+        with patch("xpra.x11.vfb_util.x11_socket_dir_writable", return_value=False), \
+                patch("xpra.x11.vfb_util.LINUX", False), \
+                patch("xpra.x11.vfb_util.get_xvfb_env", return_value={}), \
+                patch("xpra.x11.vfb_util.Popen", return_value=Mock(pid=1234)):
+            _xvfb, display_name = start_Xvfb(["Xvfb"], (), 0, 0, ":42", "/tmp", os.getuid(), os.getgid(), "")
+        self.assertEqual(display_name, ":42")
+
     # patch_pixel_depth
     def test_patch_depth_update_existing(self):
         from xpra.x11.vfb_util import patch_pixel_depth

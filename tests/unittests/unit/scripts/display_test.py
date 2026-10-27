@@ -19,6 +19,7 @@ from xpra.scripts.display import (
     stat_display_socket,
     x11_display_live,
     get_xvfb_pid,
+    find_free_x11_display,
     find_displays,
     find_wayland_display_sockets,
     get_display_info,
@@ -219,6 +220,30 @@ class TestX11DisplayLive(unittest.TestCase):
             finally:
                 sock.close()
             assert get_xvfb_pid(display, session_dir) == 0
+
+
+class TestFindFreeX11Display(unittest.TestCase):
+
+    def test_skips_used_displays(self):
+        abstract = {os.path.join(X11_SOCKET_DIR, "X0"), os.path.join(X11_SOCKET_DIR, "X2")}
+        used_paths = {os.path.join(X11_SOCKET_DIR, "X1"), "/tmp/.X3-lock"}
+        with patch("xpra.scripts.display.get_abstract_socket_paths", return_value=abstract), \
+                patch("xpra.scripts.display.os.path.exists", side_effect=lambda path: path in used_paths):
+            assert find_free_x11_display() == ":4"
+
+    @unittest.skipUnless(LINUX, "abstract sockets are Linux-only")
+    def test_skips_abstract_socket_in_use(self):
+        free = find_free_x11_display()
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        try:
+            sock.bind("\0" + x11_display_socket(free))
+        except OSError:
+            sock.close()
+            raise unittest.SkipTest(f"display {free} was taken in the meantime") from None
+        try:
+            assert find_free_x11_display() != free
+        finally:
+            sock.close()
 
 
 class TestFindDisplays(unittest.TestCase):
