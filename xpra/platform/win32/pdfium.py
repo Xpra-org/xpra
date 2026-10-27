@@ -189,7 +189,7 @@ def main() -> int:
     if len(sys.argv) == 2:
         from xpra.platform.win32.printing import get_printers
         printers = get_printers()
-        printer_name = strtobytes(printers.keys()[0])
+        printer_name = strtobytes(next(iter(printers)))
     elif len(sys.argv) in (3, 4):
         printer_name = strtobytes(sys.argv[2])
     else:
