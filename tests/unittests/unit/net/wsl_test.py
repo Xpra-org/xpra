@@ -13,6 +13,7 @@ from unittest.mock import patch
 from xpra.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.net import wsl
+from xpra.os_util import WIN32
 
 # stands in for `wsl.exe ... --exec xpra _proxy`: copies stdin to stdout, byte for byte
 ECHO = [sys.executable, "-c", (
@@ -131,6 +132,7 @@ class TestCommand(unittest.TestCase):
             wsl.get_wsl_command({"display_as_args": [100]})
 
 
+@unittest.skipUnless(WIN32, "WSL commands are only available on MS Windows")
 class TestWSLCommands(unittest.TestCase):
 
     def test_decode(self):
@@ -181,6 +183,7 @@ class TestWSLCommands(unittest.TestCase):
         self.assertIn("command -v 'my app'", run.call_args[0][0][-1])
 
 
+@unittest.skipUnless(WIN32, "the WSL bridge is only available on MS Windows")
 class TestBridge(unittest.TestCase):
 
     def connect(self, cmd, **kwargs):
