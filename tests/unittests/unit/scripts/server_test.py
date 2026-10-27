@@ -26,6 +26,7 @@ from xpra.scripts.server import (
     init_virtual_devices,
     is_splash_enabled,
     make_server_app,
+    publish_displayfd,
     request_upgrade_display,
     resolve_server_display_name,
     sanitize_dbus_env,
@@ -476,6 +477,9 @@ class TestMain(unittest.TestCase):
         app = SimpleNamespace(get_subsystem=lambda name: display if name == "display" else None)
         set_vfb_startup_state(app, state)
         assert state_calls == [state]
+        # published later, once the server is ready:
+        assert not displayfd_calls
+        publish_displayfd(app, state)
         assert displayfd_calls == [(":42", 7)]
 
     def test_publish_displayfd(self):
