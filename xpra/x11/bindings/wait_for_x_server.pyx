@@ -12,7 +12,7 @@ from time import sleep, monotonic
 from xpra.x11.bindings.xlib cimport Display, XOpenDisplay, XCloseDisplay
 
 
-# timeout is in seconds
+# timeout is in seconds; zero makes a single connection attempt
 def wait_for_x_server(display_name: str = "", int timeout = 10) -> None:
     cdef Display * d
     cdef char* name = NULL
@@ -22,11 +22,13 @@ def wait_for_x_server(display_name: str = "", int timeout = 10) -> None:
     # start with short delays, then back off up to one second:
     t = 10
     cdef double start = monotonic()
-    while (monotonic() - start) < timeout:
+    while True:
         d = XOpenDisplay(name)
         if d is not NULL:
             XCloseDisplay(d)
             return
+        if (monotonic() - start) >= timeout:
+            break
         sleep(t/1000)
         t = min(t*2, 1000)
     raise RuntimeError(f"could not connect to X server on display {display_name!r} after {timeout} seconds")
