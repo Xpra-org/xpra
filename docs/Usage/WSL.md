@@ -76,11 +76,18 @@ distribution and shows installation instructions if it cannot.
 Xpra_cmd.exe start wsl://Ubuntu/100 --start=xterm
 # re-attach to it later:
 Xpra_cmd.exe attach wsl://Ubuntu/100
+# the display number can be omitted when only one session is running:
+Xpra_cmd.exe attach wsl://Ubuntu/
 # as a specific Linux user:
-Xpra_cmd.exe attach wsl://alice@Ubuntu/100
-# using WSL's default distribution:
-Xpra_cmd.exe attach wsl:///100
+Xpra_cmd.exe attach wsl://alice@Ubuntu/
+# using WSL's default distribution, and its only session:
+Xpra_cmd.exe attach wsl://
 ```
+
+When attaching without a display number and more than one session is running,
+the error lists them and one must be specified.
+Starting a session does require a display number: WSLg mounts `/tmp/.X11-unix`
+read-only, which prevents `Xvfb` from choosing a free display by itself.
 
 The distribution name is case-sensitive, names containing special characters
 can be URL-encoded (ie: `wsl://My%20Distro/100`). When the distribution or
@@ -94,9 +101,12 @@ add `-d wsl` for details about the `wsl.exe` process.
 
 Closing or disconnecting the client terminates its `wsl.exe` process, but the
 Xpra server keeps running in the distribution, so applications are still there
-when re-attaching. The session does not survive `wsl --shutdown` or a Windows
-restart, and WSL may also stop an idle distribution after some time without any
-`wsl.exe` process attached to it. See the
+when re-attaching - as long as the distribution keeps running.
+The session does not survive `wsl --shutdown` or a Windows restart, and WSL
+also stops a distribution shortly after its last `wsl.exe` process has exited
+(in testing: 25 seconds after the client disconnected), which terminates the
+session. Keeping any other `wsl.exe` process open, ie: a terminal, prevents this.
+See the
 [`.wslconfig` documentation](https://learn.microsoft.com/windows/wsl/wsl-config)
 for the settings controlling this.
 
