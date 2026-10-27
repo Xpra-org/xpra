@@ -17,7 +17,7 @@ from xpra.gstreamer.common import (
 )
 from xpra.util.gobject import n_arg_signal
 from xpra.gstreamer.pipeline import Pipeline
-from xpra.codecs.constants import get_profile, CSC_ALIAS, VideoSpec
+from xpra.codecs.constants import get_profile, VideoSpec
 from xpra.codecs.gstreamer.common import (
     get_version, get_type, get_info,
     get_video_encoder_caps, get_video_encoder_options,
@@ -251,7 +251,9 @@ class CaptureAndEncode(Capture):
             self.frames += 1
             client_info = self.extra_client_info
             client_info["frame"] = self.frames
-            client_info["csc"] = CSC_ALIAS.get(self.pixel_format, self.pixel_format)
+            # the VAAPI and AMF encoders take NV12 input but produce YUV420P,
+            # which is what clients have decoders for:
+            client_info["csc"] = {"NV12": "YUV420P"}.get(self.pixel_format, self.pixel_format)
             self.extra_client_info = {}
             self.emit("new-image", self.encoding, data, client_info)
             if SAVE_TO_FILE:
