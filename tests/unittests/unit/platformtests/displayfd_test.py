@@ -34,6 +34,15 @@ class DisplayFDTest(unittest.TestCase):
         finally:
             os.close(r_pipe)
 
+    def test_pipe_roundtrip_wayland(self):
+        # longer than the 8 bytes we used to stop at:
+        r_pipe, w_pipe = os.pipe()
+        self.assertTrue(write_displayfd(w_pipe, "wayland-12"))
+        try:
+            self.assertEqual(read_displayfd(r_pipe), b"wayland-12\n")
+        finally:
+            os.close(r_pipe)
+
     def test_pipe_eof(self):
         for payload in (b"", b"77"):
             with self.subTest(payload=payload):

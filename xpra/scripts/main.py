@@ -2599,8 +2599,11 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
                 log.error("Error: displayfd failed")
                 log.error(f" {msg}")
 
-            n = parse_displayfd(buf, displayfd_err)
-            if n >= 0:
+            if buf.startswith(b"wayland-") and buf.endswith(b"\n"):
+                # wayland servers write their socket name verbatim:
+                matching_display = buf.rstrip(b"\n\r").decode("ascii", "replace")
+                log(f"displayfd={matching_display}")
+            elif (n := parse_displayfd(buf, displayfd_err)) >= 0:
                 matching_display = f":{n}"
                 log(f"displayfd={matching_display}")
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets,

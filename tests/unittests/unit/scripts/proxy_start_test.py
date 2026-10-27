@@ -4,12 +4,38 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 import unittest
 from subprocess import CompletedProcess
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from xpra.scripts import main as scripts_main
 from xpra.scripts.config import make_defaults_struct
+
+
+@unittest.skipUnless(scripts_main.POSIX and not scripts_main.OSX, "displayfd startup requires POSIX without macOS")
+class TestServerDisplayFD(unittest.TestCase):
+
+    def test_display_names(self):
+        for payload, display in ((b"77\n", ":77"), (b"wayland-12\n", "wayland-12")):
+            with self.subTest(payload=payload):
+                opts = make_defaults_struct()
+                process = Mock()
+                dotxpra = Mock()
+                dotxpra.socket_paths.return_value = ()
+
+                def spawn(_cmd, **kwargs):
+                    os.write(kwargs["pass_fds"][0], payload)
+                    return process
+
+                with patch.object(scripts_main, "Popen", side_effect=spawn), \
+                        patch.object(scripts_main, "add_process"), \
+                        patch.object(scripts_main, "DotXpra", return_value=dotxpra), \
+                        patch.object(scripts_main, "get_start_server_args", return_value=[]), \
+                        patch.object(scripts_main, "identify_new_socket", return_value=("/tmp/xpra-test", display)) as identify:
+                    result = scripts_main.start_server_subprocess("/usr/bin/xpra", [], "seamless", opts)
+                self.assertEqual(identify.call_args.args[3], display)
+                self.assertEqual(result, (process, "/tmp/xpra-test", display))
 
 
 class TestStartOnExisting(unittest.TestCase):
