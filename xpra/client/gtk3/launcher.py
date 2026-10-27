@@ -226,6 +226,9 @@ class ApplicationWindow:
         # TODO: the fixup does not belong here?
         from xpra.config.fixup import fixup_options
         fixup_options(self.config)
+        if self.config.backend == "win32":
+            # the launcher already uses GTK, which the native win32 client must not load:
+            self.config.backend = "gtk"
         # what we save by default:
         self.config_keys = set(SAVED_FIELDS)
         self.client = None
