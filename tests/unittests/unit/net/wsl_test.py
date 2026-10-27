@@ -4,7 +4,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+import shutil
+import subprocess
 import sys
+import tempfile
 import time
 import unittest
 from subprocess import CompletedProcess, TimeoutExpired
@@ -183,12 +187,155 @@ class TestWSLCommands(unittest.TestCase):
         self.assertIn("command -v 'my app'", run.call_args[0][0][-1])
 
 
+class TestKeepalive(unittest.TestCase):
+
+    def test_command(self):
+        cmd = wsl.get_keepalive_command("Ubuntu", "alice", interval=3)
+        self.assertEqual(cmd[:7], [wsl.WSL_COMMAND, "--distribution", "Ubuntu", "--user", "alice", "--exec", "sh"])
+        self.assertEqual(cmd[7:], ["-c", wsl.KEEPALIVE_SCRIPT, "sh", "3"])
+        self.assertEqual(wsl.get_keepalive_command()[:3], [wsl.WSL_COMMAND, "--exec", "sh"])
+        self.assertEqual(wsl.get_keepalive_command(interval=0)[-1], "1")
+
+    def test_enabled(self):
+        self.assertTrue(wsl.is_keepalive_enabled({}))
+        for value in ("no", "off", "0", "false"):
+            self.assertFalse(wsl.is_keepalive_enabled({"keepalive": value}))
+        self.assertTrue(wsl.is_keepalive_enabled({"keepalive": "yes"}))
+        with patch.object(wsl, "WSL_KEEPALIVE", False):
+            self.assertFalse(wsl.is_keepalive_enabled({}))
+            self.assertTrue(wsl.is_keepalive_enabled({"keepalive": "yes"}))
+
+    @unittest.skipUnless(sys.platform == "win32", "process creation flags are specific to MS Windows")
+    def test_start_without_breakaway(self):
+        import subprocess
+        started = []
+
+        def popen(cmd, **kwargs):
+            flags = kwargs["creationflags"]
+            if flags & subprocess.CREATE_BREAKAWAY_FROM_JOB:
+                raise PermissionError("access denied")
+            started.append(flags)
+            return type("FakeProcess", (), {"pid": 1})()
+        with patch.object(wsl, "Popen", side_effect=popen):
+            self.assertIsNotNone(wsl.start_keepalive("Ubuntu"))
+        self.assertEqual(len(started), 1)
+        self.assertTrue(started[0] & subprocess.CREATE_NO_WINDOW)
+        self.assertTrue(started[0] & subprocess.CREATE_NEW_PROCESS_GROUP)
+        with patch.object(wsl, "Popen", side_effect=OSError("no wsl")):
+            self.assertIsNone(wsl.start_keepalive("Ubuntu"))
+
+
+@unittest.skipUnless(os.path.exists("/proc/self/cmdline") and shutil.which("sh"),
+                     "the keepalive script runs in a Linux distribution")
+class TestKeepaliveScript(unittest.TestCase):
+
+    def setUp(self):
+        self.runtime_dir = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, self.runtime_dir, True)
+        os.mkdir(os.path.join(self.runtime_dir, "xpra"))
+        self.processes = []
+        self.addCleanup(self.kill_all)
+
+    def kill_all(self):
+        for proc in self.processes:
+            if proc.poll() is None:
+                proc.kill()
+                proc.wait()
+
+    def spawn(self, cmd, **kwargs):
+        proc = subprocess.Popen(cmd, **kwargs)
+        self.processes.append(proc)
+        return proc
+
+    def fake_server(self, display: str, cmdline_marker="xpra"):
+        # a long-running process with `xpra` on its command line, and its `server.pid`:
+        proc = self.spawn([sys.executable, "-c", "import time; time.sleep(60)", cmdline_marker])
+        session_dir = os.path.join(self.runtime_dir, "xpra", display)
+        os.makedirs(session_dir, exist_ok=True)
+        with open(os.path.join(session_dir, "server.pid"), "w") as f:
+            f.write(f"{proc.pid}\n")
+        return proc
+
+    def keepalive(self):
+        env = dict(os.environ, XDG_RUNTIME_DIR=self.runtime_dir)
+        return self.spawn(["sh", "-c", wsl.KEEPALIVE_SCRIPT, "sh", "1"], env=env)
+
+    def assert_running(self, proc, duration=1.5):
+        with self.assertRaises(subprocess.TimeoutExpired):
+            proc.wait(duration)
+
+    def test_no_servers(self):
+        self.assertEqual(self.keepalive().wait(5), 0)
+        # a pid file left behind by a server which is gone, or reused by another process:
+        self.fake_server("100", cmdline_marker="other").kill()
+        self.fake_server("101", cmdline_marker="other")
+        self.assertEqual(self.keepalive().wait(5), 0)
+
+    def test_lifetime(self):
+        first = self.fake_server("100")
+        second = self.fake_server("101")
+        keepalive = self.keepalive()
+        self.assert_running(keepalive)
+        first.kill()
+        first.wait()
+        # still one session left:
+        self.assert_running(keepalive)
+        second.kill()
+        second.wait()
+        self.assertEqual(keepalive.wait(5), 0)
+
+    @unittest.skipUnless(shutil.which("flock"), "flock is not installed")
+    def test_single_instance(self):
+        self.fake_server("100")
+        keepalive = self.keepalive()
+        self.assert_running(keepalive, 0.5)
+        # a second instance gives up once the lock wait expires:
+        self.assertEqual(self.keepalive().wait(10), 0)
+        self.assertIsNone(keepalive.poll())
+
+
 @unittest.skipUnless(WIN32, "the WSL bridge is only available on MS Windows")
 class TestBridge(unittest.TestCase):
 
+    def setUp(self):
+        # never leave a real `wsl.exe` running after the tests:
+        patcher = patch.object(wsl, "start_keepalive")
+        self.start_keepalive = patcher.start()
+        self.addCleanup(patcher.stop)
+
     def connect(self, cmd, **kwargs):
+        desc = {"type": "wsl", "distribution": "Ubuntu", "display": "100"}
+        desc.update(kwargs.pop("desc", {}))
         with patch.object(wsl, "WIN32", True), patch.object(wsl, "get_wsl_command", return_value=cmd):
-            return wsl.connect_to({"type": "wsl", "distribution": "Ubuntu", "display": "100"}, **kwargs)
+            return wsl.connect_to(desc, **kwargs)
+
+    def close_and_wait(self, conn) -> None:
+        proc = conn.bridge.process
+        conn.close()
+        proc.wait(wsl.WSL_EXIT_TIMEOUT + 5)
+
+    def test_keepalive_after_connection(self):
+        conn = self.connect(ECHO)
+        self.assertEqual(self.roundtrip(conn, b"hello"), b"hello")
+        self.close_and_wait(conn)
+        self.start_keepalive.assert_called_once_with("Ubuntu", "")
+
+    def test_no_keepalive_without_server(self):
+        # the server never responded, so there is nothing to keep alive:
+        conn = self.connect(ECHO, fail_cb=lambda msg: None)
+        self.close_and_wait(conn)
+        self.start_keepalive.assert_not_called()
+
+    def test_keepalive_disabled(self):
+        conn = self.connect(ECHO, desc={"keepalive": "no"})
+        self.assertEqual(self.roundtrip(conn, b"hello"), b"hello")
+        self.close_and_wait(conn)
+        self.start_keepalive.assert_not_called()
+        with patch.object(wsl, "WSL_KEEPALIVE", False):
+            conn = self.connect(ECHO)
+            self.assertEqual(self.roundtrip(conn, b"hello"), b"hello")
+            self.close_and_wait(conn)
+        self.start_keepalive.assert_not_called()
 
     def roundtrip(self, conn, data: bytes) -> bytes:
         from threading import Thread
