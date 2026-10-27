@@ -158,10 +158,11 @@ class TestRemoteStart(unittest.TestCase):
                 opts.reconnect = False
                 opts.start = [command]
                 app = Mock()
+                app.hello_extra = {} if attach else {"request": "id"}
                 with patch.object(wsl, "WIN32", True), \
                      patch("xpra.scripts.main.match_client_display_size"), \
                      patch("xpra.scripts.main.make_client", return_value=app), \
-                     patch("xpra.client.base.command.WaitForDisconnectXpraClient", return_value=app) as wait_client, \
+                     patch("xpra.client.base.command.ProxyStartedClient", return_value=app) as started_client, \
                      patch("xpra.scripts.main.connect_to_server") as connect, \
                      patch("xpra.scripts.main.do_run_client", return_value=ExitCode.OK):
                     result = run_remote_server("xpra", [], opts, [uri], "seamless", make_opts())
@@ -173,8 +174,11 @@ class TestRemoteStart(unittest.TestCase):
                 self.assertEqual(cmd[7:9], ["_proxy_start", ":100"])
                 self.assertIn(f"--start={command}", cmd)
                 self.assertEqual(opts.start, [])
-                self.assertEqual(app.hello_extra, {} if attach else {"connect": False})
-                self.assertEqual(wait_client.called, not attach)
+                self.assertEqual(app.hello_extra, {} if attach else {"request": "id", "connect": False})
+                if attach:
+                    started_client.assert_not_called()
+                else:
+                    started_client.assert_called_once_with(opts, show_display=False)
 
 
 @unittest.skipUnless(WIN32, "WSL commands are only available on MS Windows")
