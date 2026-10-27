@@ -2577,11 +2577,14 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
         proc = Popen(cmd, env=env, cwd=cwd, preexec_fn=preexec_fn, pass_fds=pass_fds)
         log(f"proc={proc}")
         add_process(proc, "server", cmd, ignore=True, forget=True)
+        if w_pipe:
+            # only the server should hold the write end,
+            # so that we get EOF if it exits without writing the display:
+            noerr(os.close, w_pipe)
         if r_pipe:
             from xpra.platform.displayfd import read_displayfd, parse_displayfd
             buf = read_displayfd(r_pipe, proc=None)  # proc daemonizes!
             noerr(os.close, r_pipe)
-            noerr(os.close, w_pipe)
 
             def displayfd_err(msg: str) -> None:
                 log.error("Error: displayfd failed")

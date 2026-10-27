@@ -7,9 +7,11 @@
 import os
 import tempfile
 import unittest
+from time import monotonic
 
 from xpra.util.io import load_binary_file
 from xpra.platform.displayfd import write_displayfd, read_displayfd, parse_displayfd
+
 
 class DisplayFDTest(unittest.TestCase):
 
@@ -30,6 +32,19 @@ class DisplayFDTest(unittest.TestCase):
             self.assertEqual(read_displayfd(r_pipe), b"77\n")
         finally:
             os.close(r_pipe)
+
+    def test_pipe_eof(self):
+        for payload in (b"", b"77"):
+            with self.subTest(payload=payload):
+                r_pipe, w_pipe = os.pipe()
+                os.write(w_pipe, payload)
+                os.close(w_pipe)
+                try:
+                    start = monotonic()
+                    self.assertEqual(read_displayfd(r_pipe, timeout=5), payload)
+                    self.assertLess(monotonic() - start, 1, "EOF should return without waiting for the timeout")
+                finally:
+                    os.close(r_pipe)
 
     def test_write(self):
         temp = tempfile.NamedTemporaryFile(prefix="xpra.", suffix=".displayfd-test", delete=False)
@@ -64,6 +79,7 @@ class DisplayFDTest(unittest.TestCase):
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()
