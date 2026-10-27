@@ -597,7 +597,11 @@ class ClientWindow(GObject.GObject):
                 # for now, we still translate to X11 key names:
                 # use the character the layout actually produces, so that
                 # ie: `AltGr`+`q` on a German keyboard is sent as `at` and not as `q`:
-                keyname = VK_NAMES.get(vk_code, "") or keysym_name(local_string)
+                # the `VK_OEM_*` punctuation keys vary with the layout and have no X11 names,
+                # ie: `VK_OEM_COMMA` is `comma` or `less` on a US layout, depending on `Shift`:
+                keyname = VK_NAMES.get(vk_code, "")
+                if (not keyname or keyname.startswith("VK_OEM_")) and local_string and local_string.isprintable():
+                    keyname = keysym_name(local_string)
                 log("vk_code: %d, string=%r, local_string=%r, scancode=%i, extended=%s, keyname=%r", vk_code, string, local_string, scancode, extended, keyname)
                 if keyname.startswith("VK_"):
                     keyname = VK_X11_MAP.get(keyname[3:], keyname)
