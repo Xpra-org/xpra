@@ -223,7 +223,7 @@ def main(argv):
 		from xpra.platform.win32.printing import get_printers
 		printers = get_printers()
 		log("printers: %s", printers)
-		printer_name = printers.keys()[0]
+		printer_name = next(iter(printers))
 	elif len(argv)==2:
 		printer_name = argv[1]
 	elif len(argv)==3:
