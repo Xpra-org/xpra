@@ -38,6 +38,8 @@ WSL_XPRA = os.environ.get("XPRA_WSL_XPRA", "xpra")
 WSL_LIST_TIMEOUT = envint("XPRA_WSL_LIST_TIMEOUT", 30)
 WSL_CHECK_TIMEOUT = envint("XPRA_WSL_CHECK_TIMEOUT", 60)
 WSL_EXIT_TIMEOUT = envint("XPRA_WSL_EXIT_TIMEOUT", 5)
+# how long we wait for the exit code of a bridge which has closed the connection without connecting:
+WSL_CLOSE_EXIT_WAIT = envint("XPRA_WSL_CLOSE_EXIT_WAIT", 1)
 # how many lines of `stderr` we keep for error messages:
 WSL_DIAGNOSTIC_LINES = envint("XPRA_WSL_DIAGNOSTIC_LINES", 20)
 # how many lines of the server log we show when the server fails to start:
@@ -317,7 +319,7 @@ class WSLBridge:
         if had_connected:
             message = f"the WSL bridge process has terminated with exit code {exit_code}"
         else:
-            message = f"failed to start xpra in WSL (exit code {exit_code})"
+            message = f"the xpra command failed in WSL (exit code {exit_code})"
         lines = [message] + list(self.diagnostics)
         if self.command_not_found() or (not had_connected and not self.diagnostics):
             lines += list(INSTALL_INSTRUCTIONS)
@@ -428,7 +430,16 @@ def connect_to(display_desc: dict[str, Any], debug_cb: Callable = noop, fail_cb:
         # ie: `_proxy_start` keeps waiting for a server which failed to start after daemonizing,
         # so we give up on it without ever hearing from it, and its errors are in the server log:
         if not conn.input_bytecount and "wsl_abort" not in display_desc:
-            report(bridge.get_startup_failure_message())
+            # if the proxy command has exited with an error, that is what we report,
+            # ie: a command that could not be started on an existing session:
+            try:
+                exit_code = child.wait(WSL_CLOSE_EXIT_WAIT)
+            except TimeoutExpired:
+                exit_code = None
+            if exit_code:
+                report(bridge.get_error_message(exit_code, False))
+            else:
+                report(bridge.get_startup_failure_message())
         elif conn.input_bytecount and is_keepalive_enabled(display_desc):
             # we did reach a server, keep it alive once our bridge is gone:
             start_keepalive(distribution, username)
