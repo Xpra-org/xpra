@@ -84,12 +84,12 @@ class TestStartOnExisting(unittest.TestCase):
         defaults.start_child = []
         result = CompletedProcess([], returncode, b"", b"new command started with pid=1\n")
         with patch("subprocess.run", return_value=result) as run, \
-                patch.object(proxy, "stderr_print") as stderr_print:
+                patch.object(proxy, "stderr_print"):
             proxy.start_commands_on_existing("/usr/bin/xpra", ":100", opts, defaults)
-        return run, stderr_print
+        return run
 
     def test_commands(self):
-        run, _ = self.run_start(start=["xterm -T 'a title'"], start_child=["xclock"], default_start=["ibus-daemon"])
+        run = self.run_start(start=["xterm -T 'a title'"], start_child=["xclock"], default_start=["ibus-daemon"])
         cmds = [c.args[0] for c in run.call_args_list]
         # the defaults from the config files are not started again:
         self.assertEqual(cmds, [
@@ -102,13 +102,40 @@ class TestStartOnExisting(unittest.TestCase):
             self.assertNotIn("stdout", c.kwargs)
 
     def test_nothing_to_start(self):
-        run, _ = self.run_start(default_start=["ibus-daemon"])
+        run = self.run_start(default_start=["ibus-daemon"])
         run.assert_not_called()
 
     def test_failure_reported(self):
-        _, stderr_print = self.run_start(start=["nosuchcommand"], returncode=1)
-        messages = " ".join(str(c.args[0]) for c in stderr_print.call_args_list)
-        self.assertIn("failed to start 'nosuchcommand' on display :100", messages)
+        from xpra.config import InitExit
+        with self.assertRaises(InitExit) as cm:
+            self.run_start(start=["nosuchcommand", "xterm"], returncode=1)
+        # the exit code tells the client that something went wrong:
+        self.assertNotEqual(int(cm.exception.status), 0)
+        self.assertIn("failed to start 'nosuchcommand', 'xterm' on display :100", str(cm.exception))
+
+
+class TestProxyStartedClient(unittest.TestCase):
+
+    def make_client(self, show_display: bool):
+        from xpra.client.base import command
+        client = command.ProxyStartedClient(TestStartServerSubprocess.make_opts(), show_display=show_display)
+        client.hello_extra |= {"connect": False}
+        return command, client
+
+    def test_identifies_without_detaching(self):
+        _, client = self.make_client(False)
+        # a `detach` request would disconnect the clients already attached to the session:
+        self.assertEqual(client.hello_extra.get("request"), "id")
+
+    def test_shows_chosen_display(self):
+        from xpra.exit_codes import ExitCode
+        from xpra.util.objects import typedict
+        for show_display, expected in ((True, ["session available on display :101"]), (False, [])):
+            command, client = self.make_client(show_display)
+            with patch.object(command, "log") as log, patch.object(client, "quit") as quit_fn:
+                client.do_command(typedict({"display": ":101"}))
+            self.assertEqual([c.args[0] for c in log.info.call_args_list], expected)
+            quit_fn.assert_called_once_with(ExitCode.OK)
 
 
 def main():
