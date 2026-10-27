@@ -140,7 +140,7 @@ class SeamlessWindowServer(WindowServer):
     """
     __slots__ = (
         "_exit_with_windows", "_focus_history", "_has_focus", "_has_grab", "_wm",
-        "configure_damage_timers", "last_raised", "snc_timer", "wm_name", "window_movers",
+        "configure_damage_timers", "last_raised", "root_event_xid", "snc_timer", "wm_name", "window_movers",
     )
     __signals__ = ("x11-child-map-event", )
 
@@ -157,6 +157,8 @@ class SeamlessWindowServer(WindowServer):
         # the client that last moved or resized each window, and when:
         self.window_movers: dict[int, tuple[str, float]] = {}
         self.snc_timer = 0
+        # the root window we receive events from, if `receive_root_events` was called:
+        self.root_event_xid = 0
 
     def init(self, opts) -> None:
         super().init(opts)
@@ -164,7 +166,10 @@ class SeamlessWindowServer(WindowServer):
         self._exit_with_windows = opts.exit_with_windows
 
     def cleanup(self) -> None:
-        remove_event_receiver(get_root_xid(), self)
+        # there may not be any X11 display to talk to if the server failed to start:
+        if xid := self.root_event_xid:
+            self.root_event_xid = 0
+            remove_event_receiver(xid, self)
         super().cleanup()
 
     def init_packet_handlers(self) -> None:
@@ -293,6 +298,7 @@ class SeamlessWindowServer(WindowServer):
             X11Window.setEventMask(rxid, event_mask)
         self.connect("x11-child-map-event", self._on_x11_child_map_event)
         add_event_receiver(rxid, self)
+        self.root_event_xid = rxid
 
     def _on_x11_child_map_event(self, _emitter, event: X11Event) -> None:
         self.do_x11_child_map_event(event)

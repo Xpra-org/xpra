@@ -23,12 +23,14 @@ class XCursorServer(CursorManager):
     X11 cursor subsystem - forwards cursor changes via XFixes,
     received as `x11-cursor-event` signals from the X11 dispatch.
     """
-    __slots__ = ("last_cursor_serial",)
+    __slots__ = ("last_cursor_serial", "root_event_xid")
     __signals__ = ("x11-cursor-event", )
 
     def __init__(self, server=None):
         CursorManager.__init__(self, server)
         self.last_cursor_serial = 0
+        # the root window we receive events from, if `setup` got that far:
+        self.root_event_xid = 0
 
     def get_default_cursor_size(self) -> tuple[int, int]:
         with xlog:
@@ -62,10 +64,14 @@ class XCursorServer(CursorManager):
             self.default_image = XFixes.get_cursor_image()
             log("get_default_cursor=%s", Ellipsizer(self.default_image))
             self.connect("x11-cursor-event", self._on_x11_cursor_event)
-            add_event_receiver(get_root_xid(), self)
+            self.root_event_xid = get_root_xid()
+            add_event_receiver(self.root_event_xid, self)
 
     def cleanup(self) -> None:
-        remove_event_receiver(get_root_xid(), self)
+        # there may not be any X11 display to talk to if the server failed to start:
+        if xid := self.root_event_xid:
+            self.root_event_xid = 0
+            remove_event_receiver(xid, self)
 
     def _on_x11_cursor_event(self, _emitter, event: X11Event) -> None:
         self.do_x11_cursor_event(event)
