@@ -50,10 +50,13 @@ void           mf_decoder_destroy(MFDecoder *dec);
 /* Decode one compressed video access unit.
    On MF_DEC_OK, frame is populated; caller must copy before next call.
    On MF_DEC_NEED_MORE_INPUT, frame is zeroed.
-   On MF_DEC_STREAM_CHANGE, dimensions changed; call mf_decoder_get_output_size(). */
+   On MF_DEC_STREAM_CHANGE, dimensions changed; call mf_decoder_get_output_size().
+   wait_ms: how long to keep polling for output the MFT has not produced yet
+   (0 when no output is expected yet, ie: the encoder still holds frames
+   so the stream is being sent out of display order). */
 MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
                                   const uint8_t *data, int data_len,
-                                  MFDecodedFrame *frame);
+                                  MFDecodedFrame *frame, int wait_ms);
 
 /* Drain buffered frames after end of stream */
 MFDecodeStatus mf_decoder_flush(MFDecoder *dec, MFDecodedFrame *frame);

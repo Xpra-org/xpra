@@ -14,6 +14,7 @@ from collections.abc import Sequence
 
 from xpra.codecs.constants import VideoSpec, EncodingNotSupported
 from xpra.util.objects import typedict
+from xpra.util.env import envint
 from xpra.common import SizedBuffer
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
@@ -21,6 +22,11 @@ log = Logger("decoder", "mf")
 
 from libc.stdint cimport uint8_t, uintptr_t
 from xpra.buffers.membuf cimport buffer_context  # pylint: disable=syntax-error
+
+# how long to wait for a frame the MFT is still decoding on its worker threads,
+# the first frame also pays for the decoder's warm-up:
+cdef int FIRST_FRAME_WAIT_MS = envint("XPRA_MF_FIRST_FRAME_WAIT_MS", 100)
+cdef int OUTPUT_WAIT_MS = envint("XPRA_MF_OUTPUT_WAIT_MS", 20)
 
 cdef extern from "mf_decode.h":
     ctypedef struct MFDecoder:
@@ -56,7 +62,7 @@ cdef extern from "mf_decode.h":
     void           mf_decoder_destroy(MFDecoder *dec)
     MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
                                       const uint8_t *data, int data_len,
-                                      MFDecodedFrame *frame) nogil
+                                      MFDecodedFrame *frame, int wait_ms) nogil
     MFDecodeStatus mf_decoder_flush(MFDecoder *dec, MFDecodedFrame *frame) nogil
     void           mf_decoder_get_output_size(MFDecoder *dec, int *width, int *height)
     int            mf_decoder_is_hardware(MFDecoder *dec)
@@ -247,6 +253,12 @@ cdef class Decoder:
         cdef const uint8_t *src = NULL
         cdef int src_len = 0
         cdef int new_w, new_h
+        # "delayed" is the number of frames still held by the encoder:
+        # the stream is in decode order, so the decoder may not output anything yet
+        delayed = options.intget("delayed", 0) > 0
+        cdef int wait_ms = 0
+        if not delayed:
+            wait_ms = FIRST_FRAME_WAIT_MS if self.frames == 0 else OUTPUT_WAIT_MS
 
         assert self.context != NULL, "decoder is closed"
 
@@ -255,11 +267,16 @@ cdef class Decoder:
             src = <const uint8_t *> (<uintptr_t> int(bc))
             src_len = len(bc)
             with nogil:
-                status = mf_decoder_decode(self.context, src, src_len, &frame)
+                status = mf_decoder_decode(self.context, src, src_len, &frame, wait_ms)
 
         if status == MF_DEC_NEED_MORE_INPUT:
-            log("mf: need more input (buffering)")
-            return None
+            detail = mf_decoder_get_last_error(self.context).decode("utf-8", "replace")
+            if delayed:
+                # the server told us this frame references frames still to come:
+                log("mf: need more input (buffering): %s", detail)
+                return None
+            raise RuntimeError("mf %s decoder produced no output for %i bytes: %s" % (
+                self.encoding, src_len, detail or mf_decode_status_str(status).decode("latin-1")))
 
         if status == MF_DEC_STREAM_CHANGE:
             # C layer handles renegotiation and retries ProcessOutput,
