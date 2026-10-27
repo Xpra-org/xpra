@@ -465,6 +465,12 @@ class TestMain(unittest.TestCase):
             DisplayManager.publish_displayfd(":42", 7)
         write_displayfd.assert_called_once_with(7, "42")
 
+    def test_publish_displayfd_placeholder(self):
+        from xpra.server.subsystem.display import DisplayManager
+        with patch("xpra.platform.displayfd.write_displayfd", return_value=True) as write_displayfd:
+            DisplayManager.publish_displayfd("S12345", 7)
+        write_displayfd.assert_not_called()
+
     def test_publish_vfb_pid(self):
         from xpra.x11.subsystem.display import X11DisplayManager
         with patch.dict(os.environ, {}, clear=False):
