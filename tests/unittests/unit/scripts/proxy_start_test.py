@@ -114,6 +114,30 @@ class TestStartOnExisting(unittest.TestCase):
         self.assertIn("failed to start 'nosuchcommand', 'xterm' on display :100", str(cm.exception))
 
 
+class TestProxyStartedClient(unittest.TestCase):
+
+    def make_client(self, show_display: bool):
+        from xpra.client.base import command
+        client = command.ProxyStartedClient(TestStartServerSubprocess.make_opts(), show_display=show_display)
+        client.hello_extra |= {"connect": False}
+        return command, client
+
+    def test_identifies_without_detaching(self):
+        _, client = self.make_client(False)
+        # a `detach` request would disconnect the clients already attached to the session:
+        self.assertEqual(client.hello_extra.get("request"), "id")
+
+    def test_shows_chosen_display(self):
+        from xpra.exit_codes import ExitCode
+        from xpra.util.objects import typedict
+        for show_display, expected in ((True, ["session available on display :101"]), (False, [])):
+            command, client = self.make_client(show_display)
+            with patch.object(command, "log") as log, patch.object(client, "quit") as quit_fn:
+                client.do_command(typedict({"display": ":101"}))
+            self.assertEqual([c.args[0] for c in log.info.call_args_list], expected)
+            quit_fn.assert_called_once_with(ExitCode.OK)
+
+
 def main():
     unittest.main()
 

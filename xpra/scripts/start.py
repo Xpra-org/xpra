@@ -272,15 +272,17 @@ def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults
     app = None
     try:
         if opts.attach is False:
-            from xpra.client.base.command import WaitForDisconnectXpraClient, RequestStartClient
+            from xpra.client.base.command import ProxyStartedClient, RequestStartClient
             if isdisplaytype(args, "ssh", "wsl"):
-                # ssh or wsl will start the instance we requested,
-                # then we just detach and we're done
-                app = WaitForDisconnectXpraClient(opts)
+                # ssh or wsl will start the instance we requested (or use the existing one),
+                # then we just identify it and we're done:
+                app = ProxyStartedClient(opts, show_display=not params.get("display"))
+                # keep the "id" request:
+                app.hello_extra |= {"connect": False}
             else:
                 app = RequestStartClient(opts)
                 app.start_new_session = sns
-            app.hello_extra = {"connect": False}
+                app.hello_extra = {"connect": False}
             opts.reconnect = False
         else:
             app = make_client(opts)
