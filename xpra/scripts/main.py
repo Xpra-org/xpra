@@ -2583,7 +2583,9 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
             noerr(os.close, w_pipe)
         if r_pipe:
             from xpra.platform.displayfd import read_displayfd, parse_displayfd, pipe_closed
-            buf = read_displayfd(r_pipe, proc=None)  # proc daemonizes!
+            # the server only writes to displayfd once it is ready,
+            # but we get EOF straight away if it fails:
+            buf = read_displayfd(r_pipe, timeout=WAIT_SERVER_TIMEOUT, proc=None)  # proc daemonizes!
             closed = not buf and pipe_closed(r_pipe)
             noerr(os.close, r_pipe)
             if closed:
