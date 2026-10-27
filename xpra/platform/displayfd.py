@@ -68,6 +68,10 @@ def read_displayfd(r_pipe: int, timeout=DISPLAY_FD_TIMEOUT, proc=None) -> bytes:
                 r = [r_pipe]
             if r_pipe in r:
                 v = os.read(r_pipe, 8)
+                if not v:
+                    # EOF: every writer has closed the pipe, nothing more will come
+                    log("read_displayfd: EOF")
+                    break
                 buf += v
                 log("read=%s", v)
                 if buf and (buf.endswith(b'\n') or len(buf) >= 8):
