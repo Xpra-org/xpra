@@ -229,7 +229,15 @@ class TestFindFreeX11Display(unittest.TestCase):
         used_paths = {os.path.join(X11_SOCKET_DIR, "X1"), "/tmp/.X3-lock"}
         with patch("xpra.scripts.display.get_abstract_socket_paths", return_value=abstract), \
                 patch("xpra.scripts.display.os.path.exists", side_effect=lambda path: path in used_paths):
-            assert find_free_x11_display() == ":4"
+            assert find_free_x11_display(first=0) == ":4"
+
+    def test_starts_at_100(self):
+        # away from the low display numbers used by desktop sessions:
+        abstract = {os.path.join(X11_SOCKET_DIR, "X100")}
+        with patch("xpra.scripts.display.get_abstract_socket_paths", return_value=abstract), \
+                patch("xpra.scripts.display.os.path.exists", return_value=False):
+            assert find_free_x11_display() == ":101"
+            assert find_free_x11_display(first=5) == ":5"
 
     @unittest.skipUnless(LINUX, "abstract sockets are Linux-only")
     def test_skips_abstract_socket_in_use(self):

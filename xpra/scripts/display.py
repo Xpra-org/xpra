@@ -29,6 +29,8 @@ from xpra.log import Logger
 from xpra.config import InitExit
 
 VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
+# where `find_free_x11_display` starts looking:
+FIRST_FREE_DISPLAY: int = envint("XPRA_FIRST_FREE_DISPLAY", 100)
 
 X11_SOCKET_DIR: Final[str] = "/tmp/.X11-unix"
 
@@ -239,14 +241,15 @@ def get_abstract_socket_paths() -> set[str]:
     return paths
 
 
-def find_free_x11_display() -> str:
+def find_free_x11_display(first: int = FIRST_FREE_DISPLAY) -> str:
     """
     find a display number that is not in use,
     without relying on the X11 server's `-displayfd` probing
     """
     abstract_sockets = get_abstract_socket_paths()
-    # same range as the X11 server's `-displayfd` probing:
-    for dno in range(65536 - 6000):
+    # the same upper limit as the X11 server's `-displayfd` probing,
+    # but starting higher, away from the displays used by desktop sessions (ie: WSLg's `:0`):
+    for dno in range(max(0, first), 65536 - 6000):
         socket_path = os.path.join(X11_SOCKET_DIR, f"X{dno}")
         if socket_path in abstract_sockets or os.path.exists(socket_path) or os.path.exists(f"/tmp/.X{dno}-lock"):
             continue
