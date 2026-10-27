@@ -403,6 +403,22 @@ class TestBridge(unittest.TestCase):
         self.assertIn("exit code 127", failures[0])
         self.assertIn("xpra: command not found", failures[0])
 
+    def test_close_after_failure(self):
+        # ie: `_proxy_start` refused a command for an existing session, and the client gave up first:
+        failures = []
+        conn = self.connect(FAIL, fail_cb=failures.append)
+        conn.bridge.process.wait(10)
+        deadline = time.monotonic() + 5
+        while not conn.bridge.diagnostics and time.monotonic() < deadline:
+            time.sleep(0.1)
+        conn.close()
+        self.assertEqual(len(failures), 1)
+        # the error is reported, not a timeout:
+        self.assertIn("the xpra command failed in WSL (exit code 127)", failures[0])
+        self.assertIn("xpra: command not found", failures[0])
+        self.assertNotIn("did not respond", failures[0])
+        self.start_keepalive.assert_not_called()
+
     def test_xpra_missing_message(self):
         bridge = wsl.WSLBridge([wsl.WSL_COMMAND, "--distribution", "Ubuntu", "--exec", "xpra", "_proxy", "100"])
         bridge.diagnostics.append("<3>WSL (865 - Relay) ERROR: CreateProcessCommon:875: execvpe(xpra) failed: No such file or directory")
