@@ -86,6 +86,8 @@ assert callable(error), "used by modules importing this function from here"
 
 NO_ROOT_WARNING: bool = envbool("XPRA_NO_ROOT_WARNING", False)
 WAIT_SERVER_TIMEOUT: int = envint("WAIT_SERVER_TIMEOUT", 90)
+# how long `xpra control` may take to start a command on an existing server:
+CONTROL_TIMEOUT = envint("XPRA_PROXY_CONTROL_TIMEOUT", 30)
 OPENGL_PROBE_TIMEOUT: int = envint("XPRA_OPENGL_PROBE_TIMEOUT", 5)
 SYSTEMD_RUN: bool = envbool("XPRA_SYSTEMD_RUN", True)
 VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
@@ -2661,6 +2663,34 @@ def run_daemon(cmd: list[str], **kwargs):
     return proc
 
 
+def start_commands_on_existing(script_file: str, display_name: str, opts, defaults) -> None:
+    """
+    `_proxy_start` for a display which is already running:
+    there is no new server to give the `start` and `start-child` commands to,
+    so ask the existing one to run them, as `xpra control DISPLAY start[-child]` would.
+    """
+    log = Logger("server", "exec")
+    from subprocess import DEVNULL
+    for option, subcommand in (("start", "start"), ("start_child", "start-child")):
+        for command in strip_defaults_start_child(getattr(opts, option), getattr(defaults, option)):
+            if not command:
+                continue
+            # the server splits the command string the same way:
+            cmd = [script_file, "control", display_name, subcommand, "--"] + shlex.split(command)
+            log("start_commands_on_existing: %s", cmd)
+            try:
+                # our stdout carries the connection, so nothing else must be written to it:
+                proc = run(cmd, stdin=DEVNULL, capture_output=True, timeout=CONTROL_TIMEOUT)
+            except (OSError, TimeoutExpired) as e:
+                stderr_print(f"Error: failed to start {command!r} on display {display_name}: {e}")
+                continue
+            for line in (proc.stdout + proc.stderr).decode(errors="replace").splitlines():
+                if line.strip():
+                    stderr_print(line)
+            if proc.returncode:
+                stderr_print(f"Error: failed to start {command!r} on display {display_name}: {exit_str(proc.returncode)}")
+
+
 def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode: str, defaults) -> ExitValue:
     no_gtk()
     display = {}
@@ -2690,7 +2720,9 @@ def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode:
                 state = dotxpra.get_display_state(display_name)
                 if state != SocketState.DEAD:
                     stderr_print(f"found existing display {display_name} : {state}")
-        if state != SocketState.LIVE:
+        if state == SocketState.LIVE:
+            start_commands_on_existing(script_file, display_name, opts, defaults)
+        else:
             # strip defaults, only keep extra ones:
             for x in ("start", "start-child",
                       "start-after-connect", "start-child-after-connect",
