@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
+import time
 from time import monotonic
 from collections import deque
 from typing import Any
@@ -15,6 +16,7 @@ from xpra.net.common import Packet, FULL_INFO
 from xpra.net.packet_type import PING_ECHO
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
+from xpra.os_util import get_hex_uuid
 from xpra.util.objects import typedict
 from xpra.util.system import getloadavg
 
@@ -34,7 +36,7 @@ class PingClient(StubClientSubsystem):
     """
     __slots__ = (
         "_server_ok", "client_latency", "echo_timeout_timer", "echo_timers", "last_echoed_time", "pings",
-        "server_latency", "server_load", "timer",
+        "server_latency", "server_load", "timer", "uuid",
     )
     PREFIX = "ping"
     __signals__: list[str] = ["timeout"]
@@ -52,6 +54,8 @@ class PingClient(StubClientSubsystem):
         self.timer: int = 0
         self.echo_timers: dict[int, int] = {}
         self.echo_timeout_timer = 0
+        # identifies our own pings, so we can ignore echoes of pings sent by someone else (ie: a proxy):
+        self.uuid: str = get_hex_uuid()
 
     def init(self, opts) -> None:
         self.pings = opts.pings
@@ -152,7 +156,7 @@ class PingClient(StubClientSubsystem):
             self.timer = 0
             return False
         now_ms = int(1000.0 * monotonic())
-        self.send("ping", now_ms)
+        self.send("ping", now_ms, int(time.time() * 1000), self.uuid)
         wait = 1000 * MIN_PING_TIMEOUT
         if aspl := tuple(self.server_latency):
             spl: Sequence[float] = tuple(x[1] for x in aspl)
@@ -171,6 +175,10 @@ class PingClient(StubClientSubsystem):
         l2 = packet.get_u64(3)
         l3 = packet.get_u64(4)
         cl = packet.get_i64(5)
+        sid = packet.get_str(6) if len(packet) >= 7 else ""
+        if sid != self.uuid:
+            log(f"ignoring ping echo for {sid=}, ours is {self.uuid!r}")
+            return
         self.last_echoed_time = echoedtime
         self.check_server_echo(0)
         server_ping_latency = monotonic() - echoedtime / 1000.0

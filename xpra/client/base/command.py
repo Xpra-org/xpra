@@ -406,7 +406,8 @@ class MonitorXpraClient(SendCommandConnectClient):
 
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
-        self.send(PING_ECHO, echotime, 0, 0, 0, -1)
+        sid = packet.get_str(3) if len(packet) >= 4 else ""
+        self.send(PING_ECHO, echotime, 0, 0, 0, -1, sid)
 
 
 class InfoTimerClient(MonitorXpraClient):
@@ -568,7 +569,8 @@ class ShellXpraClient(SendCommandConnectClient):
 
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
-        self.send(PING_ECHO, echotime, 0, 0, 0, -1)
+        sid = packet.get_str(3) if len(packet) >= 4 else ""
+        self.send(PING_ECHO, echotime, 0, 0, 0, -1, sid)
 
     @staticmethod
     def _process_shell_reply(packet: Packet) -> None:
