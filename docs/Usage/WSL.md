@@ -101,14 +101,23 @@ add `-d wsl` for details about the `wsl.exe` process.
 
 Closing or disconnecting the client terminates its `wsl.exe` process, but the
 Xpra server keeps running in the distribution, so applications are still there
-when re-attaching - as long as the distribution keeps running.
-The session does not survive `wsl --shutdown` or a Windows restart, and WSL
-also stops a distribution shortly after its last `wsl.exe` process has exited
-(in testing: 25 seconds after the client disconnected), which terminates the
-session. Keeping any other `wsl.exe` process open, ie: a terminal, prevents this.
-See the
+when re-attaching.
+
+WSL stops a distribution shortly after its last `wsl.exe` process has exited,
+whatever is still running in it, which would terminate the sessions.
+To prevent this, the client leaves a hidden `wsl.exe` process running after
+disconnecting: it keeps the distribution running for as long as the Linux user
+has Xpra servers in it, and exits once the last one has stopped.
+There is only one of these per distribution and user, however many sessions
+and connections there are.
+It can be turned off for a connection with `wsl://Ubuntu/100?keepalive=no`,
+or for all connections by setting the environment variable `XPRA_WSL_KEEPALIVE=0`,
+the distribution then stops - and the sessions with it - about 25 seconds
+after disconnecting.
+
+The sessions do not survive `wsl --shutdown` or a Windows restart. See the
 [`.wslconfig` documentation](https://learn.microsoft.com/windows/wsl/wsl-config)
-for the settings controlling this.
+for WSL's own idle settings.
 
 ### Using TCP instead
 

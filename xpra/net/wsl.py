@@ -17,7 +17,7 @@ import os
 import shlex
 from collections import deque
 from collections.abc import Callable, Sequence
-from subprocess import PIPE, Popen, run, TimeoutExpired
+from subprocess import DEVNULL, PIPE, Popen, run, TimeoutExpired
 from typing import Any
 from urllib import parse
 
@@ -25,7 +25,8 @@ from xpra.common import noop
 from xpra.scripts.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.os_util import WIN32
-from xpra.util.env import envint
+from xpra.util.env import envbool, envint
+from xpra.util.parsing import str_to_bool
 from xpra.util.thread import start_thread
 from xpra.log import Logger
 
@@ -40,6 +41,35 @@ WSL_EXIT_TIMEOUT = envint("XPRA_WSL_EXIT_TIMEOUT", 5)
 WSL_DIAGNOSTIC_LINES = envint("XPRA_WSL_DIAGNOSTIC_LINES", 20)
 # how many lines of the server log we show when the server fails to start:
 WSL_SERVER_LOG_LINES = envint("XPRA_WSL_SERVER_LOG_LINES", 10)
+# keep the distribution running while it has xpra servers, see `start_keepalive`:
+WSL_KEEPALIVE = envbool("XPRA_WSL_KEEPALIVE", True)
+WSL_KEEPALIVE_INTERVAL = envint("XPRA_WSL_KEEPALIVE_INTERVAL", 5)
+
+# Runs in the distribution, as the user owning the sessions, until none of their xpra servers are left.
+# Only one instance per user: the lock is released when it exits,
+# and a new instance waits briefly in case the previous one is just about to exit.
+KEEPALIVE_SCRIPT = """
+dir="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/xpra"
+[ -d "$dir" ] || exit 0
+if command -v flock >/dev/null 2>&1; then
+    exec 9>"$dir/wsl-keepalive.lock"
+    flock -w 2 9 || exit 0
+fi
+while true; do
+    pid=""
+    for f in "$dir"/*/server.pid; do
+        p=$(cat "$f" 2>/dev/null) || continue
+        if [ -n "$p" ] && grep -qa xpra "/proc/$p/cmdline" 2>/dev/null; then
+            pid="$p"
+            break
+        fi
+    done
+    [ -n "$pid" ] || exit 0
+    while [ -e "/proc/$pid" ]; do
+        sleep "$1"
+    done
+done
+"""
 
 DEFAULT_DISPLAY = "100"
 # exit code used by `check_command`:
@@ -185,6 +215,51 @@ def check_xpra(distribution: str = "", username: str = "", timeout: int = WSL_CH
     returns an empty string if it can, or an error message with installation instructions.
     """
     return check_command(WSL_XPRA, distribution, username, timeout, INSTALL_INSTRUCTIONS)
+
+
+def get_keepalive_command(distribution: str = "", username: str = "",
+                          interval: int = WSL_KEEPALIVE_INTERVAL) -> list[str]:
+    cmd = [WSL_COMMAND] + get_wsl_selector_args(distribution, username)
+    return cmd + ["--exec", "sh", "-c", KEEPALIVE_SCRIPT, "sh", str(max(1, interval))]
+
+
+def start_keepalive(distribution: str = "", username: str = "") -> Popen | None:
+    """
+    WSL stops a distribution shortly after its last `wsl.exe` process has exited,
+    even if it is still running processes, which would terminate the xpra servers in it.
+    So we leave a hidden `wsl.exe` process running after the client has disconnected,
+    which exits by itself once the user has no xpra servers left in the distribution.
+    """
+    cmd = get_keepalive_command(distribution, username)
+    kwargs = get_popen_kwargs()
+    flags = kwargs.get("creationflags", 0)
+    if WIN32:
+        from subprocess import CREATE_NEW_PROCESS_GROUP, CREATE_BREAKAWAY_FROM_JOB  # @UnresolvedImport
+        # so it is not interrupted with the client, and survives the client's job if we are allowed to:
+        flags |= CREATE_NEW_PROCESS_GROUP
+        attempts = (flags | CREATE_BREAKAWAY_FROM_JOB, flags)
+    else:
+        attempts = (flags, )
+    for creationflags in attempts:
+        kwargs["creationflags"] = creationflags
+        try:
+            proc = Popen(cmd, stdin=DEVNULL, stdout=DEVNULL, stderr=DEVNULL, close_fds=True, **kwargs)
+        except OSError:
+            log("start_keepalive() failed with creationflags=%#x", creationflags, exc_info=True)
+            continue
+        log("started wsl keepalive process %i: %s", proc.pid, shlex.join(cmd[:-3] + ["..."]))
+        return proc
+    log.warn("Warning: failed to start the WSL keepalive process,")
+    log.warn(" WSL may stop the distribution and its xpra sessions once disconnected")
+    return None
+
+
+def is_keepalive_enabled(display_desc: dict[str, Any]) -> bool:
+    # can be turned off globally with `XPRA_WSL_KEEPALIVE=0`, or per connection: `wsl://Ubuntu/100?keepalive=no`
+    value = display_desc.get("keepalive")
+    if value is None:
+        return WSL_KEEPALIVE
+    return bool(str_to_bool(value, WSL_KEEPALIVE))
 
 
 class WSLBridge:
@@ -341,6 +416,9 @@ def connect_to(display_desc: dict[str, Any], debug_cb: Callable = noop, fail_cb:
         # so we give up on it without ever hearing from it, and its errors are in the server log:
         if not conn.input_bytecount and "wsl_abort" not in display_desc:
             report(bridge.get_startup_failure_message())
+        elif conn.input_bytecount and is_keepalive_enabled(display_desc):
+            # we did reach a server, keep it alive once our bridge is gone:
+            start_keepalive(distribution, username)
         bridge.stop()
 
     info = {
