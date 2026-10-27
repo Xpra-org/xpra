@@ -2,8 +2,6 @@
 
 ## [7.0] 2026-10-21
 * 🔧 Platforms, build and packaging:
-  * [Ubuntu variant of the 'safer' container](https://github.com/Xpra-org/xpra/commit/23347832ed0f70ebf781bfaae3e8a4285c9439a5), [using Xdummy by default](https://github.com/Xpra-org/xpra/commit/ee9539998473cc838ea5a179c6c70e1d817b093e)
-  * [fix missing MS Windows Start menu icons and outdated documentation shortcuts](https://github.com/Xpra-org/xpra/commit/a002c6382ecd8dd60c95d4364afae54c4330850a)
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
   * [new macOS screen capture backend](https://github.com/Xpra-org/xpra/issues/1872)
   * [setup scripts for pycuda](https://github.com/Xpra-org/xpra/issues/2400)
