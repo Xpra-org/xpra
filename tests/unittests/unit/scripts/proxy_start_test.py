@@ -71,6 +71,46 @@ class TestStartServerSubprocess(unittest.TestCase):
             self.assertLess(time.monotonic() - start, 10, f"failure detected too slowly with {args=}")
 
 
+class TestStartOnExisting(unittest.TestCase):
+
+    def run_start(self, start=(), start_child=(), returncode=0, default_start=()):
+        from subprocess import CompletedProcess
+        from xpra.scripts import proxy
+        opts = TestStartServerSubprocess.make_opts()
+        defaults = TestStartServerSubprocess.make_opts()
+        opts.start = list(default_start) + list(start)
+        opts.start_child = list(start_child)
+        defaults.start = list(default_start)
+        defaults.start_child = []
+        result = CompletedProcess([], returncode, b"", b"new command started with pid=1\n")
+        with patch("subprocess.run", return_value=result) as run, \
+                patch.object(proxy, "stderr_print") as stderr_print:
+            proxy.start_commands_on_existing("/usr/bin/xpra", ":100", opts, defaults)
+        return run, stderr_print
+
+    def test_commands(self):
+        run, _ = self.run_start(start=["xterm -T 'a title'"], start_child=["xclock"], default_start=["ibus-daemon"])
+        cmds = [c.args[0] for c in run.call_args_list]
+        # the defaults from the config files are not started again:
+        self.assertEqual(cmds, [
+            ["/usr/bin/xpra", "control", ":100", "start", "--", "xterm", "-T", "a title"],
+            ["/usr/bin/xpra", "control", ":100", "start-child", "--", "xclock"],
+        ])
+        for c in run.call_args_list:
+            # our stdout is the connection to the client:
+            self.assertTrue(c.kwargs.get("capture_output"))
+            self.assertNotIn("stdout", c.kwargs)
+
+    def test_nothing_to_start(self):
+        run, _ = self.run_start(default_start=["ibus-daemon"])
+        run.assert_not_called()
+
+    def test_failure_reported(self):
+        _, stderr_print = self.run_start(start=["nosuchcommand"], returncode=1)
+        messages = " ".join(str(c.args[0]) for c in stderr_print.call_args_list)
+        self.assertIn("failed to start 'nosuchcommand' on display :100", messages)
+
+
 def main():
     unittest.main()
 
