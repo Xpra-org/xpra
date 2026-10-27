@@ -395,7 +395,7 @@ def run_mode(script_file: str, cmdline: list[str], options, args: list[str], ful
     ) and not NO_ROOT_WARNING:
         warn("\nWarning: running as root\n")
 
-    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic")
+    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic", "wsl")
     if mode.startswith("shadow") and WIN32 and not envbool("XPRA_PAEXEC_WRAP", False):
         # are we started from a non-interactive context?
         from xpra.platform.win32.gui import get_desktop_name

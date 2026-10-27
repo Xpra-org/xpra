@@ -5,7 +5,9 @@
 
 import sys
 import time
+import shlex
 import os.path
+from collections import deque
 from subprocess import Popen, PIPE
 from urllib.parse import urlencode
 from collections.abc import Callable
@@ -50,11 +52,11 @@ REQUIRE_COMMAND = False
 UNSET = object()
 
 
-def exec_command(cmd):
+def exec_command(cmd, **kwargs):
     env = os.environ.copy()
     env["XPRA_WAIT_FOR_INPUT"] = "0"
     env["XPRA_NOTTY"] = "1"
-    proc = Popen(cmd, env=env)
+    proc = Popen(cmd, env=env, **kwargs)
     log("exec_command(%s)=%s", cmd, proc)
     return proc
 
@@ -91,6 +93,10 @@ def link_btn(link: str, text="", icon_name="question.png"):
 
 
 MODE_NESTED_SSH = "SSH -> SSH"
+WSL_DEFAULT_DISTRIBUTION = "Default distribution"
+WSL_DEFAULT_DISPLAY = "100"
+# how many lines of output we show when a WSL session fails to start:
+WSL_ERROR_LINES = 20
 
 
 def get_default_port(mode):
@@ -159,6 +165,10 @@ class StartSession(Gtk.Window):
         self.localhost_btn = rb(None, "Local System", self.host_toggled)
         self.remote_btn = rb(self.localhost_btn, "Remote")
         self.remote_btn.set_tooltip_text(_("Start sessions on a remote system"))
+        self.wsl_btn = None
+        if WIN32:
+            self.wsl_btn = rb(self.localhost_btn, "WSL", self.host_toggled,
+                              "Start seamless sessions in a Windows Subsystem for Linux distribution")
         self.address_box = Gtk.HBox(homogeneous=False, spacing=0)
         options_box.pack_start(xal(self.address_box), True, True)
         self.mode_combo = sf(Gtk.ComboBoxText())
@@ -185,6 +195,22 @@ class StartSession(Gtk.Window):
         self.port_entry.set_placeholder_text(_("Port"))
         self.port_entry.set_max_length(5)
         self.address_box.pack_start(xal(self.port_entry, 0), False)
+
+        # WSL: the distribution and Linux user, `wsl.exe` takes care of the connection
+        self.wsl_box = Gtk.HBox(homogeneous=False, spacing=10)
+        options_box.pack_start(xal(self.wsl_box), True, True)
+        self.wsl_box.pack_start(l("WSL distribution:"), False)
+        self.wsl_distribution_combo = sf(Gtk.ComboBoxText())
+        self.wsl_distribution_combo.append_text(_(WSL_DEFAULT_DISTRIBUTION))
+        self.wsl_distribution_combo.set_active(0)
+        self.wsl_box.pack_start(self.wsl_distribution_combo, False)
+        self.wsl_user_entry = sf(Gtk.Entry())
+        self.wsl_user_entry.set_width_chars(12)
+        self.wsl_user_entry.set_placeholder_text(_("Linux user"))
+        self.wsl_user_entry.set_tooltip_text(_("optional, WSL's default user for the distribution otherwise"))
+        self.wsl_user_entry.set_max_length(255)
+        self.wsl_box.pack_start(self.wsl_user_entry, False)
+        self.wsl_distributions_loading = False
 
         # ssh -> ssh: the proxy host to connect through
         self.proxy_box = Gtk.VBox(homogeneous=False, spacing=10)
@@ -326,6 +352,7 @@ class StartSession(Gtk.Window):
         vbox.show_all()
         self.display_combo.hide()
         self.proxy_box.hide()
+        self.wsl_box.hide()
         self.add(vbox)
         # load encodings in the background:
         self.load_codecs_thread = start_thread(self.load_codecs, "load-codecs", daemon=True)
@@ -459,10 +486,14 @@ class StartSession(Gtk.Window):
             self.display_box.show()
         shadow_mode = self.shadow_btn.get_active()
         seamless = self.seamless_btn.get_active()
-        if localhost:
-            self.address_box.hide()
-        else:
+        if self.remote_btn.get_active():
             self.address_box.show_all()
+        else:
+            self.address_box.hide()
+        if self.is_wsl():
+            self.wsl_box.show_all()
+        else:
+            self.wsl_box.hide()
         self.show_proxy_box()
         if shadow_mode:
             # only option we show is the optional display input
@@ -590,7 +621,7 @@ class StartSession(Gtk.Window):
             self.no_display_combo()
 
     def show_proxy_box(self) -> None:
-        nested = not self.localhost_btn.get_active() and self.mode_combo.get_active_text() == MODE_NESTED_SSH
+        nested = self.remote_btn.get_active() and self.mode_combo.get_active_text() == MODE_NESTED_SSH
         if nested:
             self.proxy_box.show_all()
         else:
@@ -627,8 +658,65 @@ class StartSession(Gtk.Window):
                 self.runattach_btn.set_sensitive(False)
         self.runattach_btn.set_tooltip_text(ra_label)
 
+    def is_wsl(self) -> bool:
+        return bool(self.wsl_btn and self.wsl_btn.get_active())
+
+    def update_wsl_session_types(self) -> None:
+        # only seamless sessions are supported with WSL for now:
+        wsl = self.is_wsl()
+        for btn in (self.desktop_btn, self.shadow_btn):
+            btn.set_sensitive(not wsl)
+        if not wsl:
+            return
+        if not self.seamless_btn.get_active():
+            self.seamless_btn.set_active(True)
+        # the session should survive the client disconnecting:
+        self.exit_with_client_cb.set_active(False)
+        if not self.display_entry.get_text():
+            self.display_entry.set_text(WSL_DEFAULT_DISPLAY)
+        if not self.wsl_distributions_loading:
+            self.wsl_distributions_loading = True
+            start_thread(self.load_wsl_distributions, "wsl-list-distributions", daemon=True)
+
+    def load_wsl_distributions(self) -> None:
+        # this can take a while if WSL has to start, so it runs in its own thread
+        from xpra.net.wsl import list_distributions
+        try:
+            distributions = list_distributions()
+        except Exception as e:
+            log("list_distributions()", exc_info=True)
+            GLib.idle_add(self.show_error, _("Cannot list the WSL distributions"), str(e))
+            distributions = []
+        GLib.idle_add(self.populate_wsl_distributions, distributions)
+
+    def populate_wsl_distributions(self, distributions: list[str]) -> None:
+        self.wsl_distributions_loading = False
+        current = self.wsl_distribution_combo.get_active_text()
+        if model := self.wsl_distribution_combo.get_model():
+            model.clear()
+        self.wsl_distribution_combo.append_text(_(WSL_DEFAULT_DISTRIBUTION))
+        selected = 0
+        for i, distribution in enumerate(distributions):
+            self.wsl_distribution_combo.append_text(distribution)
+            if distribution == current:
+                selected = i + 1
+        self.wsl_distribution_combo.set_active(selected)
+
+    def get_wsl_distribution(self) -> str:
+        if self.wsl_distribution_combo.get_active() <= 0:
+            return ""
+        return self.wsl_distribution_combo.get_active_text() or ""
+
+    def show_error(self, title: str, text: str) -> None:
+        dialog = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.ERROR,
+                                   buttons=Gtk.ButtonsType.CLOSE, text=title)
+        dialog.format_secondary_text(text)
+        dialog.connect("response", lambda *_args: dialog.destroy())
+        dialog.show_all()
+
     def host_toggled(self, *args) -> None:
         log("host_toggled(%s)", args)
+        self.update_wsl_session_types()
         self.display_changed()
         self.populate_menus()
         self.entry_changed()
@@ -651,8 +739,59 @@ class StartSession(Gtk.Window):
         # only hide after reading the form:
         self.hide()
         log("do_run(%s) cmd=%s", attach, cmd)
+        if self.is_wsl():
+            distribution = self.get_wsl_distribution()
+            username = self.wsl_user_entry.get_text()
+            start_thread(self.run_wsl, "run-wsl", daemon=True, args=(cmd, distribution, username))
+            return
         if proc := exec_command(cmd):
             start_thread(self.wait_for_subprocess, "wait-%i" % proc.pid, daemon=True, args=(proc,))
+
+    @staticmethod
+    def get_wsl_executable(cmd: list[str]) -> str:
+        # ie: ["xpra", "seamless", "--start=xterm -fa Mono", ...] -> "xterm"
+        for arg in cmd:
+            for option in ("--start=", "--start-child="):
+                if arg.startswith(option):
+                    try:
+                        return shlex.split(arg[len(option):])[0]
+                    except (ValueError, IndexError):
+                        return ""
+        return ""
+
+    def run_wsl(self, cmd: list[str], distribution: str, username: str) -> None:
+        # check that xpra can be found before trying to start a session with it,
+        # so we can show installation instructions instead of an obscure error:
+        from xpra.net.wsl import check_xpra, check_command
+        message = check_xpra(distribution, username)
+        if not message and (command := self.get_wsl_executable(cmd)):
+            # the server would start without the application, and we would never know:
+            message = check_command(command, distribution, username)
+        if message:
+            GLib.idle_add(self.show_error, _("Cannot start the WSL session"), message)
+            GLib.idle_add(self.show)
+            return
+        proc = exec_command(cmd, stdout=PIPE, stderr=PIPE)
+        # keep the last lines of output, so we can show why the session failed to start:
+        output: deque[str] = deque(maxlen=WSL_ERROR_LINES)
+
+        def drain(pipe) -> None:
+            for line in iter(pipe.readline, b""):
+                if s := line.decode("utf8", errors="replace").rstrip():
+                    log("wsl session: %s", s)
+                    output.append(s)
+
+        drain_threads = [start_thread(drain, "drain-output", daemon=True, args=(pipe,))
+                         for pipe in (proc.stdout, proc.stderr)]
+        proc.wait()
+        for thread in drain_threads:
+            thread.join(1)
+        log("return code: %s", proc.returncode)
+        if proc.returncode not in (0, None):
+            from xpra.exit_codes import exit_str
+            details = "\n".join([exit_str(proc.returncode)] + list(output))
+            GLib.idle_add(self.show_error, _("The WSL session failed"), details)
+        GLib.idle_add(self.show)
 
     def wait_for_subprocess(self, proc: Popen) -> None:
         proc.wait()
@@ -714,6 +853,9 @@ class StartSession(Gtk.Window):
             display = self.display_combo.get_active_text()
         if localhost:
             uri = ":" + display if display else ""
+        elif self.is_wsl():
+            from xpra.net.wsl import wsl_target_string
+            uri = wsl_target_string(self.get_wsl_distribution(), self.wsl_user_entry.get_text(), display)
         else:
             mode = self.mode_combo.get_active_text()
             scheme = "ssh" if mode == MODE_NESTED_SSH else mode.lower()

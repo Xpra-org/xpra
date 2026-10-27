@@ -129,7 +129,7 @@ class Connection:
         self.timeout = 0
         # when set, blocking io calls are no longer retried past this `monotonic()` time:
         self.deadline = 0.0
-        self.connection_delay = SSH_CONNECTION_DELAY if socktype == "ssh" else CONNECTION_DELAY
+        self.connection_delay = SSH_CONNECTION_DELAY if socktype in ("ssh", "wsl") else CONNECTION_DELAY
         # transports can set this when a connection-fatal error is detected
         # so the connection's owner can report the right exit code:
         self.error: ExitCode = ExitCode.OK

@@ -245,9 +245,9 @@ class SocketProtocol:
         self._write_format_thread: Thread | None = None  # started when needed
         self._source_has_more = Event()
         self.receive_pending = False
-        # ssh channel may contain garbage initially,
+        # ssh channels and wsl processes may output garbage initially,
         # tell the protocol to wait for a valid header:
-        self.wait_for_header = envbool("XPRA_WAIT_FOR_HEADER", conn.socktype == "ssh")
+        self.wait_for_header = envbool("XPRA_WAIT_FOR_HEADER", conn.socktype in ("ssh", "wsl"))
         self.source_has_more = self.source_has_more_start
         self.flush_then_close = self.do_flush_then_close
 
@@ -289,7 +289,7 @@ class SocketProtocol:
             log(f"is_sending_encrypted() trust-proxy-headers={trust_proxy_headers}, http-headers={http_headers}")
             if forwarded_proto and trust_proxy_headers.lower() in TRUE_OPTIONS:
                 return forwarded_proto == "https"
-        return bool(self.cipher_out_name) or self._conn.socktype in ("ssl", "wss", "ssh", "quic")
+        return bool(self.cipher_out_name) or self._conn.socktype in ("ssl", "wss", "ssh", "quic", "wsl")
 
     def wait_for_io_threads_exit(self, timeout=None) -> bool:
         io_threads = (self._write_thread, self._read_parser_thread, self._write_format_thread)
