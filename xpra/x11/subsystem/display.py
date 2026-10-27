@@ -51,9 +51,7 @@ def check_xvfb(xvfb: Popen | None, timeout=0, command=()) -> bool:
         return True
     assert POSIX
     from xpra.x11.vfb_util import check_xvfb_process
-    if not check_xvfb_process(xvfb, timeout=timeout, command=command):
-        return False
-    return True
+    return check_xvfb_process(xvfb, timeout=timeout, command=command)
 
 
 def _get_root_int(prop: str) -> int:
