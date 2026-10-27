@@ -39,11 +39,17 @@ VSOCK_TIMEOUT: int = envint("XPRA_VSOCK_TIMEOUT", 5)
 SOCKET_TIMEOUT: int = envint("XPRA_SOCKET_TIMEOUT", 20)
 CONNECTION_DELAY: int = envint("XPRA_CONNECTION_DELAY", 10)
 SSH_CONNECTION_DELAY: int = envint("XPRA_SSH_CONNECTION_DELAY", 30)
+WSL_CONNECTION_DELAY: int = envint("XPRA_SSH_CONNECTION_DELAY", 30)
 # this is more proper but would break the proxy server:
 SOCKET_SHUTDOWN: bool = envbool("XPRA_SOCKET_SHUTDOWN", False)
 LOG_TIMEOUTS: int = envint("XPRA_LOG_TIMEOUTS", 1)
 DIRECT_SOCKET_IO = envbool("XPRA_DIRECT_SOCKET_IO", False)
 
+
+CONNECTION_DELAYS: dict[str, int] = {
+    "ssh": SSH_CONNECTION_DELAY,
+    "wsl": WSL_CONNECTION_DELAY,
+}
 
 ABORT: dict[int, str] = {
     errno.ENXIO: "ENXIO",
@@ -129,7 +135,7 @@ class Connection:
         self.timeout = 0
         # when set, blocking io calls are no longer retried past this `monotonic()` time:
         self.deadline = 0.0
-        self.connection_delay = SSH_CONNECTION_DELAY if socktype in ("ssh", "wsl") else CONNECTION_DELAY
+        self.connection_delay = CONNECTION_DELAYS.get(socktype, CONNECTION_DELAY)
         # transports can set this when a connection-fatal error is detected
         # so the connection's owner can report the right exit code:
         self.error: ExitCode = ExitCode.OK
