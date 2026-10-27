@@ -74,6 +74,10 @@ distribution and shows installation instructions if it cannot.
 ```powershell
 # start xterm in a new session on display 100 of the "Ubuntu" distribution:
 Xpra_cmd.exe start wsl://Ubuntu/100 --start=xterm
+# or let Xpra choose a free display number, starting at 100:
+Xpra_cmd.exe start wsl://Ubuntu/ --start=xterm
+# start another application in the session that is already running:
+Xpra_cmd.exe start wsl://Ubuntu/100 --start=xclock
 # re-attach to it later:
 Xpra_cmd.exe attach wsl://Ubuntu/100
 # the display number can be omitted when only one session is running:
@@ -86,8 +90,7 @@ Xpra_cmd.exe attach wsl://
 
 When attaching without a display number and more than one session is running,
 the error lists them and one must be specified.
-Starting a session does require a display number: WSLg mounts `/tmp/.X11-unix`
-read-only, which prevents `Xvfb` from choosing a free display by itself.
+Run `xpra list` in the distribution to see the sessions and their display numbers.
 
 The distribution name is case-sensitive, names containing special characters
 can be URL-encoded (ie: `wsl://My%20Distro/100`). When the distribution or
