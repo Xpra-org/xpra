@@ -11,6 +11,7 @@ import unittest
 from xpra.util.io import load_binary_file
 from xpra.platform.displayfd import write_displayfd, read_displayfd, parse_displayfd
 
+
 class DisplayFDTest(unittest.TestCase):
 
     def test_parse(self):
@@ -28,6 +29,15 @@ class DisplayFDTest(unittest.TestCase):
         self.assertTrue(write_displayfd(w_pipe, "77"))
         try:
             self.assertEqual(read_displayfd(r_pipe), b"77\n")
+        finally:
+            os.close(r_pipe)
+
+    def test_pipe_roundtrip_wayland(self):
+        # longer than the 8 bytes we used to stop at:
+        r_pipe, w_pipe = os.pipe()
+        self.assertTrue(write_displayfd(w_pipe, "wayland-12"))
+        try:
+            self.assertEqual(read_displayfd(r_pipe), b"wayland-12\n")
         finally:
             os.close(r_pipe)
 
@@ -64,6 +74,7 @@ class DisplayFDTest(unittest.TestCase):
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()
