@@ -155,6 +155,10 @@ def filt(prefix: str, name: str,
     def noopt(item_str: str):
         return item_str.lstrip("-").split(":", 1)[0]
 
+    def nogst(items: Iterable[str]) -> tuple[str, ...]:
+        # older versions had gstreamer codecs, just ignore them:
+        return tuple(x for x in items if not noopt(x).lower().removeprefix(f"{prefix}_").startswith("gst"))
+
     exclist = apl(x[1:] for x in real_list if x and x.startswith("-"))
     inclist = apl(x for x in real_list if x and not x.startswith("-"))
     if not inclist and exclist:
@@ -162,8 +166,8 @@ def filt(prefix: str, name: str,
     lists = exclist + inclist
     all_list = apl(all_options)
     unknown = tuple(x for x in lists if noopt(x) not in CODEC_TO_MODULE and x.lower() != "none")
-    if unknown:
-        log.warn(f"Warning: ignoring unknown {name}: "+csv(unknown))
+    if warn_unknown := nogst(unknown):
+        log.warn(f"Warning: ignoring unknown {name}: "+csv(warn_unknown))
     notfound = tuple(x for x in lists if (x and noopt(x) not in all_list and x not in unknown and x != "none"))
     if notfound:
         log.warn(f"Warning: {name} not found: "+csv(notfound))
