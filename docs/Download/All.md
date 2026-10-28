@@ -70,7 +70,8 @@ Save the file in `/etc/apt/sources.list.d/` and the [signing key](https://xpra.o
 {%- for d in dl.linux.deb %}
 <tr><td><a href="{{ d.url }}">{{ d.name }}</a></td>
 {%- for ch in dl.channels %}
-<td>{% if d.channels contains ch.id %}<a href="{{ dl.repos }}/{{ d.id }}/{{ ch.repo }}.sources">{{ ch.repo }}.sources</a>{% else %}not available{% endif %}</td>
+<td>{% if d.channels contains ch.id %}<a href="{{ dl.repos }}/{{ d.id }}/{{ ch.repo }}.sources">{{ ch.repo }}.sources</a>
+{%- if d.discouraged contains ch.id %}<br><small title="{{ d.discouraged_notes }}">not recommended: use LTS</small>{% endif %}{% else %}not available{% endif %}</td>
 {%- endfor %}
 </tr>
 {%- endfor %}

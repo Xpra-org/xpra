@@ -509,6 +509,10 @@ body {
   color: #dceeff;
 }
 
+.dl-options label.dl-greyed span {
+  opacity: 0.45;
+}
+
 .dl-options input:focus-visible + span {
   outline: 3px solid #ffd166;
   outline-offset: -3px;
@@ -603,6 +607,13 @@ body {
 
 .dl-extra {
   margin: 1rem 0 0;
+}
+
+.dl-warning {
+  padding: 0.6rem 0.9rem;
+  background: #fff8e1;
+  border-left: 4px solid #d29922;
+  border-radius: 4px;
 }
 
 .dl-result pre {

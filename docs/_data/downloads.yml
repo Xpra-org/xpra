@@ -178,6 +178,9 @@ linux:
       name: Debian 12 Bookworm
       url: "https://www.debian.org/releases/bookworm/"
       channels: [lts, stable, beta]
+      # still available, but not recommended for new installations:
+      discouraged: [stable]
+      discouraged_notes: "version 8 requires Python 3.12 or later and will not be available for this distribution: new installations should use the LTS channel"
     - id: bullseye
       name: Debian 11 Bullseye
       url: "https://wiki.debian.org/DebianBullseye"
@@ -204,3 +207,6 @@ linux:
       name: Ubuntu 22.04 Jammy Jellyfish
       url: "https://releases.ubuntu.com/22.04/"
       channels: [lts, stable, beta]
+      # still available, but not recommended for new installations:
+      discouraged: [stable]
+      discouraged_notes: "version 8 requires Python 3.12 or later and will not be available for this distribution: new installations should use the LTS channel"

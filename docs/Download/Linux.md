@@ -17,7 +17,9 @@ your distribution is missing.
 <label for="dl-deb"><strong>Distribution</strong></label><br>
 <select id="dl-deb" data-key="deb">
 {%- for d in dl.linux.deb %}
-<option value="{{ d.id }}">{{ d.name }}</option>
+{%- assign grey = "" %}{% for ch in dl.channels %}{% unless d.channels contains ch.id %}{% assign grey = grey | append: " " | append: ch.id %}{% endunless %}{% endfor %}
+{%- if d.discouraged %}{% assign discouraged = d.discouraged | join: " " %}{% assign grey = grey | append: " " | append: discouraged %}{% endif %}
+<option value="{{ d.id }}"{% if grey != "" %} data-grey="{{ grey | strip }}"{% endif %}>{{ d.name }}</option>
 {%- endfor %}
 </select>
 </div>
@@ -26,7 +28,9 @@ your distribution is missing.
 <label for="dl-rpm"><strong>Distribution</strong></label><br>
 <select id="dl-rpm" data-key="rpm">
 {%- for d in dl.linux.rpm %}
-<option value="{{ d.id }}">{{ d.name }}</option>
+{%- assign grey = "" %}{% for ch in dl.channels %}{% unless d.channels contains ch.id %}{% assign grey = grey | append: " " | append: ch.id %}{% endunless %}{% endfor %}
+{%- if d.discouraged %}{% assign discouraged = d.discouraged | join: " " %}{% assign grey = grey | append: " " | append: discouraged %}{% endif %}
+<option value="{{ d.id }}"{% if grey != "" %} data-grey="{{ grey | strip }}"{% endif %}>{{ d.name }}</option>
 {%- endfor %}
 </select>
 </div>
@@ -54,6 +58,9 @@ cd xpra
 <section class="dl-result dl-cond dl-jsonly" data-method="deb" data-deb="{{ d.id }}" data-channel="{{ ch.id }}">
 <h4><a href="{{ d.url }}">{{ d.name }}</a> · {{ ch.name }} <code>{{ ch.version }}</code></h4>
 {%- if d.channels contains ch.id %}
+{%- if d.discouraged contains ch.id %}
+<p class="dl-warning">Not recommended: {{ d.discouraged_notes }}.</p>
+{%- endif %}
 <p>Run as a regular user with <code>sudo</code> access:</p>
 <pre><code>sudo apt update
 sudo apt install ca-certificates wget
