@@ -1430,7 +1430,8 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
     nd: dict[str, Any] = {}
     for k, v in d.items():
         if k in discard:
-            warn(f"Warning: option {k!r} is not allowed in configuration files")
+            if k not in LEGACY_OPTIONS:
+                warn(f"Warning: option {k!r} is not allowed in configuration files")
             continue
         vt = option_types.get(k)
         if vt is None:
