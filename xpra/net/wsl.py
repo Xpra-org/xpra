@@ -430,7 +430,12 @@ def connect_to(display_desc: dict[str, Any], debug_cb: Callable = noop, fail_cb:
         if exit_code is None:
             return
         had_connected = conn.input_bytecount > 0 or conn.output_bytecount > 0
-        report(bridge.get_error_message(exit_code, had_connected))
+        if had_connected and exit_code == 0:
+            # ie: the server has closed the connection after a `detach` request,
+            # and the proxy command exited before we closed our end:
+            log("wsl bridge %s has exited cleanly", child.pid)
+        else:
+            report(bridge.get_error_message(exit_code, had_connected))
         raise ConnectionClosedException(f"cannot {action} using WSL")
 
     def close() -> None:
