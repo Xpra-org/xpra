@@ -48,7 +48,7 @@ class NetworkListener(StubClientSubsystem):
     """
     __slots__ = (
         "_close_timers", "_potential_protocols", "bind_options", "client_socket_dirs", "local_bind",
-        "mmap_group", "socket_permissions", "sockets", "listen_mode", "connection_handler",
+        "mmap_group", "socket_permissions", "sockets", "listen_mode", "listening", "connection_handler",
     )
     PREFIX = "listener"
 
@@ -63,6 +63,7 @@ class NetworkListener(StubClientSubsystem):
         self.mmap_group = ""
         self.socket_permissions = ""
         self.listen_mode = False
+        self.listening = False
         self.connection_handler = self._new_connection
 
     def init(self, opts) -> None:
@@ -73,7 +74,10 @@ class NetworkListener(StubClientSubsystem):
         self.socket_permissions = opts.socket_permissions
 
     def run(self) -> ExitValue:
-        start_thread(self.setup_sockets, "setup-sockets", daemon=True)
+        # a listener can only be started once:
+        if not self.listening:
+            self.listening = True
+            start_thread(self.setup_sockets, "setup-sockets", daemon=True)
         return 0
 
     def cleanup(self) -> None:
