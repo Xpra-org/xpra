@@ -1020,9 +1020,9 @@ class ApplicationWindow:
         self.client.after_handshake(handshake_complete)
         self.set_info_text("Connecting...")
         # The launcher already owns the GTK main loop; start the client's
-        # subsystems before scheduling its transport connection.
-        from xpra.client.gui.ui_client_base import UIXpraClient
-        UIXpraClient.run(self.client)
+        # subsystems before scheduling its transport connection,
+        # `client.run()` will not start them again once connected:
+        self.client.run_subsystems()
         start_thread(self.do_connect_builtin, "connect", daemon=True, args=(display_desc,))
 
     def ssh_failed(self, message) -> None:
