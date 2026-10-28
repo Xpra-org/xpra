@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import math
+from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
@@ -159,6 +160,8 @@ class PointerWindow(GtkStubWindow):
         else:
             if prev and prev[:2] == pos[:2]:
                 return
+            if len(pos) == 2:
+                pos = (*pos, 10, monotonic())
             # store both scaled and unscaled value:
             # (the opengl client uses the raw value)
             value = pos[:2] + self.sp(*pos[:2]) + pos[2:]
