@@ -46,6 +46,12 @@ remote pointer is. The same shortcut captures again without clicking.
 Set `XPRA_INPUT_CAPTURE_SENSITIVITY` to a value other than `1.0` to make the
 remote pointer move faster or slower than your mouse.
 
+`xpra kvm ssh://HOST/` does the same, at a fifth of the size and with fewer
+screen updates (`--refresh-rate=5`), and re-uses the shadow server if one is
+already running. With other connection strings, `xpra kvm` attaches to an
+existing shadow or desktop session. Any of these options can be overridden,
+ie: `xpra kvm ssh://HOST/ --desktop-scaling=0.1`.
+
 Input capture needs an X11, Windows or macOS client: GTK3 cannot warp the
 pointer on Wayland, so a Wayland client keeps the normal behaviour.
 

@@ -45,6 +45,9 @@ MODE_ALIAS: dict[str, str] = {
 }
 REVERSE_MODE_ALIAS: dict[str, str] = {v: k for k, v in MODE_ALIAS.items()}
 
+# `xpra kvm URI` presets, see `expand_kvm_mode`:
+KVM_OPTIONS: Sequence[str] = ("--refresh-rate=5", "--desktop-scaling=0.2", "--input-capture=click")
+
 
 def enabled_str(v: Any, true_str: str = "yes", false_str: str = "no") -> str:
     if v:
@@ -501,6 +504,7 @@ def get_usage() -> list[str]:
     if supports_gtk3_client():
         command_options += [
             "attach [DISPLAY]",
+            "kvm [DISPLAY]",
             "sessions",
             "launcher",
             "gui",
@@ -569,6 +573,19 @@ def get_usage() -> list[str]:
 def parse_cmdline(cmdline: list[str]) -> tuple[optparse.Values, list[str]]:
     defaults = make_defaults_struct()
     return do_parse_cmdline(cmdline, defaults)
+
+
+def expand_kvm_mode(cmdline: list[str], args: list[str]) -> None:
+    """
+    `xpra kvm URI` controls a shadow or desktop session from a small window:
+    over ssh, it uses `shadow`, which re-uses the shadow server if one is already running,
+    otherwise it uses `attach`.
+    The command line is modified in place so that reconnecting keeps the same options,
+    and the presets come first so that the ones given on the command line override them.
+    """
+    ssh = len(args) > 1 and args[1].startswith(("ssh:", "ssh/"))
+    cmdline[cmdline.index("kvm", 1)] = "shadow" if ssh else "attach"
+    cmdline[1:1] = KVM_OPTIONS
 
 
 def warn_restricted_encoding_options(options) -> None:
@@ -672,6 +689,9 @@ def do_parse_cmdline(cmdline: list[str], defaults) -> tuple[optparse.Values, lis
         defaults.opengl = "no"
         if args and args[0] == "attach" and csv(defaults.bind) == "auto":
             defaults.bind = "none"
+        options, args = parse_command_line(cmdline[1:], defaults)
+    if args and args[0] == "kvm":
+        expand_kvm_mode(cmdline, args)
         options, args = parse_command_line(cmdline[1:], defaults)
 
     # process "help" arguments early:

@@ -18,7 +18,7 @@ _xpra() {
     local modes="seamless desktop monitor shadow shadow-screen
         upgrade upgrade-seamless upgrade-desktop upgrade-monitor upgrade-shadow
         start start-desktop start-monitor start-shadow start-shadow-screen
-        attach detach info id version stop exit connect-test screenshot
+        attach kvm detach info id version stop exit connect-test screenshot
         control print shell send-file configure
         sessions launcher gui start-gui bug-report toolbox about example
         encoder encode
@@ -153,7 +153,7 @@ _xpra() {
     # complete from active sessions
     local mode="${words[1]}"
     case "$mode" in
-        attach|detach|info|id|version|stop|exit|connect-test|control|\
+        attach|kvm|detach|info|id|version|stop|exit|connect-test|control|\
         screenshot|print|shell|upgrade|upgrade-seamless|upgrade-desktop|\
         upgrade-monitor|upgrade-shadow)
             _xpra_displays "$cur"

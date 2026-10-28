@@ -21,6 +21,9 @@ xpra \- viewer for remote, persistent X applications
 \fBxpra\fP \fBattach\fP [CONNECTIONSTRING]
 [\fBOPTIONS..\fP]
 .HP
+\fBxpra\fP \fBkvm\fP [CONNECTIONSTRING]
+[\fBOPTIONS..\fP]
+.HP
 \fBxpra\fP \fBshadow\fP [CONNECTIONSTRING]
 [\fBOPTIONS..\fP]
 .HP
@@ -334,6 +337,13 @@ nested X11 server.
 .SS xpra attach
 This command attaches to a running xpra server, and forwards any
 applications using that server to appear on your current screen.
+.SS xpra kvm
+Controls a shadow or desktop session from a small window:
+this is \fBxpra attach\fP with \fB\-\-refresh\-rate=5\fP,
+\fB\-\-desktop\-scaling=0.2\fP and \fB\-\-input\-capture=click\fP,
+which can all be overridden on the command line.
+With an \fIssh://\fP connection string, it uses \fBxpra shadow\fP instead,
+which shadows the remote desktop unless a shadow server is already running.
 .SS xpra detach
 Detaches the given xpra display.
 .SS xpra screenshot
