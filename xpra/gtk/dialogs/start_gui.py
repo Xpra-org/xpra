@@ -93,7 +93,8 @@ def link_btn(link: str, text="", icon_name="question.png"):
 
 MODE_NESTED_SSH = "SSH -> SSH"
 WSL_DEFAULT_DISTRIBUTION = "Default distribution"
-WSL_DEFAULT_DISPLAY = "100"
+# where the server in WSL starts looking for a free display, see `XPRA_FIRST_FREE_DISPLAY`:
+WSL_FIRST_DISPLAY = 100
 # how many lines of output we show when a WSL session fails to start:
 WSL_ERROR_LINES = 20
 
@@ -667,13 +668,17 @@ class StartSession(Gtk.Window):
         for btn in (self.desktop_btn, self.shadow_btn):
             btn.set_sensitive(not wsl)
         if not wsl:
+            self.display_entry.set_placeholder_text(_("optional"))
+            self.display_entry.set_tooltip_text(_("To use a specific X11 display number"))
             return
         if not self.seamless_btn.get_active():
             self.seamless_btn.set_active(True)
         # the session should survive the client disconnecting:
         self.exit_with_client_cb.set_active(False)
-        if not self.display_entry.get_text():
-            self.display_entry.set_text(WSL_DEFAULT_DISPLAY)
+        # an empty display lets the server choose a free one:
+        self.display_entry.set_placeholder_text(_("automatic"))
+        self.display_entry.set_tooltip_text(_("To use a specific X11 display number,\n"
+                                              "leave empty to use the first free one from %s") % WSL_FIRST_DISPLAY)
         if not self.wsl_distributions_loading:
             self.wsl_distributions_loading = True
             start_thread(self.load_wsl_distributions, "wsl-list-distributions", daemon=True)

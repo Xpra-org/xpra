@@ -58,8 +58,10 @@ There is no TCP port to bind, no password to choose and no SSH server to install
 ### From the graphical interface
 
 * **Start Session**: select the `WSL` target, pick a distribution (or leave the
-  default one), optionally enter a Linux user, keep or change the suggested
-  display number (`100`), enter the command to run and click `Start & Attach`.
+  default one), optionally enter a Linux user and a display number - leave it
+  empty to use the first free one from `100`, enter the command to run and
+  click `Start & Attach`. Using the display number of a session that is already
+  running starts the command in that session.
   Only seamless sessions are available for WSL at the moment.
 * **Session Launcher** (`Connect`): choose the `WSL` mode, then the same
   distribution, user and display number to re-attach to a session that is already
