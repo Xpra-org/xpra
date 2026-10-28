@@ -18,7 +18,7 @@ from xpra.platform.win32.common import (
     GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout,
     GetIntSystemParametersInfo, GetKeyboardLayoutName,
     GetWindowThreadProcessId, LCIDToLocaleName,
-    GetKeyboardState, SetKeyboardState, MapVirtualKeyW, keybd_event,
+    GetKeyboardState, MapVirtualKeyW, keybd_event,
     SystemParametersInfoA, VkKeyScanW,
 )
 from xpra.platform.win32 import constants as win32con
@@ -222,18 +222,64 @@ def get_keys_pressed() -> Sequence[int]:
     return pressed
 
 
-def clear_keys_pressed() -> None:
-    # noinspection PyCallingNonCallable,PyTypeChecker
-    keystate = (BYTE * 256)()
-    for i in range(256):
-        keystate[i] = 0
-    SetKeyboardState(keystate)
+# Windows switches the input language (Left Alt+Shift) or the keyboard layout (Ctrl+Shift)
+# when a chord made only of modifier keys is released.
+# We inject such chords when a client key shortcut swallows the key that completes them,
+# ie: the Escape key of `Alt+Shift+Escape`.
+# Pressing an unassigned virtual key before the release cancels the hotkey (0 to disable):
+MASK_KEY = envint("XPRA_WIN32_MASK_KEY", 0xE8)
+
+CHORD_MODIFIERS: dict[int, int] = {
+    # the generic virtual keys are injected using the scancode of the left key:
+    win32con.VK_SHIFT: win32con.VK_LSHIFT,
+    win32con.VK_CONTROL: win32con.VK_LCONTROL,
+    win32con.VK_MENU: win32con.VK_LMENU,
+} | {vk: vk for vk in (
+    win32con.VK_LSHIFT, win32con.VK_RSHIFT,
+    win32con.VK_LCONTROL, win32con.VK_RCONTROL,
+    win32con.VK_LMENU, win32con.VK_RMENU,
+    win32con.VK_LWIN, win32con.VK_RWIN,
+)}
+
+
+class InjectedModifiers:
+    """
+    Tracks the modifier keys we inject, so that we can:
+    * release them, even when they were pressed by `make_keymask_match` rather than by a key event
+    * stop modifier-only chords from triggering the Windows hotkeys
+    """
+
+    def __init__(self):
+        self.held: set[int] = set()
+        # a key was pressed since the last modifier, which cancels the hotkey:
+        self.cancelled = False
+
+    def key_event(self, vk: int, press: bool) -> None:
+        modifier = CHORD_MODIFIERS.get(vk, 0)
+        if not modifier:
+            if press:
+                self.cancelled = True
+            return
+        if press:
+            self.held.add(modifier)
+            self.cancelled = False
+            return
+        if MASK_KEY and modifier in self.held and len(self.held) > 1 and not self.cancelled:
+            log("masking modifier chord %s", csv(VK_NAMES.get(k, k) for k in self.held))
+            keybd_event(MASK_KEY, 0, 0, 0)
+            keybd_event(MASK_KEY, 0, win32con.KEYEVENTF_KEYUP, 0)
+            self.cancelled = True
+        self.held.discard(modifier)
+
+
+injected_modifiers = InjectedModifiers()
 
 
 def fake_key(keycode: int, press: bool):
     if keycode <= 0:
         log.warn("no keycode found for %s", keycode)
         return
+    injected_modifiers.key_event(keycode, press)
     # KEYEVENTF_SILENT = 0X4
     flags = 0
     if not press:
@@ -252,8 +298,11 @@ class Win32Keyboard:
         fake_key(keycode, press)
 
     @staticmethod
-    def clear_keys_pressed(_keycodes) -> None:
-        clear_keys_pressed()
+    def clear_keys_pressed(keycodes: Sequence[int]) -> None:
+        # the keys stay pressed for the whole system until we inject their release,
+        # including the modifiers pressed without a key event:
+        for keycode in dict.fromkeys((*keycodes, *injected_modifiers.held)):
+            fake_key(keycode, False)
 
     @staticmethod
     def set_repeat_rate(delay: int, interval: int) -> None:
