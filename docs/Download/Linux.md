@@ -50,6 +50,12 @@ your distribution is missing.
 cd xpra
 ./setup.py install-{% if ch.id != "stable" %}{{ ch.id }}-{% endif %}repo</code></pre>
 <p>Then install <code>xpra</code> using your package manager.</p>
+{%- if ch.id == "stable" %}
+{%- assign discouraged = "" %}{% for d in dl.linux.deb %}{% if d.discouraged contains ch.id %}{% assign discouraged = discouraged | append: ", " | append: d.name %}{% endif %}{% endfor %}
+{%- if discouraged != "" %}
+<p class="dl-extra">On {{ discouraged | remove_first: ", " }}, the script installs the LTS repository instead, unless <code>REPO=xpra</code> is specified.</p>
+{%- endif %}
+{%- endif %}
 </section>
 {%- endfor %}
 
