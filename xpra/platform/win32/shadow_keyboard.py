@@ -7,7 +7,7 @@ from ctypes import byref, sizeof
 
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.common import INPUT, SendInput, GetAsyncKeyState, GetKeyState
-from xpra.platform.win32.keyboard import VK_NAMES, NATIVE_HELD_VKS, NATIVE_TOGGLED_VKS, fake_key
+from xpra.platform.win32.keyboard import VK_NAMES, NATIVE_HELD_VKS, NATIVE_TOGGLED_VKS, fake_key, injected_modifiers
 from xpra.platform.win32.keyboard_config import KeyboardConfig
 from xpra.server.shadow.keyboard import ShadowKeyboardManager
 from xpra.util.objects import typedict
@@ -63,6 +63,7 @@ class Win32ShadowKeyboardManager(ShadowKeyboardManager):
         inp.ki.dwFlags = flags
         inp.ki.time = 0
         inp.ki.dwExtraInfo = 0
+        injected_modifiers.key_event(vk_code, pressed)
         SendInput(1, byref(inp), sizeof(INPUT))
         if pressed:
             self.keys_pressed[vk_code] = keyname
