@@ -444,6 +444,8 @@ class LoaderCodecEvaluator(ast.NodeVisitor):
             return f"{prefix}_{codec_name}".replace("-", "_")
         if name == "set" and len(args) == 1:
             return set(args[0])
+        if name in ("tuple", "list") and len(args) == 1:
+            return tuple(args[0])
         return ()
 
     def eval_generator(self, node: ast.GeneratorExp, local_env: dict[str, Any]) -> Iterable[Any]:
@@ -459,8 +461,58 @@ class LoaderCodecEvaluator(ast.NodeVisitor):
             yield self.eval_expr(node.elt, env)
 
 
-def codec_names_from_loader(loader_py: str) -> list[str]:
+def codec_names_from_loader(loader_py: str, strict: bool = False) -> list[str]:
     tree = ast.parse(loader_py)
+    if strict:
+        # Validate only the ALL_CODECS dependency chain, never execute loader code.
+        assignments = {}
+        for node in tree.body:
+            if isinstance(node, ast.Assign):
+                assignments.update((target.id, node.value) for target in node.targets if isinstance(target, ast.Name))
+            elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+                assignments[node.target.id] = node.value
+        visited = set()
+
+        def validate(node, local=()):
+            if isinstance(node, ast.Name):
+                if node.id in local or node.id in visited:
+                    return
+                if node.id not in assignments:
+                    raise ValueError(f"Unresolved codec constant: {node.id}")
+                visited.add(node.id)
+                validate(assignments[node.id])
+            elif isinstance(node, ast.Call):
+                if not isinstance(node.func, ast.Name) or node.func.id not in ("tuple", "list", "set", "filt", "gfilt", "autoprefix"):
+                    raise ValueError("Unsupported call in codec constants")
+                if node.keywords:
+                    raise ValueError("Unsupported keyword arguments in codec constants")
+                for arg in node.args:
+                    validate(arg, local)
+            elif isinstance(node, ast.GeneratorExp):
+                if len(node.generators) != 1:
+                    raise ValueError("Unsupported codec generator")
+                generator = node.generators[0]
+                if not isinstance(generator.target, ast.Name) or generator.ifs or generator.is_async:
+                    raise ValueError("Unsupported codec generator")
+                validate(generator.iter, local)
+                validate(node.elt, (*local, generator.target.id))
+            elif isinstance(node, ast.Constant):
+                return
+            elif isinstance(node, (ast.Tuple, ast.List, ast.Set)):
+                for item in node.elts:
+                    validate(item, local)
+            elif isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+                validate(node.left, local)
+                validate(node.right, local)
+            elif isinstance(node, ast.JoinedStr):
+                for item in node.values:
+                    validate(item, local)
+            elif isinstance(node, (ast.FormattedValue, ast.Starred)):
+                validate(node.value, local)
+            else:
+                raise ValueError(f"Unsupported codec expression: {type(node).__name__}")
+
+        validate(ast.Name(id="ALL_CODECS"))
     evaluator = LoaderCodecEvaluator()
     for node in tree.body:
         if isinstance(node, (ast.Assign, ast.AnnAssign)):
