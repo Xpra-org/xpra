@@ -20,7 +20,6 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, bytestostr
 from xpra.util.env import envbool
 from xpra.common import noop
-from xpra.constants import XPRA_GUID1, XPRA_GUID2, XPRA_GUID3, XPRA_GUID4
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.icon_util import image_to_ICONINFO
 from xpra.platform.win32.events import NIN_BALLOONSHOW, NIN_BALLOONHIDE, NIN_BALLOONTIMEOUT, NIN_BALLOONUSERCLICK
@@ -60,12 +59,28 @@ def GetProductInfo(dwOSMajorVersion=5, dwOSMinorVersion=0, dwSpMajorVersion=0, d
     return bool(v)
 
 
-# MAX_TIP_SIZE = 128
-MAX_TIP_SIZE = 64
+# the size of the `szTip` buffer, including the null terminator:
+MAX_TIP_SIZE = 128
 
 
+def truncate_wchars(text: str, max_len: int) -> str:
+    """
+    truncate `text` to at most `max_len` WCHARs,
+    characters outside the BMP use two of them (a surrogate pair), which must not be split
+    """
+    length = 0
+    for i, c in enumerate(text):
+        length += 2 if ord(c) > 0xFFFF else 1
+        if length > max_len:
+            return text[:i]
+    return text
+
+
+# This must match the real (Vista and later) layout exactly:
+# the shell uses `cbSize` to tell which version of the structure it is given,
+# and silently ignores the fields it does not expect for that version.
 # noinspection PyTypeChecker
-def getNOTIFYICONDATAClass(char_type=CHAR, tip_size: int = MAX_TIP_SIZE):
+def getNOTIFYICONDATAClass(char_type=WCHAR):
     class _NOTIFYICONDATA(Structure):
         _fields_ = (
             ("cbSize", DWORD),
@@ -74,7 +89,7 @@ def getNOTIFYICONDATAClass(char_type=CHAR, tip_size: int = MAX_TIP_SIZE):
             ("uFlags", UINT),
             ("uCallbackMessage", UINT),
             ("hIcon", HICON),
-            ("szTip", char_type * tip_size),
+            ("szTip", char_type * MAX_TIP_SIZE),
             ("dwState", DWORD),
             ("dwStateMask", DWORD),
             ("szInfo", char_type * 256),
@@ -88,7 +103,7 @@ def getNOTIFYICONDATAClass(char_type=CHAR, tip_size: int = MAX_TIP_SIZE):
     return _NOTIFYICONDATA
 
 
-NOTIFYICONDATAA = getNOTIFYICONDATAClass()
+NOTIFYICONDATAA = getNOTIFYICONDATAClass(CHAR)
 NOTIFYICONDATAW = getNOTIFYICONDATAClass(WCHAR)
 
 shell32 = WinDLL("shell32", use_last_error=True)
@@ -115,14 +130,8 @@ PNOTIFYICONIDENTIFIER = POINTER(NOTIFYICONIDENTIFIER)
 Shell_NotifyIconGetRect.restype = SHSTDAPI
 Shell_NotifyIconGetRect.argtypes = [PNOTIFYICONIDENTIFIER, POINTER(RECT)]
 
-Shell_NotifyIcon = Shell_NotifyIconA
-NOTIFYICONDATA = NOTIFYICONDATAA
-
-XPRA_GUID = GUID()
-XPRA_GUID.Data1 = XPRA_GUID1
-XPRA_GUID.Data2 = XPRA_GUID2
-XPRA_GUID.Data3 = XPRA_GUID3
-XPRA_GUID.Data4 = XPRA_GUID4
+Shell_NotifyIcon = Shell_NotifyIconW
+NOTIFYICONDATA = NOTIFYICONDATAW
 
 FALLBACK_ICON = LoadIconA(0, win32con.IDI_APPLICATION)
 
@@ -217,7 +226,7 @@ class win32NotifyIcon:
 
     def create_window(self) -> None:
         style = win32con.WS_OVERLAPPED | win32con.WS_SYSMENU
-        window_name = f"{self.title} StatusIcon Window".encode("latin1")
+        window_name = f"{self.title} StatusIcon Window".encode("latin1", "replace")
         niwc = get_notifyicon_wnd_class()
         args = (0, niwc.NIclassAtom, window_name, style,
                 win32con.CW_USEDEFAULT, win32con.CW_USEDEFAULT, 0, 0,
@@ -248,17 +257,14 @@ class win32NotifyIcon:
         nid.hWnd = self.hwnd
         nid.uCallbackMessage = win32con.WM_MENUCOMMAND
         nid.hIcon = self.current_icon
-        # don't ask why we have to use sprintf to get what we want:
-        title = bytestostr(self.title[:MAX_TIP_SIZE - 1])
-        try:
-            nid.szTip = title
-        except (TypeError, ValueError):
-            nid.szTip = title.encode()
+        title = truncate_wchars(bytestostr(self.title), MAX_TIP_SIZE - 1)
+        nid.szTip = title
         nid.dwState = 0
         nid.dwStateMask = 0
-        nid.guidItem = XPRA_GUID
+        # identify the icon by `hWnd` + `uID`, not with `NIF_GUID`:
+        # only one icon can use a given GUID, so a second xpra process could not add its own,
+        # and the balloons and `Shell_NotifyIconGetRect` look for the icon by `uID`
         nid.uID = self.app_id
-        flags |= NIF_GUID
         # balloon notification bits:
         # szInfo
         # uTimeout
@@ -280,8 +286,6 @@ class win32NotifyIcon:
             nid.cbSize = sizeof(NOTIFYICONDATA)
             nid.hWnd = self.hwnd
             nid.uID = self.app_id
-            nid.guidItem = XPRA_GUID
-            nid.uFlags = NIF_GUID
             log("delete_tray_window(..) calling Shell_NotifyIcon(NIM_DELETE, %s)", nid)
             r = Shell_NotifyIcon(NIM_DELETE, byref(nid))
             log("Shell_NotifyIcon(NIM_DELETE, nid)=%s", bool(r))
@@ -557,7 +561,7 @@ def main(args):
             except Exception as e:
                 print(f"could not find icon: {e}")
                 icon = None
-            notify(hwnd, 0, "hello", "world", timeout=1000, icon=icon)
+            notify(hwnd, tray.app_id, "hello", "world", timeout=1000, icon=icon)
         elif cid == 1025:
             print("Goodbye")
             DestroyWindow(hwnd)
