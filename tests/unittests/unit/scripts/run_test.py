@@ -235,6 +235,9 @@ class ModeTableTest(unittest.TestCase):
         usage = tuple(line.split(" ")[0] for line in get_usage() if line)
         for mode in main.NO_NETWORK_SUBCOMMANDS + main.STDOUT_SUBCOMMANDS + usage:
             mode = MODE_ALIAS.get(mode, mode)
+            if mode == "kvm":
+                # Expanded to attach or shadow during parsing; covered by TestParsing.test_kvm_mode.
+                continue
             if mode.startswith("request-") or mode.startswith("_proxy") or mode.startswith("upgrade-"):
                 continue
             self.assertIn(mode, handled, f"{mode!r} cannot be dispatched")
