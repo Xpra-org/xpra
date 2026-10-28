@@ -167,7 +167,8 @@ def run_server(script_file, cmdline: list[str], options, args: list[str], full_m
         from xpra.scripts.server import do_run_server
         return do_run_server(script_file, cmdline, options, args, full_mode, defaults)
     except ImportError as e:
-        raise InitExit(ExitCode.COMPONENT_MISSING, f"`xpra-server` is not installed: {e}")
+        message = "server is not available in this xpra 'light' build, install the full xpra package" if (OSX or WIN32) else f"`xpra-server` is not installed: {e}"
+        raise InitExit(ExitCode.COMPONENT_MISSING, message)
 
 
 def get_current_root_size(display_is_remote: bool) -> tuple[int, int]:
