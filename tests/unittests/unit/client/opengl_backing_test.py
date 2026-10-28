@@ -601,7 +601,10 @@ class TestGLInit(unittest.TestCase):
         from xpra.os_util import gi_import
         from xpra.client.gtk3.opengl.drawing_area import GLDrawingArea
         Gtk = gi_import("Gtk")
-        win = Gtk.Window()
+        initialized, _ = Gtk.init_check()
+        self.assertTrue(initialized, "Gtk failed to initialize on the test display")
+        # Gtk.Window() checks the auto-init result cached before Xvfb was started:
+        win = Gtk.Window.new(Gtk.WindowType.TOPLEVEL)
         win.set_default_size(256, 256)
         backing = GLDrawingArea(1, window_alpha, pixel_depth)
         backing.size = (256, 256)
