@@ -329,17 +329,18 @@ class DisplayClient(StubClientSubsystem):
         log("server has randr: %s", self.server_randr)
         self.server_opengl = c.dictget("opengl")
         Logger("screen", "opengl")("server opengl=%s", self.server_opengl)
-        self.server_multi_monitors = c.boolget("multi-monitors", False)
-        self.server_monitors = c.dictget("monitors")
+        # the server mode and monitor features are not part of the `display` namespace:
+        self.server_multi_monitors = caps.boolget("multi-monitors", False)
+        self.server_monitors = caps.dictget("monitors")
         # resolutions the server allows for new monitors (ie: parsec-vdd EDID modes);
         # falls back to the client's own list when the server does not provide one:
-        self.server_new_monitor_resolutions = c.strtupleget("monitors.add-resolutions")
+        self.server_new_monitor_resolutions = caps.strtupleget("monitors.add-resolutions")
         # optional label for the "add monitor" menu entry (ie: "Add a virtual monitor"):
-        self.server_add_monitor_label = c.strget("monitors.add-label")
+        self.server_add_monitor_label = caps.strget("monitors.add-label")
         log("server multi-monitors=%s, monitors=%s, new-monitor-resolutions=%s",
             self.server_multi_monitors, self.server_monitors, self.server_new_monitor_resolutions)
-        self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop") or c.boolget("monitor")
-        self.server_is_monitor = c.boolget("monitor")
+        self.server_is_desktop = caps.boolget("shadow") or caps.boolget("desktop") or caps.boolget("monitor")
+        self.server_is_monitor = caps.boolget("monitor")
         # the colourspace capability is not part of the `display` namespace,
         # servers without it are assumed to be rendering into sRGB:
         self.server_colourspace = Colourspace.from_dict(caps.dictget("colourspace"))
@@ -352,7 +353,7 @@ class DisplayClient(StubClientSubsystem):
         return True
 
     def print_desktop_size(self, c: typedict) -> None:
-        if c.boolget("desktop") or c.boolget("shadow"):
+        if self.server_is_desktop and not self.server_is_monitor:
             v = c.intpair("actual_desktop_size")
             if v != (0, 0):
                 w, h = v

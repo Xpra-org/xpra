@@ -163,6 +163,46 @@ class DisplayClientTest(ClientMixinTest):
             self.assertEqual(info, {0: {"geometry": (0, 0, 1024, 768)}})
             self.assertEqual(self.mixin.get_server_position((-100, 50)), (-100, 50))
 
+    def test_server_mode_capabilities(self):
+        from xpra.util.objects import typedict
+        from xpra.client.subsystem import display  # pylint: disable=import-outside-toplevel
+        display_caps = {
+            "name": ":999",
+            "desktop_size": (1920, 1080),
+            "actual_desktop_size": (1920, 1080),
+        }
+
+        def parse(caps: dict):
+            dc = stubbable(display.DisplayClient)()
+            with silence_info(display):
+                self.assertTrue(dc.parse_server_capabilities(typedict(caps | {"display": display_caps})))
+            return dc
+
+        # the server mode and monitor features are top-level server features,
+        # not part of the `display` namespace:
+        dc = parse({})
+        self.assertFalse(dc.server_is_desktop)
+        self.assertFalse(dc.server_is_monitor)
+        self.assertFalse(dc.server_multi_monitors)
+        for mode in ("shadow", "desktop"):
+            dc = parse({mode: True})
+            self.assertTrue(dc.server_is_desktop, mode)
+            self.assertFalse(dc.server_is_monitor, mode)
+        monitors = {0: {"geometry": (0, 0, 1920, 1080)}}
+        dc = parse({
+            "monitor": True,
+            "multi-monitors": True,
+            "monitors": monitors,
+            "monitors.add-resolutions": ("1920x1080", "1280x720"),
+            "monitors.add-label": "Add a virtual monitor",
+        })
+        self.assertTrue(dc.server_is_desktop)
+        self.assertTrue(dc.server_is_monitor)
+        self.assertTrue(dc.server_multi_monitors)
+        self.assertEqual(dc.server_monitors, monitors)
+        self.assertEqual(dc.server_new_monitor_resolutions, ("1920x1080", "1280x720"))
+        self.assertEqual(dc.server_add_monitor_label, "Add a virtual monitor")
+
 
 def main():
     unittest.main()
