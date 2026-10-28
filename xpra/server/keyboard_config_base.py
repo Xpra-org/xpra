@@ -29,6 +29,13 @@ class KeyboardConfigBase:
             "sync": self.sync,
         }
 
+    def parse(self, props: typedict) -> int:
+        # only used for the `keyboard-config` packet, which sends the attributes at the top level,
+        # whereas the hello packet nests them all in a `keymap` dictionary:
+        if "keymap" not in props:
+            props = typedict({"keymap": dict(props)})
+        return self.parse_options(props)
+
     def parse_options(self, props: typedict) -> int:
         oldsync = self.sync
         keymap_dict = typedict(props.dictget("keymap"))
