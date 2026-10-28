@@ -73,7 +73,7 @@ class PointerClient(StubClientSubsystem):
     Utility mixin for clients that handle pointer input
     """
     __slots__ = (
-        "button_state", "button_transform", "middle_click", "position", "position_delay", "position_pending",
+        "button_state", "button_transform", "input_capture", "middle_click", "position", "position_delay", "position_pending",
         "position_send_time", "position_timer", "sequence", "server_pointer", "server_precise_wheel",
         "server_wheel_motion", "sync", "wheel_deltax", "wheel_deltay", "wheel_map", "wheel_smooth",
     )
@@ -92,6 +92,7 @@ class PointerClient(StubClientSubsystem):
         self.button_transform: dict[tuple[str, int], int] = {}
         self.server_pointer = True
         self.middle_click = True
+        self.input_capture = False
         self.button_state: dict[int, bool] = {}
         self.server_precise_wheel = False
         self.server_wheel_motion = True
@@ -112,6 +113,7 @@ class PointerClient(StubClientSubsystem):
 
     def init_ui(self, opts) -> None:
         self.middle_click = opts.middle_click
+        self.input_capture = opts.input_capture.lower() in ("click", "yes", "on", "true", "1")
         pointer_opt = opts.pointer.replace("-", "").lower()
         pointer = pointer_opt.split(":", 1)[0]
         modifier = "shift" if pointer_opt.find(":") < 0 else pointer_opt.split(":", 1)[1]

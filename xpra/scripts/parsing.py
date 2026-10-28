@@ -1193,6 +1193,12 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="pointer", default=defaults.pointer,
                      help="How to hande pointer events: on|off|emulate3buttons."
                           " Default: %s." % defaults.pointer)
+    group.add_option("--input-capture", action="store", metavar="no|click",
+                     dest="input_capture", default=defaults.input_capture,
+                     help="Clicking a shadow or desktop window captures the pointer and keyboard,"
+                          " the pointer then moves over the remote desktop at its native resolution"
+                          " until the 'toggle_input_capture' key shortcut releases it."
+                          " Default: %s." % defaults.input_capture)
     group.add_option("--input-devices", action="store", metavar="APINAME",
                      dest="input_devices", default=defaults.input_devices,
                      help="Which API to use for input devices. Default: %s." % defaults.input_devices)

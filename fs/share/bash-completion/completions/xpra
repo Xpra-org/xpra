@@ -44,7 +44,7 @@ _xpra() {
         --exit-with-children --exit-with-client --exit-with-windows
         --file-size-limit --file-transfer --forward-xdg-open --gid --gstreamer
         --headerbar --html --http --http-scripts --idle-timeout
-        --input-devices --input-method --keyboard-backend --keyboard-layout
+        --input-capture --input-devices --input-method --keyboard-backend --keyboard-layout
         --keyboard-layouts --keyboard-model --keyboard-options --keyboard-raw
         --keyboard-sync --keyboard-variant --keyboard-variants --key-shortcut
         --local-clipboard --lock --log-dir --log-file --lpadmin --lpinfo
@@ -111,6 +111,10 @@ _xpra() {
         --commands|--control|--shell|--register|--terminate-children|\
         --keyboard-raw|--input-devices)
             COMPREPLY=( $(compgen -W "yes no auto" -- "$cur") )
+            return 0
+            ;;
+        --input-capture)
+            COMPREPLY=( $(compgen -W "no click" -- "$cur") )
             return 0
             ;;
         --sharing)

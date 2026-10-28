@@ -24,6 +24,31 @@ server stops when you disconnect, leaving the desktop itself untouched.
 If you prefer a graphical tool, open **Xpra** from your application menu and
 choose **Shadow**. Enter the remote computer’s address and credentials there.
 
+## Control another computer from a small window
+
+To drive another computer's keyboard and pointer like a software KVM, without
+giving its whole screen space on yours, show it as a thumbnail and turn on
+input capture:
+
+```shell
+xpra shadow ssh://HOST/ --desktop-scaling=0.1 --input-capture=click
+```
+
+The remote desktop then appears at a tenth of its size. Click the thumbnail to
+capture your pointer and keyboard: every key and click goes to the remote
+computer, and your mouse moves the remote pointer across its whole desktop at
+its native resolution, not ten remote pixels at a time. Your local pointer is
+hidden while captured, and the thumbnail shows where the remote pointer is.
+
+Press the shortcut modifiers with `Escape` (`#+Escape`, see `--key-shortcut`)
+to release the capture: your pointer reappears over the thumbnail, where the
+remote pointer is. The same shortcut captures again without clicking.
+Set `XPRA_INPUT_CAPTURE_SENSITIVITY` to a value other than `1.0` to make the
+remote pointer move faster or slower than your mouse.
+
+Input capture needs an X11, Windows or macOS client: GTK3 cannot warp the
+pointer on Wayland, so a Wayland client keeps the normal behaviour.
+
 ## Before you share
 
 - Anyone connected can see the display and, unless input is disabled, control

@@ -115,6 +115,10 @@ class XI2_Window:
 
     def do_xi_motion(self, event, device) -> None:
         window = self.window
+        # soft dependency on `CaptureWindow`:
+        capture_motion = getattr(window, "capture_motion", None)
+        if capture_motion and capture_motion(event):
+            return
         if window.moveresize_event:
             xinputlog("do_xi_motion(%s, %s) handling as a moveresize event on window %s", event, device, window)
             window.motion_moveresize(event.x_root, event.y_root, event.state)

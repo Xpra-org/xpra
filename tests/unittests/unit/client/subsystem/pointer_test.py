@@ -21,9 +21,14 @@ class PointerClientTest(ClientMixinTest):
         opts.sharing = "no"
         opts.middle_click = True
         opts.pointer = "auto"
+        opts.input_capture = "no"
         self._test_mixin_class(PointerClient, opts, {})
         self.mixin.init_ui(opts)
         self.assertTrue(self.mixin.middle_click)
+        self.assertFalse(self.mixin.input_capture)
+        opts.input_capture = "click"
+        self.mixin.init_ui(opts)
+        self.assertTrue(self.mixin.input_capture)
         # the wheel map translates the vertical axis buttons:
         self.assertEqual(self.mixin.wheel_map[4], 5)
         self.assertEqual(self.mixin.wheel_map[5], 4)

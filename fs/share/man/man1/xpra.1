@@ -1655,6 +1655,14 @@ The \fIemulate3buttons\fP value will synthesize a middle-click
 when the left and right buttons are pressed simultaneously.
 
 .TP
+\fB\-\-input\-capture\fP=\fIno\fP|\fIclick\fP
+With \fIclick\fP, clicking a shadow or desktop window captures the pointer
+and the keyboard: all input is sent to the server,
+and the pointer moves over the remote desktop at its native resolution,
+even when the window is scaled down with \fB\-\-desktop\-scaling\fP.
+The \fItoggle_input_capture\fP key shortcut releases the capture.
+
+.TP
 \fB\-\-input\-devices\fP=\fIAPINAME\fP
 Which API to use for input devices on the server.
 

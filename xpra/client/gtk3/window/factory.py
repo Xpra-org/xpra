@@ -19,6 +19,10 @@ def get_window_base_classes() -> tuple[type, ...]:
     if features.file and DRAGNDROP:
         from xpra.client.gtk3.window.dragndrop import DragNDropWindow
         WINDOW_BASES.append(DragNDropWindow)
+    if features.pointer and features.keyboard and envbool("XPRA_INPUT_CAPTURE", True):
+        # must come before `GrabWindow` and `PointerWindow`, as it overrides some of their methods:
+        from xpra.client.gtk3.window.capture import CaptureWindow
+        WINDOW_BASES.append(CaptureWindow)
     if envbool("XPRA_FOCUS", True):
         from xpra.client.gtk3.window.focus import FocusWindow
         WINDOW_BASES.append(FocusWindow)
