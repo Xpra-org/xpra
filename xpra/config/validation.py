@@ -11,11 +11,11 @@ from typing import Any
 from xpra import config
 from xpra.config import InitException
 from xpra.util.str_fn import csv
-from xpra.config.types import OPTION_TYPES, OPTIONS_VALIDATION, NO_FILE_OPTIONS
+from xpra.config.types import OPTION_TYPES, OPTIONS_VALIDATION, DISCARD_OPTIONS
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or, parse_bool_or_number, parse_number
 
 
-def validate_config(d=None, discard=NO_FILE_OPTIONS, extras_types=None, extras_validation=None) -> dict[str,Any]:
+def validate_config(d=None, discard=DISCARD_OPTIONS, extras_types=None, extras_validation=None) -> dict[str,Any]:
     return do_validate_config(d or {}, discard, extras_types or {}, extras_validation or {})
 
 

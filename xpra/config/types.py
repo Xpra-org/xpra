@@ -381,6 +381,8 @@ CLONES: dict[str, str] = {}
 
 # these options should not be specified in config files:
 NO_FILE_OPTIONS = ("daemon", )
+LEGACY_OPTIONS = ("fake-xinerama", "dbus-proxy", "proxy-video-encoders")
+DISCARD_OPTIONS = NO_FILE_OPTIONS + LEGACY_OPTIONS
 
 # URLs (ie: "xpra+tcp://host:port/?param=value") are untrusted input:
 # they can come from a clicked link, a web page, a QR code, etc.
