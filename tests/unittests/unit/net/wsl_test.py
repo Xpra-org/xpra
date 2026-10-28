@@ -403,6 +403,25 @@ class TestBridge(unittest.TestCase):
         self.assertIn("exit code 127", failures[0])
         self.assertIn("xpra: command not found", failures[0])
 
+    def test_clean_exit_is_not_an_error(self):
+        from xpra.net.bytestreams import ConnectionClosedException
+        # ie: the server closed the connection after a `detach` request, and `_proxy` exited:
+        once = [sys.executable, "-c", (
+            "import sys\n"
+            "sys.stdout.buffer.write(sys.stdin.buffer.read1(5)); sys.stdout.flush()\n"
+        )]
+        failures = []
+        conn = self.connect(once, fail_cb=failures.append)
+        try:
+            self.assertEqual(self.roundtrip(conn, b"hello"), b"hello")
+            conn.bridge.process.wait(10)
+            with self.assertRaises(ConnectionClosedException):
+                conn.read(1)
+        finally:
+            self.close_and_wait(conn)
+        self.assertEqual(failures, [])
+        self.start_keepalive.assert_called_once_with("Ubuntu", "")
+
     def test_warnings_shown(self):
         # stands in for `_proxy_start` on an existing session, with a command that could not be started:
         stderr = (
