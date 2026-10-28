@@ -11,7 +11,7 @@ from typing import Any
 from xpra import config
 from xpra.config import InitException
 from xpra.util.str_fn import csv
-from xpra.config.types import OPTION_TYPES, OPTIONS_VALIDATION, DISCARD_OPTIONS
+from xpra.config.types import OPTION_TYPES, OPTIONS_VALIDATION, DISCARD_OPTIONS, LEGACY_OPTIONS
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or, parse_bool_or_number, parse_number
 
 
@@ -33,7 +33,8 @@ def do_validate_config(d:dict, discard, extras_types:dict, extras_validation:dic
     nd: dict[str, Any] = {}
     for k, v in d.items():
         if k in discard:
-            config.warn(f"Warning: option {k!r} is not allowed in configuration files")
+            if k not in LEGACY_OPTIONS:
+                config.warn(f"Warning: option {k!r} is not allowed in configuration files")
             continue
         vt = option_types.get(k)
         if vt is None:
