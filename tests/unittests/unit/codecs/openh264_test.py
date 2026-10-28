@@ -20,6 +20,7 @@ class OpenH264QualityTest(unittest.TestCase):
         self.enterContext(patch.multiple(openh264, MAX_QUALITY=45, LARGE_FRAME_MAX_QUALITY=35, LARGE_FRAME_PIXELS=1920 * 1080))
 
     def test_quality_caps_and_large_frame_boundary(self):
+        spec = openh264.OpenH264Spec(codec_class=object, codec_type="openh264")
         for quality, width, height, expected in (
             (100, 128, 128, 45), (70, 1920, 1080, 45),
             (100, 1920, 1082, 35), (100, 3840, 2160, 35),
@@ -27,7 +28,20 @@ class OpenH264QualityTest(unittest.TestCase):
             (-1, 128, 128, 45), (-1, 3840, 2160, 35), (200, 128, 128, 45),
         ):
             with self.subTest(quality=quality, size=(width, height)):
-                self.assertEqual(openh264.get_quality(quality, width, height), expected)
+                self.assertEqual(openh264.get_effective_quality(quality, width, height), expected)
+                self.assertEqual(spec.get_effective_quality(quality, width, height), expected)
+
+    def test_encoder_specs_report_effective_quality(self):
+        try:
+            encoder_module = import_module("xpra.codecs.openh264.encoder")
+        except ImportError:
+            self.skipTest("OpenH264 encoder is not available")
+        specs = encoder_module.get_specs()
+        self.assertTrue(specs)
+        for spec in specs:
+            with self.subTest(spec=spec):
+                self.assertEqual(spec.get_effective_quality(100, 128, 128), 45)
+                self.assertEqual(spec.get_effective_quality(100, 3840, 2160), 35)
 
     def test_encoder_caps_initial_and_per_frame_quality(self):
         try:

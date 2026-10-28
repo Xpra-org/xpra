@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 from xpra.codecs.constants import (
     CodecSpec,
+    VideoSpec,
     get_profile,
     get_subsampling_divs,
     get_x264_preset,
@@ -24,6 +25,13 @@ class Codec:
 
 
 class CodecConstantsTest(unittest.TestCase):
+
+    def test_video_spec_preserves_requested_quality(self):
+        spec = VideoSpec(codec_class=Codec, codec_type="test")
+        for quality in (-1, 0, 50, 100):
+            for width, height in ((128, 128), (3840, 2160)):
+                with self.subTest(quality=quality, size=(width, height)):
+                    self.assertEqual(spec.get_effective_quality(quality, width, height), quality)
 
     def test_pixel_format_and_x264_boundaries(self):
         self.assertEqual(get_subsampling_divs("YUV420P10"), ((1, 1), (2, 2), (2, 2)))
