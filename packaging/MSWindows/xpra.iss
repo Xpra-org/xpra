@@ -41,10 +41,10 @@ Type: filesandordirs; Name: "{app}\lib"
 
 [Icons]
 Name: "{group}\Xpra"; Filename: {app}\Xpra.exe; WorkingDir: {app}
-Name: "{group}\Xpra Session Browser"; Filename: "{app}\Xpra.exe"; Parameters: "sessions"; WorkingDir: {app}; IconFilename: {app}\share\xpra\icons\mdns.ico
-Name: "{group}\Xpra Documentation"; Filename: "{app}\website.url"; IconFilename: {app}\share\xpra\icons\xpra.ico
-Name: "{group}\Xpra Shadow Server"; Filename: "{app}\Xpra.exe"; WorkingDir: {app}; Parameters: "shadow --bind-tcp=0.0.0.0:14500,auth=sys,ssl-cert=auto"; IconFilename: {app}\share\xpra\icons\server-connected.ico
-Name: "{group}\Xpra Configuration"; Filename: "{app}\Configure.exe"; WorkingDir: {app}; IconFilename: {app}\share\xpra\icons\features.ico
+Name: "{group}\Session Browser"; Filename: "{app}\Xpra.exe"; Parameters: "sessions"; WorkingDir: {app}; IconFilename: {app}\share\xpra\icons\mdns.ico
+Name: "{group}\Documentation"; Filename: "{app}\website.url"; IconFilename: {app}\share\xpra\icons\xpra.ico
+Name: "{group}\Shadow Server"; Filename: "{app}\Xpra.exe"; WorkingDir: {app}; Parameters: "shadow --bind-tcp=0.0.0.0:14500,auth=sys,ssl-cert=auto"; IconFilename: {app}\share\xpra\icons\server-connected.ico
+Name: "{group}\Configuration"; Filename: "{app}\Configure.exe"; WorkingDir: {app}; IconFilename: {app}\share\xpra\icons\features.ico
 
 
 [Run]
