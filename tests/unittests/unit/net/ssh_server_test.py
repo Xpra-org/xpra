@@ -21,6 +21,7 @@ Covers:
 """
 
 import os
+import faulthandler
 import socket
 import tempfile
 import threading
@@ -28,6 +29,7 @@ import shutil
 import sys
 import unittest
 from io import BytesIO
+from time import monotonic
 from unittest.mock import MagicMock, patch
 
 import paramiko
@@ -519,6 +521,18 @@ class TestExecClientUnit(unittest.TestCase):
 # 5. Integration tests: real paramiko SSH server on loopback
 # ---------------------------------------------------------------------------
 
+SSH_TIMEOUT = 10
+
+
+def _test_transport(sock):
+    transport = paramiko.Transport(sock)
+    transport.banner_timeout = SSH_TIMEOUT
+    transport.handshake_timeout = SSH_TIMEOUT
+    transport.auth_timeout = SSH_TIMEOUT
+    transport.channel_timeout = SSH_TIMEOUT
+    return transport
+
+
 def _can_run_integration():
     """Check that we have everything we need for integration tests."""
     try:
@@ -545,10 +559,12 @@ class _SSHTestServer:
         self.port = self._sock.getsockname()[1]
         self._stop = threading.Event()
         self._ready = threading.Event()
+        self._transports = []
+        self._handlers = []
         self._thread = threading.Thread(target=self._accept_loop, daemon=True)
         self._thread.start()
         # wait for the accept loop to start before returning
-        self._ready.wait(5.0)
+        assert self._ready.wait(5.0), "SSH accept thread did not start"
 
     def _accept_loop(self):
         self._sock.settimeout(0.5)
@@ -560,55 +576,82 @@ class _SSHTestServer:
                 continue
             except OSError:
                 break
-            t = threading.Thread(target=self._handle, args=(conn,), daemon=True)
+            transport = _test_transport(conn)
+            ssh_server = SSHServer(none_auth=self._none_auth, password_auth=self._password_auth)
+            ssh_server.transport = transport
+            self._transports.append((transport, ssh_server))
+            t = threading.Thread(target=self._handle, args=(transport, ssh_server), daemon=True)
+            self._handlers.append(t)
             t.start()
 
-    def _handle(self, conn):
-        transport = paramiko.Transport(conn)
-        transport.add_server_key(self.host_key)
-        ssh_server = SSHServer(none_auth=self._none_auth, password_auth=self._password_auth)
-        ssh_server.transport = transport
+    def _handle(self, transport, ssh_server):
         try:
-            transport.start_server(server=ssh_server)
-        except paramiko.SSHException:
-            return
-        chan = transport.accept(10)
-        if chan is None:
-            return
-        if not ssh_server.event.wait(10):
-            return
-        # handle exec_response (mirrors make_ssh_server_connection loop)
-        if exec_response := getattr(chan, "exec_response", None):
-            exit_status, out, err = exec_response
-            if out:
-                data = out.encode() if isinstance(out, str) else out
-                chan.sendall(data)
-            if err:
-                data = err.encode() if isinstance(err, str) else err
-                chan.sendall_stderr(data)
-            chan.send_exit_status(exit_status)
-        chan.close()
-        transport.close()
+            transport.add_server_key(self.host_key)
+            try:
+                transport.start_server(server=ssh_server)
+            except (paramiko.SSHException, EOFError, OSError):
+                return
+            deadline = monotonic() + 10
+            chan = None
+            while not self._stop.is_set() and transport.is_active() and monotonic() < deadline:
+                if chan := transport.accept(0.1):
+                    break
+            if chan is None or not ssh_server.event.wait(10) or self._stop.is_set():
+                return
+            # handle exec_response (mirrors make_ssh_server_connection loop)
+            if exec_response := getattr(chan, "exec_response", None):
+                exit_status, out, err = exec_response
+                if out:
+                    data = out.encode() if isinstance(out, str) else out
+                    chan.sendall(data)
+                if err:
+                    data = err.encode() if isinstance(err, str) else err
+                    chan.sendall_stderr(data)
+                chan.send_exit_status(exit_status)
+            chan.close()
+            # Let the client acknowledge channel closure before closing the TCP socket.
+            transport.join(SSH_TIMEOUT)
+        finally:
+            transport.close()
+            transport.sock.close()
 
     def close(self):
         self._stop.set()
         self._sock.close()
+        # Stop accepting before taking a snapshot of the connections to close.
+        self._thread.join(5)
+        assert not self._thread.is_alive(), "SSH accept thread did not stop"
+        for transport, ssh_server in self._transports:
+            ssh_server.event.set()
+            transport.close()
+            transport.sock.close()
+        for t in self._handlers:
+            t.join(5)
+            assert not t.is_alive(), "SSH handler thread did not stop"
+        for transport, _ in self._transports:
+            transport.join(5)
+            assert not transport.is_alive(), "SSH transport thread did not stop"
 
 
 def _client_transport(server: _SSHTestServer) -> tuple[paramiko.Transport, socket.socket]:
     """Open a paramiko client transport and authenticate with none."""
-    sock = socket.create_connection(("127.0.0.1", server.port))
-    t = paramiko.Transport(sock)
-    t.start_client()
-    t.auth_none("testuser")
+    sock = socket.create_connection(("127.0.0.1", server.port), timeout=SSH_TIMEOUT)
+    t = _test_transport(sock)
+    try:
+        t.start_client(timeout=SSH_TIMEOUT)
+        t.auth_none("testuser")
+    except Exception:
+        t.close()
+        sock.close()
+        raise
     return t, sock
 
 
 def _exec_cmd(transport: paramiko.Transport, cmd: str) -> tuple[bytes, bytes, int]:
     """Open a session channel, exec cmd, collect stdout/stderr/exit_status."""
-    chan = transport.open_session()
-    chan.exec_command(cmd)
+    chan = transport.open_session(timeout=SSH_TIMEOUT)
     chan.settimeout(5.0)
+    chan.exec_command(cmd)
 
     stdout = b""
     while True:
@@ -629,12 +672,42 @@ def _exec_cmd(transport: paramiko.Transport, cmd: str) -> tuple[bytes, bytes, in
     except OSError:
         pass
 
+    assert chan.exit_status_ready(), "SSH command did not return an exit status"
     exit_status = chan.recv_exit_status()
     try:
         chan.close()
     except (EOFError, OSError):
         pass
     return stdout, stderr, exit_status
+
+
+@unittest.skipUnless(_can_run_integration(), "paramiko not available")
+class TestSSHTestServerCleanup(unittest.TestCase):
+
+    def test_close_without_client_banner(self):
+        server = _SSHTestServer()
+        self.addCleanup(server.close)
+        sock = socket.create_connection(("127.0.0.1", server.port), timeout=SSH_TIMEOUT)
+        self.addCleanup(sock.close)
+        sock.settimeout(5)
+        with sock.makefile("rb") as peer:
+            self.assertTrue(peer.readline().startswith(b"SSH-2.0-"))
+            # Closing a deliberately incomplete handshake makes Paramiko log an error.
+            with self.assertLogs("paramiko.transport", level="ERROR") as captured:
+                server.close()
+            self.assertTrue(any("Error reading SSH protocol banner" in msg for msg in captured.output))
+            self.assertEqual(peer.read(1), b"")
+
+    def test_close_authenticated_connection_without_channel(self):
+        server = _SSHTestServer()
+        self.addCleanup(server.close)
+        transport, sock = _client_transport(server)
+        self.addCleanup(sock.close)
+        self.addCleanup(transport.close)
+        server.close()
+        transport.join(5)
+        self.assertFalse(transport.is_alive())
+        self.assertFalse(transport.is_active())
 
 
 @unittest.skipUnless(_can_run_integration(), "paramiko not available")
@@ -650,11 +723,6 @@ class TestSSHServerIntegration(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         cls.server.close()
-
-    def setUp(self):
-        # give previous test's transport time to close cleanly
-        import time
-        time.sleep(0.05)
 
     def _connect(self):
         return _client_transport(self.server)
@@ -718,7 +786,7 @@ class TestSSHServerIntegration(unittest.TestCase):
         """Unknown command causes the server to close the channel without exec success."""
         t, sock = self._connect()
         try:
-            chan = t.open_session()
+            chan = t.open_session(timeout=SSH_TIMEOUT)
             # server returns False from check_channel_exec_request and closes channel,
             # so paramiko raises SSHException or EOFError on the client side,
             # or ConnectionError if the test server tears down the socket before our channel close reply reaches it
@@ -731,9 +799,11 @@ class TestSSHServerIntegration(unittest.TestCase):
         """A server with none_auth=False should reject none authentication."""
         srv = _SSHTestServer(none_auth=False)
         try:
-            sock = socket.create_connection(("127.0.0.1", srv.port))
-            t = paramiko.Transport(sock)
-            t.start_client()
+            sock = socket.create_connection(("127.0.0.1", srv.port), timeout=SSH_TIMEOUT)
+            t = _test_transport(sock)
+            self.addCleanup(sock.close)
+            self.addCleanup(t.close)
+            t.start_client(timeout=SSH_TIMEOUT)
             self.assertRaises(paramiko.AuthenticationException, t.auth_none, "user")
             t.close()
             sock.close()
@@ -747,9 +817,11 @@ class TestSSHServerIntegration(unittest.TestCase):
             password_auth=lambda u, p: u == "alice" and p == "s3cr3t",
         )
         try:
-            sock = socket.create_connection(("127.0.0.1", srv.port))
-            t = paramiko.Transport(sock)
-            t.start_client()
+            sock = socket.create_connection(("127.0.0.1", srv.port), timeout=SSH_TIMEOUT)
+            t = _test_transport(sock)
+            self.addCleanup(sock.close)
+            self.addCleanup(t.close)
+            t.start_client(timeout=SSH_TIMEOUT)
             t.auth_password("alice", "s3cr3t")
             assert t.is_authenticated()
             t.close()
@@ -809,13 +881,16 @@ class TestMakeSSHServerConnection(unittest.TestCase):
         results, ready = self._run_make_ssh_server_connection(s1)
 
         # Client side: connect and run 'command -v xpra'
-        t = paramiko.Transport(s2)
-        t.start_client()
+        t = _test_transport(s2)
+        self.addCleanup(s1.close)
+        self.addCleanup(s2.close)
+        self.addCleanup(t.close)
+        t.start_client(timeout=SSH_TIMEOUT)
         t.auth_none("testuser")
 
-        chan = t.open_session()
-        chan.exec_command("command -v xpra")
+        chan = t.open_session(timeout=SSH_TIMEOUT)
         chan.settimeout(5.0)
+        chan.exec_command("command -v xpra")
 
         output = b""
         while True:
@@ -826,12 +901,13 @@ class TestMakeSSHServerConnection(unittest.TestCase):
             if not data:
                 break
             output += data
+        self.assertTrue(chan.exit_status_ready(), "SSH command did not return an exit status")
         exit_status = chan.recv_exit_status()
         chan.close()
         t.close()
         s2.close()
 
-        ready.wait(10)
+        self.assertTrue(ready.wait(10), "SSH server did not finish")
         assert b"xpra" in output, f"expected xpra in {output!r}"
         assert exit_status == 0
 
@@ -853,10 +929,16 @@ class TestParamikoClientIntegration(unittest.TestCase):
     def tearDownClass(cls):
         cls.server.close()
 
+    def setUp(self):
+        # Keep do_connect's real transports subject to the same test timeouts.
+        transport_patch = patch("xpra.net.ssh.paramiko.client.Transport", _test_transport)
+        transport_patch.start()
+        self.addCleanup(transport_patch.stop)
+
     def test_do_connect_none_auth(self):
         """do_connect completes authentication using 'none' mode."""
         from xpra.net.ssh.paramiko.client import do_connect
-        sock = socket.create_connection(("127.0.0.1", self.server.port))
+        sock = socket.create_connection(("127.0.0.1", self.server.port), timeout=SSH_TIMEOUT)
         try:
             transport = do_connect(
                 sock,
@@ -869,6 +951,7 @@ class TestParamikoClientIntegration(unittest.TestCase):
                 paramiko_config={"verify-hostkey": "false"},
                 auth_modes=["none"],
             )
+            self.addCleanup(transport.close)
             assert transport.is_authenticated()
             transport.close()
         finally:
@@ -877,7 +960,7 @@ class TestParamikoClientIntegration(unittest.TestCase):
     def test_run_test_command(self):
         """run_test_command can execute 'command -v xpra' against our server."""
         from xpra.net.ssh.paramiko.client import do_connect, run_test_command
-        sock = socket.create_connection(("127.0.0.1", self.server.port))
+        sock = socket.create_connection(("127.0.0.1", self.server.port), timeout=SSH_TIMEOUT)
         try:
             transport = do_connect(
                 sock,
@@ -890,6 +973,7 @@ class TestParamikoClientIntegration(unittest.TestCase):
                 paramiko_config={"verify-hostkey": "false"},
                 auth_modes=["none"],
             )
+            self.addCleanup(transport.close)
             out, err, code = run_test_command(transport, "command -v xpra")
             assert code == 0, f"expected exit 0, got {code}"
             assert any("xpra" in line for line in out), f"expected xpra in {out!r}"
@@ -900,10 +984,11 @@ class TestParamikoClientIntegration(unittest.TestCase):
     def test_authentication_manager_with_none(self):
         """AuthenticationManager succeeds with none auth mode."""
         from xpra.net.ssh.paramiko.client import AuthenticationManager
-        sock = socket.create_connection(("127.0.0.1", self.server.port))
+        sock = socket.create_connection(("127.0.0.1", self.server.port), timeout=SSH_TIMEOUT)
         try:
-            transport = paramiko.Transport(sock)
-            transport.start_client()
+            transport = _test_transport(sock)
+            self.addCleanup(transport.close)
+            transport.start_client(timeout=SSH_TIMEOUT)
             mgr = AuthenticationManager(
                 transport,
                 "127.0.0.1",
@@ -929,7 +1014,14 @@ class TestParamikoClientIntegration(unittest.TestCase):
 
 
 def main():
-    unittest.main()
+    # Paramiko also has waits that ignore socket timeouts (for example exec replies).
+    # Fail with every thread's stack if one of those stalls in CI.
+    timeout = int(os.environ.get("XPRA_SSH_TEST_TIMEOUT", "120"))
+    faulthandler.dump_traceback_later(timeout, exit=True)
+    try:
+        unittest.main(verbosity=2)
+    finally:
+        faulthandler.cancel_dump_traceback_later()
 
 
 if __name__ == "__main__":
