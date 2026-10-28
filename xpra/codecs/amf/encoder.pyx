@@ -326,7 +326,7 @@ def get_specs() -> Sequence[VideoSpec]:
 
 
 # these are the actual caps and are probed during the self-tests:
-CAPS: Dict[str, str] = {}
+CAPS: Dict[str, dict] = {}
 
 
 ENCODING_CAPS: Dict[str, Dict[str, str]] = {
