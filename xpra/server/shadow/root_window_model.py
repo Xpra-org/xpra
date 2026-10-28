@@ -3,12 +3,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import socket
 from typing import Any
 from collections import namedtuple
 from collections.abc import Sequence
 
-from xpra.util.system import get_linux_distribution, get_generic_os_name
+from xpra.util.system import get_linux_distribution, get_generic_os_name, get_platform_icon_name
 from xpra.util.io import load_binary_file
 from xpra.platform.paths import get_icon_filename
 from xpra.net.common import BACKWARDS_COMPATIBLE
@@ -22,7 +23,7 @@ def get_os_icons() -> Sequence[tuple[int, int, str, bytes]]:
         from PIL import Image  # pylint: disable=import-outside-toplevel
     except ImportError:
         return ()
-    filename = (get_generic_os_name() or "").lower() + ".png"
+    filename = (get_platform_icon_name(sys.platform) or get_generic_os_name().lower()) + ".png"
     icon_name = get_icon_filename(filename)
     if not icon_name:
         log(f"get_os_icons() no icon matching {filename!r}")

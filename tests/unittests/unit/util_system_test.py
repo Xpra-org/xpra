@@ -9,6 +9,15 @@ from unittest.mock import patch
 from xpra.util import env, system
 
 
+class PlatformIconTest(unittest.TestCase):
+
+    def test_platform_icons(self):
+        for platform, expected in (("win32", "win32"), ("darwin", "macos"), ("linux2", "linux"),
+                                   ("freebsd14", "freebsd"), ("openbsd7", "openbsd"), ("other", "")):
+            with self.subTest(platform=platform):
+                self.assertEqual(system.get_platform_icon_name(platform), expected)
+
+
 class DisplayDetectionTest(unittest.TestCase):
 
     def test_wayland_environment_precedence(self):

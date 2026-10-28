@@ -117,7 +117,7 @@ def is_VirtualBox() -> bool:
 def get_platform_icon_name(platform: str) -> str:
     for p, i in {
         "win32": "win32",
-        "darwin": "osx",
+        "darwin": "macos",
         "linux": "linux",
         "freebsd": "freebsd",
         "openbsd": "openbsd",
