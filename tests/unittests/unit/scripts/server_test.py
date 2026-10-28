@@ -317,6 +317,25 @@ class TestMain(unittest.TestCase):
         assert display_name == ":1001"
         assert display_options == ""
 
+    def test_choose_vfb_display(self):
+        from xpra.scripts import server
+        with patch.object(server, "LINUX", True), \
+                patch("xpra.x11.vfb_util.x11_socket_dir_writable", return_value=False) as writable, \
+                patch("xpra.scripts.display.find_free_x11_display", return_value=":100"):
+            # chosen before the session directory is named after it:
+            self.assertEqual(server.choose_vfb_display("S123", 1000, 1000), ":100")
+            writable.assert_called_once_with(1000, 1000)
+            # a display we were given is used as it is:
+            self.assertEqual(server.choose_vfb_display(":42", 1000, 1000), ":42")
+        with patch.object(server, "LINUX", True), \
+                patch("xpra.x11.vfb_util.x11_socket_dir_writable", return_value=True), \
+                patch("xpra.scripts.display.find_free_x11_display") as find_free:
+            # the X11 server chooses it with `-displayfd`:
+            self.assertEqual(server.choose_vfb_display("S123", 1000, 1000), "S123")
+            find_free.assert_not_called()
+        with patch.object(server, "LINUX", False):
+            self.assertEqual(server.choose_vfb_display("S123", 1000, 1000), "S123")
+
     def test_request_upgrade_display(self):
         with patch("xpra.scripts.server.request_exit", return_value=True) as request_exit, \
                 patch("time.sleep") as sleep:
