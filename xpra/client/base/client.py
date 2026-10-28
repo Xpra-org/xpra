@@ -216,8 +216,18 @@ class XpraClientBase(PacketDispatcher):
         self._dispatch_fire("load")
 
     def run(self) -> ExitValue:
-        self._dispatch_fire("run")
+        self.run_subsystems()
         return ExitCode.OK
+
+    # set once the subsystems have been started by `run_subsystems`:
+    subsystems_running = False
+
+    def run_subsystems(self) -> None:
+        # the launcher starts the subsystems before connecting, and runs the client once connected:
+        if self.subsystems_running:
+            return
+        self.subsystems_running = True
+        self._dispatch_fire("run")
 
     @staticmethod
     def force_quit(exit_code: ExitValue = ExitCode.FAILURE) -> NoReturn:
