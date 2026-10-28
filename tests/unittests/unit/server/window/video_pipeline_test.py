@@ -91,6 +91,34 @@ class VideoPipelineTest(unittest.TestCase):
         self.assertEqual(tuple(s.encoder_spec for s in scores), (second, self.encoder, second))
         self.assertEqual(tuple(s.score for s in scores), (320, 320, 320))
 
+    def test_high_quality_prefers_vp8_and_vp9_over_current_openh264(self):
+        from xpra.codecs import openh264
+        h264 = openh264.OpenH264Spec(
+            codec_class=self.encoder.codec_class, codec_type="openh264", encoding="h264",
+            output_colorspaces=("YUV420P",), quality=40, speed=20, size_efficiency=40,
+            setup_cost=0, max_w=3840, max_h=2160,
+        )
+        vp8 = replace(encoder_spec("vpx", quality=50, speed=50, size_efficiency=60, setup_cost=20), encoding="vp8")
+        vp9 = replace(vp8, encoding="vp9", speed=40)
+        self.encoders = {"h264": {"YUV420P": (h264,)}, "vp8": {"YUV420P": (vp8,)}, "vp9": {"YUV420P": (vp9,)}}
+        self.formats = {encoding: ("YUV420P",) for encoding in self.encoders}
+        converter = csc_spec(can_scale=True, quality=100, speed=100, setup_cost=0)
+        self.converters = {"YUV420P": (converter,)}
+        settings = replace(self.settings, preferred_encodings=("h264", "vp8", "vp9"))
+        with patch.multiple(openh264, MAX_QUALITY=45, LARGE_FRAME_MAX_QUALITY=35, LARGE_FRAME_PIXELS=1920 * 1080):
+            for width, height in ((128, 128), (1920, 1080), (3840, 2160)):
+                self.codec_state.return_value = PipelineCodecState(
+                    current_csc(converter, width, height), current_encoder(h264, width, height, "YUV420P"), True)
+                for quality in (70, 90, 100):
+                    for fps in (0, 20):
+                        with self.subTest(size=(width, height), quality=quality, fps=fps):
+                            scores = self.select(replace(settings, quality=quality), encodings=("h264", "vp8", "vp9"),
+                                                 width=width, height=height, fps=fps)
+                            by_encoding = {score.encoder_spec.encoding: score.score for score in scores}
+                            self.assertGreater(by_encoding["vp8"], by_encoding["h264"])
+                            self.assertGreater(by_encoding["vp9"], by_encoding["h264"])
+                            self.assertEqual(scores[-1].encoder_spec.codec_type, "openh264")
+
     def test_unknown_preferences_and_explicit_score_delta(self):
         settings = replace(self.settings, preferred_encodings=())
         self.assertEqual(self.select(settings)[0].score, 320)

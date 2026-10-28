@@ -15,7 +15,7 @@ log = Logger("encoder", "openh264")
 from xpra.util.env import envint
 
 from xpra.codecs.image import ImageWrapper
-from xpra.codecs.openh264 import get_quality
+from xpra.codecs.openh264 import OpenH264Spec, get_effective_quality
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.constants import (
@@ -419,9 +419,9 @@ def get_specs() -> Sequence[VideoSpec]:
     for encoding in get_encodings():
         for in_cs in tuple(COLORSPACES.keys()):
             out_cs = in_cs
-            # we can handle high quality and any speed
+            # quality is capped to stay within OpenH264's buffer limits
             # setup cost is moderate (about 10ms)
-            specs.append(VideoSpec(
+            specs.append(OpenH264Spec(
                     encoding=encoding, input_colorspace=in_cs, output_colorspaces=(out_cs, ),
                     has_lossless_mode=False,
                     codec_class=Encoder, codec_type=get_type(),
@@ -580,7 +580,7 @@ cdef class Encoder:
         self.profile = get_h264_profile(options)
         self.level = get_h264_level(options)
         self.full_range = options.boolget("full-range", True)
-        self.quality = get_quality(options.intget("quality", 50), width, height)
+        self.quality = get_effective_quality(options.intget("quality", 50), width, height)
         self.speed = options.intget("speed", 50)
         self.content_types = options.strtupleget("content-types", ())
         self.screen_content = int(not use_video_usage_type(self.content_types))
@@ -686,7 +686,7 @@ cdef class Encoder:
         # update the fixed quantizer on the fly (RC is off, so this maps straight to iDLayerQp):
         if quality < 0:
             return
-        quality = get_quality(quality, self.width, self.height)
+        quality = get_effective_quality(quality, self.width, self.height)
         if quality == self.quality:
             return
         self.quality = quality

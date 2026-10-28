@@ -438,6 +438,10 @@ class VideoSpec(CodecSpec):
     has_lossless_mode: bool = False
     full_range: bool = True
 
+    def get_effective_quality(self, quality: int, width: int, height: int) -> int:
+        """Return the quality this encoder can provide at the given dimensions."""
+        return quality
+
     def __repr__(self):
         return f"{self.codec_type}({self.input_colorspace} - {self.encoding})"
 
