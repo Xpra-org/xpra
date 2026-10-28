@@ -35,6 +35,7 @@ class X11DisplayPropsWatcher:
     def __init__(self, display_client, xsettings_enabled: bool = True):
         self.display = display_client
         self.xsettings_enabled = xsettings_enabled
+        self.server_xsettings = False
         self._xsettings_watcher = None
         self._root_props_watcher = None
         self._x11_filter = None
@@ -76,8 +77,11 @@ class X11DisplayPropsWatcher:
     def do_setup_xprops(self, *args) -> None:
         log("do_setup_xprops(%s)", args)
         root_props = []
+        sync_xsettings = self.xsettings_enabled and self.server_xsettings
+        if sync_xsettings:
+            root_props.append("RESOURCE_MANAGER")
         if self.xsettings_enabled:
-            root_props += ["RESOURCE_MANAGER", "_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
+            root_props += ["_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
         window = self.display.get_subsystem("window")
         if window and window.server_window_stacking:
             root_props.append("_NET_CLIENT_LIST_STACKING")
@@ -87,7 +91,7 @@ class X11DisplayPropsWatcher:
             self.init_x11_filter()
             # pylint: disable=import-outside-toplevel
             from xpra.x11.xroot_props import XRootPropWatcher, GTK_WORKAREAS_PREFIX
-            if self.xsettings_enabled and self._xsettings_watcher is None:
+            if sync_xsettings and self._xsettings_watcher is None:
                 from xpra.x11.subsystem.xsettings_manager import XSettingsWatcher
                 self._xsettings_watcher = XSettingsWatcher()
                 self._xsettings_watcher.connect("xsettings-changed", self._handle_xsettings_changed)
@@ -97,7 +101,7 @@ class X11DisplayPropsWatcher:
                 prefixes = (GTK_WORKAREAS_PREFIX, ) if self.xsettings_enabled else ()
                 self._root_props_watcher = XRootPropWatcher(root_props, prefixes)
                 self._root_props_watcher.connect("root-prop-changed", self._handle_root_prop_changed)
-                if self.xsettings_enabled:
+                if sync_xsettings:
                     self._root_props_watcher.do_notify("RESOURCE_MANAGER")
                 if "_NET_CLIENT_LIST_STACKING" in root_props:
                     self._root_props_watcher.do_notify("_NET_CLIENT_LIST_STACKING")
