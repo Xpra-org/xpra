@@ -88,6 +88,8 @@ Xpra_cmd.exe attach wsl://alice@Ubuntu/
 Xpra_cmd.exe attach wsl://
 ```
 
+If a command cannot be started in a session that is already running,
+a warning is shown and the client still connects to the session.
 When attaching without a display number and more than one session is running,
 the error lists them and one must be specified.
 Run `xpra list` in the distribution to see the sessions and their display numbers.

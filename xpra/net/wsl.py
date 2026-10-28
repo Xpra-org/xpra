@@ -293,6 +293,7 @@ class WSLBridge:
 
     def drain_stderr(self) -> None:
         stderr = self.process.stderr
+        warning = False
         while True:
             try:
                 line = stderr.readline()
@@ -304,6 +305,12 @@ class WSLBridge:
             if s := decode_wsl_output(line.rstrip(b"\r\n")).rstrip():
                 log("wsl: %s", s)
                 self.diagnostics.append(s)
+                # warnings are shown as they come, with their indented details,
+                # ie: a command that could not be started in an existing session.
+                # (errors are part of the error message if the connection fails)
+                warning = s.startswith("Warning:") or (warning and s[:1].isspace())
+                if warning:
+                    log.warn(s)
 
     def poll(self) -> int | None:
         return self.process.poll() if self.process else None
