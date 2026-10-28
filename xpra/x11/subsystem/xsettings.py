@@ -84,7 +84,7 @@ class XSettingsServer(StubSubsystem):
             self.reset_settings()
 
     def get_caps(self, _source) -> dict[str, Any]:
-        return {}
+        return {"xsettings": self._xsettings_enabled}
 
     def get_ui_info(self, proto, **kwargs) -> dict[str, Any]:
         return {}

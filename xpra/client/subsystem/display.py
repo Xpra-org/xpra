@@ -311,6 +311,8 @@ class DisplayClient(StubClientSubsystem):
         return caps
 
     def parse_server_capabilities(self, caps: typedict) -> bool:
+        if self._x11_props:
+            self._x11_props.server_xsettings = caps.boolget("xsettings")
         d = caps.get("display")
         if isinstance(d, dict):
             c = typedict(d)
