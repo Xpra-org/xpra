@@ -40,7 +40,7 @@ class TestServerDisplayFD(unittest.TestCase):
 
 class TestStartOnExisting(unittest.TestCase):
 
-    def run_start(self, start=(), start_child=(), returncode=0, default_start=()):
+    def run_start(self, start=(), start_child=(), returncode=0, default_start=(), display_name=":100"):
         opts = make_defaults_struct()
         defaults = make_defaults_struct()
         opts.start = list(default_start) + list(start)
@@ -54,7 +54,7 @@ class TestStartOnExisting(unittest.TestCase):
         result = CompletedProcess([], returncode, b"", output)
         with patch.object(scripts_main, "run", return_value=result) as run, \
                 patch.object(scripts_main, "stderr_print") as stderr_print:
-            self.failed = scripts_main.start_commands_on_existing("/usr/bin/xpra", ":100", opts, defaults)
+            self.failed = scripts_main.start_commands_on_existing("/usr/bin/xpra", display_name, opts, defaults)
         self.stderr = [c.args[0] for c in stderr_print.call_args_list]
         return run
 
@@ -89,6 +89,9 @@ class TestStartOnExisting(unittest.TestCase):
         warnings = [line for line in self.stderr if line.startswith("Warning:")]
         self.assertEqual(len(warnings), 2)
         self.assertTrue(warnings[0].startswith("Warning: failed to start 'nosuchcommand' on display :100"))
+        # with the colon, even when the display was given without it, ie: `wsl://Ubuntu/100`:
+        self.run_start(start=["nosuchcommand"], returncode=1, display_name="100")
+        self.assertTrue(self.stderr[0].startswith("Warning: failed to start 'nosuchcommand' on display :100:"))
         # with the reason, indented and without the timestamps:
         self.assertIn(" failed to start new child command 'nosuchcommand'", self.stderr)
 
