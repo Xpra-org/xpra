@@ -9,6 +9,7 @@ from typing import Any
 from xpra.os_util import gi_import, OSX
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envfloat
+from xpra.client.gui.keyboard_shortcuts_parser import get_modifier_labels, shortcut_keys_str
 from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.client.gtk3.window.common import mask_buttons
 from xpra.log import Logger
@@ -174,7 +175,8 @@ class CaptureWindow(GtkStubWindow):
             for key, shortcuts in getattr(helper, "key_shortcuts", {}).items():
                 for req_mods, action, _args in shortcuts:
                     if action == "toggle_input_capture":
-                        return "+".join(list(req_mods) + [key])
+                        mod_labels = get_modifier_labels(helper.get_modifier_names())
+                        return shortcut_keys_str(key, req_mods, mod_labels)
         return ""
 
     def release_input_capture(self) -> None:

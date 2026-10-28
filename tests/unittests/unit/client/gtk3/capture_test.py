@@ -69,7 +69,7 @@ class CaptureTestWindow(CaptureWindow, FakePointerBase):
             "keyboard": SimpleNamespace(grabbed=False, mask_to_names=lambda _state: [],
                                         helper=SimpleNamespace(key_shortcuts={
                                             "Escape": [(["mod1", "shift"], "toggle_input_capture", [])],
-                                        })),
+                                        }, get_modifier_names=lambda: {"alt": "mod1", "shift": "shift"})),
             "remote-info": SimpleNamespace(_remote_server_mode=server_mode),
         }
         self._client = SimpleNamespace(readonly=False, server_readonly=False,
@@ -136,7 +136,7 @@ class CaptureWindowTest(unittest.TestCase):
 
     def test_requires_release_shortcut(self) -> None:
         window = CaptureTestWindow()
-        self.assertEqual(window.get_release_shortcut(), "mod1+shift+Escape")
+        self.assertEqual(window.get_release_shortcut(), "Alt+Shift+Escape")
         window.subsystems["keyboard"].helper.key_shortcuts = {}
         window._button_action(1, event(50, 20), True)
         self.assertFalse(window.input_captured)
