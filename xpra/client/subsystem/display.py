@@ -270,16 +270,17 @@ class DisplayClient(StubClientMixin):
         log("server has randr: %s", self.server_randr)
         self.server_opengl = c.dictget("opengl")
         Logger("screen", "opengl")("server opengl=%s", self.server_opengl)
-        self.server_multi_monitors = c.boolget("multi-monitors", False)
-        self.server_monitors = c.dictget("monitors")
+        # the server mode and monitor features are not part of the `display` namespace:
+        self.server_multi_monitors = caps.boolget("multi-monitors", False)
+        self.server_monitors = caps.dictget("monitors")
         log("server multi-monitors=%s, monitors=%s", self.server_multi_monitors, self.server_monitors)
-        self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop") or c.boolget("monitor")
-        self.server_is_monitor = c.boolget("monitor")
+        self.server_is_desktop = caps.boolget("shadow") or caps.boolget("desktop") or caps.boolget("monitor")
+        self.server_is_monitor = caps.boolget("monitor")
         self.print_desktop_size(c)
         return True
 
     def print_desktop_size(self, c: typedict) -> None:
-        if c.boolget("desktop") or c.boolget("shadow"):
+        if self.server_is_desktop and not self.server_is_monitor:
             v = c.intpair("actual_desktop_size")
             if v:
                 w, h = v
