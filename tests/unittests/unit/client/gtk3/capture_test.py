@@ -9,6 +9,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 from xpra.os_util import gi_import
+from xpra.constants import NotificationID
 from xpra.client.gtk3.window.capture import CaptureWindow, accumulate
 
 Gdk = gi_import("Gdk")
@@ -71,6 +72,7 @@ class CaptureTestWindow(CaptureWindow, FakePointerBase):
                                             "Escape": [(["mod1", "shift"], "toggle_input_capture", [])],
                                         }, get_modifier_names=lambda: {"alt": "mod1", "shift": "shift"})),
             "remote-info": SimpleNamespace(_remote_server_mode=server_mode),
+            "notification": SimpleNamespace(notify_client=MagicMock()),
         }
         self._client = SimpleNamespace(readonly=False, server_readonly=False,
                                        get_subsystem=self.subsystems.get)
@@ -120,6 +122,10 @@ class CaptureWindowTest(unittest.TestCase):
         window._button_action(1, event(50, 20), True)
         self.assertTrue(window.input_captured)
         self.assertTrue(window.subsystems["keyboard"].grabbed)
+        window.subsystems["notification"].notify_client.assert_called_once_with(
+            NotificationID.INPUT_CAPTURE, "Input capture started",
+            "Press Alt+Shift+Escape to release the pointer and keyboard.",
+            hints={"transient": True}, expire_timeout=5000, icon_name="keyboard")
         # the virtual pointer starts where we clicked, in remote pixels:
         self.assertEqual(window.capture_position, (500, 200))
         self.assertEqual(window.overlay, (500, 200))
@@ -141,6 +147,7 @@ class CaptureWindowTest(unittest.TestCase):
         window._button_action(1, event(50, 20), True)
         self.assertFalse(window.input_captured)
         window.seat.grab.assert_not_called()
+        window.subsystems["notification"].notify_client.assert_not_called()
         self.assertEqual(window.forwarded, [("button", 1, True)])
 
     def test_wheel_does_not_start_capture(self) -> None:

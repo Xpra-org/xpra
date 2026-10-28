@@ -7,6 +7,8 @@ import os
 from typing import Any
 
 from xpra.os_util import gi_import, OSX
+from xpra.common import may_notify_client
+from xpra.constants import NotificationID
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envfloat
 from xpra.client.gui.keyboard_shortcuts_parser import get_modifier_labels, shortcut_keys_str
@@ -147,6 +149,9 @@ class CaptureWindow(GtkStubWindow):
         self.warp_to_center()
         self.show_pointer_overlay(tuple(round(v) for v in self.capture_position))
         log.info("input capture started, press %s to release it", release)
+        may_notify_client(self._client, NotificationID.INPUT_CAPTURE, "Input capture started",
+                          f"Press {release} to release the pointer and keyboard.",
+                          hints={"transient": True}, expire_timeout=5000, icon_name="keyboard")
         return True
 
     def get_capture_gdk_window(self):
