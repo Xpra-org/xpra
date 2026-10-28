@@ -19,7 +19,7 @@ from xpra.log import Logger
 
 log = Logger("exec")
 
-MAX_MENU_CATEGORIES = envint("XPRA_MAX_MENU_CATEGORIES", 16)
+MAX_MENU_CATEGORIES = envint("XPRA_MAX_MENU_CATEGORIES", 32)
 MAX_MENU_ENTRIES = envint("XPRA_MAX_MENU_ENTRIES", 100)
 MAX_MENU_NAME = 64
 
