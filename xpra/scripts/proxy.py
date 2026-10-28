@@ -301,6 +301,8 @@ def start_commands_on_existing(script_file: str, display_name: str, opts, defaul
     import shlex
     from subprocess import run, DEVNULL, TimeoutExpired
     failed: list[str] = []
+    # the display number may be given without its colon, ie: `wsl://Ubuntu/100`:
+    display_str = f":{display_name}" if display_name.isdigit() else display_name
     for option, subcommand in (("start", "start"), ("start_child", "start-child")):
         for command in strip_defaults_start_child(getattr(opts, option), getattr(defaults, option)):
             if not command:
@@ -312,13 +314,13 @@ def start_commands_on_existing(script_file: str, display_name: str, opts, defaul
                 # our stdout carries the connection, so nothing else must be written to it:
                 proc = run(cmd, stdin=DEVNULL, capture_output=True, timeout=CONTROL_TIMEOUT)
             except (OSError, TimeoutExpired) as e:
-                stderr_print(f"Warning: failed to start {command!r} on display {display_name}: {e}")
+                stderr_print(f"Warning: failed to start {command!r} on display {display_str}: {e}")
                 failed.append(command)
                 continue
             output = [line for line in (proc.stdout + proc.stderr).decode(errors="replace").splitlines() if line.strip()]
             log("control output: %s", output)
             if proc.returncode:
-                stderr_print(f"Warning: failed to start {command!r} on display {display_name}: {exit_str(proc.returncode)}")
+                stderr_print(f"Warning: failed to start {command!r} on display {display_str}: {exit_str(proc.returncode)}")
                 for line in output:
                     # the control client's log messages are timestamped:
                     stderr_print(" " + LOG_TIMESTAMP_RE.sub("", line).strip())
