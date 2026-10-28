@@ -44,6 +44,8 @@ class CompressTest(unittest.TestCase):
         source._rgb_auto_threshold = 0
         source.has_shape = False
         source.client_bit_depth = 24
+        source.client_render_size = (0, 0)
+        source.window_dimensions = 3840, 2160
         return source
 
     @staticmethod
@@ -195,6 +197,53 @@ class CompressTest(unittest.TestCase):
         source._quality_hint = 80
         assigned = source.assign_sq_options({})
         self.assertEqual(assigned["quality"], 80)
+
+    @patch.object(compress, "monotonic", return_value=100)
+    def test_downscaled_quality_is_discounted(self, _monotonic) -> None:
+        # ie: a client using `--desktop-scaling=0.2`
+        for content_types in ((), ("desktop",), ("video",)):
+            with self.subTest(content_types=content_types):
+                source = self.make_source(content_types)
+                source.client_render_size = 768, 432
+                source._current_quality = 100
+                assigned = source.assign_sq_options({})
+                self.assertEqual(assigned["quality"], 80)
+
+    @patch.object(compress, "monotonic", return_value=100)
+    def test_downscaled_idle_bonus_does_not_absorb_the_discount(self, _monotonic) -> None:
+        source = self.make_source(("desktop",))
+        source.client_render_size = 768, 432
+        # idle for 10 seconds: +250
+        source.statistics.last_packet_time = 90
+        assigned = source.assign_sq_options({})
+        self.assertEqual(assigned["quality"], 80)
+
+    @patch.object(compress, "monotonic", return_value=100)
+    def test_small_render_size_difference_is_not_downscaled(self, _monotonic) -> None:
+        source = self.make_source(("desktop",))
+        source.client_render_size = 3830, 2150
+        self.assertFalse(source.is_downscaled())
+        self.assertEqual(source.assign_sq_options({})["quality"], 100)
+
+    @patch.object(compress, "monotonic", return_value=100)
+    def test_downscaled_explicit_quality_is_honoured(self, _monotonic) -> None:
+        source = self.make_source(("desktop",))
+        source.client_render_size = 768, 432
+        self.assertEqual(source.assign_sq_options({"quality": 100})["quality"], 100)
+
+        source._fixed_quality = 100
+        self.assertEqual(source.assign_sq_options({})["quality"], 100)
+
+        # `update_quality` copies the hint to the current quality:
+        source._fixed_quality = -1
+        source._quality_hint = 100
+        source._current_quality = 100
+        self.assertEqual(source.assign_sq_options({})["quality"], 100)
+
+        source._quality_hint = -1
+        source._current_quality = 80
+        source._fixed_min_quality = 100
+        self.assertEqual(source.assign_sq_options({})["quality"], 100)
 
     @patch.object(compress, "monotonic", return_value=100)
     def test_auto_encoding_uses_assigned_quality(self, _monotonic) -> None:

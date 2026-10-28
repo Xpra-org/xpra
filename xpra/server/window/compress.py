@@ -71,6 +71,7 @@ AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
 INITIAL_QUALITY = envint("XPRA_INITIAL_QUALITY", 65)
 INITIAL_SPEED = envint("XPRA_INITIAL_SPEED", 40)
 TEXT_QUALITY = envint("XPRA_TEXT_QUALITY", 100)
+SCALING_QUALITY_DISCOUNT = envint("XPRA_SCALING_QUALITY_DISCOUNT", 20)
 
 LOCKED_BATCH_DELAY = envint("XPRA_LOCKED_BATCH_DELAY", 1000)
 
@@ -2036,6 +2037,9 @@ class WindowSource(WindowIconSource):
                 speed = min(self._fixed_max_speed, max(1, self._fixed_min_speed, speed))
         quality = options.get("quality", 0)
         automatic_quality = quality == 0 and self._fixed_quality <= 0 and self._quality_hint < 0
+        # `scaled-width` is only added to the options once the image is captured,
+        # so ask directly whether this frame is going to be downscaled:
+        downscaled = self.is_downscaled()
         if quality == 0:
             if self._fixed_quality > 0:
                 quality = self._fixed_quality
@@ -2051,13 +2055,16 @@ class WindowSource(WindowIconSource):
                     # at least for the first packet:
                     elapsed = now-self.statistics.last_packet_time
                     quality += int(elapsed*25)
-                scaling_discount = 0
-                if "scaled-width" in options or "scaled-height" in options:
-                    scaling_discount = 20
-                quality = (quality - packets_backlog*20 - scaling_discount) * quality_pct // 100
+                quality = (quality - packets_backlog*20) * quality_pct // 100
+                if downscaled and automatic_quality:
+                    # the frame loses detail to the downscaling anyway,
+                    # apply the discount after capping the idle bonus so that it cannot be absorbed:
+                    quality = min(100, quality) - SCALING_QUALITY_DISCOUNT
                 quality = min(self._fixed_max_quality, max(1, self._fixed_min_quality, quality))
         if all((
             automatic_quality,
+            # a downscaled frame cannot be lossless:
+            not downscaled,
             not is_video_content(self.content_types),
             self._lossless_threshold_base < quality < 100,
         )):
@@ -2197,18 +2204,23 @@ class WindowSource(WindowIconSource):
         log("process_damage_region: wid=%#x, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms",
             self.wid, sequence, w, h, coding, 1000 * (now - damage_time), elapsed)
 
-    def scaled_size(self, image: ImageWrapper) -> tuple[int, int] | None:
+    def is_downscaled(self) -> bool:
+        # resize if the render size is smaller
         crs = self.client_render_size
         if crs == (0, 0) or not DOWNSCALE:
+            return False
+        ww, wh = self.window_dimensions
+        crsw, crsh = crs
+        return ww-crsw > DOWNSCALE_THRESHOLD and wh-crsh > DOWNSCALE_THRESHOLD
+
+    def scaled_size(self, image: ImageWrapper) -> tuple[int, int] | None:
+        if not self.is_downscaled():
             return None
         w, h = image.get_width(), image.get_height()
         ww, wh = self.window_dimensions
-        crsw, crsh = crs
-        # resize if the render size is smaller
-        if ww-crsw > DOWNSCALE_THRESHOLD and wh-crsh > DOWNSCALE_THRESHOLD:
-            # keep the same proportions:
-            return w*crsw//ww, h*crsh//wh
-        return None
+        crsw, crsh = self.client_render_size
+        # keep the same proportions:
+        return w*crsw//ww, h*crsh//wh
 
     def make_data_packet_cb(self, w: int, h: int, damage_time: float, process_damage_time: float,
                             image: ImageWrapper, coding: str, sequence: int, options: typedict, flush=0) -> None:
