@@ -8,6 +8,7 @@
 
 import sys
 import os.path
+import re
 import time
 import logging
 from time import monotonic
@@ -88,6 +89,8 @@ NO_ROOT_WARNING: bool = envbool("XPRA_NO_ROOT_WARNING", False)
 WAIT_SERVER_TIMEOUT: int = envint("WAIT_SERVER_TIMEOUT", 90)
 # how long `xpra control` may take to start a command on an existing server:
 CONTROL_TIMEOUT = envint("XPRA_PROXY_CONTROL_TIMEOUT", 30)
+# ie: "2026-10-28 00:57:53,082 "
+LOG_TIMESTAMP_RE = re.compile(r"^\d{4}-\d\d-\d\d \d\d:\d\d:\d\d,\d{3} ")
 OPENGL_PROBE_TIMEOUT: int = envint("XPRA_OPENGL_PROBE_TIMEOUT", 5)
 SYSTEMD_RUN: bool = envbool("XPRA_SYSTEMD_RUN", True)
 VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
@@ -2668,14 +2671,17 @@ def run_daemon(cmd: list[str], **kwargs):
     return proc
 
 
-def start_commands_on_existing(script_file: str, display_name: str, opts, defaults) -> None:
+def start_commands_on_existing(script_file: str, display_name: str, opts, defaults) -> list[str]:
     """
     `_proxy_start` for a display which is already running:
     there is no new server to give the `start` and `start-child` commands to,
     so ask the existing one to run them, as `xpra control DISPLAY start[-child]` would.
+    The commands that could not be started are only reported with a warning on stderr,
+    so the client still connects to the session, and they are returned.
     """
     log = Logger("server", "exec")
     from subprocess import DEVNULL
+    failed = []
     for option, subcommand in (("start", "start"), ("start_child", "start-child")):
         for command in strip_defaults_start_child(getattr(opts, option), getattr(defaults, option)):
             if not command:
@@ -2687,13 +2693,18 @@ def start_commands_on_existing(script_file: str, display_name: str, opts, defaul
                 # our stdout carries the connection, so nothing else must be written to it:
                 proc = run(cmd, stdin=DEVNULL, capture_output=True, timeout=CONTROL_TIMEOUT)
             except (OSError, TimeoutExpired) as e:
-                stderr_print(f"Error: failed to start {command!r} on display {display_name}: {e}")
+                stderr_print(f"Warning: failed to start {command!r} on display {display_name}: {e}")
+                failed.append(command)
                 continue
-            for line in (proc.stdout + proc.stderr).decode(errors="replace").splitlines():
-                if line.strip():
-                    stderr_print(line)
+            output = [line for line in (proc.stdout + proc.stderr).decode(errors="replace").splitlines() if line.strip()]
+            log("control output: %s", output)
             if proc.returncode:
-                stderr_print(f"Error: failed to start {command!r} on display {display_name}: {exit_str(proc.returncode)}")
+                stderr_print(f"Warning: failed to start {command!r} on display {display_name}: {exit_str(proc.returncode)}")
+                for line in output:
+                    # the control client's log messages are timestamped:
+                    stderr_print(" " + LOG_TIMESTAMP_RE.sub("", line).strip())
+                failed.append(command)
+    return failed
 
 
 def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode: str, defaults) -> ExitValue:

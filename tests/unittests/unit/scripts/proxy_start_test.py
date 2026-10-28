@@ -47,14 +47,19 @@ class TestStartOnExisting(unittest.TestCase):
         opts.start_child = list(start_child)
         defaults.start = list(default_start)
         defaults.start_child = []
-        result = CompletedProcess([], returncode, b"", b"new command started with pid=1\n")
+        output = b"new command started with pid=1\n" if not returncode else (
+            b"2026-10-28 00:57:53,082 server returned error code 127\n"
+            b"2026-10-28 00:57:53,082   failed to start new child command 'nosuchcommand'\n"
+        )
+        result = CompletedProcess([], returncode, b"", output)
         with patch.object(scripts_main, "run", return_value=result) as run, \
                 patch.object(scripts_main, "stderr_print") as stderr_print:
-            scripts_main.start_commands_on_existing("/usr/bin/xpra", ":100", opts, defaults)
-        return run, stderr_print
+            self.failed = scripts_main.start_commands_on_existing("/usr/bin/xpra", ":100", opts, defaults)
+        self.stderr = [c.args[0] for c in stderr_print.call_args_list]
+        return run
 
     def test_commands(self):
-        run, _ = self.run_start(start=["xterm -T 'a title'"], start_child=["xclock"], default_start=["ibus-daemon"])
+        run = self.run_start(start=["xterm -T 'a title'"], start_child=["xclock"], default_start=["ibus-daemon"])
         cmds = [c.args[0] for c in run.call_args_list]
         # the defaults from the config files are not started again:
         self.assertEqual(cmds, [
@@ -67,13 +72,25 @@ class TestStartOnExisting(unittest.TestCase):
             self.assertNotIn("stdout", c.kwargs)
 
     def test_nothing_to_start(self):
-        run, _ = self.run_start(default_start=["ibus-daemon"])
+        run = self.run_start(default_start=["ibus-daemon"])
         run.assert_not_called()
 
-    def test_failure_reported(self):
-        _, stderr_print = self.run_start(start=["nosuchcommand"], returncode=1)
-        messages = " ".join(str(c.args[0]) for c in stderr_print.call_args_list)
-        self.assertIn("failed to start 'nosuchcommand' on display :100", messages)
+    def test_success_is_quiet(self):
+        self.run_start(start=["xterm"])
+        self.assertEqual(self.failed, [])
+        # our stderr is shown to the user, the control command's output is not needed there:
+        self.assertEqual(self.stderr, [])
+
+    def test_failure_is_a_warning(self):
+        # all the commands are tried, and the client still connects to the session:
+        run = self.run_start(start=["nosuchcommand", "xterm"], returncode=1)
+        self.assertEqual(run.call_count, 2)
+        self.assertEqual(self.failed, ["nosuchcommand", "xterm"])
+        warnings = [line for line in self.stderr if line.startswith("Warning:")]
+        self.assertEqual(len(warnings), 2)
+        self.assertTrue(warnings[0].startswith("Warning: failed to start 'nosuchcommand' on display :100"))
+        # with the reason, indented and without the timestamps:
+        self.assertIn(" failed to start new child command 'nosuchcommand'", self.stderr)
 
 
 class TestProxyStartedClient(unittest.TestCase):

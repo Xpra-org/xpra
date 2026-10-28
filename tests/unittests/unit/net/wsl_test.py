@@ -448,6 +448,27 @@ class TestBridge(unittest.TestCase):
         self.assertIn("exit code 127", failures[0])
         self.assertIn("xpra: command not found", failures[0])
 
+    def test_warnings_shown(self):
+        # stands in for `_proxy_start` on an existing session, with a command that could not be started:
+        stderr = (
+            "found existing display 100 : LIVE",
+            "Warning: failed to start 'nosuchcommand' on display 100: REMOTE_ERROR",
+            " failed to start new child command 'nosuchcommand'",
+            "Error: shown in error messages only",
+            " not shown either",
+        )
+        script = "import sys\n" + "".join(f"sys.stderr.write({line + chr(10)!r})\n" for line in stderr)
+        with patch.object(wsl, "log") as log:
+            bridge = wsl.WSLBridge([sys.executable, "-c", script])
+            bridge.start()
+            bridge.process.wait(10)
+            deadline = time.monotonic() + 5
+            while len(bridge.diagnostics) < len(stderr) and time.monotonic() < deadline:
+                time.sleep(0.1)
+            bridge.stop()
+        self.assertEqual([c.args[0] for c in log.warn.call_args_list], list(stderr[1:3]))
+        self.assertEqual(list(bridge.diagnostics), list(stderr))
+
     def test_close_after_failure(self):
         # ie: `_proxy_start` refused a command for an existing session, and the client gave up first:
         failures = []
