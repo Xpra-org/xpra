@@ -400,6 +400,29 @@ class TestPresentFboLogic(unittest.TestCase):
 class TestDrawPointerLogic(unittest.TestCase):
     """draw_pointer() timeout and early-return guards (no GL context needed)."""
 
+    def test_window_pointer_overlay(self):
+        from time import monotonic
+        from xpra.client.gtk3.window.pointer import PointerWindow
+        from xpra.opengl.backing import TEX_CURSOR, N_TEXTURES
+        now = monotonic()
+        for pos in ((100, 200), (100, 200, 7, now - 1)):
+            with self.subTest(pos=pos):
+                b = _make_mock_backing()
+                b.textures = [123] * N_TEXTURES
+                b.cursor_data = (None, None, None, 16, 8, 4, 2)
+                window = PointerWindow()
+                window.init_window(None, None, None)
+                window._backing = b
+                window.sp = lambda x, y: (round(x / 2), round(y / 2))
+                window.timeout_add = MagicMock(return_value=1)
+                with patch("xpra.client.gtk3.window.pointer.monotonic", return_value=now):
+                    window.show_pointer_overlay(pos)
+                with patch.object(b, "overlay_texture") as overlay:
+                    b.draw_pointer(0.5, 0.5)
+                overlay.assert_called_once_with(b.textures[TEX_CURSOR], 48, 99, 8, 4)
+                self.assertEqual(b.pointer_overlay[2:4], (50, 100))
+                self.assertEqual(b.pointer_overlay[4:], pos[2:] or (10, now))
+
     def test_expired_timeout_clears_overlay(self):
         from time import monotonic
         from xpra.opengl.backing import CURSOR_IDLE_TIMEOUT
