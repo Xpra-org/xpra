@@ -16,6 +16,7 @@
   * [podman 'secure' pod](https://github.com/Xpra-org/xpra/commit/87ca4280d67a4b53f39331cac66f7daa015a37a7), [seccomp and landlock in containers](https://github.com/Xpra-org/xpra/commit/e312555101e68385a768f2fd4d04a08e9421e100)
   * [openh264 as a private library](https://github.com/Xpra-org/xpra/issues/4626)
 * 🖧 Network:
+  * [WSL transport](https://github.com/Xpra-org/xpra/issues/5101)
   * [zero copy network reception](https://github.com/Xpra-org/xpra/issues/4873)
   * [optional AsyncSSH client backend](https://github.com/Xpra-org/xpra/commit/fd89a3dc5589ede85884d747b878a52bd41780f1)
   * [proxy registration](https://github.com/Xpra-org/xpra/issues/2125)
