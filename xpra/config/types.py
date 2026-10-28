@@ -328,6 +328,7 @@ CLIENT_ONLY_OPTIONS: list[str] = [
     "attach-urls",
     "reconnect",
     "audio-sink",
+    "input-capture",
 ]
 
 # options that clients can pass to the proxy
