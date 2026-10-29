@@ -168,16 +168,15 @@ UNPROBED_PRINTER_DEFS: dict[str, list[str]] = {}
 
 
 def add_printer_def(mimetype: str, definition: str) -> None:
-    if definition.startswith("drv://"):
-        UNPROBED_PRINTER_DEFS[mimetype] = ["-m", definition]
-    elif definition.lower().endswith("ppd"):
-        if os.path.exists(definition):
-            UNPROBED_PRINTER_DEFS[mimetype] = ["-P", definition]
-        else:
-            log.warn("Warning: ppd file '%s' does not exist", definition)
+    if definition.lower().endswith("ppd") and os.path.exists(definition):
+        UNPROBED_PRINTER_DEFS[mimetype] = ["-P", definition]
+    elif os.path.isabs(definition):
+        log.warn("Warning: ppd file '%s' does not exist", definition)
     else:
-        log.warn("Warning: invalid printer definition for %s:", mimetype)
-        log.warn(" '%s' is not a valid driver or ppd file", definition)
+        # a model known to the cups server, as listed by `lpinfo -m`,
+        # ie: "drv:///sample.drv/generic.ppd" or "lsb/usr/cupsfilters/Generic-PDF_Printer-PDF.ppd",
+        # the cups server may be running somewhere else, ie: in another container
+        UNPROBED_PRINTER_DEFS[mimetype] = ["-m", definition]
 
 
 PRINTER_DEF: dict[str, list[str]] | None = None
