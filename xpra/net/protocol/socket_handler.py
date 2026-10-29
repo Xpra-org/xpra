@@ -207,6 +207,7 @@ class SocketProtocol:
             "hello", "window-metadata", "audio-data", "notification-show", "setting-change",
             "shell-reply", "display-configure",
             "encoding-set", "info-response",
+            "clipboard-data", "clipboard-contents", "clipboard-record",
         ]
         self._log_stats = None  # None here means auto-detect
         if "XPRA_LOG_SOCKET_STATS" in os.environ:
