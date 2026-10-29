@@ -278,7 +278,10 @@ FILTER_STR: Dict[FilterMode, str] = {
 
 cdef inline FilterMode get_filtermode(int speed, int downscaling) noexcept nogil:
     if downscaling:
-        return kFilterBilinear
+        # bilinear only samples 2x2 source pixels for each output pixel,
+        # so it skips most of them and breaks up text when reducing by more than 2x
+        # (libyuv already switches box to bilinear for smaller reductions)
+        return kFilterBox
     if speed>66:
         return kFilterNone
     if speed>33:
