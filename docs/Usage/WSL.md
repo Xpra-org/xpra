@@ -65,7 +65,8 @@ There is no TCP port to bind, no password to choose and no SSH server to install
   Only seamless sessions are available for WSL at the moment.
 * **Session Launcher** (`Connect`): choose the `WSL` mode, then the same
   distribution, user and display number to re-attach to a session that is already
-  running. These settings are kept when saving the session to a `.xpra` file.
+  running. The display number can be left empty when only one session is running.
+  These settings are kept when saving the session to a `.xpra` file.
 
 The list of distributions is obtained from `wsl --list --quiet`.
 Before connecting, the client verifies that `xpra` can be found in the

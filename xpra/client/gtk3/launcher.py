@@ -110,10 +110,11 @@ LAUNCHER_DEFAULTS = {
     "proxy_username": get_username(),
     "proxy_password": "",
     "proxy_key": "",
-    # an empty distribution or user selects WSL's configured default:
+    # an empty distribution or user selects WSL's configured default,
+    # and an empty display connects to the only session running:
     "wsl_distribution": "",
     "wsl_user": "",
-    "wsl_display": "100",
+    "wsl_display": "",
 }
 
 
@@ -539,8 +540,10 @@ class ApplicationWindow:
         self.wsl_user_entry.connect("activate", self.connect_clicked)
         self.wsl_display_entry = Gtk.Entry()
         self.wsl_display_entry.set_max_length(5)
-        self.wsl_display_entry.set_width_chars(5)
-        self.wsl_display_entry.set_tooltip_text("Display number of the session")
+        self.wsl_display_entry.set_width_chars(8)
+        self.wsl_display_entry.set_placeholder_text("optional")
+        self.wsl_display_entry.set_tooltip_text("Display number of the session (optional),\n"
+                                                "connects to the only session running otherwise")
         self.wsl_display_entry.connect("changed", self.validate)
         self.wsl_display_entry.connect("activate", self.connect_clicked)
         grid.attach(label("Distribution:"), 0, 0, 1, 1)
@@ -609,7 +612,9 @@ class ApplicationWindow:
         display = self.wsl_display_entry.get_text()
         user = self.wsl_user_entry.get_text()
         return [
-            (self.wsl_display_entry, not (display.isdigit() and int(display) < 2 ** 16), "invalid display number"),
+            # the display is optional: `xpra _proxy` connects to the only session running otherwise
+            (self.wsl_display_entry, bool(display) and not (display.isdigit() and int(display) < 2 ** 16),
+             "invalid display number"),
             (self.wsl_user_entry, any(c in user for c in ":@/ "), "invalid Linux username"),
         ]
 
