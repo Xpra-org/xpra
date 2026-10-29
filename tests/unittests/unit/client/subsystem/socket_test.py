@@ -6,9 +6,12 @@
 
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
+from xpra.client.base.control import Control
 from xpra.client.subsystem.socket import NetworkListener
+from xpra.exit_codes import ExitCode
+from xpra.util.objects import typedict
 
 
 class FakeClient:
@@ -31,6 +34,34 @@ class FakeClient:
 
 
 class TestNetworkListener(unittest.TestCase):
+
+    def test_control_disabled(self):
+        listener = NetworkListener(FakeClient())
+        proto = SimpleNamespace(_conn=SimpleNamespace(options={}), send_now=Mock())
+        caps = typedict({"command_request": ("debug", "disable", "all")})
+        self.assertTrue(listener.handle_hello_request(proto, "command", caps))
+        proto.send_now.assert_called_once()
+        packet = proto.send_now.call_args.args[0]
+        self.assertEqual(packet.get_type(), "hello")
+        code, response = packet.get_dict(1)["command_response"]
+        self.assertEqual(code, ExitCode.UNSUPPORTED)
+        self.assertIn("disabled", response)
+        self.assertIn("--control=yes", response)
+
+    def test_control_enabled(self):
+        client = FakeClient()
+        control = client.subsystems["control"] = Control(client)
+        control.parse_server_capabilities(typedict())
+        listener = NetworkListener(client)
+        proto = SimpleNamespace(_conn=SimpleNamespace(options={}), send_now=Mock())
+        caps = typedict({"command_request": ("debug", "status")})
+        self.assertTrue(listener.handle_hello_request(proto, "command", caps))
+        proto.send_now.assert_called_once()
+        packet = proto.send_now.call_args.args[0]
+        self.assertEqual(packet.get_type(), "hello")
+        code, response = packet.get_dict(1)["command_response"]
+        self.assertEqual(code, ExitCode.OK)
+        self.assertTrue(response.startswith("logging is enabled for:"), response)
 
     def test_run_twice_listens_once(self):
         # starting a named-pipe listener twice fails with "threads can only be started once":

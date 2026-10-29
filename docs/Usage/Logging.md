@@ -194,6 +194,8 @@ Using the `control` channel:
 xpra control :DISPLAY debug enable CATEGORY
 ```
 This can be used to control both servers and clients (using the client's socket path: #2406).
+Clients disable the control channel by default. Start the client with `--control=yes`
+to enable these commands.
 
 The server can also forward debug control commands to the clients connected to it using `client debug`:
 ```shell
