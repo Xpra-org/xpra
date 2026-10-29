@@ -167,6 +167,36 @@ class PrinterLandlockTest(unittest.TestCase):
         self.assertEqual(self.get_paths(env={"CUPS_SERVER": "localhost:631"}), {"socket": ("/run/cups", )})
 
 
+class PrinterDefinitionTest(unittest.TestCase):
+
+    def setUp(self):
+        try:
+            from xpra.platform import pycups_printing
+        except ImportError as e:
+            raise unittest.SkipTest(f"pycups is not available: {e}") from None
+        self.pycups = pycups_printing
+
+    def add(self, definition):
+        with patch.dict(self.pycups.UNPROBED_PRINTER_DEFS, clear=True):
+            self.pycups.add_printer_def("application/pdf", definition)
+            return dict(self.pycups.UNPROBED_PRINTER_DEFS)
+
+    def test_driver(self):
+        self.assertEqual(self.add("drv:///sample.drv/generic.ppd"), {"application/pdf": ["-m", "drv:///sample.drv/generic.ppd"]})
+
+    def test_model(self):
+        model = "lsb/usr/cupsfilters/Generic-PDF_Printer-PDF.ppd"
+        self.assertEqual(self.add(model), {"application/pdf": ["-m", model]})
+
+    def test_ppd_file(self):
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".ppd") as f:
+            self.assertEqual(self.add(f.name), {"application/pdf": ["-P", f.name]})
+
+    def test_missing_ppd_file(self):
+        self.assertEqual(self.add("/does/not/exist.ppd"), {})
+
+
 def main():
     unittest.main()
 
