@@ -86,6 +86,15 @@ class PrinterServer(StubSubsystem):
             self.file_transfer.printing = False
         start_thread(self.init_printing, "init-printing", daemon=True)
 
+    def get_landlock_paths(self) -> dict[str, Sequence[str]]:
+        if not self.file_transfer.printing or not POSIX:
+            return {}
+        # `lpadmin` and `lpinfo` inherit the Landlock policy and connect to the cups server's socket,
+        # which may be re-created, so allow its directory - which may be shared with another container:
+        cups_server = os.environ.get("CUPS_SERVER", "")
+        socket_dir = os.path.dirname(cups_server) if cups_server.startswith("/") else "/run/cups"
+        return {"socket": (socket_dir, )}
+
     def get_server_features(self, _source) -> dict[str, Any]:
         f = self.file_transfer.get_printer_features()
         f["attributes"] = ("printer-info", "device-uri")
