@@ -6,6 +6,7 @@
 
 from collections.abc import Sequence
 
+from xpra.os_util import LINUX
 from xpra.log import Logger
 
 log = Logger("screen")
@@ -41,7 +42,7 @@ SHADOW_BACKENDS: dict[str, Sequence[str]] = {
         "this requires the proprietary module and libraries",
         "if available, this provides the fastest capture possible",
         "and also supports hardware video compression",
-        "this option is only available for shadowing existing X11 sessions",
+        "this option is only available for shadowing existing X11 sessions" if LINUX else "",
     ),
     "dxgi": (
         "DXGI Desktop Duplication",

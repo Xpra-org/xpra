@@ -45,7 +45,7 @@ file = "COPYING"
 "Homepage" = "https://xpra.org/"
 "Source" = "https://github.com/Xpra-org/xpra"
 "Funding" = "https://github.com/sponsors/totaam"
-"Documentation" = "https://github.com/Xpra-org/xpra/docs"
+"Documentation" = "https://xpra-org.github.io/xpra/"
 
 
 [project.optional-dependencies]

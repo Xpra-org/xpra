@@ -71,17 +71,16 @@ def parse_image_data(data) -> IconData | None:
         Image = PIL_Image()
         if not Image:
             return None
+        # The notification specification requires image data in RGB byte order.
         if channels == 4:
-            rgb_format = "BGRA"
             fmt = "RGBA"
         elif channels == 3:
-            rgb_format = "BGR"
             fmt = "RGB"
         else:
             raise ValueError(f"invalid number of channels: {channels}")
         if isinstance(pixels, (list, tuple)):
             pixels = bytes(pixels)
-        img = Image.frombytes(fmt, (width, height), pixels, "raw", rgb_format, rowstride)
+        img = Image.frombytes(fmt, (width, height), pixels, "raw", fmt, rowstride)
         if channels == 4 and not has_alpha:
             img = img.convert("RGB")
         return image_data(img)
@@ -124,7 +123,9 @@ def parse_image_path(path: str) -> IconData | None:
             log("parse_image_path(%s)", path, backtrace=True)
         return None
     try:
-        img = Image.open(path)
+        # only let Pillow parse the file if its header is one of the formats we accept:
+        from xpra.codecs.pillow.decoder import open_only
+        img = open_only(load_binary_file(path), ICON_ENCODINGS)
         w, h = img.size
         maxsize = max(w, h)
         minsize = min(w, h)
@@ -243,8 +244,9 @@ def get_notification_icon(icon_string: str) -> IconData | None:
                     svg_data = load_binary_file(icon_string)
                     png_data = svg_to_png(icon_string, svg_data, MAX_SIZE, MAX_SIZE)
                     return "png", MAX_SIZE, MAX_SIZE, png_data
-                # should we be using pillow.decoder.open_only here? meh
-                img = Image.open(icon_string)
+                # only let Pillow parse the file if its header is one of the formats we accept:
+                from xpra.codecs.pillow.decoder import open_only
+                img = open_only(load_binary_file(icon_string), ICON_ENCODINGS)
             except Exception as e:
                 log("%s(%s)", Image.open, icon_string)
                 log.warn("Warning: unable to load notification icon file")

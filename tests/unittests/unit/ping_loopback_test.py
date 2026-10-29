@@ -65,6 +65,43 @@ class PingLoopbackTest(LoopbackTest):
         # and the server processed the echo:
         self.assertEqual(source.last_ping_echoed_time, ping_time)
 
+    def test_pings_carry_sid(self):
+        client, _server, source = self._connect()
+        client.send_ping()
+        self.assertEqual(self.c2s[0][3], client.uuid)
+        echo = next(p for p in self.s2c if p[0] == PING_ECHO)
+        self.assertEqual(echo[6], client.uuid)
+        source.hello_sent = monotonic() - 10
+        source.ping()
+        ping = next(p for p in self.s2c if p[0] == "ping")
+        self.assertEqual(ping[3], source.ping_uuid)
+        echo = next(p for p in self.c2s if p[0] == PING_ECHO)
+        self.assertEqual(echo[6], source.ping_uuid)
+
+    def test_client_ignores_foreign_echo(self):
+        from xpra.net.common import Packet
+        client, _server, _source = self._connect()
+        client._process_echo(Packet(PING_ECHO, 1000, 0, 0, 0, -1, "not-ours"))
+        self.assertEqual(client.last_echoed_time, 0)
+        self.assertEqual(len(client.server_latency), 0)
+        # so are echoes without a sid:
+        client._process_echo(Packet(PING_ECHO, 2000, 0, 0, 0, -1))
+        client._process_echo(Packet(PING_ECHO, 3000, 0, 0, 0, -1, ""))
+        self.assertEqual(client.last_echoed_time, 0)
+        client._process_echo(Packet(PING_ECHO, 4000, 0, 0, 0, -1, client.uuid))
+        self.assertEqual(client.last_echoed_time, 4000)
+        self.assertEqual(len(client.server_latency), 1)
+
+    def test_server_ignores_foreign_echo(self):
+        from xpra.net.common import Packet
+        _client, _server, source = self._connect()
+        source.process_ping_echo(Packet(PING_ECHO, 1000, 0, 0, 0, -1, "not-ours"))
+        self.assertEqual(source.last_ping_echoed_time, 0)
+        source.process_ping_echo(Packet(PING_ECHO, 2000, 0, 0, 0, -1))
+        self.assertEqual(source.last_ping_echoed_time, 0)
+        source.process_ping_echo(Packet(PING_ECHO, 3000, 0, 0, 0, -1, source.ping_uuid))
+        self.assertEqual(source.last_ping_echoed_time, 3000)
+
 
 def main():
     unittest.main()

@@ -5,7 +5,7 @@
 | [minimal](./minimal) | [alpine](https://www.alpinelinux.org/)   | smallest image                               |
 | [base](./base)       | [fedora](https://www.fedoraproject.org/) | simple image, well supported but run as root |
 | [safer](./safer)     | [fedora](https://www.fedoraproject.org/) | runs as a user, password protected, sandboxed with seccomp and landlock |
-| [safer-ubuntu](./safer-ubuntu) | [ubuntu](https://ubuntu.com/)  | same as `safer`, using Ubuntu packages       |
+| [safer-ubuntu](./safer-ubuntu) | [ubuntu](https://ubuntu.com/)  | same as `safer`, using Ubuntu packages and Xdummy (build with `--build-arg XDUMMY=0` to use Xvfb) |
 
 The `Dockerfile`s are executable and should create the images if you have `podman` install.\
 You may also use `docker`, `buildah`, or any other tool that can handle the `Containerfile` format.

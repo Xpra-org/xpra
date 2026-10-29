@@ -22,10 +22,16 @@ class X11BellServer(BellServer):
     By default, we only receive those delivered to the root window:
     bells rung on the windows we manage come through the window models' `bell` signal instead.
     """
-    __slots__ = ()
+    __slots__ = ("receiving", "root_event_xid")
     __signals__ = ("x11-xkb-event", )
     # receive the bell events from all windows, not just the root window:
     CATCHALL = False
+
+    def __init__(self, server=None):
+        BellServer.__init__(self, server)
+        # what `setup` registered for, if it got that far:
+        self.receiving = False
+        self.root_event_xid = 0
 
     def setup(self) -> None:
         if not self.bell:
@@ -44,14 +50,19 @@ class X11BellServer(BellServer):
             self.connect("x11-xkb-event", self._on_x11_xkb_event)
             if self.CATCHALL:
                 add_catchall_receiver("x11-xkb-event", self)
+                self.receiving = True
             else:
-                add_event_receiver(get_root_xid(), self)
+                self.root_event_xid = get_root_xid()
+                add_event_receiver(self.root_event_xid, self)
 
     def cleanup(self) -> None:
-        if self.CATCHALL:
+        # there may not be any X11 display to talk to if the server failed to start:
+        if self.receiving:
+            self.receiving = False
             remove_catchall_receiver("x11-xkb-event", self)
-        else:
-            remove_event_receiver(get_root_xid(), self)
+        if xid := self.root_event_xid:
+            self.root_event_xid = 0
+            remove_event_receiver(xid, self)
 
     def _on_x11_xkb_event(self, _emitter, event: X11Event) -> None:
         self.do_x11_xkb_event(event)

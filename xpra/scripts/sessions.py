@@ -27,7 +27,7 @@ from xpra.log import Logger
 from xpra.config import InitException, InitInfo, InitExit
 from xpra.scripts.common import no_gtk
 from xpra.scripts.display import (
-    countdown, x11_display_socket, stat_display_socket, get_xvfb_pid,
+    countdown, x11_display_live, get_xvfb_pid,
     get_display_info, get_displays_info,
 )
 from xpra.scripts.picker import pick_display, get_sockpath
@@ -617,8 +617,7 @@ def run_clean(opts, args: Iterable[str]) -> ExitValue:
             print(f"server process for session {display} is still running with pid {server_pid}")
             print(f" the session directory {session_dir!r} has not been removed")
             continue
-        x11_socket = x11_display_socket(display)
-        x11_live = stat_display_socket(x11_socket)
+        x11_live = x11_display_live(display)
         xvfb_pid = get_xvfb_pid(display, session_dir)
         if x11_live:
             if xvfb_pid and kill_displays:

@@ -36,6 +36,7 @@ SOCKET_TYPES: Final[Sequence[str]] = (
     "vsock", "hyperv", "socket",
     "named-pipe",
     "quic", "wt",
+    "wsl",
 )
 IP_SOCKTYPES: Final[Sequence[str]] = ("tcp", "ssl", "ws", "wss", "ssh", "quic", "wt")
 TCP_SOCKTYPES: Final[Sequence[str]] = ("tcp", "ssl", "ws", "wss", "ssh")

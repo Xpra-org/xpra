@@ -37,6 +37,9 @@ MSYSTEM_CARCH = os.environ.get("MSYSTEM_CARCH", "x86_64")
 PACKAGE_PREFIX = os.environ.get("MINGW_PACKAGE_PREFIX", f"mingw-w64-{MSYSTEM_CARCH}") + "-"
 MSYS2_PACKAGE_PREFIX = "msys2-"
 MSYS_DLL_PREFIX = "msys-"
+# VA-API Compatibility Pack, keep in sync with `VACP_VERSION` in `SETUP.sh`:
+VACP_PACKAGE = "microsoft.direct3d.videoaccelerationcompatibilitypack"
+VACP_VERSION = "1.0.2"
 
 X11_DLL_DIR = os.environ.get("X11_DLL_DIR", "E:/vcxsrv")
 
@@ -592,7 +595,8 @@ def fixup_dlls() -> None:
     find_delete(DIST, "*dll.a")
     debug("moving most DLLs to lib/")
     # but keep the core DLLs in the root (python, gcc, etc):
-    exclude = ("msvcrt", "libpython", "libgcc", "libwinpthread", "pdfium")
+    # (`exchndl` is loaded by name with ctypes, and it loads `mgwhelp` the same way)
+    exclude = ("msvcrt", "libpython", "libgcc", "libwinpthread", "pdfium", "exchndl", "mgwhelp")
     for dll in glob(f"{DIST}/*.dll"):
         if any(dll.find(excl) >= 0 for excl in exclude):
             continue
@@ -688,6 +692,8 @@ def trim_pillow() -> None:
         os.unlink(filename)
     debug(f"removed: {csv(removed)}")
     debug(f"kept: {csv(kept)}")
+    # we never parse avif via pillow, `xpra.codecs.avif` uses libavif directly:
+    delete_libs("PIL/_avif*")
 
 
 def trim_python_libs() -> None:
@@ -800,6 +806,7 @@ def add_manifests(light: bool) -> None:
     step("Adding EXE manifests")
     EXES = [
         "Bug_Report", "Xpra-Launcher", "Xpra", "Xpra_cmd", "Configure", "PDFIUM_Print",
+        "Xpra_Audio",
     ]
     if not light:
         EXES += [
@@ -816,7 +823,6 @@ def add_manifests(light: bool) -> None:
             "SystemTray_Test", "U2F_Tool", "Fido2_Tool",
             "SQLite_auth_tool", "SQL_auth_tool",
             "Encoding_info", "Path_info", "Feature_info", "NativeGUI_info",
-            "Xpra_Audio",
             "GStreamer_info", "Audio_Devices",
             "gst-launch-1.0", "gst-inspect-1.0",
             "Webcam_info", "Webcam_Test",
@@ -1041,7 +1047,7 @@ def get_py_lib_dirs() -> list[str]:
         path = get_path(k)
         if os.path.exists(path) and path not in py_lib_dirs:
             py_lib_dirs.append(path)
-            for extra in ("lib-dynload", "win32", "pywin32_system32"):
+            for extra in ("lib-dynload", "win32", "pywin32_system32", "pythonwin"):
                 epath = os.path.join(path, extra)
                 if os.path.exists(epath) and epath not in py_lib_dirs:
                     py_lib_dirs.append(epath)
@@ -1171,9 +1177,23 @@ def rec_sbom() -> None:
             debug(f"ignoring {path!r} (.NET SDK)")
         elif path in ("DesktopLogon.dll", ):
             debug(f"ignoring {path!r} (one of ours)")
+        elif os.path.basename(path) == "vaon12_drv_video.dll":
+            # installed from NuGet by `SETUP.sh`, not by pacman:
+            rec = {
+                "package": VACP_PACKAGE,
+                "version": VACP_VERSION,
+            }
+            add_size_checksum(rec, os.path.join(DIST, path))
+            sbom[path] = rec
         else:
             rec = sbom_rec(path)
-            if rec:
+            name = os.path.basename(path)
+            if not rec and name.find("py") >= 0:
+                # ie: "lib/pywintypes314.dll" from "site-packages/pywin32_system32":
+                rec = find_prefixed_sbom_rec(name, py_lib_dirs)
+                if rec:
+                    sbom[path] = rec
+            elif rec:
                 package = rec["package"]
                 version = rec["version"]
                 debug(f" * {path!r}: {package!r}, {version!r}")
@@ -1193,10 +1213,11 @@ def rec_sbom() -> None:
         path = os.path.join(LIB_DIR, child)
         if os.path.isdir(path) or path.endswith(".py") or path.endswith(".pyd"):
             rec_py_lib(os.path.join("lib", child))
-    # add this one by hand because cx_Freeze hides it in `library.zip`,
+    # add these by hand because cx_Freeze hides them in `library.zip`,
     # and we don't want to start unpacking a large ZIP file and converting .pyc to .py
-    # just for one filename:
-    rec_py_lib(os.path.join("lib", "decorator.py"))
+    # just for a few filenames:
+    rec_py_lib(os.path.join("lib", "decorator"))
+    rec_py_lib(os.path.join("lib", "typing_extensions.py"))
 
     # summary: list of packages
     packages = tuple(sorted(set(rec["package"] for rec in sbom.values())))
@@ -1206,6 +1227,13 @@ def rec_sbom() -> None:
         package = shorten_package_name(package_name)
         # keep only the keys relevant to the sbom:
         info = get_pacman_package_info(package_name) or get_pip_package_info(package_name)
+        if not info and package_name == VACP_PACKAGE:
+            info = {
+                "Name": VACP_PACKAGE,
+                "Version": VACP_VERSION,
+                "Description": "Microsoft Direct3D 12 VA-API driver",
+                "URL": f"https://www.nuget.org/packages/{VACP_PACKAGE}/{VACP_VERSION}",
+            }
         exported_info = {}
         for key in (
             "Name", "Version", "Description",
@@ -1248,12 +1276,18 @@ def find_win_python() -> str:
 
 def export_sbom() -> None:
     WIN_PYTHON = find_win_python()
-    SBOM_SCRIPT = "packaging\\MSWindows\\cyclonedx_sbom.py"
+    SBOM_SCRIPT = "packaging\\sbom\\cyclonedx_sbom.py"
     output = f"{DIST}/{SBOM_JSON}"
     delfile(output)
     env = os.environ.copy()
-    env["PYTHONPATH"] = "."
-    log_command([WIN_PYTHON, SBOM_SCRIPT, output], "export-sbom.log", env=env)
+    # the native Windows interpreter uses ";" as separator, and `msys2_sbom` provides the identifiers:
+    env["PYTHONPATH"] = ".;packaging\\MSWindows"
+    # the Windows certificate store may not have the root CA for downloading the MSYS2 SBOMs yet,
+    # (Windows only installs them when it first needs them), so use the MSYS2 bundle instead:
+    cert_file = f"{MINGW_PREFIX}/etc/ssl/cert.pem"
+    if "SSL_CERT_FILE" not in env and os.path.exists(cert_file):
+        env["SSL_CERT_FILE"] = cert_file
+    log_command([WIN_PYTHON, SBOM_SCRIPT, "--identifiers", "msys2_sbom", output], "export-sbom.log", env=env)
     # make a copy that can be distributed separately:
     SBOM_FILENAME = f"Xpra{version_info.extra}{version_info.arch_info}_{version_info.full_string}.json"
     delfile(SBOM_FILENAME)

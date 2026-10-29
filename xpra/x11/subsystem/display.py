@@ -52,9 +52,7 @@ def check_xvfb(xvfb: Popen | None, timeout=0, command=()) -> bool:
         return True
     assert POSIX
     from xpra.x11.vfb_util import check_xvfb_process
-    if not check_xvfb_process(xvfb, timeout=timeout, command=command):
-        return False
-    return True
+    return check_xvfb_process(xvfb, timeout=timeout, command=command)
 
 
 def _get_root_int(prop: str) -> int:
@@ -110,7 +108,7 @@ def monitor_geometries(monitors: dict[int, Any]) -> dict[int, Any]:
 class X11DisplayManager(DisplayManager):
     __slots__ = (
         "default_resolution", "display_pid", "initial_resolutions", "mirror_client_layout", "randr",
-        "randr_exact_size", "randr_sizes_added", "vfb_startup_state", "xvfb", "xvfb_cmd",
+        "randr_exact_size", "randr_sizes_added", "xvfb", "xvfb_cmd",
     )
     toggle_features = ("randr",)
     SHARING_LAYOUT_SUPPORTED = True
@@ -122,7 +120,6 @@ class X11DisplayManager(DisplayManager):
         DisplayManager.__init__(self, server)
         self.xvfb: Popen | None = None
         self.xvfb_cmd: tuple[str, ...] = ()
-        self.vfb_startup_state = None
         self.display_pid: int = 0
         self.randr_sizes_added: list[tuple[int, int]] = []
         self.initial_resolutions: Sequence[tuple[int, int, int]] = ()
@@ -146,12 +143,11 @@ class X11DisplayManager(DisplayManager):
         self.mirror_client_layout: bool = True
 
     def set_vfb_startup_state(self, state) -> None:
-        self.vfb_startup_state = state
         self.xvfb = state.xvfb
         self.xvfb_cmd = state.xvfb_cmd
         self.display_pid = state.xvfb_pid
         self.publish_vfb_pid(state.xvfb_pid)
-        self.check_xvfb(1)
+        self.check_xvfb()
 
     @staticmethod
     def publish_vfb_pid(pid: int) -> None:

@@ -13,7 +13,7 @@ from xpra.exit_codes import ExitValue
 from xpra.platform.gui import init as gui_init, force_focus
 from xpra.gtk.util import gtk_main
 from xpra.gtk.window import add_close_accel
-from xpra.gtk.widget import scaled_image, label
+from xpra.gtk.widget import scaled_image, label, switch
 from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.dialogs.common_style import (
     add_style_class, style_actions, style_body, style_button, style_window,
@@ -59,7 +59,7 @@ class AutostartWindow:
         switch_label = label("Start Xpra at login")
         add_style_class(switch_label, "xpra-heading")
         hbox_switch.pack_start(switch_label, True, True, 0)
-        self.toggle = Gtk.Switch()
+        self.toggle = switch()
         self.toggle.connect("notify::active", self._on_toggled)
         hbox_switch.pack_start(self.toggle, False, False, 20)
         vbox.pack_start(hbox_switch, False, False, 0)

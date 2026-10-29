@@ -139,7 +139,9 @@ class XvfbManager(StubSubsystem):
 
         progress(40, "connecting to the display")
         no_gtk()
-        if verify_display(None, display_name, log_errors=False, timeout=1):
+        # Only retry when an existing display is expected.
+        timeout = 1 if use_display or upgrading or shadowing else 0
+        if verify_display(None, display_name, log_errors=False, timeout=timeout):
             progress(40, "connected to the display")
             return False, xauth_data, use_display
 

@@ -34,14 +34,16 @@ echo "Making ${SBOM_FILENAME}"
 if ! ${PYTHON} -c "import cyclonedx, packageurl" >& /dev/null; then
 	echo "cyclonedx is missing, cannot export the SBOM"
 	echo " to install it, run:"
-	echo " ${PYTHON} -m pip install cyclonedx-python-lib packageurl-python"
+	echo " jhbuild build meta-osx-xpra-sbom"
 	exit 1
 fi
 if ! ${PYTHON} -c "from xpra.build_info import packages;assert packages" >& /dev/null; then
 	echo "the app bundle does not contain any SBOM package data"
-	echo " check the build_info.log from make-app.sh"
+	echo " check the sbom.log from make-app.sh"
 	exit 1
 fi
 
-${PYTHON} -W ignore::DeprecationWarning "../MSWindows/cyclonedx_sbom.py" "./image/${SBOM_FILENAME}" || exit 1
+#`jhbuild_sbom` adds the CPE identifiers:
+export PYTHONPATH="${PYTHONPATH}:${MACOS_SCRIPT_DIR}"
+${PYTHON} -W ignore::DeprecationWarning "../sbom/cyclonedx_sbom.py" --identifiers jhbuild_sbom "./image/${SBOM_FILENAME}" || exit 1
 ditto "./image/${SBOM_FILENAME}" "${HOME}/Desktop/"

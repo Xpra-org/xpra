@@ -10,6 +10,7 @@ from collections.abc import MutableSequence, Callable
 from ctypes.wintypes import HWND, BYTE, HICON, HDC, POINT, MSG
 from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER
 
+from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING
 from xpra.client.gui.window.backing import fire_paint_callbacks, get_backing_client_properties
 from xpra.client.gui.window.info import geom_str, hsc, get_backing_info
 from xpra.client.win32.gdi_backing import GDIBacking
@@ -29,6 +30,7 @@ from xpra.platform.win32.common import (
     ShowWindow, UpdateWindow,
     DestroyIcon, CREATESTRUCT,
     AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW, GetWindowRect, SendMessageW,
+    PostMessageW, ReleaseCapture,
     GetKeyState, ToUnicode, MapVirtualKeyW, GetKeyboardLayout,
     PeekMessageW, GetMessageTime,
     SetWindowTextW,
@@ -100,6 +102,26 @@ DECORATION_STYLE = win32con.WS_CAPTION | win32con.WS_THICKFRAME | win32con.WS_SY
 WINDOW_TYPE_TOOLWINDOW = {"DIALOG", "UTILITY", "SPLASHSCREEN"}
 
 
+# the `WM_SYSCOMMAND` `wparam` that starts the native move / resize loop
+# for each `_NET_WM_MOVERESIZE` direction:
+# (`SC_SIZE` takes a `WMSZ_*` edge in its low bits, `SC_MOVE` + `HTCAPTION` drags with the mouse,
+# whilst plain `SC_SIZE` / `SC_MOVE` are driven by the keyboard)
+WMSZ_LEFT, WMSZ_RIGHT, WMSZ_TOP, WMSZ_TOPLEFT, WMSZ_TOPRIGHT, WMSZ_BOTTOM, WMSZ_BOTTOMLEFT, WMSZ_BOTTOMRIGHT = range(1, 9)
+MOVERESIZE_SYSCOMMAND: dict[int, int] = {
+    MoveResize.SIZE_TOPLEFT: win32con.SC_SIZE | WMSZ_TOPLEFT,
+    MoveResize.SIZE_TOP: win32con.SC_SIZE | WMSZ_TOP,
+    MoveResize.SIZE_TOPRIGHT: win32con.SC_SIZE | WMSZ_TOPRIGHT,
+    MoveResize.SIZE_RIGHT: win32con.SC_SIZE | WMSZ_RIGHT,
+    MoveResize.SIZE_BOTTOMRIGHT: win32con.SC_SIZE | WMSZ_BOTTOMRIGHT,
+    MoveResize.SIZE_BOTTOM: win32con.SC_SIZE | WMSZ_BOTTOM,
+    MoveResize.SIZE_BOTTOMLEFT: win32con.SC_SIZE | WMSZ_BOTTOMLEFT,
+    MoveResize.SIZE_LEFT: win32con.SC_SIZE | WMSZ_LEFT,
+    MoveResize.MOVE: win32con.SC_MOVE | win32con.HTCAPTION,
+    MoveResize.SIZE_KEYBOARD: win32con.SC_SIZE,
+    MoveResize.MOVE_KEYBOARD: win32con.SC_MOVE,
+}
+
+
 SIZE_SUBCOMMAND: dict[int, str] = {
     win32con.SIZE_MAXHIDE: "MAXHIDE",
     win32con.SIZE_MAXIMIZED: "MAXIMIZED",
@@ -156,6 +178,61 @@ def peek_key_message(hwnd) -> KeyMessage | None:
     if not PeekMessageW(byref(msg), hwnd, win32con.WM_KEYFIRST, win32con.WM_KEYLAST, win32con.PM_NOREMOVE):
         return None
     return KeyMessage(msg.message, msg.wParam or 0, msg.lParam or 0, msg.time)
+
+
+def get_key_strings(vk_code: int) -> tuple[str, str]:
+    """
+    the character for this key without any modifiers,
+    and the one the layout produces with the current `Shift` and `AltGr` state
+    """
+    keyboard_state = (BYTE * 256)()
+    # first retrieve using an empty keyboard state:
+    result = (c_wchar * 4)()
+    count = ToUnicode(vk_code, 0, keyboard_state, result, 4, 0)
+    string = result.value if count > 0 else ""
+    # then again, honouring only the modifiers that select a character:
+    # `Shift` and `AltGr` - which win32 reports as `Control`+`Alt`.
+    # (`Control` on its own is left out on purpose: it would turn
+    # ie: `Control`+`q` into the control character `\x11` instead of `q`)
+    if GetKeyState(win32con.VK_SHIFT) & 0x8000:
+        keyboard_state[win32con.VK_SHIFT] = 0x80
+    if GetKeyState(win32con.VK_RMENU) & 0x8000:
+        keyboard_state[win32con.VK_CONTROL] = 0x80
+        keyboard_state[win32con.VK_MENU] = 0x80
+    result = (c_wchar * 4)()
+    count = ToUnicode(vk_code, 0, keyboard_state, result, 4, 0)
+    local_string = result.value if count > 0 else string
+    return string, local_string
+
+
+def get_keyname(vk_code: int, scancode: int, extended: bool, string: str, local_string: str) -> str:
+    """ for now, we still translate to X11 key names """
+    keyname = VK_NAMES.get(vk_code, "")
+    # use the character the layout actually produces, so that
+    # ie: `AltGr`+`q` on a German keyboard is sent as `at` and not as `q`,
+    # the `VK_OEM_*` punctuation keys vary with the layout and have no X11 names,
+    # ie: `VK_OEM_COMMA` is `comma` or `less` on a US layout, depending on `Shift`:
+    if (not keyname or keyname.startswith("VK_OEM_")) and local_string and local_string.isprintable():
+        return keysym_name(local_string)
+    if keyname.startswith("VK_"):
+        keyname = VK_X11_MAP.get(keyname[3:], keyname)
+    if string:
+        return keyname
+    # tell the left and right modifier keys apart:
+    if vk_code == win32con.VK_CONTROL:
+        return "Control_R" if extended else "Control_L"
+    if vk_code == win32con.VK_MENU:
+        return get_alt_r_keyname(GetKeyboardLayout(0) or 0) if extended else "Alt_L"
+    if vk_code == win32con.VK_SHIFT:
+        MAPVK_VSC_TO_VK_EX = 3
+        vk = MapVirtualKeyW(scancode, MAPVK_VSC_TO_VK_EX)
+        VK_LSHIFT = 0xA0
+        VK_RSHIFT = 0xA1
+        if vk == VK_LSHIFT:
+            return "Shift_L"
+        if vk == VK_RSHIFT:
+            return "Shift_R"
+    return keyname
 
 
 class ClientWindow(GObject.GObject):
@@ -390,6 +467,37 @@ class ClientWindow(GObject.GObject):
             log("_apply_title_bar_theme(%#x)", hwnd or 0, exc_info=True)
         return hwnd
 
+    def key_message(self, msg: int, vk_code: int, lparam: int) -> bool:
+        """
+        emits the `key` signal for this key message,
+        returns `True` if `DefWindowProc` should not see it
+        """
+        # `GetMessageTime` is signed, `MSG.time` is not:
+        key_message = KeyMessage(msg, vk_code, lparam, GetMessageTime() & 0xffffffff)
+        previous_key_message = self.last_key_message
+        self.last_key_message = key_message
+        # `AltGr` comes with a fake left `Control` (see `xpra.client.win32.altgr`),
+        # which is normally followed by the right `Alt` key, but check both neighbours:
+        if vk_code == win32con.VK_CONTROL and (
+            is_altgr_fake_control(key_message, peek_key_message(self.hwnd))
+            or is_altgr_fake_control(key_message, previous_key_message)
+        ):
+            keylog("dropping the fake Control_L generated by AltGr")
+            add_altgr_layout(GetKeyboardLayout(0) or 0)
+            return True
+        extended = key_message.is_extended()
+        scancode = (lparam >> 16) & 0xff
+        string, local_string = get_key_strings(vk_code)
+        keyname = get_keyname(vk_code, scancode, extended, string, local_string)
+        log("vk_code: %d, string=%r, local_string=%r, scancode=%i, extended=%s, keyname=%r",
+            vk_code, string, local_string, scancode, extended, keyname)
+        pressed = msg in (win32con.WM_KEYDOWN, win32con.WM_SYSKEYDOWN)
+        self.emit("key", keyname, pressed, vk_code, local_string, scancode, extended)
+        # for `WM_SYSKEY*` messages, the key belongs to the remote application:
+        # don't let `DefWindowProc` enter menu mode (`Alt`, `F10`)
+        # or close the window locally (`Alt`+`F4`)
+        return msg in (win32con.WM_SYSKEYDOWN, win32con.WM_SYSKEYUP)
+
     def wnd_proc_cb(self, hwnd: int, msg: int, wparam: int, lparam) -> int:
         msg_str = WM_MESSAGES.get(msg, str(msg))
         log("wnd_proc_cb(%i, %s, %i, %#x)", hwnd, msg_str, wparam, lparam)
@@ -534,72 +642,8 @@ class ClientWindow(GObject.GObject):
                 return 0
             # keys pressed while `Alt` is held (and `F10`) arrive as `WM_SYSKEY*` messages:
             key_msgs = (win32con.WM_KEYDOWN, win32con.WM_KEYUP, win32con.WM_SYSKEYDOWN, win32con.WM_SYSKEYUP)
-            if msg in key_msgs and not local_syskey:
-                vk_code = wparam
-                # `GetMessageTime` is signed, `MSG.time` is not:
-                key_message = KeyMessage(msg, vk_code, lparam, GetMessageTime() & 0xffffffff)
-                previous_key_message = self.last_key_message
-                self.last_key_message = key_message
-                # `AltGr` comes with a fake left `Control` (see `xpra.client.win32.altgr`),
-                # which is normally followed by the right `Alt` key, but check both neighbours:
-                if vk_code == win32con.VK_CONTROL and (
-                    is_altgr_fake_control(key_message, peek_key_message(self.hwnd))
-                    or is_altgr_fake_control(key_message, previous_key_message)
-                ):
-                    keylog("dropping the fake Control_L generated by AltGr")
-                    add_altgr_layout(GetKeyboardLayout(0) or 0)
-                    return 0
-                extended = key_message.is_extended()
-                scancode = (lparam >> 16) & 0xff
-
-                # Use ToUnicode to convert VK code to character
-                keyboard_state = (BYTE * 256)()
-                # first retrieve using an empty keyboard state:
-                result = (c_wchar * 4)()
-                count = ToUnicode(vk_code, 0, keyboard_state, result, 4, 0)
-                string = result.value if count > 0 else ""
-                # then again, honouring only the modifiers that select a character:
-                # `Shift` and `AltGr` - which win32 reports as `Control`+`Alt`.
-                # (`Control` on its own is left out on purpose: it would turn
-                # ie: `Control`+`q` into the control character `\x11` instead of `q`)
-                altgr = bool(GetKeyState(win32con.VK_RMENU) & 0x8000)
-                if GetKeyState(win32con.VK_SHIFT) & 0x8000:
-                    keyboard_state[win32con.VK_SHIFT] = 0x80
-                if altgr:
-                    keyboard_state[win32con.VK_CONTROL] = 0x80
-                    keyboard_state[win32con.VK_MENU] = 0x80
-                result = (c_wchar * 4)()
-                count = ToUnicode(vk_code, 0, keyboard_state, result, 4, 0)
-                local_string = result.value if count > 0 else string
-
-                # for now, we still translate to X11 key names:
-                # use the character the layout actually produces, so that
-                # ie: `AltGr`+`q` on a German keyboard is sent as `at` and not as `q`:
-                keyname = VK_NAMES.get(vk_code, "") or keysym_name(local_string)
-                log("vk_code: %d, string=%r, local_string=%r, scancode=%i, extended=%s, keyname=%r", vk_code, string, local_string, scancode, extended, keyname)
-                if keyname.startswith("VK_"):
-                    keyname = VK_X11_MAP.get(keyname[3:], keyname)
-                if not string:
-                    if vk_code == win32con.VK_CONTROL:
-                        keyname = "Control_R" if extended else "Control_L"
-                    elif vk_code == win32con.VK_MENU:
-                        keyname = get_alt_r_keyname(GetKeyboardLayout(0) or 0) if extended else "Alt_L"
-                    elif vk_code == win32con.VK_SHIFT:
-                        MAPVK_VSC_TO_VK_EX = 3
-                        vk = MapVirtualKeyW(scancode, MAPVK_VSC_TO_VK_EX)
-                        VK_LSHIFT = 0xA0
-                        VK_RSHIFT = 0xA1
-                        if vk == VK_LSHIFT:
-                            keyname = "Shift_L"
-                        elif vk == VK_RSHIFT:
-                            keyname = "Shift_R"
-                pressed = msg in (win32con.WM_KEYDOWN, win32con.WM_SYSKEYDOWN)
-                self.emit("key", keyname, pressed, vk_code, local_string, scancode, extended)
-                if msg in (win32con.WM_SYSKEYDOWN, win32con.WM_SYSKEYUP):
-                    # the key belongs to the remote application:
-                    # don't let `DefWindowProc` enter menu mode (`Alt`, `F10`)
-                    # or close the window locally (`Alt`+`F4`)
-                    return 0
+            if msg in key_msgs and not local_syskey and self.key_message(msg, wparam, lparam):
+                return 0
             if msg == win32con.WM_ERASEBKGND:
                 log("skipped erase background")
                 return 1
@@ -948,6 +992,30 @@ class ClientWindow(GObject.GObject):
 
     def resize(self, w: int, h: int, resize_counter: int = 0) -> None:
         self.move_resize(self.x, self.y, w, h, resize_counter)
+
+    def initiate_moveresize(self, x_root: int, y_root: int, direction: int, button: int,
+                            source_indication: int) -> None:
+        geomlog("initiate_moveresize%s", (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction),
+                                          button, source_indication))
+        if not self.hwnd:
+            return
+        if direction == MoveResize.CANCEL:
+            # ends the native move / resize loop, if there is one:
+            SendMessageW(self.hwnd, win32con.WM_CANCELMODE, 0, 0)
+            return
+        command = MOVERESIZE_SYSCOMMAND.get(direction, 0)
+        if not command:
+            geomlog.warn("Warning: unsupported moveresize direction %r", direction)
+            return
+        # let the native loop take over the pointer,
+        # and use the current position since the server's coordinates may be stale:
+        ReleaseCapture()
+        pos = POINT()
+        GetCursorPos(byref(pos))
+        lparam = (pos.x & 0xffff) | ((pos.y & 0xffff) << 16)
+        # posted rather than sent, so the modal loop runs from the message pump
+        # and not from within this packet handler:
+        PostMessageW(self.hwnd, win32con.WM_SYSCOMMAND, command, lparam)
 
     def apply_size_constraints(self, lparam) -> None:
         info = cast(lparam, POINTER(MINMAXINFO)).contents

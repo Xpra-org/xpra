@@ -57,7 +57,7 @@ class AuthenticationManager(StubSubsystem):
 
     def init_auth(self, opts) -> None:
         for x in SOCKET_TYPES:
-            if x in ("hyperv", "wt"):
+            if x in ("hyperv", "wt", "wsl"):
                 # client-only socket types: no server bind, no auth option
                 continue
             if x in ("socket", "named-pipe"):

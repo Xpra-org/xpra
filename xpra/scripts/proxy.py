@@ -26,8 +26,12 @@ from xpra.scripts.common import no_gtk
 from xpra.scripts.display import get_displays_info
 from xpra.scripts.sessions import identify_new_socket
 from xpra.scripts.clients import run_client, get_client_app, do_run_client
+from xpra.util.env import envint
 
 # pylint: disable=import-outside-toplevel
+
+# how long `xpra control` may take to start a command on an existing server:
+CONTROL_TIMEOUT = envint("XPRA_PROXY_CONTROL_TIMEOUT", 30)
 
 
 def add_process(*args, **kwargs):
@@ -181,8 +185,9 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
             if getuid() == 0 and (uid != 0 or gid != 0):
                 cmd.append(f"--uid={uid}")
                 cmd.append(f"--gid={gid}")
-            if not OSX and not matching_display:
-                # use "--displayfd" switch to tell us which display was chosen:
+            if not OSX and mode in ("seamless", "desktop", "monitor"):
+                # the "--displayfd" switch tells us which display was chosen, once the server is ready,
+                # and we get EOF if it fails - even when we chose the display:
                 r_pipe, w_pipe = os.pipe()
                 log("subprocess displayfd pipes: %s", (r_pipe, w_pipe))
                 cmd.append(f"--displayfd={w_pipe}")
@@ -191,20 +196,35 @@ def start_server_subprocess(script_file: str, args: list[str], mode: str, opts,
         proc = Popen(cmd, env=env, cwd=cwd, preexec_fn=preexec_fn, pass_fds=pass_fds)
         log(f"proc={proc}")
         add_process(proc, "server", cmd, ignore=True, forget=True)
-        if r_pipe:
-            from xpra.platform.displayfd import read_displayfd, parse_displayfd
-            buf = read_displayfd(r_pipe, proc=None)  # proc daemonizes!
-            noerr(os.close, r_pipe)
+        if w_pipe:
+            # only the server should hold the write end,
+            # so that we get EOF if it exits without writing the display:
             noerr(os.close, w_pipe)
+        if r_pipe:
+            from xpra.platform.displayfd import read_displayfd, parse_displayfd, pipe_closed
+            # the server only writes to displayfd once it is ready,
+            # but we get EOF straight away if it fails:
+            from xpra.scripts.sessions import WAIT_SERVER_TIMEOUT
+            buf = read_displayfd(r_pipe, timeout=WAIT_SERVER_TIMEOUT, proc=None)  # proc daemonizes!
+            closed = not buf and pipe_closed(r_pipe)
+            noerr(os.close, r_pipe)
+            if closed:
+                # the server has exited before telling us which display it is using,
+                # and as it daemonizes, its errors are in its log file:
+                raise InitExit(ExitCode.FAILURE, "the server failed to start, check its log file for details")
 
             def displayfd_err(msg: str) -> None:
                 log.error("Error: displayfd failed")
                 log.error(f" {msg}")
 
-            n = parse_displayfd(buf, displayfd_err)
-            if n >= 0:
-                matching_display = f":{n}"
-                log(f"displayfd={matching_display}")
+            if not matching_display:
+                if buf.startswith(b"wayland-") and buf.endswith(b"\n"):
+                    # wayland servers write their socket name verbatim:
+                    matching_display = buf.rstrip(b"\n\r").decode("ascii", "replace")
+                    log(f"displayfd={matching_display}")
+                elif (n := parse_displayfd(buf, displayfd_err)) >= 0:
+                    matching_display = f":{n}"
+                    log(f"displayfd={matching_display}")
     socket_path, display = identify_new_socket(proc, dotxpra, existing_sockets,
                                                matching_display,
                                                new_server_uuid,
@@ -266,6 +286,42 @@ def run_daemon(cmd: list[str], **kwargs):
     return proc
 
 
+def start_commands_on_existing(script_file: str, display_name: str, opts, defaults) -> None:
+    """
+    `_proxy_start` for a display which is already running:
+    there is no new server to give the `start` and `start-child` commands to,
+    so ask the existing one to run them, as `xpra control DISPLAY start[-child]` would.
+    """
+    log = Logger("server", "exec")
+    import shlex
+    from subprocess import run, DEVNULL, TimeoutExpired
+    failed: list[str] = []
+    for option, subcommand in (("start", "start"), ("start_child", "start-child")):
+        for command in strip_defaults_start_child(getattr(opts, option), getattr(defaults, option)):
+            if not command:
+                continue
+            # the server splits the command string the same way:
+            cmd = [script_file, "control", display_name, subcommand, "--"] + shlex.split(command)
+            log("start_commands_on_existing: %s", cmd)
+            try:
+                # our stdout carries the connection, so nothing else must be written to it:
+                proc = run(cmd, stdin=DEVNULL, capture_output=True, timeout=CONTROL_TIMEOUT)
+            except (OSError, TimeoutExpired) as e:
+                stderr_print(f"Error: failed to start {command!r} on display {display_name}: {e}")
+                failed.append(command)
+                continue
+            for line in (proc.stdout + proc.stderr).decode(errors="replace").splitlines():
+                if line.strip():
+                    stderr_print(line)
+            if proc.returncode:
+                stderr_print(f"Error: failed to start {command!r} on display {display_name}: {exit_str(proc.returncode)}")
+                failed.append(command)
+    if failed:
+        # exit with an error rather than connecting, so the client can tell:
+        commands = csv(repr(x) for x in failed)
+        raise InitExit(ExitCode.FAILURE, f"failed to start {commands} on display {display_name}")
+
+
 def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode: str, defaults) -> ExitValue:
     no_gtk()
     display = {}
@@ -296,7 +352,9 @@ def run_proxy(opts, script_file: str, cmdline: list[str], args: list[str], mode:
                 state = dotxpra.get_display_state(display_name)
                 if state != SocketState.DEAD:
                     stderr_print(f"found existing display {display_name} : {state}")
-        if state != SocketState.LIVE:
+        if state == SocketState.LIVE:
+            start_commands_on_existing(script_file, display_name, opts, defaults)
+        else:
             # strip defaults, only keep extra ones:
             for x in ("start", "start-child",
                       "start-after-connect", "start-child-after-connect",

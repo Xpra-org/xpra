@@ -94,7 +94,6 @@ def get_max_viewport_dims() -> tuple[int, int]:
 def get_extensions() -> list[str]:
     extensions: list[str] = _get_gl_enums("extensions", "GL_NUM_EXTENSIONS", "GL_EXTENSIONS")
     if not extensions:
-        # try legacy mode:
         from OpenGL.error import GLError
         try:
             from OpenGL.GL import glGetString, GL_EXTENSIONS

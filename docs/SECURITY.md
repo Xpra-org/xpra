@@ -23,7 +23,7 @@ Even more so for vulnerabilities.
 
 Please contact [security@xpra.org](mailto:security@xpra.org).
 
-You can encrypt all communications with the following GPG key: `66EA1EA1A1323924` for `xpra@xpra.org`, the primary key fingerprint: `B499 3B57 3231 48E3 7977  E5D8 7325 4CAD 1797 8FAF` is the same as the one used for [signing packages](https://github.com/Xpra-org/xpra/wiki/Download#-signatures).
+You can encrypt all communications with the following GPG key: `66EA1EA1A1323924` for `xpra@xpra.org`, the primary key fingerprint: `B499 3B57 3231 48E3 7977  E5D8 7325 4CAD 1797 8FAF` is the same as the one used for [signing packages](https://xpra-org.github.io/xpra/Download/All.html#signatures).
 
 
 ## Notifications
@@ -54,7 +54,7 @@ please send a request to [security@xpra.org](mailto:security@xpra.org)
 
 ## Bundled libraries
 The MS Windows builds are scanned every day for known vulnerabilities in the libraries they bundle,
-see [CVEs](https://github.com/Xpra-org/xpra/blob/master/docs/Build/CVE.md) for every vulnerability found and whether it applies.
+see [CVEs](https://xpra-org.github.io/xpra/Build/CVE.html) for every vulnerability found and whether it applies.
 
 
 ## False positives

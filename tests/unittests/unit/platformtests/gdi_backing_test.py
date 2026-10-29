@@ -214,6 +214,53 @@ class GDIPaintRGBTest(unittest.TestCase):
         success, _ = self.paint(backing, bgrx_pattern(16, 16))
         self.assertFalse(success)
 
+    def test_paint_clipped_to_shrunk_backing(self):
+        """the server encoded the frame before the window was made smaller"""
+        backing = self.make(16, 16)
+        backing.init(8, 6, 8, 6)
+        pixels = bgrx_pattern(16, 16)
+        success, message = self.paint(backing, pixels)
+        self.assertTrue(success, message)
+        for y in range(6):
+            self.assertEqual(get_row(backing, y), pixels[y * 64:y * 64 + 32], f"row {y}")
+
+    def test_paint_negative_offset_is_clipped(self):
+        backing = self.make(16, 16)
+        pixels = bgrx_pattern(4, 4)
+        success, message = self.paint(backing, pixels, x=-2, y=-1, width=4, height=4)
+        self.assertTrue(success, message)
+        # only the bottom right 2x3 corner of the source lands in the backing:
+        for row in range(3):
+            src = (row + 1) * 16 + 2 * 4
+            self.assertEqual(get_row(backing, row)[:8], pixels[src:src + 8], f"row {row}")
+
+    def test_paint_outside_backing(self):
+        backing = self.make(16, 16)
+        before = get_pixels(backing)
+        success, message = self.paint(backing, bgrx_pattern(4, 4), x=20, y=2, width=4, height=4)
+        self.assertTrue(success, message)
+        self.assertEqual(get_pixels(backing), before)
+
+    def test_paint_while_resizing(self):
+        """the decode thread paints while the UI thread resizes the backing"""
+        from threading import Thread, Event
+        backing = self.make(64, 64)
+        pixels = bgrx_pattern(64, 64)
+        done = Event()
+
+        def resize_loop():
+            for i in range(200):
+                size = 64 - (i % 2) * 48
+                backing.init(size, size, size, size)
+            done.set()
+
+        thread = Thread(target=resize_loop, daemon=True)
+        thread.start()
+        while not done.is_set():
+            success, message = self.paint(backing, pixels, width=64, height=64)
+            self.assertTrue(success, message)
+        thread.join()
+
 
 @unittest.skipUnless(WIN32, "the GDI backing is only available on MS Windows")
 class GDIScrollTest(unittest.TestCase):

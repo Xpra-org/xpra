@@ -12,7 +12,7 @@ This encoder requires a [supported NVIDIA graphics card](https://developer.nvidi
 ## Software Requirements
 
 </div>
-You must have [PyCUDA](http://mathema.tician.de/software/pycuda/) installed (it is included in the official [xpra repositories](https://github.com/Xpra-org/xpra/wiki/Download)), and a recent enough version of the nvidia drivers. It is not compatible with the `nouveau` driver.
+You must have [PyCUDA](http://mathema.tician.de/software/pycuda/) installed (it is included in the official [xpra repositories](https://xpra-org.github.io/xpra/Download/Linux.html)), and a recent enough version of the nvidia drivers. It is not compatible with the `nouveau` driver.
 
 How you install those drivers is entirely up to you, here are some options for Fedora / RHEL:
 * [nvidia installers](http://www.nvidia.com/object/unix.html)
@@ -81,7 +81,7 @@ Newer SDK versions may not support keys, or just not the same set of keys, in wh
 
 </div>
 * download and install the [CUDA SDK](https://developer.nvidia.com/cuda-downloads)
-* install [PyCuda](http://wiki.tiker.net/PyCuda/Installation/Linux) - it is included in the [official repositories](https://github.com/Xpra-org/xpra/wiki/Download) for Fedora and RHEL
+* install [PyCuda](http://wiki.tiker.net/PyCuda/Installation/Linux) - it is included in the [official repositories](https://xpra-org.github.io/xpra/Download/Linux.html) for Fedora and RHEL
 * download the [NVENC SDK](https://developer.nvidia.com/nvidia-video-codec-sdk), aka "NVIDIA VIDEO CODEC SDK" and install it somewhere (ie: just unzip into `/opt/`)
 * create a `pkgconfig` file matching your SDK version and location, you can use [nvenc.pc](https://github.com/Xpra-org/xpra/blob/master/fs/lib/pkgconfig/nvenc.pc) as template.
 * when building xpra, nvenc support should be auto-detected, but you can try forcing it to verify, ie:

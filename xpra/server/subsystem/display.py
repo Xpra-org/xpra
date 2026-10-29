@@ -148,6 +148,11 @@ class DisplayManager(StubSubsystem):
     def publish_displayfd(display_name: str, fd: int) -> None:
         if OSX or not POSIX or fd <= 0:
             return
+        if not display_name.startswith(":"):
+            # ie: the "S$PID" placeholder used until we have a real display,
+            # which must not be mistaken for display number $PID
+            log.error(f"Error: cannot write invalid display name {display_name!r} to fd={fd}")
+            return
         try:
             from xpra.platform import displayfd
             display_no = display_name[1:]

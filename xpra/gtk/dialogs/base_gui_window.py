@@ -114,11 +114,22 @@ class BaseGUIWindow(Gtk.Window):
         lbl = label(text, font=font)
         lbl.set_line_wrap(True)
         lbl.set_use_markup(True)
+        lbl.connect("activate-link", self.activate_link)
         if self.style_class:
             lbl.set_halign(Gtk.Align.START)
             lbl.set_justify(Gtk.Justification.LEFT)
             add_style_class(lbl, "xpra-card", "xpra-subtitle")
         self.add_widget(lbl)
+
+    @staticmethod
+    def activate_link(_label, uri: str) -> bool:
+        # GTK's default handler spawns a process via GLib,
+        # which needs the `gspawn` helper executables on MS Windows:
+        log("activate_link(%s)", uri)
+        import webbrowser
+        from xpra.util.thread import start_thread
+        start_thread(webbrowser.open, "open-link", True, args=(uri, ))
+        return True
 
     def add_buttons(self, *buttons) -> list[Gtk.Button]:
         hbox = Gtk.HBox()
@@ -187,11 +198,12 @@ class BaseGUIWindow(Gtk.Window):
                     add_gui("Toolbox", "toolbox", ToolboxGUI)
             if configure:
                 try:
-                    from xpra.gtk.configure.main import ConfigureGUI
+                    from xpra.gtk.configure.home import HomeGUI as ConfigureGUI
                 except ImportError:
                     pass
                 else:
                     add_gui("Configure", "features", ConfigureGUI)
+            self.add_headerbar_buttons(add_hb_button)
             hb.show_all()
 
         def rs(rect) -> tuple[int, int]:
@@ -227,6 +239,9 @@ class BaseGUIWindow(Gtk.Window):
 
         add_buttons()
         self.set_titlebar(hb)
+
+    def add_headerbar_buttons(self, add_hb_button: Callable) -> None:
+        """ subclasses can add their own buttons to the header bar """
 
     def ib(self, title="", icon_name="browse.png", tooltip="", callback: Callable = noop, sensitive=True) -> Gtk.Button:
         label_font = "" if self.style_class else "sans 16"

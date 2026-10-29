@@ -131,7 +131,9 @@ def normalize_mdns_host(host: str, stype: str = "", domain: str = "", mode: str 
 
 
 def normalized_session_host(endpoint: SessionEndpoint) -> str:
-    host = endpoint.host
+    # the mDNS `server` name is unique per service and may include the session uuid,
+    # prefer the real hostname from the text record when the server provides it:
+    host = endpoint.typed_text.strget("hostname") or endpoint.host
     if endpoint.domain == "local" and host.endswith(".local"):
         host = host[:-len(".local")]
     return host

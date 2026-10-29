@@ -42,7 +42,7 @@ CSS = b"""
     min-height: 48px;
     padding: 8px 14px;
     border-radius: 10px;
-    font-size: 1.05em;
+    font-size: 2.0em;
 }
 
 .configure-window .configure-section-title {

@@ -406,7 +406,8 @@ class MonitorXpraClient(SendCommandConnectClient):
 
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
-        self.send(PING_ECHO, echotime, 0, 0, 0, -1)
+        sid = packet.get_str(3) if len(packet) >= 4 else ""
+        self.send(PING_ECHO, echotime, 0, 0, 0, -1, sid)
 
 
 class InfoTimerClient(MonitorXpraClient):
@@ -568,7 +569,8 @@ class ShellXpraClient(SendCommandConnectClient):
 
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
-        self.send(PING_ECHO, echotime, 0, 0, 0, -1)
+        sid = packet.get_str(3) if len(packet) >= 4 else ""
+        self.send(PING_ECHO, echotime, 0, 0, 0, -1, sid)
 
     @staticmethod
     def _process_shell_reply(packet: Packet) -> None:
@@ -861,10 +863,21 @@ class DetachXpraClient(HelloRequestClient):
         # the server should disconnect us with the response
 
 
-class WaitForDisconnectXpraClient(DetachXpraClient):
-    """ we just want the connection to close """
+class ProxyStartedClient(IDXpraClient):
+    """
+    `start --attach=no` via ssh or wsl:
+    the remote proxy command has already started the session we asked for (or found it),
+    so we only identify it, without disconnecting its clients like a `detach` request would.
+    """
 
-    def _process_connection_close(self, _packet: Packet) -> None:
+    def __init__(self, opts, show_display=False):
+        super().__init__(opts)
+        self.show_display = show_display
+
+    def do_command(self, caps: typedict) -> None:
+        if self.show_display and (display := caps.strget("display")):
+            # the display number was chosen for us:
+            log.info(f"session available on display {display}")
         self.quit(ExitCode.OK)
 
 

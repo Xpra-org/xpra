@@ -221,7 +221,7 @@ def may_create_user_config(xpra_conf_filename: str = DEFAULT_XPRA_CONF_FILENAME)
 
 # For more information on the file format,
 # see the xpra manual at:
-# https://github.com/Xpra-org/xpra/tree/master/docs/
+# https://xpra-org.github.io/xpra/
 """)
                 f.flush()
             config_log.debug(f"created default config in {d!r}")

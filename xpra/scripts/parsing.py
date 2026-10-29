@@ -302,6 +302,24 @@ def parse_display_name(opts, display_name: str, cmdline=(),
         desc["full_ssh"] = full_ssh
         return desc
 
+    if protocol == "wsl":
+        from xpra.net.wsl import check_platform, parse_wsl_netloc
+        check_platform()
+        # the Linux user and distribution are selected by `wsl.exe`, there are no credentials:
+        username, distribution = parse_wsl_netloc(parsed.netloc)
+        desc.update({
+            "local": False,
+            "distribution": distribution,
+            "proxy_command": ["_proxy"],
+        })
+        if username:
+            desc["username"] = username
+        connection.add_path(desc, parsed.path, process_query)
+        process_query(parsed.query)
+        display = desc.get("display", "")
+        desc["display_as_args"] = [display] if display else []
+        return desc
+
     if protocol == "socket":
         if WIN32:
             raise RuntimeError("unix-domain sockets are not supported on MS Windows")

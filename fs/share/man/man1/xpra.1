@@ -463,7 +463,7 @@ be available.
 .SH OPTIONS
 .SS General options
 .TP
-\fB\-\-version\fP
+\fB-V\fP, \fB\-\-version\fP
 Displays xpra's version number.
 .TP
 \fB-h, \-\-help\fP
@@ -1252,7 +1252,7 @@ This option is only relevant for seamless servers.
 \fB\-\-exit\-with\-client\fP=\fIyes\fP|\fIno\fP
 The server will terminate when the last client disconnects.
 .TP
-\fB\-\-landlock\fP=\fIno\fP|\fIdefault\fP|\fIstrict\fP
+\fB\-\-landlock\fP=\fIno\fP|\fIdefault\fP|\fIstrict\fP[\fI+gpu\fP]
 Confine client and server filesystem access with Linux Landlock.
 The default is \fIno\fP.
 \fIdefault\fP allows broad system and user reads and restricts writes to
@@ -1262,6 +1262,11 @@ and Xpra configuration. It uses private temporary storage inside the client's
 dedicated download directory or the server's session directory. A download
 directory which falls back to /tmp must be replaced using the
 \fIdownload-path\fP configuration setting.
+The GPU devices are not accessible unless \fI+gpu\fP is appended to an enabled
+mode, ie: \fIstrict+gpu\fP. This grants access to the devices below /dev/dri
+and /dev/accel, and to the NVIDIA devices required by CUDA. It is needed by
+hardware accelerated video encoders and decoders (NVENC, NVDEC, VA-API, etc)
+and by hardware accelerated OpenGL rendering in the client.
 Both enabled modes require Landlock ABI 9 or newer and fail startup on Linux
 if confinement cannot be installed. The option has no effect elsewhere.
 Qt, Pyglet and Tk clients do not support Landlock and require
@@ -1406,6 +1411,22 @@ Enable the builtin web server scripts that expose the
 server status, current active sessions and displays, the list
 of applications and desktop sessions installed.
 This can be used by the client's user interface.
+.TP
+\fB\-\-http\-origin\fP=\fIauto\fP|\fIany\fP|\fInone\fP|\fIstrict\fP|\fIORIGINS\fP
+Control which origins may open WebSocket connections to the server.
+The default \fIauto\fP accepts an \fIOrigin\fP header whose hostname matches
+the request's \fIHost\fP header, also matching the port if it is specified
+in \fIHost\fP. The scheme is ignored to support TLS terminating proxies.
+Use \fIany\fP to allow all origins, or \fInone\fP to reject all requests
+carrying an \fIOrigin\fP header.
+Alternatively, specify a comma separated list of allowed origins,
+including their scheme and any non-default port,
+ie: \fIhttps://desktop.example,https://other.example:8443\fP.
+Connections without an \fIOrigin\fP header are allowed unless \fIstrict\fP
+is included, ie: \fIstrict,https://desktop.example\fP.
+On its own, \fIstrict\fP applies the \fIauto\fP policy and also requires
+an \fIOrigin\fP header. Native xpra clients connecting via WebSockets then
+need \fIXPRA_WEBSOCKET_HEADERS_MODULES=origin\fP to send this header.
 .TP
 
 \fB\-\-rfb\-upgrade\fP=\fIDELAY\fP
@@ -1739,11 +1760,12 @@ Enable or disable webcam forwarding.
 The webcam device to use can also be specified.
 .TP
 
-\fB-z\fP\fILEVEL\fP, \fB\-\-compress\fP=\fILEVEL\fP
+\fB-z\fP\fILEVEL\fP, \fB\-\-compression\-level\fP=\fILEVEL\fP
 Select the level of compression xpra will use when transmitting data
 over the network.
-There are only two possible values:
-0 (meaning no compression) and 1 (compression enabled).
+Values range from 0 (no compression) to 9 (maximum compression effort).
+The default is 1.
+The spellings \fB\-\-compression_level\fP and \fB\-\-compress\fP are also accepted.
 
 This compression is not used on pixel data (except
 when using the \fBrgb\fP encoding).
@@ -1985,6 +2007,13 @@ To get a list of options use the special value 'help'.
 It is also possible to specify plugin options using the form:
 \fI\-\-audio\-source=
 pulse\:device=device.alsa_input.pci-0000_00_14.2.analog-stereo\fP
+.TP
+\fB\-\-audio\-sink\fP=\fISINK[:DEVICE|OPTIONS]\fP
+Specifies the client-side GStreamer audio sink used for speaker playback.
+The default \fIauto\fP selects the platform's default sink.
+A device can be selected with \fI\-\-audio\-sink=pulsesink:device-name\fP.
+Sink properties can be specified as comma separated name=value pairs,
+ie: \fI\-\-audio\-sink=pulsesink:device=device-name,sync=false\fP.
 .TP
 \fB\-\-speaker\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP and \fB\-\-microphone\fP=\fIon\fP|\fIoff\fP|\fIdisabled\fP|\fIon:DEVICE\fP|\fIoff:DEVICE\fP
 Sound input and output forwarding support: \fIon\fP will start the forwarding

@@ -496,7 +496,13 @@ def set_vfb_startup_state(app, state: VFBStartResult) -> None:
         return
     if hasattr(display, "set_vfb_startup_state"):
         display.set_vfb_startup_state(state)
-    if hasattr(display, "publish_displayfd"):
+
+
+def publish_displayfd(app, state: VFBStartResult) -> None:
+    # only once the server is ready to accept connections,
+    # so that the pipe closing without any data means that the server failed to start:
+    display = app.get_subsystem("display")
+    if display and hasattr(display, "publish_displayfd"):
         display.publish_displayfd(state.display_name, state.displayfd)
 
 
@@ -786,6 +792,7 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         progress(90, "finalizing")
         app.setup()
         init_virtual_devices(app, vfb_result.devices)
+        publish_displayfd(app, vfb_result)
     except InitInfo as e:
         for m in str(e).split("\n"):
             log.info("%s", m)

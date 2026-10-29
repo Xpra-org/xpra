@@ -12,6 +12,8 @@ from xpra.os_util import POSIX
 from xpra.util.env import envint
 
 DISPLAY_FD_TIMEOUT = envint("XPRA_DISPLAY_FD_TIMEOUT", 20)
+# long enough for wayland display names, ie: "wayland-1":
+DISPLAY_FD_MAX = 64
 
 
 def write_displayfd(w_pipe: int, display: str, timeout: float = 10) -> int:
@@ -58,7 +60,7 @@ def read_displayfd(r_pipe: int, timeout=DISPLAY_FD_TIMEOUT, proc=None) -> bytes:
     buf = b""
     log = Logger("util")
     log("read_displayfd%s", (r_pipe, timeout, proc))
-    while monotonic() < limit and len(buf) < 8 and (proc is None or proc.poll() is None):
+    while monotonic() < limit and len(buf) < DISPLAY_FD_MAX and (proc is None or proc.poll() is None):
         try:
             timeout = 1
             if POSIX:
@@ -67,15 +69,33 @@ def read_displayfd(r_pipe: int, timeout=DISPLAY_FD_TIMEOUT, proc=None) -> bytes:
             else:
                 r = [r_pipe]
             if r_pipe in r:
-                v = os.read(r_pipe, 8)
+                v = os.read(r_pipe, DISPLAY_FD_MAX - len(buf))
+                if not v:
+                    # EOF: every writer has closed the pipe, nothing more will come
+                    log("read_displayfd: EOF")
+                    break
                 buf += v
                 log("read=%s", v)
-                if buf and (buf.endswith(b'\n') or len(buf) >= 8):
+                if buf.endswith(b'\n'):
                     break
         except OSError as e:
             if e.errno != errno.EINTR:
                 raise
     return buf
+
+
+def pipe_closed(r_pipe: int) -> bool:
+    """
+    `read_displayfd` returns an empty buffer on timeout as well as on EOF,
+    this tells them apart: only EOF makes the pipe readable without any data
+    """
+    import select
+    try:
+        if r_pipe not in select.select([r_pipe], [], [], 0)[0]:
+            return False
+        return os.read(r_pipe, 1) == b""
+    except OSError:
+        return True
 
 
 def parse_displayfd(buf: bytes, err: Callable) -> int:

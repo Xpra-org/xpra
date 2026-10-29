@@ -7,6 +7,7 @@
 import os
 import tempfile
 import unittest
+from io import BytesIO
 from unittest.mock import patch
 
 from xpra.notification import common
@@ -69,6 +70,25 @@ class TestCommon(unittest.TestCase):
         assert p((10, 10, 40, True, 32, 4, b"0"*40*10)) is not None
         assert p((10, 10, 40, False, 24, 4, b"0"*40*10)) is not None
         assert p((10, 10, 30, False, 24, 3, b"0"*30*10)) is not None
+
+    def test_parse_image_data_colours(self):
+        Image = common.PIL_Image()
+        for mode, pixels in (
+            ("RGB", bytes((255, 0, 0, 0, 0, 255, 12, 34, 56, 78, 90, 123))),
+            ("RGBA", bytes((255, 0, 0, 255, 0, 0, 255, 128, 12, 34, 56, 0, 78, 90, 123, 64))),
+        ):
+            channels = len(mode)
+            row_bytes = 2 * channels
+            for padding in (0, 3):
+                padded = pixels[:row_bytes] + b"\x99" * padding + pixels[row_bytes:]
+                for container in (bytes, list, tuple):
+                    with self.subTest(mode=mode, padding=padding, container=container.__name__):
+                        icon = common.parse_image_data((2, 2, row_bytes + padding, mode == "RGBA", 8, channels, container(padded)))
+                        self.assertIsNotNone(icon)
+                        self.assertEqual(icon[:3], ("png", 2, 2))
+                        with Image.open(BytesIO(icon[3])) as image:
+                            self.assertEqual(image.mode, mode)
+                            self.assertEqual(image.tobytes(), pixels)
 
     def test_parse_image_path(self):
         iconname = "xpra"

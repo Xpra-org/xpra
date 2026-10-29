@@ -19,7 +19,7 @@ import argparse
 
 CVE_DOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "docs", "Build", "CVE.md")
 
-CVE_DOC_URL = "https://github.com/Xpra-org/xpra/blob/master/docs/Build/CVE.md"
+CVE_DOC_URL = "https://xpra-org.github.io/xpra/Build/CVE.html"
 
 SEVERITIES = ("Critical", "High", "Medium", "Low", "Negligible", "Unknown")
 

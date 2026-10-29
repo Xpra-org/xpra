@@ -257,7 +257,7 @@ setup_options = {
     "data_files"        : data_files,
     "py_modules"        : modules,
     "project_urls"      : {
-        "Documentation" : "https://github.com/Xpra-org/xpra/tree/master/docs",
+        "Documentation" : "https://xpra-org.github.io/xpra/",
         "Funding"       : "https://github.com/sponsors/totaam",
         "Source"        : "https://github.com/Xpra-org/xpra",
     },
@@ -822,7 +822,10 @@ def convert_doc_dir(src, dst, fmt="html", force=False) -> None:
         os.makedirs(dst, mode=0o755)
     for x in os.listdir(src):
         fsrc = os.path.join(src, x)
-        if os.path.isdir(fsrc):
+        if os.path.isdir(fsrc) and (x == "Download" or x.startswith("_")):
+            # only used by the github pages site (jekyll templates):
+            print(f"ignoring {fsrc!r}")
+        elif os.path.isdir(fsrc):
             fdst = os.path.join(dst, x)
             convert_doc_dir(fsrc, fdst, fmt, force)
         elif fsrc.endswith(".md"):
@@ -2766,7 +2769,8 @@ if WIN32:
             "packages"          : packages,
             "include_files"     : data_files,
             "excludes"          : excludes,
-            "include_msvcr"     : True,
+            # our binaries use the OS UCRT, not the MSVC runtime:
+            "include_msvcr"     : False,
             "bin_excludes"      : bin_excludes,
         }
         # cx_Freeze v5 workarounds:
@@ -2838,12 +2842,15 @@ if WIN32:
             add_data_files("lib/", (shutil.which("gst-launch-1.0.exe"), ))
             add_console_exe("packaging/MSWindows/tools/lib_delegate.py", "gstreamer.ico", "gst-inspect-1.0")
             add_data_files("lib/", (shutil.which("gst-inspect-1.0.exe"), ))
+        if audio_ENABLED:
             add_console_exe("fs/bin/xpra", "speaker.ico", "Xpra_Audio")
         if libva_ENABLED:
             do_add_DLLs("", "vaon12_drv_video")
         if printing_ENABLED:
             add_console_exe("xpra/platform/win32/pdfium.py",    "printer.ico",     "PDFIUM_Print")
             do_add_DLLs("", "pdfium")
+        # Dr. MinGW's crash handler, loaded with `XPRA_EXCHNDL=1`:
+        do_add_DLLs("", "exchndl", "mgwhelp")
         # extra tools:
         # noinspection PyPep8
         if win32_tools_ENABLED:

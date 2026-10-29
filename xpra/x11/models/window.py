@@ -599,10 +599,10 @@ class WindowModel(BaseWindowModel):
                 cx, cy, cw, ch = geom[:4]
                 if cx != x or cy != y or cw != w or ch != h:
                     X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
-                # The corral owns root positioning; the client always remains
-                # at its local origin, including when repairing an old offset.
-                X11Window.configure(self.xid, 0, 0, w, h)
-                X11Window.sendConfigureNotify(self.xid)
+                    X11Window.configure(self.xid, 0, 0, w, h)
+                    X11Window.sendConfigureNotify(self.xid)
+                else:
+                    X11Window.sendConfigureNotify(self.xid)
             else:
                 # corral window hasn't been created yet
                 X11Window.configure(self.xid, x, y, w, h)
@@ -731,14 +731,33 @@ class WindowModel(BaseWindowModel):
         if VALIDATE_CONFIGURE_REQUEST:
             w, h = self.calc_constrained_size(w, h, hints)
 
-        geomlog("do_x11_child_configure_request_event applying requested geometry from %s to %s",
+        # update the geometry now, as another request may come in
+        # before we've had a chance to process the ConfigureNotify that the code below will generate
+        if not self._updateprop("geometry", (x, y, w, h)):
+            # As per ICCCM 4.1.5, even if we ignore the request
+            # send back a synthetic ConfigureNotify telling the client that nothing has happened.
+            geomlog("geometry unchanged: %s", (x, y, w, h))
+            with xlog:
+                X11Window.sendConfigureNotify(self.xid)
+            return
+
+        geomlog("do_x11_child_configure_request_event updated requested geometry from %s to %s",
                 (ox, oy, ow, oh), (x, y, w, h))
-        # Requests use root coordinates, but self.xid is reparented at (0, 0).
-        # A root-geometry delta mask applied to that child loses the unchanged
-        # axis (and cannot move the corral to the origin). Apply the complete
-        # target through the same constrained corral/client path as WM moves.
-        # This also sends a final root-space notification for no-op requests.
-        self._do_update_client_geometry(x, y, w, h)
+        # the request uses root coordinates: the position belongs to the corral,
+        # the client window stays at (0, 0) and only follows the size
+        moved = ox != x or oy != y
+        resized = ow != w or oh != h
+        with xlog:
+            if moved and resized:
+                X11Window.MoveResizeWindow(self.corral_xid, x, y, w, h)
+                X11Window.ResizeWindow(self.xid, w, h)
+            elif moved:
+                # ICCCM 4.2.3
+                X11Window.MoveWindow(self.corral_xid, x, y)
+                X11Window.sendConfigureNotify(self.xid)
+            else:
+                X11Window.ResizeWindow(self.corral_xid, w, h)
+                X11Window.ResizeWindow(self.xid, w, h)
         # FIXME: consider handling attempts to change stacking order here.
         # (In particular, I believe that a request to jump to the top is
         # meaningful and should perhaps even be respected.)

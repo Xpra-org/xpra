@@ -1,0 +1,34 @@
+{%- comment -%}
+The download links for every channel / arch / build combination of a platform,
+javascript only shows the one matching the current selection.
+  platform: "windows" or "macos"
+{%- endcomment -%}
+{%- assign dl = site.data.downloads -%}
+{%- assign p = dl[include.platform] -%}
+<div class="dl-results">
+{%- for ch in dl.channels %}
+{%- for arch in p.arches %}
+{%- for build in dl.builds %}
+  {%- assign dir = dl.base | append: "/" | append: ch.id | append: "/" | append: p.dir | append: "/" | append: arch.id | append: "/" -%}
+  {%- capture combo %}{{ ch.id }}/{{ arch.id }}/{{ build.id }}{% endcapture -%}
+  <section class="dl-result dl-cond" data-channel="{{ ch.id }}" data-arch="{{ arch.id }}" data-build="{{ build.id }}">
+    <h4>{{ ch.name }} <code>{{ ch.version }}</code> · {{ arch.name }} · {{ build.name }}</h4>
+    <div class="dl-files">
+    {%- for f in p.formats %}
+      {%- assign file = f[build.id] %}
+      <div class="dl-file{% if forloop.first %} dl-primary{% endif %}">
+        <a class="dl-button" href="{{ dir }}{{ file }}">{{ f.name }}<small>{{ file }}</small></a>
+        <span class="dl-meta">{{ f.description }} · <a href="{{ dir }}{{ file }}.gpg">signature</a></span>
+      </div>
+    {%- endfor %}
+    </div>
+    {%- assign has_sbom = false %}
+    {%- if p.sbom %}{% assign has_sbom = true %}{% if p.no_sbom contains combo %}{% assign has_sbom = false %}{% endif %}{% endif %}
+    <p class="dl-extra">
+      {%- if has_sbom %}<a href="{{ dir }}{{ p.sbom[build.id] }}">SBOM</a> (<a href="https://cyclonedx.org/">CycloneDX</a> JSON) · {% endif -%}
+      <a href="{{ dir }}">browse all files and older versions</a></p>
+  </section>
+{%- endfor %}
+{%- endfor %}
+{%- endfor %}
+</div>

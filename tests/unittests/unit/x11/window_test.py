@@ -57,10 +57,6 @@ class ManagedGeometryStub:
         from xpra.x11.models.window import calc_constrained_size
         return calc_constrained_size(w, h, hints)
 
-    def _do_update_client_geometry(self, *geometry):
-        from xpra.x11.models.window import WindowModel
-        WindowModel._do_update_client_geometry(self, *geometry)
-
 
 class FocusStub:
     """ the minimum amount of server state needed to focus and lose windows """
@@ -224,60 +220,93 @@ class X11WindowTest(ServerTestUtil):
         configure_request((0, 0, 499, 316, 0, 24))
         x11.sendConfigureNotify.assert_called_once_with(XID)
 
-    def test_managed_partial_requests_preserve_root_axes(self) -> None:
+    def test_managed_configure_request(self) -> None:
         from xpra.x11.models import window
-        model = ManagedGeometryStub()
-        x11 = Mock()
-        for mask, requested, expected in (
-                (window.CWX, (240, 0, 1, 1), (240, 300, 413, 229)),
-                (window.CWY, (0, 350, 1, 1), (240, 350, 413, 229)),
-                (window.CWX, (280, 0, 1, 1), (280, 350, 413, 229)),
-                (window.CWWidth, (0, 0, 500, 1), (280, 350, 500, 229)),
-                (window.CWHeight, (0, 0, 1, 270), (280, 350, 500, 270)),
-                (window.CWX | window.CWY, (0, 0, 1, 1), (0, 0, 500, 270)),
-                (window.CWX | window.CWY, (-150, -20, 1, 1), (-150, -20, 500, 270)),
-        ):
-            with self.subTest(mask=mask, target=expected):
-                x11.reset_mock()
-                x11.getGeometry.return_value = model.get_property("geometry")
-                event = SimpleNamespace(value_mask=mask, x=requested[0], y=requested[1],
-                                        width=requested[2], height=requested[3])
-                with patch.object(window, "X11Window", x11):
-                    window.WindowModel.do_x11_child_configure_request_event(model, event)
-                self.assertEqual(model.get_property("geometry"), expected)
-                x11.MoveResizeWindow.assert_called_once_with(CORRAL_XID, *expected)
-                x11.configure.assert_called_once_with(XID, 0, 0, *expected[2:])
-                x11.sendConfigureNotify.assert_called_once_with(XID)
+        props = {
+            "geometry": (200, 300, 400, 200),
+            "requested-position": (200, 300),
+            "requested-size": (400, 200),
+            "size-constraints": {},
+        }
+        model = SimpleNamespace(
+            xid=XID, corral_xid=CORRAL_XID, emit=Mock(),
+            get_property=props.get,
+            _internal_set_property=props.__setitem__,
+        )
 
-    def test_managed_request_constraints_and_notifications(self) -> None:
-        from xpra.x11.models import window
-        model = ManagedGeometryStub(hints={"minimum-size": (100, 80), "maximum-size": (500, 400)})
+        def updateprop(name, value) -> bool:
+            changed = props[name] != value
+            props[name] = value
+            return changed
+
+        model._updateprop = updateprop
         x11 = Mock()
-        x11.getGeometry.return_value = model.get_property("geometry")
-        event = SimpleNamespace(value_mask=window.CONFIGURE_GEOMETRY_MASK, x=250, y=360, width=800, height=20)
-        with patch.object(window, "X11Window", x11):
-            window.WindowModel.do_x11_child_configure_request_event(model, event)
-        self.assertEqual(model.get_property("geometry"), (250, 360, 500, 80))
-        self.assertEqual(x11.method_calls, [
-            call.getGeometry(CORRAL_XID),
-            call.MoveResizeWindow(CORRAL_XID, 250, 360, 500, 80),
-            call.configure(XID, 0, 0, 500, 80),
-            call.sendConfigureNotify(XID),
-        ])
-        # Even no-op/restack-only requests must acknowledge actual geometry,
-        # normalizing the child origin without interpreting zero as a move.
-        for mask in (0, window.CWStackMode):
+
+        def configure_request(mask, x=0, y=0, width=1, height=1):
             x11.reset_mock()
-            x11.getGeometry.return_value = model.get_property("geometry")
-            event.value_mask = mask
-            event.detail = 0
-            event.above = 0
+            event = SimpleNamespace(value_mask=mask, x=x, y=y, width=width, height=height)
             with patch.object(window, "X11Window", x11):
                 window.WindowModel.do_x11_child_configure_request_event(model, event)
-            x11.MoveResizeWindow.assert_not_called()
-            x11.configure.assert_called_once_with(XID, 0, 0, 500, 80)
-            x11.sendConfigureNotify.assert_called_once_with(XID)
-            self.assertEqual(model.get_property("geometry"), (250, 360, 500, 80))
+            return x11.method_calls
+
+        # the position is applied to the corral, never to the reparented client window,
+        # and the axes that were not requested are preserved:
+        self.assertEqual(configure_request(window.CWX, x=240), [
+            call.MoveWindow(CORRAL_XID, 240, 300),
+            call.sendConfigureNotify(XID),
+        ])
+        self.assertEqual(configure_request(window.CWY, y=0), [
+            call.MoveWindow(CORRAL_XID, 240, 0),
+            call.sendConfigureNotify(XID),
+        ])
+        self.assertEqual(configure_request(window.CWWidth, width=500), [
+            call.ResizeWindow(CORRAL_XID, 500, 200),
+            call.ResizeWindow(XID, 500, 200),
+        ])
+        self.assertEqual(configure_request(window.CONFIGURE_GEOMETRY_MASK, -20, 10, 300, 100), [
+            call.MoveResizeWindow(CORRAL_XID, -20, 10, 300, 100),
+            call.ResizeWindow(XID, 300, 100),
+        ])
+        self.assertEqual(props["geometry"], (-20, 10, 300, 100))
+        # nothing changed: only a synthetic ConfigureNotify (ICCCM 4.1.5)
+        self.assertEqual(configure_request(window.CWX, x=-20), [call.sendConfigureNotify(XID)])
+        # Height-only changes and an explicit root-origin move preserve
+        # the other axes while keeping the child at its local origin.
+        self.assertEqual(configure_request(window.CWHeight, height=270), [
+            call.ResizeWindow(CORRAL_XID, 300, 270),
+            call.ResizeWindow(XID, 300, 270),
+        ])
+        self.assertEqual(configure_request(window.CWX | window.CWY, x=0, y=0), [
+            call.MoveWindow(CORRAL_XID, 0, 0),
+            call.sendConfigureNotify(XID),
+        ])
+        self.assertEqual(props["geometry"], (0, 0, 300, 270))
+
+    def test_configure_request_size_validation_policy(self) -> None:
+        from xpra.x11.models import window
+        for validate, expected_size in ((False, (800, 20)), (True, (500, 80))):
+            with self.subTest(validate=validate):
+                model = ManagedGeometryStub(hints={"minimum-size": (100, 80), "maximum-size": (500, 400)})
+                x11 = Mock()
+                event = SimpleNamespace(value_mask=window.CONFIGURE_GEOMETRY_MASK, x=250, y=360, width=800, height=20)
+                with patch.object(window, "X11Window", x11), patch.object(window, "VALIDATE_CONFIGURE_REQUEST", validate):
+                    window.WindowModel.do_x11_child_configure_request_event(model, event)
+                self.assertEqual(model.get_property("geometry"), (250, 360, *expected_size))
+                self.assertEqual(x11.method_calls, [
+                    call.MoveResizeWindow(CORRAL_XID, 250, 360, *expected_size),
+                    call.ResizeWindow(XID, *expected_size),
+                ])
+                # No-op and restack-only requests still acknowledge geometry,
+                # without a synchronous query or another child configuration.
+                for mask in (0, window.CWStackMode):
+                    x11.reset_mock()
+                    event.value_mask = mask
+                    event.detail = 0
+                    event.above = 0
+                    with patch.object(window, "X11Window", x11), patch.object(window, "VALIDATE_CONFIGURE_REQUEST", validate):
+                        window.WindowModel.do_x11_child_configure_request_event(model, event)
+                    self.assertEqual(x11.method_calls, [call.sendConfigureNotify(XID)])
+                    self.assertEqual(model.get_property("geometry"), (250, 360, *expected_size))
 
     def test_managed_configure_request_coordinates(self):
         """Use real X11 windows to keep root geometry off the reparented child."""

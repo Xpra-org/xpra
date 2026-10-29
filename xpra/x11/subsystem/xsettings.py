@@ -184,8 +184,7 @@ class XSettingsServer(StubSubsystem):
         log(f" {dpi=}")
         log(f" {double_click_time=}, {double_click_distance=}")
         log(f" {antialias=}")
-        # older versions may send keys as "bytes":
-        settings = {bytestostr(k): v for k, v in settings.items()}
+        settings = {str(k): v for k, v in settings.items()}
         self._settings.update(settings)
         for k, v in settings.items():
             # cook the "resource-manager" value to add the DPI and/or antialias values:

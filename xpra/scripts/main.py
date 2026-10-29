@@ -123,6 +123,14 @@ def get_logger() -> Logger:
 
 def main(script_file: str, cmdline: list[str]) -> ExitValue:
     save_env()
+    if envbool("XPRA_FAULTHANDLER", False):
+        # same as `python -X faulthandler`, for when we can't pass interpreter flags
+        # (ie: the frozen `xpra_cmd.exe` wrapper on win32):
+        import faulthandler
+        faulthandler.enable(all_threads=True)
+    if WIN32 and envbool("XPRA_EXCHNDL", False):
+        from xpra.platform.win32.exchndl import init_exchndl
+        init_exchndl()
     ml = envint("XPRA_MEM_USAGE_LOGGER")
     if ml > 0:
         from xpra.util.pysystem import start_mem_watcher
@@ -387,7 +395,7 @@ def run_mode(script_file: str, cmdline: list[str], options, args: list[str], ful
     ) and not NO_ROOT_WARNING:
         warn("\nWarning: running as root\n")
 
-    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic")
+    display_is_remote = isdisplaytype(args, "ssh", "tcp", "ssl", "vsock", "hyperv", "quic", "wsl")
     if mode.startswith("shadow") and WIN32 and not envbool("XPRA_PAEXEC_WRAP", False):
         # are we started from a non-interactive context?
         from xpra.platform.win32.gui import get_desktop_name

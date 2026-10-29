@@ -720,6 +720,16 @@ find "${CONTENTS_DIR}" -type f \( -name "*.so" -o -name "*.dylib" \) -print0 | w
 done
 
 
+if [ "${XPRA_SBOM:-1}" == "1" ]; then
+	echo "*******************************************************************************"
+	echo "Recording the SBOM"
+	# from the files we ship, so this must run after we have removed the ones we don't:
+	SBOM_LOG="${LOG_DIR}/sbom.log"
+	"${PYTHON}" "${MACOS_SCRIPT_DIR}/jhbuild_sbom.py" "${APP_DIR}" >& "${SBOM_LOG}"
+	log_error "jhbuild_sbom" "${SBOM_LOG}"
+fi
+
+
 echo "*******************************************************************************"
 echo "Adding Xpra_NoDock app bundle"
 SUB_APP_NAME="Xpra_NoDock.app"

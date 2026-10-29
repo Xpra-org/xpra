@@ -19,7 +19,7 @@ from importlib.util import find_spec
 from typing import Any, Final
 
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import getuid, getgid, gi_import, WIN32, OSX
+from xpra.os_util import getuid, getgid, gi_import, WIN32, OSX, LINUX
 from xpra.util.env import envint, osexpand, OSEnvContext
 from xpra.util.io import is_socket, wait_for_socket, warn, load_binary_file
 from xpra.util.parsing import adjust_monitor_refresh_rate, validated_monitor_data
@@ -29,6 +29,8 @@ from xpra.log import Logger
 from xpra.config import InitExit
 
 VERIFY_SOCKET_TIMEOUT: int = envint("XPRA_VERIFY_SOCKET_TIMEOUT", 1)
+# where `find_free_x11_display` starts looking:
+FIRST_FREE_DISPLAY: int = envint("XPRA_FIRST_FREE_DISPLAY", 100)
 
 X11_SOCKET_DIR: Final[str] = "/tmp/.X11-unix"
 
@@ -196,20 +198,63 @@ def x11_display_socket(display: str) -> str:
     return os.path.join(X11_SOCKET_DIR, f"X{dno}")
 
 
+def x11_display_live(display: str, timeout=VERIFY_SOCKET_TIMEOUT) -> bool:
+    socket_path = x11_display_socket(display)
+    if not socket_path:
+        return False
+    if stat_display_socket(socket_path, timeout):
+        return True
+    if not LINUX:
+        return False
+    # the X11 server may only be listening on its abstract socket,
+    # ie: when it could not create its socket in a read-only `X11_SOCKET_DIR`
+    import socket
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
+        sock.settimeout(timeout)
+        try:
+            sock.connect("\0" + socket_path)
+            return True
+        except OSError:
+            return False
+
+
 def get_xvfb_pid(display: str, session_dir: str) -> int:
     def load_session_pid(pidfile: str) -> int:
         return load_pid(os.path.join(session_dir, pidfile))
 
-    try:
-        dno = int(display.lstrip(":"))
-    except (ValueError, TypeError):
-        return 0
-    x11_socket_path = os.path.join(X11_SOCKET_DIR, f"X{dno}")
-    r = stat_display_socket(x11_socket_path)
-    if not r:
+    if not x11_display_live(display):
         return 0
     # so the X11 server may still be running
     return load_session_pid("xvfb.pid")
+
+
+def get_abstract_socket_paths() -> set[str]:
+    paths: set[str] = set()
+    try:
+        with open("/proc/net/unix", encoding="latin1") as proc_net_unix:
+            for line in proc_net_unix:
+                path = line.rstrip("\n\r").split(" ")[-1]
+                if path.startswith("@"):
+                    paths.add(path[1:])
+    except OSError as e:
+        warn(f"Warning: failed to read the list of abstract sockets: {e}")
+    return paths
+
+
+def find_free_x11_display(first: int = FIRST_FREE_DISPLAY) -> str:
+    """
+    find a display number that is not in use,
+    without relying on the X11 server's `-displayfd` probing
+    """
+    abstract_sockets = get_abstract_socket_paths()
+    # the same upper limit as the X11 server's `-displayfd` probing,
+    # but starting higher, away from the displays used by desktop sessions (ie: WSLg's `:0`):
+    for dno in range(max(0, first), 65536 - 6000):
+        socket_path = os.path.join(X11_SOCKET_DIR, f"X{dno}")
+        if socket_path in abstract_sockets or os.path.exists(socket_path) or os.path.exists(f"/tmp/.X{dno}-lock"):
+            continue
+        return f":{dno}"
+    raise InitExit(ExitCode.NO_DISPLAY, "no free X11 display number found")
 
 
 def get_display_inodes(*displays: str) -> dict[int, str]:

@@ -37,10 +37,10 @@ looks like when attached from an MS Windows 11 desktop client:
 ## Official stable downloads
 * Microsoft Windows: [EXE](https://xpra.org/stable/windows/Xpra-x86_64_Setup.exe), [ZIP](https://xpra.org/stable/windows/Xpra.zip), [MSI](https://xpra.org/stable/windows/Xpra-x86_64.msi)
 * MacOS `x86_64` [DMG](https://xpra.org/stable/MacOS/x86_64/Xpra.dmg) / [PKG](https://xpra.org/stable/MacOS/x86_64/Xpra.pkg), `arm64` [DMG](https://xpra.org/stable/MacOS/arm64/Xpra.dmg) / [PKG](https://xpra.org/stable/MacOS/arm64/Xpra.pkg)
-* Linux: [RPM](https://github.com/Xpra-org/xpra/wiki/Download#-for-rpm-distributions), [DEB](https://github.com/Xpra-org/xpra/wiki/Download#-for-debian-based-distributions)
+* Linux: [RPM](https://xpra-org.github.io/xpra/Download/Linux.html?method=rpm), [DEB](https://xpra-org.github.io/xpra/Download/Linux.html?method=deb)
 
 All the packages are signed. There are also [LTS](https://xpra.org/lts) and [beta builds](https://xpra.org/beta) available. \
-For more information and more build architecture options, see [xpra downloads](https://github.com/Xpra-org/xpra/wiki/Download).
+For more information and more build architecture options, see [xpra downloads](https://xpra-org.github.io/xpra/Download/).
 
 ## Build from source
 ```sh

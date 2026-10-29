@@ -279,6 +279,9 @@ def connect_to(display_desc: dict[str, Any], debug_cb=noop, ssh_fail_cb=noop):
         return connect_to_vsock(display_desc)
     if dtype == "hyperv":
         return connect_to_hyperv(display_desc)
+    if dtype == "wsl":
+        from xpra.net import wsl
+        return wsl.connect_to(display_desc, debug_cb, ssh_fail_cb)
     if dtype in ("quic", "wt"):
         return connect_to_quic(display_desc)
     if dtype in ("tcp", "ssl", "ws", "wss", "vnc"):
@@ -319,6 +322,9 @@ def display_desc_to_uri(display_desc: dict[str, Any]) -> str:
     dtype = props.strget("type")
     if not dtype:
         raise InitException("missing display type")
+    if dtype == "wsl":
+        from xpra.net.wsl import wsl_target_string
+        return wsl_target_string(props.strget("distribution"), props.strget("username"), props.strget("display"))
     uri = f"{dtype}://"
     if username := props.strget("username"):
         uri += username

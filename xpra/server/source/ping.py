@@ -7,7 +7,7 @@ import time
 from time import monotonic
 from typing import Any
 
-from xpra.os_util import gi_import
+from xpra.os_util import gi_import, get_hex_uuid
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.util.system import getloadavg
@@ -40,6 +40,8 @@ class PingConnection(StubClientConnection):
         self.check_ping_echo_timers: dict[int, int] = {}
         self.client_load = (0, 0, 0)
         self.hello_sent = 0.0
+        # identifies our own pings, so we can ignore echoes of pings sent by someone else (ie: a proxy):
+        self.ping_uuid: str = get_hex_uuid()
 
     def cleanup(self) -> None:
         self.cancel_ping_echo_timers()
@@ -65,7 +67,7 @@ class PingConnection(StubClientConnection):
         # NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000 * monotonic())
         log("sending ping to %s with time=%s", self.protocol, now_ms)
-        self.send_async("ping", now_ms, int(time.time() * 1000), will_have_more=False)
+        self.send_async("ping", now_ms, int(time.time() * 1000), self.ping_uuid, will_have_more=False)
         timeout = PING_TIMEOUT
         self.check_ping_echo_timers[now_ms] = GLib.timeout_add(timeout * 1000,
                                                                self.check_ping_echo_timeout, now_ms, timeout)
@@ -109,6 +111,10 @@ class PingConnection(StubClientConnection):
         l2 = packet.get_u64(3)
         l3 = packet.get_u64(4)
         server_ping_latency = packet.get_i64(5)
+        sid = packet.get_str(6) if len(packet) >= 7 else ""
+        if sid != self.ping_uuid:
+            log(f"ignoring ping echo for {sid=}, ours is {self.ping_uuid!r}")
+            return
         if timer := self.check_ping_echo_timers.pop(echoedtime, None):
             GLib.source_remove(timer)
         self.last_ping_echoed_time = echoedtime
