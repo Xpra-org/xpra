@@ -11,10 +11,13 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.objects import typedict
 from xpra.util.str_fn import single_line, truncate
 from xpra.util.env import envbool, envint
-from xpra.os_util import get_machine_id
+from xpra.os_util import get_machine_id, gi_import
+from xpra.util.thread import is_main_thread
 from xpra.auth.auth_helper import AuthDef
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
+
+GLib = gi_import("GLib")
 
 log = Logger("printing")
 
@@ -68,7 +71,12 @@ class PrinterConnection(StubClientConnection):
         self.machine_id = ""
 
     def cleanup(self) -> None:
-        self.remove_printers()
+        # disconnect cleanup may run in the network thread,
+        # where the seccomp filter denies reading the machine-id and running `lpadmin`:
+        if is_main_thread():
+            self.remove_printers()
+        else:
+            GLib.idle_add(self.remove_printers)
 
     def parse_client_caps(self, c: typedict) -> None:
         # `parse_printer_caps` comes from the `FileConnection` half of this instance:

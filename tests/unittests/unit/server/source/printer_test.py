@@ -45,6 +45,23 @@ class PrinterConnectionTest(unittest.TestCase):
         names = [call.args[0] for call in setup.call_args_list]
         self.assertEqual(names, [f"printer{i}" for i in range(printer.MAX_PRINTERS)])
 
+    def test_cleanup_from_network_thread(self):
+        # the network thread's seccomp filter would deny running `lpadmin`,
+        # so the printers must be removed from the main thread:
+        for main_thread in (True, False):
+            pc = PrinterConnection()
+            pc.init_state()
+            with patch.object(printer, "is_main_thread", return_value=main_thread), \
+                    patch.object(printer.GLib, "idle_add") as idle_add, \
+                    patch.object(pc, "remove_printers") as remove_printers:
+                pc.cleanup()
+            if main_thread:
+                remove_printers.assert_called_once_with()
+                idle_add.assert_not_called()
+            else:
+                remove_printers.assert_not_called()
+                idle_add.assert_called_once_with(remove_printers)
+
 
 def main():
     unittest.main()
