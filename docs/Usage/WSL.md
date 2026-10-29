@@ -1,5 +1,35 @@
 # Windows Subsystem for Linux (WSL)
 
+<div class="docs-grid docs-screenshot-grid" markdown="1">
+<section class="docs-card docs-screenshot-card" markdown="1">
+
+### Start a session
+
+<a class="docs-screenshot-link" href="../images/screenshots/xpra-start-wsl.png">
+<img src="../images/screenshots/xpra-start-wsl.png"
+     alt="Start Xpra Session window in WSL mode, with the distribution, Linux user, display and command to run">
+</a>
+
+Use **Start** with the `Remote` host and the `WSL` mode to start an application
+in a new session, or in one that is already running.
+
+</section>
+
+<section class="docs-card docs-screenshot-card" markdown="1">
+
+### Connect to a session
+
+<a class="docs-screenshot-link" href="../images/screenshots/xpra-launcher-wsl.png">
+<img src="../images/screenshots/xpra-launcher-wsl.png"
+     alt="Xpra session launcher in WSL mode, with the distribution, Linux user and optional display">
+</a>
+
+Use **Connect** in `WSL` mode to re-attach to a session that is already running.
+See [the graphical interface](#from-the-graphical-interface) below for details.
+
+</section>
+</div>
+
 This page covers running an Xpra server in a Linux distribution hosted by WSL
 and connecting to it from Windows. This is useful when applications should keep
 running after their client disconnects, or when the Linux session is to be used
