@@ -605,7 +605,10 @@ class WindowVideoSource(WindowSource):
             return nonvideo(info="size out of range for video encoder")
 
         now = monotonic()
-        if now-self.statistics.last_packet_time > 1:
+        if now-self.statistics.last_packet_time > 1 and not self.video_pipeline_ready(cww, cwh):
+            # windows that repaint about once a second (ie: a blinking cursor or a spinner)
+            # would otherwise switch between video and non-video encodings on every other frame,
+            # repainting the whole area with a visibly different picture each time
             return nonvideo(info="no recent updates")
         if now-self.statistics.last_resized < 0.350:
             return nonvideo(info="resized recently")
@@ -1318,6 +1321,19 @@ class WindowVideoSource(WindowSource):
 
         scores = self.get_video_pipeline_options(*params)
         scorelog(f"update_pipeline_scores({force_reload})={scores}")
+
+    def video_pipeline_ready(self, width: int, height: int) -> bool:
+        """
+        returns True if the current video pipeline was set up for this area
+        and can encode it without being re-initialized.
+        """
+        params = self.last_pipeline_params
+        if not params or tuple(params[1:3]) != (width, height):
+            return False
+        ve = self._video_encoder
+        if ve is None or ve.is_closed():
+            return False
+        return self.verify_csc_and_encoder()
 
     def verify_csc_and_encoder(self) -> bool:
         """
