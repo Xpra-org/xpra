@@ -91,7 +91,10 @@ class PingConnection(StubClientConnection):
         cl = -1
         if PING_DETAILS:
             # send back the load average:
-            l1, l2, l3 = getloadavg()
+            try:
+                l1, l2, l3 = getloadavg()
+            except OSError:
+                log("cannot read load averages", exc_info=True)
             # and the last client ping latency we measured (if any):
             stats = getattr(self, "statistics", None)
             if stats and stats.client_ping_latency:
