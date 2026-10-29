@@ -11,6 +11,8 @@ from unittest.mock import Mock, patch
 from xpra.server.window import compress
 from xpra.server.window.compress import WindowSource
 from xpra.server.window.refresh import RefreshController
+from xpra.net.common import Packet
+from xpra.net.packet_type import WINDOW_DRAW
 from xpra.util.objects import typedict
 from xpra.util.rectangle import rectangle
 from unit.server.window.refresh_test_util import FakeClock, FakeScheduler
@@ -108,6 +110,74 @@ class RefreshSourceTest(unittest.TestCase):
         self.scheduler.fire(source.refresh_controller.timer)
         source.do_send_regions.assert_not_called()
         self.assertEqual(source.refresh_controller.event_time, 0)
+
+    def test_scaled_refresh_does_not_schedule_another_refresh(self):
+        for video in (False, True):
+            with self.subTest(video=video):
+                source = self.make_video_source(rectangle(0, 0, 50, 100)) if video else self.make_source()
+                region = rectangle(0, 0, 100, 100)
+                client_options = {"quality": 100, "scaled_size": (20, 20)}
+                packet = Packet(WINDOW_DRAW, source.wid, 0, 0, 100, 100, "webp", b"data", 1, 0, client_options)
+                source.schedule_auto_refresh(packet, typedict())
+                self.assertTrue(source.refresh_controller.regions)
+                if video:
+                    source.video_subregion.add_video_refresh.reset_mock()
+                timer = source.refresh_controller.timer
+                source.schedule_auto_refresh(packet, typedict(source.get_refresh_options()))
+                self.assertEqual(source.refresh_controller.regions, [])
+                self.assertEqual(source.refresh_controller.timer, 0)
+                self.assertIn(timer, self.scheduler.cancelled)
+                self.assertFalse(self.scheduler.tasks)
+                if video:
+                    source.video_subregion.add_video_refresh.assert_not_called()
+                    source.video_subregion.remove_refresh_region.assert_called_once_with(region)
+
+    def test_scaled_refresh_keeps_its_flag_when_delayed_video_frames_are_flushed(self):
+        from xpra.server.window import video_compress
+        source = self.make_video_source(None)
+        source.client_render_size = 20, 20
+        source.pixel_format = "RGB"
+        source.video_helper = Mock()
+        source.width_mask = source.height_mask = 0xffff
+        source.start_video_frame = 0
+        source.video_stream_file = None
+        source.b_frame_flush_timer = 0
+        source.scroll_data = None
+        source.global_statistics.packet_count = 0
+        source.statistics.packet_count = 0
+        source.statistics.encoding_totals = {}
+        source.may_use_scrolling = Mock(return_value=False)
+        source.check_pipeline = Mock(return_value=True)
+        source.get_video_encoder_options = Mock(return_value={})
+        source.cancel_video_encoder_timer = Mock()
+        source.schedule_video_encoder_timer = Mock()
+        source.call_in_encode_thread = Mock(side_effect=lambda callback: callback())
+        source.queue_damage_packet = Mock(
+            side_effect=lambda packet, _damage_time, _process_time, options: source.schedule_auto_refresh(packet, options),
+        )
+        image = Mock()
+        image.get_geometry.return_value = 0, 0, 100, 100
+        image.get_pixel_format.return_value = "RGB"
+        source.csc_image = Mock(return_value=(Mock(), image, "RGB", 20, 20))
+        encoder = source._video_encoder = Mock()
+        encoder.is_closed.return_value = False
+        encoder.get_type.return_value = "test"
+        encoder.get_encoding.return_value = "h264"
+        encoder.get_width.return_value = encoder.get_height.return_value = 100
+        encoder.compress_image.return_value = b"data", {"quality": 100, "frame": 1, "delayed": 2}
+        encoder.flush.side_effect = [
+            (b"frame1", {"quality": 100, "delayed": 1}),
+            (b"frame2", {"quality": 100, "delayed": 0}),
+        ]
+        with patch.object(video_compress, "GLib", self.scheduler):
+            source.do_video_encode("h264", image, typedict(source.get_refresh_options()))
+            for _ in range(2):
+                self.scheduler.fire(source.b_frame_flush_timer)
+                self.assertEqual(source.refresh_controller.regions, [])
+                self.assertEqual(source.refresh_controller.timer, 0)
+        self.assertEqual(source.queue_damage_packet.call_count, 2)
+        self.assertFalse(self.scheduler.tasks)
+        source.video_subregion.add_video_refresh.assert_not_called()
 
     def test_lossless_completion_does_not_read_cleaned_up_settings(self):
         source = self.make_source()

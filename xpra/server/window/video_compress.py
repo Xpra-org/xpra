@@ -2247,7 +2247,7 @@ class WindowVideoSource(WindowSource):
         delayed = client_options.get("delayed", 0)
         self.cancel_video_encoder_flush()
         if delayed > 0:
-            self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size)
+            self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size, options.boolget("auto_refresh"))
             if not data:
                 if self.non_video_encodings and frame == 0:
                     # first frame has not been sent yet,
@@ -2282,9 +2282,9 @@ class WindowVideoSource(WindowSource):
             self.b_frame_flush_timer = 0
             GLib.source_remove(bft)
 
-    def schedule_video_encoder_flush(self, ve, csc, frame, x: int, y: int, scaled_size) -> None:
+    def schedule_video_encoder_flush(self, ve, csc, frame, x: int, y: int, scaled_size, auto_refresh: bool = False) -> None:
         flush_delay: int = max(150, min(500, int(self.batch_config.delay*10)))
-        self.b_frame_flush_data = (ve, csc, frame, x, y, scaled_size)
+        self.b_frame_flush_data = (ve, csc, frame, x, y, scaled_size, auto_refresh)
         self.b_frame_flush_timer = GLib.timeout_add(flush_delay, self.flush_video_encoder)
 
     def flush_video_encoder_now(self) -> None:
@@ -2306,7 +2306,7 @@ class WindowVideoSource(WindowSource):
             return
         # consume the data now, so we don't hold on to an encoder that has been replaced or closed:
         self.b_frame_flush_data = ()
-        ve, csc, frame, x, y, scaled_size = flush_data
+        ve, csc, frame, x, y, scaled_size, auto_refresh = flush_data
         if self._video_encoder != ve or ve.is_closed():
             return
         if frame == 0 and ve.get_type() == "x264":
@@ -2342,16 +2342,17 @@ class WindowVideoSource(WindowSource):
             videolog("do_flush_video_encoder %s : (%s %s bytes, %s)",
                      flush_data, len(data or ()), type(data), client_options)
             now = monotonic()
+            # A delayed refresh frame must not schedule another refresh, even when scaled or lossy.
             # warning: 'options' will be missing the "window-size",
             # so we may end up not honouring gravity during window resizing:
-            options = typedict()
+            options = typedict({"auto_refresh": auto_refresh})
             packet = self.make_draw_packet(x, y, w, h, encoding, Compressed(encoding, data), 0,
                                            client_options, options)
             self.queue_damage_packet(packet, now, now, options)
             if not closed:
                 # check for more delayed frames since we want to support multiple b-frames:
                 if not self.b_frame_flush_timer and client_options.get("delayed", 0) > 0:
-                    self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size)
+                    self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size, auto_refresh)
                 else:
                     self.schedule_video_encoder_timer()
         finally:
