@@ -141,8 +141,8 @@ class RefreshSourceTest(unittest.TestCase):
 
         self.assertEqual(packet[4:6], (100, 100))
         self.assertEqual(client_options["quality"], 100)
-        self.assertEqual(source.refresh_controller.regions, [rectangle(0, 0, 100, 100)])
-        self.assertTrue(source.refresh_controller.timer)
+        self.assertEqual(source.refresh_regions, [rectangle(0, 0, 100, 100)])
+        self.assertTrue(source.refresh_timer)
         self.assertIsNone(source.scroll_data)
         scroll_data.free.assert_called_once_with()
         scroll_data.invalidate.assert_not_called()
