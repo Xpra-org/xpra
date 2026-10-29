@@ -78,8 +78,9 @@ else
   run dnf update -y
   install -y wget "--setopt=install_weak_deps=False"
   run wget -O "/etc/yum.repos.d/${REPO}.repo" "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/${REPO_DIR}/${REPO}.repo"
-  # `xpra-client` provides `xpra run`, which can be used as exec wrapper to start the commands in another container:
-  install -y xpra-filesystem xpra-server xpra-client xpra-x11 xpra-html5 python3-pyxdg ${EXTRA_PACKAGES} dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups-filters cups-pdf --setopt=install_weak_deps=False
+  # `xpra-client` provides `xpra run`, which can be used as exec wrapper to start the commands in another container,
+  # the `cups` package provides `lpadmin` and `lpinfo`, but the cups server runs in the 'xpra-cups' container:
+  install -y xpra-filesystem xpra-server xpra-client xpra-x11 xpra-html5 python3-pyxdg ${EXTRA_PACKAGES} dbus-daemon dbus-x11 dbus-tools desktop-backgrounds-compat libjxl-utils python3-cups cups --setopt=install_weak_deps=False
   if [ "${AUDIO}" == "1" ]; then
     install -y xpra-audio-server
   fi
@@ -93,6 +94,8 @@ else
   # the package scripts only cache the SVG menu icons available when xpra is installed,
   # cache them again now that everything is installed, the home directory may not be writable at runtime:
   run xpra menu-cache
+  # the printers are added to the cups server running in the 'xpra-cups' container:
+  copy "../../fs/etc/xpra/conf.d/65_printing_cups_container.conf" "/etc/xpra/conf.d/"
 
   run userdel -r "${TARGET_USER}" || true
   run groupadd -r -g "${TARGET_GID}" "${TARGET_USER}"

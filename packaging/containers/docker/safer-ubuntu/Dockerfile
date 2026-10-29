@@ -28,7 +28,8 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         xpra-server xpra-x11 xpra-codecs xpra-audio-server xpra-html5 \
         python3-aioquic python3-paramiko python3-cryptography \
-        dbus dbus-x11 python3-dbus python3-gi-cairo python3-xdg gir1.2-rsvg-2.0 xterm xfonts-base && \
+        dbus dbus-x11 python3-dbus python3-gi-cairo python3-xdg gir1.2-rsvg-2.0 xterm xfonts-base \
+        python3-cups cups-client && \
     rm -rf /var/lib/apt/lists/* && \
     { userdel --remove ubuntu 2> /dev/null || true; } && \
     groupadd -r -g ${GID} ${GROUP} && \
@@ -38,6 +39,12 @@ RUN apt-get update && \
         if getent group ${group} > /dev/null; then usermod -aG ${group} ${USERNAME}; fi; \
     done && \
     chmod 644 /etc/xpra/ssl/*.pem && \
+    # the printers can be added to the cups server running in the `xpra-cups` container,
+    # using its drivers, without probing for them when the server starts:
+    printf 'pdf-printer = lsb/usr/cupsfilters/Generic-PDF_Printer-PDF.ppd\npostscript-printer = drv:///sample.drv/generic.ppd\n' \
+        > /etc/xpra/conf.d/65_printing_cups_container.conf && \
+    # with `--landlock=strict`, `lpadmin` can only connect to the cups socket if this directory exists when the server starts:
+    install -d -m 755 /run/cups && \
     # unlike Fedora, Ubuntu's dbus package creates a separate '/var/lib/dbus/machine-id' file,
     # which no longer matches once '/etc/machine-id' is generated, so link it instead:
     { test -s /etc/machine-id || rm -f /etc/machine-id; } && \

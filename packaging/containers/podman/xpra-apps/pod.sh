@@ -21,6 +21,10 @@ fi
 if ! buildah inspect -t image apps &> /dev/null; then
   (cd "$SPLIT_DIR" && bash ./desktop.sh)
 fi
+CUPS_DIR="$(dirname "$0")/../../docker/cups"
+if ! buildah inspect -t image xpra-cups &> /dev/null; then
+  podman build --tag xpra-cups --file "${CUPS_DIR}/Dockerfile" "${CUPS_DIR}"
+fi
 
 # Create public network (standard podman bridge with internet access)
 PUBLIC_NET="publicnet"
@@ -84,6 +88,22 @@ podman run -dt \
   --read-only --read-only-tmpfs=true \
   "${MENU_MOUNTS[@]}" \
   xpra
+
+# Start the cups server used for forwarding the client's printers,
+# after the xpra container, which populates the shared '/run' volume.
+# it does not need any network access: xpra adds the printers, and the applications print,
+# using the cups socket in '/run/cups', and the `xpraforwarder` backend sends the print jobs
+# to the xpra server using its socket in '/run':
+podman run -dt \
+  --pod ${POD_NAME} \
+  --replace \
+  --name xpra-apps-cups \
+  --network none \
+  --volume ${RUN_VOLUME}:/run:rw \
+  --security-opt label=type:container_runtime_t \
+  --cap-drop=all \
+  --cap-add=CHOWN,DAC_OVERRIDE,KILL,SETGID,SETUID \
+  xpra-cups
 
 # Start app container running the desktop environment applications:
 # `--init` reaps the orphaned processes, ie: services started by the session bus,
