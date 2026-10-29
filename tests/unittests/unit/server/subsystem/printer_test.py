@@ -146,6 +146,27 @@ class PrintClientTest(unittest.TestCase):
         self.assertEqual(client.warn_and_quit.call_args.args[0], ExitCode.FAILURE)
 
 
+class PrinterLandlockTest(unittest.TestCase):
+
+    def get_paths(self, printing="yes", env=None):
+        from xpra.server.subsystem.printer import PrinterServer
+        printer = PrinterServer(Owner())
+        printer.file_transfer.init_attributes("no", "1M", printing)
+        with patch.dict("os.environ", env or {}, clear=True):
+            return printer.get_landlock_paths()
+
+    def test_disabled(self):
+        self.assertEqual(self.get_paths("no"), {})
+
+    def test_default_socket(self):
+        self.assertEqual(self.get_paths(), {"socket": ("/run/cups", )})
+
+    def test_cups_server_socket(self):
+        self.assertEqual(self.get_paths(env={"CUPS_SERVER": "/shared/cups/cups.sock"}), {"socket": ("/shared/cups", )})
+        # a remote cups server does not use a socket path:
+        self.assertEqual(self.get_paths(env={"CUPS_SERVER": "localhost:631"}), {"socket": ("/run/cups", )})
+
+
 def main():
     unittest.main()
 
