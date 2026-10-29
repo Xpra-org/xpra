@@ -106,3 +106,20 @@ class ShadowWindowServer(WindowServer):
         # we have to keep track of mappings!
         if len(self.models()) == 1:
             self.server.disconnect_client(proto, ConnectionMessage.DONE, "closed the only window")
+
+    def _process_focus(self, proto, packet: Packet) -> None:
+        super()._process_focus(proto, packet)
+        if packet.get_wid() or self.is_readonly(proto):
+            return
+        # once its window has lost the focus, the client will not send the release of the keys still pressed,
+        # ie: `Alt+Tab` sends the press of `Alt`, then the window manager takes the focus away before its release,
+        # and we are left holding it down in the shadowed session:
+        ss = self.get_server_source(proto)
+        ui_driver = self.server.ui_driver
+        if ss and ui_driver and ui_driver != ss.uuid:
+            # the keys pressed belong to another client
+            return
+        keyboard = self.get_subsystem("keyboard")
+        if keyboard and keyboard.keys_pressed:
+            log("focus lost, releasing %s", keyboard.keys_pressed)
+            keyboard.clear_keys_pressed()
