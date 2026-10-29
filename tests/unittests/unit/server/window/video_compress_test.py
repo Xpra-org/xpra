@@ -101,7 +101,7 @@ class VideoContextCleanTest(unittest.TestCase):
         encoder.get_encoding.return_value = "h264"
         encoder.flush.return_value = b"data", {}
         source._video_encoder = encoder
-        source.b_frame_flush_data = encoder, None, 1, 0, 0, None
+        source.b_frame_flush_data = encoder, None, 1, 0, 0, None, False
         source.b_frame_flush_timer = 0
         source.start_video_frame = 0
         events = []
@@ -127,7 +127,7 @@ class VideoContextCleanTest(unittest.TestCase):
         old_encoder = Mock()
         old_encoder.is_closed.return_value = False
         source._video_encoder = Mock()
-        source.b_frame_flush_data = old_encoder, None, 1, 0, 0, None
+        source.b_frame_flush_data = old_encoder, None, 1, 0, 0, None, False
 
         source.do_flush_video_encoder()
 
@@ -139,7 +139,7 @@ class VideoContextCleanTest(unittest.TestCase):
         encoder = Mock()
         encoder.is_closed.return_value = True
         source._video_encoder = encoder
-        source.b_frame_flush_data = encoder, None, 1, 0, 0, None
+        source.b_frame_flush_data = encoder, None, 1, 0, 0, None, False
 
         source.do_flush_video_encoder()
 
@@ -156,7 +156,7 @@ class VideoContextCleanTest(unittest.TestCase):
         encoder.get_height.return_value = 64
         encoder.flush.return_value = b"data", {}
         source._video_encoder = encoder
-        source.b_frame_flush_data = encoder, None, 1, 0, 0, None
+        source.b_frame_flush_data = encoder, None, 1, 0, 0, None, False
         source.b_frame_flush_timer = 0
         source.start_video_frame = 0
         source.video_stream_file = None
