@@ -269,8 +269,11 @@ class NetworkListener(StubClientSubsystem):
 
             def process_control() -> None:
                 try:
-                    control = self.get_subsystem("control")
-                    code, response = control.process_control_command(proto, *command)
+                    if control := self.get_subsystem("control"):
+                        code, response = control.process_control_command(proto, *command)
+                    else:
+                        code = ExitCode.UNSUPPORTED
+                        response = "the control channel is disabled, start the client with --control=yes to enable it"
                 except Exception as e:
                     code = ExitCode.FAILURE
                     response = str(e)
