@@ -387,6 +387,9 @@ class DisplayClient(StubClientSubsystem):
         if not p or p.TYPE != "xpra":
             return
         root_w, root_h = self.cp(*self.get_root_size())
+        # clamp to avoid overly large values when scaling:
+        root_w = min(32768, root_w)
+        root_h = min(32768, root_h)
         maxw, maxh = root_w, root_h
         try:
             server_w, server_h = self.server_actual_desktop_size
@@ -394,7 +397,7 @@ class DisplayClient(StubClientSubsystem):
             maxh = max(root_h, server_h)
         except (TypeError, ValueError):
             pass
-        if maxw <= 0 or maxh <= 0 or maxw >= 32768 or maxh >= 32768:
+        if maxw <= 0 or maxh <= 0 or maxw > 32768 or maxh > 32768:
             message = "invalid maximum desktop size: %ix%i" % (maxw, maxh)
             log(message)
             self.client.quit(ExitCode.INTERNAL_ERROR)
