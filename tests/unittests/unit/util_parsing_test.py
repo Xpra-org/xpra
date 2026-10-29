@@ -481,6 +481,22 @@ class TestAdjustMonitorRefreshRate(unittest.TestCase):
         self.assertEqual(result[0]["refresh-rate"], 60000)
         self.assertEqual(result[0]["refresh-rate.cooked"], 60000)
 
+    def test_passthrough_preserves_cooked(self):
+        mdef = {0: {"refresh-rate": 60000, "refresh-rate.cooked": 30000}}
+        for policy in ("", "auto", "AUTO", "none", "NONE"):
+            with self.subTest(policy=policy):
+                self.assertEqual(adjust_monitor_refresh_rate(policy, mdef), mdef)
+
+    def test_explicit_policy_overrides_cooked(self):
+        mdef = {0: {"refresh-rate": 60000, "refresh-rate.cooked": 15000}}
+        for policy, expected in (("40", 40000), ("50%", 30000), ("20-50", 50000)):
+            with self.subTest(policy=policy):
+                result = adjust_monitor_refresh_rate(policy, mdef)
+                self.assertEqual(result[0]["refresh-rate"], 60000)
+                self.assertEqual(result[0]["refresh-rate.cooked"], expected)
+                self.assertEqual(adjust_monitor_refresh_rate(policy, result), result)
+        self.assertEqual(mdef[0]["refresh-rate.cooked"], 15000)
+
     def test_explicit_rate_keeps_real_adds_cooked(self):
         mdef = {0: {"refresh-rate": 60000}}
         result = adjust_monitor_refresh_rate("30", mdef)
