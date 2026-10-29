@@ -96,30 +96,42 @@ def install(GLib) -> None:
         def __init__(self):
             super().__init__()
             self.set_priority(GLib.PRIORITY_DEFAULT_IDLE)
+            # a callback may run a nested main loop (ie: the launcher running the client, or `Gtk.Dialog.run`),
+            # which must still be able to dispatch the other callbacks - just like separate native idle sources:
+            self.set_can_recurse(True)
             self.lock = Lock()
             self.counter = FIRST_ID
             self.pending: dict[int, tuple[Callable, tuple]] = {}
+            # the callbacks currently executing, which a nested dispatch must skip:
+            self.running: set[int] = set()
+
+        def has_pending(self) -> bool:
+            with self.lock:
+                return bool(self.pending.keys() - self.running)
 
         def prepare(self):
-            return bool(self.pending), -1
+            return self.has_pending(), -1
 
         def check(self):
-            return bool(self.pending)
+            return self.has_pending()
 
         def dispatch(self, _callback, _args) -> bool:
             with self.lock:
                 calls = tuple(self.pending.items())
             for sid, (fn, args) in calls:
-                if sid not in self.pending:
-                    # removed by one of the previous callbacks
-                    continue
+                with self.lock:
+                    if sid not in self.pending or sid in self.running:
+                        # removed by one of the previous callbacks, or already running further up the stack
+                        continue
+                    self.running.add(sid)
                 try:
                     repeat = fn(*args)
                 except Exception:
                     log.error("Error calling %s%s", fn, args, exc_info=True)
                     repeat = False
-                if not repeat:
-                    with self.lock:
+                with self.lock:
+                    self.running.discard(sid)
+                    if not repeat:
                         self.pending.pop(sid, None)
             return GLib.SOURCE_CONTINUE
 
@@ -129,7 +141,7 @@ def install(GLib) -> None:
                 if self.counter < LAST_ID:
                     self.counter = FIRST_ID
                 sid = self.counter
-                wakeup = not self.pending
+                wakeup = not (self.pending.keys() - self.running)
                 self.pending[sid] = (fn, args)
             if wakeup:
                 # we may be called from a different thread:
