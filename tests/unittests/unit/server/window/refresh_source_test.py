@@ -121,6 +121,32 @@ class RefreshSourceTest(unittest.TestCase):
                     source.video_subregion.add_video_refresh.assert_not_called()
                     source.video_subregion.remove_refresh_region.assert_called_once_with(region)
 
+    def test_downscaled_webp_refreshes_and_resets_scroll_data(self):
+        try:
+            from xpra.codecs.webp.encoder import encode
+        except ImportError:
+            self.skipTest("WebP encoder is not available")
+        from xpra.codecs.checks import make_test_image
+
+        source = self.make_video_source(None)
+        source.scroll_data = scroll_data = Mock()
+        source.global_statistics.packet_count = 0
+        source.statistics.packet_count = 0
+        source.statistics.encoding_totals = {}
+        options = typedict({"quality": 100, "scaled-width": 20, "scaled-height": 20})
+        image = make_test_image("BGRX", 100, 100)
+        coding, data, client_options, w, h, stride, _bpp = encode("webp", image, options)
+        packet = source.make_draw_packet(0, 0, w, h, coding, data, stride, client_options, options)
+        source.schedule_auto_refresh(packet, options)
+
+        self.assertEqual(packet[4:6], (100, 100))
+        self.assertEqual(client_options["quality"], 100)
+        self.assertEqual(source.refresh_controller.regions, [rectangle(0, 0, 100, 100)])
+        self.assertTrue(source.refresh_controller.timer)
+        self.assertIsNone(source.scroll_data)
+        scroll_data.free.assert_called_once_with()
+        scroll_data.invalidate.assert_not_called()
+
     def test_scaled_refresh_keeps_its_flag_when_delayed_video_frames_are_flushed(self):
         from xpra.server.window import video_compress
         source = self.make_video_source(None)
