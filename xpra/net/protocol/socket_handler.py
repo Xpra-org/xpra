@@ -61,6 +61,15 @@ PACKET_JOIN_SIZE = envint("XPRA_PACKET_JOIN_SIZE", READ_BUFFER_SIZE)
 LARGE_PACKET_SIZE = envint("XPRA_LARGE_PACKET_SIZE", 16384)
 LOG_RAW_PACKET_SIZE = envbool("XPRA_LOG_RAW_PACKET_SIZE", False)
 MODERN_INITIAL_PACKET_SIZE = 16 * 1024
+# Infrequent packets containing text or nested dictionaries benefit from Brotli.
+# These are preferences: both ends must support the compressor, and level zero still disables compression.
+PACKET_COMPRESSORS: dict[str, str] = {
+    "clipboard-data": "brotli",
+    "clipboard-record": "brotli",
+    "notification-show": "brotli",
+    "info-response": "brotli",
+    "encoding-set": "brotli",
+}
 # inline compressed data in packet if smaller than:
 INLINE_SIZE = envint("XPRA_INLINE_SIZE", 32768)
 FAKE_JITTER = envint("XPRA_FAKE_JITTER", 0)
@@ -217,6 +226,7 @@ class SocketProtocol:
         self._encoder = packet_encoding.get_encoder("none")
         self.compressor = "none"
         self._compress = compression.get_compressor("none")
+        self.remote_compressors: tuple[str, ...] = ()
         self.compression_level = 0
         self.chunks = True
         self.authenticators = ()
@@ -258,7 +268,7 @@ class SocketProtocol:
         "cipher_in_always_pad", "cipher_in_stream", "cipher_in_key",
         "cipher_out", "cipher_out_name", "cipher_out_block_size", "cipher_out_padding",
         "cipher_out_always_pad", "cipher_out_stream", "cipher_out_key",
-        "compression_level", "chunks", "encoder", "compressor",
+        "compression_level", "chunks", "encoder", "compressor", "remote_compressors",
     )
 
     def save_state(self) -> dict[str, Any]:
@@ -675,11 +685,12 @@ class SocketProtocol:
             self.enable_compressor("none")
 
     def enable_compressor_from_caps(self, caps: typedict) -> None:
+        self.remote_compressors = caps.strtupleget("compressors")
         if self.compression_level == 0:
             self.enable_compressor("none")
             return
         opts = compression.get_enabled_compressors(order=compression.PERFORMANCE_ORDER)
-        compressors = caps.strtupleget("compressors")
+        compressors = self.remote_compressors
         log(f"enable_compressor_from_caps(..) options={opts}, compressors from caps={compressors}")
         for c in opts:  # ie: ["lz4", "none"]
             if c == "none":
@@ -808,7 +819,13 @@ class SocketProtocol:
         level = 0
         if self.compression_level > 0 and size > MIN_COMPRESS_SIZE + inlined_size:
             try:
-                level, main_packet = self._compress(main_packet, self.compression_level)
+                compress = self._compress
+                preferred = PACKET_COMPRESSORS.get(packet_type)
+                if preferred in self.remote_compressors and compression.use(preferred):
+                    compress = compression.get_compressor(preferred)
+                cl, cdata = compress(main_packet, self.compression_level)
+                if len(cdata) < size:
+                    level, main_packet = cl, cdata
                 if LOG_RAW_PACKET_SIZE and packet_type != "logging":
                     log.info(f"         {packet_type!r:<32}: %i bytes compressed, from %i", len(main_packet), size)
             except Exception as e:

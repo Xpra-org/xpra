@@ -14,12 +14,14 @@ from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.common import noop, SizedBuffer
+from xpra.net import compression
 from xpra.net.protocol import socket_handler, check
 from xpra.net.packet_type import CONNECTION_LOST, INFO_RESPONSE
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.constants import MAX_PACKET_SIZE
+from xpra.util.objects import typedict
 from xpra.log import Logger
 
 from unit.test_util import silence_error
@@ -94,7 +96,6 @@ class ProtocolTest(unittest.TestCase):
         unittest.TestCase.setUpClass()
         from xpra.net import packet_encoding
         packet_encoding.init_all()
-        from xpra.net import compression
         compression.init_all()
 
     def make_memory_protocol(self, data=(b"", ), read_buffer_size=1, hangup_delay=0,
@@ -181,6 +182,88 @@ class ProtocolTest(unittest.TestCase):
                 items = p.encode(packet)
                 assert items
 
+    def make_compression_protocol(self, compressors=("lz4", "brotli"), level=1, **kwargs):
+        proto = self.make_memory_protocol(**kwargs)
+        proto.set_compression_level(level)
+        proto.enable_compressor_from_caps(typedict({"compressors": compressors}))
+        return proto
+
+    def test_packet_compression_preferences(self) -> None:
+        if not compression.use("brotli"):
+            self.skipTest("Brotli is not available")
+        text = "clipboard contents and notification text " * 100
+        options = {"claim": True, "data": {"UTF8_STRING": ("UTF8_STRING", 8, "bytes", text.encode())}}
+        packets = (
+            Packet("clipboard-data", "CLIPBOARD", options),
+            Packet("clipboard-record", "client", "clipboard-data", "CLIPBOARD", options),
+            Packet("notification-show", "", 1, "Xpra", 0, "", "Summary", text, 10000, (), (), {}),
+            Packet(INFO_RESPONSE, {"details": {"text": text}}),
+            Packet("encoding-set", {"encodings": {"description": text}}),
+        )
+        received = []
+        receiver = self.make_memory_protocol(process_packet_cb=lambda _proto, packet: received.append(list(packet)))
+        sender = self.make_compression_protocol()
+        for packet in packets:
+            with self.subTest(packet=packet.get_type()):
+                chunks = sender.encode(packet)
+                self.assertEqual(len(chunks), 1)
+                flags, index, level, data = chunks[0]
+                self.assertEqual(index, 0)
+                self.assertEqual(compression.get_compression_type(level), "brotli")
+                info = socket_handler.PacketReadInfo(flags, level, index, len(data), 0, len(data))
+                self.assertTrue(receiver.process_payload(socket_handler.ReceiveState(), info, data))
+                self.assertEqual(received[-1], list(packet))
+        # The preference must not change the default for other packet types.
+        self.assertEqual(sender.compressor, "lz4")
+        level = sender.encode(Packet("test", {"text": text}))[0][2]
+        self.assertEqual(compression.get_compression_type(level), "lz4")
+
+    def test_packet_compression_fallback(self) -> None:
+        packet = Packet(INFO_RESPONSE, {"text": "compressible text " * 100})
+        sender = self.make_memory_protocol()
+        sender.set_compression_level(1)
+        sender.enable_compressor("lz4")
+        # Before learning the peer's capabilities, no preferred compressor can be used.
+        self.assertEqual(compression.get_compression_type(sender.encode(packet)[0][2]), "lz4")
+        for compressors, expected in (((), ""), (("lz4",), "lz4")):
+            with self.subTest(compressors=compressors):
+                sender.enable_compressor_from_caps(typedict({"compressors": compressors}))
+                level = sender.encode(packet)[0][2]
+                self.assertEqual(compression.get_compression_type(level) if level else "", expected)
+        available = {name: codec for name, codec in compression.COMPRESSION.items() if name != "brotli"}
+        with patch.dict(compression.COMPRESSION, available, clear=True):
+            sender = self.make_compression_protocol()
+            self.assertEqual(compression.get_compression_type(sender.encode(packet)[0][2]), "lz4")
+
+    def test_packet_compression_limits(self) -> None:
+        for level, text in ((0, "text " * 100), (1, "short")):
+            with self.subTest(level=level, size=len(text)):
+                sender = self.make_compression_protocol(level=level)
+                self.assertEqual(sender.encode(Packet(INFO_RESPONSE, {"text": text}))[0][2], 0)
+
+    def test_packet_compression_does_not_expand_data(self) -> None:
+        if not compression.use("brotli"):
+            self.skipTest("Brotli is not available")
+        sender = self.make_compression_protocol()
+        packet = Packet(INFO_RESPONSE, {"text": "test data " * 100})
+        raw, flags = sender._encoder(list(packet))
+
+        def expanding_compressor(data, _level):
+            return 0x41, bytes(data) + b"larger"
+
+        with patch.object(compression, "get_compressor", return_value=expanding_compressor):
+            self.assertEqual(sender.encode(packet), [(flags, 0, 0, raw)])
+
+    def test_packet_compression_state_restore(self) -> None:
+        if not compression.use("brotli"):
+            self.skipTest("Brotli is not available")
+        sender = self.make_compression_protocol()
+        restored = self.make_memory_protocol()
+        restored.restore_state(sender.save_state())
+        packet = Packet(INFO_RESPONSE, {"text": "test data " * 100})
+        level = restored.encode(packet)[0][2]
+        self.assertEqual(compression.get_compression_type(level), "brotli")
+
     def test_input_packet_statistics(self) -> None:
         from xpra.net.packet_encoding import get_encoder
 
@@ -248,8 +331,6 @@ class ProtocolTest(unittest.TestCase):
 
     def test_modern_initial_packet_size(self) -> None:
         from xpra.net.protocol.header import FLAGS_FLUSH, FLAGS_RENCODEPLUS, pack_header
-        from xpra.util.objects import typedict
-
         proto = self.make_memory_protocol()
 
         if BACKWARDS_COMPATIBLE:

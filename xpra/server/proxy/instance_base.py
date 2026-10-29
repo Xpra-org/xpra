@@ -257,6 +257,7 @@ class ProxyInstance:
 
     def filter_server_caps(self, caps: typedict) -> dict:
         self.server_protocol.enable_encoder_from_caps(caps)
+        self.server_protocol.remote_compressors = caps.strtupleget("compressors")
         return self.filter_caps(caps, ("aliases",), self.client_protocol)
 
     def filter_caps(self, caps: typedict, prefixes: Iterable[str], proto=None) -> dict:
