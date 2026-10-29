@@ -792,7 +792,7 @@ def build_cuda_kernels(kernels: Sequence[str]) -> None:
     env = os.environ.copy()
     paths = env.pop("PYTHONPATH", "").split(os.pathsep)+[os.getcwd()]
     env["PYTHONPATH"] = os.pathsep.join(paths)
-    r = subprocess.Popen(["./fs/bin/build_cuda_kernels.py"]+list(kernels), env=env).wait()
+    r = subprocess.Popen([sys.executable, "./fs/bin/build_cuda_kernels.py"]+list(kernels), env=env).wait()
     if r!=0:
         print(f"failed to rebuild the cuda kernels {kernels}")
         sys.exit(1)
@@ -884,7 +884,7 @@ def build_package() -> int:
     if run(cmd).returncode != 0:
         raise RuntimeError("failed to install dev-env using %r" % command_string(cmd))
     print("* creating source archive")
-    cmd = ["python3", "./setup.py", "sdist", "--formats=xztar"]
+    cmd = [sys.executable, "./setup.py", "sdist", "--formats=xztar"]
     if run(cmd).returncode != 0:
         raise RuntimeError("failed to install create sdist source using %r" % command_string(cmd))
     src_xz = f"./dist/xpra-{XPRA_VERSION}.tar.xz"
