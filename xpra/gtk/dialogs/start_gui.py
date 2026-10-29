@@ -93,6 +93,7 @@ def link_btn(link: str, text="", icon_name="question.png"):
 
 
 MODE_NESTED_SSH = "SSH -> SSH"
+MODE_WSL = "WSL"
 WSL_DEFAULT_DISTRIBUTION = "Default distribution"
 # where the server in WSL starts looking for a free display, see `XPRA_FIRST_FREE_DISPLAY`:
 WSL_FIRST_DISPLAY = 100
@@ -165,43 +166,46 @@ class StartSession(Gtk.Window):
         host_box.pack_start(hbox, True, True)
         self.localhost_btn = rb(None, "Local System", self.host_toggled)
         self.remote_btn = rb(self.localhost_btn, "Remote")
-        self.remote_btn.set_tooltip_text(_("Start sessions on a remote system"))
-        self.wsl_btn = None
-        if WIN32:
-            self.wsl_btn = rb(self.localhost_btn, "WSL", self.host_toggled,
-                              "Start seamless sessions in a Windows Subsystem for Linux distribution")
+        self.remote_btn.set_tooltip_text(_("Start sessions on a remote system, or in a WSL distribution") if WIN32
+                                         else _("Start sessions on a remote system"))
         self.address_box = Gtk.HBox(homogeneous=False, spacing=0)
         options_box.pack_start(xal(self.address_box), True, True)
         self.mode_combo = sf(Gtk.ComboBoxText())
         self.address_box.pack_start(xal(self.mode_combo), False)
-        for mode in ("SSH", MODE_NESTED_SSH, "TCP", "SSL", "WS", "WSS", "QUIC"):
+        modes = ["SSH", MODE_NESTED_SSH, "TCP", "SSL", "WS", "WSS", "QUIC"]
+        if WIN32:
+            modes.append(MODE_WSL)
+        for mode in modes:
             self.mode_combo.append_text(mode)
         self.mode_combo.set_active(0)
         self.mode_combo.connect("changed", self.mode_changed)
+        # the network address, which WSL does not use:
+        self.server_box = Gtk.HBox(homogeneous=False, spacing=0)
+        self.address_box.pack_start(self.server_box, False)
         self.username_entry = sf(Gtk.Entry())
         self.username_entry.set_width_chars(12)
         self.username_entry.set_placeholder_text(_("Username"))
         self.username_entry.set_max_length(255)
-        self.address_box.pack_start(xal(self.username_entry), False)
-        self.address_box.pack_start(l("@"), False)
+        self.server_box.pack_start(xal(self.username_entry), False)
+        self.server_box.pack_start(l("@"), False)
         self.host_entry = sf(Gtk.Entry())
         self.host_entry.set_width_chars(24)
         self.host_entry.set_placeholder_text(_("Hostname or IP address"))
         self.host_entry.set_max_length(255)
-        self.address_box.pack_start(xal(self.host_entry), False)
-        self.address_box.pack_start(label(":"), False)
+        self.server_box.pack_start(xal(self.host_entry), False)
+        self.server_box.pack_start(label(":"), False)
         self.port_entry = sf(Gtk.Entry())
         self.port_entry.set_text("22")
         self.port_entry.set_width_chars(5)
         self.port_entry.set_placeholder_text(_("Port"))
         self.port_entry.set_max_length(5)
-        self.address_box.pack_start(xal(self.port_entry, 0), False)
+        self.server_box.pack_start(xal(self.port_entry, 0), False)
 
         # WSL: the distribution and Linux user, `wsl.exe` takes care of the connection
         self.wsl_box = Gtk.HBox(homogeneous=False, spacing=10)
-        options_box.pack_start(xal(self.wsl_box), True, True)
-        self.wsl_box.pack_start(l("WSL distribution:"), False)
+        self.address_box.pack_start(self.wsl_box, False, False, 10)
         self.wsl_distribution_combo = sf(Gtk.ComboBoxText())
+        self.wsl_distribution_combo.set_tooltip_text(_("The WSL distribution to run the xpra server in"))
         self.wsl_distribution_combo.append_text(_(WSL_DEFAULT_DISTRIBUTION))
         self.wsl_distribution_combo.set_active(0)
         self.wsl_box.pack_start(self.wsl_distribution_combo, False)
@@ -487,14 +491,10 @@ class StartSession(Gtk.Window):
             self.display_box.show()
         shadow_mode = self.shadow_btn.get_active()
         seamless = self.seamless_btn.get_active()
-        if self.remote_btn.get_active():
-            self.address_box.show_all()
-        else:
-            self.address_box.hide()
-        if self.is_wsl():
-            self.wsl_box.show_all()
-        else:
-            self.wsl_box.hide()
+        wsl = self.is_wsl()
+        self.address_box.set_visible(self.remote_btn.get_active())
+        self.server_box.set_visible(not wsl)
+        self.wsl_box.set_visible(wsl)
         self.show_proxy_box()
         if shadow_mode:
             # only option we show is the optional display input
@@ -617,7 +617,8 @@ class StartSession(Gtk.Window):
         log("mode_changed(%s)", args)
         mode = self.mode_combo.get_active_text()
         self.port_entry.set_text(str(get_default_port(mode)))
-        self.show_proxy_box()
+        self.update_wsl_session_types()
+        self.populate_menus()
         if not (self.shadow_btn.get_active() and self.localhost_btn.get_active()):
             self.no_display_combo()
 
@@ -660,7 +661,7 @@ class StartSession(Gtk.Window):
         self.runattach_btn.set_tooltip_text(ra_label)
 
     def is_wsl(self) -> bool:
-        return bool(self.wsl_btn and self.wsl_btn.get_active())
+        return self.remote_btn.get_active() and self.mode_combo.get_active_text() == MODE_WSL
 
     def update_wsl_session_types(self) -> None:
         # only seamless sessions are supported with WSL for now:
