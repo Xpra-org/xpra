@@ -363,12 +363,15 @@ class DisplayManager(StubSubsystem):
 
     def get_client_refresh_rate(self, ss) -> int:
         vrefresh = []
-        # use the real refresh-rate value from the monitors
-        # (value is pre-multiplied by 1000!) and apply our own `--refresh-rate`
-        # policy below - the client only cooks the value it applies to its own display:
+        # Monitor rates are in mHz. Honour the client's cooked rates unless an
+        # explicit server policy overrides them, using raw rates to avoid applying percentages twice:
+        override = self.refresh_rate and self.refresh_rate.lower() not in ("auto", "none")
         if ss.monitors:
             for mdef in ss.monitors.values():
-                if v := mdef.get("refresh-rate", 0):
+                v = mdef.get("refresh-rate", 0)
+                if not override:
+                    v = mdef.get("refresh-rate.cooked") or v
+                if v:
                     vrefresh.append(v)
         if not vrefresh and getattr(ss, "vrefresh", 0) > 0:
             vrefresh.append(ss.vrefresh * 1000)

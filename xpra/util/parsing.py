@@ -578,10 +578,11 @@ def adjust_monitor_refresh_rate(refresh_rate: str, mdef: dict[int, dict]) -> dic
         # and expose the value adjusted by the `--refresh-rate` option as `refresh-rate.cooked`
         # (consumers that drive an actual display should prefer the cooked value):
         real = int(monitor.get("refresh-rate", DEFAULT_REFRESH_RATE))
-        if refresh_rate and refresh_rate != "auto":
+        if refresh_rate and refresh_rate.lower() not in ("auto", "none"):
             cooked = get_refresh_rate_for_value(refresh_rate, real, 1000)
         else:
-            cooked = real
+            # preserve the client's policy when the server has no override:
+            cooked = int(monitor.get("refresh-rate.cooked") or real)
         if cooked:
             mprops["refresh-rate.cooked"] = cooked
         adjusted[i] = mprops

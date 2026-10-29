@@ -6,7 +6,7 @@
 
 import unittest
 
-from xpra.util.objects import AdHocStruct
+from xpra.util.objects import AdHocStruct, typedict
 from unit.test_util import stubbable
 from unit.server.subsystem.servermixintest_util import ServerMixinTest
 from unit.process_test_util import DisplayContext
@@ -55,6 +55,53 @@ class DisplayMixinTest(ServerMixinTest):
             },
         }
         self._test_mixin_class(make_display_manager, opts, caps, DisplayConnection)
+
+
+class RefreshRateTest(unittest.TestCase):
+
+    def setUp(self):
+        from xpra.server.subsystem.display import DisplayManager
+        from xpra.server.source.display import DisplayConnection
+        server = AdHocStruct()
+        server.hello_request_handlers = {}
+        self.dm = DisplayManager(server)
+        self.ss = DisplayConnection()
+        self.ss.init_state()
+
+    def test_client_refresh_rate(self):
+        from xpra.util.parsing import adjust_monitor_refresh_rate
+        monitors = {0: {"refresh-rate": 60000}, 1: {"refresh-rate": 120000}}
+        for client_policy, expected in (("30", 30), ("50%", 30), ("20-50", 50), ("auto", 60)):
+            for server_policy in ("", "auto", "AUTO", "none", "NONE"):
+                with self.subTest(client_policy=client_policy, server_policy=server_policy):
+                    self.dm.refresh_rate = server_policy
+                    self.ss.parse_client_caps(typedict({"display": {
+                        "refresh-rate": 60,
+                        "monitors": adjust_monitor_refresh_rate(client_policy, monitors),
+                    }}))
+                    self.assertEqual(self.dm.get_client_refresh_rate(self.ss), expected)
+
+    def test_server_policy_overrides_client(self):
+        self.ss.set_monitors({0: {"refresh-rate": 60000, "refresh-rate.cooked": 15000}})
+        for policy, expected in (("40", 40), ("50%", 30), ("20-50", 50)):
+            with self.subTest(policy=policy):
+                self.dm.refresh_rate = policy
+                self.assertEqual(self.dm.get_client_refresh_rate(self.ss), expected)
+
+    def test_raw_monitor_fallback(self):
+        self.ss.set_monitors({
+            0: {"refresh-rate": 120000, "refresh-rate.cooked": 60000},
+            1: {"refresh-rate": 50000},
+            2: {"refresh-rate": 75000, "refresh-rate.cooked": 0},
+        })
+        self.ss.vrefresh = 30
+        self.assertEqual(self.dm.get_client_refresh_rate(self.ss), 50)
+
+    def test_fallback_without_monitor_rates(self):
+        self.ss.vrefresh = 75
+        self.assertEqual(self.dm.get_client_refresh_rate(self.ss), 75)
+        self.ss.vrefresh = -1
+        self.assertEqual(self.dm.get_client_refresh_rate(self.ss), round(self.dm.DEFAULT_REFRESH_RATE / 1000))
 
 
 class ConfigureDisplayTest(unittest.TestCase):
