@@ -18,6 +18,7 @@ This functionality shares most of the code with the [file transfers](File-Transf
 * the cups backend installed must have `0700` permissions: `chmod 700 /usr/lib/cups/backend/xpraforwarder`
 * the `pdf-printer` and `postscript-printer` options can be set to a PPD file, or to a driver or model known to the cups server, as listed by `lpinfo -m`, ie: `lsb/usr/cupsfilters/Generic-PDF_Printer-PDF.ppd` or `drv:///sample.drv/generic.ppd`, otherwise the server probes for them when it starts
 * with [Landlock](../Usage/Landlock.md), the server can still connect to the cups server's socket in `/run/cups`, or in the directory of `CUPS_SERVER` if it is set to a socket path, as long as this directory exists when the server starts
+* containers: the cups server can run in its own container, see [printing with containers](https://github.com/Xpra-org/xpra/tree/master/packaging/containers/docker/README.md#printing)
 * [SELinux](https://en.wikipedia.org/wiki/Security-Enhanced_Linux) can cause problems: either disable it or use the "cups_xpra" policy add-on (see [#815])
 * forwarding is only supported to a Posix server, support for MS Windows and MacOS _servers_ may be added in the future
 * do not use socket authentication on your local sockets (see [#1286])

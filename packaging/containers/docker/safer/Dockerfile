@@ -20,6 +20,10 @@ RUN dnf install -y xpra xpra-audio-server && \
         if getent group ${group} > /dev/null; then usermod -aG ${group} ${USERNAME}; fi; \
     done && \
     chmod 644 /etc/xpra/ssl/*.pem && \
+    # the printers can be added to the cups server running in the `xpra-cups` container,
+    # using its drivers, without probing for them when the server starts:
+    printf 'pdf-printer = lsb/usr/cupsfilters/Generic-PDF_Printer-PDF.ppd\npostscript-printer = drv:///sample.drv/generic.ppd\n' \
+        > /etc/xpra/conf.d/65_printing_cups_container.conf && \
     { test -s /etc/machine-id || rm -f /etc/machine-id; } && \
     dbus-uuidgen --ensure=/etc/machine-id
 

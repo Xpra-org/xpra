@@ -4,7 +4,11 @@ FROM fedora:latest
 
 RUN dnf install -y --setopt=install_weak_deps=False wget
 ADD https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos/Fedora/xpra-beta.repo /etc/yum.repos.d/
-RUN dnf install -y xpra xpra-audio-server
+RUN dnf install -y xpra xpra-audio-server && \
+    # the printers can be added to the cups server running in the `xpra-cups` container,
+    # using its drivers, without probing for them when the server starts:
+    printf 'pdf-printer = lsb/usr/cupsfilters/Generic-PDF_Printer-PDF.ppd\npostscript-printer = drv:///sample.drv/generic.ppd\n' \
+        > /etc/xpra/conf.d/65_printing_cups_container.conf
 
 EXPOSE 10000
 
