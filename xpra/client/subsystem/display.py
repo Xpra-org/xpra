@@ -402,8 +402,6 @@ class DisplayClient(StubClientSubsystem):
             log(message)
             self.client.quit(ExitCode.INTERNAL_ERROR)
             return
-        if maxw >= 16384 or maxh >= 16384:
-            log.warn("Warning: the desktop size is extremely large: %ix%i", maxw, maxh)
         # max packet size to accommodate
         # a full screen RGBX (32 bits) uncompressed image
         # also with enough headroom for some metadata (4k)
