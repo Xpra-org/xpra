@@ -580,6 +580,8 @@ cdef class Encoder:
             "rgb_format"  : pixel_format,
             "frame" : self.frames,
         }
+        if pic.width!=self.width or pic.height!=self.height:
+            client_options["scaled_size"] = pic.width, pic.height
         self.frames += 1
         cdef int subsample = self.quality < SUBSAMPLING_THRESHOLD
         if subsample:
@@ -732,6 +734,8 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple:
     client_options = {
         "rgb_format"  : pixel_format,
     }
+    if pic.width!=<int> width or pic.height!=<int> height:
+        client_options["scaled_size"] = pic.width, pic.height
     cdef int subsample = quality < SUBSAMPLING_THRESHOLD
     if subsample:
         #(when using sharp yuv, `WebPEncode` does the conversion for us)
