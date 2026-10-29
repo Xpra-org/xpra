@@ -88,7 +88,7 @@ class ClientInfoConnection(StubClientConnection):
         self.name = client_str(c, "name")
         self.argv = c.strtupleget("argv")
         self.client_type = client_str(c, "client_type")
-        self.client_platform = client_str(c, "platform")
+        self.client_platform = client_str(c, "platform.system") or client_str(c, "platform")
         self.client_machine = client_str(c, "platform.machine")
         self.client_processor = client_str(c, "platform.processor")
         self.client_release = client_str(c, "platform.sysrelease")
