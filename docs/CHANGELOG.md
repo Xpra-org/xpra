@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.7] 2026-10-23
+## [5.1.7] 2026-10-29
 * 🔧 Platforms, build and packaging:
   * [honour `--root ROOT` when installing](https://github.com/Xpra-org/xpra/commit/17226720ee22ad7f8cade2f1284557459b3d4b02)
   * [better install prefix detection](https://github.com/Xpra-org/xpra/commit/9a08d5bbdd2c671fc99b0296a717340b4c2d2863)
@@ -44,6 +44,7 @@
   * [`openh264 2.7.0](https://github.com/Xpra-org/xpra/commit/c42940e7e2c2bc5ad76ee89bdd4ffd1fca838c31)
   * [`pycuda` missing package dependencies](https://github.com/Xpra-org/xpra/commit/caf012fe23faaeb5fade55575e2530b363aacb9f)
 * ⚠️ Major:
+  * [mistimed early packets could cause clients to disconnect](https://github.com/Xpra-org/xpra/commit/b92a35c3bcfab20d3c6dd390060861588c4a43a8)
   * [don't leave the client waiting when an authentication module raises](https://github.com/Xpra-org/xpra/commit/dc38abdd4d9a44caafaf610f3d6909a95462ac78)
   * [prevent an endless window info lookup when a parent window disappears](https://github.com/Xpra-org/xpra/commit/44da3d0fd0cdaa48b8f010ba552c663e88865a22)
   * [numeric list options could return a single integer instead of the converted list](https://github.com/Xpra-org/xpra/commit/9677fd266c8181e08657636f26413a8b84a16ce5)
@@ -100,7 +101,9 @@
   * [swapped colour channels](https://github.com/Xpra-org/xpra/commit/5147834e3102ca55eb0ce22c7442e2c001344fe4), [miscalculated rowstride](https://github.com/Xpra-org/xpra/commit/000c5781cbe4089e5cabf9d380e1a92cec3e44fb)
   * [prefer BGRX / BGRA by default](https://github.com/Xpra-org/xpra/commit/ef94cda09a1fb27ba8f5340b22331a1958f98e9c)
   * [cairo: discard alpha from 32-bit data when needed](https://github.com/Xpra-org/xpra/commit/dcd74737010a7adbc8d3b38d04956a52f6b8217c)
+  * [remove unused avif decoder in pillow](https://github.com/Xpra-org/xpra/commit/75b1e6f0d9313bb08ef53b862d9a2699b68ae4e3)
 * 📬 Notifications:
+  * [swapped RGB channels](https://github.com/Xpra-org/xpra/commit/71d8879d2fe896181619e83f296a5a2964cf80bc)
   * [only forward icon theme names as `app_icon`](https://github.com/Xpra-org/xpra/commit/7cff0c0cdc4aa8b77e77ea9cb498e2dc42a2c2f0)
   * [remove images and links from the body](https://github.com/Xpra-org/xpra/commit/022d073dfa389de2b9f68e2fdc23afa5f1363292)
   * [escape the notification summary in Gtk fallback notifier](https://github.com/Xpra-org/xpra/commit/507d8fe7ea38eedf70a6985447acfd6d6e7feb95)
@@ -125,6 +128,7 @@
   * [don't drop clients that are slow to send their first packet](https://github.com/Xpra-org/xpra/commit/b29e54dde8c411f82a5a57ad2d0b625331563360)
   * [socket fast read timeout handling on older Python](https://github.com/Xpra-org/xpra/commit/b1983adde9f3960beebe7d0e177b5abae062f487)
   * [paramiko: try ssh keys in the same order as openssh](https://github.com/Xpra-org/xpra/commit/e8676a54869a79cadf539162886f80ad20f5a220)
+  * [expose the real hostname via mDNS](https://github.com/Xpra-org/xpra/commit/28c9e919cb51d62d72876c69e21adc7670dd1daf)
 * SSL:
   * [ssl upgrade must override defaults](https://github.com/Xpra-org/xpra/commit/d9d0bd47ab5ba6d9249a786dcf765733a639e9a8)
   * [clients could remain stuck after an SSL upgrade failed](https://github.com/Xpra-org/xpra/commit/357e80d99a241e2447f2aa209ec3687f035ccc68) [or the server closed the connection during the upgrade](https://github.com/Xpra-org/xpra/commit/fef346766767091186836ead62cfc546a52e74e6)
@@ -210,6 +214,8 @@
   * [cursor logging errors](https://github.com/Xpra-org/xpra/commit/129c36fd113671f1d6c0bf0437a81a0e12e8f9a8)
   * [missing type conversion](https://github.com/Xpra-org/xpra/commit/97367b88e92ee3228cbd5507e6195b146f103b25)
   * [windows can disappear as we inspect them](https://github.com/Xpra-org/xpra/commit/06883b1e04e3363bb0f345505f952f3b27082dee)
+  * [error picking an audio monitor device](https://github.com/Xpra-org/xpra/commit/dcbfd83cbd7e5ceed0925b40f1b8b0c96c38e074)
+  * [error picking a default printer](https://github.com/Xpra-org/xpra/commit/7cf357d703432b18f710a8d686e1135052414185)
 * 💄 Cosmetic:
   * [incorrect library versions reported](https://github.com/Xpra-org/xpra/commit/bea62f73e74f525b20c030ff63a5376dfa553fdb)
   * [skip video warnings for clients without video support](https://github.com/Xpra-org/xpra/commit/645791eb6e80862ff96ee4bc7d1c6d38d55e4c79)

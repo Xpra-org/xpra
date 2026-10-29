@@ -42,6 +42,7 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     `openh264 2.7.0
     `pycuda` missing package dependencies
   * ⚠️ Major:
+    mistimed early packets could cause clients to disconnect
     don't leave the client waiting when an authentication module raises
     prevent an endless window info lookup when a parent window disappears
     numeric list options could return a single integer instead of the converted list
@@ -98,7 +99,9 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     swapped colour channels, miscalculated rowstride
     prefer BGRX / BGRA by default
     cairo: discard alpha from 32-bit data when needed
+    remove unused avif decoder in pillow
   * 📬 Notifications:
+    swapped RGB channels
     only forward icon theme names as `app_icon`
     remove images and links from the body
     escape the notification summary in Gtk fallback notifier
@@ -123,6 +126,7 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     don't drop clients that are slow to send their first packet
     socket fast read timeout handling on older Python
     paramiko: try ssh keys in the same order as openssh
+    expose the real hostname via mDNS
   * SSL:
     ssl upgrade must override defaults
     clients could remain stuck after an SSL upgrade failed or the server closed the connection during the upgrade
@@ -208,6 +212,8 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     cursor logging errors
     missing type conversion
     windows can disappear as we inspect them
+    error picking an audio monitor device
+    error picking a default printer
   * 💄 Cosmetic:
     incorrect library versions reported
     skip video warnings for clients without video support
@@ -226,7 +232,7 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     X11 tests failed due to invalid xauth cookie
     tests now stop the `dbus-daemon`s left behind
 
- -- Antoine Martin <antoine@xpra.org>  Fri, 23 Oct 2026 19:23:59 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 29 Oct 2026 22:33:36 +0700
 
 xpra (5.1.6-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

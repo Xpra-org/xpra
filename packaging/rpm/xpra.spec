@@ -843,7 +843,7 @@ fi
 
 
 %changelog
-* Fri Oct 23 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
+* Thu Oct 29 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
 - 🔧 Platforms, build and packaging:
    honour `--root ROOT` when installing
    better install prefix detection
@@ -887,6 +887,7 @@ fi
    `openh264 2.7.0
    `pycuda` missing package dependencies
 - ⚠️ Major:
+   mistimed early packets could cause clients to disconnect
    don't leave the client waiting when an authentication module raises
    prevent an endless window info lookup when a parent window disappears
    numeric list options could return a single integer instead of the converted list
@@ -943,7 +944,9 @@ fi
    swapped colour channels, miscalculated rowstride
    prefer BGRX / BGRA by default
    cairo: discard alpha from 32-bit data when needed
+   remove unused avif decoder in pillow
 - 📬 Notifications:
+   swapped RGB channels
    only forward icon theme names as `app_icon`
    remove images and links from the body
    escape the notification summary in Gtk fallback notifier
@@ -968,6 +971,7 @@ fi
    don't drop clients that are slow to send their first packet
    socket fast read timeout handling on older Python
    paramiko: try ssh keys in the same order as openssh
+   expose the real hostname via mDNS
 - SSL:
    ssl upgrade must override defaults
    clients could remain stuck after an SSL upgrade failed or the server closed the connection during the upgrade
@@ -1053,6 +1057,8 @@ fi
    cursor logging errors
    missing type conversion
    windows can disappear as we inspect them
+   error picking an audio monitor device
+   error picking a default printer
 - 💄 Cosmetic:
    incorrect library versions reported
    skip video warnings for clients without video support
