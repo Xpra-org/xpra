@@ -211,6 +211,7 @@ class SocketProtocol:
             "hello", "window-metadata", "audio-data", "notification-show", "setting-change",
             "shell-reply", "display-configure",
             "encodings", "info-response",
+            "clipboard-data", "clipboard-contents", "clipboard-record",
         ]
         if BACKWARDS_COMPATIBLE:
             self.large_packets += ["sound-data", "notify_show", "configure-display"]
