@@ -225,6 +225,23 @@ class VideoPipelineTest(unittest.TestCase):
                     self.select(settings, src_format=src_format)
                 self.assertEqual(scorer.call_args.args[12], 1 + penalty)
 
+    def test_subsampling_inside_the_encoder_is_lossy(self):
+        # RGB in, but the encoder can only produce 4:2:0:
+        for output_colorspaces, text, quality, shadow, penalty in (
+            (("YUV420P", ), True, 50, False, -500),
+            (("YUV420P", ), False, 100, False, -250),
+            (("YUV420P", ), False, 50, True, -40),
+            (("YUV420P", ), False, 50, False, 0),
+            (("YUV444P", ), True, 100, True, 0),
+            (("YUV420P", "YUV444P"), True, 100, True, 0),
+        ):
+            with self.subTest(output_colorspaces=output_colorspaces, text=text, quality=quality, shadow=shadow):
+                self.encoder.output_colorspaces = output_colorspaces
+                settings = replace(self.settings, text_hint=text, quality=quality, is_shadow=shadow)
+                with patch.object(video_pipeline, "get_pipeline_score", wraps=video_scoring.get_pipeline_score) as scorer:
+                    self.select(settings)
+                self.assertEqual(scorer.call_args.args[12], 1 + penalty)
+
     def test_current_codecs_and_runtime_factors_change_ranking(self):
         other = encoder_spec("other", setup_cost=0)
         self.encoders["h264"]["RGB"] = (other, self.encoder)
