@@ -31,7 +31,7 @@ from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import WINDOW_EOS
 from xpra.util.rectangle import rectangle, merge_all
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
-from xpra.server.window.video_scoring import get_pipeline_score
+from xpra.server.window.video_scoring import LOSSY_CSC, get_pipeline_score
 from xpra.codecs.constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder, CSCSpec
 from xpra.codecs.protocols import VideoEncoder
 from xpra.codecs.loader import has_codec
@@ -1468,7 +1468,8 @@ class WindowVideoSource(WindowSource):
                     else:
                         scaling = (1, 1)
                     score_delta = encoding_score_delta
-                    lossy_csc = enc_in_format in ("NV12", "YUV420P", "YUV422P")
+                    # the subsampling may also happen inside the encoder (ie: "BGRX" in, "YUV420P" out):
+                    lossy_csc = enc_in_format in LOSSY_CSC or all(cs in LOSSY_CSC for cs in matches)
                     if scaling != (1, 1) or lossy_csc:
                         if text_hint:
                             # we should not be using scaling or csc with text!
