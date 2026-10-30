@@ -23,7 +23,11 @@ class KeyboardConfig(KeyboardConfigBase):
         if keycode == -1 and keystr and len(keystr) == 1:
             v = VkKeyScanW(keystr)
             vk_code = v & 0xff
-            if vk_code > 0 and vk_code != 0xff:
+            # a character that needs `Control` but not `AltGr` is a control character,
+            # which the key does not produce on its own,
+            # ie: the NUL string of `KP_Page_Up` is `Control+Shift+2`:
+            control_char = ((v >> 8) & 0x6) == 0x2
+            if vk_code > 0 and vk_code != 0xff and not control_char:
                 keycode = vk_code
         log("get_keycode%s=%s", (client_keycode, keyname, pressed, modifiers, keyval, keystr, group), keycode)
         return keycode, group
