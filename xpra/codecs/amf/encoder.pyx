@@ -323,7 +323,8 @@ def get_specs() -> Sequence[VideoSpec]:
         output_caps = caps.get("output", {})
         min_w, max_w = input_caps.get("width-range", (128, 4096))
         min_h, max_h = input_caps.get("height-range", (128, 4096))
-        input_colorspaces = input_caps.get("native-formats", ("NV12", ))
+        # The driver may also advertise BGRA, but this encoder can only upload NV12.
+        input_colorspaces = ("NV12",)
         output_colorspaces = output_caps.get("native-formats", ("YUV420P", ))
         for input_colorspace in input_colorspaces:
             # ugly translation into the names xpra uses for legacy reasons:
