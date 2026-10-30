@@ -103,11 +103,18 @@ class EncodingsConnection(StubClientConnection):
         # was skipped in parse_encoding_caps. Allocate it now if still missing.
         if not self.cuda_device_context and self.wants_cuda_device():
             self.allocate_cuda_device_context()
-        # Propagate cuda context to any window sources created before it was available.
-        if self.cuda_device_context:
-            for ws in self.all_window_sources():
-                if not ws.cuda_device_context:
-                    ws.cuda_device_context = self.cuda_device_context
+        for ws in self.all_window_sources():
+            # Propagate cuda context to any window sources created before it was available.
+            if self.cuda_device_context and not ws.cuda_device_context:
+                ws.cuda_device_context = self.cuda_device_context
+            # window sources copy the encodings when they are created,
+            # and those which already existed before the client sent its `encoding-config`
+            # (ie: shadow windows) would otherwise never get the client's video decoders:
+            ws.server_core_encodings = self.server_core_encodings
+            ws.server_encodings = self.server_encodings
+            ws.encodings = self.encodings
+            ws.core_encodings = self.core_encodings
+            ws.rgb_formats = self.rgb_formats
 
     def cleanup(self) -> None:
         self.cancel_recalculate_timer()
