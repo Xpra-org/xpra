@@ -139,8 +139,10 @@ cdef extern from "dxgi.h":
 
     # DEFINE_GUID(IID_IDXGIAdapter, 0x2411e7e1, 0x12ac, 0x4ccf, 0xbd, 0x14, 0x97, 0x9b, 0xe2, 0x52, 0x12, 0x20)
     ctypedef HRESULT (*ADAPTER_GETDESC)(IDXGIAdapter *this, DXGI_ADAPTER_DESC *desc)
+    ctypedef ULONG (*ADAPTER_RELEASE)(IDXGIAdapter *this)
 
     ctypedef struct IDXGIAdapterVtbl:
+        ADAPTER_RELEASE Release
         ADAPTER_GETDESC GetDesc
 
     ctypedef struct IDXGIAdapter:
@@ -148,7 +150,9 @@ cdef extern from "dxgi.h":
 
     # DEFINE_GUID(IID_IDXGIDevice, 0x54ec77fa, 0x1377, 0x44e6, 0x8c, 0x32, 0x88, 0xfd, 0x5f, 0x44, 0xc8, 0x4c)
     ctypedef HRESULT (*DEVICE_GETADAPTER)(IDXGIDevice *this, IDXGIAdapter** adapter)
+    ctypedef ULONG (*DXGI_DEVICE_RELEASE)(IDXGIDevice *this)
     ctypedef struct IDXGIDeviceVtbl:
+        DXGI_DEVICE_RELEASE Release
         DEVICE_GETADAPTER GetAdapter
 
     ctypedef struct IDXGIDevice:
@@ -415,7 +419,7 @@ cdef extern from "d3d11.h":
     ctypedef void (*DC_COPYRESOURCE)(ID3D11DeviceContext *context, ID3D11Resource *dst, ID3D11Resource *src)
     ctypedef void (*DC_COPYSUBRESOURCEREGION)(ID3D11DeviceContext *context,
                                               ID3D11Resource *dst, UINT dstSubResource, UINT dstX, UINT dstY, UINT dstZ,
-                                              ID3D11Resource *src, UINT srcSubResource)
+                                              ID3D11Resource *src, UINT srcSubResource, const D3D11_BOX *pSrcBox)
     ctypedef void (*DC_UPDATESUBRESOURCEREGION)(ID3D11DeviceContext *context,
                                                 ID3D11Resource  *pDstResource, UINT DstSubresource,
                                                 const D3D11_BOX *pDstBox,
@@ -574,7 +578,7 @@ cdef class D3D11DeviceContext:
         self.context = NULL
 
     def __repr__(self):
-        return "ImmediateContext(%s)" % self.d3d11device
+        return "ImmediateContext(%#x)" % <uintptr_t> self.device
 
     def flush(self) -> None:
         assert self.context
@@ -614,7 +618,7 @@ cdef class D3D11Device:
         self.device.lpVtbl.Release(self.device)
 
     def get_immediate_context(self) -> D3D11DeviceContext:
-        return D3D11DeviceContext(self)
+        return D3D11DeviceContext(<uintptr_t> self.device)
 
     def __repr__(self):
         return "D3D11Device(%#x)" % <uintptr_t> self.device
@@ -641,35 +645,41 @@ cdef class D3D11Device:
         # get the adapter interface:
         cdef GUID adapter_guid     # IID_IDXGIAdapter
         set_GUID(&adapter_guid, 0x2411e7e1, 0x12ac, 0x4ccf, 0xbd, 0x14, 0x97, 0x9b, 0xe2, 0x52, 0x12, 0x20)
-        cdef IDXGIAdapter *adapter
-        res = dxgi_device.lpVtbl.GetAdapter(dxgi_device, &adapter)
-        if res:
-            log.warn("Warning: failed to get IDXGIAdapter: %s", ERRORS.get(res, res))
-            return info
-        assert adapter
-        # get the adapter description:
+        cdef IDXGIAdapter *adapter = NULL
         cdef DXGI_ADAPTER_DESC desc
-        res = adapter.lpVtbl.GetDesc(adapter, &desc)
-        if res:
-            log.warn("Warning: failed to get adapter description: %s", ERRORS.get(res, res))
-            return info
+        cdef size_t size
+        try:
+            res = dxgi_device.lpVtbl.GetAdapter(dxgi_device, &adapter)
+            if res:
+                log.warn("Warning: failed to get IDXGIAdapter: %s", ERRORS.get(res, res))
+                return info
+            assert adapter
+            # get the adapter description:
+            res = adapter.lpVtbl.GetDesc(adapter, &desc)
+            if res:
+                log.warn("Warning: failed to get adapter description: %s", ERRORS.get(res, res))
+                return info
 
-        cdef size_t size = wcslen(desc.Description)
-        description = PyUnicode_FromWideChar(desc.Description, size)
-        info.update({
-            "description": description,
-            "vendor": VENDORS.get(desc.VendorId, desc.VendorId),
-            "device": desc.DeviceId,
-            "subsystem": desc.SubSysId,
-            "revision": desc.Revision,
-            "memory": {
-                "video": desc.DedicatedVideoMemory,
-                "system": desc.DedicatedSystemMemory,
-                "shared": desc.SharedSystemMemory,
-            },
-            "luid": "%#x:%#x" % (desc.AdapterLuid.HighPart, desc.AdapterLuid.LowPart),
-        })
-        return info
+            size = wcslen(desc.Description)
+            description = PyUnicode_FromWideChar(desc.Description, size)
+            info.update({
+                "description": description,
+                "vendor": VENDORS.get(desc.VendorId, desc.VendorId),
+                "device": desc.DeviceId,
+                "subsystem": desc.SubSysId,
+                "revision": desc.Revision,
+                "memory": {
+                    "video": desc.DedicatedVideoMemory,
+                    "system": desc.DedicatedSystemMemory,
+                    "shared": desc.SharedSystemMemory,
+                },
+                "luid": "%#x:%#x" % (desc.AdapterLuid.HighPart, desc.AdapterLuid.LowPart),
+            })
+            return info
+        finally:
+            if adapter != NULL:
+                adapter.lpVtbl.Release(adapter)
+            dxgi_device.lpVtbl.Release(dxgi_device)
 
 
 cdef void set_GUID(GUID* guid, uint32_t data1, uint16_t data2, uint16_t data3,
