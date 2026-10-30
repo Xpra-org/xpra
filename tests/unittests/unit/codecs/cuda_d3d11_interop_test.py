@@ -9,8 +9,10 @@ import unittest
 from collections import Counter
 from unittest.mock import patch
 
-from xpra.codecs.nvidia.cuda import d3d11
-from xpra.codecs.nvidia.cuda.d3d11 import D3D11Interop
+try:
+    from xpra.codecs.nvidia.cuda import d3d11
+except ImportError:
+    d3d11 = None
 
 
 class Texture:
@@ -80,6 +82,7 @@ class FakeCUDA:
         return 0
 
 
+@unittest.skipIf(d3d11 is None, "NVIDIA CUDA D3D11 module is not available")
 class TestD3D11Interop(unittest.TestCase):
 
     def setUp(self):
@@ -93,7 +96,7 @@ class TestD3D11Interop(unittest.TestCase):
         self.enterContext(patch.object(d3d11, "com_add_ref", add_ref))
         self.enterContext(patch.object(d3d11, "com_release", release))
         self.cuda = FakeCUDA()
-        self.interop = D3D11Interop(0, lib=self.cuda)
+        self.interop = d3d11.D3D11Interop(0, lib=self.cuda)
 
     def test_luid(self):
         self.assertEqual(self.interop.luid, FakeCUDA.LUID)
