@@ -638,8 +638,39 @@ def _do_unmap(uintptr_t ctx_ptr, uintptr_t staging_ptr) -> None:
 
 def get_capture_instance(output_index: int = 0) -> DXGICapture:
     capture = DXGICapture(output_index)
-    capture.init_context()
+    try:
+        capture.init_context()
+    except Exception:
+        capture.clean()
+        raise
     return capture
+
+
+def get_output_positions() -> dict[int, tuple[int, int]]:
+    """ Enumerate monitor positions without duplicating outputs already in use. """
+    cdef void *device = NULL
+    cdef void *context = NULL
+    cdef void *output1 = NULL
+    cdef OutputPos pos
+    cdef int hr
+    positions = {}
+    # v7.x captures each have their own device; enumeration only needs a temporary one.
+    try:
+        hr = xpra_create_device(&device, &context)
+        if hr:
+            raise RuntimeError("D3D11CreateDevice failed: %#x" % <unsigned int> hr)
+        for output_index in range(8):
+            if xpra_get_output1(device, output_index, &output1) or not output1:
+                break
+            pos = xpra_get_output_pos(output1)
+            xpra_com_release(output1)
+            output1 = NULL
+            positions[output_index] = (pos.x, pos.y)
+    finally:
+        xpra_com_release(output1)
+        xpra_com_release(context)
+        xpra_com_release(device)
+    return positions
 
 
 def get_capture_for_monitor(x: int, y: int) -> DXGICapture | None:
@@ -648,15 +679,11 @@ def get_capture_for_monitor(x: int, y: int) -> DXGICapture | None:
     desktop position matches (x, y).  Returns None if no output matches.
     Captures work in local (monitor-relative) coordinates.
     """
-    for output_index in range(8):
-        try:
-            capture = DXGICapture(output_index)
-            capture.init_context()
-            if capture._output_x == x and capture._output_y == y:
-                return capture
-            capture.clean()
-        except RuntimeError:
-            break   # no more outputs on this adapter
+    positions = get_output_positions()
+    log("get_capture_for_monitor(%i, %i) output positions=%s", x, y, positions)
+    for output_index, pos in positions.items():
+        if pos == (x, y):
+            return get_capture_instance(output_index)
     return None
 
 
