@@ -382,6 +382,11 @@ class Encodings(StubClientSubsystem):
                 if profile := os.environ.get(f"XPRA_H264_{csc_name}_PROFILE", default_profile):
                     h264_caps[f"{csc_name}.profile"] = profile
             h264_caps["fast-decode"] = envbool("XPRA_X264_FAST_DECODE", False)
+            # openh264 holds on to the Main and High profile frames of streams that use `pic_order_cnt_type` 0,
+            # even when there are no B frames to reorder, until it runs out of pictures and fails to decode:
+            # ask for streams that say their output order is the decoding order instead.
+            # (servers assume that this is needed when the option is missing)
+            h264_caps["poc-type-2"] = envbool("XPRA_H264_POC_TYPE_2", True)
             log("x264 encoding options: %s", h264_caps)
             caps["h264"] = h264_caps
         # the level caps a stream's resolution, framerate and bitrate,

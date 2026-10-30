@@ -144,6 +144,7 @@ PROPERTIES: dict[str, dict[str, str]] = {
         "qp-inter": "QPP",
         "gop-size": "IDRPeriod",
         "b-frames": "BPicturesPattern",
+        "low-latency": "LowLatencyInternal",
         "query-timeout": "QueryTimeout",
         "deblocking": "DeBlockingFilter",
         "input-color-profile": "InColorProfile",
@@ -717,6 +718,14 @@ cdef class Encoder:
         if not options.boolget("b-frames", False):
             self.try_property("b-frames", 0)
 
+            # Without B frames, the output order is the decoding order, and the low latency mode says so
+            # in the bitstream (`pic_order_cnt_type` 2, as x264 does). Otherwise openh264 holds on to every
+            # Main and High profile frame in its display order buffer, runs out of pictures a few frames
+            # into the stream ("PrefetchPic ERROR") and then fails to decode anything until a keyframe.
+            # Clients whose decoder does not need this can say so, older ones all use openh264:
+            if options.boolget("h264.poc-type-2", True):
+                self.try_property("low-latency", 1)
+
         # let `QueryOutput` block in the driver instead of polling for it from python:
         if QUERY_TIMEOUT > 0:
             self.query_timeout = self.try_property("query-timeout", QUERY_TIMEOUT)
@@ -826,7 +835,7 @@ cdef class Encoder:
         props = PROPERTIES.get(self.encoding, {})
         info = {}
         for name in ("profile", "rate-control", "target-bitrate", "peak-bitrate", "qp-intra", "qp-inter",
-                     "gop-size", "quality-preset", "b-frames", "deblocking"):
+                     "gop-size", "quality-preset", "b-frames", "deblocking", "low-latency"):
             prop = props.get(name, "")
             if not prop:
                 continue
