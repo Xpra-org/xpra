@@ -880,13 +880,14 @@ cdef class Encoder:
         cdef uintptr_t gpu_texture
         cdef AMFSurface *host_surface
         cdef AMFSurface *gpu_surface
-        cdef amf_int32 hpitch, vpitch
-        cdef int stride
+        cdef amf_int32 hpitch
+        cdef int stride, rows
         cdef AMF_RESULT res
 
         if not WIN32:
             raise ImportError("amf encoder needs porting to this platform")
 
+        divs = get_subsampling_divs(self.src_format)
         from xpra.platform.win32.d3d11.device import D3D11Device
         log("D3D11Device(%#x)", <uintptr_t> self.device)
         device = D3D11Device(<uintptr_t> self.device)
@@ -903,16 +904,17 @@ cdef class Encoder:
                 assert plane
                 stride = strides[plane_index]
                 hpitch = plane.pVtbl.GetHPitch(plane)
-                vpitch = plane.pVtbl.GetVPitch(plane)
+                # AMF's vertical pitch can include padding beyond the source plane.
+                rows = self.height // divs[plane_index][1]
                 host_texture = <uintptr_t> plane.pVtbl.GetNative(plane)
                 src = <uintptr_t> pic_in[plane_index]
                 dst = <uintptr_t> host_texture
                 if hpitch == stride:
                     # same stride, happy path with just one big copy:
-                    memcpy(<void *> dst, <void *> src, hpitch * vpitch)
+                    memcpy(<void *> dst, <void *> src, stride * rows)
                 else:
-                    for y in range(vpitch):
-                        memcpy(<void *> dst, <void *> src, stride)
+                    for y in range(rows):
+                        memcpy(<void *> dst, <void *> src, min(stride, hpitch))
                         dst += hpitch
                         src += stride
 
