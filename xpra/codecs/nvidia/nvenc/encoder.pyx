@@ -422,6 +422,7 @@ cdef class Encoder:
     cdef object inputBuffer
     cdef object cudaInputBuffer
     cdef object cudaOutputBuffer
+    cdef object d3d11_interop                       #None: not tried yet, False: not available
     cdef unsigned int inputPitch                    #note: this isn't the pitch (aka rowstride) we actually use!
                                                     #just the value returned from the allocation call
     cdef unsigned int outputPitch
@@ -528,6 +529,7 @@ cdef class Encoder:
         if not cuda_device_context:
             raise RuntimeError("no cuda device context")
         self.cuda_device_context = cuda_device_context
+        self.d3d11_interop = None
         # `ARGB` is handled using the `XRGB` kernels, see `init_cuda`:
         if src_format not in ("ARGB", "XRGB", "BGRX", "r210"):
             raise ValueError(f"invalid source format {src_format}")
@@ -1414,6 +1416,13 @@ cdef class Encoder:
     cdef void cuda_clean(self):
         log("cuda_clean()")
         cdef NVENCSTATUS r
+        interop = self.d3d11_interop
+        self.d3d11_interop = None
+        if interop:
+            try:
+                interop.clean()
+            except Exception:
+                log.warn("Warning: failed to clean %s", interop, exc_info=True)
         if self.context!=NULL and self.frames>0:
             try:
                 self.flushEncoder()
@@ -1604,6 +1613,8 @@ cdef class Encoder:
             if GPU_MEMCOPY and cuda_buffer and stride<=self.inputPitch:
                 driver.memcpy_dtod(self.cudaInputBuffer, int(gpu_buffer), stride*h)
                 log("GPU memcopy %i bytes from %#x to %#x", stride*h, int(gpu_buffer), int(self.cudaInputBuffer))
+            elif gpu_buffer is not None and self.copy_from_d3d11(gpu_buffer, w, h):
+                stride = self.inputPitch
             else:
                 stride = self.copy_image(image, False)
                 log("memcpy_htod(cudaOutputBuffer=%s, inputBuffer=%s)", self.cudaOutputBuffer, self.inputBuffer)
@@ -1627,6 +1638,46 @@ cdef class Encoder:
             return self.nvenc_compress(input_size, mappedResource, image.get_timestamp(), image.get_full_range(), damage)
         finally:
             self.unmap_input_resource(mappedResource)
+
+    def supports_gpu_input(self) -> bool:
+        """ can we copy `D3D11Texture` buffers directly, see `DXGIImageWrapper.freeze_on_gpu()` """
+        return WIN32 and bool(self.kernel) and self.d3d11_interop is not False
+
+    def copy_from_d3d11(self, texture, unsigned int w, unsigned int h) -> bool:
+        """
+        Copy a D3D11 texture from the DXGI screen capture straight to the kernel's input buffer.
+        Returns False if that is not possible, and the pixels must be copied from system memory instead.
+        """
+        if not WIN32 or not self.kernel or self.d3d11_interop is False:
+            return False
+        from xpra.platform.win32.d3d11.image import D3D11Texture
+        if not isinstance(texture, D3D11Texture):
+            return False
+        interop = self.d3d11_interop
+        try:
+            if interop is None:
+                interop = self.d3d11_interop = self.init_d3d11_interop(texture)
+            interop.copy_to(texture, int(self.cudaInputBuffer), self.inputPitch,
+                            min(w, self.input_width), min(h, self.input_height))
+            return True
+        except Exception as e:
+            log("copy_from_d3d11(%s, %i, %i)", texture, w, h, exc_info=True)
+            if first_time(f"nvenc-d3d11-{self.cuda_device_context}"):
+                log.warn("Warning: cannot use D3D11 textures with nvenc:")
+                log.warn(" %s", e)
+            self.d3d11_interop = False
+            if interop:
+                interop.clean()
+            return False
+
+    def init_d3d11_interop(self, texture):
+        from xpra.codecs.nvidia.cuda.d3d11 import D3D11Interop
+        from xpra.platform.win32.d3d11.device import D3D11Device
+        interop = D3D11Interop(self.cuda_device_context.device_id)
+        luid = D3D11Device(texture.device).get_luid()
+        if interop.luid != luid:
+            raise ValueError(f"the CUDA device {self.cuda_device_context.device_id} is not the D3D11 device's adapter")
+        return interop
 
     cdef unsigned int copy_image(self, image, int strict_stride) except -1:
         if DEBUG_API:
