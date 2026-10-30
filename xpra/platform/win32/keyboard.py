@@ -7,7 +7,7 @@
 from typing import Any, Final
 import ctypes
 from ctypes.wintypes import HANDLE
-from ctypes import create_string_buffer, create_unicode_buffer, byref
+from ctypes import create_string_buffer, create_unicode_buffer, byref, sizeof
 from functools import cache
 from ctypes.wintypes import DWORD, BYTE
 from collections.abc import Callable, Sequence
@@ -18,8 +18,9 @@ from xpra.platform.win32.common import (
     GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout,
     GetIntSystemParametersInfo, GetKeyboardLayoutName,
     GetWindowThreadProcessId, LCIDToLocaleName,
-    GetKeyboardState, MapVirtualKeyW, keybd_event,
-    SystemParametersInfoA, VkKeyScanW,
+    GetKeyboardState, MapVirtualKeyExW, keybd_event,
+    SystemParametersInfoA, VkKeyScanW, VkKeyScanExW, ToUnicodeEx,
+    GetForegroundWindow, SendInput, INPUT, KEYBDINPUT,
 )
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
@@ -38,6 +39,14 @@ LAYOUT_MASKS: dict[int, Sequence[int]] = {
 }
 
 MAPVK_VK_TO_VSC: Final[int] = 0
+# `ToUnicodeEx` flag: don't change the keyboard state, ie: the dead keys
+TOUNICODE_NO_STATE_CHANGE: Final[int] = 0x4
+# the "keycodes" of the characters that the keyboard layout cannot type,
+# they are injected using `KEYEVENTF_UNICODE`:
+UNICODE_KEY: Final[int] = 1 << 24
+# `VkKeyScanExW` shift states:
+SHIFT_STATE_SHIFT: Final[int] = 0x1
+SHIFT_STATE_ALTGR: Final[int] = 0x6
 
 
 def _GetKeyboardLayoutList() -> list[int]:
@@ -276,17 +285,83 @@ class InjectedModifiers:
 injected_modifiers = InjectedModifiers()
 
 
+def get_foreground_layout() -> int:
+    """
+    The layout of the window that receives the key events:
+    MS Windows keyboard layouts are per thread, and may even be set per application window.
+    """
+    hwnd = GetForegroundWindow()
+    tid = GetWindowThreadProcessId(hwnd, None) if hwnd else 0
+    return GetKeyboardLayout(tid) or 0
+
+
+def to_unicode(vk: int, shift_state: int, lock: bool, hkl: int) -> str:
+    """ the character that `vk` types with this layout, empty for dead keys """
+    keystate = (BYTE * 256)()
+    if shift_state & SHIFT_STATE_SHIFT:
+        keystate[win32con.VK_SHIFT] = keystate[win32con.VK_LSHIFT] = 0x80
+    if (shift_state & SHIFT_STATE_ALTGR) == SHIFT_STATE_ALTGR:
+        for vk_mod in (win32con.VK_CONTROL, win32con.VK_LCONTROL, win32con.VK_MENU, win32con.VK_LMENU):
+            keystate[vk_mod] = 0x80
+    if lock:
+        keystate[win32con.VK_CAPITAL] = 0x01
+    buf = create_unicode_buffer(8)
+    scancode = MapVirtualKeyExW(vk, MAPVK_VK_TO_VSC, hkl)
+    count = ToUnicodeEx(vk, scancode, keystate, buf, len(buf), TOUNICODE_NO_STATE_CHANGE, hkl)
+    return buf.value[:count] if count > 0 else ""
+
+
+def find_character_key(char: str, lock: bool, hkl: int) -> tuple[int, int]:
+    """
+    Find the virtual key and the shift state (`SHIFT_STATE_SHIFT` and / or `SHIFT_STATE_ALTGR`)
+    that type `char` with this keyboard layout, given the state of `Caps Lock`.
+    Returns `(0, 0)` if the layout cannot type it, or only using a dead key.
+    """
+    v = VkKeyScanExW(char, hkl)
+    vk = v & 0xff
+    if vk in (0, 0xff):
+        return 0, 0
+    shift_state = (v >> 8) & 0x7
+    if (shift_state & SHIFT_STATE_ALTGR) not in (0, SHIFT_STATE_ALTGR):
+        # needs `Control` or `Alt` on their own: a control character
+        return 0, 0
+    # `VkKeyScanExW` ignores `Caps Lock`, which inverts `Shift` for some keys:
+    for state in (shift_state, shift_state ^ SHIFT_STATE_SHIFT):
+        if to_unicode(vk, state, lock, hkl) == char:
+            return vk, state
+    return 0, 0
+
+
+def send_unicode(char: str, press: bool) -> None:
+    flags = win32con.KEYEVENTF_UNICODE
+    if not press:
+        flags |= win32con.KEYEVENTF_KEYUP
+    # one event per UTF-16 code unit, so two for the characters outside the BMP:
+    data = char.encode("utf-16-le")
+    units = [int.from_bytes(data[i:i + 2], "little") for i in range(0, len(data), 2)]
+    # noinspection PyCallingNonCallable,PyTypeChecker
+    inputs = (INPUT * len(units))()
+    for i, unit in enumerate(units):
+        inputs[i].type = win32con.INPUT_KEYBOARD
+        inputs[i].ki = KEYBDINPUT(0, unit, flags, 0, 0)
+    log("send_unicode(%r, %s) calling SendInput for %s", char, press, csv(hex(unit) for unit in units))
+    SendInput(len(units), inputs, sizeof(INPUT))
+
+
 def fake_key(keycode: int, press: bool):
     if keycode <= 0:
         log.warn("no keycode found for %s", keycode)
         return
     injected_modifiers.key_event(keycode, press)
+    if keycode & UNICODE_KEY:
+        send_unicode(chr(keycode & ~UNICODE_KEY), press)
+        return
     # KEYEVENTF_SILENT = 0X4
     flags = 0
     if not press:
         flags |= win32con.KEYEVENTF_KEYUP
-    # get the scancode:
-    scancode = MapVirtualKeyW(keycode, MAPVK_VK_TO_VSC)
+    # get the scancode, which depends on the layout for some keys, ie: `VK_OEM_7`:
+    scancode = MapVirtualKeyExW(keycode, MAPVK_VK_TO_VSC, get_foreground_layout())
     # see: http://msdn.microsoft.com/en-us/library/windows/desktop/ms646304(v=vs.85).aspx
     log("fake_key(%s, %s) calling keybd_event(%s, %s, %s, 0)", keycode, press, keycode, scancode, flags)
     keybd_event(keycode, scancode, flags, 0)
