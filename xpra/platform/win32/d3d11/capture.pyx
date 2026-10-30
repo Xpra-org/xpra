@@ -6,34 +6,38 @@
 """
 DXGI Desktop Duplication capture backend.
 
-Uses IDXGIOutputDuplication (Windows 8+) to capture the desktop.
+Uses IDXGIOutputDuplication (Windows 8+) to capture the desktop,
+using the D3D11 device shared with the GPU encoders (see `get_shared_device`).
 Two textures are maintained:
 
   _gpu_tex  — D3D11_USAGE_DEFAULT, GPU-only.  Populated every refresh().
-              Exposed via DXGIImageWrapper.get_gpu_buffer() for GPU encoders
-              (e.g. the MF VideoProcessor CSC path) that never need CPU pixels.
 
-  _staging  — D3D11_USAGE_STAGING, CPU-readable.  Populated *lazily* inside
-              _do_map() only when get_pixels() is actually called.
+  _staging  — D3D11_USAGE_STAGING, CPU-readable.  Only populated by `download()`,
+              when the pixels are actually needed in system memory.
 
 Flow per frame:
-  refresh()  -> AcquireNextFrame -> CopyResource(_gpu_tex, src) -> ReleaseFrame
+  refresh()   -> AcquireNextFrame -> CopyResource(_gpu_tex, src) -> ReleaseFrame
   get_image() -> DXGIImageWrapper (neither GPU nor CPU copy yet)
-  DXGIImageWrapper.get_gpu_buffer() -> _gpu_tex ptr (zero-copy GPU path)
-  DXGIImageWrapper.may_download()   -> CopyResource(staging, gpu_tex)
-                                     -> Map staging -> memcpy -> Unmap
+  snapshot()  -> CopySubresourceRegion(pooled texture, _gpu_tex)  (for the GPU encoders)
+  download()  -> CopySubresourceRegion(staging, texture) -> Map staging -> memcpy -> Unmap
 """
 
 import time
 from typing import Any
+from threading import Lock
 
 from libc.stdint cimport uintptr_t, uint8_t, uint32_t
 from libc.string cimport memcpy
 from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 
+from xpra.codecs.constants import CodecStateException
+from xpra.platform.win32.d3d11.image import D3D11Texture
 from xpra.log import Logger
 
 log = Logger("shadow", "win32", "d3d11")
+
+# how long `download()` waits for the GPU to finish copying to the staging texture:
+MAP_TIMEOUT = 1.0
 
 
 # ---------------------------------------------------------------------------
@@ -65,6 +69,7 @@ cdef extern from *:
     #define XPRA_DXGI_ERROR_DEVICE_HUNG        DXGI_ERROR_DEVICE_HUNG
     #define XPRA_DXGI_ERROR_DEVICE_RESET       DXGI_ERROR_DEVICE_RESET
     #define XPRA_DXGI_ERROR_ACCESS_LOST        DXGI_ERROR_ACCESS_LOST
+    #define XPRA_D3D11_MAP_FLAG_DO_NOT_WAIT    D3D11_MAP_FLAG_DO_NOT_WAIT
 
     /* ---- Result structures passed back to Cython as plain data ---- */
     typedef struct {
@@ -86,21 +91,16 @@ cdef extern from *:
         uint32_t RowPitch;
     } MapResult;
 
-    /* ---- Device creation ---- */
-    static HRESULT xpra_create_device(void **out_device, void **out_context)
+    /* ---- Immediate context of the (shared) device ---- */
+    static void xpra_get_immediate_context(void *device, void **out_context)
     {
-        D3D_FEATURE_LEVEL fl;
-        return D3D11CreateDevice(
-            NULL,
-            D3D_DRIVER_TYPE_HARDWARE,
-            NULL,
-            D3D11_CREATE_DEVICE_BGRA_SUPPORT,
-            NULL, 0,
-            D3D11_SDK_VERSION,
-            (ID3D11Device **) out_device,
-            &fl,
-            (ID3D11DeviceContext **) out_context
-        );
+        ((ID3D11Device *)device)->lpVtbl->GetImmediateContext(
+            (ID3D11Device *)device, (ID3D11DeviceContext **) out_context);
+    }
+
+    static void xpra_com_add_ref(void *obj)
+    {
+        ((IUnknown *)obj)->lpVtbl->AddRef((IUnknown *)obj);
     }
 
     /* ---- Walk device -> adapter -> output -> IDXGIOutput1 ---- */
@@ -195,6 +195,23 @@ cdef extern from *:
         );
     }
 
+    /* ---- GPU copy of an area, to the top-left corner of `dst` ---- */
+    static void xpra_copy_region(void *context, void *dst, void *src,
+                                 UINT x, UINT y, UINT width, UINT height)
+    {
+        D3D11_BOX box;
+        box.left   = x;
+        box.top    = y;
+        box.front  = 0;
+        box.right  = x + width;
+        box.bottom = y + height;
+        box.back   = 1;
+        ((ID3D11DeviceContext *)context)->lpVtbl->CopySubresourceRegion(
+            (ID3D11DeviceContext *)context,
+            (ID3D11Resource *)dst, 0, 0, 0, 0,
+            (ID3D11Resource *)src, 0, &box);
+    }
+
     /* ---- Flush ---- */
     static void xpra_flush(void *context)
     {
@@ -243,14 +260,14 @@ cdef extern from *:
     }
 
     /* ---- Map staging texture ---- */
-    static MapResult xpra_map_staging(void *context, void *staging)
+    static MapResult xpra_map_staging(void *context, void *staging, UINT flags)
     {
         D3D11_MAPPED_SUBRESOURCE mapped = {0};
         MapResult r;
         r.hr = ((ID3D11DeviceContext *)context)->lpVtbl->Map(
             (ID3D11DeviceContext *)context,
             (ID3D11Resource *)staging,
-            0, D3D11_MAP_READ, 0, &mapped);
+            0, D3D11_MAP_READ, flags, &mapped);
         r.pData    = mapped.pData;
         r.RowPitch = mapped.RowPitch;
         return r;
@@ -318,9 +335,11 @@ cdef extern from *:
     int XPRA_DXGI_ERROR_DEVICE_HUNG
     int XPRA_DXGI_ERROR_DEVICE_RESET
     int XPRA_DXGI_ERROR_ACCESS_LOST
+    unsigned int XPRA_D3D11_MAP_FLAG_DO_NOT_WAIT
 
     # helper functions
-    int  xpra_create_device(void **out_device, void **out_context)
+    void xpra_get_immediate_context(void *device, void **out_context)
+    void xpra_com_add_ref(void *obj)
     int  xpra_get_output1(void *device, unsigned int output_idx, void **out_output1)
     int  xpra_duplicate_output(void *output1, void *device, void **out_dupl)
     DuplDesc xpra_get_dupl_desc(void *dupl)
@@ -328,12 +347,14 @@ cdef extern from *:
     int  xpra_release_frame(void *dupl)
     int  xpra_resource_to_texture(void *resource, void **out_texture)
     void xpra_copy_resource(void *context, void *dst, void *src)
+    void xpra_copy_region(void *context, void *dst, void *src,
+                          unsigned int x, unsigned int y, unsigned int width, unsigned int height)
     void xpra_flush(void *context)
     int  xpra_create_staging(void *device, unsigned int w, unsigned int h,
                               unsigned int fmt, void **out_staging)
     int  xpra_create_gpu_tex(void *device, unsigned int w, unsigned int h,
                               unsigned int fmt, void **out_tex)
-    MapResult xpra_map_staging(void *context, void *staging)
+    MapResult xpra_map_staging(void *context, void *staging, unsigned int flags)
     void xpra_unmap_staging(void *context, void *staging)
     void xpra_com_release(void *obj)
 
@@ -369,11 +390,14 @@ cdef class DXGICapture:
     Interface matches GDICapture: get_type/get_info/refresh/get_image/clean.
     """
 
-    cdef void *_device      # ID3D11Device*
+    cdef void *_device      # ID3D11Device* — the shared device, we hold a reference
     cdef void *_context     # ID3D11DeviceContext*
     cdef void *_duplication # IDXGIOutputDuplication*
-    cdef void *_gpu_tex     # ID3D11Texture2D* — D3D11_USAGE_DEFAULT, for GPU encoder path
+    cdef void *_gpu_tex     # ID3D11Texture2D* — D3D11_USAGE_DEFAULT, the latest frame
     cdef void *_staging     # ID3D11Texture2D* — D3D11_USAGE_STAGING, for CPU readback
+
+    cdef object _pool           # the shared device's `TexturePool`, for snapshots
+    cdef object _staging_lock   # `download()` runs from the encode threads
 
     cdef int      _width
     cdef int      _height
@@ -390,6 +414,8 @@ cdef class DXGICapture:
         self._output_x = 0
         self._output_y = 0
         self._has_frame = 0
+        self._pool = None
+        self._staging_lock = Lock()
 
     def __repr__(self) -> str:
         return "DXGICapture(%dx%d %s output=%d)" % (
@@ -402,10 +428,13 @@ cdef class DXGICapture:
     def init_context(self) -> None:
         cdef int hr
 
-        hr = xpra_create_device(&self._device, &self._context)
-        if hr:
-            raise RuntimeError("D3D11CreateDevice failed: %#x" % <unsigned int> hr)
-        log("D3D11CreateDevice OK: device=%#x", <uintptr_t> self._device)
+        from xpra.platform.win32.d3d11.device import get_shared_device
+        device = get_shared_device()
+        self._device = <void *> (<uintptr_t> device.get_ptr())
+        xpra_com_add_ref(self._device)
+        xpra_get_immediate_context(self._device, &self._context)
+        self._pool = device.get_texture_pool()
+        log("using shared D3D11 device=%#x, context=%#x", <uintptr_t> self._device, <uintptr_t> self._context)
 
         cdef void *output1 = NULL
         hr = xpra_get_output1(self._device, self._output_index, &output1)
@@ -438,7 +467,6 @@ cdef class DXGICapture:
             desc.format, self._pixel_format, self._depth)
 
         # GPU texture (DEFAULT usage) — populated every refresh(); never CPU-mapped.
-        # GPU encoders (e.g. MF VideoProcessor) read directly from this texture.
         hr = xpra_create_gpu_tex(self._device,
                                   self._width, self._height, self._dxgi_format,
                                   &self._gpu_tex)
@@ -446,7 +474,7 @@ cdef class DXGICapture:
             raise RuntimeError("CreateTexture2D(gpu_tex) failed: %#x" % <unsigned int> hr)
         log("GPU texture created at %#x", <uintptr_t> self._gpu_tex)
 
-        # Staging texture (STAGING usage) — CPU-readable; populated lazily in _do_map().
+        # Staging texture (STAGING usage) — CPU-readable; only populated by download().
         hr = xpra_create_staging(self._device,
                                   self._width, self._height, self._dxgi_format,
                                   &self._staging)
@@ -462,7 +490,7 @@ cdef class DXGICapture:
         return "DXGI"
 
     def get_info(self) -> dict[str, Any]:
-        return {
+        info = {
             "type":         "dxgi",
             "width":        self._width,
             "height":       self._height,
@@ -472,15 +500,19 @@ cdef class DXGICapture:
             "depth":        self._depth,
             "output":       self._output_index,
         }
+        if self._pool:
+            info["snapshots"] = self._pool.get_info()
+        return info
 
     def refresh(self) -> bool:
         """
         Acquire the next desktop frame.  On success, copies it GPU-side to the
-        staging texture and immediately releases the duplication frame.
+        desktop texture and immediately releases the duplication frame.
 
         Returns True when new content was captured (caller should send damage).
         Returns False if the desktop has not changed.
-        Raises RuntimeError on device-lost / access-lost errors.
+        Raises CodecStateException on device-lost / access-lost errors,
+        so that the shadow server re-creates its captures.
         """
         if not self._duplication:
             return False
@@ -494,7 +526,7 @@ cdef class DXGICapture:
                      XPRA_DXGI_ERROR_DEVICE_HUNG,
                      XPRA_DXGI_ERROR_DEVICE_RESET,
                      XPRA_DXGI_ERROR_ACCESS_LOST):
-            raise RuntimeError("DXGI device lost: %#x" % <unsigned int> ar.hr)
+            raise CodecStateException("DXGI device lost: %#x" % <unsigned int> ar.hr)
 
         if ar.hr:
             log.warn("Warning: AcquireNextFrame failed: %#x", <unsigned int> ar.hr)
@@ -513,8 +545,7 @@ cdef class DXGICapture:
             return False
 
         # GPU-side copy: desktop texture -> _gpu_tex (DEFAULT, GPU-only).
-        # _staging is NOT touched here; it is populated lazily in _do_map()
-        # only when a CPU pixel readback is actually requested.
+        # _staging is NOT touched here; it is only populated by download().
         xpra_copy_resource(self._context, self._gpu_tex, src_texture)
         xpra_com_release(src_texture)
 
@@ -527,10 +558,10 @@ cdef class DXGICapture:
 
     def get_image(self, x: int = 0, y: int = 0, width: int = 0, height: int = 0):
         """
-        Return a DXGIImageWrapper for the current staged frame.
-        No CPU copy happens here — it is deferred to may_download().
+        Return a DXGIImageWrapper for an area of the current frame.
+        No copy happens here, see `snapshot()` and `download()`.
         """
-        if not self._has_frame or not self._staging:
+        if not self._has_frame or not self._gpu_tex:
             return None
 
         if width == 0:
@@ -552,83 +583,96 @@ cdef class DXGICapture:
         if width <= 0 or height <= 0:
             return None
 
-        cdef uintptr_t ctx_ptr     = <uintptr_t> self._context
-        cdef uintptr_t gpu_ptr     = <uintptr_t> self._gpu_tex
-        cdef uintptr_t staging_ptr = <uintptr_t> self._staging
-        cdef int bpp               = self._depth // 8
-        cdef int full_width        = self._width
-        cdef int cap_x = x, cap_y = y, cap_w = width, cap_h = height
-
-        pixel_format = self._pixel_format
-        depth        = self._depth
-        rowstride    = width * bpp
-
-        def map_pixels():
-            # Lazily copies gpu_tex -> staging, then maps staging and reads back.
-            return _do_map(ctx_ptr, staging_ptr, gpu_ptr,
-                           cap_x, cap_y, cap_w, cap_h,
-                           full_width, bpp)
-
-        def do_unmap():
-            _do_unmap(ctx_ptr, staging_ptr)
-
         from xpra.platform.win32.d3d11.image import DXGIImageWrapper
-        return DXGIImageWrapper(
-            x, y, width, height,
-            pixel_format, depth, rowstride,
-            map_pixels, do_unmap,
-            gpu_ptr,         # DEFAULT texture ptr — usable by GPU encoders
-        )
+        return DXGIImageWrapper(x, y, width, height, self._pixel_format, self._depth, self)
+
+    def snapshot(self, int x, int y, int width, int height) -> D3D11Texture | None:
+        """
+        Copy an area of the current frame to a texture of its own, without leaving the GPU.
+        Must be called from the same thread as `refresh()`, which overwrites the desktop texture.
+        The texture must be given back with `release_snapshot()`.
+        """
+        if not self._has_frame or not self._gpu_tex or not self._pool:
+            return None
+        if x < 0 or y < 0 or width <= 0 or height <= 0 or x + width > self._width or y + height > self._height:
+            raise ValueError("invalid snapshot area %i,%i,%i,%i for %ix%i" % (
+                x, y, width, height, self._width, self._height))
+        cdef uintptr_t texture = self._pool.acquire(width, height, self._dxgi_format)
+        if not texture:
+            log("snapshot%s no texture available from %s", (x, y, width, height), self._pool)
+            return None
+        xpra_copy_region(self._context, <void *> texture, self._gpu_tex, x, y, width, height)
+        xpra_flush(self._context)
+        return D3D11Texture(texture, <uintptr_t> self._device, 0, 0, width, height)
+
+    def release_snapshot(self, snapshot: D3D11Texture) -> None:
+        """ can be called from any thread, and after `clean()` """
+        self._pool.release(snapshot.texture, snapshot.width, snapshot.height, self._dxgi_format)
+
+    def download(self, uintptr_t texture, int x, int y, int width, int height) -> bytes:
+        """
+        Copy an area of `texture` (or of the desktop texture if zero) to system memory.
+        This can run from any thread: the device is shared and multithread protected,
+        and the staging texture has a lock of its own.
+        """
+        if width <= 0 or height <= 0 or width > self._width or height > self._height:
+            raise ValueError("invalid download size %ix%i" % (width, height))
+        cdef MapResult mr
+        cdef uint8_t *src
+        cdef uint8_t *dst
+        cdef uint32_t src_pitch
+        cdef int bpp = self._depth // 8
+        cdef int dst_stride = width * bpp
+        cdef int row
+        cdef bytes buf
+        cdef void *src_texture
+        with self._staging_lock:
+            if not self._staging:
+                raise RuntimeError("%s has been closed" % self)
+            src_texture = <void *> texture
+            if not src_texture:
+                src_texture = self._gpu_tex
+            xpra_copy_region(self._context, self._staging, src_texture, x, y, width, height)
+            # don't wait for the GPU while holding the device lock,
+            # the capture needs it on the UI thread:
+            deadline = time.monotonic() + MAP_TIMEOUT
+            while True:
+                mr = xpra_map_staging(self._context, self._staging, XPRA_D3D11_MAP_FLAG_DO_NOT_WAIT)
+                if mr.hr != XPRA_DXGI_ERROR_WAS_STILL_DRAWING:
+                    break
+                if time.monotonic() > deadline:
+                    raise RuntimeError("timeout waiting for the staging texture of %s" % self)
+                time.sleep(0.0005)
+            if mr.hr:
+                raise RuntimeError("Map(staging) failed: %#x" % <unsigned int> mr.hr)
+            try:
+                # copy straight into a new bytes object:
+                src = <uint8_t *> mr.pData
+                src_pitch = mr.RowPitch
+                buf = PyBytes_FromStringAndSize(NULL, dst_stride * height)
+                dst = <uint8_t *> PyBytes_AS_STRING(buf)
+                with nogil:
+                    for row in range(height):
+                        memcpy(dst + row * dst_stride, src + row * src_pitch, dst_stride)
+            finally:
+                xpra_unmap_staging(self._context, self._staging)
+        return buf
 
     def clean(self) -> None:
         self._has_frame = 0
-        xpra_com_release(self._duplication)
-        self._duplication = NULL
-        xpra_com_release(self._staging)
-        self._staging = NULL
-        xpra_com_release(self._gpu_tex)
-        self._gpu_tex = NULL
-        xpra_com_release(self._context)
-        self._context = NULL
-        xpra_com_release(self._device)
-        self._device = NULL
+        with self._staging_lock:
+            xpra_com_release(self._duplication)
+            self._duplication = NULL
+            xpra_com_release(self._staging)
+            self._staging = NULL
+            xpra_com_release(self._gpu_tex)
+            self._gpu_tex = NULL
+            xpra_com_release(self._context)
+            self._context = NULL
+            xpra_com_release(self._device)
+            self._device = NULL
+        # `self._pool` stays around for the snapshots that are still in use
         log("DXGICapture.clean() done")
-
-
-# ---------------------------------------------------------------------------
-# Map / unmap helpers — called from DXGIImageWrapper closures
-# ---------------------------------------------------------------------------
-
-def _do_map(uintptr_t ctx_ptr, uintptr_t staging_ptr, uintptr_t gpu_ptr,
-            int x, int y, int width, int height,
-            int full_width, int bpp) -> bytes:
-    """Lazily copy gpu_tex -> staging (if gpu_ptr given), then map and read back."""
-    if gpu_ptr:
-        # gpu_ptr is a D3D11_USAGE_DEFAULT texture populated by refresh().
-        # Copy it to the CPU-readable staging texture before mapping.
-        xpra_copy_resource(<void *> ctx_ptr, <void *> staging_ptr, <void *> gpu_ptr)
-    cdef MapResult mr = xpra_map_staging(<void *> ctx_ptr, <void *> staging_ptr)
-    if mr.hr:
-        raise RuntimeError("Map(staging) failed: %#x" % <unsigned int> mr.hr)
-
-    cdef uint8_t *src      = <uint8_t *> mr.pData
-    cdef uint32_t src_pitch = mr.RowPitch
-    cdef int dst_stride    = width * bpp
-    cdef int nbytes        = dst_stride * height
-
-    # copy straight into a new bytes object:
-    cdef bytes buf = PyBytes_FromStringAndSize(NULL, nbytes)
-    cdef uint8_t *dst = <uint8_t *> PyBytes_AS_STRING(buf)
-    cdef int row
-    for row in range(height):
-        memcpy(dst + row * dst_stride,
-               src + (y + row) * src_pitch + x * bpp,
-               dst_stride)
-    return buf
-
-
-def _do_unmap(uintptr_t ctx_ptr, uintptr_t staging_ptr) -> None:
-    xpra_unmap_staging(<void *> ctx_ptr, <void *> staging_ptr)
 
 
 # ---------------------------------------------------------------------------
@@ -641,21 +685,43 @@ def get_capture_instance(output_index: int = 0) -> DXGICapture:
     return capture
 
 
+def get_output_positions() -> dict[int, tuple[int, int]]:
+    """ the desktop position of each output of the shared device's adapter """
+    from xpra.platform.win32.d3d11.device import get_shared_device
+    cdef void *device = <void *> (<uintptr_t> get_shared_device().get_ptr())
+    cdef void *output1 = NULL
+    cdef OutputPos pos
+    positions = {}
+    for output_index in range(8):
+        output1 = NULL
+        if xpra_get_output1(device, output_index, &output1) or not output1:
+            break   # no more outputs on this adapter
+        pos = xpra_get_output_pos(output1)
+        xpra_com_release(output1)
+        positions[output_index] = (pos.x, pos.y)
+    return positions
+
+
 def get_capture_for_monitor(x: int, y: int) -> DXGICapture | None:
     """
     Find and return a fully-initialised DXGICapture for the output whose
     desktop position matches (x, y).  Returns None if no output matches.
     Captures work in local (monitor-relative) coordinates.
     """
-    for output_index in range(8):
+    # don't duplicate the other outputs just to find out where they are:
+    # an output can only be duplicated once per process
+    positions = get_output_positions()
+    log("get_capture_for_monitor(%i, %i) output positions=%s", x, y, positions)
+    for output_index, pos in positions.items():
+        if pos != (x, y):
+            continue
+        capture = DXGICapture(output_index)
         try:
-            capture = DXGICapture(output_index)
             capture.init_context()
-            if capture._output_x == x and capture._output_y == y:
-                return capture
-            capture.clean()
         except RuntimeError:
-            break   # no more outputs on this adapter
+            capture.clean()
+            raise
+        return capture
     return None
 
 

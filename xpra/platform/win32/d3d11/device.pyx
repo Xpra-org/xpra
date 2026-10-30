@@ -4,13 +4,111 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from threading import Lock
 
+from xpra.util.env import envint
 from xpra.log import Logger
 
 from libc.stddef cimport wchar_t, size_t
-from libc.stdint cimport uintptr_t, uint8_t, uint16_t, uint32_t
+from libc.stdint cimport uintptr_t
 
 log = Logger("win32", "d3d11")
+
+# how many snapshot textures can be in use at the same time,
+# and how many unused ones we keep around for each size:
+MAX_SNAPSHOTS = envint("XPRA_D3D11_MAX_SNAPSHOTS", 16)
+MAX_IDLE_SNAPSHOTS = envint("XPRA_D3D11_MAX_IDLE_SNAPSHOTS", 2)
+MAX_SNAPSHOT_SIZES = envint("XPRA_D3D11_MAX_SNAPSHOT_SIZES", 8)
+
+
+cdef extern from *:
+    """
+    #include <windows.h>
+    #include <d3d11.h>
+    #include <d3d10.h>
+
+    static const GUID XPRA_IID_ID3D10Multithread = {
+        0x9b7e4e00,0x342c,0x4106,{0xa1,0x9f,0x4f,0x27,0x04,0xf6,0x89,0xf0}};
+    static const GUID XPRA_IID_IDXGIDevice = {
+        0x54ec77fa,0x1377,0x44e6,{0x8c,0x32,0x88,0xfd,0x5f,0x44,0xc8,0x4c}};
+
+    /* the shared device is used from the UI thread (capture) and the encode threads,
+       so all the calls going through its immediate context must be serialized: */
+    static HRESULT xpra_create_shared_device(void **out_device, unsigned int *out_flags)
+    {
+        D3D_FEATURE_LEVEL fl;
+        ID3D10Multithread *mt = NULL;
+        UINT flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT | D3D11_CREATE_DEVICE_VIDEO_SUPPORT;
+        HRESULT hr = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags, NULL, 0,
+                                       D3D11_SDK_VERSION, (ID3D11Device **) out_device, &fl, NULL);
+        if (FAILED(hr)) {
+            flags = D3D11_CREATE_DEVICE_BGRA_SUPPORT;
+            hr = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, flags, NULL, 0,
+                                   D3D11_SDK_VERSION, (ID3D11Device **) out_device, &fl, NULL);
+        }
+        if (FAILED(hr))
+            return hr;
+        *out_flags = flags;
+        ID3D11Device *device = (ID3D11Device *) *out_device;
+        if (SUCCEEDED(device->lpVtbl->QueryInterface(device, &XPRA_IID_ID3D10Multithread, (void **) &mt)) && mt) {
+            mt->lpVtbl->SetMultithreadProtected(mt, TRUE);
+            mt->lpVtbl->Release(mt);
+        }
+        return S_OK;
+    }
+
+    static HRESULT xpra_get_device_removed_reason(void *device)
+    {
+        return ((ID3D11Device *) device)->lpVtbl->GetDeviceRemovedReason((ID3D11Device *) device);
+    }
+
+    static HRESULT xpra_get_adapter_desc(void *device, DXGI_ADAPTER_DESC *desc)
+    {
+        IDXGIDevice *dxgi_device = NULL;
+        IDXGIAdapter *adapter = NULL;
+        HRESULT hr = ((ID3D11Device *) device)->lpVtbl->QueryInterface(
+            (ID3D11Device *) device, &XPRA_IID_IDXGIDevice, (void **) &dxgi_device);
+        if (FAILED(hr))
+            return hr;
+        hr = dxgi_device->lpVtbl->GetAdapter(dxgi_device, &adapter);
+        dxgi_device->lpVtbl->Release(dxgi_device);
+        if (FAILED(hr))
+            return hr;
+        hr = adapter->lpVtbl->GetDesc(adapter, desc);
+        adapter->lpVtbl->Release(adapter);
+        return hr;
+    }
+
+    static HRESULT xpra_create_texture(void *device, UINT width, UINT height, UINT format, void **out_texture)
+    {
+        D3D11_TEXTURE2D_DESC desc = {0};
+        desc.Width              = width;
+        desc.Height             = height;
+        desc.MipLevels          = 1;
+        desc.ArraySize          = 1;
+        desc.Format             = (DXGI_FORMAT) format;
+        desc.SampleDesc.Count   = 1;
+        desc.Usage              = D3D11_USAGE_DEFAULT;
+        desc.BindFlags          = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+        return ((ID3D11Device *) device)->lpVtbl->CreateTexture2D(
+            (ID3D11Device *) device, &desc, NULL, (ID3D11Texture2D **) out_texture);
+    }
+
+    static unsigned long xpra_add_ref(void *obj)
+    {
+        return ((IUnknown *) obj)->lpVtbl->AddRef((IUnknown *) obj);
+    }
+
+    static unsigned long xpra_release(void *obj)
+    {
+        return ((IUnknown *) obj)->lpVtbl->Release((IUnknown *) obj);
+    }
+    """
+    int xpra_create_shared_device(void **out_device, unsigned int *out_flags)
+    int xpra_get_device_removed_reason(void *device)
+    int xpra_create_texture(void *device, unsigned int width, unsigned int height, unsigned int fmt, void **out_texture)
+    unsigned long xpra_add_ref(void *obj)
+    unsigned long xpra_release(void *obj)
 
 ctypedef unsigned int UINT
 ctypedef unsigned int HRESULT
@@ -153,6 +251,10 @@ cdef extern from "dxgi.h":
 
     ctypedef struct IDXGIDevice:
         const IDXGIDeviceVtbl *lpVtbl
+
+
+cdef extern from *:
+    int xpra_get_adapter_desc(void *device, DXGI_ADAPTER_DESC *desc)
 
 
 cdef extern from "d3d11.h":
@@ -415,7 +517,7 @@ cdef extern from "d3d11.h":
     ctypedef void (*DC_COPYRESOURCE)(ID3D11DeviceContext *context, ID3D11Resource *dst, ID3D11Resource *src)
     ctypedef void (*DC_COPYSUBRESOURCEREGION)(ID3D11DeviceContext *context,
                                               ID3D11Resource *dst, UINT dstSubResource, UINT dstX, UINT dstY, UINT dstZ,
-                                              ID3D11Resource *src, UINT srcSubResource)
+                                              ID3D11Resource *src, UINT srcSubResource, const D3D11_BOX *pSrcBox)
     ctypedef void (*DC_UPDATESUBRESOURCEREGION)(ID3D11DeviceContext *context,
                                                 ID3D11Resource  *pDstResource, UINT DstSubresource,
                                                 const D3D11_BOX *pDstBox,
@@ -574,7 +676,7 @@ cdef class D3D11DeviceContext:
         self.context = NULL
 
     def __repr__(self):
-        return "ImmediateContext(%s)" % self.d3d11device
+        return "ImmediateContext(%#x)" % <uintptr_t> self.device
 
     def flush(self) -> None:
         assert self.context
@@ -587,6 +689,25 @@ cdef class D3D11DeviceContext:
         cdef ID3D11Resource *r_dst = <ID3D11Resource*> dst
         cdef ID3D11Resource *r_src = <ID3D11Resource*> src
         self.context.lpVtbl.CopyResource(self.context, r_dst, r_src)
+
+    def copy_subresource_region(self, uintptr_t dst, unsigned int dst_x, unsigned int dst_y,
+                                uintptr_t src, unsigned int x, unsigned int y,
+                                unsigned int width, unsigned int height) -> None:
+        """ copy the `width` x `height` area at `x`, `y` of `src` to `dst_x`, `dst_y` in `dst` """
+        log("D3D11DeviceContext.copy_subresource_region(%#x, %i, %i, %#x, %i, %i, %i, %i)",
+            dst, dst_x, dst_y, src, x, y, width, height)
+        assert self.context
+        assert dst and src
+        cdef D3D11_BOX box
+        box.left = x
+        box.top = y
+        box.front = 0
+        box.right = x + width
+        box.bottom = y + height
+        box.back = 1
+        self.context.lpVtbl.CopySubresourceRegion(self.context,
+                                                  <ID3D11Resource*> dst, 0, dst_x, dst_y, 0,
+                                                  <ID3D11Resource*> src, 0, &box)
 
     def get_info(self) -> dict[str, Any]:
         assert self.context
@@ -602,22 +723,54 @@ cdef class D3D11DeviceContext:
 
 cdef class D3D11Device:
     cdef ID3D11Device *device
+    cdef object texture_pool
 
     def __init__(self, devptr: uintptr_t):
         assert devptr, "no device"
         self.device = <ID3D11Device *> devptr
+        self.texture_pool = None
+
+    def get_ptr(self) -> int:
+        return <uintptr_t> self.device
 
     def get_device_context(self):
         return D3D11DeviceContext(<uintptr_t> self.device)
 
     def Release(self):
+        pool = self.texture_pool
+        if pool:
+            self.texture_pool = None
+            pool.close()
         self.device.lpVtbl.Release(self.device)
 
     def get_immediate_context(self) -> D3D11DeviceContext:
-        return D3D11DeviceContext(self)
+        return D3D11DeviceContext(<uintptr_t> self.device)
+
+    def get_texture_pool(self) -> TexturePool:
+        if self.texture_pool is None:
+            self.texture_pool = TexturePool(<uintptr_t> self.device)
+        return self.texture_pool
+
+    def is_removed(self) -> bool:
+        return xpra_get_device_removed_reason(self.device) != 0
 
     def __repr__(self):
         return "D3D11Device(%#x)" % <uintptr_t> self.device
+
+    def get_vendor_id(self) -> int:
+        cdef DXGI_ADAPTER_DESC desc
+        if xpra_get_adapter_desc(self.device, &desc):
+            return 0
+        return desc.VendorId
+
+    def get_luid(self) -> bytes:
+        """ the adapter's LUID, laid out like the `LUID` structure """
+        cdef DXGI_ADAPTER_DESC desc
+        if xpra_get_adapter_desc(self.device, &desc):
+            return b""
+        low = desc.AdapterLuid.LowPart & 0xffffffff
+        high = desc.AdapterLuid.HighPart & 0xffffffff
+        return low.to_bytes(4, "little") + high.to_bytes(4, "little")
 
     def get_info(self) -> dict[str, Any]:
         level = self.device.lpVtbl.GetFeatureLevel(self.device)
@@ -628,32 +781,11 @@ cdef class D3D11Device:
             "feature-level": FEATURE_LEVELS.get(level, level),
             "exception-mode": emode,
         }
-        # get a IDXGIDevice interface from this device:
-        cdef GUID device_guid               # IID_IDXGIDevice
-        set_GUID(&device_guid, 0x54ec77fa, 0x1377, 0x44e6, 0x8c, 0x32, 0x88, 0xfd, 0x5f, 0x44, 0xc8, 0x4c)
-        cdef IDXGIDevice *dxgi_device = NULL
-        cdef HRESULT res = self.device.lpVtbl.QueryInterface(self.device, &device_guid, <void**> &dxgi_device)
-        log("D3D11Device.QueryInterface(DXGIDevice)=%i, dxgi_device=%#x", res, <uintptr_t> dxgi_device)
-        if res:
-            log.warn("Warning: failed to get DXGIDevice interface: %s", ERRORS.get(res, res))
-            return info
-        assert dxgi_device
-        # get the adapter interface:
-        cdef GUID adapter_guid     # IID_IDXGIAdapter
-        set_GUID(&adapter_guid, 0x2411e7e1, 0x12ac, 0x4ccf, 0xbd, 0x14, 0x97, 0x9b, 0xe2, 0x52, 0x12, 0x20)
-        cdef IDXGIAdapter *adapter
-        res = dxgi_device.lpVtbl.GetAdapter(dxgi_device, &adapter)
-        if res:
-            log.warn("Warning: failed to get IDXGIAdapter: %s", ERRORS.get(res, res))
-            return info
-        assert adapter
-        # get the adapter description:
         cdef DXGI_ADAPTER_DESC desc
-        res = adapter.lpVtbl.GetDesc(adapter, &desc)
+        cdef int res = xpra_get_adapter_desc(self.device, &desc)
         if res:
-            log.warn("Warning: failed to get adapter description: %s", ERRORS.get(res, res))
+            log.warn("Warning: failed to get the adapter description: %s", ERRORS.get(res, res))
             return info
-
         cdef size_t size = wcslen(desc.Description)
         description = PyUnicode_FromWideChar(desc.Description, size)
         info.update({
@@ -669,20 +801,120 @@ cdef class D3D11Device:
             },
             "luid": "%#x:%#x" % (desc.AdapterLuid.HighPart, desc.AdapterLuid.LowPart),
         })
+        if self.texture_pool:
+            info["texture-pool"] = self.texture_pool.get_info()
         return info
 
 
-cdef void set_GUID(GUID* guid, uint32_t data1, uint16_t data2, uint16_t data3,
-                   uint8_t data40, uint8_t data41, uint8_t data42, uint8_t data43,
-                   uint8_t data44, uint8_t data45, uint8_t data46, uint8_t data47):
-    guid.Data1 = data1
-    guid.Data2 = data2
-    guid.Data3 = data3
-    guid.Data4[0] = data40
-    guid.Data4[1] = data41
-    guid.Data4[2] = data42
-    guid.Data4[3] = data43
-    guid.Data4[4] = data44
-    guid.Data4[5] = data45
-    guid.Data4[6] = data46
-    guid.Data4[7] = data47
+cdef class TexturePool:
+    """
+    GPU textures used for snapshotting regions of the desktop texture.
+    Each texture handed out by `acquire` belongs to the caller until it is given back with `release`,
+    which may be called from any thread.
+    """
+    cdef uintptr_t device
+    cdef object lock
+    cdef dict idle
+    cdef unsigned int outstanding
+    cdef int closed
+
+    def __init__(self, uintptr_t device):
+        self.device = device
+        self.lock = Lock()
+        self.idle = {}
+        self.outstanding = 0
+        self.closed = 0
+
+    def __repr__(self):
+        return "TexturePool(%#x)" % self.device
+
+    def get_info(self) -> dict[str, Any]:
+        with self.lock:
+            return {
+                "outstanding": self.outstanding,
+                "idle": {"%ix%i" % key[:2]: len(textures) for key, textures in self.idle.items()},
+            }
+
+    def acquire(self, unsigned int width, unsigned int height, unsigned int fmt) -> int:
+        """ returns a texture pointer, or zero if we have run out """
+        cdef void *texture = NULL
+        cdef int hr
+        key = (width, height, fmt)
+        with self.lock:
+            if self.closed or self.outstanding >= MAX_SNAPSHOTS:
+                return 0
+            textures = self.idle.get(key)
+            if textures:
+                self.outstanding += 1
+                return textures.pop()
+            hr = xpra_create_texture(<void *> self.device, width, height, fmt, &texture)
+            if hr or not texture:
+                log("TexturePool.acquire(%i, %i, %i) CreateTexture2D failed: %#x", width, height, fmt, hr)
+                return 0
+            self.outstanding += 1
+            return <uintptr_t> texture
+
+    def release(self, uintptr_t texture, unsigned int width, unsigned int height, unsigned int fmt) -> None:
+        key = (width, height, fmt)
+        with self.lock:
+            if self.outstanding:
+                self.outstanding -= 1
+            if not self.closed:
+                textures = self.idle.get(key)
+                if textures is None:
+                    if len(self.idle) >= MAX_SNAPSHOT_SIZES:
+                        # make room by evicting the size which has been unused the longest:
+                        for old in self.idle.pop(next(iter(self.idle))):
+                            com_release(old)
+                    textures = self.idle[key] = []
+                if len(textures) < MAX_IDLE_SNAPSHOTS:
+                    textures.append(texture)
+                    return
+        xpra_release(<void *> texture)
+
+    def close(self) -> None:
+        with self.lock:
+            self.closed = 1
+            idle = self.idle
+            self.idle = {}
+        for textures in idle.values():
+            for texture in textures:
+                com_release(texture)
+
+
+def com_add_ref(uintptr_t ptr) -> int:
+    return xpra_add_ref(<void *> ptr)
+
+
+def com_release(uintptr_t ptr) -> int:
+    return xpra_release(<void *> ptr)
+
+
+shared_device_lock = Lock()
+shared_device: D3D11Device | None = None
+
+
+def get_shared_device() -> D3D11Device:
+    """
+    The D3D11 device shared by the screen capture and the GPU encoders, so that textures can be
+    passed from one to the other without ever leaving the GPU.
+    It is created on the default adapter, which is also the one that DXGI capture and AMF use.
+    """
+    global shared_device
+    cdef void *device = NULL
+    cdef unsigned int flags = 0
+    cdef int hr
+    with shared_device_lock:
+        if shared_device and shared_device.is_removed():
+            log.warn("Warning: the shared D3D11 device has been removed, creating a new one")
+            # users of the old device still hold their own reference:
+            shared_device.Release()
+            shared_device = None
+        if not shared_device:
+            hr = xpra_create_shared_device(&device, &flags)
+            if hr or not device:
+                raise RuntimeError("D3D11CreateDevice failed: %s" % ERRORS.get(hr, "%#x" % <unsigned int> hr))
+            flags_strs = tuple(name for value, name in DEVICE_FLAGS.items() if flags & value)
+            log("created shared D3D11 device %#x with flags %s", <uintptr_t> device, flags_strs)
+            shared_device = D3D11Device(<uintptr_t> device)
+        return shared_device
