@@ -4,7 +4,7 @@
  * later version. See the file COPYING for details.
  * ABOUTME: MediaFoundation video encoder - C API header.
  * ABOUTME: Flat C interface wrapping IMFTransform for use from Cython.
- * ABOUTME: Accepts YUV420P CPU buffers and outputs H.264 / HEVC bitstreams. */
+ * ABOUTME: Accepts YUV420P CPU buffers or BGRA D3D11 textures and outputs H.264 / HEVC bitstreams. */
 
 #ifndef MF_ENCODE_H
 #define MF_ENCODE_H
@@ -42,6 +42,14 @@ typedef enum {
     MF_CONTENT_SCREEN  = 1,  /* synthetic edges: text, browser, desktop */
     MF_CONTENT_VIDEO   = 2,  /* continuous tone: real video, photos */
 } MFContentType;
+
+/* What the encoder is given to encode */
+typedef enum {
+    MF_INPUT_YUV420P = 0,  /* three planes in system memory, interleaved into NV12 on the CPU */
+    MF_INPUT_BGRX    = 1,  /* BGRA textures on the device given to `mf_encode_set_device`
+                              (or pixels uploaded to one), converted to NV12 on the GPU
+                              by the D3D11 video processor */
+} MFInputFormat;
 
 typedef enum {
     MF_ENC_PROFILE_CONSTRAINED_BASELINE = 0,
@@ -85,9 +93,17 @@ typedef struct {
 MFEncodeStatus mf_encode_startup(void);
 void           mf_encode_shutdown(void);
 
-/* Lifecycle - `tuning` may be NULL for the defaults */
-MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int height,
-                                 const MFEncoderTuning *tuning);
+/* The `ID3D11Device` that "BGRX" encoders run on, which has to be the one their
+   textures live on, so it is the screen capture's own. It must have been created
+   with video support and be multithread protected. NULL lets go of it.
+   Encoders that are already running keep the device they were created with. */
+MFEncodeStatus mf_encode_set_device(void *d3d11_device);
+
+/* Lifecycle - `tuning` may be NULL for the defaults.
+   A "BGRX" encoder is only ever a hardware MFT on the adapter of the device given
+   to `mf_encode_set_device`: MF_ENC_NOT_AVAILABLE if there is no such MFT. */
+MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int input_format,
+                                 int width, int height, const MFEncoderTuning *tuning);
 void           mf_encoder_destroy(MFEncoder *enc);
 
 /* Update the quality / speed / bandwidth limit of a running encoder.
@@ -113,6 +129,17 @@ MFEncodeStatus mf_encoder_encode(MFEncoder *enc,
                                   const uint8_t *v_data, int v_stride,
                                   int width, int height,
                                   MFEncodedFrame *frame);
+
+/* Encode the region at (x, y) of a BGRA `ID3D11Texture2D` on the encoder's device,
+   as large as the encoder ("BGRX" input only). The texture is not used again
+   once this returns: everything that reads it is queued on the device first. */
+MFEncodeStatus mf_encoder_encode_texture(MFEncoder *enc, void *texture, int x, int y,
+                                         MFEncodedFrame *frame);
+
+/* Encode BGRX pixels from system memory, at least as large as the encoder
+   ("BGRX" input only): they are uploaded and take the same path as a texture. */
+MFEncodeStatus mf_encoder_encode_bgrx(MFEncoder *enc, const uint8_t *pixels, int stride,
+                                      MFEncodedFrame *frame);
 
 /* Ask for one frame the encoder is still holding, draining the MFT if it has
    to. Draining ends the stream segment, so the next encoded frame will be an
