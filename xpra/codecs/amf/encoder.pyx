@@ -86,6 +86,11 @@ log = Logger("encoder", "amf")
 DX11 = envbool("XPRA_AMF_DX11", WIN32)
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
 
+# BT.601 studio range, matching the NV12 input produced by libyuv.
+COLOR_PROFILE_601 = 0
+# AMF's SMPTE170M colour primaries and transfer characteristic, also BT.601.
+SMPTE170M = 6
+
 
 AMF_ENCODINGS : Dict[str, str] = {
     # AMFVideoEncoderVCE_SVC?
@@ -136,6 +141,10 @@ PROPERTIES: Dict[str, Dict[str, str]] = {
         "low-latency": "LowLatencyInternal",
         "query-timeout": "QueryTimeout",
         "deblocking": "DeBlockingFilter",
+        "input-color-profile": "InColorProfile",
+        "output-color-profile": "OutColorProfile",
+        "output-color-primaries": "OutColorPrimaries",
+        "output-transfer-characteristic": "OutColorTransferChar",
     },
     "hevc": {
         # two knobs are deliberately missing here, both because there is no HEVC capable
@@ -157,6 +166,10 @@ PROPERTIES: Dict[str, Dict[str, str]] = {
         "qp-intra": "HevcQP_I",
         "qp-inter": "HevcQP_P",
         "query-timeout": "HevcQueryTimeout",
+        "input-color-profile": "HevcInColorProfile",
+        "output-color-profile": "HevcOutColorProfile",
+        "output-color-primaries": "HevcOutColorPrimaries",
+        "output-transfer-characteristic": "HevcOutColorTransferChar",
     },
     "av1": {
         "usage": "Av1Usage",
@@ -174,6 +187,10 @@ PROPERTIES: Dict[str, Dict[str, str]] = {
         "query-timeout": "Av1QueryTimeout",
         "screen-content": "Av1ScreenContentTools",
         "palette-mode": "Av1PaletteMode",
+        "input-color-profile": "Av1InputColorProfile",
+        "output-color-profile": "Av1OutputColorProfile",
+        "output-color-primaries": "Av1OutputColorPrimaries",
+        "output-transfer-characteristic": "Av1OutputTransferChar",
     },
 }
 
@@ -668,6 +685,12 @@ cdef class Encoder:
             self.try_property("palette-mode", int(screen_content))
             setint64("Av1Profile", AMF_VIDEO_ENCODER_AV1_PROFILE_MAIN)
             setint64("Av1Level", AMF_VIDEO_ENCODER_AV1_LEVEL_5_1)
+
+        # The NV12 input is BT.601 studio range, but AMF's automatic choice uses BT.709 for HD.
+        self.try_property("input-color-profile", COLOR_PROFILE_601)
+        self.try_property("output-color-profile", COLOR_PROFILE_601)
+        self.try_property("output-color-primaries", SMPTE170M)
+        self.try_property("output-transfer-characteristic", SMPTE170M)
 
         # init:
         res = self.encoder.pVtbl.Init(self.encoder, self.surface_format, self.width, self.height)
