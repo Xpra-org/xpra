@@ -25,7 +25,7 @@ from xpra.server.window.window_source import (
     )
 from xpra.rectangle import rectangle, merge_all          #@UnresolvedImport
 from xpra.server.window.video_subregion import VideoSubregion, VIDEO_SUBREGION
-from xpra.server.window.video_scoring import get_pipeline_score
+from xpra.server.window.video_scoring import LOSSY_CSC, get_pipeline_score
 from xpra.codecs.codec_constants import PREFERRED_ENCODING_ORDER, EDGE_ENCODING_ORDER, preforder
 from xpra.codecs.loader import has_codec
 from xpra.util import parse_scaling_value, engs, envint, envbool, csv, roundup, print_nested_dict, first_time, typedict
@@ -1450,7 +1450,8 @@ class WindowVideoSource(WindowSource):
                         scaling = self.calculate_scaling(width, height, max_w, max_h)
                     else:
                         scaling = (1, 1)
-                    lossy_csc = enc_in_format in ("NV12", "YUV420P", "YUV422P")
+                    # the subsampling may also happen inside the encoder (ie: "BGRX" in, "YUV420P" out):
+                    lossy_csc = enc_in_format in LOSSY_CSC or all(cs in LOSSY_CSC for cs in matches)
                     if text_hint and (scaling != (1, 1) or lossy_csc):
                         continue
                     score_delta = encoding_score_delta
