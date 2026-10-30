@@ -949,6 +949,18 @@ class WindowVideoSource(WindowSource):
             encoding, r, self.full_frames_only, non_video, self.video_encodings)
         return r
 
+    def may_freeze_on_gpu(self) -> bool:
+        """
+        Images can stay on the GPU if the current video encoder can read them from there.
+        Not otherwise: everything else needs the pixels in system memory,
+        including the scroll detection.
+        """
+        ve = self._video_encoder
+        if not ve or self._csc_encoder:
+            return False
+        supports_gpu_input = getattr(ve, "supports_gpu_input", None)
+        return bool(supports_gpu_input and supports_gpu_input())
+
     def do_process_damage_image(self, damage_time: float, rgb_request_time: float,
                                 image: ImageWrapper,
                                 coding: str, sequence: int, eoptions: typedict, flush=0):
@@ -982,7 +994,10 @@ class WindowVideoSource(WindowSource):
             av_delay, must_freeze, (w, h), coding)
         if must_freeze:
             with image:
-                image.freeze()
+                freeze = image.freeze
+                if video_mode and self.may_freeze_on_gpu():
+                    freeze = getattr(image, "freeze_on_gpu", freeze)
+                freeze()
 
         def call_encode(ew: int, eh: int, eimage: ImageWrapper, encoding: str, flush: int) -> None:
             if self.is_cancelled(sequence):

@@ -231,6 +231,10 @@ class ImageWrapper:
             # some wrappers (XShm) need to be told to stop updating the pixel buffer
             return False
 
+    def freeze_on_gpu(self) -> bool:
+        """ like `freeze()`, but images whose pixels live on the GPU may keep them there """
+        return self.freeze()
+
     def clone_pixel_data(self) -> None:
         with self._lock:
             if self.freed:
