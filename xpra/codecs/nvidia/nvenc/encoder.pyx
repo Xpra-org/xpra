@@ -1586,8 +1586,10 @@ cdef class Encoder:
         cdef unsigned int h = image.get_height()
         gpu_buffer = image.get_gpu_buffer()
         cdef unsigned int stride = image.get_rowstride()
-        log("do_compress_image(%s) kernel=%s, GPU buffer=%#x, stride=%i, input pitch=%i, output pitch=%i",
-            image, self.kernel_name, int(gpu_buffer or 0), stride, self.inputPitch, self.outputPitch)
+        log("do_compress_image(%s) kernel=%s, GPU buffer=%s, stride=%i, input pitch=%i, output pitch=%i",
+            image, self.kernel_name, gpu_buffer, stride, self.inputPitch, self.outputPitch)
+        # `get_gpu_buffer()` can also be a D3D11 texture or a dmabuf:
+        cdef uint8_t cuda_buffer = isinstance(gpu_buffer, driver.DeviceAllocation)
         assert image.get_planes()==ImageWrapper.PACKED, "invalid number of planes: %s" % image.get_planes()
         assert (w & self.width_mask)<=self.input_width, "invalid width: %s" % w
         assert (h & self.height_mask)<=self.input_height, "invalid height: %s" % h
@@ -1600,7 +1602,7 @@ cdef class Encoder:
         cdef unsigned long input_size
         if self.kernel:
             #copy to input buffer, CUDA kernel converts into output buffer:
-            if GPU_MEMCOPY and gpu_buffer and stride<=self.inputPitch:
+            if GPU_MEMCOPY and cuda_buffer and stride<=self.inputPitch:
                 driver.memcpy_dtod(self.cudaInputBuffer, int(gpu_buffer), stride*h)
                 log("GPU memcopy %i bytes from %#x to %#x", stride*h, int(gpu_buffer), int(self.cudaInputBuffer))
             else:
@@ -1611,7 +1613,7 @@ cdef class Encoder:
             input_size = self.inputPitch * self.input_height
         else:
             #go direct to the CUDA "output" buffer:
-            if GPU_MEMCOPY and gpu_buffer and stride<=self.outputPitch:
+            if GPU_MEMCOPY and cuda_buffer and stride<=self.outputPitch:
                 driver.memcpy_dtod(self.cudaOutputBuffer, int(gpu_buffer), stride*h)
                 log("GPU memcopy %i bytes from %#x to %#x", stride*h, int(gpu_buffer), int(self.cudaOutputBuffer))
             else:
