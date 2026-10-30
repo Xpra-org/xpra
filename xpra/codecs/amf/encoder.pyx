@@ -29,7 +29,7 @@ from xpra.codecs.amf.amf cimport (
     AMF_DX11_0,
     AMF_MEMORY_TYPE, AMF_MEMORY_DX11, AMF_MEMORY_HOST,
     AMF_INPUT_FULL, AMF_NOT_SUPPORTED, AMF_ALREADY_INITIALIZED, AMF_OK,
-    AMF_SURFACE_FORMAT, AMF_SURFACE_YUV420P, AMF_SURFACE_NV12, AMF_SURFACE_BGRA,
+    AMF_SURFACE_FORMAT, AMF_SURFACE_NV12, AMF_SURFACE_BGRA,
     AMF_VARIANT_TYPE, AMF_VARIANT_INT64, AMF_VARIANT_SIZE, AMF_VARIANT_RATE,
     AMF_VIDEO_ENCODER_USAGE_LOW_LATENCY,
     AMF_VIDEO_ENCODER_USAGE_ULTRA_LOW_LATENCY,
@@ -84,7 +84,18 @@ from xpra.codecs.amf.common cimport (
 log = Logger("encoder", "amf")
 
 DX11 = envbool("XPRA_AMF_DX11", WIN32)
+# use the D3D11 device shared with the DXGI screen capture,
+# so that captured frames can be encoded without going through system memory:
+SHARED_DEVICE = envbool("XPRA_AMF_SHARED_DEVICE", True)
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
+
+AMD_VENDOR_ID = 0x1002
+# `AMF_VIDEO_CONVERTER_COLOR_PROFILE_601`: BT.601, studio range,
+# which is what the libyuv colourspace conversion produces for the NV12 input:
+COLOR_PROFILE_601 = 0
+# `AMF_COLOR_PRIMARIES_SMPTE170M` and `AMF_COLOR_TRANSFER_CHARACTERISTIC_SMPTE170M`, also BT.601.
+# (the default is "undefined", which goes into the bitstream as the reserved value 0)
+SMPTE170M = 6
 
 
 AMF_ENCODINGS : dict[str, str] = {
@@ -135,6 +146,10 @@ PROPERTIES: dict[str, dict[str, str]] = {
         "b-frames": "BPicturesPattern",
         "query-timeout": "QueryTimeout",
         "deblocking": "DeBlockingFilter",
+        "input-color-profile": "InColorProfile",
+        "output-color-profile": "OutColorProfile",
+        "output-color-primaries": "OutColorPrimaries",
+        "output-transfer-characteristic": "OutColorTransferChar",
     },
     "hevc": {
         # two knobs are deliberately missing here, both because there is no HEVC capable
@@ -156,6 +171,10 @@ PROPERTIES: dict[str, dict[str, str]] = {
         "qp-intra": "HevcQP_I",
         "qp-inter": "HevcQP_P",
         "query-timeout": "HevcQueryTimeout",
+        "input-color-profile": "HevcInColorProfile",
+        "output-color-profile": "HevcOutColorProfile",
+        "output-color-primaries": "HevcOutColorPrimaries",
+        "output-transfer-characteristic": "HevcOutColorTransferChar",
     },
     "av1": {
         "usage": "Av1Usage",
@@ -173,6 +192,10 @@ PROPERTIES: dict[str, dict[str, str]] = {
         "query-timeout": "Av1QueryTimeout",
         "screen-content": "Av1ScreenContentTools",
         "palette-mode": "Av1PaletteMode",
+        "input-color-profile": "Av1InputColorProfile",
+        "output-color-profile": "Av1OutputColorProfile",
+        "output-color-primaries": "Av1OutputColorPrimaries",
+        "output-transfer-characteristic": "Av1OutputColorTransferChar",
     },
 }
 
@@ -222,6 +245,13 @@ cdef extern from "Python.h":
     wchar_t* PyUnicode_AsWideCharString(object unicode, Py_ssize_t *size)
     # cdef extern from "pymem.h":
     void PyMem_Free(void *ptr)
+
+
+cdef AMF_RESULT set_component_property(AMFComponent *component, name: str, AMFVariantStruct var):
+    cdef wchar_t *prop = PyUnicode_AsWideCharString(name, NULL)
+    cdef AMF_RESULT ret = component.pVtbl.SetProperty(component, prop, var)
+    PyMem_Free(prop)
+    return ret
 
 
 cdef inline AMF_VIDEO_ENCODER_QUALITY_PRESET_ENUM get_h264_preset(int quality, int speed):
@@ -280,9 +310,35 @@ def get_type() -> str:
 
 CODECS = tuple(AMF_ENCODINGS.keys())
 
+# the encodings which can also take "BGRX" input, converted to NV12 by `AMFVideoConverter` on the GPU.
+# The selftest probes these separately, so that a failure only disables this input format:
+BGRX_ENCODINGS: Sequence[str] = CODECS if (WIN32 and DX11) else ()
+
 
 def get_encodings() -> Sequence[str]:
     return CODECS
+
+
+def get_shared_device_ptr() -> int:
+    """
+    The D3D11 device shared with the DXGI screen capture, if it is an AMD one.
+    Returns zero otherwise, in which case AMF creates a device of its own.
+    """
+    if not SHARED_DEVICE:
+        return 0
+    try:
+        from xpra.platform.win32.d3d11.device import get_shared_device
+        device = get_shared_device()
+    except (ImportError, RuntimeError) as e:
+        log("get_shared_device()", exc_info=True)
+        if first_time("amf-shared-device"):
+            log.warn("Warning: cannot use the shared D3D11 device: %s", e)
+        return 0
+    vendor_id = device.get_vendor_id()
+    if vendor_id != AMD_VENDOR_ID:
+        log("not using the shared D3D11 device %s, vendor is %#x", device, vendor_id)
+        return 0
+    return device.get_ptr()
 
 
 def get_info() -> dict[str, Any]:
@@ -295,31 +351,48 @@ def get_info() -> dict[str, Any]:
     return info
 
 
+def get_spec(encoding: str, input_colorspace: str) -> VideoSpec:
+    caps = CAPS.get(encoding, {})
+    input_caps = caps.get("input", {})
+    output_caps = caps.get("output", {})
+    min_w, max_w = input_caps.get("width-range", (128, 4096))
+    min_h, max_h = input_caps.get("height-range", (128, 4096))
+    output_colorspaces = output_caps.get("native-formats", ("YUV420P", ))
+    # ugly translation into the names xpra uses for legacy reasons:
+    out_css = tuple({"NV12" : "YUV420P"}.get(cs, cs) for cs in output_colorspaces)
+    kwargs = {}
+    if input_colorspace == "BGRX":
+        # the colourspace conversion runs on the GPU, and it subsamples:
+        kwargs = {
+            "cpu_cost": 10,
+            "gpu_cost": 100,
+            "width_mask": 0xFFFE,
+            "height_mask": 0xFFFE,
+        }
+    return VideoSpec(
+        encoding=encoding, input_colorspace=input_colorspace, output_colorspaces=out_css,
+        has_lossless_mode=False,
+        full_range=False,
+        codec_class=Encoder, codec_type=get_type(),
+        quality=50, speed=50,
+        size_efficiency=60,
+        setup_cost=20,
+        min_w=min_w, min_h=min_h,
+        max_w=max_w, max_h=max_h,
+        **kwargs,
+    )
+
+
 def get_specs() -> Sequence[VideoSpec]:
     specs: Sequence[VideoSpec] = []
-    speed = 50
-    quality = 50
     for encoding in CODECS:
-        caps = CAPS.get(encoding, {})
-        input_caps = caps.get("input", {})
-        output_caps = caps.get("output", {})
-        min_w, max_w = input_caps.get("width-range", (128, 4096))
-        min_h, max_h = input_caps.get("height-range", (128, 4096))
-        input_colorspaces = input_caps.get("native-formats", ("NV12", ))
-        output_colorspaces = output_caps.get("native-formats", ("YUV420P", ))
+        # the encoders may report other native formats (ie: "BGRA"),
+        # but the only ones we can feed them are NV12 and our own "BGRX" conversion:
+        input_colorspaces = ["NV12"]
+        if encoding in BGRX_ENCODINGS:
+            input_colorspaces.append("BGRX")
         for input_colorspace in input_colorspaces:
-            # ugly translation into the names xpra uses for legacy reasons:
-            out_css = tuple({"NV12" : "YUV420P"}.get(cs, cs) for cs in output_colorspaces)
-            spec = VideoSpec(
-                encoding=encoding, input_colorspace=input_colorspace, output_colorspaces=out_css,
-                has_lossless_mode=False,
-                full_range=False,
-                codec_class=Encoder, codec_type=get_type(),
-                quality=quality, speed=speed,
-                size_efficiency=60,
-                setup_cost=20,
-                min_w=min_w, min_h=min_h,
-                max_w=max_w, max_h=max_h)
+            spec = get_spec(encoding, input_colorspace)
             log("AMF encoder spec for %r: %s", encoding, spec.to_dict())
             specs.append(spec)
     return specs
@@ -378,9 +451,13 @@ cdef class Encoder:
     cdef AMFContext *context
     cdef AMFContext1 *context1
     cdef AMFComponent* encoder
+    cdef AMFComponent* converter    # BGRA to NV12, for "BGRX" input
     cdef AMF_SURFACE_FORMAT surface_format
     cdef AMFSurface* surface
     cdef void *device
+    cdef uintptr_t shared_device    # we hold a reference while AMF uses it
+    cdef object com_release
+    cdef int gpu_input
     cdef object device_info
     cdef unsigned long frames
     cdef unsigned int width
@@ -409,20 +486,17 @@ cdef class Encoder:
         assert options.get("scaled-width", width)==width, "amf encoder does not handle scaling"
         assert options.get("scaled-height", height)==height, "amf encoder does not handle scaling"
         assert encoding in get_encodings()
-        assert src_format == "NV12", f"invalid source format {src_format!r} for {encoding!r}"
+        if src_format not in ("NV12", "BGRX"):
+            raise ValueError(f"invalid source format {src_format!r} for {encoding!r}")
+        if src_format == "BGRX" and not (WIN32 and DX11):
+            raise ValueError(f"{src_format!r} input requires DX11")
         self.src_format = src_format
-        if src_format == "YUV420P":
-            self.surface_format = AMF_SURFACE_YUV420P
-        elif src_format == "NV12":
-            self.surface_format = AMF_SURFACE_NV12
-        elif src_format == "BGRA":
-            self.surface_format = AMF_SURFACE_BGRA
-        else:
-            raise ValueError("invalid pixel format {src_format!r}")
+        # the encoder always takes NV12, "BGRX" goes through the video converter first:
+        self.surface_format = AMF_SURFACE_NV12
 
         self.encoding = encoding
         self.profile = get_h264_profile(options) if encoding == "h264" else "main"
-        self.level = get_level(options, encoding=encoding, csc_mode=src_format)
+        self.level = get_level(options, encoding=encoding, csc_mode="YUV420P" if src_format == "BGRX" else src_format)
         self.width = width
         self.height = height
         self.quality = options.intget("quality", 50)
@@ -434,12 +508,17 @@ cdef class Encoder:
 
         self.context = NULL
         self.encoder = NULL
+        self.converter = NULL
         self.device = NULL
+        self.shared_device = 0
+        self.gpu_input = 0
         self.caps = {}
         self.device_info = {}
 
         self.amf_context_init()
         self.amf_encoder_init(options)
+        if src_format == "BGRX":
+            self.amf_converter_init()
 
         self.generation = generation.increase()
         if SAVE_TO_FILE:
@@ -459,11 +538,22 @@ cdef class Encoder:
         self.check(res, "AMF context initialization")
         cdef AMFGuid amf1contextguid
         if DX11:
-            res = self.context.pVtbl.InitDX11(self.context, NULL, AMF_DX11_0)
-            log(f"amf_context_init() InitDX11()={res}")
+            self.shared_device = get_shared_device_ptr()
+            if self.shared_device:
+                # the shared device may get replaced if it is ever removed,
+                # so hold our own reference for as long as AMF uses it:
+                from xpra.platform.win32.d3d11.device import com_add_ref, com_release
+                com_add_ref(self.shared_device)
+                # `clean()` may run from `__dealloc__` when imports are no longer possible:
+                self.com_release = com_release
+            res = self.context.pVtbl.InitDX11(self.context, <void *> self.shared_device, AMF_DX11_0)
+            log(f"amf_context_init() InitDX11(%#x)={res}", self.shared_device)
             self.check(res, "AMF DX11 device initialization")
             self.device = self.context.pVtbl.GetDX11Device(self.context, AMF_DX11_0)
             assert self.device
+            # captured frames can only be used directly if they live on the same device:
+            self.gpu_input = int(self.src_format == "BGRX" and self.shared_device != 0
+                                 and <uintptr_t> self.device == self.shared_device)
             from xpra.platform.win32.d3d11.device import D3D11Device
             device = D3D11Device(<uintptr_t> self.device)
             self.device_info = device.get_info()
@@ -660,11 +750,53 @@ cdef class Encoder:
             setint64("Av1Profile", AMF_VIDEO_ENCODER_AV1_PROFILE_MAIN)
             setint64("Av1Level", AMF_VIDEO_ENCODER_AV1_LEVEL_5_1)
 
+        # the NV12 we get is BT.601 studio range, whether it comes from libyuv or from our video converter,
+        # but AMF defaults to choosing the colour profile by size, which means BT.709 for HD and above:
+        self.try_property("input-color-profile", COLOR_PROFILE_601)
+        self.try_property("output-color-profile", COLOR_PROFILE_601)
+        self.try_property("output-color-primaries", SMPTE170M)
+        self.try_property("output-transfer-characteristic", SMPTE170M)
+
         # init:
         res = self.encoder.pVtbl.Init(self.encoder, self.surface_format, self.width, self.height)
         self.check(res, f"AMF {self.encoding!r} encoder initialization for {self.width}x{self.height} {self.src_format}")
         log("amf_encoder_init() %s encoder initialized at %#x: %s",
             self.encoding, <uintptr_t> self.encoder, self.get_tuning_info())
+
+    def amf_converter_init(self) -> None:
+        cdef AMFFactory *factory = get_factory()
+        assert factory and self.context
+        cdef wchar_t *name = PyUnicode_AsWideCharString("AMFVideoConverter", NULL)
+        cdef AMF_RESULT res = factory.pVtbl.CreateComponent(factory, self.context, name, &self.converter)
+        PyMem_Free(name)
+        log(f"amf_converter_init() CreateComponent()={res}")
+        self.check(res, "AMF video converter creation")
+
+        cdef AMFVariantStruct var
+        def setprop(prop: str) -> None:
+            self.check(set_component_property(self.converter, prop, var), f"AMF video converter setting {prop}")
+        for prop, value in {
+            "OutputFormat": AMF_SURFACE_NV12,
+            "MemoryType": AMF_MEMORY_DX11,
+            "ColorProfile": COLOR_PROFILE_601,
+        }.items():
+            self.check(AMFVariantInit(&var), "AMF variant initialization")
+            AMFVariantAssignInt64(&var, value)
+            setprop(prop)
+        self.check(AMFVariantInit(&var), "AMF variant initialization")
+        var.type = AMF_VARIANT_SIZE
+        var.sizeValue.width = self.width
+        var.sizeValue.height = self.height
+        setprop("OutputSize")
+
+        res = self.converter.pVtbl.Init(self.converter, AMF_SURFACE_BGRA, self.width, self.height)
+        self.check(res, f"AMF video converter initialization for {self.width}x{self.height}")
+        log("amf_converter_init() video converter initialized at %#x, gpu input=%s",
+            <uintptr_t> self.converter, bool(self.gpu_input))
+
+    def supports_gpu_input(self) -> bool:
+        """ can we encode `D3D11Texture` buffers directly, see `DXGIImageWrapper.freeze_on_gpu()` """
+        return bool(self.gpu_input)
 
     def set_rate_control(self, int quality, int bwlimit) -> None:
         # xpra drives its encoders with a quality percentage, and the video pipeline's
@@ -726,6 +858,8 @@ cdef class Encoder:
             "src_format": self.src_format,
             "content-types": self.content_types,
             "caps": self.caps,
+            "gpu-input": bool(self.gpu_input),
+            "shared-device": bool(self.shared_device),
         }
         if self.encoder:
             info["tuning"] = self.get_tuning_info()
@@ -753,6 +887,12 @@ cdef class Encoder:
         self.clean()
 
     def clean(self) -> None:
+        log("clean() converter=%s", <uintptr_t> self.converter)
+        cdef AMFComponent* converter = self.converter
+        if converter:
+            self.converter = NULL
+            converter.pVtbl.Terminate(converter)
+            converter.pVtbl.Release(converter)
         log("clean() encoder=%s", <uintptr_t> self.encoder)
         cdef AMFComponent* encoder = self.encoder
         if encoder:
@@ -766,6 +906,14 @@ cdef class Encoder:
             context.pVtbl.Terminate(context)
             context.pVtbl.Release(context)
         self.context1 = NULL
+        self.device = NULL
+        self.gpu_input = 0
+        cdef uintptr_t shared_device = self.shared_device
+        com_release = self.com_release
+        self.shared_device = 0
+        self.com_release = None
+        if shared_device and com_release:
+            com_release(shared_device)
         self.frames = 0
         self.width = 0
         self.height = 0
@@ -782,20 +930,20 @@ cdef class Encoder:
             f.close()
 
     def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
-        cdef uint8_t *pic_in[2]
-        cdef int strides[2]
         assert self.context!=NULL
-        pixels = image.get_pixels()
-        istrides = image.get_rowstride()
+        if not WIN32:
+            raise ImportError("amf encoder needs porting to this platform")
         pf = image.get_pixel_format().replace("A", "X")
         if pf != self.src_format:
             raise ValueError(f"expected {self.src_format} but got {image.get_pixel_format()}")
-        assert image.get_width()==self.width, "invalid image width %s, expected %s" % (image.get_width(), self.width)
-        assert image.get_height()==self.height, "invalid image height %s, expected %s" % (image.get_height(), self.height)
-        assert pixels, "failed to get pixels from %s" % image
-        assert len(pixels)==2, "image pixels does not have 2 planes! (found %s)" % len(pixels)
-        assert len(istrides)==2, "image strides does not have 2 values! (found %s)" % len(istrides)
-        divs = get_subsampling_divs(self.src_format)
+        cdef unsigned int width = image.get_width()
+        cdef unsigned int height = image.get_height()
+        if self.src_format == "BGRX":
+            # the video pipeline rounds the encoder size down, and sends the edges separately:
+            if width < self.width or height < self.height:
+                raise ValueError(f"image {width}x{height} is smaller than the encoder size {self.width}x{self.height}")
+        elif width != self.width or height != self.height:
+            raise ValueError(f"invalid image size {width}x{height}, expected {self.width}x{self.height}")
 
         cdef int speed = options.intget("speed", 50)
         if speed>=0:
@@ -804,39 +952,29 @@ cdef class Encoder:
         if quality>=0:
             self.set_encoding_quality(quality)
 
-        cdef Py_buffer py_buf[2]
-        for i in range(2):
-            memset(&py_buf[i], 0, sizeof(Py_buffer))
+        cdef AMFSurface *surface
+        if self.src_format == "BGRX":
+            surface = self.convert(self.upload_bgrx(image))
+        else:
+            surface = self.upload_nv12(image)
+        client_options = {
+            "csc"       : "YUV420P",
+            "frame"     : int(self.frames),
+            "full-range" : False,
+            #"quality"  : min(99+self.lossless, self.quality),
+            #"speed"    : self.speed,
+        }
+        if self.frames == 0:
+            client_options["profile"] = self.profile
         try:
-            for i in range(2):
-                xdiv, ydiv = divs[i]
-                if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
-                    raise ValueError(f"failed to read pixel data from {type(pixels[i])}")
-                assert istrides[i]>=self.width//xdiv, "invalid stride %i for width %i" % (istrides[i], self.width)
-                assert py_buf[i].len>=istrides[i]*(self.height//ydiv), "invalid buffer length %i for plane %s, at least %i needed" % (
-                    py_buf[i].len, "YUV"[i], istrides[i]*(self.height//ydiv))
-                pic_in[i] = <uint8_t *> py_buf[i].buf
-                strides[i] = istrides[i]
-            client_options = {
-                "csc"       : {"NV12": "YUV420P"}.get(self.src_format, self.src_format),
-                "frame"     : int(self.frames),
-                "full-range" : False,
-                #"quality"  : min(99+self.lossless, self.quality),
-                #"speed"    : self.speed,
-            }
-            if self.frames == 0:
-                client_options["profile"] = self.profile
-            return self.do_compress_image(pic_in, strides), client_options
+            return self.encode_surface(surface), client_options
         finally:
             self.frames += 1
-            for i in range(2):
-                if py_buf[i].buf:
-                    PyBuffer_Release(&py_buf[i])
 
-    cdef void alloc_surface(self, AMFSurface **surface, AMF_MEMORY_TYPE memory=AMF_MEMORY_HOST):
+    cdef void alloc_surface(self, AMFSurface **surface, AMF_MEMORY_TYPE memory, AMF_SURFACE_FORMAT fmt):
         assert self.context
         memtype = MEMORY_TYPE_STR(memory)
-        cdef AMF_RESULT res = self.context.pVtbl.AllocSurface(self.context, memory, self.surface_format,
+        cdef AMF_RESULT res = self.context.pVtbl.AllocSurface(self.context, memory, fmt,
                                                              self.width, self.height, surface)
         if res:
             self.check(res, f"AMF {memtype} surface initialization for {self.width}x{self.height} {self.src_format}")
@@ -863,66 +1001,126 @@ cdef class Encoder:
         assert texture
         return texture
 
-    cdef bytes do_compress_image(self, uint8_t *pic_in[2], int strides[2]):
-        cdef unsigned long start_time = 0    # nanoseconds!
+    cdef AMFSurface *upload(self, AMF_SURFACE_FORMAT fmt, pixels, strides, divs) except NULL:
+        """
+        Copy the pixel data to a host surface, then to a DX11 surface.
+        (we have not managed to make `CopyResource` accept a host surface wrapping the buffer directly)
+        """
+        cdef AMFSurface *host_surface = NULL
+        cdef AMFSurface *gpu_surface = NULL
         cdef AMFPlane *plane
         cdef uintptr_t src, dst
-        cdef uintptr_t host_texture
-        cdef uintptr_t gpu_texture
-        cdef AMFSurface *host_surface
-        cdef AMFSurface *gpu_surface
-        cdef amf_int32 hpitch, vpitch
-        cdef int stride
-        cdef AMF_RESULT res
-
-        if not WIN32:
-            raise ImportError("amf encoder needs porting to this platform")
-
+        cdef int stride, hpitch, rows, row
+        cdef unsigned int nplanes = len(pixels)
+        cdef Py_buffer py_buf
         from xpra.platform.win32.d3d11.device import D3D11Device
-        log("D3D11Device(%#x)", <uintptr_t> self.device)
         device = D3D11Device(<uintptr_t> self.device)
         with device.get_device_context() as dc:
-            if log.is_debug_enabled():
-                log("device: %s", device.get_info())
-                log("device context: %s", dc.get_info())
+            self.alloc_surface(&host_surface, AMF_MEMORY_HOST, fmt)
+            try:
+                for plane_index in range(nplanes):
+                    xdiv, ydiv = divs[plane_index]
+                    stride = strides[plane_index]
+                    rows = self.height // ydiv
+                    memset(&py_buf, 0, sizeof(Py_buffer))
+                    if PyObject_GetBuffer(pixels[plane_index], &py_buf, PyBUF_ANY_CONTIGUOUS):
+                        raise ValueError(f"failed to read pixel data from {type(pixels[plane_index])}")
+                    try:
+                        if py_buf.len < stride * rows:
+                            raise ValueError(f"buffer too small for plane {plane_index}: {py_buf.len} < {stride}x{rows}")
+                        plane = host_surface.pVtbl.GetPlaneAt(host_surface, plane_index)
+                        assert plane
+                        hpitch = plane.pVtbl.GetHPitch(plane)
+                        src = <uintptr_t> py_buf.buf
+                        dst = <uintptr_t> plane.pVtbl.GetNative(plane)
+                        if log.is_debug_enabled():
+                            log("plane %i: %i rows, stride=%i, hpitch=%i", plane_index, rows, stride, hpitch)
+                        if hpitch == stride:
+                            # same stride, happy path with just one big copy:
+                            memcpy(<void *> dst, <void *> src, stride * rows)
+                        else:
+                            for row in range(rows):
+                                memcpy(<void *> dst, <void *> src, min(stride, hpitch))
+                                dst += hpitch
+                                src += stride
+                    finally:
+                        PyBuffer_Release(&py_buf)
 
-            self.alloc_surface(&host_surface, AMF_MEMORY_HOST)
+                # make it accessible by the GPU:
+                res = host_surface.pVtbl.Convert(host_surface, AMF_MEMORY_DX11)
+                self.check(res, "AMF Convert to DX11 memory")
 
-            for plane_index in range(2):
-                log("plane %s src data=%#x", ["Y", "UV"][plane_index], <uintptr_t> pic_in[plane_index])
-                plane = host_surface.pVtbl.GetPlaneAt(host_surface, plane_index)
-                assert plane
-                stride = strides[plane_index]
-                hpitch = plane.pVtbl.GetHPitch(plane)
-                vpitch = plane.pVtbl.GetVPitch(plane)
-                host_texture = <uintptr_t> plane.pVtbl.GetNative(plane)
-                src = <uintptr_t> pic_in[plane_index]
-                dst = <uintptr_t> host_texture
-                if hpitch == stride:
-                    # same stride, happy path with just one big copy:
-                    memcpy(<void *> dst, <void *> src, hpitch * vpitch)
-                else:
-                    for y in range(vpitch):
-                        memcpy(<void *> dst, <void *> src, stride)
-                        dst += hpitch
-                        src += stride
+                self.alloc_surface(&gpu_surface, AMF_MEMORY_DX11, fmt)
+                for plane_index in range(nplanes):
+                    dc.copy_resource(self.get_native_plane(gpu_surface, plane_index),
+                                     self.get_native_plane(host_surface, plane_index))
+                dc.flush()
+            finally:
+                host_surface.pVtbl.Release(host_surface)
+        return gpu_surface
 
-            # make it accessible by the GPU:
-            res = host_surface.pVtbl.Convert(host_surface, AMF_MEMORY_DX11)
-            self.check(res, "AMF Convert to DX11 memory")
+    cdef AMFSurface *upload_nv12(self, image) except NULL:
+        pixels = image.get_pixels()
+        strides = image.get_rowstride()
+        if not pixels or len(pixels) != 2:
+            raise ValueError(f"expected 2 NV12 planes, got {len(pixels or ())}")
+        if len(strides) != 2:
+            raise ValueError(f"expected 2 NV12 strides, got {len(strides)}")
+        divs = get_subsampling_divs(self.src_format)
+        for plane_index in range(2):
+            xdiv = divs[plane_index][0]
+            if strides[plane_index] < self.width // xdiv:
+                raise ValueError(f"invalid stride {strides[plane_index]} for width {self.width}")
+        return self.upload(AMF_SURFACE_NV12, pixels, strides, divs)
 
-            self.alloc_surface(&gpu_surface, AMF_MEMORY_DX11)
-
-            for plane_index in range(2):
-                log("plane %s", ["Y", "UV"][plane_index])
-                host_texture = self.get_native_plane(host_surface, plane_index)
-                gpu_texture = self.get_native_plane(gpu_surface, plane_index)
-                dc.copy_resource(gpu_texture, host_texture)
-            log("flush()")
+    cdef AMFSurface *upload_bgrx(self, image) except NULL:
+        texture = image.get_gpu_buffer() if self.gpu_input else None
+        if texture is not None:
+            from xpra.platform.win32.d3d11.image import D3D11Texture
+            if not (isinstance(texture, D3D11Texture) and texture.device == <uintptr_t> self.device
+                    and texture.width >= self.width and texture.height >= self.height):
+                log("cannot use GPU buffer %s", texture)
+                texture = None
+        if texture is None:
+            pixels = image.get_pixels()
+            if not pixels:
+                raise ValueError(f"failed to get pixels from {image}")
+            return self.upload(AMF_SURFACE_BGRA, (pixels, ), (image.get_rowstride(), ), ((1, 1), ))
+        # zero-copy: the texture is already on our device,
+        # so the only copy is the one which moves it into a surface that AMF owns:
+        cdef AMFSurface *surface = NULL
+        self.alloc_surface(&surface, AMF_MEMORY_DX11, AMF_SURFACE_BGRA)
+        from xpra.platform.win32.d3d11.device import D3D11Device
+        device = D3D11Device(<uintptr_t> self.device)
+        with device.get_device_context() as dc:
+            dc.copy_subresource_region(self.get_native_plane(surface, 0), 0, 0,
+                                       texture.texture, texture.x, texture.y, self.width, self.height)
             dc.flush()
-            log("freeing host surface=%s", <uintptr_t> host_surface)
-            host_surface.pVtbl.Release(host_surface)
+        return surface
 
+    cdef AMFSurface *convert(self, AMFSurface *surface) except NULL:
+        """ BGRA to NV12, the input surface is released """
+        cdef AMFData *data = NULL
+        cdef AMF_RESULT res
+        try:
+            res = self.converter.pVtbl.SubmitInput(self.converter, <AMFData*> surface)
+            self.check(res, "AMF submitting input to the video converter")
+        finally:
+            surface.pVtbl.Release(surface)
+        for i in range(200):
+            res = self.converter.pVtbl.QueryOutput(self.converter, &data)
+            if res != AMF_REPEAT:
+                break
+            sleep(0.001)
+        self.check(res, "AMF video converter query output")
+        if data == NULL:
+            raise RuntimeError("AMF video converter did not produce any output")
+        # the output of the video converter is a surface:
+        return <AMFSurface*> data
+
+    cdef bytes encode_surface(self, AMFSurface *gpu_surface):
+        """ the surface is released """
+        cdef AMF_RESULT res
         ns = round(1000 * 1000 * monotonic())
         self.set_surface_property(gpu_surface, START_TIME_PROPERTY, AMF_VARIANT_INT64, ns)
 
@@ -977,6 +1175,8 @@ cdef class Encoder:
 
     def flush(self, unsigned long frame_no) -> None:
         cdef AMF_RESULT res
+        if self.converter:
+            self.converter.pVtbl.Drain(self.converter)
         for _ in range(200):
             res = self.encoder.pVtbl.Drain(self.encoder)
             if res != AMF_INPUT_FULL:
@@ -1015,14 +1215,34 @@ cdef class Encoder:
         log("amf quality set to %i (qp=%i)", pct, qp)
 
 
+def probe_bgrx(encodings: Sequence[str], full: bool) -> Sequence[str]:
+    from xpra.codecs.checks import test_encoder_spec, DEFAULT_TEST_SIZE
+    W, H = DEFAULT_TEST_SIZE
+    working = []
+    for encoding in encodings:
+        try:
+            test_encoder_spec(get_spec(encoding, "BGRX"), encoding, "BGRX", "YUV420P", W, H, full, typedict())
+            working.append(encoding)
+        except Exception as e:
+            log("BGRX input test failed for %s", encoding, exc_info=True)
+            log.warn("Warning: the AMF %s encoder cannot use BGRX input:", encoding)
+            log.warn(" %s", e)
+    return tuple(working)
+
+
 def selftest(full=False) -> None:
-    global CODECS, SAVE_TO_FILE
+    global CODECS, SAVE_TO_FILE, BGRX_ENCODINGS
     from xpra.codecs.checks import testencoder
     from xpra.codecs.amf import encoder
     temp = SAVE_TO_FILE
+    bgrx = BGRX_ENCODINGS
     try:
         SAVE_TO_FILE = ""
+        # test the NV12 input on its own first, so that a failure of the colourspace conversion
+        # on the GPU only disables the "BGRX" input, and not the whole encoding:
+        BGRX_ENCODINGS = ()
         CODECS = testencoder(encoder, full, typedict())
+        BGRX_ENCODINGS = probe_bgrx(tuple(encoding for encoding in bgrx if encoding in CODECS), full)
         log("AMF specs()=%s", get_specs())
     finally:
         SAVE_TO_FILE = temp
