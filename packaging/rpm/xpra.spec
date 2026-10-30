@@ -232,7 +232,12 @@ BuildRequires:		pkgconfig(libqrencode)
 %endif
 Recommends:			qrencode
 BuildRequires:		%{pygobject_requires}
+%if 0%{?el8}
+# el8 predates the rename to python3-gobject-devel:
+BuildRequires:		pygobject3-devel
+%else
 BuildRequires:		python3-gobject-devel
+%endif
 BuildRequires:		pkgconfig(pygobject-3.0)
 BuildRequires:		pkgconfig(py3cairo)
 BuildRequires:		pkgconfig(gtk+-3.0)
