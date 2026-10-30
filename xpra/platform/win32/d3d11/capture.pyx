@@ -31,6 +31,7 @@ from libc.stdint cimport uintptr_t, uint8_t, uint32_t
 from libc.string cimport memcpy
 from cpython.bytes cimport PyBytes_FromStringAndSize, PyBytes_AS_STRING
 
+from xpra.codecs.constants import CodecStateException
 from xpra.log import Logger
 
 log = Logger("shadow", "win32", "d3d11")
@@ -480,7 +481,7 @@ cdef class DXGICapture:
 
         Returns True when new content was captured (caller should send damage).
         Returns False if the desktop has not changed.
-        Raises RuntimeError on device-lost / access-lost errors.
+        Raises CodecStateException on device-lost / access-lost errors.
         """
         if not self._duplication:
             return False
@@ -494,7 +495,7 @@ cdef class DXGICapture:
                      XPRA_DXGI_ERROR_DEVICE_HUNG,
                      XPRA_DXGI_ERROR_DEVICE_RESET,
                      XPRA_DXGI_ERROR_ACCESS_LOST):
-            raise RuntimeError("DXGI device lost: %#x" % <unsigned int> ar.hr)
+            raise CodecStateException("DXGI device lost: %#x" % <unsigned int> ar.hr)
 
         if ar.hr:
             log.warn("Warning: AcquireNextFrame failed: %#x", <unsigned int> ar.hr)
