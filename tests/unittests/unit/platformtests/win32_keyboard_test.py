@@ -9,6 +9,7 @@ Tests for the keys injected by the win32 server:
 modifier-only chords must not reach Windows, as they switch the input language or keyboard layout,
 and clearing the keys pressed must release them for the whole system.
 The key events are recorded instead of being injected.
+Also the virtual keys that the client key names map to.
 These tests are skipped on non-Windows platforms.
 """
 
@@ -105,6 +106,53 @@ class InjectedKeysTest(unittest.TestCase):
         self.events.clear()
         self.keyboard.Win32Keyboard.clear_keys_pressed([VK_LCONTROL, VK_C])
         self.assertEqual(self.events, [(VK_LCONTROL, False), (VK_C, False)])
+
+
+@unittest.skipUnless(WIN32, "the win32 keyboard is only available on MS Windows")
+class KeycodeTest(unittest.TestCase):
+
+    def get_keycode(self, keyname: str, keystr: str = "\0") -> int:
+        from xpra.platform.win32.keyboard_config import KeyboardConfig
+        # GTK clients send a NUL string for the keys that have no character:
+        return KeyboardConfig().get_keycode(0, keyname, True, [], 0, keystr, 0)[0]
+
+    def test_keypad_without_numlock(self):
+        for keyname, vk in {
+            "KP_Home": 0x24,
+            "KP_Up": 0x26,
+            "KP_Page_Up": 0x21,
+            "KP_Prior": 0x21,
+            "KP_Left": 0x25,
+            "KP_Begin": 0x0C,
+            "KP_Right": 0x27,
+            "KP_End": 0x23,
+            "KP_Down": 0x28,
+            "KP_Page_Down": 0x22,
+            "KP_Next": 0x22,
+            "KP_Insert": 0x2D,
+            "KP_Delete": 0x2E,
+            "KP_Enter": 0x0D,
+        }.items():
+            self.assertEqual(self.get_keycode(keyname), vk, keyname)
+
+    def test_keypad_with_numlock(self):
+        self.assertEqual(self.get_keycode("KP_9", "9"), 0x69)
+
+    def test_page_keys(self):
+        self.assertEqual(self.get_keycode("Page_Up"), 0x21)
+        self.assertEqual(self.get_keycode("Page_Down"), 0x22)
+
+    def test_control_character(self):
+        # `Control+Shift+2` would type `2`:
+        self.assertEqual(self.get_keycode("UnknownKey"), -1)
+
+    def test_vk_x11_names(self):
+        # the names sent by the native win32 client:
+        from xpra.platform.win32.keyboard import VK_X11_MAP
+        self.assertEqual(VK_X11_MAP["PRIOR"], "Page_Up")
+        self.assertEqual(VK_X11_MAP["NEXT"], "Page_Down")
+        self.assertEqual(VK_X11_MAP["HOME"], "Home")
+        self.assertEqual(VK_X11_MAP["RETURN"], "Return")
 
 
 def main():
