@@ -164,8 +164,14 @@ def get_h264_profile(options: typedict) -> str:
     if profile not in H264_PROFILE_IDS:
         log.warn("Warning: %r is not a valid Media Foundation H.264 profile", profile)
         log.warn(" valid profiles are: %s", ", ".join(H264_PROFILE_IDS))
-        return "main"
+        profile = "main"
     if profile == "baseline":
+        return "constrained-baseline"
+    if profile != "constrained-baseline" and options.boolget("h264.poc-type-2", True):
+        # the MFTs number their pictures with `pic_order_cnt_type` 0 (AMD's do, at every profile),
+        # and openh264 cannot decode that at Main or High: it holds the frames back until it runs
+        # out of buffers. MediaFoundation has no setting for it, so those clients get Baseline:
+        log("using constrained-baseline instead of %r for a client that needs pic_order_cnt_type 2", profile)
         return "constrained-baseline"
     return profile
 
