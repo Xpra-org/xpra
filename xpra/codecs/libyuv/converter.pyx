@@ -74,12 +74,6 @@ cdef extern from "libyuv/convert_from_argb.h" namespace "libyuv":
                    uint8_t* dst_uv, int dst_stride_uv,
                    int width, int height) nogil
 
-    int ABGRToJ420(const uint8_t* src_abgr, int src_stride_abgr,
-               uint8_t* dst_y, int dst_stride_y,
-               uint8_t* dst_u, int dst_stride_u,
-               uint8_t* dst_v, int dst_stride_v,
-               int width, int height) nogil
-
     int NV12ToRGB24(const uint8_t* src_y, int src_stride_y,
                     const uint8_t* src_uv, int src_stride_uv,
                     uint8_t* dst_rgb24, int dst_stride_rgb24,
@@ -201,9 +195,37 @@ cdef extern from *:
                                   width, height);
     #endif
     }
+    static inline int xpra_libyuv_has_ABGRToJ420(void) {
+    #if LIBYUV_VERSION >= 1840
+        return 1;
+    #else
+        return 0;
+    #endif
+    }
+    static inline int xpra_ABGRToJ420(const uint8_t* src_abgr, int src_stride_abgr,
+                                      uint8_t* dst_y, int dst_stride_y,
+                                      uint8_t* dst_u, int dst_stride_u,
+                                      uint8_t* dst_v, int dst_stride_v,
+                                      int width, int height) {
+    #if LIBYUV_VERSION >= 1840
+        return libyuv::ABGRToJ420(src_abgr, src_stride_abgr,
+                                  dst_y, dst_stride_y,
+                                  dst_u, dst_stride_u,
+                                  dst_v, dst_stride_v,
+                                  width, height);
+    #else
+        return -1;
+    #endif
+    }
     """
     int xpra_libyuv_has_ARGBToJ444()
     int xpra_ARGBToJ444(const uint8_t* src_argb, int src_stride_argb,
+                        uint8_t* dst_y, int dst_stride_y,
+                        uint8_t* dst_u, int dst_stride_u,
+                        uint8_t* dst_v, int dst_stride_v,
+                        int width, int height) nogil
+    int xpra_libyuv_has_ABGRToJ420()
+    int xpra_ABGRToJ420(const uint8_t* src_abgr, int src_stride_abgr,
                         uint8_t* dst_y, int dst_stride_y,
                         uint8_t* dst_u, int dst_stride_u,
                         uint8_t* dst_v, int dst_stride_v,
@@ -1404,15 +1426,15 @@ cdef class Converter:
                                         out_planes[0], self.out_stride[0],
                                         out_planes[1], self.out_stride[1],
                                         width, height)
-            elif self.dst_format=="YUV420P" and full_range:
-                # libyuv has a native full-range ABGR->J420 path, no swap needed:
+            elif self.dst_format=="YUV420P" and full_range and xpra_libyuv_has_ABGRToJ420():
+                # libyuv 1840 onwards has a native full-range ABGR->J420 path, no swap needed:
                 fn_name = "ABGRToJ420"
                 with nogil:
-                    result = ABGRToJ420(src, stride,
-                                        out_planes[0], self.out_stride[0],
-                                        out_planes[1], self.out_stride[1],
-                                        out_planes[2], self.out_stride[2],
-                                        width, height)
+                    result = xpra_ABGRToJ420(src, stride,
+                                             out_planes[0], self.out_stride[0],
+                                             out_planes[1], self.out_stride[1],
+                                             out_planes[2], self.out_stride[2],
+                                             width, height)
             elif self.dst_format in ("YUV420P", "YUV444P"):
                 # libyuv has no limited-range ABGR->I420 path, and no ABGR->*444 path at all:
                 # do a SIMD byte-swap to BGRX first, then reuse the ARGB* conversion below
@@ -1425,7 +1447,16 @@ cdef class Converter:
                     memfree(swap_buffer)
                     raise RuntimeError(f"libyuv.ABGRToARGB failed and returned {swap_result}")
                 argb_src = <const uint8_t*> swap_buffer
-                if self.dst_format=="YUV420P":
+                if self.dst_format=="YUV420P" and full_range:
+                    # older libyuv snapshots lack ABGRToJ420:
+                    fn_name = "ARGBToJ420"
+                    with nogil:
+                        result = ARGBToJ420(argb_src, stride,
+                                            out_planes[0], self.out_stride[0],
+                                            out_planes[1], self.out_stride[1],
+                                            out_planes[2], self.out_stride[2],
+                                            width, height)
+                elif self.dst_format=="YUV420P":
                     fn_name = "ARGBToI420"
                     with nogil:
                         result = ARGBToI420(argb_src, stride,
