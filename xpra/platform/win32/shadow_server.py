@@ -448,6 +448,7 @@ class ShadowServer(ShadowServerBase):
             if title not in monitors:
                 vddlog.info("removing shadow window for monitor %r", title)
                 window_sub._remove_window(model)
+                self._discard_capture(model)
         # add new monitors, and update the geometry of existing ones:
         model_class = self.get_root_window_model_class()
         for plug, monitor in monitors.items():
@@ -473,8 +474,21 @@ class ShadowServer(ShadowServerBase):
                 # size-constraints reach the client cleanly:
                 vddlog.info("monitor %r resolution changed: %s -> %s, recreating window", plug, old, geometry)
                 window_sub._remove_window(model)
+                # release the old capture first:
+                # DXGI cannot duplicate an output twice from the same process
+                self._discard_capture(model)
                 capture = self._make_monitor_capture(len(existing), plug, x, y, width, height)
                 window_sub._add_new_window(model_class(capture, plug, geometry))
+
+    def _discard_capture(self, model) -> None:
+        capture = getattr(model, "capture", None)
+        if capture is None or capture is self.capture:
+            # the shared full-desktop capture is still used by the other windows
+            return
+        if capture in self._captures:
+            self._captures.remove(capture)
+        vddlog("discarding capture %s", capture)
+        capture.clean()
 
     def _process_display_monitor_configure(self, _proto, packet: Packet) -> None:
         if not self._vdd_multimonitor:
