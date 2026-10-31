@@ -290,6 +290,44 @@ class SharingLayoutTest(unittest.TestCase):
         self.assertEqual([layout[0]["geometry"] for layout in layouts], [(0, 0, 1920, 1080), (0, 0, 1280, 1024)])
 
 
+class HelloImageRequestTest(unittest.TestCase):
+
+    def make_display(self):
+        from unittest.mock import Mock
+        from xpra.server.subsystem.display import DisplayManager
+        server = AdHocStruct()
+        server.hello_request_handlers = {}
+        server.send_disconnect = Mock()
+        dm = stubbable(DisplayManager)(server)
+        return dm, server
+
+    def test_image_sent(self):
+        from unittest.mock import Mock
+        for request in ("screenshot", "icon"):
+            with self.subTest(request=request):
+                dm, server = self.make_display()
+                packet = ("display-" + request, 1, 1, "png", 0, b"image")
+                setattr(dm, f"do_make_{request}_packet", lambda p=packet: p)
+                proto = Mock()
+                self.assertTrue(dm.server.hello_request_handlers[request](proto, typedict()))
+                proto.send_now.assert_called_once_with(packet)
+                server.send_disconnect.assert_not_called()
+
+    def test_no_image(self):
+        # the client must be told, not left waiting for an image that never comes:
+        from unittest.mock import Mock
+        from xpra.net.constants import ConnectionMessage
+        for request in ("screenshot", "icon"):
+            with self.subTest(request=request):
+                dm, server = self.make_display()
+                setattr(dm, f"do_make_{request}_packet", lambda: None)
+                proto = Mock()
+                self.assertTrue(dm.server.hello_request_handlers[request](proto, typedict()))
+                proto.send_now.assert_not_called()
+                server.send_disconnect.assert_called_once_with(proto, ConnectionMessage.SERVER_ERROR,
+                                                               f"{request} failed")
+
+
 def main():
     unittest.main()
 

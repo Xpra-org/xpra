@@ -580,13 +580,18 @@ class DisplayManager(StubSubsystem):
     ######################################################################
     # screenshots:
     def _handle_hello_request_screenshot(self, proto, _caps: typedict) -> bool:
-        packet = self.make_screenshot_packet()
-        proto.send_now(packet)
-        return True
+        return self.send_hello_image(proto, self.make_screenshot_packet(), "screenshot")
 
     def _handle_hello_request_icon(self, proto, _caps: typedict) -> bool:
-        packet = self.make_icon_packet()
-        proto.send_now(packet)
+        return self.send_hello_image(proto, self.make_icon_packet(), "icon")
+
+    def send_hello_image(self, proto, packet: Packet | None, request: str) -> bool:
+        # the client exits once it has the image,
+        # so tell it why when there is none instead of leaving it to time out:
+        if not packet:
+            self.server.send_disconnect(proto, ConnectionMessage.SERVER_ERROR, f"{request} failed")
+        else:
+            proto.send_now(packet)
         return True
 
     def _process_request_screenshot(self, proto, _packet: Packet) -> None:
@@ -614,19 +619,6 @@ class DisplayManager(StubSubsystem):
 
     def do_make_icon_packet(self) -> Packet:
         raise NotImplementedError("no icon capability in %s" % type(self))
-
-    def send_screenshot(self, proto) -> None:
-        # this is a screenshot request, handle it and disconnect
-        try:
-            packet = self.make_screenshot_packet()
-            if not packet:
-                self.server.send_disconnect(proto, "screenshot failed")
-                return
-            proto.send_now(packet)
-            self.timeout_add(5 * 1000, self.server.send_disconnect, proto, "screenshot sent")
-        except Exception as e:
-            log.error("failed to capture screenshot", exc_info=True)
-            self.server.send_disconnect(proto, "screenshot failed: %s" % e)
 
     def init_packet_handlers(self) -> None:
         self.add_packets("display-configure", "display-request-screenshot", "display-request-icon", main_thread=True)
