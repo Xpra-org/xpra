@@ -32,6 +32,11 @@ class TestPillowHeader(unittest.TestCase):
         data = comment + b'<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg"></svg>'
         self.assertEqual(get_image_type(data), "svg")
 
+    def test_svg_with_doctype(self):
+        data = b'<!DOCTYPE svg>\n<svg viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"></svg>'
+        self.assertEqual(get_image_type(data), "svg")
+        self.assertEqual(get_image_type(b"<!DOCTYPE html><html></html>"), "")
+
     def test_apng(self):
         from io import BytesIO
         from PIL import Image
