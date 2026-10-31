@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections import Counter
 from collections.abc import Sequence
 
 from xpra.client.base.stub import StubClientSubsystem
@@ -13,9 +14,37 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.net.packet_type import COMMAND_START
 from xpra.util.parsing import str_to_bool
 from xpra.util.objects import typedict
+from xpra.util.str_fn import bytestostr
 from xpra.log import Logger
 
 log = Logger("exec")
+
+
+def menu_entry_labels(entries: dict) -> dict[str, Any]:
+    """
+    newer servers key the entries by desktop file id, older ones by name:
+    label the entries using their `Name`, falling back to the key,
+    and add the key to the labels which are not unique, ie: "Files (nemo)" and "Files (org.gnome.Nautilus)"
+    """
+    labelled = []
+    for key, props in entries.items():
+        key = bytestostr(key)
+        name = props.get("Name") if isinstance(props, dict) else None
+        labelled.append((bytestostr(name or key), key, props))
+    counts = Counter(label for label, _key, _props in labelled)
+    return {(label if counts[label] == 1 else f"{label} ({key})"): props for label, key, props in labelled}
+
+
+def labelled_menu(menu) -> dict:
+    """ the server's start menu, with the entries keyed by label """
+    if not isinstance(menu, dict):
+        return {}
+    labelled = {}
+    for category, props in menu.items():
+        if isinstance(props, dict) and isinstance(props.get("Entries"), dict):
+            props = dict(props) | {"Entries": menu_entry_labels(props["Entries"])}
+        labelled[category] = props
+    return labelled
 
 
 class CommandClient(StubClientSubsystem):
@@ -71,7 +100,7 @@ class CommandClient(StubClientSubsystem):
             onchange = getattr(self.client, "on_server_setting_changed", noop)
 
             def update_menu_value(_setting, menu) -> None:
-                self.server_menu = menu
+                self.server_menu = labelled_menu(menu)
             onchange("menu", update_menu_value)
 
         if self.request_start or self.request_start_child:
