@@ -2327,7 +2327,7 @@ class WindowVideoSource(WindowSource):
             return self.video_fallback(image, options)
 
         if self.encoding=="grayscale":
-            from xpra.codecs.csc_libyuv.colorspace_converter import argb_to_gray    #@UnresolvedImport pylint: disable=import-outside-toplevel
+            from xpra.codecs.libyuv.colorspace_converter import argb_to_gray    #@UnresolvedImport pylint: disable=import-outside-toplevel
             image = argb_to_gray(image)
 
         vh = self.video_helper

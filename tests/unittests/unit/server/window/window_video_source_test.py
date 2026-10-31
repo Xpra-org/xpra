@@ -8,9 +8,53 @@ import unittest
 from unittest.mock import Mock, patch
 
 from xpra.codecs.codec_constants import video_spec
+from xpra.codecs.image_wrapper import ImageWrapper
+from xpra.codecs.loader import load_codec
 from xpra.server.window import window_video_source
 from xpra.server.window.window_video_source import WindowVideoSource
 from xpra.util import typedict
+
+
+class VideoEncodeTest(unittest.TestCase):
+
+    def test_grayscale_conversion(self):
+        if load_codec("csc_libyuv") is None:
+            self.skipTest("libyuv converter is not available")
+
+        pixels = bytes((0, 0, 255, 255, 0, 255, 0, 255, 255, 0, 0, 255, 50, 100, 200, 255))
+        image = ImageWrapper(0, 0, 2, 2, pixels, "BGRX", 24, 8)
+        self.addCleanup(image.free)
+        source = WindowVideoSource.__new__(WindowVideoSource)
+        source.pixel_format = "BGRX"
+        source.supports_transparency = False
+        source.encoding = "grayscale"
+        source.image_depth = 24
+        source.may_use_scrolling = Mock(return_value=False)
+        source.video_helper = Mock()
+        source.video_helper.get_encoder_specs.return_value = {}
+        source.common_video_encodings = ("h264",)
+        source.full_csc_modes = typedict()
+        source.is_cancelled = Mock(return_value=False)
+        source.check_pipeline = Mock(return_value=False)
+        source.video_fallback = Mock(return_value=("fallback",))
+        options = typedict()
+
+        with patch.object(window_video_source, "videolog"):
+            self.assertEqual(source.do_video_encode("grayscale", image, options), ("fallback",))
+
+        converted = source.video_fallback.call_args.args[0]
+        self.addCleanup(converted.free)
+        source.video_fallback.assert_called_once_with(converted, options)
+        source.check_pipeline.assert_called_once_with("grayscale", 2, 2, "BGRX")
+        self.assertEqual(converted.get_geometry()[:4], image.get_geometry()[:4])
+        self.assertEqual(converted.get_pixel_format(), "BGRX")
+        gray_pixels = bytes(converted.get_pixels())
+        self.assertEqual(len(gray_pixels), len(pixels))
+        self.assertNotEqual(gray_pixels, pixels)
+        for offset in range(0, len(gray_pixels), 4):
+            b, g, r = gray_pixels[offset:offset + 3]
+            self.assertEqual(b, g)
+            self.assertEqual(g, r)
 
 
 class VideoQualitySelectionTest(unittest.TestCase):
