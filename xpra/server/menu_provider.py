@@ -178,6 +178,9 @@ class MenuProvider:
                 log.error("Error loading menu data", exc_info=True)
             finally:
                 self.clear_cache()
+                # the default window icons may be found via the menu entries:
+                if windowicon := sys.modules.get("xpra.server.window.windowicon"):
+                    GLib.idle_add(windowicon.clear_default_icon_cache)
 
         start_thread(load, "load-menu-data", True)
 

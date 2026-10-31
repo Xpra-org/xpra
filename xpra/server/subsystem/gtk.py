@@ -40,6 +40,7 @@ def inject_gtk_window_icon_lookup() -> None:
     Gtk = gi_import("Gtk")
     if it := Gtk.IconTheme.get_default():  # pylint: disable=no-member
         it.has_icon("xpra")
+        it.connect("changed", lambda *_args: windowicon.clear_default_icon_cache())
 
 
 def get_default_window_icon(size: int, wmclass_name: str) -> tuple[int, int, str, bytes] | None:

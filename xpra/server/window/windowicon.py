@@ -66,6 +66,14 @@ def do_get_default_window_icon(size: int, name: str) -> tuple[int, int, str, byt
 
 get_default_window_icon = do_get_default_window_icon
 
+# results of `get_default_window_icon` by (size, wmclass name), misses included:
+default_icon_cache: dict[tuple[int, str], tuple[int, int, str, bytes] | None] = {}
+
+
+def clear_default_icon_cache() -> None:
+    log("clear_default_icon_cache() %i entries", len(default_icon_cache))
+    default_icon_cache.clear()
+
 
 class WindowIconSource:
     """
@@ -158,7 +166,10 @@ class WindowIconSource:
         wmclass_name = self.get_window_wm_class_name()
         if not wmclass_name:
             return None
-        return get_default_window_icon(size, wmclass_name)
+        key = (size, wmclass_name)
+        if key not in default_icon_cache:
+            default_icon_cache[key] = get_default_window_icon(size, wmclass_name)
+        return default_icon_cache[key]
 
     def get_window_wm_class_name(self) -> str:
         try:

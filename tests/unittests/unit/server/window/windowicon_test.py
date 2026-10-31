@@ -73,6 +73,7 @@ class WindowIconTest(unittest.TestCase):
                 (windowicon, "get_default_window_icon", get_default_window_icon),
                 (windowicon, "check_main_thread", lambda: None),
                 (WindowIconSource, "fallback_window_icon", FALLBACK),
+                (windowicon, "default_icon_cache", {}),
         ):
             patcher = patch.object(target, attr, value)
             patcher.start()
@@ -135,6 +136,22 @@ class WindowIconTest(unittest.TestCase):
         source.send_window_icon()
         self.assertEqual(self.lookups, [(48, "plain.py")])
         self.assertEqual(source.window_icon_data, ICON_48)
+
+    def test_wmclass_lookups_are_cached(self):
+        self.default_icon = ICON_48
+        for _ in range(2):
+            IconSource(FakeWindow()).send_window_icon()
+        # misses are cached too:
+        self.default_icon = None
+        for _ in range(2):
+            IconSource(FakeWindow(wm_class=("other", "other"))).send_window_icon()
+        self.assertEqual(self.lookups, [(48, "plain.py"), (48, "other")])
+        windowicon.clear_default_icon_cache()
+        self.default_icon = ICON_64
+        source = IconSource(FakeWindow())
+        source.send_window_icon()
+        self.assertEqual(self.lookups[-1], (48, "plain.py"))
+        self.assertEqual(source.window_icon_data, ICON_64)
 
     def test_no_wmclass(self):
         self.default_icon = ICON_48
