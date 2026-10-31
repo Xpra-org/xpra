@@ -286,7 +286,8 @@ class MenuProvider:
         if not entries:
             log("get_menu_icon: no entries for category %r", category_name)
             return "", b""
-        app = entries.get(app_name)
+        # the entries are keyed by desktop file id, the html5 client uses the name:
+        app = entries.get(app_name) or next((entry for entry in entries.values() if entry.get("Name") == app_name), None)
         if not app:
             log("get_menu_icon: no matching application for %r in category %r",
                 app_name, category_name)

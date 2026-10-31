@@ -210,6 +210,42 @@ class TestMenuIconCache(unittest.TestCase):
                 os.chmod(home, 0o700)
 
 
+class TestMenuEntryKeys(unittest.TestCase):
+
+    def setUp(self):
+        from xpra.platform.posix import menu_helper
+        if not menu_helper.check_xdg():
+            self.skipTest("pyxdg is not installed")
+        self.menu_helper = menu_helper
+        tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(tmpdir.cleanup)
+        self.dir = tmpdir.name
+        for filename, command in (("org.gnome.Nautilus.desktop", "nautilus"), ("nemo.desktop", "nemo")):
+            with open(os.path.join(self.dir, filename), "w", encoding="utf8") as f:
+                f.write(f"[Desktop Entry]\nType=Application\nName=Files\nExec={command}\n")
+        for attr in ("load_entry_icon", "add_entry_icon"):
+            patcher = patch.object(menu_helper, attr, lambda props, *_args, **_kwargs: props)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def test_same_name(self):
+        from xdg.Menu import MenuEntry
+        entries = [MenuEntry(filename, self.dir) for filename in ("org.gnome.Nautilus.desktop", "nemo.desktop")]
+        submenu = SimpleNamespace(getName=lambda: "Accessories", getEntries=lambda: entries)
+        data = self.menu_helper.load_xdg_menu(submenu)
+        self.assertEqual({key: entry["command"] for key, entry in data["Entries"].items()}, {
+            "org.gnome.Nautilus": "nautilus",
+            "nemo": "nemo",
+        })
+
+    def test_applications_not_in_the_menu(self):
+        menu_data = {"Accessories": {"Entries": {"nemo": {"Name": "Files"}}}}
+        with patch.object(self.menu_helper, "LOAD_APPLICATIONS", [self.dir]):
+            entries = self.menu_helper.load_applications(menu_data)
+        self.assertEqual(list(entries), ["org.gnome.Nautilus"])
+        self.assertEqual(entries["org.gnome.Nautilus"]["Name"], "Files")
+
+
 class TestThemeIconNames(unittest.TestCase):
 
     def setUp(self):

@@ -23,6 +23,17 @@ class MenuProviderTest(unittest.TestCase):
         get_menu_data.assert_called_once_with(True)
         get_desktop_sessions.assert_called_once_with(True)
 
+    def test_menu_icon_by_key_or_name(self):
+        from xpra.server.menu_provider import MenuProvider
+        provider = MenuProvider()
+        provider.menu_data = {"Accessories": {"Entries": {
+            "org.gnome.Nautilus": {"Name": "Files", "IconType": "png", "IconData": b"nautilus"},
+            "nemo": {"Name": "Nemo Files", "IconType": "png", "IconData": b"nemo"},
+        }}}
+        assert provider.get_menu_icon("Accessories", "nemo") == ("png", b"nemo")
+        assert provider.get_menu_icon("Accessories", "Files") == ("png", b"nautilus")
+        assert provider.get_menu_icon("Accessories", "missing") == ("", b"")
+
     def test_force_reload_reaches_platform_loader(self):
         from xpra.server.menu_provider import MenuProvider
         provider = MenuProvider()

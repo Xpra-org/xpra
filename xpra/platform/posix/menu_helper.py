@@ -426,12 +426,12 @@ def do_find_menu_icon(*names: str) -> str:
         return ""
     for category, cdata in menu_cache.items():
         entries = cdata.get("Entries", ())
-        for name, edata in entries.items():
+        for key, edata in entries.items():
             cmd = os.path.basename(edata.get("Exec", "")).split(" ")[0]
             filename = edata.get("IconFile", "")
             if not filename:
                 continue
-            if (name and name in names) or (cmd and cmd in names):
+            if any(value and value in names for value in (key, edata.get("Name"), cmd)):
                 return filename
     return ""
 
@@ -480,6 +480,11 @@ def load_xdg_entry(de) -> dict[str, Any]:
     return props
 
 
+def desktop_entry_id(entry) -> str:
+    """ the desktop file id, without the `.desktop` extension, ie: "org.gnome.Nautilus" """
+    return str(getattr(entry, "DesktopFileID", "") or "").removesuffix(".desktop")
+
+
 def load_xdg_menu(submenu) -> dict[str, Any]:
     submenu_data: dict[str, Any] = export(submenu, (
         "Name", "GenericName", "Comment",
@@ -499,8 +504,9 @@ def load_xdg_menu(submenu) -> dict[str, Any]:
                 log("  - %-3i %s", i, name)
                 try:
                     ed = load_xdg_entry(de)
-                    if name and ed:
-                        entries_data[name] = ed
+                    # different applications can have the same name, so use the desktop file id:
+                    if (key := desktop_entry_id(entry) or name) and ed:
+                        entries_data[key] = ed
                 except Exception as e:
                     log("load_xdg_menu(%s)", submenu, exc_info=True)
                     log.error(f"Error loading desktop menu entry {name!r}:")
@@ -683,11 +689,11 @@ def load_applications(menu_data=None):
     if not LOAD_APPLICATIONS or not check_xdg():
         return entries
 
-    def already_has_name(name: str) -> bool:
-        if not menu_data or not name:
+    def already_has_entry(key: str) -> bool:
+        if not menu_data or not key:
             return False
         for menu_category in menu_data.values():
-            if name in menu_category.get("Entries", {}):
+            if key in menu_category.get("Entries", {}):
                 return True
         return False
 
@@ -707,9 +713,9 @@ def load_applications(menu_data=None):
                 ed = load_xdg_entry(me.DesktopEntry)
                 if not ed:
                     continue
-                app_name = ed.get("Name", "")
-                if app_name and not already_has_name(app_name):
-                    entries[app_name] = ed
+                key = desktop_entry_id(me)
+                if key and ed.get("Name") and not already_has_entry(key):
+                    entries[key] = ed
     log("entries(%s)=%s", LOAD_APPLICATIONS, remove_icons(entries))
     return entries
 
