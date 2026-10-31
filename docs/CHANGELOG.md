@@ -9,6 +9,7 @@
 * 🌈 Encodings:
 * ✨ Features:
   * [remove backwards compatibility](https://github.com/Xpra-org/xpra/issues/4496)
+  * [faster default window icon lookups](https://github.com/Xpra-org/xpra/issues/5112), [start menu entries with the same name](https://github.com/Xpra-org/xpra/commit/3487ccba2f88b853e9a2759c147e5b3e934ef8e1)
 
 ## [7.0] 2026-10-16
 * 🔧 Platforms, build and packaging:
