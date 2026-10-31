@@ -40,6 +40,23 @@ def inject_gtk_window_icon_lookup() -> None:
     if it := Gtk.IconTheme.get_default():  # pylint: disable=no-member
         it.has_icon("xpra")
         it.connect("changed", lambda *_args: windowicon.clear_default_icon_cache())
+    warmup_svg_loader()
+    windowicon.schedule_warmup()
+
+
+def warmup_svg_loader() -> None:
+    # the first SVG icon initializes librsvg and the png saver used by `load_theme_icon`,
+    # this must be done from the main thread:
+    svg = b'<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>'
+    try:
+        from xpra.gtk.pixbuf import pixbuf_save_to_memory
+        loader = gi_import("GdkPixbuf").PixbufLoader()
+        loader.write(svg)
+        loader.close()
+        png = pixbuf_save_to_memory(loader.get_pixbuf(), "png")
+        log("warmup_svg_loader() %i bytes of png", len(png))
+    except Exception as e:
+        log("warmup_svg_loader() %s", e)
 
 
 def get_theme_icon_names(size: int, wmclass_name: str) -> tuple[str, ...]:

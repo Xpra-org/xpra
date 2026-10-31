@@ -130,6 +130,37 @@ def clear_default_icon_cache() -> None:
     default_icon_cache.clear()
 
 
+def warmup_default_window_icons() -> None:
+    """
+    Loads pillow's plugins and the icon themes,
+    so the first default window icon lookup doesn't have to.
+    This does not use Gtk, it runs in the background worker thread.
+    """
+    start = monotonic()
+    if Image:
+        Image.init()
+    if POSIX and not OSX:
+        try:
+            from xpra.platform.posix.menu_helper import find_icon
+            # a miss goes through all the themes:
+            find_icon("xpra-warmup-no-such-icon")
+        except (OSError, ValueError, TypeError, ImportError) as e:
+            log("warmup_default_window_icons() %s", e)
+    log("warmup_default_window_icons() took %ims", 1000 * (monotonic() - start))
+
+
+def schedule_warmup() -> None:
+    from xpra.util.background_worker import add_work_item
+    add_work_item(warmup_default_window_icons)
+
+
+def menus_reloaded() -> None:
+    # the menu entries can provide icons,
+    # and loading them clears the icon theme caches:
+    clear_default_icon_cache()
+    schedule_warmup()
+
+
 class WindowIconSource:
     """
     Mixin for handling the sending of window icon pixels.
