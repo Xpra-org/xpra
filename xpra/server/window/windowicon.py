@@ -37,6 +37,31 @@ SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 MAX_ARGB_PIXELS = envint("XPRA_MAX_ARGB_PIXELS", 1024)
 
 
+def load_icon_file(filename: str, size: int) -> tuple[int, int, str, bytes] | None:
+    """
+    Loads the icon using pillow, scaled to `size` and encoded as png.
+    This does not use any Gtk or Gdk calls.
+    """
+    if not Image:
+        return None
+    try:
+        with Image.open(filename) as img:
+            img.load()
+            w = int(img.width)
+            h = int(img.height)
+            log("load_icon_file(%r, %i) size=%ix%i", filename, size, w, h)
+            if w != size or h != size:
+                try:
+                    NEAREST = Image.Resampling.NEAREST
+                except AttributeError:
+                    NEAREST = Image.NEAREST
+                img = img.resize((size, size), NEAREST)
+            return size, size, "png", to_png(img)
+    except (OSError, ValueError, TypeError) as e:
+        log("load_icon_file(%r, %i) %s", filename, size, e)
+    return None
+
+
 def do_get_default_window_icon(size: int, name: str) -> tuple[int, int, str, bytes] | None:
     log("do_get_default_window_icon(%i, %s)", size, name)
     if POSIX and not OSX and Image:
@@ -45,20 +70,7 @@ def do_get_default_window_icon(size: int, name: str) -> tuple[int, int, str, byt
             filename = find_icon(name)
             log("find_icon(%r)=%r", name, filename)
             if filename:
-                img = Image.open(filename)
-                img.load()
-                w = int(img.width)
-                h = int(img.height)
-                log("size=%ix%i", w, h)
-                if w != size or h != size:
-                    try:
-                        NEAREST = Image.Resampling.NEAREST
-                    except AttributeError:
-                        NEAREST = Image.NEAREST
-                    img = img.resize((size, size), NEAREST)
-                data = to_png(img)
-                img.close()
-                return size, size, "png", data
+                return load_icon_file(filename, size)
         except (OSError, ValueError, TypeError, ImportError) as e:
             log("do_get_default_window_icon(%i, %r) %s", size, name, e)
     return None
