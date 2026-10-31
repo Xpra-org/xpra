@@ -181,6 +181,52 @@ class WindowIconTest(unittest.TestCase):
         self.assertEqual(len(self.timers), 1)
 
 
+class ThemeIconLookupTest(unittest.TestCase):
+
+    def lookup(self, filename="", theme_icon=None, loaded=None, theme_loaded=None, fallback=None):
+        calls = []
+
+        def record(name, value):
+            def fn(*args):
+                calls.append((name, ) + args)
+                return value
+            return fn
+
+        with (
+            patch.object(windowicon, "find_theme_icon", record("find", (filename, theme_icon))),
+            patch.object(windowicon, "load_icon_file", record("file", loaded)),
+            patch.object(windowicon, "load_theme_icon", record("theme", theme_loaded)),
+            patch.object(windowicon, "do_get_default_window_icon", record("fallback", fallback)),
+        ):
+            icon = windowicon.get_default_window_icon(48, "app")
+        return icon, [call[0] for call in calls]
+
+    def test_raster_theme_icon(self):
+        icon, calls = self.lookup("/icons/app.png", "info", loaded=ICON_48)
+        self.assertEqual(icon, ICON_48)
+        self.assertEqual(calls, ["find", "file"])
+
+    def test_svg_theme_icon(self):
+        icon, calls = self.lookup("/icons/app.svg", "info", theme_loaded=ICON_64)
+        self.assertEqual(icon, ICON_64)
+        self.assertEqual(calls, ["find", "theme"])
+
+    def test_raster_file_fails_to_load(self):
+        icon, calls = self.lookup("/resource/app.png", "info", theme_loaded=ICON_64)
+        self.assertEqual(icon, ICON_64)
+        self.assertEqual(calls, ["find", "file", "theme"])
+
+    def test_not_in_theme(self):
+        icon, calls = self.lookup(fallback=ICON_48)
+        self.assertEqual(icon, ICON_48)
+        self.assertEqual(calls, ["find", "fallback"])
+
+    def test_nothing_found(self):
+        icon, calls = self.lookup("/icons/app.png", "info")
+        self.assertIsNone(icon)
+        self.assertEqual(calls, ["find", "file", "theme", "fallback"])
+
+
 class DefaultWindowIconTest(unittest.TestCase):
 
     def setUp(self):

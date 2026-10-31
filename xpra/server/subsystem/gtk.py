@@ -5,12 +5,10 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Callable
 
 from xpra.os_util import gi_import
 from xpra.util.env import SilenceWarningsContext
 from xpra.util.screen import prettify_plug_name
-from xpra.common import noop
 from xpra.net.common import FULL_INFO
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.server.subsystem.stub import StubSubsystem
@@ -18,23 +16,24 @@ from xpra.log import Logger
 
 log = Logger("server", "gtk")
 
-get_default_window_icon_fallback: Callable[[int, str], Any] = noop
+icon_lookup_injected = False
 
 
 def inject_gtk_window_icon_lookup() -> None:
     """
-    Replace the default window-icon lookup with one that consults the
-    current GTK icon theme. Safe to call on any GDK backend (X11, Wayland, ...).
+    Make the default window-icon lookup consult the current GTK icon theme.
+    Safe to call on any GDK backend (X11, Wayland, ...).
     """
-    global get_default_window_icon_fallback
-    if get_default_window_icon_fallback != noop:
+    global icon_lookup_injected
+    if icon_lookup_injected:
         return
     try:
         from xpra.server.window import windowicon
     except ImportError:
         return
-    get_default_window_icon_fallback = windowicon.do_get_default_window_icon
-    windowicon.get_default_window_icon = get_default_window_icon
+    icon_lookup_injected = True
+    windowicon.find_theme_icon = find_theme_icon
+    windowicon.load_theme_icon = load_theme_icon
     # the first lookup loads the icon themes from disk,
     # do it now rather than when the first window is mapped:
     Gtk = gi_import("Gtk")
@@ -54,9 +53,9 @@ def get_theme_icon_names(size: int, wmclass_name: str) -> tuple[str, ...]:
     )
 
 
-def find_theme_icon(size: int, wmclass_name: str):
+def find_theme_icon(size: int, wmclass_name: str) -> tuple[str, Any]:
     """
-    Returns the `Gtk.IconInfo` of the first icon found in the GTK icon theme,
+    Returns the filename and `Gtk.IconInfo` of the first icon found in the GTK icon theme,
     preferring raster formats over SVG.
     The lookups use the icon theme's cache, without loading any icon data.
     """
@@ -68,11 +67,11 @@ def find_theme_icon(size: int, wmclass_name: str):
             info = it.lookup_icon(icon_name, size, flags)
             log("lookup_icon(%r, %i, %s)=%s", icon_name, size, flags, info)
             if info:
-                return info
-    return None
+                return info.get_filename() or "", info
+    return "", None
 
 
-def load_theme_icon_info(info) -> tuple[int, int, str, bytes] | None:
+def load_theme_icon(info) -> tuple[int, int, str, bytes] | None:
     # this uses Gtk and may use rsvg, so it must be called from the main thread:
     try:
         pixbuf = info.load_icon()
@@ -84,19 +83,6 @@ def load_theme_icon_info(info) -> tuple[int, int, str, bytes] | None:
     except Exception:
         log("%s.load_icon()", info, exc_info=True)
     return None
-
-
-def get_default_window_icon(size: int, wmclass_name: str) -> tuple[int, int, str, bytes] | None:
-    if info := find_theme_icon(size, wmclass_name):
-        filename = info.get_filename() or ""
-        log("find_theme_icon(%i, %r)=%r", size, wmclass_name, filename)
-        if filename and not filename.endswith(".svg"):
-            from xpra.server.window.windowicon import load_icon_file
-            if icon := load_icon_file(filename, size):
-                return icon
-        if icon := load_theme_icon_info(info):
-            return icon
-    return get_default_window_icon_fallback(size, wmclass_name)
 
 
 class GTKServer(StubSubsystem):

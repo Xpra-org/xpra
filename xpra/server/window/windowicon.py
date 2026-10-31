@@ -8,6 +8,7 @@
 from io import BytesIO
 from time import monotonic
 from typing import Any
+from collections.abc import Callable
 
 try:
     from PIL import Image
@@ -22,6 +23,7 @@ from xpra.codecs.image import to_png
 from xpra.util.thread import check_main_thread
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
+from xpra.common import noop
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -76,7 +78,32 @@ def do_get_default_window_icon(size: int, name: str) -> tuple[int, int, str, byt
     return None
 
 
-get_default_window_icon = do_get_default_window_icon
+def no_theme_icon(_size: int, _wmclass_name: str) -> tuple[str, Any]:
+    return "", None
+
+
+# GTK servers replace these with lookups in the GTK icon theme,
+# both must be called from the main thread:
+# `find_theme_icon(size, wmclass_name)` returns the icon's filename and an opaque object
+# which `load_theme_icon(obj)` can use to load the icon if the file cannot be loaded with pillow (ie: SVG)
+find_theme_icon: Callable[[int, str], tuple[str, Any]] = no_theme_icon
+load_theme_icon: Callable[[Any], tuple[int, int, str, bytes] | None] = noop
+
+
+def get_default_window_icon(size: int, wmclass_name: str) -> tuple[int, int, str, bytes] | None:
+    # main thread, the icon theme cache:
+    filename, theme_icon = find_theme_icon(size, wmclass_name)
+    # any thread, file I/O:
+    if filename and not filename.endswith(".svg"):
+        if icon := load_icon_file(filename, size):
+            return icon
+    # main thread, may use Gtk and rsvg:
+    if theme_icon:
+        if icon := load_theme_icon(theme_icon):
+            return icon
+    # any thread, file I/O:
+    return do_get_default_window_icon(size, wmclass_name)
+
 
 # results of `get_default_window_icon` by (size, wmclass name), misses included:
 default_icon_cache: dict[tuple[int, str], tuple[int, int, str, bytes] | None] = {}
