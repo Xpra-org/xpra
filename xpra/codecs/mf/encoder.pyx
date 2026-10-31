@@ -199,16 +199,17 @@ def get_h264_profile(options: typedict) -> str:
     if profile not in H264_PROFILE_IDS:
         log.warn("Warning: %r is not a valid Media Foundation H.264 profile", profile)
         log.warn(" valid profiles are: %s", ", ".join(H264_PROFILE_IDS))
-        profile = "main"
+        return "main"
     if profile == "baseline":
         return "constrained-baseline"
-    if profile != "constrained-baseline" and options.boolget("h264.poc-type-2", True):
-        # the MFTs number their pictures with `pic_order_cnt_type` 0 (AMD's do, at every profile),
-        # and openh264 cannot decode that at Main or High: it holds the frames back until it runs
-        # out of buffers. MediaFoundation has no setting for it, so those clients get Baseline:
-        log("using constrained-baseline instead of %r for a client that needs pic_order_cnt_type 2", profile)
-        return "constrained-baseline"
     return profile
+
+
+# The `pic_order_cnt_type` of the Main / High profile streams of the MFT we get for each
+# encoding and input format, once we have seen one: MediaFoundation has no setting for it,
+# AMD's MFTs write 0 and NVIDIA's write 2. openh264 cannot decode type 0 at these profiles:
+# it holds the frames back until it runs out of buffers, see `Encoder.check_poc_type`.
+POC_TYPES: dict[tuple[str, str], int] = {}
 
 
 def get_encodings() -> Sequence[str]:
@@ -327,6 +328,8 @@ cdef class Encoder:
     cdef object content_types
     cdef double last_reinit
     cdef uintptr_t device       # the D3D11 device of a "BGRX" encoder
+    cdef bint poc_type_2        # the client can only decode `pic_order_cnt_type` 2 at Main and High
+    cdef int poc_type           # what our stream uses, -1 until it has been checked
 
     cdef object __weakref__
 
@@ -337,6 +340,12 @@ cdef class Encoder:
         assert src_format in INPUT_FORMATS, "invalid source format: %s" % src_format
         self.encoding   = encoding
         self.profile    = get_h264_profile(options) if encoding == "h264" else "main"
+        self.poc_type_2 = encoding == "h264" and options.boolget("h264.poc-type-2", True)
+        self.poc_type   = -1
+        if self.needs_poc_check() and POC_TYPES.get((encoding, src_format)) == 0:
+            # we already know that this MFT's stream would have to be replaced:
+            log("using constrained-baseline instead of %r, for pic_order_cnt_type 2", self.profile)
+            self.profile = "constrained-baseline"
         self.level      = get_level(options, encoding=encoding, csc_mode="YUV420P")
         self.src_format = src_format
         self.width      = width
@@ -394,6 +403,35 @@ cdef class Encoder:
     def supports_gpu_input(self) -> bool:
         """ can we encode `D3D11Texture` buffers directly, see `DXGIImageWrapper.freeze_on_gpu()` """
         return self.context != NULL and self.device != 0
+
+    cdef bint needs_poc_check(self) noexcept:
+        # openh264 decodes Baseline whatever its `pic_order_cnt_type`:
+        return self.poc_type_2 and self.poc_type < 0 and self.profile != "constrained-baseline"
+
+    cdef bint check_poc_type(self, data) except -1:
+        """
+        Can the client decode this stream? Only its first keyframe needs checking:
+        the `pic_order_cnt_type` is in its SPS, and MediaFoundation has no setting for it.
+        Returns False if the encoder has to be replaced with a Baseline one.
+        """
+        if not data or not self.needs_poc_check():
+            return True
+        from xpra.codecs.h264_util import get_pic_order_cnt_type
+        poc_type = get_pic_order_cnt_type(data)
+        name = mf_encoder_get_name(self.context).decode("utf-8", "replace")
+        log("%r writes pic_order_cnt_type %i at %s", name, poc_type, self.profile)
+        if poc_type == 2:
+            self.poc_type = poc_type
+            POC_TYPES[(self.encoding, self.src_format)] = poc_type
+            return True
+        # 0, 1, or -1 if we cannot tell: Baseline is safe whatever it is
+        POC_TYPES[(self.encoding, self.src_format)] = 0
+        if first_time(f"mf-poc-type-{name}"):
+            log.info("the %r encoder does not use pic_order_cnt_type 2 at %s", name, self.profile)
+            log.info(" using constrained-baseline for openh264 clients")
+        self.profile = "constrained-baseline"
+        self.reinit_encoder()
+        return False
 
     cdef void reinit_encoder(self) except *:
         # close and reopen the MFT with the current tuning:
@@ -483,6 +521,8 @@ cdef class Encoder:
             info["mft"] = mf_encoder_get_name(self.context).decode("utf-8", "replace")
             info["hardware"] = bool(mf_encoder_is_hardware(self.context))
             info["gpu-input"] = self.device != 0
+            if self.poc_type >= 0:
+                info["pic-order-cnt-type"] = self.poc_type
             info["tuning"] = self.get_tuning_info()
         return info
 
@@ -580,11 +620,15 @@ cdef class Encoder:
             raise RuntimeError("mf encode error: %s (detail: %s, hr=0x%08X)" % (
                 mf_encode_status_str(status).decode("latin-1"), detail, last_hr))
 
+        data = bytes(frame.data[:frame.data_len])
+        if not self.check_poc_type(data):
+            # this is the first frame we send, so encode it again with the Baseline encoder:
+            return self.compress_image(image, options)
+
         # the video processor converts "BGRX" to studio range:
         cdef bint full_range = self.src_format != "BGRX" and image.get_full_range()
         cdef bint range_changed = full_range != self.full_range
         self.full_range = full_range
-        data = bytes(frame.data[:frame.data_len])
 
         log("mf encoded %8d bytes %dx%d keyframe=%s (input=%dus output=%dus)",
             frame.data_len, width, height, bool(frame.is_keyframe),
@@ -618,6 +662,10 @@ cdef class Encoder:
         if status != MF_ENC_OK:
             return b"", {}
         data = bytes(frame.data[:frame.data_len])
+        if not self.check_poc_type(data):
+            # we no longer have the frame to encode it again,
+            # the next one will be the first keyframe from the Baseline encoder:
+            return b"", {}
         client_options: dict[str, Any] = {
             "frame"     : int(self.frames),
         }
