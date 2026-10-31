@@ -72,7 +72,7 @@ class WindowIconTest(unittest.TestCase):
                 (windowicon, "GLib", glib),
                 (windowicon, "get_default_window_icon", get_default_window_icon),
                 (windowicon, "check_main_thread", lambda: None),
-                (WindowIconSource, "fallback_window_icon", FALLBACK),
+                (windowicon, "xpra_icons", {"xpra.png": FALLBACK}),
                 (windowicon, "default_icon_cache", {}),
         ):
             patcher = patch.object(target, attr, value)
@@ -302,6 +302,41 @@ class DefaultWindowIconTest(unittest.TestCase):
     def test_not_found(self):
         with patch("xpra.platform.posix.menu_helper.find_icon", lambda *_names, **_kwargs: ""):
             self.assertIsNone(windowicon.do_get_default_window_icon(48, "no-such-icon"))
+
+
+class XpraIconTest(unittest.TestCase):
+
+    def setUp(self):
+        patcher = patch.object(windowicon, "xpra_icons", {})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def test_loaded_once(self):
+        from xpra.platform.paths import get_icon_filename
+        filename = get_icon_filename("xpra.png")
+        if not filename or not os.path.exists(filename):
+            self.skipTest("xpra.png icon not found")
+        icon = windowicon.get_xpra_icon("xpra.png")
+        self.assertIsNotNone(icon)
+        w, h, coding, data = icon
+        self.assertEqual(coding, "png")
+        self.assertEqual(Image.open(BytesIO(data)).size, (w, h))
+        with patch.object(windowicon, "load_binary_file", lambda _filename: self.fail("not cached")):
+            self.assertIs(windowicon.get_xpra_icon("xpra.png"), icon)
+            self.assertIs(WindowIconSource.get_fallback_window_icon(), icon)
+
+    def test_not_found(self):
+        self.assertIsNone(windowicon.get_xpra_icon("no-such-icon.png"))
+        # misses are cached too:
+        self.assertIn("no-such-icon.png", windowicon.xpra_icons)
+
+    def test_warmup_preloads(self):
+        with (
+            patch.object(windowicon, "POSIX", False),
+            patch.object(windowicon, "get_xpra_icon", lambda name: windowicon.xpra_icons.setdefault(name, None)),
+        ):
+            windowicon.warmup_default_window_icons()
+        self.assertEqual(sorted(windowicon.xpra_icons), sorted(("xpra.png", windowicon.OS_ICON)))
 
 
 def main():

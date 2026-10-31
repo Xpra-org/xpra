@@ -22,6 +22,7 @@ from xpra.net.packet_type import WINDOW_ICON
 from xpra.codecs.image import to_png
 from xpra.util.thread import check_main_thread
 from xpra.util.str_fn import csv
+from xpra.util.system import get_generic_os_name
 from xpra.util.env import envint, envbool
 from xpra.common import noop
 from xpra.log import Logger
@@ -158,15 +159,50 @@ def clear_default_icon_cache() -> None:
     default_icon_cache.clear()
 
 
+# the icon of the operating system, used by desktop windows:
+OS_ICON = get_generic_os_name().lower() + ".png"
+
+# icons shipped with xpra, by name, loaded once:
+xpra_icons: dict[str, tuple[int, int, str, bytes] | None] = {}
+
+
+def get_xpra_icon(name: str) -> tuple[int, int, str, bytes] | None:
+    """
+    Returns one of the icons shipped with xpra, encoded as png.
+    The ones we use are preloaded by `warmup_default_window_icons`.
+    This does not use any Gtk or Gdk calls.
+    """
+    try:
+        return xpra_icons[name]
+    except KeyError:
+        pass
+    icon = None
+    from xpra.platform.paths import get_icon_filename
+    filename = get_icon_filename(name)
+    if Image and filename and (data := load_binary_file(filename)):
+        try:
+            with Image.open(BytesIO(data)) as img:
+                if img.format != "PNG":
+                    data = to_png(img)
+                icon = img.width, img.height, "png", data
+        except (OSError, ValueError) as e:
+            log("get_xpra_icon(%r) %s", name, e)
+    log("get_xpra_icon(%r) filename=%r, found=%s", name, filename, bool(icon))
+    xpra_icons[name] = icon
+    return icon
+
+
 def warmup_default_window_icons() -> None:
     """
-    Loads pillow's plugins and the icon themes,
+    Loads pillow's plugins, our own icons and the icon themes,
     so the first default window icon lookup doesn't have to.
     This does not use Gtk, it runs in the background worker thread.
     """
     start = monotonic()
     if Image:
         Image.init()
+    for name in ("xpra.png", OS_ICON):
+        get_xpra_icon(name)
     if POSIX and not OSX:
         try:
             from xpra.platform.posix.menu_helper import find_icon
@@ -193,8 +229,6 @@ class WindowIconSource:
     """
     Mixin for handling the sending of window icon pixels.
     """
-
-    fallback_window_icon: bool | tuple[int, int, str, bytes] = False
 
     def __init__(self, window_icon_encodings, icons_encoding_options):
         self.window_icon_encodings = window_icon_encodings
@@ -258,22 +292,8 @@ class WindowIconSource:
         return {"icon": info}
 
     @staticmethod
-    def get_fallback_window_icon():
-        if WindowIconSource.fallback_window_icon is False and Image:
-            try:
-                from xpra.platform.paths import get_icon_filename  # pylint: disable=import-outside-toplevel
-                icon_filename = get_icon_filename("xpra.png")
-                log(f"get_fallback_window_icon() icon filename={icon_filename}")
-                img = Image.open(icon_filename)
-                icon_data = load_binary_file(icon_filename)
-                icon = (img.size[0], img.size[1], "png", icon_data)
-                img.close()
-                WindowIconSource.fallback_window_icon = icon
-                return icon
-            except Exception as e:
-                log.warn(f"Warning: failed to get fallback icon: {e}")
-                WindowIconSource.fallback_window_icon = False
-        return WindowIconSource.fallback_window_icon
+    def get_fallback_window_icon() -> tuple[int, int, str, bytes] | None:
+        return get_xpra_icon("xpra.png")
 
     def get_default_window_icon(self, size=48) -> tuple[int, int, str, bytes] | None:
         # return the icon which would be used from the wmclass

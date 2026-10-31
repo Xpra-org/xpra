@@ -6,9 +6,8 @@
 import socket
 from typing import Any
 from xpra.os_util import gi_import
-from xpra.util.system import get_generic_os_name
 from xpra.util.io import load_binary_file
-from xpra.platform.paths import get_icon, get_icon_filename
+from xpra.platform.paths import get_icon_filename
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.server.window.model import WindowModelStub
 from xpra.x11.error import xlog
@@ -165,11 +164,8 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
 
     @staticmethod
     def get_default_window_icon(_size: int = 48) -> tuple[int, int, str, bytes] | None:
-        icon_name = get_generic_os_name() + ".png"
-        icon = get_icon(icon_name)
-        if not icon:
-            return None
-        return icon.get_width(), icon.get_height(), "RGBA", icon.get_pixels()
+        from xpra.server.window.windowicon import get_xpra_icon, OS_ICON
+        return get_xpra_icon(OS_ICON)
 
     def get_title(self) -> str:
         return self.get_property("wm-name") or "xpra desktop"
