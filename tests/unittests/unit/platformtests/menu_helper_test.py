@@ -142,6 +142,7 @@ class TestMenuIconCache(unittest.TestCase):
             with patch.object(menu_helper, "get_menu_icon_cache_dir", return_value=cache_dir), \
                  patch.object(menu_helper, "load_menu", return_value=applications), \
                  patch.object(menu_helper, "load_desktop_sessions", return_value=sessions), \
+                 patch.object(menu_helper, "_theme_svg_icon_files", return_value=set()), \
                  patch.object(menu_helper.icon_util, "load_rsvg", return_value=True), \
                  patch.object(menu_helper.icon_util, "svg_to_png", return_value=PNG_DATA):
                 assert menu_helper.cache_menu_icons() == 1
@@ -155,9 +156,42 @@ class TestMenuIconCache(unittest.TestCase):
             with patch.object(menu_helper, "get_menu_icon_cache_dir", return_value=cache_dir), \
                  patch.object(menu_helper, "load_menu", return_value=applications), \
                  patch.object(menu_helper, "load_desktop_sessions", return_value=sessions), \
+                 patch.object(menu_helper, "_theme_svg_icon_files", return_value=set()), \
                  patch.object(menu_helper.icon_util, "load_rsvg", return_value=True), \
                  patch.object(menu_helper.icon_util, "svg_to_png", return_value=PNG_DATA):
                 assert menu_helper.cache_menu_icons() == 1
+
+    def test_desktop_entry_icon_names(self):
+        from xpra.platform.posix import menu_helper
+        with tempfile.TemporaryDirectory() as tmpdir:
+            for filename, contents in (
+                    ("org.example.Files.desktop", "[Desktop Entry]\nName=Files\nIcon=example-files\nStartupWMClass=example\n"),
+                    ("other.desktop", "[Desktop Entry]\nName=Files\nIcon[fr]=localized\nIcon=\n"),
+                    ("not-a-desktop-file.txt", "Icon=ignored\n"),
+            ):
+                with open(os.path.join(tmpdir, filename), "w", encoding="utf8") as f:
+                    f.write(contents)
+            with patch.object(menu_helper, "LOAD_APPLICATIONS", [tmpdir, os.path.join(tmpdir, "missing")]):
+                names = menu_helper.get_desktop_entry_icon_names()
+        self.assertEqual(names, {"org.example.Files", "example-files", "example", "other"})
+
+    def test_cache_menu_icons_includes_desktop_entry_theme_icons(self):
+        from xpra.platform.posix import menu_helper
+        with tempfile.TemporaryDirectory() as tmpdir:
+            svg_filename = os.path.join(tmpdir, "app.svg")
+            with open(svg_filename, "wb") as f:
+                f.write(SVG_DATA)
+            cache_dir = os.path.join(tmpdir, "cache")
+            with patch.object(menu_helper, "get_menu_icon_cache_dir", return_value=cache_dir), \
+                 patch.object(menu_helper, "load_menu", return_value={}), \
+                 patch.object(menu_helper, "load_desktop_sessions", return_value={}), \
+                 patch.object(menu_helper, "get_desktop_entry_icon_names", return_value={"app"}), \
+                 patch.object(menu_helper, "_theme_svg_icon_files", return_value={svg_filename}) as theme_files, \
+                 patch.object(menu_helper.icon_util, "load_rsvg", return_value=True), \
+                 patch.object(menu_helper.icon_util, "svg_to_png", return_value=PNG_DATA):
+                assert menu_helper.cache_menu_icons() == 1
+            theme_files.assert_called_once_with({"app"})
+            assert os.path.exists(menu_helper.cached_svg_filename(SVG_DATA, cache_dir))
 
     def test_cache_menu_icons_read_only(self):
         from xpra.platform.posix import menu_helper
@@ -215,6 +249,13 @@ class TestThemeIconNames(unittest.TestCase):
         self.menu_helper.load_theme_icon_names()
         self.menu_helper.find_theme_icon("unknown", "app", "hidden")
         self.assertEqual(self.lookups, ["app"])
+
+    def test_theme_svg_icon_files(self):
+        base = self.menu_helper.IconTheme.icondirs[0]
+        self.assertEqual(self.menu_helper._theme_svg_icon_files({"app", "other", "hidden", "/abs/icon.svg"}), {
+            os.path.join(base, "test-theme", "scalable", "apps", "other.svg"),
+            "/abs/icon.svg",
+        })
 
     def test_not_loaded(self):
         self.menu_helper.find_theme_icon("unknown", "app")

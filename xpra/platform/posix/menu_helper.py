@@ -304,6 +304,20 @@ ic_lock = RLock()
 theme_icon_names: frozenset[str] | None = None
 
 
+def list_theme_icon_dirs() -> Generator[tuple[str, list[str]], None, None]:
+    """ yields the path and the files of every directory of the icon themes """
+    if not (IconTheme and themes):
+        return
+    for theme in tuple(themes.values()):
+        for subdir in theme.getDirectories():
+            for basedir in IconTheme.icondirs:
+                icon_dir = os.path.join(basedir, theme.name, subdir)
+                try:
+                    yield icon_dir, os.listdir(icon_dir)
+                except OSError:
+                    continue
+
+
 def load_theme_icon_names() -> None:
     """
     Lists the directories of the icon themes, so `find_theme_icon` can skip
@@ -315,14 +329,8 @@ def load_theme_icon_names() -> None:
         return
     start = monotonic()
     names: set[str] = set()
-    for theme in tuple(themes.values()):
-        for subdir in theme.getDirectories():
-            for basedir in IconTheme.icondirs:
-                try:
-                    entries = os.listdir(os.path.join(basedir, theme.name, subdir))
-                except OSError:
-                    continue
-                names.update(os.path.splitext(entry)[0] for entry in entries)
+    for _icon_dir, entries in list_theme_icon_dirs():
+        names.update(os.path.splitext(entry)[0] for entry in entries)
     theme_icon_names = frozenset(names)
     log("load_theme_icon_names() %i names in %ims", len(names), 1000 * (monotonic() - start))
 
@@ -754,6 +762,44 @@ def _menu_icon_files(data: Any) -> set[str]:
     return filenames
 
 
+def get_desktop_entry_icon_names() -> set[str]:
+    """
+    The icon names that windows are likely to use:
+    the `Icon` and `StartupWMClass` of all the desktop entries, and their filenames,
+    including the ones that the menus do not show.
+    """
+    names: set[str] = set()
+    for d in LOAD_APPLICATIONS:
+        try:
+            filenames = os.listdir(d)
+        except OSError:
+            continue
+        for f in filenames:
+            if not f.endswith(".desktop"):
+                continue
+            names.add(f[:-len(".desktop")])
+            try:
+                with open(os.path.join(d, f), encoding="utf8", errors="ignore") as desktop_file:
+                    for line in desktop_file:
+                        key, _, value = line.partition("=")
+                        if key.strip() in ("Icon", "StartupWMClass") and value.strip():
+                            names.add(value.strip())
+            except OSError as e:
+                log(f"failed to read {f!r} from {d!r}: {e}")
+    return names
+
+
+def _theme_svg_icon_files(names: set[str]) -> set[str]:
+    """ the SVG files matching these icon names, in every icon theme """
+    filenames = {name for name in names if os.path.isabs(name) and name.lower().endswith(".svg")}
+    for icon_dir, entries in list_theme_icon_dirs():
+        for entry in entries:
+            root, ext = os.path.splitext(entry)
+            if ext.lower() == ".svg" and root in names:
+                filenames.add(os.path.join(icon_dir, entry))
+    return filenames
+
+
 def prepare_menu_icon_cache_dir() -> str:
     """Create the menu icon cache directory, returns an empty string if it is not writable, ie: read-only home"""
     cache_dir = get_menu_icon_cache_dir()
@@ -792,22 +838,27 @@ def _write_cached_png(filename: str, png_data: bytes) -> None:
 
 
 def cache_menu_icons() -> int:
-    """Load XDG application and desktop-session menus and cache their SVG icons as PNG."""
+    """
+    Load XDG application and desktop-session menus and cache their SVG icons as PNG,
+    also cache the SVG theme icons of all the desktop entries, for the default window icons.
+    """
     cache_dir = prepare_menu_icon_cache_dir()
     if not cache_dir:
         log.info("menu icon cache directory %r is not writable", get_menu_icon_cache_dir())
         return 0
     menu_data = load_menu(True)
     session_data = load_desktop_sessions()
-    filenames = _menu_icon_files(menu_data)
-    filenames.update(_menu_icon_files(session_data))
+    menu_filenames = _menu_icon_files(menu_data)
+    menu_filenames.update(_menu_icon_files(session_data))
+    filenames = menu_filenames | _theme_svg_icon_files(get_desktop_entry_icon_names())
     if filenames and not icon_util.load_rsvg():
         raise RuntimeError("the Rsvg bindings are required to cache SVG menu icons")
     modified = 0
     for filename in sorted(filenames):
         svg_data = load_binary_file(filename)
         if not svg_data or get_image_type(svg_data) != "svg":
-            log.warn("Warning: cannot cache invalid SVG menu icon %r", filename)
+            # only the menu icons are worth a warning, the themes have broken symlinks:
+            (log.warn if filename in menu_filenames else log)("Warning: cannot cache invalid SVG menu icon %r", filename)
             continue
         cached_filename = cached_svg_filename(svg_data, cache_dir)
         cached_data = load_binary_file(cached_filename)
