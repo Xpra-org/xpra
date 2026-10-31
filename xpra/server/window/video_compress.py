@@ -2425,7 +2425,7 @@ class WindowVideoSource(WindowSource):
             return ()
 
         if self.encoding == "grayscale":
-            from xpra.codecs.csc_libyuv.converter import argb_to_gray
+            from xpra.codecs.libyuv.converter import argb_to_gray
             image = argb_to_gray(image)
 
         vh = self.video_helper
