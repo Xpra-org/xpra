@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
+from collections import Counter
 from collections.abc import Sequence
 
 from xpra.client.base.stub import StubClientSubsystem
@@ -28,11 +29,24 @@ def menu_name(name) -> str:
     return truncate(single_line(bytestostr(name)).strip(), MAX_MENU_NAME)
 
 
+def menu_entry_labels(entries: dict) -> list[tuple[str, dict]]:
+    """
+    newer servers key the entries by desktop file id, and different applications can have the same name:
+    label the entries using their `Name`, adding the key to the labels which are not unique
+    """
+    labelled = [(menu_name(props.get("Name") or key), menu_name(key), props) for key, props in entries.items() if isinstance(props, dict)]
+    counts = Counter(label for label, _key, _props in labelled)
+    return sorted(
+        ((label if counts[label] == 1 else menu_name(f"{label} ({key})"), props) for label, key, props in labelled),
+        key=lambda entry: entry[0],
+    )
+
+
 def validated_menu(menu) -> tuple[dict, bool]:
     """
     the start menu data comes from the server:
     clean the names, and limit the number of categories and of entries in each category
-    returns the menu, and whether we had to drop anything
+    returns the menu keyed by labels, and whether we had to drop anything
     """
     if not isinstance(menu, dict):
         return {}, False
@@ -47,7 +61,7 @@ def validated_menu(menu) -> tuple[dict, bool]:
     for category, props in categories:
         entries = props.get("Entries")
         if isinstance(entries, dict):
-            entries = sorted((menu_name(name), cp) for name, cp in entries.items() if isinstance(cp, dict))
+            entries = menu_entry_labels(entries)
             if len(entries) > MAX_MENU_ENTRIES:
                 if first_time(f"start-menu-category-{category}"):
                     log.warn("Warning: the server's start menu category %r has too many entries", category)
