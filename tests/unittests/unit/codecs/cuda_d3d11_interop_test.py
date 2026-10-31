@@ -101,6 +101,9 @@ class TestD3D11Interop(unittest.TestCase):
     def test_luid(self):
         self.assertEqual(self.interop.luid, FakeCUDA.LUID)
 
+    def test_device_luid(self):
+        self.assertEqual(d3d11.get_device_luid(1, self.cuda), FakeCUDA.LUID)
+
     def test_copy(self):
         self.interop.copy_to(Texture(0x500, 3, 7), 0xd000, 10240, 640, 480)
         self.assertEqual(self.cuda.mapped, 0)

@@ -349,10 +349,17 @@ def reset_state() -> None:
     DEVICE_STATE = {}
 
 
-def select_device(preferred_device_id=-1, min_compute=0) -> tuple[int, Any]:
+def select_device(preferred_device_id=-1, min_compute=0, *, adapter_luid: bytes = b"") -> tuple[int, Any]:
     log("select_device(%s, %s)", preferred_device_id, min_compute)
     for device_id in (preferred_device_id, get_pref("device-id")):
-        if device_id is not None and device_id >= 0:
+        if device_id is None:
+            continue
+        try:
+            device_id = int(device_id)
+        except (TypeError, ValueError):
+            log.warn("Warning: invalid CUDA device ID %r", device_id)
+            continue
+        if device_id >= 0:
             if dct := make_device_context(device_id):
                 device, context, tpct = dct
                 context.pop()
@@ -364,6 +371,13 @@ def select_device(preferred_device_id=-1, min_compute=0) -> tuple[int, Any]:
                 if tpct < MIN_FREE_MEMORY:
                     log.warn(f"Warning: GPU device {device_id} is low on memory: {tpct}%")
                 return device_id, device
+    if WIN32 and adapter_luid and not get_pref("device-name"):
+        try:
+            device_id, device = select_device_for_adapter(adapter_luid, min_compute)
+            if device is not None:
+                return device_id, device
+        except Exception:
+            log("failed to select a CUDA device for capture adapter %s", adapter_luid.hex(), exc_info=True)
     load_balancing = get_pref("load-balancing")
     log("load-balancing=%s", load_balancing)
     if load_balancing == "round-robin":
@@ -371,6 +385,31 @@ def select_device(preferred_device_id=-1, min_compute=0) -> tuple[int, Any]:
     if load_balancing and load_balancing != "memory" and first_time("cuda-load-balancing"):
         log.warn("Warning: invalid load balancing value '%s'", load_balancing)
     return select_best_free_memory(min_compute)
+
+
+def select_device_for_adapter(adapter_luid: bytes, min_compute: int) -> tuple[int, Any]:
+    from xpra.codecs.nvidia.cuda.d3d11 import get_device_luid
+    for device_id in init_all_devices():
+        if DEVICE_STATE.get(device_id, True) is not True:
+            continue
+        try:
+            luid = get_device_luid(device_id)
+        except Exception:
+            log("failed to query the LUID for CUDA device %i", device_id, exc_info=True)
+            continue
+        if luid != adapter_luid:
+            continue
+        if not (dct := make_device_context(device_id)):
+            continue
+        device, context, free_pct = dct
+        try:
+            if compute_capability(device) >= min_compute and free_pct >= MIN_FREE_MEMORY:
+                log.info("selected device %s for capture adapter %s: %s", device_id, adapter_luid.hex(), device_info(device))
+                return device_id, device
+        finally:
+            context.pop()
+            context.detach()
+    return -1, None
 
 
 rr = 0
@@ -482,7 +521,10 @@ def make_device_context(device_id: int) -> tuple:
 
 def get_device_context(options: typedict):
     MIN_COMPUTE = 0x30
-    device_id, device = select_device(options.intget("cuda_device", -1), min_compute=MIN_COMPUTE)
+    # EncodingsConnection supplies this server-owned hint from the capture adapter, so NVENC
+    # can read D3D11 textures on the same GPU. Explicit device preferences still take precedence.
+    adapter_luid = options.bytesget("cuda-adapter-luid")
+    device_id, device = select_device(options.intget("cuda_device", -1), min_compute=MIN_COMPUTE, adapter_luid=adapter_luid)
     if device_id < 0 or not device:
         return None
     return cuda_device_context(device_id, device)

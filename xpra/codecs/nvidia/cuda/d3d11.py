@@ -89,6 +89,16 @@ def get_library() -> CUDALibrary:
     return library
 
 
+def get_device_luid(device_ordinal: int, lib=None) -> bytes:
+    lib = lib or get_library()
+    device = c_int()
+    cudacheck(lib.cuDeviceGet(byref(device), device_ordinal), "cuDeviceGet")
+    luid = ctypes.create_string_buffer(8)
+    node_mask = c_uint()
+    cudacheck(lib.cuDeviceGetLuid(luid, byref(node_mask), device), "cuDeviceGetLuid")
+    return luid.raw
+
+
 def com_add_ref(ptr: int) -> None:
     from xpra.platform.win32.d3d11.device import com_add_ref as add_ref
     add_ref(ptr)
@@ -107,12 +117,7 @@ class D3D11Interop:
 
     def __init__(self, device_ordinal: int, lib=None):
         self.lib = lib or get_library()
-        device = c_int()
-        cudacheck(self.lib.cuDeviceGet(byref(device), device_ordinal), "cuDeviceGet")
-        luid = ctypes.create_string_buffer(8)
-        node_mask = c_uint()
-        cudacheck(self.lib.cuDeviceGetLuid(luid, byref(node_mask), device), "cuDeviceGetLuid")
-        self.luid: bytes = luid.raw
+        self.luid: bytes = get_device_luid(device_ordinal, self.lib)
         self.registrations: OrderedDict[int, c_void_p] = OrderedDict()
         log("D3D11Interop(%i) luid=%s", device_ordinal, self.luid.hex())
 

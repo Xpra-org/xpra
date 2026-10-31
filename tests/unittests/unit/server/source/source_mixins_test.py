@@ -10,7 +10,7 @@ import unittest
 from io import BytesIO
 from threading import Event
 from time import monotonic
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from unit.test_util import LoggerSilencer, silence_error, silence_info
 
@@ -22,6 +22,9 @@ from xpra.util.signal_emitter import SignalEmitter
 
 class FakeServer(SignalEmitter):
     """ stands in for the owning server: keeps a `__dict__`, so tests can set anything on it """
+
+    def get_capture_adapter_luid(self) -> bytes:
+        return b""
 
 
 class SourceMixinsTest(unittest.TestCase):
@@ -232,6 +235,31 @@ class SourceMixinsTest(unittest.TestCase):
         # connection merely because it has no encodings to advertise.
         source = self._test_mixin_class(EncodingsConnection, server_props)
         self.assertEqual(source.core_encodings, ())
+
+    def test_cuda_adapter_hint(self):
+        from xpra.server.source.encoding import EncodingsConnection
+        source = EncodingsConnection()
+        source.encoding_options = typedict()
+        cuda_module = Mock()
+        with patch.dict(sys.modules, {"xpra.codecs.nvidia.cuda.context": cuda_module}):
+            for luid in (b"capture0", b""):
+                with self.subTest(luid=luid):
+                    source.cuda_device_context = None
+                    source.encoding_options["cuda-adapter-luid"] = b"client-supplied"
+                    source.get_capture_adapter_luid = Mock(return_value=luid)
+                    self.assertIs(source.allocate_cuda_device_context(), cuda_module.get_device_context.return_value)
+                    if luid:
+                        self.assertEqual(source.encoding_options["cuda-adapter-luid"], luid)
+                    else:
+                        self.assertNotIn("cuda-adapter-luid", source.encoding_options)
+                    cuda_module.get_device_context.assert_called_with(source.encoding_options)
+
+            # Failure to obtain the optional hint must not disable CUDA encoding.
+            source.cuda_device_context = None
+            source.encoding_options["cuda-adapter-luid"] = b"stale"
+            source.get_capture_adapter_luid.side_effect = RuntimeError("capture unavailable")
+            self.assertIs(source.allocate_cuda_device_context(), cuda_module.get_device_context.return_value)
+            self.assertNotIn("cuda-adapter-luid", source.encoding_options)
 
     def test_file(self):
         from xpra.server.source.file import FileConnection

@@ -544,6 +544,15 @@ class ShadowServer(ShadowServerBase):
         w, h = get_display_size()
         return 0, 0, w, h
 
+    def get_capture_adapter_luid(self) -> bytes:
+        luids = set()
+        for capture in self._captures:
+            get_luid = getattr(capture, "get_adapter_luid", None)
+            if get_luid and (luid := get_luid()):
+                luids.add(luid)
+        # Each client has one CUDA context, so only prefer an unambiguous capture adapter.
+        return luids.pop() if len(luids) == 1 else b""
+
     def setup_monitor_capture(self, index: int, title: str, x: int, y: int, w: int, h: int):
         """
         Per-monitor capture dispatch.  DXGI is tried first (by desktop position),

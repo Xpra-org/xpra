@@ -489,6 +489,14 @@ cdef class DXGICapture:
     def get_type(self) -> str:
         return "DXGI"
 
+    def get_adapter_luid(self) -> bytes:
+        """ Identify the device holding the captured textures for GPU encoder selection. """
+        from xpra.platform.win32.d3d11.device import D3D11Device
+        with self._staging_lock:
+            if not self._device:
+                return b""
+            return D3D11Device(<uintptr_t> self._device).get_luid()
+
     def get_info(self) -> dict[str, Any]:
         info = {
             "type":         "dxgi",

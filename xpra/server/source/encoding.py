@@ -83,6 +83,7 @@ class EncodingsConnection(StubClientConnection):
         self.cuda_device_context = None
 
     def init_from(self, _protocol, server) -> None:
+        self.get_capture_adapter_luid = server.get_capture_adapter_luid
         # `EncodingServer` is the standalone subsystem instance:
         enc = server.subsystems["encoding"]
         self.server_core_encodings = enc.core_encodings
@@ -378,6 +379,15 @@ class EncodingsConnection(StubClientConnection):
             except ImportError as e:
                 cudalog(f"unable to import cuda context: {e}")
                 return None
+            # Server-owned hint consumed by CUDA device selection: prefer the adapter holding
+            # the captured D3D11 textures, so NVENC can copy them without a system-memory round trip.
+            # Refresh after parsing client options, including clearing any client-supplied or stale value.
+            self.encoding_options.pop("cuda-adapter-luid", None)
+            try:
+                if adapter_luid := self.get_capture_adapter_luid():
+                    self.encoding_options["cuda-adapter-luid"] = adapter_luid
+            except Exception:
+                cudalog("failed to query the capture adapter LUID", exc_info=True)
             try:
                 self.cuda_device_context = get_device_context(self.encoding_options)
                 cudalog("cuda_device_context=%s", self.cuda_device_context)

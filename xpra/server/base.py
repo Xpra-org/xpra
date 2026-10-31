@@ -167,6 +167,10 @@ class ServerBase(ServerCore):
     def set_dpi(self, xdpi: int, ydpi: int) -> None:
         """ optionally overridden by server variants """
 
+    def get_capture_adapter_luid(self) -> bytes:
+        """ Optionally identify the capture adapter for GPU encoder device selection. """
+        return b""
+
     def set_screen_size(self, width: int, height: int):
         # default: delegate to the display subsystem's implementation.
         # Variants (e.g. SeamlessServer) override this to add wrapping
