@@ -224,34 +224,40 @@ class WindowIconSource:
         return wm_class and wm_class in self.theme_default_icons
 
     def send_window_icon(self) -> None:
-        # some of this code could be moved to the work queue half, meh
         check_main_thread()
         if self.suspended or not self.has_png:
             return
-        # this runs in the UI thread
         icons = self.window.get_property("icons")
         log("send_window_icon window %s found %i icons, window_icon_greedy=%s, has_default=%s",
             self.window, len(icons or ()), self.window_icon_greedy, self.has_default)
+        if icons:
+            self.icon_lookup_done(icons)
+            return
+        if self.client_has_theme_icon():
+            log("%s in client theme icons already (not sending default icon)", self.theme_default_icons)
+            return
+        self.icon_lookup_done(self.get_default_icons())
+
+    def get_default_icons(self) -> list[tuple[int, int, str, bytes]]:
+        # try to load the icon for this class-instance from the theme:
+        icons = []
+        sizes = []
+        for size in (self.window_icon_size, self.window_icon_max_size, (48, 64)):
+            if size:
+                for dim in size:  # ie: 48
+                    if dim not in sizes:
+                        sizes.append(dim)
+        for size in sizes:
+            if icon := self.window.get_default_window_icon(size):
+                icons.append(icon)
         if not icons:
-            if self.client_has_theme_icon():
-                log("%s in client theme icons already (not sending default icon)", self.theme_default_icons)
-                return
-            # try to load the icon for this class-instance from the theme:
-            icons = []
-            sizes = []
-            for size in (self.window_icon_size, self.window_icon_max_size, (48, 64)):
-                if size:
-                    for dim in size:  # ie: 48
-                        if dim not in sizes:
-                            sizes.append(dim)
-            for size in sizes:
-                if icon := self.window.get_default_window_icon(size):
-                    icons.append(icon)
-            if not icons:
-                # try to find one using the wmclass:
-                if icon := self.get_default_window_icon():
-                    log("send_window_icon window %s using default window icon", self.window)
-                    icons.append(icon)
+            # try to find one using the wmclass:
+            if icon := self.get_default_window_icon():
+                log("send_window_icon window %s using default window icon", self.window)
+                icons.append(icon)
+        return icons
+
+    def icon_lookup_done(self, icons) -> None:
         max_w, max_h = self.window_icon_max_size
         icon = self.choose_icon(icons, max_w, max_h)
         if not icon:
