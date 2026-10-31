@@ -7,7 +7,7 @@
 
 from io import BytesIO
 from time import monotonic
-from typing import Any
+from typing import Any, BinaryIO
 from collections.abc import Callable
 
 try:
@@ -40,7 +40,7 @@ MAX_ARGB_PIXELS = envint("XPRA_MAX_ARGB_PIXELS", 1024)
 DEFAULT_ICON_CACHE_SIZE = envint("XPRA_DEFAULT_ICON_CACHE_SIZE", 256)
 
 
-def load_icon_file(filename: str, size: int) -> tuple[int, int, str, bytes] | None:
+def load_icon_file(filename: str | BinaryIO, size: int) -> tuple[int, int, str, bytes] | None:
     """
     Loads the icon using pillow, scaled to `size` and encoded as png.
     This does not use any Gtk or Gdk calls.
@@ -65,13 +65,36 @@ def load_icon_file(filename: str, size: int) -> tuple[int, int, str, bytes] | No
     return None
 
 
+def load_cached_svg_icon(filename: str, size: int) -> tuple[int, int, str, bytes] | None:
+    """
+    Loads the png rendering of this SVG file from the menu icon cache, if it has one.
+    This does not use any Gtk or Gdk calls.
+    """
+    if not POSIX or OSX:
+        return None
+    try:
+        from xpra.platform.posix.menu_helper import load_cached_svg
+        if not (svg_data := load_binary_file(filename)):
+            return None
+        cached = load_cached_svg(svg_data)
+        log("load_cached_svg(%r)=%s", filename, bool(cached))
+        if cached:
+            return load_icon_file(BytesIO(cached[0]), size)
+    except (OSError, ValueError, TypeError, ImportError) as e:
+        log("load_cached_svg_icon(%r, %i) %s", filename, size, e)
+    return None
+
+
 def do_get_default_window_icon(size: int, name: str) -> tuple[int, int, str, bytes] | None:
     log("do_get_default_window_icon(%i, %s)", size, name)
     if POSIX and not OSX and Image:
         try:
             from xpra.platform.posix.menu_helper import find_icon
-            filename = find_icon(name)
+            # prefer raster formats over SVG:
+            filename = find_icon(name, extensions=("png", "xpm", "svg"))
             log("find_icon(%r)=%r", name, filename)
+            if filename.endswith(".svg"):
+                return load_cached_svg_icon(filename, size)
             if filename:
                 return load_icon_file(filename, size)
         except (OSError, ValueError, TypeError, ImportError) as e:
@@ -94,16 +117,21 @@ load_theme_icon: Callable[[Any], tuple[int, int, str, bytes] | None] = noop
 def get_default_window_icon(size: int, wmclass_name: str) -> tuple[int, int, str, bytes] | None:
     # main thread, the icon theme cache:
     filename, theme_icon = find_theme_icon(size, wmclass_name)
+    svg = filename.endswith(".svg")
     # any thread, file I/O:
-    if filename and not filename.endswith(".svg"):
+    if filename and not svg:
         if icon := load_icon_file(filename, size):
+            return icon
+    # rendering SVGs is expensive, so try everything else first:
+    if icon := do_get_default_window_icon(size, wmclass_name):
+        return icon
+    if svg:
+        if icon := load_cached_svg_icon(filename, size):
             return icon
     # main thread, may use Gtk and rsvg:
     if theme_icon:
-        if icon := load_theme_icon(theme_icon):
-            return icon
-    # any thread, file I/O:
-    return do_get_default_window_icon(size, wmclass_name)
+        return load_theme_icon(theme_icon)
+    return None
 
 
 # results of `get_default_window_icon` by (size, wmclass name), misses included,

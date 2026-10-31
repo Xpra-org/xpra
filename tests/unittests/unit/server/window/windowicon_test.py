@@ -192,7 +192,7 @@ class WindowIconTest(unittest.TestCase):
 
 class ThemeIconLookupTest(unittest.TestCase):
 
-    def lookup(self, filename="", theme_icon=None, loaded=None, theme_loaded=None, fallback=None):
+    def lookup(self, filename="", theme_icon=None, loaded=None, cached=None, theme_loaded=None, fallback=None):
         calls = []
 
         def record(name, value):
@@ -204,6 +204,7 @@ class ThemeIconLookupTest(unittest.TestCase):
         with (
             patch.object(windowicon, "find_theme_icon", record("find", (filename, theme_icon))),
             patch.object(windowicon, "load_icon_file", record("file", loaded)),
+            patch.object(windowicon, "load_cached_svg_icon", record("cached", cached)),
             patch.object(windowicon, "load_theme_icon", record("theme", theme_loaded)),
             patch.object(windowicon, "do_get_default_window_icon", record("fallback", fallback)),
         ):
@@ -215,15 +216,25 @@ class ThemeIconLookupTest(unittest.TestCase):
         self.assertEqual(icon, ICON_48)
         self.assertEqual(calls, ["find", "file"])
 
+    def test_svg_theme_icon_found_elsewhere(self):
+        icon, calls = self.lookup("/icons/app.svg", "info", fallback=ICON_48, theme_loaded=ICON_64)
+        self.assertEqual(icon, ICON_48)
+        self.assertEqual(calls, ["find", "fallback"])
+
+    def test_svg_theme_icon_cached(self):
+        icon, calls = self.lookup("/icons/app.svg", "info", cached=ICON_48, theme_loaded=ICON_64)
+        self.assertEqual(icon, ICON_48)
+        self.assertEqual(calls, ["find", "fallback", "cached"])
+
     def test_svg_theme_icon(self):
         icon, calls = self.lookup("/icons/app.svg", "info", theme_loaded=ICON_64)
         self.assertEqual(icon, ICON_64)
-        self.assertEqual(calls, ["find", "theme"])
+        self.assertEqual(calls, ["find", "fallback", "cached", "theme"])
 
     def test_raster_file_fails_to_load(self):
         icon, calls = self.lookup("/resource/app.png", "info", theme_loaded=ICON_64)
         self.assertEqual(icon, ICON_64)
-        self.assertEqual(calls, ["find", "file", "theme"])
+        self.assertEqual(calls, ["find", "file", "fallback", "theme"])
 
     def test_not_in_theme(self):
         icon, calls = self.lookup(fallback=ICON_48)
@@ -233,7 +244,7 @@ class ThemeIconLookupTest(unittest.TestCase):
     def test_nothing_found(self):
         icon, calls = self.lookup("/icons/app.png", "info")
         self.assertIsNone(icon)
-        self.assertEqual(calls, ["find", "file", "theme", "fallback"])
+        self.assertEqual(calls, ["find", "file", "fallback", "theme"])
 
 
 class DefaultWindowIconTest(unittest.TestCase):
@@ -247,15 +258,49 @@ class DefaultWindowIconTest(unittest.TestCase):
         filename = get_icon_filename("xpra.png")
         if not filename or not os.path.exists(filename):
             self.skipTest("xpra.png icon not found")
-        with patch("xpra.platform.posix.menu_helper.find_icon", lambda *_names: filename):
+        with patch("xpra.platform.posix.menu_helper.find_icon", lambda *_names, **_kwargs: filename):
             icon = windowicon.do_get_default_window_icon(37, "xpra")
         self.assertIsNotNone(icon)
         w, h, coding, data = icon
         self.assertEqual((w, h, coding), (37, 37, "png"))
         self.assertEqual(Image.open(BytesIO(data)).size, (37, 37))
 
+    def test_svg_uses_the_menu_icon_cache(self):
+        calls = []
+
+        def load_cached_svg_icon(filename, size):
+            calls.append((filename, size))
+            return ICON_48
+
+        with (
+            patch("xpra.platform.posix.menu_helper.find_icon", lambda *_names, **_kwargs: "/icons/app.svg"),
+            patch.object(windowicon, "load_cached_svg_icon", load_cached_svg_icon),
+        ):
+            self.assertEqual(windowicon.do_get_default_window_icon(48, "app"), ICON_48)
+        self.assertEqual(calls, [("/icons/app.svg", 48)])
+
+    def test_cached_svg(self):
+        from xpra.platform.paths import get_icon_filename
+        png_filename = get_icon_filename("xpra.png")
+        if not png_filename or not os.path.exists(png_filename):
+            self.skipTest("xpra.png icon not found")
+        with open(png_filename, "rb") as f:
+            png_data = f.read()
+        svg_data = b"<svg/>"
+        with (
+            patch.object(windowicon, "load_binary_file", lambda _filename: svg_data),
+            patch("xpra.platform.posix.menu_helper.load_cached_svg", lambda data: (png_data, "png") if data == svg_data else ()),
+        ):
+            icon = windowicon.load_cached_svg_icon("/icons/app.svg", 37)
+        self.assertEqual(icon[:3], (37, 37, "png"))
+        with (
+            patch.object(windowicon, "load_binary_file", lambda _filename: svg_data),
+            patch("xpra.platform.posix.menu_helper.load_cached_svg", lambda _data: ()),
+        ):
+            self.assertIsNone(windowicon.load_cached_svg_icon("/icons/app.svg", 37))
+
     def test_not_found(self):
-        with patch("xpra.platform.posix.menu_helper.find_icon", lambda *_names: ""):
+        with patch("xpra.platform.posix.menu_helper.find_icon", lambda *_names, **_kwargs: ""):
             self.assertIsNone(windowicon.do_get_default_window_icon(48, "no-such-icon"))
 
 
