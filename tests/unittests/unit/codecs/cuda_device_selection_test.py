@@ -7,13 +7,12 @@
 import unittest
 from unittest.mock import Mock, patch
 
-from xpra.codecs.nvidia.cuda import d3d11
 from xpra.util.objects import typedict
 
 try:
-    from xpra.codecs.nvidia.cuda import context
+    from xpra.codecs.nvidia.cuda import d3d11, context
 except ImportError:
-    context = None
+    d3d11 = context = None
 
 
 @unittest.skipIf(context is None, "PyCUDA is not available")
