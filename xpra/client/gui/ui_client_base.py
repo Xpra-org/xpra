@@ -7,6 +7,7 @@
 
 import os
 import sys
+from collections import Counter
 from typing import Type, Dict, List, Any, Callable, Tuple
 
 from xpra.client.base.client_base import XpraClientBase
@@ -93,6 +94,33 @@ DELAY_KEYBOARD_DATA = envbool("XPRA_DELAY_KEYBOARD_DATA", True)
 #a rogue server could otherwise switch encoders, toggle debug logging, etc.
 #set XPRA_CONTROL=1 to opt back in to server-driven control commands:
 CONTROL = envbool("XPRA_CONTROL", False)
+
+
+def menu_entry_labels(entries: dict) -> Dict[str, Any]:
+    """
+    newer servers key the entries by desktop file id, older ones by name:
+    label the entries using their `Name`, falling back to the key,
+    and add the key to the labels which are not unique, ie: "Files (nemo)" and "Files (org.gnome.Nautilus)"
+    """
+    labelled = []
+    for key, props in entries.items():
+        key = bytestostr(key)
+        name = props.get("Name") if isinstance(props, dict) else None
+        labelled.append((bytestostr(name or key), key, props))
+    counts = Counter(label for label, _key, _props in labelled)
+    return {(label if counts[label] == 1 else f"{label} ({key})"): props for label, key, props in labelled}
+
+
+def labelled_menu(menu) -> dict:
+    """ the server's start menu, with the entries keyed by label """
+    if not isinstance(menu, dict):
+        return {}
+    labelled = {}
+    for category, props in menu.items():
+        if isinstance(props, dict) and isinstance(props.get("Entries"), dict):
+            props = dict(props, Entries=menu_entry_labels(props["Entries"]))
+        labelled[category] = props
+    return labelled
 
 
 """
@@ -483,7 +511,7 @@ class UIXpraClient(ClientBaseClass):
         self.server_pointer = c.boolget("pointer", True)
         self.server_start_new_commands = c.boolget("start-new-commands")
         if self.server_start_new_commands:
-            self.server_xdg_menu = c.dictget("xdg-menu", None)
+            self.server_xdg_menu = labelled_menu(c.dictget("xdg-menu", None))
         if self.request_start or self.request_start_child:
             if self.server_start_new_commands:
                 self.after_handshake(self.send_start_new_commands)
@@ -626,6 +654,8 @@ class UIXpraClient(ClientBaseClass):
             "bandwidth-limit", "clipboard-limits",
             "xdg-menu", "monitors",
             ):
+            if setting == "xdg-menu":
+                value = labelled_menu(value)
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
         else:
             log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(bytestostr(value)))
