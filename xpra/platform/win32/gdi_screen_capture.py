@@ -245,8 +245,9 @@ class GDICapture:
         return v
 
     def take_screenshot(self) -> tuple[int, int, str, int, bytes] | None:
+        # the whole virtual screen, `get_image()` adds the offset of per-monitor captures:
         x, y, w, h = get_virtualscreenmetrics()
-        image = self.get_image(x, y, w, h)
+        image = self.get_image(x - self.offset_x, y - self.offset_y, w, h)
         if not image:
             return None
         assert image.get_width() == w and image.get_height() == h
