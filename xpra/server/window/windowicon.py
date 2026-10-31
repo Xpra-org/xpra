@@ -123,12 +123,14 @@ def get_default_window_icon(size: int, wmclass_name: str) -> tuple[int, int, str
     if filename and not svg:
         if icon := load_icon_file(filename, size):
             return icon
-    # rendering SVGs is expensive, so try everything else first:
-    if icon := do_get_default_window_icon(size, wmclass_name):
-        return icon
+    # the menu icon cache may have a rendering of this SVG,
+    # that's cheaper than searching for another icon:
     if svg:
         if icon := load_cached_svg_icon(filename, size):
             return icon
+    # rendering SVGs is expensive, so try everything else first:
+    if icon := do_get_default_window_icon(size, wmclass_name):
+        return icon
     # main thread, may use Gtk and rsvg:
     if theme_icon:
         return load_theme_icon(theme_icon)

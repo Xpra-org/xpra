@@ -219,17 +219,18 @@ class ThemeIconLookupTest(unittest.TestCase):
     def test_svg_theme_icon_found_elsewhere(self):
         icon, calls = self.lookup("/icons/app.svg", "info", fallback=ICON_48, theme_loaded=ICON_64)
         self.assertEqual(icon, ICON_48)
-        self.assertEqual(calls, ["find", "fallback"])
+        self.assertEqual(calls, ["find", "cached", "fallback"])
 
     def test_svg_theme_icon_cached(self):
         icon, calls = self.lookup("/icons/app.svg", "info", cached=ICON_48, theme_loaded=ICON_64)
         self.assertEqual(icon, ICON_48)
-        self.assertEqual(calls, ["find", "fallback", "cached"])
+        # the cache is checked before searching for other icons:
+        self.assertEqual(calls, ["find", "cached"])
 
     def test_svg_theme_icon(self):
         icon, calls = self.lookup("/icons/app.svg", "info", theme_loaded=ICON_64)
         self.assertEqual(icon, ICON_64)
-        self.assertEqual(calls, ["find", "fallback", "cached", "theme"])
+        self.assertEqual(calls, ["find", "cached", "fallback", "theme"])
 
     def test_raster_file_fails_to_load(self):
         icon, calls = self.lookup("/resource/app.png", "info", theme_loaded=ICON_64)
