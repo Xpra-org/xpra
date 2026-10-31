@@ -5,6 +5,9 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from concurrent.futures import ThreadPoolExecutor
+from threading import Event
+from unittest.mock import patch
 
 from xpra.os_util import WIN32
 
@@ -32,7 +35,7 @@ class FakeCapture:
         self.downloads.append((texture, x, y, width, height))
         if texture:
             # snapshots keep the frame and the origin they were taken from:
-            frame, ox, oy = texture >> 16, (texture >> 8) & 0xff, texture & 0xff
+            frame, ox, oy = (texture >> 16) - 1, (texture >> 8) & 0xff, texture & 0xff
             return b"".join(bytes((ox + x + i, oy + y + j, frame, 0)) for j in range(height) for i in range(width))
         return b"".join(self.pixel(x + i, y + j) for j in range(height) for i in range(width))
 
@@ -40,7 +43,7 @@ class FakeCapture:
         from xpra.platform.win32.d3d11.image import D3D11Texture
         if len(self.snapshots) - len(self.released) >= self.max_snapshots:
             return None
-        texture = D3D11Texture((self.frame << 16) | (x << 8) | y, 1, 0, 0, width, height)
+        texture = D3D11Texture(((self.frame + 1) << 16) | (x << 8) | y, 1, 0, 0, width, height)
         self.snapshots.append(texture)
         return texture
 
@@ -80,9 +83,88 @@ class TestDXGIImageWrapper(unittest.TestCase):
         capture.frame = 1
         # downloads come from the snapshot, not from the newer frame:
         self.assertEqual(image.get_pixels(), expected(2, 1, 4, 2, 0))
-        # while an image that was not frozen shows the current frame:
+        # while an unregistered image that was not frozen shows the current frame:
         live = self.make_image(capture, 2, 1, 4, 2)
         self.assertEqual(live.get_pixels(), expected(2, 1, 4, 2, 1))
+
+    def test_preserve_before_overwrite(self):
+        capture = FakeCapture()
+        image = self.make_image(capture)
+        self.assertEqual(capture.snapshots, [])
+        self.assertEqual(capture.downloads, [])
+
+        image.preserve_before_overwrite()
+        self.assertEqual(len(capture.snapshots), 1)
+        self.assertEqual(capture.downloads, [])
+        self.assertFalse(image.has_pixels())
+        capture.frame = 1
+        image.preserve_before_overwrite()
+        self.assertEqual(len(capture.snapshots), 1)
+        self.assertEqual(image.get_pixels(), expected(0, 0, W, H, 0))
+
+    def test_preserve_skips_completed_images(self):
+        for action in ("get_pixels", "freeze_on_gpu", "free"):
+            with self.subTest(action=action):
+                capture = FakeCapture()
+                image = self.make_image(capture)
+                getattr(image, action)()
+                snapshots = list(capture.snapshots)
+                downloads = list(capture.downloads)
+                image.preserve_before_overwrite()
+                self.assertEqual(capture.snapshots, snapshots)
+                self.assertEqual(capture.downloads, downloads)
+
+    def test_preserve_falls_back_to_download(self):
+        capture = FakeCapture(max_snapshots=0)
+        image = self.make_image(capture, 2, 1, 4, 2)
+        image.preserve_before_overwrite()
+        self.assertIsNone(image.get_gpu_buffer())
+        self.assertEqual(capture.downloads, [(0, 2, 1, 4, 2)])
+        capture.frame = 1
+        self.assertEqual(image.get_pixels(), expected(2, 1, 4, 2, 0))
+
+    def test_preserve_failure_can_retry(self):
+        capture = FakeCapture()
+        image = self.make_image(capture)
+        with patch.object(capture, "snapshot", side_effect=RuntimeError("snapshot failed")):
+            with self.assertRaisesRegex(RuntimeError, "snapshot failed"):
+                image.preserve_before_overwrite()
+        self.assertIsNone(image.get_gpu_buffer())
+        self.assertFalse(image.has_pixels())
+        image.preserve_before_overwrite()
+        capture.frame = 1
+        self.assertEqual(image.get_pixels(), expected(0, 0, W, H, 0))
+
+    def test_preserve_waits_for_download(self):
+        capture = FakeCapture()
+        image = self.make_image(capture)
+        download_started = Event()
+        allow_download = Event()
+        download = capture.download
+
+        def slow_download(*args):
+            download_started.set()
+            if not allow_download.wait(5):
+                raise RuntimeError("download was not released")
+            return download(*args)
+
+        def overwrite():
+            image.preserve_before_overwrite()
+            capture.frame = 1
+
+        with patch.object(capture, "download", side_effect=slow_download), ThreadPoolExecutor(max_workers=2) as executor:
+            downloading = executor.submit(image.get_pixels)
+            try:
+                self.assertTrue(download_started.wait(5))
+                preserving = executor.submit(overwrite)
+                with self.assertRaises(TimeoutError):
+                    preserving.result(timeout=0.05)
+            finally:
+                allow_download.set()
+            self.assertEqual(downloading.result(timeout=5), expected(0, 0, W, H, 0))
+            preserving.result(timeout=5)
+        self.assertEqual(capture.snapshots, [])
+        self.assertEqual(image.get_pixels(), expected(0, 0, W, H, 0))
 
     def test_freeze_downloads_the_region(self):
         capture = FakeCapture()

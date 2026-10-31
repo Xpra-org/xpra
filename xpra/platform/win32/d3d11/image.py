@@ -36,8 +36,8 @@ class DXGIImageWrapper(ImageWrapper):
     - `freeze()`, `get_pixels()` and friends download the area to system memory,
       from that texture if there is one, or from the desktop texture otherwise.
 
-    The capture overwrites the desktop texture with every new frame,
-    so an image that has not been frozen shows whatever is current when it is downloaded.
+    Before overwriting the desktop texture, the capture freezes images that still
+    depend on it. Images downloaded or freed before then need no extra copy.
     """
 
     def __init__(self, x: int, y: int, width: int, height: int,
@@ -129,6 +129,14 @@ class DXGIImageWrapper(ImageWrapper):
         # out of snapshot textures, or the capture is gone:
         log("freeze_on_gpu() no snapshot available for %s, downloading it instead", self)
         return self.freeze()
+
+    def preserve_before_overwrite(self) -> None:
+        """ Called by the capture thread before it overwrites the desktop texture. """
+        with self._lock:
+            if self.freed or self._capture is None or self.pixels is not None or self._snapshot is not None:
+                return
+            # Keep the image locked through the fallback download if the snapshot pool is full.
+            self.freeze_on_gpu()
 
     def free(self) -> None:
         lock = getattr(self, "_lock", None)

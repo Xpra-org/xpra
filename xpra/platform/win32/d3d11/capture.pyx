@@ -16,15 +16,16 @@ Two textures are maintained:
               when the pixels are actually needed in system memory.
 
 Flow per frame:
-  refresh()   -> AcquireNextFrame -> CopyResource(_gpu_tex, src) -> ReleaseFrame
+  refresh()   -> AcquireNextFrame -> preserve live images -> CopyResource(_gpu_tex, src) -> ReleaseFrame
   get_image() -> DXGIImageWrapper (neither GPU nor CPU copy yet)
-  snapshot()  -> CopySubresourceRegion(pooled texture, _gpu_tex)  (for the GPU encoders)
+  snapshot()  -> CopySubresourceRegion(pooled texture, _gpu_tex)  (for GPU encoders or preservation)
   download()  -> CopySubresourceRegion(staging, texture) -> Map staging -> memcpy -> Unmap
 """
 
 import time
 from typing import Any
 from threading import Lock
+from weakref import WeakSet
 
 from libc.stdint cimport uintptr_t, uint8_t, uint32_t
 from libc.string cimport memcpy
@@ -398,6 +399,7 @@ cdef class DXGICapture:
 
     cdef object _pool           # the shared device's `TexturePool`, for snapshots
     cdef object _staging_lock   # `download()` runs from the encode threads
+    cdef object _live_images    # weak references to images returned since the last overwrite
 
     cdef int      _width
     cdef int      _height
@@ -416,6 +418,7 @@ cdef class DXGICapture:
         self._has_frame = 0
         self._pool = None
         self._staging_lock = Lock()
+        self._live_images = WeakSet()
 
     def __repr__(self) -> str:
         return "DXGICapture(%dx%d %s output=%d)" % (
@@ -514,8 +517,8 @@ cdef class DXGICapture:
 
     def refresh(self) -> bool:
         """
-        Acquire the next desktop frame.  On success, copies it GPU-side to the
-        desktop texture and immediately releases the duplication frame.
+        Acquire the next desktop frame.  On success, preserves outstanding images,
+        copies it GPU-side to the desktop texture and releases the duplication frame.
 
         Returns True when new content was captured (caller should send damage).
         Returns False if the desktop has not changed.
@@ -552,13 +555,18 @@ cdef class DXGICapture:
             log.warn("Warning: failed to QI desktop resource as ID3D11Texture2D: %#x", <unsigned int> hr)
             return False
 
-        # GPU-side copy: desktop texture -> _gpu_tex (DEFAULT, GPU-only).
-        # _staging is NOT touched here; it is only populated by download().
-        xpra_copy_resource(self._context, self._gpu_tex, src_texture)
-        xpra_com_release(src_texture)
+        try:
+            # Do not hold the staging or device lock while waiting for an image's lock.
+            # Completed images need no copy; only those still using _gpu_tex are preserved.
+            for image in tuple(self._live_images):
+                image.preserve_before_overwrite()
+            self._live_images.clear()
 
-        # Release the duplication frame immediately; _gpu_tex is now independent
-        xpra_release_frame(self._duplication)
+            # GPU-side copy: desktop texture -> _gpu_tex (DEFAULT, GPU-only).
+            xpra_copy_resource(self._context, self._gpu_tex, src_texture)
+        finally:
+            xpra_com_release(src_texture)
+            xpra_release_frame(self._duplication)
         xpra_flush(self._context)
 
         self._has_frame = 1
@@ -567,7 +575,8 @@ cdef class DXGICapture:
     def get_image(self, x: int = 0, y: int = 0, width: int = 0, height: int = 0):
         """
         Return a DXGIImageWrapper for an area of the current frame.
-        No copy happens here, see `snapshot()` and `download()`.
+        No copy happens here; a later refresh preserves it if it is still needed.
+        Must be called from the same thread as `refresh()`.
         """
         if not self._has_frame or not self._gpu_tex:
             return None
@@ -592,7 +601,9 @@ cdef class DXGICapture:
             return None
 
         from xpra.platform.win32.d3d11.image import DXGIImageWrapper
-        return DXGIImageWrapper(x, y, width, height, self._pixel_format, self._depth, self)
+        image = DXGIImageWrapper(x, y, width, height, self._pixel_format, self._depth, self)
+        self._live_images.add(image)
+        return image
 
     def snapshot(self, int x, int y, int width, int height) -> D3D11Texture | None:
         """
@@ -668,6 +679,7 @@ cdef class DXGICapture:
 
     def clean(self) -> None:
         self._has_frame = 0
+        self._live_images.clear()
         with self._staging_lock:
             xpra_com_release(self._duplication)
             self._duplication = NULL
