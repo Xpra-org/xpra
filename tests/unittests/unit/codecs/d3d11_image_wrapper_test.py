@@ -6,21 +6,10 @@
 
 import unittest
 import weakref
-from importlib.util import module_from_spec, spec_from_file_location
-from pathlib import Path
 
-import xpra
 from xpra.codecs.constants import CodecStateException
-
 from xpra.os_util import WIN32
 
-
-# The wrapper is pure Python; avoid the Windows package initializer on other platforms.
-spec = spec_from_file_location("d3d11_image_wrapper", Path(xpra.__file__).parent / "platform/win32/d3d11/image.py")
-image_module = module_from_spec(spec)
-spec.loader.exec_module(image_module)
-DXGIImageWrapper = image_module.DXGIImageWrapper
-D3D11Texture = image_module.D3D11Texture
 
 W, H = 8, 4
 
@@ -50,6 +39,7 @@ class FakeCapture:
         return b"".join(self.pixel(x + i, y + j) for j in range(height) for i in range(width))
 
     def snapshot(self, x: int, y: int, width: int, height: int):
+        from xpra.platform.win32.d3d11.image import D3D11Texture
         if len(self.snapshots) - len(self.released) >= self.max_snapshots:
             return None
         texture = D3D11Texture((self.frame << 16) | (x << 8) | y, 1, 0, 0, width, height)
@@ -64,9 +54,11 @@ def expected(x: int, y: int, width: int, height: int, frame: int = 0) -> bytes:
     return b"".join(bytes((x + i, y + j, frame, 0)) for j in range(height) for i in range(width))
 
 
+@unittest.skipUnless(WIN32, "the d3d11 package is only available on MS Windows")
 class TestDXGIImageWrapper(unittest.TestCase):
 
     def make_image(self, capture, x=0, y=0, width=W, height=H):
+        from xpra.platform.win32.d3d11.image import DXGIImageWrapper
         return DXGIImageWrapper(x, y, width, height, "BGRX", 32, capture)
 
     def test_no_gpu_buffer_until_frozen_on_gpu(self):
@@ -241,9 +233,11 @@ class CPUCapture:
         return bytes((self.frame,)) * (width * height * 4)
 
 
+@unittest.skipUnless(WIN32, "the d3d11 package is only available on MS Windows")
 class TestDXGIImageWrapperCPU(unittest.TestCase):
 
     def make_image(self, capture):
+        from xpra.platform.win32.d3d11.image import DXGIImageWrapper
         return DXGIImageWrapper(2, 1, 4, 2, "BGRX", 32, capture)
 
     def test_freeze_downloads_once_and_keeps_the_frame(self):
