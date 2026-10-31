@@ -23,6 +23,11 @@ class TestPillowHeader(unittest.TestCase):
             e = get_image_type(data)
             assert encoding==e, "expected %s got %s" % (encoding, e)
 
+    def test_svg_with_doctype(self):
+        data = b'<!DOCTYPE svg>\n<svg viewBox="0 0 16 16" version="1.1" xmlns="http://www.w3.org/2000/svg"></svg>'
+        self.assertEqual(get_image_type(data), "svg")
+        self.assertEqual(get_image_type(b"<!DOCTYPE html><html><body></body></html>"), "")
+
     def test_bad_header(self):
         for x in (b"", None,
                   b"abc",

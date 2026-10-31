@@ -35,7 +35,9 @@ def is_jpeg(data) -> bool:
     #will have this type of header
     return data[:3]==JPEG_HEADER
 def is_svg(data) -> bool:
-    return strtobytes(data[:5])==b"<?xml" or strtobytes(data[:4])==b"<svg"
+    # ie: breeze icons start with `<!DOCTYPE svg>`:
+    return (strtobytes(data[:5])==b"<?xml" or strtobytes(data[:4])==b"<svg" or
+            strtobytes(data[:13])==b"<!DOCTYPE svg")
 XPM_HEADER = b"/* XPM */"
 def is_xpm(data) -> bool:
     return data[:9]==XPM_HEADER
