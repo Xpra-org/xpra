@@ -15,7 +15,7 @@ from xpra.util.objects import typedict
 from xpra.os_util import OSX, POSIX
 from xpra.util.io import pollwait, which
 from xpra.codecs.image import ImageWrapper
-from unit.server_test_util import ServerTestUtil
+from unit.server_test_util import ServerTestUtil, SERVER_TIMEOUT
 
 
 class ShadowNotifierTest(unittest.TestCase):
@@ -119,6 +119,54 @@ class ShadowServerTest(ServerTestUtil):
             rd = tinfo.intget("refresh-delay", 0)
             assert rd==new_delay, f"expected refresh-delay={new_delay}, got {rd}"
         self.stop_shadow_server(xvfb, server)
+
+    @unittest.skipUnless(POSIX and not OSX and which("xterm"), "xterm required for dynamic window match test")
+    def test_shadow_dynamic_window_match_no_crash(self):
+        # Regression test for a caller/constructor argument-count mismatch:
+        # ShadowX11Server.makeDynamicWindowModels()'s `model_class` closure
+        # used to call X11ShadowModel(root, capture, title, geometry) -- an
+        # extra leading `root` argument the constructor doesn't accept.
+        # Every other caller (GTKShadowServerBase.make_capture_window_models)
+        # already omits it. This crashed load_existing_windows() with
+        # "TypeError: X11ShadowModel.__init__() takes from 1 to 4 positional
+        # arguments but 5 were given" for every window matched by a
+        # `windows=` (xid=/pid=/command=/class=/title regex) dynamic spec --
+        # i.e. any shadow session that doesn't mirror the whole screen.
+        display = self.find_free_display()
+        xvfb = self.start_Xvfb(display)
+        assert display in self.find_X11_displays()
+        env = self.get_run_env()
+        env["DISPLAY"] = display
+        title = "xpra-dynamic-match-test"
+        # -e sleep 300, not an interactive shell: an interactive shell's own
+        # prompt can overwrite the -T title shortly after startup via an
+        # OSC escape sequence, making the window unmatchable by title.
+        xterm_proc = self.run_command([xterm, "-T", title, "-e", "sleep", "300"], env=env)
+        time.sleep(2)
+        try:
+            server_proc = self.run_xpra(["shadow", f"{display},windows={title}", "--no-daemon"])
+            if pollwait(server_proc, SERVER_TIMEOUT) is not None:
+                self.show_proc_error(server_proc, "shadow server failed to start")
+            live: list[str] = []
+            for _ in range(20):
+                live = self.dotxpra.displays()
+                if display in live:
+                    break
+                time.sleep(1)
+            assert server_proc.poll() is None, \
+                "shadow server terminated unexpectedly -- did makeDynamicWindowModels() crash?"
+            assert display in live, f"shadow server display {display!r} not found in {live}"
+            info = self.get_server_info(display)
+            assert info
+            tinfo = typedict(info)
+            nwindows = tinfo.intget("state.windows", -1)
+            assert nwindows == 1, f"expected exactly 1 matched window, got state.windows={nwindows!r}"
+            self.check_stop_server(server_proc, "stop", display)
+        finally:
+            xterm_proc.terminate()
+        time.sleep(1)
+        assert pollwait(xvfb, 2) is None, "the Xvfb should not have been killed by xpra shutting down!"
+        xvfb.terminate()
 
     def test_capture_window_model(self):
         from xpra.server.shadow.root_window_model import CaptureWindowModel
