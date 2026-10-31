@@ -144,6 +144,13 @@ class Capture(GObject.GObject):
         with self._lock:
             return self._image is not None
 
+    @staticmethod
+    def take_screenshot() -> None:
+        # `get_image()` hands the pending frame over to the caller,
+        # a screenshot taken from it would never reach the client's window
+        log("PipeWire captures do not support screenshots")
+        return None
+
     def get_info(self) -> dict:
         info = {
             "type": "pipewire", "node-id": self.node_id, "state": self.state,
