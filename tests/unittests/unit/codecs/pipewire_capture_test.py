@@ -62,6 +62,18 @@ class PipeWireCaptureTest(unittest.TestCase):
         capture.clean()
         self.assertEqual(backend.cleans, 1)
 
+    def test_screenshot_keeps_the_frame(self):
+        capture, _backend = self.make_capture()
+        frame = {"type": "memory", "data": b"A" * 16, "offset": 0, "size": 16,
+                 "width": 2, "height": 2, "stride": 8, "format": "BGRX"}
+        with patch("xpra.codecs.pipewire.capture.GLib.idle_add", return_value=1):
+            capture.native_frame(frame)
+        self.assertIsNone(capture.take_screenshot())
+        image = capture.get_image()
+        self.assertEqual(image.get_pixels(), b"A" * 16)
+        image.free()
+        capture.clean()
+
     def test_start_clean_idempotent(self):
         capture, backend = self.make_capture()
         capture.start()
