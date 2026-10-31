@@ -148,7 +148,7 @@ class DesktopModelBase(WindowModelStub, WindowDamageHandler):
         return bool(self._xshm_handle)
 
     def get_default_window_icon(self, _size) -> Optional[Tuple[int,int,str,bytes]]:
-        icon_name = get_generic_os_name()+".png"
+        icon_name = get_generic_os_name().lower()+".png"
         icon = get_icon(icon_name)
         if not icon:
             return None
