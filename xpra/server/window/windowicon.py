@@ -37,6 +37,7 @@ DEFAULT_ICONS = envbool("XPRA_DEFAULT_ICONS", True)
 LOG_THEME_DEFAULT_ICONS = envbool("XPRA_LOG_THEME_DEFAULT_ICONS", False)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 MAX_ARGB_PIXELS = envint("XPRA_MAX_ARGB_PIXELS", 1024)
+DEFAULT_ICON_CACHE_SIZE = envint("XPRA_DEFAULT_ICON_CACHE_SIZE", 256)
 
 
 def load_icon_file(filename: str, size: int) -> tuple[int, int, str, bytes] | None:
@@ -105,8 +106,23 @@ def get_default_window_icon(size: int, wmclass_name: str) -> tuple[int, int, str
     return do_get_default_window_icon(size, wmclass_name)
 
 
-# results of `get_default_window_icon` by (size, wmclass name), misses included:
+# results of `get_default_window_icon` by (size, wmclass name), misses included,
+# least recently used first:
 default_icon_cache: dict[tuple[int, str], tuple[int, int, str, bytes] | None] = {}
+
+
+def get_cached_default_window_icon(size: int, wmclass_name: str) -> tuple[int, int, str, bytes] | None:
+    key = (size, wmclass_name)
+    try:
+        # move it to the end:
+        icon = default_icon_cache.pop(key)
+    except KeyError:
+        icon = get_default_window_icon(size, wmclass_name)
+        # the wmclass is chosen by the application, so we must limit the number of entries:
+        while default_icon_cache and len(default_icon_cache) >= DEFAULT_ICON_CACHE_SIZE:
+            default_icon_cache.pop(next(iter(default_icon_cache)))
+    default_icon_cache[key] = icon
+    return icon
 
 
 def clear_default_icon_cache() -> None:
@@ -205,10 +221,7 @@ class WindowIconSource:
         wmclass_name = self.get_window_wm_class_name()
         if not wmclass_name:
             return None
-        key = (size, wmclass_name)
-        if key not in default_icon_cache:
-            default_icon_cache[key] = get_default_window_icon(size, wmclass_name)
-        return default_icon_cache[key]
+        return get_cached_default_window_icon(size, wmclass_name)
 
     def get_window_wm_class_name(self) -> str:
         try:

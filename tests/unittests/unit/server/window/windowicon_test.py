@@ -153,6 +153,15 @@ class WindowIconTest(unittest.TestCase):
         self.assertEqual(self.lookups[-1], (48, "plain.py"))
         self.assertEqual(source.window_icon_data, ICON_64)
 
+    def test_cache_size_is_limited(self):
+        with patch.object(windowicon, "DEFAULT_ICON_CACHE_SIZE", 2):
+            for wm_class in ("a", "b", "a", "c"):
+                IconSource(FakeWindow(wm_class=(wm_class, wm_class))).send_window_icon()
+            # "b" was the least recently used:
+            self.assertEqual(list(windowicon.default_icon_cache), [(48, "a"), (48, "c")])
+            IconSource(FakeWindow(wm_class=("b", "b"))).send_window_icon()
+        self.assertEqual(self.lookups, [(48, "a"), (48, "b"), (48, "c"), (48, "b")])
+
     def test_no_wmclass(self):
         self.default_icon = ICON_48
         source = IconSource(FakeWindow(wm_class=()))
