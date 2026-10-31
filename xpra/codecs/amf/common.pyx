@@ -13,7 +13,7 @@ from libc.stdint cimport uint64_t, uintptr_t
 from libc.string cimport memset
 
 from xpra.codecs.amf.amf cimport (
-    AMF_RESULT, AMF_OK,
+    AMF_RESULT, AMF_OK, AMF_FAIL,
     AMFFactory, AMFGuid, AMFTrace, AMFSurface, AMFPlane, AMFData, AMFDataVtbl,
     AMFVariantStruct, AMFPlaneVtbl, AMFSurfaceVtbl,
     AMFVariantInit,
@@ -115,14 +115,18 @@ cdef AMFFactory *get_factory():
     global initialized, factory
     cdef AMF_RESULT res = AMF_OK
     if not initialized:
-        initialized = 1
         log("amf.common.get_factory() version=%s", get_version())
         version = get_c_version()
         AMFInit = amf.AMFInit
         AMFInit.argtypes = [c_uint64, c_void_p]
         res = AMFInit(version, <uintptr_t> &factory)
         log(f"AMFInit: {res=}")
-        check(res, "AMF initialization")
+        if res != AMF_OK or factory == NULL:
+            # ie: the AMF runtime is still installed but the AMD GPU is not,
+            # don't hand out the factory to the next caller, try again instead:
+            factory = NULL
+            check(res or AMF_FAIL, "AMF initialization")
+        initialized = 1
         res = factory.pVtbl.GetTrace(factory, &trace)
         log(f"amf_encoder_init() GetTrace()={res}")
         if res == 0:
@@ -166,6 +170,8 @@ cdef object error_str(AMF_RESULT result):
     if err:
         return err
     # fallback to API call:
+    if factory == NULL:
+        return ""
     cdef AMFTrace *trace = NULL
     cdef AMF_RESULT res = factory.pVtbl.GetTrace(factory, &trace)
     if res != 0:
