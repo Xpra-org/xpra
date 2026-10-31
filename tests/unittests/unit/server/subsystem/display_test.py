@@ -290,6 +290,45 @@ class SharingLayoutTest(unittest.TestCase):
         self.assertEqual([layout[0]["geometry"] for layout in layouts], [(0, 0, 1920, 1080), (0, 0, 1280, 1024)])
 
 
+class HelloImageRequestTest(unittest.TestCase):
+
+    def make_display(self):
+        from unittest.mock import Mock
+        from xpra.server.subsystem.display import DisplayManager
+        network = Mock()
+        server = AdHocStruct()
+        server.hello_request_handlers = {}
+        server.subsystems = {"network": network}
+        dm = stubbable(DisplayManager)(server)
+        return dm, network
+
+    def test_image_sent(self):
+        from unittest.mock import Mock
+        for request in ("screenshot", "icon"):
+            with self.subTest(request=request):
+                dm, network = self.make_display()
+                packet = ("display-" + request, 1, 1, "png", 0, b"image")
+                setattr(dm, f"do_make_{request}_packet", lambda p=packet: p)
+                proto = Mock()
+                self.assertTrue(dm.server.hello_request_handlers[request](proto, typedict()))
+                proto.send_now.assert_called_once_with(packet)
+                network.send_disconnect.assert_not_called()
+
+    def test_no_image(self):
+        # the client must be told, not left waiting for an image that never comes:
+        from unittest.mock import Mock
+        from xpra.net.constants import ConnectionMessage
+        for request in ("screenshot", "icon"):
+            with self.subTest(request=request):
+                dm, network = self.make_display()
+                setattr(dm, f"do_make_{request}_packet", lambda: None)
+                proto = Mock()
+                self.assertTrue(dm.server.hello_request_handlers[request](proto, typedict()))
+                proto.send_now.assert_not_called()
+                network.send_disconnect.assert_called_once_with(proto, ConnectionMessage.SERVER_ERROR,
+                                                                f"{request} failed")
+
+
 def main():
     unittest.main()
 
