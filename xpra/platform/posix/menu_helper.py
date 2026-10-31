@@ -299,12 +299,42 @@ def find_pixmap_icon(*names: str, extensions=EXTENSIONS) -> str:
 
 ic_lock = RLock()
 
+# every icon name found in the directories `find_theme_icon` searches,
+# or `None` until `load_theme_icon_names` has run:
+theme_icon_names: frozenset[str] | None = None
+
+
+def load_theme_icon_names() -> None:
+    """
+    Lists the directories of the icon themes, so `find_theme_icon` can skip
+    the (expensive) pyxdg lookups for names which have no icon.
+    This does I/O, it must not be called from the main thread.
+    """
+    global theme_icon_names
+    if not (IconTheme and themes):
+        return
+    start = monotonic()
+    names: set[str] = set()
+    for theme in tuple(themes.values()):
+        for subdir in theme.getDirectories():
+            for basedir in IconTheme.icondirs:
+                try:
+                    entries = os.listdir(os.path.join(basedir, theme.name, subdir))
+                except OSError:
+                    continue
+                names.update(os.path.splitext(entry)[0] for entry in entries)
+    theme_icon_names = frozenset(names)
+    log("load_theme_icon_names() %i names in %ims", len(names), 1000 * (monotonic() - start))
+
 
 def find_theme_icon(*names: str, extensions=EXTENSIONS) -> str:
     if not LOAD_FROM_THEME:
         return ""
     if not (IconTheme and Config and themes):
         return ""
+    # skip the names we know are not in any theme:
+    if (known := theme_icon_names) is not None:
+        names = tuple(name for name in names if name in known)
     size = Config.icon_size or 32
     for name in names:
         for theme in themes.values():

@@ -8,6 +8,7 @@ import os
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 PNG_DATA = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
@@ -173,6 +174,51 @@ class TestMenuIconCache(unittest.TestCase):
                         load_menu.assert_not_called()
             finally:
                 os.chmod(home, 0o700)
+
+
+class TestThemeIconNames(unittest.TestCase):
+
+    def setUp(self):
+        from xpra.platform.posix import menu_helper
+        self.menu_helper = menu_helper
+        tmpdir = tempfile.TemporaryDirectory()
+        self.addCleanup(tmpdir.cleanup)
+        base = tmpdir.name
+        for path in ("test-theme/48x48/apps/app.png", "test-theme/scalable/apps/other.svg", "test-theme/unused/hidden.png"):
+            os.makedirs(os.path.dirname(os.path.join(base, path)), exist_ok=True)
+            with open(os.path.join(base, path), "wb"):
+                pass
+        theme = SimpleNamespace(name="test-theme", getDirectories=lambda: ("48x48/apps", "scalable/apps", "missing/apps"))
+        self.lookups = []
+
+        def lookup_icon(name, _size, theme=None, extensions=()):
+            self.lookups.append(name)
+            return ""
+
+        icon_theme = SimpleNamespace(icondirs=[base, os.path.join(base, "no-such-dir")], LookupIcon=lookup_icon)
+        for attr, value in (
+                ("IconTheme", icon_theme),
+                ("Config", SimpleNamespace(icon_size=48)),
+                ("themes", {"test-theme": theme}),
+                ("theme_icon_names", None),
+                ("LOAD_FROM_THEME", True),
+        ):
+            patcher = patch.object(menu_helper, attr, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
+    def test_names(self):
+        self.menu_helper.load_theme_icon_names()
+        self.assertEqual(self.menu_helper.theme_icon_names, frozenset(("app", "other")))
+
+    def test_unknown_names_are_skipped(self):
+        self.menu_helper.load_theme_icon_names()
+        self.menu_helper.find_theme_icon("unknown", "app", "hidden")
+        self.assertEqual(self.lookups, ["app"])
+
+    def test_not_loaded(self):
+        self.menu_helper.find_theme_icon("unknown", "app")
+        self.assertEqual(self.lookups, ["unknown", "app"])
 
 
 def main():

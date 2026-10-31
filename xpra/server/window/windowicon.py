@@ -205,7 +205,8 @@ def warmup_default_window_icons() -> None:
         get_xpra_icon(name)
     if POSIX and not OSX:
         try:
-            from xpra.platform.posix.menu_helper import find_icon
+            from xpra.platform.posix.menu_helper import find_icon, load_theme_icon_names
+            load_theme_icon_names()
             # a miss goes through all the themes:
             find_icon("xpra-warmup-no-such-icon")
         except (OSError, ValueError, TypeError, ImportError) as e:
