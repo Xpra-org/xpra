@@ -450,10 +450,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     ###################################
     # Clipboard
     ###################################
-    def selectSelectionInput(self, Window xwindow) -> None:
-        self.context_check("selectSelectionInput")
-        self.addXSelectInput(xwindow, SelectionNotify)
-
     def sendSelectionNotify(self, Window xwindow, selection, target, property, Time time=CurrentTime) -> None:
         self.context_check("sendSelectionNotify")
         cdef XEvent e
