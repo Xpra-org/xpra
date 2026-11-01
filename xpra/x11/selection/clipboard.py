@@ -152,10 +152,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         proxy.set_direction(self.can_send, self.can_receive)
         proxy.connect("send-clipboard-token", self._send_clipboard_token_handler)
         proxy.connect("send-clipboard-request", self._send_clipboard_request_handler)
-        from xpra.x11.bindings.core import get_root_xid
-        rxid = get_root_xid()
         xfixes_selection_input(xid, selection)
-        xfixes_selection_input(rxid, selection)
         return proxy
 
     ############################################################################
