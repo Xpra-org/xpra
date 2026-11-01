@@ -41,7 +41,6 @@ def init_event_window() -> int:
     rxid = X11Window.get_root_xid()
     xid = X11Window.CreateWindow(rxid, -1, -1, event_mask=PropertyChangeMask, inputoutput=InputOnly)
     prop_set(xid, "WM_TITLE", "latin1", "Xpra-Clipboard")
-    X11Window.selectSelectionInput(xid)
     log(f"init_event_window()={xid=}")
     return xid
 
