@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.7] 2026-10-29
+## [5.1.7] 2026-11-01
 * 🔧 Platforms, build and packaging:
   * [honour `--root ROOT` when installing](https://github.com/Xpra-org/xpra/commit/17226720ee22ad7f8cade2f1284557459b3d4b02)
   * [better install prefix detection](https://github.com/Xpra-org/xpra/commit/9a08d5bbdd2c671fc99b0296a717340b4c2d2863)
@@ -102,6 +102,8 @@
   * [prefer BGRX / BGRA by default](https://github.com/Xpra-org/xpra/commit/ef94cda09a1fb27ba8f5340b22331a1958f98e9c)
   * [cairo: discard alpha from 32-bit data when needed](https://github.com/Xpra-org/xpra/commit/dcd74737010a7adbc8d3b38d04956a52f6b8217c)
   * [remove unused avif decoder in pillow](https://github.com/Xpra-org/xpra/commit/75b1e6f0d9313bb08ef53b862d9a2699b68ae4e3)
+  * [encoders that subsample are lossy](https://github.com/Xpra-org/xpra/commit/9478abff43573c8c3077ffbe4345664245dd9074)
+  * [grayscale video fails](https://github.com/Xpra-org/xpra/commit/425a992b0ad6cbfc6f686ec16f6564dc9affdb55)
 * 📬 Notifications:
   * [swapped RGB channels](https://github.com/Xpra-org/xpra/commit/71d8879d2fe896181619e83f296a5a2964cf80bc)
   * [only forward icon theme names as `app_icon`](https://github.com/Xpra-org/xpra/commit/7cff0c0cdc4aa8b77e77ea9cb498e2dc42a2c2f0)
@@ -216,6 +218,7 @@
   * [windows can disappear as we inspect them](https://github.com/Xpra-org/xpra/commit/06883b1e04e3363bb0f345505f952f3b27082dee)
   * [error picking an audio monitor device](https://github.com/Xpra-org/xpra/commit/dcbfd83cbd7e5ceed0925b40f1b8b0c96c38e074)
   * [error picking a default printer](https://github.com/Xpra-org/xpra/commit/7cf357d703432b18f710a8d686e1135052414185)
+  * [convert all buffer types to bytes](https://github.com/Xpra-org/xpra/commit/c62c94a527ae5136ad2c609959d84c46a8989003)
 * 💄 Cosmetic:
   * [incorrect library versions reported](https://github.com/Xpra-org/xpra/commit/bea62f73e74f525b20c030ff63a5376dfa553fdb)
   * [skip video warnings for clients without video support](https://github.com/Xpra-org/xpra/commit/645791eb6e80862ff96ee4bc7d1c6d38d55e4c79)
@@ -233,6 +236,9 @@
   * [fix ignored test](https://github.com/Xpra-org/xpra/commit/0d26fafe2a6818691925ed8ced4908c388143eea)
   * [X11 tests failed due to invalid xauth cookie](https://github.com/Xpra-org/xpra/commit/f089558d9d56b1cf1430b60ef97d42db7bafd917)
   * [tests now stop the `dbus-daemon`s left behind](https://github.com/Xpra-org/xpra/commit/66c3f3ed8d69b50449e2eba01ed016ee3459b643)
+  * [newer servers expose multiple desktop entries with the same name](https://github.com/Xpra-org/xpra/commit/777e537691edf8d57a1ed491267b05a60fa4ac7f)
+  * [accept SVG files starting with a doctype](https://github.com/Xpra-org/xpra/commit/8ee8b9010d9366aa8ff1a7597c07188c1487a6e2)
+  * [missing session icon for default desktop sessions](https://github.com/Xpra-org/xpra/commit/03dec7326dcfcd2939de1ede4db2b47cded398fe)
 
 ## [5.1.6] 2026-06-30
 * Platforms, build and packaging:

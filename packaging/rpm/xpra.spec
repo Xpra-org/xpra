@@ -843,7 +843,7 @@ fi
 
 
 %changelog
-* Thu Oct 29 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
+* Sun Nov 01 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
 - 🔧 Platforms, build and packaging:
    honour `--root ROOT` when installing
    better install prefix detection
@@ -945,6 +945,8 @@ fi
    prefer BGRX / BGRA by default
    cairo: discard alpha from 32-bit data when needed
    remove unused avif decoder in pillow
+   encoders that subsample are lossy
+   grayscale video fails
 - 📬 Notifications:
    swapped RGB channels
    only forward icon theme names as `app_icon`
@@ -1059,6 +1061,7 @@ fi
    windows can disappear as we inspect them
    error picking an audio monitor device
    error picking a default printer
+   convert all buffer types to bytes
 - 💄 Cosmetic:
    incorrect library versions reported
    skip video warnings for clients without video support
@@ -1076,6 +1079,9 @@ fi
    fix ignored test
    X11 tests failed due to invalid xauth cookie
    tests now stop the `dbus-daemon`s left behind
+   newer servers expose multiple desktop entries with the same name
+   accept SVG files starting with a doctype
+   missing session icon for default desktop sessions
 
 * Tue Jun 30 2026 Antoine Martin <antoine@xpra.org> 5.1.6-10
 - Platforms, build and packaging:
