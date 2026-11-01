@@ -55,7 +55,6 @@ def init_event_window(gtk_filter: bool) -> int:
         event_mask |= constants["StructureNotifyMask"]
     xid = X11Window.CreateWindow(rxid, -1, -1, event_mask=event_mask, inputoutput=InputOnly)
     prop_set(xid, "WM_TITLE", "latin1", "Xpra-Clipboard")
-    X11Window.selectSelectionInput(xid)
     log(f"init_event_window()={xid=}")
     return xid
 
