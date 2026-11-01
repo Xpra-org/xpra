@@ -137,13 +137,9 @@ class ClipboardProxy(ClipboardProxyCore, GObject.GObject):
         #        X11Window.XSetSelectionOwner(0, self._selection)
         # empty replies for all pending requests,
         # this will also cancel any pending timers:
-        rr = self.remote_requests
-        self.remote_requests = {}
-        for target in rr:
+        for target in tuple(self.remote_requests):
             self.got_contents(target)
-        lr = self.local_requests
-        self.local_requests = {}
-        for target in lr:
+        for target in tuple(self.local_requests):
             self.got_local_contents(target)
         for atom in tuple(self.incr_transfers):
             self.cancel_incr_transfer(atom)
