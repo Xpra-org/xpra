@@ -7,6 +7,7 @@
 import os
 import time
 import unittest
+from threading import Thread, current_thread, main_thread
 from unittest.mock import patch
 from collections.abc import Sequence
 
@@ -144,6 +145,66 @@ class ProtocolTest(unittest.TestCase):
             proto.start()
             idle.call_args.args[0]()
         prepare.assert_called_once_with(conn)
+
+    def test_close_from_filtered_thread(self) -> None:
+        try:
+            from xpra.seccomp import thread_state
+        except ImportError:
+            self.skipTest("seccomp module is unavailable")
+        for filtered in (False, True):
+            for cleanup_first in (False, True):
+                with self.subTest(filtered=filtered, cleanup_first=cleanup_first):
+                    pending = []
+                    events = []
+                    errors = []
+
+                    def connection_lost(_proto, packet) -> None:
+                        self.assertEqual(packet.get_type(), CONNECTION_LOST)
+                        self.assertEqual(packet.get_str(1), "closing")
+                        self.assertFalse(conn.active)
+                        events.append(("connection-lost", current_thread()))
+
+                    proto = self.make_memory_protocol(process_packet_cb=connection_lost)
+                    conn = proto._conn
+                    close_connection = conn.close
+
+                    def close() -> None:
+                        self.assertFalse(thread_state.filtered)
+                        close_connection()
+                        events.append(("close", current_thread()))
+
+                    def schedule(fn, *args) -> int:
+                        pending.append((fn, args))
+                        return len(pending)
+
+                    def worker_close() -> None:
+                        try:
+                            thread_state.filtered = filtered
+                            proto.close("closing")
+                            proto.close("closing")
+                        except Exception as exc:
+                            errors.append(exc)
+
+                    worker = Thread(target=worker_close, name="test-parse-close", daemon=True)
+                    with patch.object(proto, "idle_add", side_effect=schedule), patch.object(conn, "close", side_effect=close):
+                        worker.start()
+                        worker.join(5)
+                        self.assertFalse(worker.is_alive())
+                        self.assertEqual(errors, [])
+                        self.assertEqual(conn.active, filtered)
+                        self.assertEqual(proto.is_closed(), not filtered)
+                        if cleanup_first:
+                            # Main-thread cleanup must work even if its loop stops
+                            # before the filtered thread's queued close runs.
+                            proto.close("closing")
+                            self.assertFalse(conn.active)
+                        while pending:
+                            fn, args = pending.pop(0)
+                            fn(*args)
+                    self.assertEqual(events, [
+                        ("close", main_thread() if filtered else worker),
+                        ("connection-lost", main_thread()),
+                    ])
 
     def test_verify_packet(self) -> None:
         verify_packet = check.verify_packet
