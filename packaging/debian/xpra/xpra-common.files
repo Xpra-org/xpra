@@ -1,6 +1,7 @@
 usr/bin/xpra
 usr/share/xpra/README.md
 usr/share/xpra/COPYING
+usr/share/xpra/css/
 usr/share/xpra/icons/
 usr/share/xpra/images/
 usr/share/xpra/locales/
