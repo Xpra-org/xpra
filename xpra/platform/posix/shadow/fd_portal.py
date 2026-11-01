@@ -11,6 +11,7 @@ from dbus.types import Dictionary
 from typing import Any
 
 from xpra.exit_codes import ExitCode
+from xpra.util.env import envint
 from xpra.server.common import get_sources_by_type
 from xpra.util.objects import typedict
 from xpra.common import may_notify_client
@@ -22,10 +23,10 @@ from xpra.codecs.image import ImageWrapper
 from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.platform.posix.fd_portal import (
-    SCREENCAST_IFACE, PORTAL_SESSION_INTERFACE,
+    SCREENCAST_IFACE, REMOTEDESKTOP_IFACE, PORTAL_SESSION_INTERFACE,
     dbus_sender_name,
     get_portal_interface, get_session_interface,
-    screenscast_dbus_call, remotedesktop_dbus_call,
+    dbus_desktop_call, screenscast_dbus_call, remotedesktop_dbus_call,
     AvailableSourceTypes, AvailableDeviceTypes,
 )
 from xpra.log import Logger
@@ -34,6 +35,9 @@ from xpra.config import InitExit
 log = Logger("shadow")
 
 session_counter: int = random.randint(0, 2 ** 24)
+
+# 0: do not persist, 1: while xpra is running, 2: until explicitly revoked
+PERSIST_MODE = envint("XPRA_PORTAL_PERSIST_MODE", 2)
 
 
 class PipewireWindowModel(CaptureWindowModel):
@@ -46,6 +50,9 @@ class PipewireWindowModel(CaptureWindowModel):
 
 
 class PortalShadow(ShadowServerBase):
+    # the portal interface used for creating and starting the session:
+    SESSION_IFACE = REMOTEDESKTOP_IFACE
+
     def __init__(self, attrs: dict[str, str]):
         try:
             get_native_capture_class()
@@ -138,7 +145,8 @@ class PortalShadow(ShadowServerBase):
             "session_handle_token": token,
         }
         log(f"create_session() session_counter={session_counter}")
-        remotedesktop_dbus_call(
+        dbus_desktop_call(
+            self.SESSION_IFACE,
             self.portal_interface.CreateSession,
             self.on_create_session_response,
             options=options)
@@ -170,6 +178,8 @@ class PortalShadow(ShadowServerBase):
         options = {
             "types": UInt32(AvailableDeviceTypes.KEYBOARD + AvailableDeviceTypes.POINTER),
         }
+        # remote desktop sessions can only be persisted via `SelectDevices`:
+        options.update(self.get_persist_options())
         remotedesktop_dbus_call(
             self.portal_interface.SelectDevices,
             self.on_select_devices_response,
@@ -192,6 +202,8 @@ class PortalShadow(ShadowServerBase):
             "multiple": self.multi_window,
             "types": UInt32(AvailableSourceTypes.WINDOW | AvailableSourceTypes.MONITOR),
         }
+        if self.SESSION_IFACE == SCREENCAST_IFACE:
+            options.update(self.get_persist_options())
         log(f"calling SelectSources with options={options}")
         screenscast_dbus_call(
             self.portal_interface.SelectSources,
@@ -212,7 +224,8 @@ class PortalShadow(ShadowServerBase):
 
     def portal_start(self) -> None:
         log("portal_start()")
-        remotedesktop_dbus_call(
+        dbus_desktop_call(
+            self.SESSION_IFACE,
             self.portal_interface.Start,
             self.on_start_response,
             self.session_handle,
@@ -227,6 +240,9 @@ class PortalShadow(ShadowServerBase):
             log.error(f"Error {r} starting the screen capture")
             self.client_auth_error("cannot start screen capture")
             return
+        if PERSIST_MODE:
+            # the token we used is now invalid, save the new one (if any):
+            self.save_restore_token(res.strget("restore_token"))
         streams = res.tupleget("streams")
         if not streams:
             log.error("Error: failed to start capture:")
@@ -242,6 +258,49 @@ class PortalShadow(ShadowServerBase):
             # ss.notify("", nid, "Xpra", 0, "", title, body, [], {}, 10*1000, icon)
             log.warn("Warning: no input devices,")
             log.warn(" keyboard and pointer events cannot be forwarded")
+
+    def get_restore_token_filename(self) -> str:
+        from xpra.platform.paths import get_state_dir
+        iface = self.SESSION_IFACE.split(".")[-1].lower()
+        return os.path.join(os.path.expanduser(get_state_dir()), f"portal-{iface}-restore-token")
+
+    def load_restore_token(self) -> str:
+        filename = self.get_restore_token_filename()
+        try:
+            with open(filename, encoding="utf8") as f:
+                return f.read().strip()
+        except FileNotFoundError:
+            return ""
+        except OSError as e:
+            log(f"load_restore_token() {filename!r}", exc_info=True)
+            log.warn(f"Warning: unable to load the portal restore token from {filename!r}")
+            log.warn(f" {e}")
+            return ""
+
+    def save_restore_token(self, token: str) -> None:
+        filename = self.get_restore_token_filename()
+        log(f"save_restore_token({token!r}) to {filename!r}")
+        try:
+            if not token:
+                if os.path.exists(filename):
+                    os.unlink(filename)
+                return
+            os.makedirs(os.path.dirname(filename), mode=0o700, exist_ok=True)
+            fd = os.open(filename, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w", encoding="utf8") as f:
+                f.write(token)
+        except OSError as e:
+            log(f"save_restore_token({token!r})", exc_info=True)
+            log.warn(f"Warning: unable to save the portal restore token to {filename!r}")
+            log.warn(f" {e}")
+
+    def get_persist_options(self) -> dict[str, Any]:
+        if not PERSIST_MODE:
+            return {}
+        options: dict[str, Any] = {"persist_mode": UInt32(PERSIST_MODE)}
+        if token := self.load_restore_token():
+            options["restore_token"] = token
+        return options
 
     def create_capture(self, fd: int, node_id: int, w: int, h: int) -> Capture:
         return Capture(fd, node_id, w, h)
