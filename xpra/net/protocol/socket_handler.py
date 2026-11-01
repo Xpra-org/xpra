@@ -524,11 +524,12 @@ class SocketProtocol:
     def start(self) -> None:
         def start_network_parse_thread() -> None:
             eventlog(f"start_network_parse_thread() closed={self._closed}")
+            conn = self._conn
             rpt = self._read_parser_thread
             # idempotent: only start the parse thread if it isn't running already
             # (start() may be called more than once - ie: by both the caller and the client's `run()`)
             if not self._closed and rpt and not rpt.is_alive():
-                prepare_parse_thread_seccomp(self._conn)
+                prepare_parse_thread_seccomp(conn)
                 rpt.start()
 
         self.idle_add(start_network_parse_thread)
@@ -1060,7 +1061,11 @@ class SocketProtocol:
 
     def _read_parse_thread_loop(self) -> None:
         log("read_parse_thread_loop starting")
-        install_parse_thread_seccomp(self._conn.socktype)
+        # The connection may have been closed or transferred before this thread runs.
+        conn = self._conn
+        if conn is None:
+            return
+        install_parse_thread_seccomp(conn.socktype)
         try:
             self.do_read_parse_thread_loop()
         except Exception as e:

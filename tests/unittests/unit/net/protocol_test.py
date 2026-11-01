@@ -115,6 +115,36 @@ class ProtocolTest(unittest.TestCase):
         p.enable_default_encoder()
         return p
 
+    def test_parse_worker_startup(self) -> None:
+        for retire in (None, "close", "steal_connection"):
+            with self.subTest(retire=retire):
+                proto = self.make_memory_protocol()
+                events = []
+                with patch.object(proto, "idle_add"), \
+                        patch.object(socket_handler, "install_parse_thread_seccomp", side_effect=events.append), \
+                        patch.object(proto, "do_read_parse_thread_loop", side_effect=lambda: events.append("parse")):
+                    if retire:
+                        getattr(proto, retire)()
+                    proto._read_parse_thread_loop()
+                self.assertEqual(events, [] if retire else ["tcp", "parse"])
+
+    def test_close_during_parse_startup(self) -> None:
+        proto = self.make_memory_protocol()
+        conn = proto._conn
+        worker = proto._read_parser_thread
+
+        def close_after_check():
+            proto.close()
+            return False
+
+        with patch.object(proto, "idle_add") as idle, \
+                patch.object(worker, "is_alive", side_effect=close_after_check), \
+                patch.object(worker, "start"), \
+                patch.object(socket_handler, "prepare_parse_thread_seccomp") as prepare:
+            proto.start()
+            idle.call_args.args[0]()
+        prepare.assert_called_once_with(conn)
+
     def test_verify_packet(self) -> None:
         verify_packet = check.verify_packet
 
