@@ -605,7 +605,7 @@ class GTKTrayMenu(GTKMenuHelper):
                     clipboard_submenu.append(self.make_translatedclipboard_optionsmenuitem())
                     clipboard_submenu.append(Gtk.SeparatorMenuItem())
                 except ImportError:
-                    clipboardlog.error("make_clipboardmenuitem()", exc_info=True)
+                    clipboardlog.error("Error: failed to import clipboard components", exc_info=True)
             items = []
             for label in CLIPBOARD_DIRECTION_LABELS:
                 direction_item = Gtk.CheckMenuItem(label=label)

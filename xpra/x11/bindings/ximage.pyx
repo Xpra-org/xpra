@@ -597,7 +597,7 @@ cdef class DrawableWrapper:
 
     def get_image(self, unsigned int x, unsigned int y, unsigned int width, unsigned int height):
         if not self.drawable:
-            log.warn("%s.get_image%s", self, (x, y, width, height))
+            log.error("Error: cannot retrieve image %s from an already cleaned up DrawableWrapper", (x, y, width, height))
             return None
         ximagedebug("%s.get_image%s width=%i, height=%i", self, (x, y, width, height), self.width, self.height)
         if x >= self.width or y >= self.height:

@@ -251,7 +251,8 @@ def run_audio(mode: str, args: list[str]) -> int:
             log.error(f"{info}: {e}")
             return 1
         except OSError:
-            log.error("run_audio%s error", (mode, args), exc_info=True)
+            log.error("Error running audio subprocess %r for mode %s", subproc, mode)
+            log.error(" with arguments: %r", pipeline_args, exc_info=True)
             return 1
         finally:
             if ss:

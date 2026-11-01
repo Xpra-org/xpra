@@ -216,7 +216,7 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
             werr("Warning: failed to connect:", f" {e}")
             call(app.quit, ExitCode.CONNECTION_FAILED)
         except Exception as e:
-            log.error("do_setup_connection() display_desc=%s", display_desc, exc_info=True)
+            log.error("Error: setting up connection for %r", display_desc, exc_info=True)
             werr("Error: failed to connect:", f" {e}")
             call(app.quit, ExitCode.CONNECTION_FAILED)
 

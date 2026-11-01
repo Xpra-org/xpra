@@ -911,7 +911,7 @@ class CoreX11WindowModel(WindowModelStub):
             log.warn("invalid event data: %s", event.data)
             return
         if not self.process_client_message_event(event):
-            log.warn("do_x11_client_message_event(%s) not handled", event)
+            log.warn("Warning: unhandled X11 message %r", event)
 
     def do_x11_focus_in_event(self, event: X11Event) -> None:
         # X11: FocusIn

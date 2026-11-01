@@ -208,7 +208,7 @@ class SystemTray(GObject.GObject):
         elif event.message_type in IGNORED_MESSAGE_TYPES:
             log("do_x11_client_message_event(%s) in ignored message type list", event)
         else:
-            log.info("do_x11_client_message_event(%s)", event)
+            log.warn("Warning: unhandled X11 message %r", event)
 
     def undock(self, xid) -> None:
         log("undock(%#x)", xid)

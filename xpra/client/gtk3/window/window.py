@@ -113,7 +113,9 @@ class ClientWindow(WindowBaseClass):
             metalog("xget_u32_property(%s, %s, %s)=%s", target, name, default_value, prop[2][0])
             return prop[2][0]
         except Exception as e:
-            metalog.error("xget_u32_property error on %s / %s: %s", target, name, e)
+            metalog.error("Error: retrieving CARDINAL property %r on %r", name, target)
+            metalog.error(" returning default %i", default_value)
+            metalog.estr(e)
             return default_value
 
     def get_drawing_area_geometry(self) -> tuple[int, int, int, int]:
