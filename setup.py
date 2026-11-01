@@ -674,7 +674,7 @@ SWITCHES += [
     "wayland_client", "wayland_server",
     "qt6_client", "pyglet_client", "tk_client", "terminal_client", "win32_client",
     "ism_ext",
-    "pam", "xdg_open", "peercred", "landlock",
+    "pam", "xdg_open", "peercred", "landlock", "seccomp",
     "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
     "rebuild",
     "docs", "pandoc_lua",
