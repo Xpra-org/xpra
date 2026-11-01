@@ -17,8 +17,8 @@ log = Logger("shadow", "pointer")
 # xdg-desktop-portal expects evdev button codes:
 EVDEV_BUTTONS: dict[int, int] = {
     1: 0x110,  # BTN_LEFT
-    2: 0x111,  # BTN_RIGHT
-    3: 0x112,  # BTN_MIDDLE
+    2: 0x112,  # BTN_MIDDLE
+    3: 0x111,  # BTN_RIGHT
 }
 
 
