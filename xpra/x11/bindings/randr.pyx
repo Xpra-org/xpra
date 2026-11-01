@@ -10,7 +10,7 @@ import struct
 from libc.string cimport memset
 from xpra.x11.bindings.xlib cimport (
     Display, XID, Bool, Status, Drawable, Window, Time, Atom, XEvent,
-    XDefaultRootWindow, XGetGeometry,
+    XDefaultRootWindow, XGetGeometry, XScreenCount,
     XFree, XSync,
     AnyPropertyType, PropModeReplace,
     CurrentTime, Success,
@@ -331,7 +331,6 @@ cdef extern from "X11/extensions/Xrandr.h":
     void XRRDeleteOutputMode(Display *dpy, RROutput output, RRMode mode)
     void XRRFreeModeInfo(XRRModeInfo *modeInfo)
 
-    int XScreenCount(Display *display)
     int XDisplayWidthMM(Display *display, int screen_number)
     int XDisplayHeightMM(Display *display, int screen_number)
     int XDisplayWidth(Display *display, int screen_number)
@@ -803,9 +802,6 @@ cdef class RandRBindingsInstance(X11CoreBindingsInstance):
             return True
         finally:
             XRRFreeScreenConfigInfo(config)
-
-    def get_screen_count(self) -> int:
-        return XScreenCount(self.display)
 
     def get_screen_size_mm(self) -> tuple[int, int]:
         sizes = self.get_screen_sizes_mm()

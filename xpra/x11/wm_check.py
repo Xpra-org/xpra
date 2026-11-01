@@ -9,14 +9,11 @@ from typing import Any
 from xpra.util.env import envbool
 from xpra.x11.error import xsync, xlog
 from xpra.x11.prop import prop_get
-from xpra.x11.bindings.core import get_root_xid
+from xpra.x11.bindings.core import get_root_xid, get_default_screen
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.log import Logger
 
 log = Logger("x11", "window")
-
-WM_S0 = "WM_S0"
-_NET_WM_CM_S0 = "_NET_WM_CM_S0"
 
 FORCE_REPLACE_WM = envbool("XPRA_FORCE_REPLACE_WM", False)
 
@@ -35,6 +32,11 @@ def get_ewmh_xid() -> int:
     return 0
 
 
+def get_wm_selections() -> tuple[str, str]:
+    screen = get_default_screen()
+    return f"WM_S{screen}", f"_NET_WM_CM_S{screen}"
+
+
 def get_wm_info() -> dict[str, Any]:
     from xpra.x11.bindings.display_source import get_display_name
     with xsync:
@@ -44,10 +46,9 @@ def get_wm_info() -> dict[str, Any]:
             "root": root_xid,
             "display": get_display_name(),
         }
-        if s0 := X11Window.XGetSelectionOwner(WM_S0):
-            info["WM_S0"] = s0
-        if s0 := X11Window.XGetSelectionOwner(_NET_WM_CM_S0):
-            info["_NET_WM_CM_S0"] = s0
+        for selection in get_wm_selections():
+            if owner := X11Window.XGetSelectionOwner(selection):
+                info[selection] = owner
     if ewmh_xid := get_ewmh_xid():
         info["_NET_SUPPORTING_WM_CHECK"] = ewmh_xid
         with xlog:
@@ -76,8 +77,9 @@ def wm_check(upgrading=False) -> bool:
     info = get_wm_info()
     display_name = info.get("display", "")
     name = info.get("wmname")
-    wm_so = info.get("WM_S0")
-    cwm_so = info.get("_NET_WM_CM_S0")
+    wm_s, cwm_s = get_wm_selections()
+    wm_so = info.get(wm_s)
+    cwm_so = info.get(cwm_s)
     ewmh_xid = info.get("_NET_SUPPORTING_WM_CHECK", 0)
     xpra_name = name and name.lower().startswith("xpra")
     log(f"wm_check({upgrading}) {info=}")
@@ -102,7 +104,7 @@ def wm_check(upgrading=False) -> bool:
         if FORCE_REPLACE_WM:
             log.warn(" XPRA_FORCE_REPLACE_WM is set, replacing it forcibly")
             return True
-        log.warn(" it does not own the selection '%s' or '%s'", WM_S0, _NET_WM_CM_S0)
+        log.warn(" it does not own the selection %r or %r", wm_s, cwm_s)
         log.warn(" so we cannot take over and make it exit")
         log.warn(" please stop %s so you can run xpra on this display",
                  name or "the existing window manager")

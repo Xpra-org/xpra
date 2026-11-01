@@ -18,7 +18,7 @@ from xpra.x11.bindings.xlib cimport (
     XUngrabKeyboard, XUngrabPointer,
     XSynchronize, XSync, XFlush,
     CurrentTime,
-    XDefaultRootWindow,
+    XDefaultRootWindow, XDefaultScreen, XScreenCount,
     XConnectionNumber,
     XProtocolVersion, XProtocolRevision,
     XServerVendor, XVendorRelease,
@@ -402,6 +402,14 @@ cdef class X11CoreBindingsInstance:
         assert self.display
         return XDefaultRootWindow(self.display)
 
+    def get_default_screen(self) -> int:
+        assert self.display
+        return XDefaultScreen(self.display)
+
+    def get_screen_count(self) -> int:
+        assert self.display
+        return XScreenCount(self.display)
+
     cdef Atom str_to_atom(self, atomstr) noexcept:
         """Returns the X atom corresponding to the given Python string or Python
         integer (assumed to already be an X atom)."""
@@ -515,9 +523,22 @@ cdef class X11CoreBindingsInstance:
         cdef int root_x, root_y
         cdef int win_x, win_y
         cdef unsigned int mask
-        XQueryPointer(self.display, root_window, &root, &child,
-                      &root_x, &root_y, &win_x, &win_y, &mask)
+        if not XQueryPointer(self.display, root_window, &root, &child,
+                             &root_x, &root_y, &win_x, &win_y, &mask):
+            # the pointer is on another screen,
+            # `root_x` and `root_y` are relative to that screen's root window:
+            return -1, -1
         return root_x, root_y
+
+    def is_pointer_on_screen(self) -> bool:
+        self.context_check("is_pointer_on_screen")
+        cdef Window root_window = XDefaultRootWindow(self.display)
+        cdef Window root, child
+        cdef int root_x, root_y
+        cdef int win_x, win_y
+        cdef unsigned int mask
+        return bool(XQueryPointer(self.display, root_window, &root, &child,
+                                  &root_x, &root_y, &win_x, &win_y, &mask))
 
     def query_mask(self) -> int:
         self.context_check("query_mask")
@@ -570,3 +591,7 @@ def X11CoreBindings() -> X11CoreBindingsInstance:
 
 def get_root_xid() -> int:
     return X11CoreBindings().get_root_xid()
+
+
+def get_default_screen() -> int:
+    return X11CoreBindings().get_default_screen()

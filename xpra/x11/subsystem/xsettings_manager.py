@@ -10,7 +10,7 @@ from xpra.os_util import gi_import
 from xpra.util.gobject import no_arg_signal, one_arg_signal
 from xpra.x11.error import xlog, XError, xsync
 from xpra.x11.common import X11Event
-from xpra.x11.bindings.core import get_root_xid
+from xpra.x11.bindings.core import get_root_xid, get_default_screen
 from xpra.x11.prop import raw_prop_set, raw_prop_get
 from xpra.x11.selection.manager import ManagerSelection
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
@@ -34,7 +34,9 @@ XNone: Final[int] = 0
 class XSettingsManager:
     __slots__ = ("_manager", "_window")
 
-    def __init__(self, screen_number=0):
+    def __init__(self, screen_number=-1):
+        if screen_number < 0:
+            screen_number = get_default_screen()
         self._manager = ManagerSelection(f"_XSETTINGS_S{screen_number}")
         # Technically I suppose ICCCM says we should use FORCE, but it's not
         # like a window manager where you have to wait for the old wm to clean
@@ -63,7 +65,9 @@ class XSettingsHelper:
         Convenience class for accessing XSETTINGS,
         without all the code from the watcher.
     """
-    def __init__(self, screen_number=0):
+    def __init__(self, screen_number=-1):
+        if screen_number < 0:
+            screen_number = get_default_screen()
         self._selection = "_XSETTINGS_S%s" % screen_number
         with xsync:
             from xpra.x11.bindings.window import X11WindowBindings

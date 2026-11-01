@@ -192,7 +192,7 @@ def main() -> int:  # pragma: no cover
             init_display_source()
             from xpra.x11.bindings.window import X11WindowBindings
             window_bindings = X11WindowBindings()
-            selection = "_XSETTINGS_S0"
+            selection = f"_XSETTINGS_S{window_bindings.get_default_screen()}"
             owner = window_bindings.XGetSelectionOwner(selection)
             print(f"owner({selection})={owner:x}")
             XSETTINGS = "_XSETTINGS_SETTINGS"

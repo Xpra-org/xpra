@@ -205,7 +205,8 @@ def main(argv: list[str]) -> int:
         from xpra.x11.gtk.bindings import init_x11_filter
         init_x11_filter()
 
-        manager = ManagerSelection("_NET_WM_CM_S0", "WM_S0")
+        screen = X11WindowBindings().get_default_screen()
+        manager = ManagerSelection(f"_NET_WM_CM_S{screen}", f"WM_S{screen}")
 
         def acquired(mgr):
             log.info("acquired(%r)", mgr)
