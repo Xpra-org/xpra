@@ -25,7 +25,7 @@ from xpra.util.str_fn import (
     Ellipsizer, repr_ellipsized, strtobytes, memoryview_to_bytes,
 )
 from xpra.util.env import envint, envbool, first_time
-from xpra.util.thread import make_thread, start_thread
+from xpra.util.thread import make_thread, start_thread, is_main_thread
 from xpra.common import noop, SizedBuffer
 from xpra.util.parsing import TRUE_OPTIONS
 from xpra.net.bytestreams import SOCKET_TIMEOUT, set_socket_timeout
@@ -1339,6 +1339,18 @@ class SocketProtocol:
         eventlog("Protocol.close(%s) closed=%s, connection=%s", message, self._closed, c)
         if self._closed:
             return
+        if not is_main_thread():
+            try:
+                from xpra.seccomp import thread_state
+            except ImportError:
+                pass
+            else:
+                if thread_state.filtered:
+                    # Keep transport cleanup (SSH termination, ...) off filtered threads.
+                    # Leave the protocol open so main-thread cleanup can still close it
+                    # if it runs before this callback and stops the main loop.
+                    self.idle_add(self.close, message)
+                    return
         self._closed = True
         if self.error == ExitCode.OK:
             # mirror any transport-supplied exit code onto the protocol so the
@@ -1347,13 +1359,14 @@ class SocketProtocol:
         packet_data = []
         if message:
             packet_data.append(message)
-        self.idle_add(self._process_packet_cb, self, Packet(CONNECTION_LOST, *packet_data))
         self.may_log_stats()
         if c:
             self._conn = None
             with log.trap_error("Error closing %s", c):
                 eventlog("Protocol.close(%s) calling %s", message, c.close)
                 c.close()
+        # The connection-lost handler may quit the main loop, so close the transport first.
+        self.idle_add(self._process_packet_cb, self, Packet(CONNECTION_LOST, *packet_data))
         self.clean_authenticators()
         self.terminate_queue_threads()
         self.idle_add(self.clean)
