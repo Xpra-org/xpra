@@ -173,7 +173,8 @@ class RefreshSourceTest(unittest.TestCase):
         image = Mock()
         image.get_geometry.return_value = 0, 0, 100, 100
         image.get_pixel_format.return_value = "RGB"
-        source.csc_image = Mock(return_value=(Mock(), image, "RGB", 20, 20))
+        source._csc_encoder = Mock()
+        source.csc_image = Mock(return_value=(source._csc_encoder, image, "RGB", 20, 20))
         encoder = source._video_encoder = Mock()
         encoder.is_closed.return_value = False
         encoder.get_type.return_value = "test"

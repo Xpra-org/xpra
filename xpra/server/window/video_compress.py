@@ -37,7 +37,7 @@ from xpra.codecs.protocols import VideoEncoder
 from xpra.codecs.loader import has_codec
 from xpra.common import roundup
 from xpra.util.parsing import parse_scaling_value
-from xpra.util.objects import typedict
+from xpra.util.objects import AtomicInteger, typedict
 from xpra.util.str_fn import csv, print_nested_dict
 from xpra.util.env import envint, envbool, first_time
 from xpra.log import Logger
@@ -56,6 +56,8 @@ compresslog = Logger("compress")
 refreshlog = Logger("refresh")
 regionrefreshlog = Logger("regionrefresh")
 
+video_encoder_timer_sequence = AtomicInteger()
+
 
 TEXT_USE_VIDEO = envbool("XPRA_TEXT_USE_VIDEO", False)
 MAX_NONVIDEO_PIXELS = envint("XPRA_MAX_NONVIDEO_PIXELS", 1024*4)
@@ -64,7 +66,7 @@ MIN_VIDEO_EVENTS = envint("XPRA_MIN_VIDEO_EVENTS", 20)
 ENCODE_QUEUE_MIN_GAP = envint("XPRA_ENCODE_QUEUE_MIN_GAP", 5)
 
 VIDEO_TIMEOUT = envint("XPRA_VIDEO_TIMEOUT", 10)
-VIDEO_NODETECT_TIMEOUT = envint("XPRA_VIDEO_NODETECT_TIMEOUT", 10*60)
+VIDEO_GPU_TIMEOUT = envint("XPRA_VIDEO_GPU_TIMEOUT", 2)
 TRACK_REGION = envbool("XPRA_VIDEO_TRACK_REGION", True)
 
 FORCE_CSC_MODE = os.environ.get("XPRA_FORCE_CSC_MODE", "")   # ie: "YUV444P"
@@ -221,6 +223,8 @@ class WindowVideoSource(WindowSource):
         self.edge_encoding: str = ""
         self.start_video_frame: int = 0
         self.video_encoder_timer: int = 0
+        self._video_encoder_timer_sequence: int = 0
+        self.video_encoder_timeout_delay: int = VIDEO_TIMEOUT
         self.b_frame_flush_timer: int = 0
         self.b_frame_flush_data : tuple = ()
         self.encode_from_queue_timer: int = 0
@@ -599,8 +603,6 @@ class WindowVideoSource(WindowSource):
             return nonvideo(info="size out of range for video encoder")
 
         now = monotonic()
-        if now-self.statistics.last_packet_time > 1:
-            return nonvideo(info="no recent updates")
         if now-self.statistics.last_resized < 0.350:
             return nonvideo(info="resized recently")
 
@@ -1931,6 +1933,9 @@ class WindowVideoSource(WindowSource):
                               _score: int, scaling, _csc_scaling, csc_width: int, csc_height: int, csc_spec,
                               enc_in_format: str, encoder_scaling,
                               enc_width: int, enc_height: int, encoder_spec) -> bool:
+        # Codec creation and idle cleanup both run on the encode thread.
+        # Invalidate even an already queued timeout before creating replacements.
+        self.cancel_video_encoder_timer()
         encoding = encoder_spec.encoding
         # the encoder should only be given the output colorspace(s)
         # that this particular spec can produce and the client can decode:
@@ -2020,6 +2025,8 @@ class WindowVideoSource(WindowSource):
         # half-updated pair and end up clearing only one of the two:
         self._csc_encoder = csce
         self._video_encoder = ve
+        gpu = encoder_spec.gpu_cost or (csc_spec and csc_spec.gpu_cost)
+        self.video_encoder_timeout_delay = VIDEO_GPU_TIMEOUT if gpu else VIDEO_TIMEOUT
         videolog("setup_pipeline: csc=%s, video encoder=%s, info: %s, setup took %.2fms",
                  csce, ve, ve.get_info(), (enc_end - enc_start) * 1000)
         scalinglog("setup_pipeline: scaling=%s, encoder_scaling=%s", scaling, encoder_scaling)
@@ -2444,10 +2451,6 @@ class WindowVideoSource(WindowSource):
         if not ve.is_ready():
             return self.video_fallback(image, options, warn=False, info=f"encoder {ve.get_type()!r} is not ready")
 
-        # we're going to use the video encoder,
-        # so make sure we don't time it out:
-        self.cancel_video_encoder_timer()
-
         # dw and dh are the edges we don't handle here
         width = w & self.width_mask
         height = h & self.height_mask
@@ -2523,18 +2526,16 @@ class WindowVideoSource(WindowSource):
         self.cancel_video_encoder_flush()
         if delayed > 0:
             self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size, options.boolget("auto_refresh"))
-            if not data:
-                if self.non_video_encodings and frame == 0:
-                    # first frame has not been sent yet,
-                    # so send something as non-video
-                    # and skip painting this video frame when it does come out:
-                    self.start_video_frame = delayed
-                    return self.video_fallback(image, options, info="delayed frame")
-                return ()
-        else:
-            # there are no delayed frames,
-            # make sure we time out the encoder if no new frames come through:
-            self.schedule_video_encoder_timer()
+        if data:
+            self.schedule_video_encoder_timer(ve, csce)
+        if delayed > 0 and not data:
+            if self.non_video_encodings and frame == 0:
+                # first frame has not been sent yet,
+                # so send something as non-video
+                # and skip painting this video frame when it does come out:
+                self.start_video_frame = delayed
+                return self.video_fallback(image, options, info="delayed frame")
+            return ()
         actual_encoding = ve.get_encoding()
         videolog("video_encode %s encoder: %4s %4ix%-4i result is %7i bytes, %5i MPixels/s, client options=%s",
                  ve.get_type(), actual_encoding, enc_width, enc_height, len(data or ""),
@@ -2584,6 +2585,7 @@ class WindowVideoSource(WindowSource):
         ve, csc, frame, x, y, scaled_size, auto_refresh = flush_data
         if self._video_encoder != ve or ve.is_closed():
             return
+        csce = self._csc_encoder
         if frame == 0 and ve.get_type() == "x264":
             # x264 has problems if we try to re-use a context after flushing the first IDR frame
             self.ve_clean(self._video_encoder)
@@ -2629,31 +2631,57 @@ class WindowVideoSource(WindowSource):
                 # check for more delayed frames since we want to support multiple b-frames:
                 if not self.b_frame_flush_timer and client_options.get("delayed", 0) > 0:
                     self.schedule_video_encoder_flush(ve, csc, frame, x, y, scaled_size, auto_refresh)
-                else:
-                    self.schedule_video_encoder_timer()
+                self.schedule_video_encoder_timer(ve, csce)
         finally:
             if closed:
                 self.video_context_clean(True)
 
     def cancel_video_encoder_timer(self) -> None:
-        if vet := self.video_encoder_timer:
+        # Invalidate callbacks that have already reached the encode queue too.
+        self._video_encoder_timer_sequence = 0
+        if timer := self.video_encoder_timer:
             self.video_encoder_timer = 0
-            GLib.source_remove(vet)
+            # GLib may warn if the timer has fired and its cleanup is still queued.
+            GLib.source_remove(timer)
 
-    def schedule_video_encoder_timer(self) -> None:
-        if not self.video_encoder_timer:
-            vs = self.video_subregion
-            if vs and vs.detection:
-                timeout = VIDEO_TIMEOUT
-            else:
-                timeout = VIDEO_NODETECT_TIMEOUT
-            if timeout > 0:
-                self.video_encoder_timer = GLib.timeout_add(timeout*1000, self.video_encoder_timeout)
+    def schedule_video_encoder_timer(self, ve: VideoEncoder, csce: ColorspaceConverter | None) -> None:
+        """Reset the idle timeout after producing a frame, from the encode thread."""
+        if self._video_encoder is not ve or self._csc_encoder is not csce:
+            return
+        self.cancel_video_encoder_timer()
+        timeout = self.video_encoder_timeout_delay
+        if timeout > 0 and self.b_frame_flush_data and self.b_frame_flush_data[0] is ve:
+            timeout *= 2
+        if timeout > 0:
+            sequence = video_encoder_timer_sequence.increase()
+            self._video_encoder_timer_sequence = sequence
+            self.video_encoder_timer = GLib.timeout_add(timeout*1000, self.video_encoder_timeout, sequence, ve, csce)
 
-    def video_encoder_timeout(self) -> None:
-        videolog("video_encoder_timeout() will close video encoder=%s", self._video_encoder)
+    def video_encoder_timeout(self, sequence: int, ve: VideoEncoder, csce: ColorspaceConverter | None) -> bool:
+        # The UI callback only queues work; it must not change codec or timer state.
+        self.call_in_encode_thread(self.do_video_encoder_timeout, sequence, ve, csce)
+        return False
+
+    def do_video_encoder_timeout(self, sequence: int, ve: VideoEncoder, csce: ColorspaceConverter | None) -> None:
+        # A new frame, cancellation or pipeline replacement may have overtaken
+        # the timeout while it was waiting in the encode queue.
+        if self._video_encoder_timer_sequence != sequence:
+            return
         self.video_encoder_timer = 0
-        self.video_context_clean()
+        if self._video_encoder is not ve or self._csc_encoder is not csce:
+            self.cancel_video_encoder_timer()
+            return
+        if self.b_frame_flush_data and self.b_frame_flush_data[0] is ve:
+            # Includes a flush whose timer fired but which is still queued.
+            self.schedule_video_encoder_timer(ve, csce)
+            return
+        self.cancel_video_encoder_timer()
+        self._csc_encoder = None
+        self._video_encoder = None
+        videolog("video_encoder_timeout() closing video encoder=%s, csc=%s", ve, csce)
+        # Unlike a forced cleanup, never recurse to close a replacement pipeline.
+        self.csc_clean(csce)
+        self.ve_clean(ve)
 
     def csc_image(self, image: ImageWrapper, width: int, height: int) -> tuple:
         """

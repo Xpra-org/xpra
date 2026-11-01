@@ -171,7 +171,7 @@ class VideoContextCleanTest(unittest.TestCase):
 
         encoder.flush.assert_called_once_with(1)
         self.assertEqual(source.b_frame_flush_data, ())
-        source.schedule_video_encoder_timer.assert_called_once_with()
+        source.schedule_video_encoder_timer.assert_called_once_with(encoder, None)
 
 
 class VideoEncodeTest(unittest.TestCase):
