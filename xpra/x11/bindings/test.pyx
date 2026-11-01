@@ -5,7 +5,7 @@
 
 import os
 
-from xpra.x11.bindings.xlib cimport Display, Bool
+from xpra.x11.bindings.xlib cimport Display, Bool, XDefaultScreen
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
 
 from xpra.log import Logger
@@ -24,9 +24,6 @@ cdef extern from "X11/extensions/XTest.h":
                              Bool is_press, unsigned long delay)
     int XTestFakeMotionEvent(Display * display, int screen_number, int x, int y, unsigned long delay)
     int XTestFakeRelativeMotionEvent(Display * display, int x, int y, unsigned long delay)
-
-
-DEF screen_number = 0
 
 
 cdef class XTestBindingsInstance(X11CoreBindingsInstance):
@@ -75,7 +72,7 @@ cdef class XTestBindingsInstance(X11CoreBindingsInstance):
         if not self.hasXTest():
             return False
         self.context_check("xtest_fake_motion")
-        return XTestFakeMotionEvent(self.display, screen_number, x, y, delay)
+        return XTestFakeMotionEvent(self.display, XDefaultScreen(self.display), x, y, delay)
 
     def xtest_fake_relative_motion(self, int x, int y, int delay=0) -> bool:
         if not self.hasXTest():

@@ -418,7 +418,7 @@ cdef dict parse_MotionNotify(Display *d, XEvent *e):
         "y_root": e.xmotion.y_root,
         "state": e.xmotion.state,
         "is_hint": e.xmotion.is_hint != NotifyNormal,
-        #pyev.same_screen = bool(e.xmotion.same_screen),
+        "same_screen": bool(e.xmotion.same_screen),
     }
 
 

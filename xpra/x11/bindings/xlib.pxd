@@ -104,6 +104,9 @@ cdef extern from "X11/Xlib.h":
                      unsigned int event_mask, int pointer_mode, int keyboard_mode,
                      Window confine_to, Cursor cursor, Time time)
     int XUngrabPointer(Display *display, Time time)
+    int XWarpPointer(Display *display, Window src_w, Window dest_w,
+                     int src_x, int src_y, unsigned int src_width, unsigned int src_height,
+                     int dest_x, int dest_y)
 
     int *XSynchronize(Display *display, Bool onoff)
 
@@ -226,6 +229,8 @@ cdef extern from "X11/Xlib.h":
     void XFreeEventData(Display *display, XGenericEventCookie *cookie)
 
     Window XDefaultRootWindow(Display * display) nogil
+    int XDefaultScreen(Display *display) nogil
+    int XScreenCount(Display *display) nogil
 
     Bool XQueryPointer(Display *display, Window w, Window *root_return, Window *child_return, int *root_x_return, int *root_y_return,
                        int *win_x_return, int *win_y_return, unsigned int *mask_return)
