@@ -38,6 +38,10 @@ class WindowFocus(StubClientSubsystem):
             packet.append(keyboard.get_current_modifiers())
         self.send(*packet)
 
+    @property
+    def focused_wid(self) -> int:
+        return self._focused or 0
+
     def has_focus(self, wid: int) -> bool:
         return bool(self._focused) and self._focused == wid
 

@@ -37,6 +37,16 @@ class FakeWindowSubsystem:
         self._window_with_grab = None
         self.pointer_grabbed = None
 
+    @property
+    def focused_wid(self) -> int:
+        return self._focused or 0
+
+    def is_grabbed(self, wid: int) -> bool:
+        return bool(wid) and self._window_with_grab == wid
+
+    def grab_lost(self) -> None:
+        self._window_with_grab = None
+
     def get_window(self, wid: int):
         return self._id_to_window.get(wid)
 

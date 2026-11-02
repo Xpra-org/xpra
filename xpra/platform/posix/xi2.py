@@ -178,7 +178,7 @@ class XI2_Window:
         props = self.get_pointer_extra_args(event)
         if unused_valuators:
             xinputlog("do_xi_motion(%s, %s) wid=%#x / focus=%s / window wid=%#x",
-                      event, device, wid, wp._focused if wp else None, window.wid)
+                      event, device, wid, wp.focused_wid if wp else 0, window.wid)
             xinputlog(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
                       event.device, pointer_data, modifiers, buttons)
             device_id = 0

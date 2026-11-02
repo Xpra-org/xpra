@@ -372,7 +372,7 @@ class WindowMenuHelper(GTKMenuHelper):
             return None
 
         def is_grabbed() -> bool:
-            return window._window_with_grab == self.window.wid
+            return window.is_grabbed(self.window.wid)
 
         def toggle_grab(*args) -> None:
             log("toggle_grab%s", args)

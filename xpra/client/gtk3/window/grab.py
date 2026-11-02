@@ -61,7 +61,7 @@ class GrabWindow(GtkStubWindow):
 
     def grab_broken(self, win, event) -> None:
         log("grab_broken%s", (win, event))
-        self.get_subsystem("window")._window_with_grab = None
+        self.get_subsystem("window").grab_lost()
 
     def _focus_change(self, *args) -> None:
         assert not self._override_redirect

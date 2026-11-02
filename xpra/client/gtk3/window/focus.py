@@ -107,7 +107,7 @@ class FocusWindow(GtkStubWindow):
         self.send_latest_focus()
 
     def send_latest_focus(self) -> None:
-        focused = self.get_subsystem("window")._focused
+        focused = self.get_subsystem("window").focused_wid
         log("send_latest_focus() wid=%#x, focused=%s, latest=%s", self.wid, focused, self._focus_latest)
         if self._focus_latest:
             self._focus()

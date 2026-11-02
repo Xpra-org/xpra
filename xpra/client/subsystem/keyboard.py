@@ -210,7 +210,7 @@ class KeyboardClient(StubClientSubsystem):
             return
         # send the events to the window which currently has the focus, if any:
         window_sub = self.get_subsystem("window")
-        wid = getattr(window_sub, "_focused", 0) or 0
+        wid = window_sub.focused_wid if window_sub else 0
         mod_meanings = kh.mod_meanings or DEFAULT_MODIFIER_MEANINGS
         # the modifiers held down as we walk through the sequence:
         modifiers: list[str] = []

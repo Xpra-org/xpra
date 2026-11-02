@@ -1441,7 +1441,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.when_realized("transient-for-root", set_root_transient)
         else:
             # gtk window is easier:
-            window = self.get_subsystem("window")._id_to_window.get(wid)
+            window = self.get_subsystem("window").get_window(wid)
             log("%s.apply_transient_for(%#x) window=%s", self, wid, window)
             if window and isinstance(window, Gtk.Window):
                 self.set_transient_for(window)

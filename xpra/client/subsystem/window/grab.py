@@ -73,6 +73,12 @@ class WindowGrab(StubClientSubsystem):
             "pointer-grab": self.pointer_grabbed or 0,
         }
 
+    def is_grabbed(self, wid: int) -> bool:
+        return bool(wid) and self._window_with_grab == wid
+
+    def grab_lost(self) -> None:
+        self._window_with_grab = None
+
     def window_grab(self, wid: int, _window) -> None:
         log.warn(f"Warning: window grab not implemented in {self.client.client_type}")
         self._window_with_grab = wid
