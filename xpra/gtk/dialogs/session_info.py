@@ -325,7 +325,9 @@ def subsystem_attr(client, subsystem: str, attr: str, default=None):
 
 
 def remote_attr(client, attr: str, default=None):
-    return subsystem_attr(client, "remote-info", attr, default)
+    """ one of the public properties of the `remote-info` subsystem """
+    remote_info = get_client_subsystem(client, "remote-info")
+    return getattr(remote_info, attr, default) if remote_info else default
 
 
 def get_server_platform_name(client) -> str:
@@ -333,10 +335,9 @@ def get_server_platform_name(client) -> str:
     pinfo = server_info.get("server", {}).get("platform", {})
 
     def plat(key=""):
-        # we can get the platform information from the server info mixin,
-        # or from the server last info:
-        attr = "_remote_platform" if not key else f"_remote_platform_{key}"
-        return pinfo.get(key) or remote_attr(client, attr, "")
+        # we can get the platform information from the server last info,
+        # or just the platform name from the `remote-info` subsystem:
+        return pinfo.get(key) or (remote_attr(client, "platform", "") if not key else "")
 
     return make_os_str(
         plat(""),
@@ -354,7 +355,7 @@ def get_server_builddate(client) -> str:
     build_info = get_client_server_last_info(client).get("server", {}).get("build", {})
 
     def cattr(name):
-        return build_info.get(name, "") or remote_attr(client, f"_remote_build_{name}", "")
+        return build_info.get(name, "") or remote_attr(client, f"build_{name}", "")
 
     return make_datetime(cattr("date"), cattr("time"))
 
@@ -371,23 +372,15 @@ def get_local_builddate() -> str:
 
 
 def get_server_version(client) -> str:
-    v = remote_attr(client, "_remote_version", "")
+    v = remote_attr(client, "version", "")
     return make_version_str(v or "unknown")
 
 
 def get_server_revision_str(client) -> str:
-    def cattr(name):
-        return remote_attr(client, name, "")
-
     if build_info := get_client_server_last_info(client).get("server", {}).get("build", {}):
         return caps_to_revision(typedict(build_info))
-
-    return make_revision_str(
-        cattr("_remote_revision"),
-        cattr("_remote_modifications"),
-        cattr("_remote_branch"),
-        cattr("_remote_commit"),
-    )
+    # the hello packet does not include the revision or commit:
+    return make_revision_str(None, remote_attr(client, "modifications", 0), remote_attr(client, "branch", ""), "")
 
 
 def get_glbuffering_info(opengl_props: dict) -> str:
@@ -864,7 +857,7 @@ class SessionInfo(Gtk.Window):
         self.csrow(_("Build date"), get_local_builddate(), get_server_builddate(self.client))
 
         def server_vinfo(lib) -> str:
-            rlv = self.get_remote_attr("_remote_lib_versions", {}) or {}
+            rlv = self.get_remote_attr("lib_versions", {}) or {}
             return make_version_str(rlv.get(lib, ""))
 
         try:
@@ -1124,9 +1117,9 @@ class SessionInfo(Gtk.Window):
         server_display = self.get_subsystem_attr("display", "server_display", "")
         if features.display and server_display:
             self.label_row(_("Server Display"), prettify_plug_name(server_display))
-        self.label_row(_("Server Hostname"), self.get_remote_attr("_remote_hostname", ""))
-        if self.get_remote_attr("_remote_platform", ""):
-            self.label_row(_("Server Platform"), self.get_remote_attr("_remote_platform", ""))
+        self.label_row(_("Server Hostname"), self.get_remote_attr("hostname", ""))
+        if server_platform := self.get_remote_attr("platform", ""):
+            self.label_row(_("Server Platform"), server_platform)
         self.server_load_label = self.label_row(_("Server Load"))
         self.server_load_label.set_tooltip_text(_("Average over 1, 5 and 15 minutes"))
         self.session_started_label = self.label_row(_("Session Duration"))
@@ -1746,8 +1739,6 @@ class SessionInfoClient(InfoTimerClient):
                 d = typedict(v or {})
             return d
 
-        from xpra.client.base.remoteinfo import get_remote_lib_versions
-
         feature_info = rtdict("features")
         if clipboard := self.get_subsystem("clipboard"):
             clipboard.server_clipboard = feature_info.boolget("clipboard")
@@ -1765,27 +1756,12 @@ class SessionInfoClient(InfoTimerClient):
         if display:
             display.server_actual_desktop_size = server.intpair("root_window_size")
             display.server_max_desktop_size = server.intpair("max_desktop_size")
-        self._remote_lib_versions = get_remote_lib_versions(rtdict("server"))
         encodings = rtdict("encodings")
         self.server_core_encodings = encodings.strtupleget("core")
         network = rtdict("network")
         self.server_packet_encoders = network.strtupleget("encoders")
         self.server_compressors = network.strtupleget("compressors")
         self.server_load = server.inttupleget("load")
-        self._remote_hostname = server.strget("hostname")
-        build = rtdict("server", "build")
-        self._remote_version = build.strget("version")
-        self._remote_build_date = build.strget("date")
-        self._remote_build_time = build.strget("time")
-        self._remote_revision = build.intget("revision")
-        self._remote_modifications = build.intget("local_modifications")
-        self._remote_branch = build.strget("branch")
-        self._remote_commit = build.strget("commit")
-        platform_info = rtdict("server", "platform")
-        self._remote_platform = platform_info.strget("")
-        self._remote_platform_release = platform_info.strget("release")
-        self._remote_platform_platform = platform_info.strget("platform")
-        self._remote_platform_linux_distribution = platform_info.strget("linux_distribution")
         self.server_display = server.strget("display")
         GLib.idle_add(self.do_update_screen)
 
