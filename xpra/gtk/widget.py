@@ -8,6 +8,7 @@ from collections.abc import Callable
 from xpra.common import noop
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.util.env import IgnoreWarningsContext, ignorewarnings, envint
+from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.log import Logger
 
 Gtk = gi_import("Gtk")
@@ -26,6 +27,15 @@ def scaled_image(pixbuf, icon_size: int = 0) -> Gtk.Image | None:
     if icon_size:
         pixbuf = pixbuf.scale_simple(icon_size, icon_size, GdkPixbuf.InterpType.BILINEAR)
     return Gtk.Image.new_from_pixbuf(pixbuf)
+
+
+def icon_image(icon_name: str, size: int = 0) -> Gtk.Image | None:
+    """ load one of xpra's icons (or an absolute path) as a `Gtk.Image`, scaled to `size` if specified """
+    with log.trap_error(f"Error loading image for icon {icon_name!r} and size {size}"):
+        pixbuf = get_icon_pixbuf(icon_name)
+        log("icon_image(%r, %s) pixbuf=%s", icon_name, size, pixbuf)
+        return scaled_image(pixbuf, size)
+    return None
 
 
 def imagebutton(title, icon=None, tooltip="", clicked_callback: Callable | None = None, icon_size=32,

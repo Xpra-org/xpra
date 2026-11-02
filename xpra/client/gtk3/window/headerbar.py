@@ -4,8 +4,7 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.gtk.widget import scaled_image
-from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.widget import icon_image
 from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.util.objects import typedict
@@ -58,8 +57,7 @@ def get_header_bar_image(size: int = 24):
         from xpra.gtk.dialogs.util import nearest_icon_enum
         return Gtk.Image.new_from_gicon(icon, nearest_icon_enum(size))
     if WINDOW_ICON:
-        pixbuf = get_icon_pixbuf("transparent.png")
-        return scaled_image(pixbuf, size)
+        return icon_image("transparent.png", size)
     return None
 
 

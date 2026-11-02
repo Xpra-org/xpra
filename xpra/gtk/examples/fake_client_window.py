@@ -45,18 +45,6 @@ class TestClient(FakeClient):
     def after_handshake(self, callback, *args) -> None:
         GLib.idle_add(callback, *args)
 
-    def get_image(self, icon_name: str, size=None):
-        try:
-            from xpra.gtk.pixbuf import get_icon_pixbuf
-            pixbuf = get_icon_pixbuf(icon_name)
-            if pixbuf and size:
-                pixbuf = pixbuf.scale_simple(size, size, 2)
-            if pixbuf:
-                return Gtk.Image.new_from_pixbuf(pixbuf)
-        except Exception:
-            pass
-        return Gtk.Image()
-
     def window_close_event(self, wid: int, *_args) -> None:
         if window := self.get_subsystem("window")._id_to_window.get(wid):
             window.destroy()

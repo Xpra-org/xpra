@@ -8,16 +8,13 @@ from collections.abc import Callable, Sequence
 from xpra.os_util import gi_import
 from xpra.platform import program_context
 from xpra.platform.systray import get_backends, get_menu_helper_class
-from xpra.platform.paths import get_icon_filename
 from xpra.client.gui.fake_client import FakeClient
-from xpra.gtk.widget import scaled_image
 from xpra.common import noop
 from xpra.util.objects import AdHocStruct
 from xpra.log import Logger, consume_verbose_argv
 
 Gtk = gi_import("Gtk")
 GLib = gi_import("GLib")
-GdkPixbuf = gi_import("GdkPixbuf")
 
 log = Logger("client")
 
@@ -290,18 +287,6 @@ class FakeApplication(FakeClient):
 
     def send_download_request(self, *_args) -> None:
         """ this method is part of the GUI client "interface" """
-
-    def get_image(self, icon_name: str, size=None):
-        with log.trap_error(f"Error loading image for icon {icon_name!r} and size {size}"):
-            if not icon_name:
-                return None
-            icon_filename = get_icon_filename(icon_name)
-            if not icon_filename:
-                return None
-            pixbuf = GdkPixbuf.Pixbuf.new_from_file(filename=icon_filename)
-            if not pixbuf:
-                return None
-            return scaled_image(pixbuf, size)
 
     def xpra_tray_click(self, button: int, pressed: bool, time: int = 0) -> None:
         log("xpra_tray_click(%s, %s, %s)", button, pressed, time)

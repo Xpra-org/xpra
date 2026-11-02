@@ -18,26 +18,14 @@ from xpra.log import Logger
 log = Logger("tray")
 
 
-def get_icon_image(icon_name: str):
-    from xpra.platform.gui import get_icon_size
-    size = get_icon_size()
-    from xpra.gtk.widget import scaled_image
-    with log.trap_error(f"Error loading image from icon {icon_name!r} with size {size}"):
-        from xpra.gtk.pixbuf import get_icon_pixbuf
-        pixbuf = get_icon_pixbuf(icon_name)
-        log("get_image(%s, %s) pixbuf=%s", icon_name, size, pixbuf)
-        if not pixbuf:
-            return None
-        return scaled_image(pixbuf, size)
-
-
 def traymenuitem(title: str, icon_name="", tooltip="", cb: Callable = noop):  # -> Gtk.ImageMenuItem:
     """ Utility method for easily creating an ImageMenuItem """
     # pylint: disable=import-outside-toplevel
-    from xpra.gtk.widget import menuitem
+    from xpra.gtk.widget import menuitem, icon_image
+    from xpra.platform.gui import get_icon_size
     image = None
     if icon_name:
-        image = get_icon_image(icon_name)
+        image = icon_image(icon_name, get_icon_size())
     return menuitem(title, image, tooltip, cb)
 
 

@@ -64,9 +64,6 @@ class FakeClient(FileTransferHandler):
     def connect(self, *args):
         pass
 
-    def get_image(self, *_args):
-        return None
-
     def get_encodings(self):
         return ["png"]
 

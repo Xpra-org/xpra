@@ -22,8 +22,6 @@ from xpra.constants import DEFAULT_METADATA_SUPPORTED
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.gtk.util import get_default_root_window, init_display_source
 from xpra.gtk.window import GDKWindow
-from xpra.gtk.widget import scaled_image
-from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.exit_codes import ExitValue
 from xpra.util.gobject import no_arg_signal
@@ -190,14 +188,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
     # because the `challenge` subsystem has a working non-GUI fallback:
     def do_process_challenge_prompt(self, *args, **kwargs):
         return self._call_dialogs("do_process_challenge_prompt", *args, **kwargs)
-
-    def get_image(self, icon_name: str, size=None) -> Gtk.Image | None:
-        with log.trap_error(f"Error getting image for icon name {icon_name} and size {size}"):
-            pixbuf = get_icon_pixbuf(icon_name)
-            log(f"get_image({icon_name!r}, {size}) pixbuf={pixbuf}")
-            if not pixbuf:
-                return None
-            return scaled_image(pixbuf, size)
 
     def get_tray_classes(self) -> list[type]:
         return _add_statusicon_tray(super().get_tray_classes())
