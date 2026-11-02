@@ -116,6 +116,29 @@ class WindowManagerTest(ClientMixinTest):
         window_client.window_ungrab()
         native.do_window_ungrab.assert_not_called()
 
+    def test_force_ungrab_on_focus_loss(self):
+        from xpra.client.subsystem.window import WindowClient
+        from xpra.client.subsystem.window import grab as grab_module
+
+        for enabled, caps, readonly, expected in (
+            (True, {"force_ungrab": True}, False, [(7, )]),
+            (True, {}, False, []),
+            (False, {"force_ungrab": True}, False, []),
+            (True, {"force_ungrab": True}, True, []),
+        ):
+            with self.subTest(enabled=enabled, caps=caps, readonly=readonly):
+                client = Mock(readonly=readonly, subsystems={})
+                window_client = WindowClient(client)
+                self.assertTrue(window_client.parse_server_capabilities(typedict(caps)))
+                window = Mock()
+                window_client._id_to_window = {7: window}
+                window_client.window_grab(7, window)
+                with patch.object(grab_module, "FORCE_UNGRAB", enabled):
+                    window_client.update_focus(7, False)
+                window.do_window_ungrab.assert_called_once_with()
+                self.assertFalse(window_client.is_grabbed(7))
+                self.assertEqual([args for args, _kwargs in client.send_force_ungrab.call_args_list], expected)
+
     def test_destroy_grabbed_window_ungrabs_first(self):
         from xpra.client.subsystem.window import WindowClient
 

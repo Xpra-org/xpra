@@ -54,11 +54,9 @@ class WindowFocus(StubClientSubsystem):
                 self._focused = wid
             self.cancel_lost_focus_timer()
         else:
-            if self._window_with_grab:
+            if wwgrab := self._window_with_grab:
                 self.window_ungrab()
-                if wwgrab := self._window_with_grab:
-                    self.do_force_ungrab(wwgrab)
-                self._window_with_grab = None
+                self.do_force_ungrab(wwgrab)
             if wid and focused and focused != wid:
                 # if this window lost focus, it must have had it!
                 # (catch up - makes things like OR windows work:

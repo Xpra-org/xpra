@@ -9,6 +9,7 @@ from typing import Any
 from xpra.net.common import Packet
 from xpra.net.packet_type import WINDOW_DISMISS
 from xpra.util.objects import typedict
+from xpra.util.env import envbool
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
@@ -30,6 +31,8 @@ def get_grab_defs(grab_str: str) -> dict[str, list[str]]:
 
 OR_FORCE_GRAB_STR: str = os.environ.get("XPRA_OR_FORCE_GRAB", "DIALOG:sun-awt-X11")
 OR_FORCE_GRAB = get_grab_defs(OR_FORCE_GRAB_STR)
+# ask the server to release its grabs when the window which had the grab loses focus:
+FORCE_UNGRAB = envbool("XPRA_FORCE_UNGRAB", True)
 
 
 def should_force_grab(metadata: typedict) -> bool:
@@ -56,15 +59,17 @@ class WindowGrab(StubClientSubsystem):
     # which is the subsystem registered as `window`: declaring the prefix here
     # too keeps each mixin usable (and testable) on its own
     PREFIX = "window"
-    SLOT_NAMES = ("_window_with_grab", "pointer_grabbed", "server_window_dismiss")
+    SLOT_NAMES = ("_window_with_grab", "pointer_grabbed", "server_window_dismiss", "server_force_ungrab")
 
     def __init__(self):
         self._window_with_grab = None
         self.pointer_grabbed = None
         self.server_window_dismiss = False
+        self.server_force_ungrab = False
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_window_dismiss = c.boolget("window.dismiss")
+        self.server_force_ungrab = c.boolget("force_ungrab")
         return True
 
     def get_info(self) -> dict[str, Any]:
@@ -100,7 +105,9 @@ class WindowGrab(StubClientSubsystem):
         self._window_with_grab = None
 
     def do_force_ungrab(self, wid: int) -> None:
-        log("do_force_ungrab(%#x)", wid)
+        log("do_force_ungrab(%#x) enabled=%s, server support=%s", wid, FORCE_UNGRAB, self.server_force_ungrab)
+        if not FORCE_UNGRAB or not self.server_force_ungrab or self.client.readonly:
+            return
         # ungrab via dedicated server packet:
         self.client.send_force_ungrab(wid)
 
