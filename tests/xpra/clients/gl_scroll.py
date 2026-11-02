@@ -145,12 +145,12 @@ class TestGLRender:
         metadata.update(force_size_constraint(self.ww, self.wh))
         border = WindowBorder()
         max_window_size = (4096, 4096)
-        default_cursor_data = None
         pixel_depth = 32
 
-        window = self.GLClientWindowClass(noclient, None, 0, 2 ** 32 - 1, x, y, self.ww, self.wh, self.ww, self.wh,
+        window = self.GLClientWindowClass(noclient.get_subsystem, noclient.is_readonly, None, 2 ** 32 - 1,
+                                          (x, y, self.ww, self.wh), (self.ww, self.wh),
                                           metadata, False, typedict({}),
-                                          border, max_window_size, default_cursor_data, pixel_depth)
+                                          border, max_window_size, pixel_depth)
         window_backing = window._backing
         window.realize()
         window_backing.paint_screen = True
