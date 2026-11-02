@@ -304,11 +304,13 @@ class WindowSource(WindowIconSource):
         self.has_alpha: bool = HAS_ALPHA and window.has_alpha()
         self.discard_alpha = False
         self.has_shape = False
+        self.opacity = -1
         self.window_dimensions = ww, wh
         # ugly callback for window filters:
         self.window_dimensions_updated = noop
         # where the window is mapped on the client:
         self.mapped_at = None
+        self._batch_covered: bool | None = None
         self.fullscreen: bool = not self.is_tray and window.get("fullscreen")
         if default_encoding_options.get("scaling.control") is None:
             self.scaling_control = None     # means "auto"
@@ -337,6 +339,12 @@ class WindowSource(WindowIconSource):
             sid = window.connect("notify::shape", self._shape_changed)
             self.window_signal_handlers.append(sid)
             self.has_shape = bool(window.get("shape"))
+        if "opacity" in window.get_dynamic_property_names():
+            def opacity_updated(*_args) -> None:
+                self.opacity = window.get_property("opacity")
+            sid = window.connect("notify::opacity", opacity_updated)
+            self.window_signal_handlers.append(sid)
+            opacity_updated()
         if "children" in window.get_internal_property_names():
             # we just copy the value to an attribute of window-source,
             # so that we can access it from any thread
@@ -1190,6 +1198,7 @@ class WindowSource(WindowIconSource):
         self.no_idle()
 
     def unmap(self) -> None:
+        self.mapped_at = None
         self.cancel_damage()
         self.statistics.reset()
         self.go_idle()
@@ -1264,7 +1273,8 @@ class WindowSource(WindowIconSource):
         """ See cancel_damage(wid) """
         return self._damage_cancelled >= sequence
 
-    def calculate_batch_delay(self, has_focus: bool, other_is_fullscreen: bool, other_is_maximized: bool) -> None:
+    def calculate_batch_delay(self, has_focus: bool, other_is_fullscreen: bool, other_is_maximized: bool,
+                              covered: bool | None = None) -> None:
         bc = self.batch_config
         if bc.locked:
             return
@@ -1272,13 +1282,15 @@ class WindowSource(WindowIconSource):
             # mmap is so fast that we don't need to use the batch delay:
             bc.delay = bc.min_delay
             return
+        coverage_changed = covered != self._batch_covered
+        self._batch_covered = covered
         # calculations take time (CPU), see if we can just skip it this time around:
         now = monotonic()
         lr = self.statistics.last_recalculate
         elapsed = now-lr
         statslog("calculate_batch_delay for wid=%#x current batch delay=%i, last update %.1f seconds ago",
                  self.wid, bc.delay, elapsed)
-        if bc.delay <= 2*bc.start_delay and lr > 0 and elapsed < 60 and self.get_packets_backlog() == 0:
+        if not coverage_changed and bc.delay <= 2*bc.start_delay and lr > 0 and elapsed < 60 and self.get_packets_backlog() == 0:
             # delay is low-ish, figure out if we should bother updating it
             lde = tuple(self.statistics.last_damage_events)
             if not lde:
@@ -1310,7 +1322,7 @@ class WindowSource(WindowIconSource):
         calculate_batch_delay(self.wid, self.window_dimensions, has_focus,
                               other_is_fullscreen, other_is_maximized,
                               self.is_OR, self.soft_expired, bc,
-                              self.global_statistics, self.statistics, self.bandwidth_limit, self.jitter)
+                              self.global_statistics, self.statistics, self.bandwidth_limit, self.jitter, covered)
         # update the normalized value:
         ww, wh = self.window_dimensions
         bc.delay_per_megapixel = round(bc.delay * 1000000 // max(1, (ww*wh)))

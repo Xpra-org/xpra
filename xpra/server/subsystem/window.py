@@ -543,6 +543,8 @@ class WindowServer(StubSubsystem):
         focuslog("process_window_stacking: %s", stacking)
         self.update_window_stacking(stacking)
         source = self.get_server_source(proto)
+        if source:
+            source.set_window_stacking(stacking)
         for ss in self.window_sources(exclude=source):
             if ss.window_sync_stacking:
                 ss.send_window_stacking(stacking)

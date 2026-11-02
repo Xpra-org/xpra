@@ -206,6 +206,7 @@ class EncodingsConnection(StubClientConnection):
         sources = self.window_sources.items()
         maximized_wids = tuple(wid for wid, source in sources if source is not None and source.maximized)
         fullscreen_wids = tuple(wid for wid, source in sources if source is not None and source.fullscreen)
+        get_coverage = getattr(self, "get_window_coverage", lambda _wid: None)
         log("recalculate_delays() wids=%s, focus=%s, maximized=%s, fullscreen=%s",
             wids, focus, maximized_wids, fullscreen_wids)
         for wid in wids:
@@ -219,7 +220,8 @@ class EncodingsConnection(StubClientConnection):
                 ws.statistics.update_averages()
                 ws.calculate_batch_delay(wid == focus,
                                          len(fullscreen_wids) > 0 and wid not in fullscreen_wids,
-                                         len(maximized_wids) > 0 and wid not in maximized_wids)
+                                         len(maximized_wids) > 0 and wid not in maximized_wids,
+                                         get_coverage(wid))
                 ws.reconfigure()
             if self.is_closed():
                 return
@@ -252,12 +254,12 @@ class EncodingsConnection(StubClientConnection):
             log("delay_per_megapixel=%i, delay=%i, for wdelay=%i, avg_size=%i, ratio=%.2f",
                 normalized_delay, delay, wdelay, avg_size, ratio)
 
-    def may_recalculate(self, wid: int, pixel_count: int) -> None:
+    def may_recalculate(self, wid: int, pixel_count: int, *, force=False) -> None:
         if wid in self.calculate_window_ids:
             return  # already scheduled
         v = self.calculate_window_pixels.get(wid, 0) + pixel_count
         self.calculate_window_pixels[wid] = v
-        if v < MIN_PIXEL_RECALCULATE:
+        if not force and v < MIN_PIXEL_RECALCULATE:
             return  # not enough pixel updates
         statslog("may_recalculate(%#x, %i) total %i pixels, scheduling recalculate work item", wid, pixel_count, v)
         self.calculate_window_ids.add(wid)

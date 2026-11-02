@@ -35,7 +35,7 @@ def get_low_limit(mmap_enabled: bool, window_dimensions: tuple[int, int]) -> int
 def calculate_batch_delay(wid: int, window_dimensions: tuple[int, int],
                           has_focus: bool, other_is_fullscreen: bool, other_is_maximized: bool, is_OR: bool,
                           soft_expired: int, batch, global_statistics, statistics,
-                          bandwidth_limit: int, jitter: int) -> None:
+                          bandwidth_limit: int, jitter: int, covered: bool | None = None) -> None:
     """
         Calculates a new batch delay.
         We first gather some statistics,
@@ -68,9 +68,9 @@ def calculate_batch_delay(wid: int, window_dimensions: tuple[int, int],
     min_delay = 0
     if batch.always:
         min_delay = batch.min_delay
-    # if another window is fullscreen or maximized,
-    # make sure we don't use a very low delay (cap at 10fps)
-    if other_is_fullscreen or other_is_maximized:
+    # Prefer actual client coverage, falling back to the fullscreen/maximized heuristic.
+    background = (other_is_fullscreen or other_is_maximized) if covered is None else (covered and not has_focus)
+    if background:
         min_delay = max(100, min_delay)
     elif not has_focus:
         # wayland clients never tell us about minimized windows,

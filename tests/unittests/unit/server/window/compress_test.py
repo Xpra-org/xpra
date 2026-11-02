@@ -57,6 +57,52 @@ class CompressTest(unittest.TestCase):
             get_property=lambda name: {"frame-has-alpha": frame_has_alpha}[name],
         )
 
+    @patch.object(compress, "monotonic", return_value=100)
+    def test_coverage_change_recalculates_with_no_damage(self, _monotonic):
+        source = self.make_source()
+        source.wid = 1
+        source.batch_config = SimpleNamespace(locked=False, delay=40, start_delay=50)
+        source._mmap = False
+        source._batch_covered = None
+        source.statistics.last_recalculate = 99
+        source.statistics.last_damage_events = ()
+        source.is_OR = False
+        source.soft_expired = 0
+        source.global_statistics = object()
+        source.bandwidth_limit = 0
+        source.jitter = 0
+        source.update_av_sync_frame_delay = Mock()
+        with patch.object(compress, "calculate_batch_delay") as calculate:
+            for covered in (False, True, False, None):
+                source.calculate_batch_delay(False, False, False, covered)
+                self.assertEqual(calculate.call_args.args[-1], covered)
+                self.assertEqual(source.statistics.last_recalculate, 100)
+                calculate.reset_mock()
+                # With no further coverage change, the low-activity shortcut still applies.
+                source.calculate_batch_delay(False, False, False, covered)
+                calculate.assert_not_called()
+            source.batch_config.locked = True
+            source.calculate_batch_delay(False, False, False, True)
+            self.assertEqual(source.batch_config.delay, 40)
+            calculate.assert_not_called()
+            source.batch_config.locked = False
+            source.batch_config.min_delay = 16
+            source._mmap = True
+            source.calculate_batch_delay(False, False, False, True)
+            self.assertEqual(source.batch_config.delay, 16)
+            calculate.assert_not_called()
+
+    def test_unmap_clears_client_geometry(self):
+        source = self.make_source()
+        source.mapped_at = (10, 20, 800, 600)
+        source.cancel_damage = Mock()
+        source.statistics.reset = Mock()
+        source.go_idle = Mock()
+        source.unmap()
+        self.assertIsNone(source.mapped_at)
+        source.cancel_damage.assert_called_once_with()
+        source.go_idle.assert_called_once_with()
+
     def make_alpha_source(self, **window_kwargs) -> WindowSource:
         source = self.make_source()
         source.window = self.make_window(**window_kwargs)

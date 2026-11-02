@@ -104,6 +104,7 @@ class WindowsConnection(StubClientConnection):
         self.window_sync_focus = False
         # receive the complete stacking order reported by another client
         self.window_sync_stacking = False
+        self.window_stacking: tuple[int, ...] = ()
         self.window_metadata_supported: Sequence[str] = ()
         self.window_grabs = False
         self.system_tray = False
@@ -284,6 +285,45 @@ class WindowsConnection(StubClientConnection):
     def send_window_stacking(self, stacking: Sequence[int]) -> None:
         focuslog("send_window_stacking(%s)", stacking)
         self.send(WINDOW_STACKING, list(stacking))
+
+    def set_window_stacking(self, wids: Sequence[int]) -> None:
+        stacking = tuple(dict.fromkeys(wids))
+        if stacking == self.window_stacking:
+            return
+        self.window_stacking = stacking
+        if may_recalculate := getattr(self, "may_recalculate", None):
+            for wid in tuple(self.window_sources):
+                may_recalculate(wid, 0, force=True)
+
+    def get_window_coverage(self, wid: int) -> bool | None:
+        """Whether one opaque window above this window fully covers it, or unknown."""
+        stacking = self.window_stacking
+        try:
+            index = stacking.index(wid)
+        except ValueError:
+            return None
+        ws = self.window_sources.get(wid)
+        if ws is None or ws.suspended:
+            return None
+        geometry = ws.mapped_at
+        if not geometry or len(geometry) != 4:
+            return None
+        x, y, w, h = geometry
+        if w <= 0 or h <= 0:
+            return None
+        for above in stacking[index + 1:]:
+            source = self.window_sources.get(above)
+            if source is None or source.suspended or source.iconic or source.has_alpha or source.has_shape:
+                continue
+            if source.opacity not in (-1, 0xffffffff):
+                continue
+            geometry = source.mapped_at
+            if not geometry or len(geometry) != 4:
+                continue
+            ax, ay, aw, ah = geometry
+            if ax <= x and ay <= y and ax + aw >= x + w and ay + ah >= y + h:
+                return True
+        return False
 
     def bell(self, wid: int, device: int, percent: int, pitch: int, duration: int,
              bell_class, bell_id: int, bell_name: str) -> None:
