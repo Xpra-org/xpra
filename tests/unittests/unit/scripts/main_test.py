@@ -193,6 +193,15 @@ class TestMain(unittest.TestCase):
         self.assertEqual(events, ["run", "connect", "protocol"])
         app.cleanup.assert_called_once_with()
 
+    def test_reconnect_remote_display(self):
+        from xpra.scripts.start import get_remote_display
+        remote_info = SimpleNamespace(display_name=":10")
+        app = SimpleNamespace(get_subsystem={"remote-info": remote_info}.get)
+        self.assertEqual(get_remote_display(app), ":10")
+        self.assertEqual(get_remote_display(SimpleNamespace(get_subsystem=lambda name: None)), "")
+        self.assertEqual(get_remote_display(SimpleNamespace()), "")
+        self.assertEqual(get_remote_display(None), "")
+
     def test_run_failure_still_cleans_up(self):
         error = InitExit(ExitCode.FAILURE, "Landlock unavailable")
         app = SimpleNamespace(run=Mock(side_effect=error), cleanup=Mock())

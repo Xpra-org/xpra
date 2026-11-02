@@ -199,6 +199,13 @@ def get_current_root_size(display_is_remote: bool) -> tuple[int, int]:
     return root_w, root_h
 
 
+def get_remote_display(app) -> str:
+    """ the display name of the server we connected to, as reported by the `remote-info` subsystem """
+    get_subsystem = getattr(app, "get_subsystem", None)
+    remote_info = get_subsystem("remote-info") if get_subsystem else None
+    return remote_info.display_name if remote_info else ""
+
+
 def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults) -> ExitValue:
     """ Uses the regular XpraClient with patched proxy arguments to tell run_proxy to start the server """
     if not args:
@@ -316,7 +323,7 @@ def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults
         if not params.get("display", ""):
             # try to find which display was used,
             # so we can re-connect to this specific one:
-            display = getattr(app, "_remote_display", None)
+            display = get_remote_display(app)
             if not display:
                 warn("cannot identify the remote display to reconnect to")
                 warn(" this may fail if there is more than one")

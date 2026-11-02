@@ -864,7 +864,7 @@ class SessionInfo(Gtk.Window):
         self.csrow(_("Build date"), get_local_builddate(), get_server_builddate(self.client))
 
         def server_vinfo(lib) -> str:
-            rlv = getattr(self.client, "_remote_lib_versions", {})
+            rlv = self.get_remote_attr("_remote_lib_versions", {}) or {}
             return make_version_str(rlv.get(lib, ""))
 
         try:
