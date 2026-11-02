@@ -58,7 +58,6 @@ class FakeClient(GLibScheduler):
         self.title = ""
         self.readonly = False
         self._remote_server_mode = "seamless"
-        self.pointer_grabbed = None
         self.find_window = noop
         self.request_frame_extents = noop
         self.server_readonly = False
