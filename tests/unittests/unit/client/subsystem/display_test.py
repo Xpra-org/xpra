@@ -186,9 +186,11 @@ class DisplayClientTest(ClientMixinTest):
                         "desktop_size": (1024, 768),
                         "max_desktop_size": (3840, 2160),
                         "actual_desktop_size": (1024, 768),
-                        "resize_screen": True,
                     },
+                    # a server feature, not part of the `display` namespace:
+                    "resize_screen": True,
                 })
+            self.assertTrue(self.mixin.server_randr)
             self.assertIsNotNone(self.mixin._x11_props)
             self.assertFalse(self.mixin._x11_props.xsettings_enabled)
             # `get_monitors_info` now calls through to `xpra.platform.gui.get_monitors_info`
