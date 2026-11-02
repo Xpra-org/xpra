@@ -15,6 +15,7 @@ from time import monotonic
 from collections.abc import Sequence
 from typing import Any
 
+from xpra.common import noop
 from xpra.exit_codes import ExitCode
 from xpra.os_util import getuid, getgid, get_username_for_uid, WIN32
 from xpra.net.constants import SocketState
@@ -233,11 +234,11 @@ def single_display_match(dir_servers, nomatch="cannot find any live servers to c
     return sockdir, name, path
 
 
-def connect_or_fail(display_desc):
+def connect_or_fail(display_desc, debug_cb=noop):
     from xpra.net.bytestreams import ConnectionClosedException
     from xpra.net.connect import connect_to
     try:
-        return connect_to(display_desc)
+        return connect_to(display_desc, debug_cb=debug_cb)
     except ConnectionClosedException as e:
         raise InitExit(ExitCode.CONNECTION_FAILED, str(e)) from None
     except InitException:

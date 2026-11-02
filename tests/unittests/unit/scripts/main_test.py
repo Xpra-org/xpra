@@ -186,7 +186,7 @@ class TestMain(unittest.TestCase):
              patch("xpra.client.base.command.RequestStartClient", return_value=app), \
              patch("xpra.scripts.clients.gi_import", return_value=glib), \
              patch("xpra.util.thread.start_thread", side_effect=lambda fn, *a, **kw: fn()), \
-             patch("xpra.scripts.clients.connect_or_fail", side_effect=lambda target: events.append("connect") or object()):
+             patch("xpra.scripts.clients.connect_or_fail", side_effect=lambda target, *_args: events.append("connect") or object()):
             result = run_remote_server("xpra", [], opts, ["tcp://localhost:12345/"], "desktop", make_defaults_struct())
         self.assertEqual(result, ExitCode.OK)
         self.assertIs(app.display_desc, desc)

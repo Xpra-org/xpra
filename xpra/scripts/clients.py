@@ -190,7 +190,15 @@ def connect_to_server(app, display_desc: dict[str, Any], opts) -> None:
     def do_setup_connection() -> None:
         try:
             log("do_setup_connection() display_desc=%s", display_desc)
-            conn = connect_or_fail(display_desc)
+            # connection backends report their progress as text messages,
+            # spread them over the splash screen gap after "connecting to server" (60%):
+            pct = [60]
+
+            def connect_progress(message: str) -> None:
+                pct[0] = min(pct[0] + 2, 85)
+                may_show_progress(app, pct[0], message)
+
+            conn = connect_or_fail(display_desc, connect_progress)
             if not conn:
                 raise RuntimeError("not connected")
             log("do_setup_connection() conn=%s", conn)
