@@ -37,6 +37,7 @@ class FakeWindowSubsystem:
 class FakeClient:
     """ the minimal client surface a terminal `ClientWindow` reaches through """
     readonly = False
+    server_readonly = False
     # a title template with a variable, so the metadata title is used:
     title = "@title@"
     headerbar = "no"

@@ -91,7 +91,7 @@ class XI2_Window:
     def do_xi_button(self, event, device) -> None:
         window = self.window
         client = window._client
-        if client.readonly:
+        if window.is_readonly():
             return
         # the input device list is owned by the `window` subsystem,
         # the wheel capabilities by the `pointer` subsystem:
@@ -121,7 +121,7 @@ class XI2_Window:
             self._do_motion_notify_event(event)
             return
         client = window._client
-        if client.readonly:
+        if window.is_readonly():
             return
         # the input device list is owned by the `window` subsystem,
         # the wheel state by the `pointer` subsystem:
