@@ -1276,11 +1276,13 @@ class WindowSource(WindowIconSource):
     def calculate_batch_delay(self, has_focus: bool, other_is_fullscreen: bool, other_is_maximized: bool,
                               covered: bool | None = None) -> None:
         bc = self.batch_config
+        bc.covered = covered
         if bc.locked:
             return
         if self._mmap:
             # mmap is so fast that we don't need to use the batch delay:
             bc.delay = bc.min_delay
+            bc.effective_min_delay = bc.min_delay
             return
         coverage_changed = covered != self._batch_covered
         self._batch_covered = covered

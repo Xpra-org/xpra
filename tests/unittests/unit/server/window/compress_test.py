@@ -84,12 +84,15 @@ class CompressTest(unittest.TestCase):
             source.batch_config.locked = True
             source.calculate_batch_delay(False, False, False, True)
             self.assertEqual(source.batch_config.delay, 40)
+            self.assertTrue(source.batch_config.covered)
             calculate.assert_not_called()
             source.batch_config.locked = False
             source.batch_config.min_delay = 16
             source._mmap = True
             source.calculate_batch_delay(False, False, False, True)
             self.assertEqual(source.batch_config.delay, 16)
+            self.assertEqual(source.batch_config.effective_min_delay, 16)
+            self.assertTrue(source.batch_config.covered)
             calculate.assert_not_called()
 
     def test_unmap_clears_client_geometry(self):

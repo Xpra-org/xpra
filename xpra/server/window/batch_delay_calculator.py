@@ -76,6 +76,8 @@ def calculate_batch_delay(wid: int, window_dimensions: tuple[int, int],
         # wayland clients never tell us about minimized windows,
         # so we have to be more aggressive with unfocused windows instead:
         min_delay = max(40, min_delay)
+    batch.covered = covered
+    batch.effective_min_delay = min_delay
     update_batch_delay(batch, factors, min_delay)
 
 
