@@ -86,6 +86,18 @@ class RemoteInfo(StubClientSubsystem):
         self._remote_server_log = ""
         self._remote_server_mode = ""
 
+    @property
+    def server_mode(self) -> str:
+        return self._remote_server_mode
+
+    @property
+    def hostname(self) -> str:
+        return self._remote_hostname
+
+    @property
+    def display_name(self) -> str:
+        return self._remote_display
+
     def get_caps(self) -> dict[str, Any]:
         caps = {}
         if FULL_INFO > 0:

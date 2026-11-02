@@ -88,7 +88,7 @@ class CaptureWindow(GtkStubWindow):
         if self._override_redirect or self._client.readonly or self._client.server_readonly:
             return False
         remoteinfo = self._client.get_subsystem("remote-info")
-        server_mode = remoteinfo._remote_server_mode if remoteinfo else ""
+        server_mode = remoteinfo.server_mode if remoteinfo else ""
         return any(x == "*" or server_mode.find(x) >= 0 for x in CAPTURE_MODES)
 
     def get_capture_size(self) -> tuple[int, int]:

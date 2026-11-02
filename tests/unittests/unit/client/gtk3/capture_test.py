@@ -71,7 +71,7 @@ class CaptureTestWindow(CaptureWindow, FakePointerBase):
                                         helper=SimpleNamespace(key_shortcuts={
                                             "Escape": [(["mod1", "shift"], "toggle_input_capture", [])],
                                         }, get_modifier_names=lambda: {"alt": "mod1", "shift": "shift"})),
-            "remote-info": SimpleNamespace(_remote_server_mode=server_mode),
+            "remote-info": SimpleNamespace(server_mode=server_mode),
             "notification": SimpleNamespace(notify_client=MagicMock()),
         }
         self._client = SimpleNamespace(readonly=False, server_readonly=False,

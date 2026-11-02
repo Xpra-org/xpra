@@ -43,8 +43,8 @@ def do_get_window_title(client, wid: int, metadata: dict) -> str:
     remote_info = client.get_subsystem("remote-info")
     display_info = client.get_subsystem("display")
     mmap_info = client.get_subsystem("mmap")
-    remote_hostname = remote_info._remote_hostname if remote_info else None
-    remote_display = remote_info._remote_display if remote_info else None
+    remote_hostname = remote_info.hostname if remote_info else None
+    remote_display = remote_info.display_name if remote_info else None
     if remote_display:
         # ie: "1\\WinSta0\\Default" -> 1-WinSta0-Default
         remote_display = remote_display.replace("\\", "-")
