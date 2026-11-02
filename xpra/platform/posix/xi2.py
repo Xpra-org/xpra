@@ -6,7 +6,8 @@
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.platform.posix.gui import X11XI2Bindings, X11WindowBindings
+from xpra.platform.posix.gui import X11WindowBindings
+from xpra.x11.bindings.xi2 import X11XI2Bindings
 from xpra.util.env import envint
 from xpra.util.str_fn import csv
 from xpra.log import Logger
