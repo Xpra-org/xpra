@@ -7,11 +7,13 @@
 import unittest
 from unittest.mock import Mock, patch
 
+# Initialize XPRA_UNIT_TEST before importing server subsystems.
+from unit.server.subsystem.servermixintest_util import ServerMixinTest
+from unit.process_test_util import DisplayContext
+
 from xpra.server.source.keyboard import KeyboardConnection
 from xpra.server.subsystem.keyboard import KeyboardServer
 from xpra.util.objects import AdHocStruct, typedict
-from unit.server.subsystem.servermixintest_util import ServerMixinTest
-from unit.process_test_util import DisplayContext
 
 
 class KeyboardHelloTest(unittest.TestCase):
