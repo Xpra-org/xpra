@@ -149,7 +149,7 @@ class CaptureWindow(GtkStubWindow):
         self.warp_to_center()
         self.show_pointer_overlay(tuple(round(v) for v in self.capture_position))
         log.info("input capture started, press %s to release it", release)
-        may_notify_client(self._client, NotificationID.INPUT_CAPTURE, "Input capture started",
+        may_notify_client(self, NotificationID.INPUT_CAPTURE, "Input capture started",
                           f"Press {release} to release the pointer and keyboard.",
                           hints={"transient": True}, expire_timeout=5000, icon_name="keyboard")
         return True
