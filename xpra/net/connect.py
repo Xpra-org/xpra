@@ -157,8 +157,12 @@ def connect_to_tcp(display_desc: dict[str, Any]):
             from xpra.net.tls.socket import ssl_handshake, ssl_wrap_socket
             # convert option names to function arguments:
             ssl_options = {k.replace("-", "_"): v for k, v in display_desc.get("ssl-options", {}).items()}
+            # advertise `http/1.1` for `wss` so that a server listening on a multi-protocol socket (ie: `tcp`)
+            # can tell from the `ClientHello` that this is a websocket connection,
+            # instead of having to wait for our http upgrade request after the handshake:
+            alpn_protocols = ("http/1.1", ) if dtype == "wss" else ()
             try:
-                sock = ssl_wrap_socket(sock, **ssl_options)
+                sock = ssl_wrap_socket(sock, alpn_protocols, **ssl_options)
             except ValueError as e:
                 raise InitExit(ExitCode.SSL_FAILURE, f"ssl setup failed: {e}")
             if not sock:
