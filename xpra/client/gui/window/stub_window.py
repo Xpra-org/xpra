@@ -6,18 +6,9 @@
 from typing import Any
 
 from xpra.util.objects import typedict
-from xpra.util.env import envbool
-
-# when running the unit tests,
-# we inject the scheduler
-if envbool("XPRA_UNIT_TEST"):
-    from xpra.util.glib_scheduler import GLibScheduler
-    superclass = GLibScheduler
-else:
-    superclass = object
 
 
-class StubWindow(superclass):
+class StubWindow:
 
     def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
         """ setup and initialize the window """

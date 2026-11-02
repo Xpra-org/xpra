@@ -4,16 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import unittest
 from io import BytesIO
 
-# `XPRA_UNIT_TEST` is read at import time by the client window modules:
-os.environ.setdefault("XPRA_UNIT_TEST", "1")
-
-from xpra.util.objects import typedict                                  # noqa: E402
-from xpra.net.packet_type import WINDOW_MAP, WINDOW_UNMAP, WINDOW_CONFIGURE   # noqa: E402
-from unit.client.terminal.terminal_test_util import parse_output, actions, graphics_keys   # noqa: E402
+from xpra.util.objects import typedict
+from xpra.net.packet_type import WINDOW_MAP, WINDOW_UNMAP, WINDOW_CONFIGURE
+from unit.client.terminal.terminal_test_util import parse_output, actions, graphics_keys
 
 try:
     from xpra.client.terminal.tty import TerminalOutput
