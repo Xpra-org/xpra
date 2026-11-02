@@ -158,14 +158,13 @@ class KeyboardManager(StubSubsystem):
         """ GTK servers will start listening for the 'keys-changed' signal """
 
     def parse_hello_ui_keyboard(self, ss, c: typedict) -> None:
-        keyboard_clients = self.get_sources_by_type(KeyboardConnection, ss)
-        kb_client = hasattr(ss, "keyboard_config")
-        if not kb_client:
+        if not getattr(ss, "keyboard_input", False):
             return
+        keyboard_clients = self.get_sources_by_type(KeyboardConnection, ss)
         ss.keyboard_config = self.get_keyboard_config(c)  # pylint: disable=assignment-from-none
 
         delay, interval = (500, 30)
-        if not keyboard_clients:
+        if not any(source.keyboard_input for source in keyboard_clients):
             # so only activate this feature afterwards:
             delay, interval = c.intpair("key_repeat", (500, 30))
             # always clear modifiers before setting a new keymap
