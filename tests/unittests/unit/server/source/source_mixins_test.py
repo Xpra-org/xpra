@@ -491,11 +491,14 @@ class SourceMixinsTest(unittest.TestCase):
         class FakeWindowSource:
             def __init__(self):
                 self.calls = []
+                self.mapped_at = (100, 200, 800, 600)
 
             def unmap(self):
+                self.mapped_at = None
                 self.calls.append("unmap")
 
             def map(self, mapped_at):
+                self.mapped_at = mapped_at
                 self.calls.append(("map", mapped_at))
 
             def cancel_damage(self):
@@ -531,10 +534,14 @@ class SourceMixinsTest(unittest.TestCase):
         window = FakeWindow()
         ws = FakeWindowSource()
         source.window_sources[3] = ws
+        source.window_stacking = (3,)
+        source.may_recalculate = Mock()
         source.display_area = rectangle(4480, 0, 2560, 1440)
 
         self.assertTrue(source.update_window_visibility(3, window))
         self.assertEqual(ws.calls, ["unmap"])
+        source.may_recalculate.assert_called_once_with(3, 0, force=True)
+        source.may_recalculate.reset_mock()
         # damage is dropped while it is hidden:
         source.damage(3, window, 0, 0, 800, 600)
         self.assertEqual(ws.calls, ["unmap"])
@@ -543,7 +550,8 @@ class SourceMixinsTest(unittest.TestCase):
         ws.calls.clear()
         window.geometry = (4600, 200, 800, 600)
         self.assertFalse(source.update_window_visibility(3, window))
-        self.assertEqual(ws.calls, [("map", (4600, 200)), "cancel_damage", ("damage", 0, 0, 800, 600)])
+        self.assertEqual(ws.calls, [("map", (4600, 200, 800, 600)), "cancel_damage", ("damage", 0, 0, 800, 600)])
+        source.may_recalculate.assert_called_once_with(3, 0, force=True)
 
     def test_window_stacking_sync_is_ungated(self):
         from xpra.server.source.window import WindowsConnection
