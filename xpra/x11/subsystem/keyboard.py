@@ -351,7 +351,7 @@ class X11KeyboardServer(KeyboardServer):
             self.keymap_changing_timer = GLib.timeout_add(100, reenable_keymap_changes)
         # if sharing, don't set the keymap, translate the existing one:
         other_kb_clients = get_sources_by_type(self, KeyboardConnection, server_source)
-        translate_only = len(other_kb_clients) > 0
+        translate_only = any(ss.keyboard_input for ss in other_kb_clients)
         log("set_keymap(%s, %s) translate_only=%s", server_source, force, translate_only)
         with xsync:
             # pylint: disable=access-member-before-definition

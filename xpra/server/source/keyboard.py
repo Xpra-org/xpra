@@ -34,6 +34,7 @@ class KeyboardConnection(StubClientConnection):
 
     def init_state(self) -> None:
         self.keyboard_config = None
+        self.keyboard_input = True
         self.ibus = False
         self.keyboard_record = False
 
@@ -46,6 +47,7 @@ class KeyboardConnection(StubClientConnection):
     def parse_client_caps(self, c: typedict) -> None:
         self.ibus = c.boolget("ibus")
         ibuslog(f"client ibus support: {self.ibus}")
+        self.keyboard_input = c.boolget("keyboard.input", True)
         keyboard = c.get("keyboard")
         if isinstance(keyboard, dict) and typedict(keyboard).boolget("record", False):
             self.keyboard_record = is_recording_allowed(self, "keyboard")
@@ -54,6 +56,7 @@ class KeyboardConnection(StubClientConnection):
         info: dict[str, Any] = {}
         kci = {
             "ibus": self.ibus,
+            "input": self.keyboard_input,
             "record": self.keyboard_record,
         }
         if kc := self.keyboard_config:
