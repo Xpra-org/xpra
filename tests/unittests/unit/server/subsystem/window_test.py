@@ -53,6 +53,36 @@ class WebcamMixinTest(ServerMixinTest):
         manager.update_window_stacking((4, 2, 99, 1, 3, 4))
         manager._wm.update_window_stacking.assert_called_once_with([0x104, 0x101])
 
+    def test_x11_grab_sent_to_ui_driver(self):
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+
+        def source(uuid: str, readonly=False):
+            return Mock(uuid=uuid, effective_readonly=Mock(return_value=readonly))
+
+        driver, other, observer = source("driver"), source("other"), source("observer", True)
+        server = AdHocStruct()
+        server.ui_driver = "driver"
+        manager = stubbable(SeamlessWindowServer)(server)
+        manager.window_sources = lambda: (driver, other, observer)
+        manager.get_wid = lambda _window: 5
+        manager._window_grab(object(), object())
+        driver.window_grab.assert_called_once_with(5)
+        other.window_grab.assert_not_called()
+        observer.window_grab.assert_not_called()
+        # ungrabs go to everyone:
+        manager._window_ungrab(object(), object())
+        for ss in (driver, other, observer):
+            ss.window_ungrab.assert_called_once_with(5)
+
+        # without a ui driver, only the clients that can interact with the session grab:
+        server.ui_driver = None
+        for ss in (driver, other, observer):
+            ss.reset_mock()
+        manager._window_grab(object(), object())
+        driver.window_grab.assert_called_once_with(5)
+        other.window_grab.assert_called_once_with(5)
+        observer.window_grab.assert_not_called()
+
     def test_x11_window_stacking_capability(self):
         from xpra.server.base import ServerBase
         from xpra.x11.server.seamless import SeamlessServer
