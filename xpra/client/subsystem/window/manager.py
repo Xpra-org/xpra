@@ -726,11 +726,11 @@ class WindowManagerClient(StubClientSubsystem):
         log("destroy_window(%s#x, %s)", wid, window)
         # it may have been closed before we ever got a chance to show it:
         self._locked_windows.pop(wid, None)
-        window.destroy()
         if self._window_with_grab == wid:
             log("destroying window %s which has grab, ungrabbing!", wid)
             self.client.window_ungrab()
             self._window_with_grab = None
+        window.destroy()
         if self.pointer_grabbed == wid:
             self.pointer_grabbed = None
         # deal with signal watchers:

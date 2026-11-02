@@ -89,6 +89,20 @@ class WindowManagerTest(ClientMixinTest):
                 self.assertFalse(keyboard.grabbed)
                 self.assertEqual([tuple(args) for args, _kwargs in client.send.call_args_list], expected)
 
+    def test_destroy_grabbed_window_ungrabs_first(self):
+        from xpra.client.subsystem.window import WindowClient
+
+        client = Mock(subsystems={})
+        window_client = WindowClient(client)
+        calls = []
+        client.window_ungrab.side_effect = lambda: calls.append("ungrab")
+        window = Mock()
+        window.destroy.side_effect = lambda: calls.append("destroy")
+        window_client._window_with_grab = 7
+        window_client.destroy_window(7, window)
+        self.assertEqual(calls, ["ungrab", "destroy"])
+        self.assertIsNone(window_client._window_with_grab)
+
     def test_missing_resize_counter_defaults_to_zero(self):
         from xpra.client.subsystem.window.manager import WindowManagerClient
 
