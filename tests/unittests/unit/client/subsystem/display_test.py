@@ -37,12 +37,15 @@ class DisplayClientTest(ClientMixinTest):
             opts.refresh_rate = "20"
             with silence_info(display):
                 self._test_mixin_class(_DisplayClient, opts, {
-                    "display" : ":999",
-                    "desktop_size" : (1024, 768),
-                    "max_desktop_size" : (3840, 2160),
-                    "actual_desktop_size" : (1024, 768),
-                    "resize_screen" : True,
+                    "display": {
+                        "name": ":999",
+                        "desktop_size": (1024, 768),
+                        "max_desktop_size": (3840, 2160),
+                        "actual_desktop_size": (1024, 768),
+                    },
+                    "resize_screen": True,
                 })
+            self.assertTrue(self.mixin.server_randr)
 
     def test_server_mode_capabilities(self):
         from xpra.client.subsystem import display
@@ -67,6 +70,8 @@ class DisplayClientTest(ClientMixinTest):
         for nested in (False, True):
             with self.subTest(nested=nested):
                 dc = parse({}, nested)
+                self.assertFalse(dc.server_randr)
+                self.assertTrue(parse({"resize_screen": True}, nested).server_randr)
                 self.assertFalse(dc.server_is_desktop)
                 self.assertFalse(dc.server_is_monitor)
                 self.assertFalse(dc.server_multi_monitors)
