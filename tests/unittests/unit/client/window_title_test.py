@@ -7,7 +7,7 @@
 import unittest
 from types import SimpleNamespace
 
-from xpra.client.gui.window_title import do_get_window_title, MAX_TITLE
+from xpra.client.gui.window_title import do_get_window_title, get_window_title, MAX_TITLE
 
 
 class FakeClient:
@@ -134,6 +134,17 @@ class WindowTitleTest(unittest.TestCase):
         out = self._title("[@title@]", {"title": "x" * (MAX_TITLE * 2)})
         self.assertEqual(len(out), MAX_TITLE + 2)
         self.assertTrue(out.endswith("\u2026]"))
+
+    def test_error_falls_back_to_the_template(self):
+        client = FakeClient(title="@title@ on @server-machine@\0")
+
+        def broken(_name):
+            raise RuntimeError("test")
+        client.get_subsystem = broken
+        self.assertEqual(get_window_title(client, 1, {"title": "xterm"}), "@title@ on @server-machine@")
+        # no error:
+        client = FakeClient(title="@title@")
+        self.assertEqual(get_window_title(client, 1, {"title": "xterm"}), "xterm")
 
 
 def main():

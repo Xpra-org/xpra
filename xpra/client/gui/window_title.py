@@ -35,6 +35,16 @@ def window_title_str(value) -> str:
     return truncate(single_line(str(value)), MAX_TITLE)
 
 
+def get_window_title(client, wid: int, metadata: dict) -> str:
+    """ the window title, from the client's title template, falling back to the template itself """
+    try:
+        return do_get_window_title(client, wid, metadata)
+    except Exception as e:
+        metalog.error("Error parsing window title:")
+        metalog.estr(e)
+        return client.title.replace("\0", "")
+
+
 def do_get_window_title(client, wid: int, metadata: dict) -> str:
     title = client.title.replace("\0", "")
     if title.find("@") < 0:

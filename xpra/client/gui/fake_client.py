@@ -6,6 +6,7 @@
 from collections.abc import Sequence
 
 from xpra.util.glib_scheduler import GLibScheduler
+from xpra.client.gui.window_title import get_window_title
 from xpra.log import Logger
 
 log = Logger("client")
@@ -26,7 +27,8 @@ class FakePointerSubsystem:
 
 
 class FakeWindowSubsystem:
-    def __init__(self):
+    def __init__(self, client=None):
+        self.client = client
         self.modal_windows = False
         self.server_window_states: Sequence[str] = ()
         self.server_window_frame_extents = False
@@ -72,6 +74,9 @@ class FakeWindowSubsystem:
     def send(self, *args) -> None:
         log("send%s", args)
 
+    def get_window_title(self, wid: int, metadata: dict) -> str:
+        return get_window_title(self.client, wid, metadata) if self.client else ""
+
 
 class FakeClient(GLibScheduler):
     def __init__(self):
@@ -80,7 +85,7 @@ class FakeClient(GLibScheduler):
         self._remote_server_mode = "seamless"
         self.server_readonly = False
         self.subsystems = {
-            "window": FakeWindowSubsystem(),
+            "window": FakeWindowSubsystem(self),
             "pointer": FakePointerSubsystem(),
         }
 

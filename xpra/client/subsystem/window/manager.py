@@ -15,6 +15,7 @@ from xpra.net.common import Packet, PacketElement
 from xpra.net.packet_type import WINDOW_UNMAP, WINDOW_REFRESH, WINDOW_STACKING
 from xpra.client.subsystem.window.grab import should_force_grab
 from xpra.client.subsystem.window.signalwatcher import kill_signalwatcher
+from xpra.client.gui.window_title import get_window_title
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
@@ -294,6 +295,10 @@ class WindowManagerClient(StubClientSubsystem):
 
     def get_window(self, wid: int):
         return self._id_to_window.get(wid)
+
+    def get_window_title(self, wid: int, metadata: dict) -> str:
+        """ substitutes the window's metadata into the `--title` template """
+        return get_window_title(self.client, wid, metadata)
 
     ######################################################################
     # regular windows:

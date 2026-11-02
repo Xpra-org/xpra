@@ -33,7 +33,7 @@ class GtkReplay(Replay):
             "display": self,
             "encoding": self,
             "pointer": FakePointerSubsystem(),
-            "window": FakeWindowSubsystem(),
+            "window": FakeWindowSubsystem(self),
         }
         self.sp = self.sx = self.sy = self.srect = self.no_scaling
         self.cx = self.cy = self.no_scaling

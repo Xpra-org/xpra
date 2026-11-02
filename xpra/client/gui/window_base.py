@@ -19,7 +19,7 @@ from xpra.util.colourspace import Colourspace, SRGB
 from xpra.util.parsing import scaleup_value, scaledown_value
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
-from xpra.client.gui.window_title import do_get_window_title, window_title_str
+from xpra.client.gui.window_title import window_title_str
 from xpra.util.env import envint, envbool, ignorewarnings
 from xpra.log import Logger
 
@@ -301,12 +301,7 @@ class ClientWindowBase(ClientWidgetBase):
         return window.get_window(wid) if wid > 0 and window else None
 
     def _get_window_title(self, metadata: typedict) -> str:
-        try:
-            return do_get_window_title(self._client, self.wid, dict(self._metadata) | dict(metadata))
-        except Exception as e:
-            log.error("Error parsing window title:")
-            log.estr(e)
-            return self._client.title.replace("\0", "")
+        return self.get_subsystem("window").get_window_title(self.wid, dict(self._metadata) | dict(metadata))
 
     def set_metadata(self, metadata: typedict):
         metalog("set_metadata(%s)", metadata)
