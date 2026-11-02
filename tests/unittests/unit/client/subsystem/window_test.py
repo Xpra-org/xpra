@@ -59,7 +59,7 @@ class WindowManagerTest(ClientMixinTest):
     def test_dismiss_popups(self):
         from xpra.client.subsystem.window import WindowClient
 
-        client = Mock(readonly=False)
+        client = Mock(readonly=False, server_readonly=False)
         keyboard = Mock(grabbed=True)
         client.subsystems = {"keyboard": keyboard}
         window_client = WindowClient(client)
@@ -100,7 +100,7 @@ class WindowManagerTest(ClientMixinTest):
             (True, {"force_ungrab": True}, True, []),
         ):
             with self.subTest(enabled=enabled, caps=caps, readonly=readonly):
-                client = Mock(readonly=readonly, subsystems={})
+                client = Mock(readonly=readonly, server_readonly=False, subsystems={})
                 window_client = WindowClient(client)
                 self.assertTrue(window_client.parse_server_capabilities(typedict(caps)))
                 window = Mock()
@@ -117,7 +117,7 @@ class WindowManagerTest(ClientMixinTest):
     def test_destroy_grabbed_window_ungrabs_first(self):
         from xpra.client.subsystem.window import WindowClient
 
-        client = Mock(subsystems={})
+        client = Mock(readonly=False, server_readonly=False, subsystems={})
         window_client = WindowClient(client)
         calls = []
         client.window_ungrab.side_effect = lambda: calls.append("ungrab")

@@ -407,6 +407,10 @@ class GTKTrayMenu(GTKMenuHelper):
 
     def make_readonlymenuitem(self) -> Gtk.ImageMenuItem:
         def readonly_toggled(*args) -> None:
+            if self.client.server_readonly:
+                # the item only shows the server's read-only state,
+                # it must not become the user's own setting:
+                return
             v = readonly.get_active()
             self.client.readonly = v
             self.client.send_setting_change("readonly", v)
@@ -415,8 +419,8 @@ class GTKTrayMenu(GTKMenuHelper):
         set_sensitive(readonly, False)
 
         def set_readonly_menuitem(*args) -> None:
-            log("set_readonly_menuitem%s enabled=%s", args, self.client.readonly)
-            readonly.set_active(self.client.readonly)
+            log("set_readonly_menuitem%s readonly=%s, server readonly=%s", args, self.client.readonly, self.client.server_readonly)
+            readonly.set_active(self.client.readonly or self.client.server_readonly)
             sens_tooltip(readonly, not self.client.server_readonly,
                          _("Disable all mouse and keyboard input"),
                          _("Cannot disable readonly mode: the server has locked the session to read only"))
@@ -694,7 +698,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 keyboard.send_key_sequence(keynames)
 
         item = self.menuitem(title or combo, icon_name, cb=send_keys)
-        sens_tooltip(item, not self.client.readonly,
+        sens_tooltip(item, not (self.client.readonly or self.client.server_readonly),
                      _("Send the %s key sequence to the server") % combo,
                      _("Connection is read-only"))
         return item
@@ -716,7 +720,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 continue
             menu.append(self.make_keysequencemenuitem(title, keynames))
         send.set_submenu(menu)
-        set_sensitive(send, not self.client.readonly)
+        set_sensitive(send, not (self.client.readonly or self.client.server_readonly))
         return send
 
     def make_openglmenuitem(self) -> Gtk.ImageMenuItem:

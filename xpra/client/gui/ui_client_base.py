@@ -395,10 +395,10 @@ class UIXpraClient(XpraClientBase):
         self.server_lock_toggle = c.boolget("lock-toggle")
         sharinglog("server sharing=%s (toggle=%s), lock=%s (toggle=%s)",
                    self.server_sharing, self.server_sharing_toggle, self.server_lock, self.server_lock_toggle)
+        # `readonly` remains the user's own choice, so the server can turn its own off again:
         self.server_readonly = c.boolget("readonly")
         if self.server_readonly and not self.readonly:
             log.info("server is read only")
-            self.readonly = True
         print_proxy_caps(c)
         return True
 
@@ -450,8 +450,6 @@ class UIXpraClient(XpraClientBase):
                 "ibus-layouts", "border",
         ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
-            if setting == "readonly" and value:
-                self.readonly = True
         else:
             log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(value))
             return

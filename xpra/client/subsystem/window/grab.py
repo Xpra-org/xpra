@@ -88,7 +88,7 @@ class WindowGrab(StubClientSubsystem):
 
     def do_force_ungrab(self, wid: int) -> None:
         log("do_force_ungrab(%#x) enabled=%s, server support=%s", wid, FORCE_UNGRAB, self.server_force_ungrab)
-        if not FORCE_UNGRAB or not self.server_force_ungrab or self.client.readonly:
+        if not FORCE_UNGRAB or not self.server_force_ungrab or self.client.readonly or self.client.server_readonly:
             return
         # ungrab via dedicated server packet:
         self.client.send_force_ungrab(wid)
@@ -100,7 +100,7 @@ class WindowGrab(StubClientSubsystem):
         self.pointer_grabbed = None
         if keyboard := self.get_subsystem("keyboard"):
             keyboard.grabbed = False
-        if self.client.readonly:
+        if self.client.readonly or self.client.server_readonly:
             return
         if not self.server_window_dismiss:
             log.warn("Warning: the server does not support dismissing popup windows")
