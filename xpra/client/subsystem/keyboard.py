@@ -177,7 +177,7 @@ class KeyboardClient(StubClientSubsystem):
         log(f"handle_key_action({window}, {key_event}) wid={wid:#x}")
         if kh.key_handled_as_shortcut(window, key_event.keyname, key_event.modifiers, key_event.pressed):
             return False
-        if self.client.readonly:
+        if self.client.readonly or self.client.server_readonly:
             return False
         kh.process_key_event(wid, key_event)
         return False
@@ -205,7 +205,7 @@ class KeyboardClient(StubClientSubsystem):
             log.warn("Warning: cannot send key sequence %s", csv(keynames))
             log.warn(" keyboard support is not available")
             return
-        if self.client.readonly:
+        if self.client.readonly or self.client.server_readonly:
             log.info("key sequence %s not sent: connection is read-only", csv(keynames))
             return
         # send the events to the window which currently has the focus, if any:
