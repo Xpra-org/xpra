@@ -389,8 +389,8 @@ class WindowMenuHelper(GTKMenuHelper):
         def toggle_border(*args) -> None:
             log("toggle_border%s", args)
             self.window.border.shown = not self.window.border.shown
-            self._set_ticked(self.grab_menuitem, self.window.border.shown)
-            self.client.send_refresh(self.window.wid)
+            self._set_ticked(self.border_menuitem, self.window.border.shown)
+            self.window.refresh_window()
 
         self.border_menuitem = self.menuitem("Show Border", ticked_icon(self.window.border.shown), cb=toggle_border)
         return self.border_menuitem
@@ -398,7 +398,7 @@ class WindowMenuHelper(GTKMenuHelper):
     def make_refreshmenuitem(self) -> Gtk.ImageMenuItem:
         def force_refresh(*args) -> None:
             log("force refresh%s", args)
-            self.client.send_refresh(self.window.wid)
+            self.window.refresh_window()
             self.window.reset_icon()
 
         return self.menuitem("Refresh", "retry.png", cb=force_refresh)
