@@ -88,6 +88,10 @@ class ClientWindow(WindowBaseClass):
             mh.build()
             mh.popup(0, 0)
 
+    def show_window_info(self, *_args) -> None:
+        from xpra.client.gtk3.window.window_info import WindowInfo
+        WindowInfo(self).show()
+
     def show_window_menu(self, *_args) -> None:
         if not self.menu_helper:
             from xpra.client.gtk3.window.menu import WindowMenuHelper

@@ -10,6 +10,7 @@ from collections.abc import Sequence
 from xpra.client.base import features
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.client.gui.keyboard_helper import KeyboardHelper, KEYCODE_DEF
+from xpra.client.gui.shortcuts import ShortcutTarget
 from xpra.keyboard.common import KeyEvent, DELAY_KEYBOARD_DATA
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS
 from xpra.util.objects import typedict
@@ -175,7 +176,8 @@ class KeyboardClient(StubClientSubsystem):
         window_sub = self.get_subsystem("window")
         wid = window_sub._window_to_id[window]
         log(f"handle_key_action({window}, {key_event}) wid={wid:#x}")
-        if kh.key_handled_as_shortcut(window, key_event.keyname, key_event.modifiers, key_event.pressed):
+        target = ShortcutTarget(self.client, window)
+        if kh.key_handled_as_shortcut(target, key_event.keyname, key_event.modifiers, key_event.pressed):
             return False
         if self.client.readonly or self.client.server_readonly:
             return False

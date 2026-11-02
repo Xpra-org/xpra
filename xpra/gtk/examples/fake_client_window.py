@@ -24,7 +24,7 @@ GLib = gi_import("GLib")
 log = Logger("window")
 
 MIXIN_NAMES: tuple[str, ...] = (
-    "action", "headerbar", "dragndrop", "focus",
+    "headerbar", "dragndrop", "focus",
     "grab", "workspace", "keyboard", "pointer",
 )
 
@@ -124,10 +124,7 @@ def make_metadata(args) -> typedict:
 
 def patch_window_base_classes(args) -> None:
     def add_mixin(bases: list[type], name: str) -> None:
-        if name == "action":
-            from xpra.client.gui.window.action import ActionWindow
-            bases.append(ActionWindow)
-        elif name == "headerbar":
+        if name == "headerbar":
             from xpra.client.gtk3.window.headerbar import HeaderBarWindow
             bases.append(HeaderBarWindow)
         elif name == "dragndrop":
