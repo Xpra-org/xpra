@@ -28,7 +28,7 @@ class Window:
 
     def __init__(self):
         self.wid = 7
-        self._client = SimpleNamespace(readonly=False, server_readonly=False)
+        self._client = SimpleNamespace(is_readonly=lambda: False)
         self.window_subsystem = SimpleNamespace(server_window_states=("iconified",))
         self._iconified = False
         self._server_iconify_pending = False

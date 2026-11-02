@@ -77,7 +77,7 @@ class CaptureTestWindow(CaptureWindow, FakePointerBase):
             "remote-info": SimpleNamespace(server_mode=server_mode),
             "notification": SimpleNamespace(notify_client=MagicMock()),
         }
-        self._client = SimpleNamespace(readonly=False, server_readonly=False,
+        self._client = SimpleNamespace(is_readonly=lambda: False,
                                        get_subsystem=self.subsystems.get)
         self.init_window(None, None, None)
 

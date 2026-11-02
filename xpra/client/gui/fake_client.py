@@ -98,6 +98,9 @@ class FakeClient(GLibScheduler):
     def get_subsystem(self, name: str):
         return self.subsystems.get(name)
 
+    def is_readonly(self) -> bool:
+        return bool(self.readonly or self.server_readonly)
+
     def signal_disconnect_and_quit(self, *_args):
         log.info("signal_disconnect_and_quit")
 

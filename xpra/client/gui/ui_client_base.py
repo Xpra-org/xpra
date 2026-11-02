@@ -154,6 +154,10 @@ class UIXpraClient(XpraClientBase):
         reaper_cleanup()
         log("UIXpraClient.signal_cleanup() done")
 
+    def is_readonly(self) -> bool:
+        """ no input or window changes are sent to the server: the user's own choice, or the server's """
+        return bool(self.readonly or self.server_readonly)
+
     def get_info(self) -> dict[str, Any]:
         info = XpraClientBase.get_info(self)
         if FULL_INFO > 0:

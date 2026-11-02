@@ -35,6 +35,13 @@ class ReadonlyTest(unittest.TestCase):
                 # the user's own setting is unchanged:
                 self.assertEqual(client.readonly, readonly)
 
+    def test_is_readonly(self) -> None:
+        for readonly, server_readonly in ((False, False), (True, False), (False, True), (True, True)):
+            with self.subTest(readonly=readonly, server_readonly=server_readonly):
+                client = make_client(readonly)
+                client.server_readonly = server_readonly
+                self.assertEqual(client.is_readonly(), readonly or server_readonly)
+
 
 def main():
     unittest.main()

@@ -54,6 +54,9 @@ class FakeClient(FileTransferHandler):
         self.log_events = True
         self.handshake_callbacks = []
 
+    def is_readonly(self) -> bool:
+        return bool(self.readonly or self.server_readonly)
+
     def server_ok(self):
         return True
 

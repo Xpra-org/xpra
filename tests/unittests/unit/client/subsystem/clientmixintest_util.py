@@ -138,6 +138,9 @@ class ClientMixinTest(unittest.TestCase):
         # used by the `pointer` subsystem via `self.client`:
         return 0, 0
 
+    def is_readonly(self) -> bool:
+        return bool(self.readonly or self.server_readonly)
+
     def get_raw_mouse_position(self) -> tuple[int, int]:
         return 0, 0
 

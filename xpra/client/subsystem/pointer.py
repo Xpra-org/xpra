@@ -226,7 +226,7 @@ class PointerClient(StubClientSubsystem):
     def send_button(self, device_id: int, wid: int, button: int, pressed: bool,
                     pointer, modifiers, buttons, props) -> None:
         client = self.client
-        if pressed and (client.readonly or client.server_readonly or not self.server_pointer):
+        if pressed and (client.is_readonly() or not self.server_pointer):
             # only the press: a release is never held back, or a button which went down
             # before the policy changed would stay down on the server. It cannot escape
             # on its own - the state check below only lets a release through when we
@@ -324,7 +324,7 @@ class PointerClient(StubClientSubsystem):
         # this is a different entry point for mouse wheel events,
         # which provides finer grained deltas (if supported by the server)
         client = self.client
-        if client.readonly or client.server_readonly or not self.server_pointer:
+        if client.is_readonly() or not self.server_pointer:
             # the button path applies the same policy in the toolkit adapter
             # (see `PointerWindow._button_action`), but wheel events arrive here
             # from four of them - gtk, win32, xi2 and the terminal client:

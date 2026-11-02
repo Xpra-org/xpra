@@ -65,6 +65,9 @@ class FakeClient:
     def send(self, *args) -> None:
         self.packets.append(args)
 
+    def is_readonly(self) -> bool:
+        return bool(self.readonly or self.server_readonly)
+
     def get_subsystem(self, name: str):
         return self.subsystems.get(name)
 

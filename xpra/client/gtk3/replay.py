@@ -55,6 +55,9 @@ class GtkReplay(Replay):
     def get_subsystem(self, name: str):
         return self.subsystems.get(name)
 
+    def is_readonly(self) -> bool:
+        return True
+
     @staticmethod
     def no_scaling(*args):
         if len(args) == 1:

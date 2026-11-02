@@ -36,8 +36,7 @@ class ClientWidgetBase:
 
     def is_readonly(self) -> bool:
         """ read-only mode (local or server side): no input or window changes are sent to the server """
-        client = self._client
-        return bool(client.readonly or client.server_readonly)
+        return self._client.is_readonly()
 
     def get_info(self) -> dict[str, Any]:
         info = {

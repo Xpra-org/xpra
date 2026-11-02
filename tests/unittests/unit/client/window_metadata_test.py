@@ -50,22 +50,21 @@ class WindowMetadataTest(unittest.TestCase):
 
     def test_legacy_metadata_is_normalized_or_ignored(self):
         window = self.make_window()
-        window._client = SimpleNamespace(readonly=False, server_readonly=False)
+        window._client = SimpleNamespace(is_readonly=lambda: False)
         window._size = (100, 100)
         window.update_metadata(typedict({"content-type": "text"}))
         expected = {}
         self.assertEqual(window._metadata, expected)
 
     def test_readonly_fixes_the_size(self):
-        for readonly, server_readonly in ((False, False), (True, False), (False, True)):
-            with self.subTest(readonly=readonly, server_readonly=server_readonly):
+        for readonly in (False, True):
+            with self.subTest(readonly=readonly):
                 window = self.make_window()
-                window._client = SimpleNamespace(readonly=readonly, server_readonly=server_readonly)
+                window._client = SimpleNamespace(is_readonly=lambda ro=readonly: ro)
                 window._size = (100, 50)
                 window.set_metadata = lambda _metadata: None
                 window.update_metadata(typedict({}))
-                self.assertEqual(window.is_readonly(), readonly or server_readonly)
-                self.assertEqual("size-constraints" in window._metadata, readonly or server_readonly)
+                self.assertEqual("size-constraints" in window._metadata, readonly)
 
 
 def main():
