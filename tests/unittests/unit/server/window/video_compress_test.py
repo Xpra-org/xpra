@@ -178,7 +178,7 @@ class VideoEncodeTest(unittest.TestCase):
             self.skipTest("libyuv converter is not available")
 
         pixels = bytes((0, 0, 255, 255, 0, 255, 0, 255, 255, 0, 0, 255, 50, 100, 200, 255))
-        image = ImageWrapper(0, 0, 2, 2, pixels, "BGRX", 24, 8)
+        image = ImageWrapper(0, 0, 2, 2, (pixels,), "BGRX", 24, 8)
         self.addCleanup(image.free)
         source = WindowVideoSource.__new__(WindowVideoSource)
         source.pixel_format = "BGRX"
@@ -199,7 +199,7 @@ class VideoEncodeTest(unittest.TestCase):
         source.check_pipeline.assert_called_once_with(("h264",), 2, 2, "BGRX")
         self.assertEqual(converted.get_geometry()[:4], image.get_geometry()[:4])
         self.assertEqual(converted.get_pixel_format(), "BGRX")
-        gray_pixels = bytes(converted.get_pixels())
+        gray_pixels = bytes(converted.get_plane(0))
         self.assertEqual(len(gray_pixels), len(pixels))
         self.assertNotEqual(gray_pixels, pixels)
         for offset in range(0, len(gray_pixels), 4):

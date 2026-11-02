@@ -131,7 +131,7 @@ class ShadowServerTest(ServerTestUtil):
 
             def get_image(self, x, y, w, h):
                 pixels = "0"*w*4*h
-                return ImageWrapper(x, y, w, h, pixels, "BGRA", 32, w*4, 4, ImageWrapper.PACKED, True, None)
+                return ImageWrapper(x, y, w, h, (pixels,), "BGRA", 32, w*4, 4, ImageWrapper.PACKED, True, None)
 
             def get_info(self):
                 return {"type" : "fake"}

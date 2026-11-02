@@ -575,7 +575,7 @@ def get_CG_imagewrapper(rect=None):
         rowstride, alpha_str)
     prov = CG.CGImageGetDataProvider(image)
     argb = CG.CGDataProviderCopyData(prov)
-    return ImageWrapper(x, y, width, height, argb, "BGRX", 24, rowstride)
+    return ImageWrapper(x, y, width, height, (argb,), "BGRX", 24, rowstride)
 
 
 def take_screenshot() -> tuple[int, int, str, int, bytes]:

@@ -564,7 +564,7 @@ cdef class Encoder:
             self.configure_encoder()
 
         cdef unsigned int stride = image.get_rowstride()
-        pixels = image.get_pixels()
+        pixels = image.get_plane(0)
         cdef WebPPicture pic
         import_picture(&pic, self.width, self.height,
                        stride,
@@ -721,7 +721,7 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple:
     configure_image_hint(&config, content_types)
     validate_config(&config)
 
-    pixels = image.get_pixels()
+    pixels = image.get_plane(0)
     cdef WebPPicture pic
     import_picture(&pic, width, height,
                    stride,

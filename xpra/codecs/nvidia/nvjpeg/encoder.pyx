@@ -320,7 +320,7 @@ cdef class Encoder:
         cdef int height = image.get_height()
         cdef int src_stride = image.get_rowstride()
         cdef int dst_stride
-        pixels = image.get_pixels()
+        pixels = image.get_plane(0)
         cdef Py_ssize_t buf_len = len(pixels)
         cdef double start, end
         cdef size_t length
@@ -469,7 +469,7 @@ def compress_file(filename: str, save_to="./out.jpeg") -> None:
     log("data=%i bytes (%s) for %s", len(data), type(data), img.mode)
     log("w=%i, h=%i, stride=%i, size=%i", w, h, stride, stride*h)
     from xpra.codecs.image import ImageWrapper
-    image = ImageWrapper(0, 0, w, h, data, rgb_format,
+    image = ImageWrapper(0, 0, w, h, (data,), rgb_format,
                        len(rgb_format)*8, stride, len(rgb_format), ImageWrapper.PACKED, True, None)
     jpeg_data = encode("jpeg", image)[0]
     with open(save_to, "wb") as f:

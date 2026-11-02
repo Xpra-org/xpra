@@ -88,7 +88,7 @@ class LosslessRoundtripTest(unittest.TestCase):
         return bytes(buf)
 
     def make_image(self, pixels) -> ImageWrapper:
-        return ImageWrapper(0, 0, self.width, self.height, pixels, self.src_format, 32,
+        return ImageWrapper(0, 0, self.width, self.height, (pixels,), self.src_format, 32,
                             self.stride, 4, planes=ImageWrapper.PACKED, thread_safe=True)
 
     def decoded_to_image(self, dec_mod, dec_name: str, encoding: str, cdata: bytes, options: typedict):
@@ -101,7 +101,7 @@ class LosslessRoundtripTest(unittest.TestCase):
             else:
                 img = dec_mod.decompress(cdata, options)
             rgb_format = img.get_pixel_format()
-            raw_data = img.get_pixels()
+            raw_data = img.get_plane(0)
             width, height, rowstride = img.get_width(), img.get_height(), img.get_rowstride()
         # grayscale encoders may report a single-channel "L"/"LA" format; otherwise the data
         # is a packed RGB(X)/BGR(X) variant whose channel count drives the PIL image mode:

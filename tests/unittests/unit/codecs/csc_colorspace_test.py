@@ -96,7 +96,7 @@ def make_textured_rgb(rgb_format: str, w: int, h: int):
     stride = image.get_rowstride()
     xx = numpy.arange(stride, dtype=numpy.int64).reshape(1, stride)
     yy = numpy.arange(h, dtype=numpy.int64).reshape(h, 1)
-    image.set_pixels(((xx ^ yy) & 0xFF).astype(numpy.uint8).tobytes())
+    image.set_pixels((((xx ^ yy) & 0xFF).astype(numpy.uint8).tobytes(),))
     return image
 
 
@@ -167,7 +167,7 @@ class Test_CSC_Colorspace(unittest.TestCase):
                                        width, height, "YUV420P", typedict())
                 converted = converter.convert_image(image)
                 converter.clean()
-                values = tuple(memoryview_to_bytes(plane)[0] for plane in converted.get_pixels())
+                values = tuple(memoryview_to_bytes(plane)[0] for plane in (converted.get_plane(i) for i in range(converted.get_planes())))
                 self.assertEqual(values, expected)
 
     def _do_test_RGB_to_YUV(self, mod_out: str, mod_in: str,
@@ -184,7 +184,7 @@ class Test_CSC_Colorspace(unittest.TestCase):
             # textured input: a flat colour would roundtrip near-losslessly,
             # so we use a textured image and measure the signal-to-noise ratio:
             in_image = make_textured_rgb(in_csc, width, height)
-            in_pixels = to_bytes(in_image.get_pixels())
+            in_pixels = to_bytes(in_image.get_plane(0))
         else:
             in_image = make_test_image(in_csc, width, height, pixel)
             in_pixels = h2b(pixel) * width * height
@@ -194,7 +194,7 @@ class Test_CSC_Colorspace(unittest.TestCase):
         info = f"{in_csc} to {out_csc} {color_name!r} {options}"
         # now verify the value for each plane specified:
         for i, v_str in enumerate(expected):
-            plane = out_image.get_pixels()[i]
+            plane = out_image.get_plane(i)
             # plane_stride = out_image.get_rowstride()[i]
             # assert len(plane)>=plane_stride*out_image.get_height()
             plane_bytes = memoryview_to_bytes(plane)
@@ -212,7 +212,7 @@ class Test_CSC_Colorspace(unittest.TestCase):
                             width, height, in_csc, options)
         roundtrip_image = csc_in.convert_image(out_image)
         csc_in.clean()
-        roundtrip_pixels = to_bytes(roundtrip_image.get_pixels())
+        roundtrip_pixels = to_bytes(roundtrip_image.get_plane(0))
         if not textured:
             cmpe(f"roundtrip {mod_out}-{mod_in} {info} mismatch, expected %s but got %s" % (
                 pstr(in_pixels), pstr(roundtrip_pixels)),
@@ -314,14 +314,14 @@ class Test_CSC_Colorspace(unittest.TestCase):
                             if (x if vertical else y) % factor == phase:
                                 offset = y * stride + x * 4
                                 pixels[offset:offset + 4] = b"\xff" * 4
-                    image.set_pixels(bytes(pixels))
+                    image.set_pixels((bytes(pixels),))
                     converter = csc_mod.Converter()
                     converter.init_context(width, height, "BGRX", ow, oh, "YUV420P",
                                            typedict({"full-range": True}))
                     out = converter.convert_image(image)
                     converter.clean()
                     y_stride = out.get_rowstride()[0]
-                    y_plane = memoryview_to_bytes(out.get_pixels()[0])
+                    y_plane = memoryview_to_bytes(out.get_plane(0))
                     values = {y_plane[y * y_stride + x] for y in range(oh) for x in range(ow)}
                     self.assertTrue(all(abs(v - grey) <= 3 for v in values),
                                     f"expected Y={grey} everywhere, got {sorted(values)}")

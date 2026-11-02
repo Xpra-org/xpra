@@ -102,7 +102,7 @@ cdef tuple do_encode(object image, object options):
     #to reach the same quality - a window we have not identified is treated
     #as screen content, which is what it usually is:
     cdef int continuous_tone = is_video_content(options.strtupleget("content-types", ()))
-    pixels = image.get_pixels()
+    pixels = image.get_plane(0)
     with buffer_context(pixels) as bc:
         if len(bc) < stride * height:
             raise ValueError(f"{pixel_format} buffer is too small: {len(bc)} bytes, need {stride * height}")

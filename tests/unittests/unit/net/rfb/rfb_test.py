@@ -147,7 +147,7 @@ class TestRFB(unittest.TestCase):
         def get_image(x, y, w, h):
             stride = (w+8)*4
             pixels = b"0"*stride*h
-            return ImageWrapper(x, y, w, h, pixels, "BGRX", 24, stride, 4)
+            return ImageWrapper(x, y, w, h, (pixels,), "BGRX", 24, stride, 4)
         window.get_image = get_image
         window.acknowledge_changes = noop
         for protocol in (p, None):
@@ -179,7 +179,7 @@ class TestRFB(unittest.TestCase):
             image_calls.append((x, y, w, h))
             stride = (w + 8) * 4
             pixels = b"0" * stride * h
-            return ImageWrapper(x, y, w, h, pixels, "BGRX", 24, stride, 4)
+            return ImageWrapper(x, y, w, h, (pixels,), "BGRX", 24, stride, 4)
 
         window.get_image = get_image
         window.acknowledge_changes = noop
@@ -271,7 +271,7 @@ class TestRFB(unittest.TestCase):
             image_calls.append((x, y, w, h))
             stride = (w + 8) * 4
             pixels = b"0" * stride * h
-            return ImageWrapper(x, y, w, h, pixels, "BGRX", 24, stride, 4)
+            return ImageWrapper(x, y, w, h, (pixels,), "BGRX", 24, stride, 4)
 
         window.get_image = get_image
         window.acknowledge_changes = noop
@@ -315,8 +315,8 @@ class TestRFB(unittest.TestCase):
         s = RFBSource(p, True)
         try:
             images = (
-                ImageWrapper(0, 0, 1, 1, b"1234", "BGRX", 24, 4, 4),
-                ImageWrapper(2, 2, 1, 1, b"5678", "BGRX", 24, 4, 4),
+                ImageWrapper(0, 0, 1, 1, (b"1234",), "BGRX", 24, 4, 4),
+                ImageWrapper(2, 2, 1, 1, (b"5678",), "BGRX", 24, 4, 4),
             )
             regions = (
                 (images[0], 0, 0, 1, 1, RFBEncoding.RAW),

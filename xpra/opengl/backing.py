@@ -1476,7 +1476,7 @@ class GLWindowBackingBase(WindowBackingBase):
         # because `self.assign_cuda_context` will have imported it with the lock:
         from pycuda.driver import LogicError  # @UnresolvedImport pylint: disable=import-outside-toplevel
         # `pixels` is a cuda buffer with 2 planes: Y then UV
-        cuda_buffer = img.get_pixels()
+        cuda_buffer = img.get_gpu_buffer()
         strides = img.get_rowstride()
         height = img.get_height()
         uvheight = height // 2
@@ -1489,8 +1489,8 @@ class GLWindowBackingBase(WindowBackingBase):
             log("nvdec_image_to_pbos%s", (context, img, stream), exc_info=True)
             raise RuntimeError(f"failed to download nvdec cuda buffer to pbo: {e}")
         finally:
-            cuda_buffer.free()
-        img.set_pixels((y_pbo, uv_pbo))
+            img.free_cuda()
+        img.pbos = (y_pbo, uv_pbo)
 
     def paint_nvdec_image(self, context, encoding: str, img,
                           x: int, y: int, width: int, height: int,
@@ -1638,9 +1638,9 @@ class GLWindowBackingBase(WindowBackingBase):
             if rgb_format not in ("RGB", "BGR", "RGBA", "BGRA"):
                 raise ValueError(f"unexpected rgb format {rgb_format}")
             # `pixels` is a cuda buffer:
-            cuda_buffer = img.get_pixels()
+            cuda_buffer = img.get_gpu_buffer()
             pbo = self.cuda_buffer_to_pbo(gl_context, cuda_buffer, img.get_rowstride(), 0, img.get_height(), stream)
-            cuda_buffer.free()
+            img.free_cuda()
 
         pformat = PIXEL_FORMAT_TO_CONSTANT[rgb_format]
         target = GL_TEXTURE_RECTANGLE
@@ -1916,7 +1916,7 @@ class GLWindowBackingBase(WindowBackingBase):
 
         gl_marker("updating planar textures: %sx%s %s", width, height, pixel_format)
         rowstrides = img.get_rowstride()
-        img_data = img.get_pixels()
+        img_data = img.pbos if pbo else tuple(img.get_plane(i) for i in range(nplanes))
         if len(rowstrides) != nplanes or len(img_data) != nplanes:
             raise RuntimeError(f"invalid number of planes for {pixel_format}")
         for texture, index in textures:

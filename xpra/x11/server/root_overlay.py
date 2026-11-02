@@ -111,7 +111,7 @@ def paint_overlay_window(cr, window, x: int, y: int, image) -> None:
     width = image.get_width()
     height = image.get_height()
     rowstride = image.get_rowstride()
-    img_data = image.get_pixels()
+    img_data = image.get_plane(0)
     rgb_format = image.get_pixel_format()
     log("paint_overlay_window%s rgb_format=%s, img_data=%i (%s)",
         (window, x, y, image), rgb_format, len(img_data), type(img_data))

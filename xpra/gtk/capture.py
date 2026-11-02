@@ -75,7 +75,7 @@ class GTKImageCapture:
         attrs = get_rgb_rawdata(self.window, x, y, width, height)
         if not attrs:
             return None
-        return ImageWrapper(*attrs)
+        return ImageWrapper(*attrs[:4], (attrs[4],), *attrs[5:])
 
     def take_screenshot(self) -> ScreenshotData | None:
         return take_png_screenshot(self.window)

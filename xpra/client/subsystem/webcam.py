@@ -308,7 +308,7 @@ class WebcamForwarder(StubClientSubsystem):
                 # some csc modules (ie: libyuv) return a `MemBuf`,
                 # which neither `mmap_write` nor `to_pil` can handle:
                 # (the output is always a single plane since we convert to an RGB format)
-                image.set_pixels(memoryview(image.get_pixels()))
+                image.set_pixels((memoryview(image.get_plane(0)),))
 
             pixel_format = image.get_pixel_format()
             w, h = image.get_width(), image.get_height()
@@ -319,7 +319,7 @@ class WebcamForwarder(StubClientSubsystem):
             if encoding == "mmap":
                 mmap_write_area = self.get_subsystem("mmap").mmap_write_area
                 options["pixel-format"] = pixel_format
-                mmap_data = mmap_write_area.write_data(image.get_pixels())
+                mmap_data = mmap_write_area.write_data(image.get_plane(0))
                 log("mmap_write_area=%s, mmap_data=%s", mmap_write_area.get_info(), mmap_data)
                 img_data = b""
                 options["chunks"] = mmap_data

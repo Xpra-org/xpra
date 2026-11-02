@@ -131,7 +131,7 @@ class Filter:
         height = image.get_height()
         assert width <= self.width, "expected image width smaller than %i got %i" % (self.width, width)
         assert height <= self.height, "expected image height smaller than %i got %i" % (self.height, height)
-        bgrx = image.get_pixels()
+        bgrx = image.get_plane(0)
         img = Image.frombuffer("RGBA", (width, height), bgrx, "raw", "BGRA", image.get_rowstride())
         pixel_format = image.get_pixel_format()
         if pixel_format == "BGRX":
@@ -142,7 +142,7 @@ class Filter:
             may_save_image("png", png_data)
         modified = img.filter(self.transform)
         bgrx = modified.tobytes("raw", "BGRA", 0, 1)
-        filtered = ImageWrapper(image.get_x(), image.get_y(), width, height, bgrx, pixel_format, image.get_depth(),
+        filtered = ImageWrapper(image.get_x(), image.get_y(), width, height, (bgrx,), pixel_format, image.get_depth(),
                                 width * 4, 4, planes=PlanarFormat.PACKED, thread_safe=True)
         filtered.set_target_x(image.get_target_x())
         filtered.set_target_y(image.get_target_y())

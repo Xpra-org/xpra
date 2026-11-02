@@ -5,7 +5,7 @@
 
 import os
 from time import monotonic
-from collections.abc import Callable, Sequence
+from collections.abc import Buffer, Callable, Sequence
 
 from xpra.util.io import osclose
 from xpra.common import noop
@@ -33,7 +33,7 @@ class DMABufImageWrapper(ImageWrapper):
                  pixel_format: str = "DMABUF", depth: int = 0,
                  bytesperpixel: int = 0, full_range=True):
         rowstride = tuple(strides)
-        super().__init__(x, y, width, height, None, pixel_format, depth, rowstride,
+        super().__init__(x, y, width, height, (), pixel_format, depth, rowstride,
                          bytesperpixel, ImageWrapper.PACKED, True, None, full_range)
         self.drm_format = drm_format
         self.modifier = modifier
@@ -61,7 +61,7 @@ class DMABufImageWrapper(ImageWrapper):
         return self
 
     def has_pixels(self) -> bool:
-        return self.pixels is not None
+        return bool(self.pixels)
 
     def get_dmabuf_info(self) -> dict:
         return {
@@ -80,7 +80,7 @@ class DMABufImageWrapper(ImageWrapper):
 
     def may_download(self) -> None:
         with self._lock:
-            if self.pixels is not None or self.freed:
+            if self.pixels or self.freed:
                 return
             check_main_thread()
             if not self.downloader:
@@ -98,7 +98,7 @@ class DMABufImageWrapper(ImageWrapper):
                 self.downloader = None
                 self.release_buffer()
                 raise RuntimeError("dmabuf download failed")
-            self.pixels = image.get_pixels()
+            self.pixels = tuple(image.get_plane(i) for i in range(image.get_planes() or 1))
             self.pixel_format = image.get_pixel_format()
             self.depth = image.get_depth()
             self.rowstride = image.get_rowstride()
@@ -113,9 +113,9 @@ class DMABufImageWrapper(ImageWrapper):
             log("may_download() format=%#x, modifier=%#x, size=%ix%i, elapsed=%ims",
                 self.drm_format, self.modifier, self.width, self.height, int(1000 * elapsed))
 
-    def get_pixels(self):
+    def get_plane(self, i: int) -> Buffer:
         self.may_download()
-        return super().get_pixels()
+        return super().get_plane(i)
 
     def clone_pixel_data(self) -> None:
         self.may_download()

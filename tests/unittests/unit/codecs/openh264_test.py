@@ -58,7 +58,7 @@ class OpenH264QualityTest(unittest.TestCase):
                     self.assertEqual(encoder.get_info()["quality"], 45)
                     image = make_test_image("YUV420P", width, height)
                     rng = Random(1)
-                    image.set_pixels(tuple(rng.randbytes(len(plane)) for plane in image.get_pixels()))
+                    image.set_pixels(tuple(rng.randbytes(len(plane)) for plane in (image.get_plane(i) for i in range(image.get_planes()))))
                     for requested, expected in ((100, 45), (20, 20), (99, 45), (-1, 45)):
                         data, client_options = encoder.compress_image(image, typedict({"quality": requested}))
                         self.assertTrue(data)
@@ -76,7 +76,7 @@ class OpenH264QualityTest(unittest.TestCase):
         width, height = 3840, 2160
         image = make_test_image("YUV420P", width, height)
         rng = Random(1)
-        image.set_pixels(tuple(rng.randbytes(len(plane)) for plane in image.get_pixels()))
+        image.set_pixels(tuple(rng.randbytes(len(plane)) for plane in (image.get_plane(i) for i in range(image.get_planes()))))
         for profile in ("main", "constrained-baseline"):
             for speed in (50, 80):
                 with self.subTest(profile=profile, speed=speed):

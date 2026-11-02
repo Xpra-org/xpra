@@ -34,7 +34,7 @@ class TestPillow(unittest.TestCase):
         for speed in (10, 30, 90, 100):
             pixel_data = b"0"*128*128*4
             Bpp = 4
-            image = ImageWrapper(0, 0, W, H, pixel_data, "BGRX", 32,
+            image = ImageWrapper(0, 0, W, H, (pixel_data,), "BGRX", 32,
                                  W*Bpp, Bpp, planes=ImageWrapper.PACKED,
                                  thread_safe=True)
             comp = encode("png", image, typedict({
@@ -49,7 +49,7 @@ class TestPillow(unittest.TestCase):
         H = 128
         pixel_data = b"0"*128*128*4
         Bpp = 4
-        image = ImageWrapper(0, 0, W, H, pixel_data, "BGRA", 32,
+        image = ImageWrapper(0, 0, W, H, (pixel_data,), "BGRA", 32,
                              W*Bpp, Bpp, planes=ImageWrapper.PACKED,
                              thread_safe=True)
         comp = encode("png", image, typedict({"grayscale": True}))
@@ -79,7 +79,7 @@ class TestPillow(unittest.TestCase):
                             size = width*height*bpp
                             pixel_data = bytes(buf[:size])
                             Bpp = bpp//8
-                            image = ImageWrapper(0, 0, width, height, pixel_data, pixel_format, 32,
+                            image = ImageWrapper(0, 0, width, height, (pixel_data,), pixel_format, 32,
                                                  width*Bpp, Bpp, planes=ImageWrapper.PACKED,
                                                  thread_safe=True, palette=palette)
                             options = {
@@ -102,7 +102,7 @@ class TestPillow(unittest.TestCase):
         pixel_format = "invalid"
         pixel_data = bytes(b"0"*bpp*width*height)
         Bpp = bpp//8
-        image = ImageWrapper(0, 0, width, height, pixel_data, pixel_format, 32,
+        image = ImageWrapper(0, 0, width, height, (pixel_data,), pixel_format, 32,
                              width*Bpp, Bpp, planes=ImageWrapper.PACKED,
                              thread_safe=True, palette=None)
         try:
@@ -119,7 +119,7 @@ class TestPillow(unittest.TestCase):
         pixel_format = "BGRA"
         pixel_data = bytes(b"0"*bpp*width*height)
         Bpp = bpp//8
-        image = ImageWrapper(0, 0, width, height, pixel_data, pixel_format, 32,
+        image = ImageWrapper(0, 0, width, height, (pixel_data,), pixel_format, 32,
                              width*Bpp, Bpp, planes=ImageWrapper.PACKED,
                              thread_safe=True, palette=None)
         for encoding in (None, "", True, "hello", 1):

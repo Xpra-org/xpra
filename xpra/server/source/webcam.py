@@ -291,7 +291,7 @@ class WebcamConnection(StubClientConnection):
                 rgb_pixel_format = "BGRX"
 
             from xpra.codecs.image import ImageWrapper
-            bgrx_image = ImageWrapper(0, 0, w, h, pixels, rgb_pixel_format, 32, w * 4, planes=ImageWrapper.PACKED)
+            bgrx_image = ImageWrapper(0, 0, w, h, (pixels,), rgb_pixel_format, 32, w * 4, planes=ImageWrapper.PACKED)
             if forward:
                 # re-compress because the webcam-client doesn't set up mmap:
                 from xpra.codecs.image import to_pil_encoding

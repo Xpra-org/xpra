@@ -38,7 +38,7 @@ class PipeWireCaptureTest(unittest.TestCase):
     def test_cpu_frame_padding_offset_and_dimensions(self):
         data = b"xxxx" + b"abcdefgh----ijklmnop----"
         image = make_cpu_image(data, 4, 24, 2, 2, 12, "BGRA")
-        self.assertEqual(image.get_pixels(), b"abcdefgh----ijklmnop----")
+        self.assertEqual(image.get_plane(0), b"abcdefgh----ijklmnop----")
         self.assertEqual(image.get_rowstride(), 12)
         self.assertEqual((image.get_width(), image.get_height()), (2, 2))
         with self.assertRaises(ValueError):
@@ -56,7 +56,7 @@ class PipeWireCaptureTest(unittest.TestCase):
             capture.native_frame(frame2)
         self.assertEqual(len(callbacks), 1)
         image = capture.get_image()
-        self.assertEqual(image.get_pixels(), b"B" * 8)
+        self.assertEqual(image.get_plane(0), b"B" * 8)
         self.assertEqual((capture.width, capture.height), (1, 2))
         image.free()
         capture.clean()
@@ -70,7 +70,7 @@ class PipeWireCaptureTest(unittest.TestCase):
             capture.native_frame(frame)
         self.assertIsNone(capture.take_screenshot())
         image = capture.get_image()
-        self.assertEqual(image.get_pixels(), b"A" * 16)
+        self.assertEqual(image.get_plane(0), b"A" * 16)
         image.free()
         capture.clean()
 
@@ -97,7 +97,7 @@ class PipeWireCaptureTest(unittest.TestCase):
             f.write(b"pad!" + b"01234567abcdefgh")
             f.flush()
             image = download_dmabuf(f.fileno(), 4, 8, 2, 2, "BGRA", 0)
-        self.assertEqual(image.get_pixels(), b"01234567abcdefgh")
+        self.assertEqual(image.get_plane(0), b"01234567abcdefgh")
         self.assertEqual(image.get_rowstride(), 8)
         with tempfile.TemporaryFile() as f:
             with self.assertRaises(ValueError):

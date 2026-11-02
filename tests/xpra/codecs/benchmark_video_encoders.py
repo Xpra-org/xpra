@@ -75,14 +75,14 @@ def make_frame(width: int, height: int, frame_no: int) -> ImageWrapper:
                 b, g, r = 20, 230, 250
             pixels[p:p + 4] = bytes((b, g, r, 255))
             p += 4
-    return ImageWrapper(0, 0, width, height, bytes(pixels), RGB_FORMAT, 32,
+    return ImageWrapper(0, 0, width, height, (bytes(pixels),), RGB_FORMAT, 32,
                         width * 4, planes=ImageWrapper.PACKED, thread_safe=True)
 
 
 def rgb_energy(reference: ImageWrapper, candidate: ImageWrapper) -> tuple[int, int]:
     """Return RGB signal and error energy, ignoring row padding and X."""
-    ref = reference.get_pixels()
-    got = candidate.get_pixels()
+    ref = reference.get_plane(0)
+    got = candidate.get_plane(0)
     ref_stride = reference.get_rowstride()
     got_stride = candidate.get_rowstride()
     width = reference.get_width()

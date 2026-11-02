@@ -40,7 +40,7 @@ def pixels_to_bytes(pixels) -> bytes:
 def to_rgb(image: ImageWrapper) -> ImageWrapper:
     pixel_format = image.get_pixel_format()
     w, h = image.get_width(), image.get_height()
-    src = pixels_to_bytes(image.get_pixels())
+    src = pixels_to_bytes(image.get_plane(0))
     if pixel_format == "BGR":
         from xpra.codecs.argb.argb import bgr_to_rgb
         rgb = bgr_to_rgb(src)
@@ -50,7 +50,7 @@ def to_rgb(image: ImageWrapper) -> ImageWrapper:
         rgb = bgra_to_rgb(src)
     else:
         raise RuntimeError("unsupported pixel format %r" % pixel_format)
-    return ImageWrapper(0, 0, w, h, rgb, "RGB", 24, w * 3, 3,
+    return ImageWrapper(0, 0, w, h, (rgb,), "RGB", 24, w * 3, 3,
                         planes=ImageWrapper.PACKED)
 
 
@@ -127,7 +127,7 @@ class WebcamWindow(Gtk.Window):
             pixel_format = image.get_pixel_format()
             w, h = image.get_width(), image.get_height()
             rowstride = image.get_rowstride()
-            pixels = pixels_to_bytes(image.get_pixels())
+            pixels = pixels_to_bytes(image.get_plane(0))
             has_alpha = pixel_format == "RGBX"
             raw = GLib.Bytes.new(pixels)
             self.pixbuf = GdkPixbuf.Pixbuf.new_from_bytes(raw, GdkPixbuf.Colorspace.RGB,

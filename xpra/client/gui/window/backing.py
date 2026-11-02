@@ -711,7 +711,7 @@ class WindowBackingBase:
         options["rgb_format"] = pixel_format
         w = img.get_width()
         h = img.get_height()
-        pixels = img.get_pixels()
+        pixels = img.get_plane(0)
         stride = img.get_rowstride()
         self.do_paint_rgb(context, encoding, pixel_format, pixels, x, y, w, h, width, height, stride, options, callbacks)
         img.free()

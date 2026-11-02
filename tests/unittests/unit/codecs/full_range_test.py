@@ -53,7 +53,7 @@ TEST_SIZE = 128, 128
 
 def first_luma(image) -> int:
     # the first byte of the first (Y) plane:
-    return memoryview_to_bytes(image.get_pixels()[0])[0]
+    return memoryview_to_bytes(image.get_plane(0))[0]
 
 
 def find_spec(specs, in_cs: str, out_cs: str):

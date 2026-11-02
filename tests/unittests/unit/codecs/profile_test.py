@@ -98,7 +98,7 @@ class H264ProfileTest(unittest.TestCase):
                             self.assertNotIn("delayed", client_options)
                             decoded = decoder.decompress_image(data, typedict(client_options))
                             self.assertIsNotNone(decoded)
-                            self.assertAlmostEqual(decoded.get_pixels()[0][0], luma, delta=2)
+                            self.assertAlmostEqual(decoded.get_plane(0)[0], luma, delta=2)
                             decoded.free()
                     finally:
                         encoder.clean()

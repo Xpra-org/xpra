@@ -614,7 +614,7 @@ cdef class Encoder:
         cdef uint8_t *active_map_data = NULL
         cdef vpx_active_map_t active_map
         assert self.context!=NULL
-        pixels = image.get_pixels()
+        pixels = tuple(image.get_plane(plane_no) for plane_no in range(image.get_planes()))
         istrides = image.get_rowstride()
         # track the image colour range and signal it in the VP9 bitstream color_config:
         cdef int full_range = image.get_full_range()

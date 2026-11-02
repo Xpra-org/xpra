@@ -8,6 +8,7 @@ from libc.string cimport memset
 from libc.stdint cimport uintptr_t
 from xpra.buffers.membuf cimport getbuf, buffer_context, MemBuf  # pylint: disable=syntax-error
 
+from functools import partial
 from weakref import WeakValueDictionary
 from typing import Any
 from collections.abc import Sequence
@@ -16,6 +17,7 @@ from threading import Event
 from xpra.util.str_fn import csv
 from xpra.util.objects import AtomicInteger, typedict
 from xpra.codecs.image import ImageWrapper
+from xpra.codecs.nvidia.cuda.decoded_image import CUDADecodedImageWrapper
 from xpra.codecs.constants import ColorRange, EncodingNotSupported, VideoSpec
 from xpra.codecs.h264_util import get_video_full_range
 from xpra.codecs.nvidia.cuda.errors import cudacheck, get_error_name
@@ -889,9 +891,11 @@ cdef class Decoder:
             copy.dst_pitch = yuv_pitch
             copy(aligned=False)
             rowstrides = [yuv_pitch, yuv_pitch]
-            image = ImageWrapper(0, 0, self.width, self.height,
-                                 yuv_buf, "NV12", 24, rowstrides, 3, ImageWrapper.PLANAR_2,
-                                 full_range=self.full_range)
+            image = CUDADecodedImageWrapper(
+                0, 0, self.width, self.height, (), "NV12", 24, rowstrides, 3, ImageWrapper.PLANAR_2,
+                full_range=self.full_range, gpu_buffer=yuv_buf, downloader=partial(download_nv12, self.height, yuv_pitch),
+                cuda_context=Context.get_current(),
+            )
             self.frames += 1
             self.event.set()
             return image
@@ -939,22 +943,18 @@ def decompress(encoding: str, img_data, width: int, height: int, options=None) -
 
 def decompress_and_download(encoding: str, img_data, width: int, height: int, options=None) -> ImageWrapper:
     img = decompress_with_device(encoding, img_data, width, height, options)
-    cuda_buffer = img.get_pixels()
-    rowstrides = img.get_rowstride()
-    assert len(rowstrides)==2 and rowstrides[0]==rowstrides[1]
-    stride = rowstrides[0]
-    assert img.get_pixel_format()=="NV12"
-    height = img.get_height()
+    img.may_download()
+    return img
+
+
+def download_nv12(int height, int stride, cuda_buffer):
     size = roundup(height, 2)*stride*3//2
     y_size = stride*height
     uv_start = roundup(height, 2)*stride
     uv_size = stride*(height//2)
     nv12_buf = download_from_gpu(cuda_buffer, size)
     pixels = memoryview(nv12_buf)
-    planes = pixels[:y_size], pixels[uv_start:uv_start+uv_size]
-    cuda_buffer.free()
-    img.set_pixels(planes)
-    return img
+    return pixels[:y_size], pixels[uv_start:uv_start+uv_size]
 
 
 def decompress_with_device(encoding: str, img_data, width: int, height: int, options=None) -> ImageWrapper:

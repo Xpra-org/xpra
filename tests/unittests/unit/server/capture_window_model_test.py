@@ -20,19 +20,19 @@ PADDING = 16
 def make_image(x: int, y: int, w: int, h: int) -> ImageWrapper:
     stride = w * 4 + PADDING
     pixels = (BLUE * w + b"\x77" * PADDING) * h
-    return ImageWrapper(x, y, w, h, pixels, "BGRX", 24, stride, 4, ImageWrapper.PACKED, True)
+    return ImageWrapper(x, y, w, h, (pixels,), "BGRX", 24, stride, 4, ImageWrapper.PACKED, True)
 
 
 class GPUImageWrapper(ImageWrapper):
     """ like the DXGI and CUDA wrappers: the pixels are only downloaded on demand """
 
     def __init__(self, x: int, y: int, w: int, h: int):
-        super().__init__(x, y, w, h, None, "BGRX", 24, w * 4 + PADDING, 4, ImageWrapper.PACKED, True)
+        super().__init__(x, y, w, h, (), "BGRX", 24, w * 4 + PADDING, 4, ImageWrapper.PACKED, True)
 
-    def get_pixels(self):
-        if self.pixels is None:
-            self.pixels = make_image(self.x, self.y, self.width, self.height).get_pixels()
-        return super().get_pixels()
+    def get_plane(self, i):
+        if not self.pixels:
+            self.pixels = (make_image(self.x, self.y, self.width, self.height).get_plane(0),)
+        return super().get_plane(i)
 
 
 class FakeCapture:

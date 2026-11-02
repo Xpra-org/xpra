@@ -212,7 +212,7 @@ class Filter:
         import torch
         import numpy as np
         rowstride = image.get_rowstride()
-        bgrx = image.get_pixels()
+        bgrx = image.get_plane(0)
         log("convert_image(%s) stride=%i, pixels=%i", image, rowstride, len(bgrx))
         bgrx_array = np.frombuffer(bgrx, dtype=np.uint8)
         bgrx_array = bgrx_array.reshape(height, rowstride)
@@ -231,7 +231,7 @@ class Filter:
             bgrx = result.tobytes()
             filtered = ImageWrapper(
                 image.get_x(), image.get_y(), width, height,
-                bgrx, image.get_pixel_format(), image.get_depth(),
+                (bgrx,), image.get_pixel_format(), image.get_depth(),
                 width * 4, 4, planes=ImageWrapper.PACKED, thread_safe=True,
             )
             filtered.set_target_x(image.get_target_x())
@@ -255,7 +255,7 @@ class Filter:
         bgrx = result_cpu.tobytes()
         filtered = ImageWrapper(
             image.get_x(), image.get_y(), width, height,
-            bgrx, image.get_pixel_format(), image.get_depth(),
+            (bgrx,), image.get_pixel_format(), image.get_depth(),
             width * 4, 4, planes=ImageWrapper.PACKED, thread_safe=True,
         )
         filtered.set_target_x(image.get_target_x())

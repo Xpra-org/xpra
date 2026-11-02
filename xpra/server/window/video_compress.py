@@ -1906,7 +1906,7 @@ class WindowVideoSource(WindowSource):
                     newstride = roundup(image.get_width() * image.get_bytesperpixel(), 4)
                     image.restride(newstride)
                 bpp = image.get_bytesperpixel()
-                pixels = image.get_pixels()
+                pixels = image.get_plane(0)
                 if not pixels:
                     return False
                 stride = image.get_rowstride()
@@ -2040,7 +2040,7 @@ class WindowVideoSource(WindowSource):
                 #    # hard-coded for BGRA!
                 #    from xpra.os_util import memoryview_to_bytes
                 #    from PIL import Image
-                #    im = Image.frombuffer("RGBA", (w, sh), memoryview_to_bytes(sub.get_pixels()),
+                #    im = Image.frombuffer("RGBA", (w, sh), memoryview_to_bytes(sub.get_plane(0)),
                 #                          "raw", "BGRA", sub.get_rowstride(), 1)
                 #    filename = "./scroll-%i-%i.png" % (self._sequence, len(non_scroll)-flush)
                 #    im.save(filename, "png")

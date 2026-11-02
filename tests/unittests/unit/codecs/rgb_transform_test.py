@@ -15,6 +15,7 @@ W = 640
 H = 480
 D = 24
 
+
 class RGBTransformTest(unittest.TestCase):
 
     def make_test_image(self, fmt, buf):
@@ -22,7 +23,7 @@ class RGBTransformTest(unittest.TestCase):
         if fmt=="BGR565":
             stride = W*2
         l = stride*H
-        return ImageWrapper(X, Y, W, H, memoryview(bytes(buf[:l])), fmt, D, stride, planes=ImageWrapper.PACKED)
+        return ImageWrapper(X, Y, W, H, (memoryview(bytes(buf[:l])),), fmt, D, stride, planes=ImageWrapper.PACKED)
 
     def test_rgb_reformat(self):
         from unit.test_util import LoggerSilencer
@@ -41,7 +42,7 @@ class RGBTransformTest(unittest.TestCase):
             "BGRX"  : ("RGB", "RGBX",),
             "r210"  : ("RGBA", "RGBX", "RGB"),
             "BGR565": ("RGBA", "RGBX", "RGB"),
-            }.items():
+        }.items():
             for to_fmt in to_fmts:
                 for pillow in (True, False):
                     if pillow:
@@ -60,8 +61,10 @@ class RGBTransformTest(unittest.TestCase):
                     r = rgb_reformat(img, (), transparency)
                     assert r is False
 
+
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()

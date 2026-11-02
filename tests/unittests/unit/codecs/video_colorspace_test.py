@@ -90,14 +90,14 @@ def make_textured_image(pixel_format: str, w: int, h: int):
     image = make_test_image(pixel_format, w, h, ())
     strides = image.get_rowstride()
     if image.get_planes() == ImageWrapper.PACKED:
-        image.set_pixels(_texture_plane(strides, h, 1, 8))
+        image.set_pixels((_texture_plane(strides, h, 1, 8),))
         return image
     try:
         depth = int(pixel_format.split("P")[1])     # ie: YUV420P10 -> 10
     except (IndexError, ValueError):
         depth = 8
     Bpp = (depth + 7) // 8
-    pixels = list(image.get_pixels())
+    pixels = [image.get_plane(i) for i in range(image.get_planes())]
     for i, plane in enumerate(pixels):
         rows = len(plane) // strides[i]
         pixels[i] = _texture_plane(strides[i], rows, Bpp, depth)
@@ -388,7 +388,7 @@ class Test_Roundtrip(unittest.TestCase):
         # 1. textured RGB source image (a flat colour would roundtrip near-losslessly):
         src_image = make_textured_image(rgb_format, width, height)
         src_stride = src_image.get_rowstride()
-        src_pixels = bytes(src_image.get_pixels())
+        src_pixels = bytes(src_image.get_plane(0))
         # 2. RGB -> YUV (csc step before the encoder):
         yuv_image = self._csc_image(fcsc, src_image, rgb_format, in_csc, width, height, csc_options)
         # 3. encode the YUV image:
@@ -408,7 +408,7 @@ class Test_Roundtrip(unittest.TestCase):
         # 5. YUV -> RGB (csc step on the way out):
         rgb_out = self._csc_image(bcsc, yuv_out, out_csc, rgb_format, width, height, csc_options)
         # 6. compare the RGB images, ignoring the unused 'X' channel:
-        out_pixels = rgb_out.get_pixels()
+        out_pixels = rgb_out.get_plane(0)
         out_stride = rgb_out.get_rowstride()
         xi = rgb_format.find("X")
         Bpp = len(rgb_format)
@@ -438,9 +438,15 @@ class Test_Roundtrip(unittest.TestCase):
         else:
             # lossy mode: use a textured image so the loss is measurable:
             in_image = make_textured_image(in_csc, width, height)
-        saved_pixels = in_image.get_pixels()
+        saved_pixels = (
+            in_image.get_plane(0) if in_image.get_planes() == ImageWrapper.PACKED
+            else tuple(in_image.get_plane(i) for i in range(in_image.get_planes()))
+        )
         in_image.clone_pixel_data()
-        in_pixels = in_image.get_pixels()
+        in_pixels = (
+            in_image.get_plane(0) if in_image.get_planes() == ImageWrapper.PACKED
+            else tuple(in_image.get_plane(i) for i in range(in_image.get_planes()))
+        )
         out = encoder.compress_image(in_image, options)
         if not out:
             raise RuntimeError(f"{encoder} failed to compress {in_image} with options {options}")
@@ -456,7 +462,10 @@ class Test_Roundtrip(unittest.TestCase):
             # uses GPU pycuda DeviceAllocation buffers,
             # which we can't compare directly
             return 0, 0
-        out_pixels = out_image.get_pixels()
+        out_pixels = (
+            out_image.get_plane(0) if out_image.get_planes() == ImageWrapper.PACKED
+            else tuple(out_image.get_plane(i) for i in range(out_image.get_planes()))
+        )
 
         out_csc = out_image.get_pixel_format()
         md = 0
@@ -558,7 +567,10 @@ class Test_Roundtrip(unittest.TestCase):
             for out_source, out_image in compare.items():
                 out_csc = out_image.get_pixel_format()
                 log(f"comparing {in_csc} with {out_csc} ({out_source})")
-                out_pixels = out_image.get_pixels()
+                out_pixels = (
+                    out_image.get_plane(0) if out_image.get_planes() == ImageWrapper.PACKED
+                    else tuple(out_image.get_plane(i) for i in range(out_image.get_planes()))
+                )
                 in_stride = in_image.get_rowstride()
                 out_stride = out_image.get_rowstride()
                 in_width = width * len(in_csc)

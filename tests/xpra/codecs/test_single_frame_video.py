@@ -57,7 +57,7 @@ def main(files):
         rgb_data = img.tobytes("raw")
         stride = w * len(pixel_format)
         source_image = ImageWrapper(0, 0, w, h,
-                                    rgb_data, pixel_format, len(pixel_format) * 8, stride,
+                                    (rgb_data,), pixel_format, len(pixel_format) * 8, stride,
                                     planes=ImageWrapper.PACKED, thread_safe=True)
         #source_image.restride(roundup(w*4, 8))
         for encoding, colorspace, enc in encoders:
@@ -103,7 +103,7 @@ def main(files):
                 csc.init_context(w, h, dformat, w, h, "BGRX", typedict())
                 output = csc.convert_image(decoded)
                 print(f"    converted {dformat} to BGRX")
-            obytes = memoryview_to_bytes(output.get_pixels())
+            obytes = memoryview_to_bytes(output.get_plane(0))
             output_image = Image.frombuffer("RGBA", (w, h), obytes, "raw", "BGRA", output.get_rowstride())
             filename = f"{index}-{enc.get_type()}-{encoding}-{colorspace}.png"
             output_image.save(filename, "PNG")

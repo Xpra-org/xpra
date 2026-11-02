@@ -195,7 +195,7 @@ class EncoderServer(ServerBase):
             free = noop
 
         try:
-            image = ImageWrapper(0, 0, width, height, rgb_data, pixel_format, depth, rowstride,
+            image = ImageWrapper(0, 0, width, height, (rgb_data,), pixel_format, depth, rowstride,
                                  bpp, PlanarFormat.PACKED, True, None, full_range)
             if SAVE_TO_FILE:
                 from xpra.codecs.debug import save_imagewrapper
@@ -366,7 +366,7 @@ class EncoderServer(ServerBase):
                 pixels = [decompress(plane) for plane in pixels]
             free_all()
 
-        metadata["pixels"] = pixels
+        metadata["pixels"] = (pixels,) if planes == PlanarFormat.PACKED else pixels
         try:
             image = ImageWrapper(**metadata)
             log(f"{encoder=} {image=}")

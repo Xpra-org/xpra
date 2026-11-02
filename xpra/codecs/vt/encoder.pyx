@@ -551,13 +551,13 @@ cdef class Encoder:
         if r != 0 or pixbuf == NULL:
             raise RuntimeError(f"failed to allocate CVPixelBuffer, error {r}")
 
-        pixels = image.get_pixels()
+        pixels = [image.get_plane(i) for i in range(COLORSPACES[self.src_format])]
         strides = image.get_rowstride()
         cdef int nplanes = COLORSPACES[self.src_format]
 
         # normalize to a list of (buffer, stride) per plane:
         if nplanes == 1:
-            planes = [pixels]
+            planes = pixels
             plane_strides = [strides]
         else:
             planes = list(pixels)

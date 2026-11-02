@@ -391,7 +391,7 @@ class YUVImageWrapper(ImageWrapper):
 
 def argb_to_gray(image: ImageWrapper) -> ImageWrapper:
     cdef iplanes = image.get_planes()
-    pixels = image.get_pixels()
+    pixels = image.get_plane(0)
     cdef int stride = image.get_rowstride()
     cdef int width = image.get_width()
     cdef int height = image.get_height()
@@ -413,7 +413,7 @@ def argb_to_gray(image: ImageWrapper) -> ImageWrapper:
                                 width, height)
     assert result==0, "libyuv ARGBGrayTo failed and returned %i" % result
     out = memoryview(output_buffer)
-    gray_image = ImageWrapper(0, 0, width, height, out, image.get_pixel_format(), 24, dst_stride, image.get_bytesperpixel(), ImageWrapper.PACKED)
+    gray_image = ImageWrapper(0, 0, width, height, (out,), image.get_pixel_format(), 24, dst_stride, image.get_bytesperpixel(), ImageWrapper.PACKED)
     log("argb_to_gray(%s)=%s", image, gray_image)
     return gray_image
 
@@ -421,7 +421,7 @@ def argb_to_gray(image: ImageWrapper) -> ImageWrapper:
 def argb_scale(image: ImageWrapper, int src_width, int src_height,
                int dst_width, int dst_height, FilterMode filtermode=kFilterNone) -> ImageWrapper:
     cdef iplanes = image.get_planes()
-    pixels = image.get_pixels()
+    pixels = image.get_plane(0)
     cdef int stride = image.get_rowstride()
     cdef int width = image.get_width()
     cdef int height = image.get_height()
@@ -450,7 +450,7 @@ def argb_scale(image: ImageWrapper, int src_width, int src_height,
                                filtermode)
     assert result==0, "libyuv ARGBScale failed and returned %i" % result
     out = memoryview(output_buffer)
-    scaled_image = ImageWrapper(0, 0, dst_width, dst_height, out,
+    scaled_image = ImageWrapper(0, 0, dst_width, dst_height, (out,),
                                 image.get_pixel_format(), image.get_depth(), dst_stride, bpp, ImageWrapper.PACKED)
     log("argb_scale(%s, %i, %i, %i)=%s", image, dst_width, dst_height, filtermode, scaled_image)
     return scaled_image
@@ -684,14 +684,14 @@ cdef class Converter:
         each plane, so check the buffers really are that big: the image metadata is
         not proof of the size of the buffer it came with
         """
-        planes = image.get_pixels()
+        planes = tuple(image.get_plane(i) for i in range(image.get_planes() or 1))
         strides = image.get_rowstride()
         cdef int nplanes = image.get_planes()
         cdef Py_ssize_t min_len
         cdef unsigned int ydiv, plane_height
         if nplanes == ImageWrapper.PACKED:
             min_len = <Py_ssize_t> strides * self.src_height
-            with buffer_context(planes) as bc:
+            with buffer_context(planes[0]) as bc:
                 if len(bc) < min_len:
                     raise ValueError("pixel buffer is too small: %i bytes, %i needed for %ix%i at rowstride %i" % (
                         len(bc), min_len, self.src_width, self.src_height, strides))
@@ -746,7 +746,7 @@ cdef class Converter:
             raise ValueError(f"invalid dst format {self.dst_format!r}")
         if self.rgb_scaling:
             raise ValueError(f"cannot scale {self.src_format!r}")
-        pixels = image.get_pixels()
+        pixels = tuple(image.get_plane(plane_no) for plane_no in range(image.get_planes()))
         strides = image.get_rowstride()
         cdef int y_stride = strides[0]
         cdef int uv_stride = strides[1]
@@ -799,7 +799,7 @@ cdef class Converter:
         log("libyuv.%s took %.1fms", fn_name, 1000.0*elapsed)
         self.time += elapsed
         return ImageWrapper(0, 0, self.dst_width, self.dst_height,
-                            rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
+                            (rgb_buffer,), self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
 
     def nv12_to_yuv(self, image: ImageWrapper) -> ImageWrapper:
         self.validate_image_src_size(image)
@@ -811,7 +811,7 @@ cdef class Converter:
             raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
         if self.dst_format != "YUV420P":
             raise ValueError(f"invalid dst format {self.dst_format!r} for nv12_to_yuv")
-        pixels = image.get_pixels()
+        pixels = tuple(image.get_plane(plane_no) for plane_no in range(image.get_planes()))
         strides = image.get_rowstride()
         cdef int y_stride = strides[0]
         cdef int uv_stride = strides[1]
@@ -886,7 +886,7 @@ cdef class Converter:
             raise ValueError(f"invalid number of planes: {iplanes} for {self.src_format}")
         if self.dst_format != "NV12":
             raise ValueError(f"invalid dst format {self.dst_format!r} for yuv_to_nv12")
-        pixels = image.get_pixels()
+        pixels = tuple(image.get_plane(plane_no) for plane_no in range(image.get_planes()))
         strides = image.get_rowstride()
         cdef int y_stride = strides[0]
         cdef int u_stride = strides[1]
@@ -993,7 +993,7 @@ cdef class Converter:
         for i in range(self.planes):
             scaled_planes[i] = scaled_buffer + self.scaled_offsets[i]
 
-        pixels = image.get_pixels()
+        pixels = tuple(image.get_plane(plane_no) for plane_no in range(image.get_planes()))
         strides = image.get_rowstride()
         yuv_format = image.get_pixel_format()
         cdef int nplanes = image.get_planes()
@@ -1050,7 +1050,7 @@ cdef class Converter:
         if height < self.src_height:
             raise ValueError(f"source image height {height} is smaller than context {self.src_height}")
         assert self.dst_width >= self.src_width and self.dst_height >= self.src_height
-        pixels = image.get_pixels()
+        pixels = image.get_plane(0)
         cdef int stride = image.get_rowstride()
         cdef int dst_stride = self.dst_width * 4
 
@@ -1077,7 +1077,7 @@ cdef class Converter:
         log("libyuv.YUY2ToARGB took %.1fms", 1000.0*elapsed)
         self.time += elapsed
         img = ImageWrapper(0, 0, self.dst_width, self.dst_height,
-                           rgb_buffer, self.dst_format, 24, dst_stride, 4, ImageWrapper.PACKED)
+                           (rgb_buffer,), self.dst_format, 24, dst_stride, 4, ImageWrapper.PACKED)
         return img
 
     def convert_yuv_image(self, image: ImageWrapper) -> ImageWrapper:
@@ -1097,7 +1097,7 @@ cdef class Converter:
             raise ValueError(f"invalid dst format {self.dst_format!r}")
         if self.rgb_scaling:
             raise ValueError(f"cannot scale {self.src_format}")
-        pixels = image.get_pixels()
+        pixels = tuple(image.get_plane(plane_no) for plane_no in range(image.get_planes()))
         strides = image.get_rowstride()
         cdef int y_stride = strides[0]
         cdef int u_stride = strides[1]
@@ -1235,7 +1235,7 @@ cdef class Converter:
         log("libyuv.%s took %.1fms (full-range=%s)", fn_name, 1000.0*elapsed, bool(full_range))
         self.time += elapsed
         img = ImageWrapper(0, 0, self.dst_width, self.dst_height,
-                            rgb_buffer, self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
+                            (rgb_buffer,), self.dst_format, Bpp*8, rowstride, Bpp, ImageWrapper.PACKED)
         img.set_full_range(full_range)
         return img
 
@@ -1259,7 +1259,7 @@ cdef class Converter:
             height = self.dst_height
             self.validate_image_dst_size(image)
         cdef int stride = image.get_rowstride()
-        pixels = image.get_pixels()
+        pixels = image.get_plane(0)
         assert pixels, "failed to get pixels from %s" % image
         if self.yuv_scaling:
             #re-use the same temporary buffer every time:
@@ -1393,7 +1393,7 @@ cdef class Converter:
             height = self.dst_height
             self.validate_image_dst_size(image)
         cdef int stride = image.get_rowstride()
-        pixels = image.get_pixels()
+        pixels = image.get_plane(0)
         assert pixels, "failed to get pixels from %s" % image
         if self.yuv_scaling:
             #re-use the same temporary buffer every time:

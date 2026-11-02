@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Buffer
 from time import monotonic
 from dataclasses import dataclass
 
@@ -43,7 +44,7 @@ class DXGIImageWrapper(ImageWrapper):
     def __init__(self, x: int, y: int, width: int, height: int,
                  pixel_format: str, depth: int, capture):
         bpp = depth // 8
-        super().__init__(x, y, width, height, None, pixel_format, depth, width * bpp,
+        super().__init__(x, y, width, height, (), pixel_format, depth, width * bpp,
                          bpp, ImageWrapper.PACKED, thread_safe=False)
         self._capture = capture
         # position of this image in the capture's desktop texture:
@@ -66,12 +67,12 @@ class DXGIImageWrapper(ImageWrapper):
 
     def may_download(self) -> None:
         with self._lock:
-            if self.pixels is not None or self.freed:
+            if self.pixels or self.freed:
                 return
             start = monotonic()
-            self.pixels = self._download(0, 0, self.width, self.height)
+            self.pixels = (self._download(0, 0, self.width, self.height),)
             elapsed = monotonic() - start
-            nbytes = len(self.pixels)
+            nbytes = memoryview(self.pixels[0]).nbytes
             mbs = nbytes / elapsed / 1024 / 1024 if elapsed > 0 else 9999
             log("may_download() %s size=%i, from %s, elapsed=%ims %.0fMB/s",
                 self.pixel_format, nbytes, "snapshot" if self._snapshot else "desktop texture",
@@ -81,9 +82,9 @@ class DXGIImageWrapper(ImageWrapper):
         """ only available once frozen on the GPU, the desktop texture keeps changing """
         return self._snapshot
 
-    def get_pixels(self):
+    def get_plane(self, i: int) -> Buffer:
         self.may_download()
-        return super().get_pixels()
+        return super().get_plane(i)
 
     def clone_pixel_data(self) -> None:
         self.may_download()
@@ -99,12 +100,12 @@ class DXGIImageWrapper(ImageWrapper):
 
     def get_sub_image(self, x: int, y: int, w: int, h: int):
         with self._lock:
-            if self.pixels is None and not self.freed and (x, y, w, h) != (0, 0, self.width, self.height):
+            if not self.pixels and not self.freed and (x, y, w, h) != (0, 0, self.width, self.height):
                 # only download the area we need:
                 if w <= 0 or h <= 0 or x < 0 or y < 0 or x + w > self.width or y + h > self.height:
                     raise ValueError(f"invalid sub-image geometry {x},{y},{w},{h} for {self.width}x{self.height}")
                 bpp = self.bytesperpixel
-                image = ImageWrapper(self.x + x, self.y + y, w, h, self._download(x, y, w, h),
+                image = ImageWrapper(self.x + x, self.y + y, w, h, (self._download(x, y, w, h),),
                                      self.pixel_format, self.depth, w * bpp, bpp,
                                      planes=self.planes, thread_safe=True, full_range=self.full_range)
                 image.set_target_x(self.target_x + x)
@@ -119,7 +120,7 @@ class DXGIImageWrapper(ImageWrapper):
 
     def freeze_on_gpu(self) -> bool:
         with self._lock:
-            if self.pixels is not None or self._snapshot or self.freed:
+            if self.pixels or self._snapshot or self.freed:
                 return True
             capture = self._capture
             if capture:
@@ -133,7 +134,7 @@ class DXGIImageWrapper(ImageWrapper):
     def preserve_before_overwrite(self) -> None:
         """ Called by the capture thread before it overwrites the desktop texture. """
         with self._lock:
-            if self.freed or self._capture is None or self.pixels is not None or self._snapshot is not None:
+            if self.freed or self._capture is None or self.pixels or self._snapshot is not None:
                 return
             # Keep the image locked through the fallback download if the snapshot pool is full.
             self.freeze_on_gpu()

@@ -82,10 +82,10 @@ class TestDXGIImageWrapper(unittest.TestCase):
         image.freeze_on_gpu()
         capture.frame = 1
         # downloads come from the snapshot, not from the newer frame:
-        self.assertEqual(image.get_pixels(), expected(2, 1, 4, 2, 0))
+        self.assertEqual(image.get_plane(0), expected(2, 1, 4, 2, 0))
         # while an unregistered image that was not frozen shows the current frame:
         live = self.make_image(capture, 2, 1, 4, 2)
-        self.assertEqual(live.get_pixels(), expected(2, 1, 4, 2, 1))
+        self.assertEqual(live.get_plane(0), expected(2, 1, 4, 2, 1))
 
     def test_preserve_before_overwrite(self):
         capture = FakeCapture()
@@ -100,7 +100,7 @@ class TestDXGIImageWrapper(unittest.TestCase):
         capture.frame = 1
         image.preserve_before_overwrite()
         self.assertEqual(len(capture.snapshots), 1)
-        self.assertEqual(image.get_pixels(), expected(0, 0, W, H, 0))
+        self.assertEqual(image.get_plane(0), expected(0, 0, W, H, 0))
 
     def test_preserve_skips_completed_images(self):
         for action in ("get_pixels", "freeze_on_gpu", "free"):
@@ -121,7 +121,7 @@ class TestDXGIImageWrapper(unittest.TestCase):
         self.assertIsNone(image.get_gpu_buffer())
         self.assertEqual(capture.downloads, [(0, 2, 1, 4, 2)])
         capture.frame = 1
-        self.assertEqual(image.get_pixels(), expected(2, 1, 4, 2, 0))
+        self.assertEqual(image.get_plane(0), expected(2, 1, 4, 2, 0))
 
     def test_preserve_failure_can_retry(self):
         capture = FakeCapture()
@@ -133,7 +133,7 @@ class TestDXGIImageWrapper(unittest.TestCase):
         self.assertFalse(image.has_pixels())
         image.preserve_before_overwrite()
         capture.frame = 1
-        self.assertEqual(image.get_pixels(), expected(0, 0, W, H, 0))
+        self.assertEqual(image.get_plane(0), expected(0, 0, W, H, 0))
 
     def test_preserve_waits_for_download(self):
         capture = FakeCapture()
@@ -164,14 +164,14 @@ class TestDXGIImageWrapper(unittest.TestCase):
             self.assertEqual(downloading.result(timeout=5), expected(0, 0, W, H, 0))
             preserving.result(timeout=5)
         self.assertEqual(capture.snapshots, [])
-        self.assertEqual(image.get_pixels(), expected(0, 0, W, H, 0))
+        self.assertEqual(image.get_plane(0), expected(0, 0, W, H, 0))
 
     def test_freeze_downloads_the_region(self):
         capture = FakeCapture()
         image = self.make_image(capture, 1, 2, 3, 2)
         self.assertTrue(image.freeze())
         self.assertEqual(capture.downloads, [(0, 1, 2, 3, 2)])
-        self.assertEqual(image.get_pixels(), expected(1, 2, 3, 2))
+        self.assertEqual(image.get_plane(0), expected(1, 2, 3, 2))
         self.assertIsNone(image.get_gpu_buffer())
         self.assertEqual(image.get_rowstride(), 3 * 4)
 
@@ -194,13 +194,13 @@ class TestDXGIImageWrapper(unittest.TestCase):
         # and an image that cannot be downloaded any more says so:
         image = self.make_image(capture)
         with self.assertRaises(RuntimeError):
-            image.get_pixels()
+            image.get_plane(0)
 
     def test_sub_image_only_downloads_the_area(self):
         capture = FakeCapture()
         image = self.make_image(capture)
         sub = image.get_sub_image(W - 2, 0, 2, H)
-        self.assertEqual(sub.get_pixels(), expected(W - 2, 0, 2, H))
+        self.assertEqual(sub.get_plane(0), expected(W - 2, 0, 2, H))
         self.assertEqual((sub.get_target_x(), sub.get_target_y()), (W - 2, 0))
         self.assertFalse(image.has_pixels())
         self.assertEqual(capture.downloads, [(0, W - 2, 0, 2, H)])
@@ -208,10 +208,10 @@ class TestDXGIImageWrapper(unittest.TestCase):
     def test_sub_image_reuses_existing_pixels(self):
         capture = FakeCapture()
         image = self.make_image(capture)
-        image.get_pixels()
+        image.get_plane(0)
         capture.frame = 1
         sub = image.get_sub_image(1, 1, 2, 2)
-        self.assertEqual(sub.get_pixels(), expected(1, 1, 2, 2, 0))
+        self.assertEqual(sub.get_plane(0), expected(1, 1, 2, 2, 0))
         self.assertEqual(len(capture.downloads), 1)
 
     def test_sub_image_of_a_snapshot(self):
@@ -220,14 +220,14 @@ class TestDXGIImageWrapper(unittest.TestCase):
         image.freeze_on_gpu()
         capture.frame = 1
         sub = image.get_sub_image(1, 1, 2, 2)
-        self.assertEqual(sub.get_pixels(), expected(3, 2, 2, 2, 0))
+        self.assertEqual(sub.get_plane(0), expected(3, 2, 2, 2, 0))
 
     def test_restride_downloads_first(self):
         capture = FakeCapture()
         image = self.make_image(capture)
         self.assertTrue(image.restride(W * 4 + 8))
         self.assertEqual(image.get_rowstride(), W * 4 + 8)
-        self.assertEqual(len(image.get_pixels()), (W * 4 + 8) * H)
+        self.assertEqual(len(image.get_plane(0)), (W * 4 + 8) * H)
         image = self.make_image(capture)
         self.assertFalse(image.may_restride())
         self.assertTrue(image.has_pixels())
@@ -247,7 +247,7 @@ class TestDXGIImageWrapper(unittest.TestCase):
 
     def test_base_freeze_on_gpu(self):
         from xpra.codecs.image import ImageWrapper
-        image = ImageWrapper(0, 0, W, H, b"\0" * W * H * 4, "BGRX", 32, W * 4)
+        image = ImageWrapper(0, 0, W, H, (b"\0" * W * H * 4,), "BGRX", 32, W * 4)
         self.assertFalse(image.freeze_on_gpu())
         self.assertIsNone(image.get_gpu_buffer())
 

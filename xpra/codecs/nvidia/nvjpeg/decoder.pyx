@@ -27,12 +27,13 @@ from xpra.codecs.nvidia.nvjpeg.common import (
 )
 from xpra.codecs.nvidia.cuda.context import get_default_device_context
 from xpra.codecs.image import ImageWrapper
+from xpra.codecs.nvidia.cuda.decoded_image import CUDADecodedImageWrapper
 from xpra.log import Logger
 log = Logger("encoder", "nvjpeg")
 
 #we can import pycuda safely here,
 #because importing cuda/context will have imported it with the lock
-from pycuda.driver import Memcpy2D, memcpy_dtoh, mem_alloc
+from pycuda.driver import Context, Memcpy2D, memcpy_dtoh, mem_alloc
 
 
 DEF NVJPEG_MAX_COMPONENT = 4
@@ -105,10 +106,7 @@ def decompress(rgb_format: str, img_data, options=None) -> ImageWrapper:
 
 def decompress_and_download(rgb_format: str, img_data, options=None) -> ImageWrapper:
     img = decompress_with_device(rgb_format, img_data, options)
-    cuda_buffer = img.get_pixels()
-    pixels = download_from_gpu(cuda_buffer, img.get_rowstride() * img.get_height())
-    cuda_buffer.free()
-    img.set_pixels(pixels)
+    img.may_download()
     return img
 
 
@@ -244,7 +242,11 @@ def decompress_with_device(rgb_format: str, img_data, options=None) -> ImageWrap
             errcheck(nvjpegJpegStateDestroy(jpeg_handle), "nvjpegJpegStateDestroy")
     finally:
         errcheck(nvjpegDestroy(nv_handle), "nvjpegDestroy")
-    return ImageWrapper(0, 0, width, height, pixels, rgb_format, len(rgb_format)*8, rowstride, planes=len(rgb_format))
+    return CUDADecodedImageWrapper(
+        0, 0, width, height, (), rgb_format, len(rgb_format)*8, rowstride, len(rgb_format), ImageWrapper.PACKED,
+        gpu_buffer=pixels, cuda_context=Context.get_current(),
+        downloader=lambda buffer: (download_from_gpu(buffer, rowstride * height),),
+    )
 
 
 def selftest(full=False) -> None:

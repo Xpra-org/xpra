@@ -44,7 +44,7 @@ def main(fmt="png", files=()):
         stride = w * len(pixel_format)
         print(f"{f:40} : {img}")
         image = ImageWrapper(0, 0, w, h,
-                             rgb_data, pixel_format, len(pixel_format)*8, stride,
+                             (rgb_data,), pixel_format, len(pixel_format)*8, stride,
                              planes=ImageWrapper.PACKED, thread_safe=True)
         for enc in encoders:
             if fmt=="all":

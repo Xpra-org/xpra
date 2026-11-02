@@ -239,7 +239,7 @@ class AVFoundationCamera(CameraDevice):
             return
 
         self._frames += 1
-        image = ImageWrapper(0, 0, w, h, raw, pixel_format, 0, stride, planes=ImageWrapper.PACKED)
+        image = ImageWrapper(0, 0, w, h, (raw,), pixel_format, 0, stride, planes=ImageWrapper.PACKED)
         with self._cond:
             if self._latest is not None:
                 self._overwritten += 1

@@ -42,8 +42,8 @@ class VideoBenchmarkTest(unittest.TestCase):
         same = make_frame(32, 24, 7)
         next_frame = make_frame(32, 24, 8)
         try:
-            self.assertEqual(bytes(first.get_pixels()), bytes(same.get_pixels()))
-            self.assertNotEqual(bytes(first.get_pixels()), bytes(next_frame.get_pixels()))
+            self.assertEqual(bytes(first.get_plane(0)), bytes(same.get_plane(0)))
+            self.assertNotEqual(bytes(first.get_plane(0)), bytes(next_frame.get_plane(0)))
         finally:
             first.free()
             same.free()

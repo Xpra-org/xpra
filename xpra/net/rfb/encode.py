@@ -46,7 +46,7 @@ def rgb222_encode_image(img: ImageWrapper, x: int, y: int, w: int, h: int) -> Se
     if img.get_pixel_format() != "BGRX":
         log.warn("Warning: cannot convert %s to rgb222", img.get_pixel_format())
         return []
-    pixels = img.get_pixels()
+    pixels = img.get_plane(0)
     from xpra.codecs.argb.argb import bgra_to_rgb222  # pylint: disable=no-name-in-module
     data = bgra_to_rgb222(pixels)
     return header, data
@@ -71,7 +71,7 @@ def raw_pixels(img: ImageWrapper | None) -> SizedBuffer:
     Bpp = len(img.get_pixel_format())  # ie: BGRX -> 4
     if img.get_rowstride() != w * Bpp:
         img.restride(w * Bpp)
-    pixels = img.get_pixels()
+    pixels = img.get_plane(0)
     assert len(pixels) >= Bpp * w * h, "expected %i pixels for %ix%i-%i but got %i" % (
         Bpp * w * h, w, h, Bpp, len(pixels))
     return pixels[:Bpp * w * h]

@@ -48,7 +48,7 @@ def make_cpu_image(data, offset: int, size: int, width: int, height: int,
     if offset < 0 or size < required or offset + required > len(view):
         raise ValueError(f"invalid PipeWire chunk: offset={offset}, size={size}, required={required}")
     pixels = bytes(view[offset:offset + required])
-    return ImageWrapper(0, 0, width, height, pixels, pixel_format, 32, stride, 4,
+    return ImageWrapper(0, 0, width, height, (pixels,), pixel_format, 32, stride, 4,
                         ImageWrapper.PACKED, True)
 
 
@@ -74,7 +74,7 @@ def download_dmabuf(fd: int, offset: int, stride: int, width: int, height: int,
             fcntl.ioctl(fd, DMA_BUF_IOCTL_SYNC, flags.to_bytes(8, "little"))
         except OSError:
             pass
-    return ImageWrapper(0, 0, width, height, pixels, pixel_format, 32, stride, 4,
+    return ImageWrapper(0, 0, width, height, (pixels,), pixel_format, 32, stride, 4,
                         ImageWrapper.PACKED, True)
 
 

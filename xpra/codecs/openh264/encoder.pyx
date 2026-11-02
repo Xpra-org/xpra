@@ -819,7 +819,7 @@ cdef class Encoder:
         # honour any per-frame quality/speed change (no-op if unchanged):
         self.set_encoding_quality(options.intget("quality", -1))
         self.set_encoding_speed(options.intget("speed", -1))
-        pixels = image.get_pixels()
+        pixels = tuple(image.get_plane(plane_no) for plane_no in range(image.get_planes()))
         strides = image.get_rowstride()
 
         cdef SFrameBSInfo frame_info

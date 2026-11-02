@@ -15,6 +15,7 @@ N = 10
 #Q = (20, 99)
 Q = (1, 10, 50, 99, 100)
 
+
 def main(argv):
     assert len(argv)>1, "specify images to benchmark"
     from xpra.net import compression
@@ -50,7 +51,7 @@ def main(argv):
                     #print("%s" % (dir(mod), ))
                     for e in encodings:
                         image = ImageWrapper(0, 0, w, h,
-                                             rgb_data, pixel_format, len(pixel_format)*8, stride,
+                                             (rgb_data,), pixel_format, len(pixel_format)*8, stride,
                                              planes=ImageWrapper.PACKED, thread_safe=True)
                         sizes = []
                         n = 1 if warmup else N
@@ -60,7 +61,7 @@ def main(argv):
                             "rgb_formats"   : ("BGRX", "BGRA", "RGBA", "RGBX", "RGB", "BGR"),
                             "lz4"           : True,
                             "alpha"         : True,
-                            }
+                        }
                         client_options = {}
                         start = monotonic()
                         for _ in range(n):
@@ -81,6 +82,7 @@ def main(argv):
                             mps = (w*h*N) / (end-start)
                             print("    %-16s : %3i%%    -    %7i MPixels/s,    %s" % (
                                 e, cratio, mps//1024//1024, client_options))
+
 
 if __name__ == '__main__':
     main(sys.argv)

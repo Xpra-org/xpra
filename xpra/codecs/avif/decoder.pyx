@@ -177,7 +177,7 @@ def decompress(data: SizedBuffer, options: typedict, yuv=False) -> ImageWrapper:
             may_save_image("avif", data)
             if decoder.imageCount>1:
                 log.warn("Warning: more than one image in avif data")
-            img = ImageWrapper(0, 0, width, height, memoryview(pixels), rgb_format, bpp, stride, planes=ImageWrapper.PACKED)
+            img = ImageWrapper(0, 0, width, height, (memoryview(pixels),), rgb_format, bpp, stride, planes=ImageWrapper.PACKED)
             img.set_full_range(options.boolget("full-range", image.yuvRange == AVIF_RANGE_FULL))
             return img
     finally:
@@ -191,5 +191,5 @@ def selftest(full=False) -> None:
         for bdata, options in samples:
             img = decompress(bdata, typedict(options))
             assert img.get_width()==w and img.get_height()==h
-            assert len(img.get_pixels())>0
+            assert len(img.get_plane(0))>0
             #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))

@@ -1069,7 +1069,7 @@ cdef class Encoder:
         return gpu_surface
 
     cdef AMFSurface *upload_nv12(self, image) except NULL:
-        pixels = image.get_pixels()
+        pixels = tuple(image.get_plane(plane_no) for plane_no in range(image.get_planes()))
         strides = image.get_rowstride()
         if not pixels or len(pixels) != 2:
             raise ValueError(f"expected 2 NV12 planes, got {len(pixels or ())}")
@@ -1091,7 +1091,7 @@ cdef class Encoder:
                 log("cannot use GPU buffer %s", texture)
                 texture = None
         if texture is None:
-            pixels = image.get_pixels()
+            pixels = image.get_plane(0)
             if not pixels:
                 raise ValueError(f"failed to get pixels from {image}")
             return self.upload(AMF_SURFACE_BGRA, (pixels, ), (image.get_rowstride(), ), ((1, 1), ))

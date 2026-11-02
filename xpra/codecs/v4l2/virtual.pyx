@@ -436,7 +436,7 @@ cdef class VirtualWebcam:
         assert iplanes==ImageWrapper.PLANAR_3, "invalid input format: %s planes" % iplanes
         assert image.get_width()>=self.width, "invalid image width: %s (minimum is %s)" % (image.get_width(), self.width)
         assert image.get_height()>=self.height, "invalid image height: %s (minimum is %s)" % (image.get_height(), self.height)
-        planes = image.get_pixels()
+        planes = tuple(image.get_plane(plane_no) for plane_no in range(image.get_planes()))
         assert planes, "failed to get pixels from %s" % image
         input_strides = image.get_rowstride()
 

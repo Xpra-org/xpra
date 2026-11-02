@@ -90,7 +90,7 @@ class CaptureWindowModel:
             return None
         try:
             # downloads the pixels of images that live on the GPU:
-            image.get_pixels()
+            image.get_plane(0)
             width = image.get_width()
             stride = width * image.get_bytesperpixel()
             # Pillow expects rows without any padding:

@@ -11,7 +11,7 @@ from xpra.codecs.image import ImageWrapper
 
 
 def make_image() -> ImageWrapper:
-    return ImageWrapper(0, 0, 4, 4, b"0"*4*4*4, "RGBX", 24, 4*4, thread_safe=True)
+    return ImageWrapper(0, 0, 4, 4, (b"0"*4*4*4,), "RGBX", 24, 4*4, thread_safe=True)
 
 
 class TestImageWrapperLock(unittest.TestCase):
