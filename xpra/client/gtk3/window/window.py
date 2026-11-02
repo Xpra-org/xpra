@@ -95,7 +95,7 @@ class ClientWindow(WindowBaseClass):
     def show_window_menu(self, *_args) -> None:
         if not self.menu_helper:
             from xpra.client.gtk3.window.menu import WindowMenuHelper
-            self.menu_helper = WindowMenuHelper(self._client, self)
+            self.menu_helper = WindowMenuHelper(self.get_subsystem, self)
             self.menu_helper.build()
         self.menu_helper.popup(0, 0)
 

@@ -25,6 +25,7 @@ class MenuHelper:
         self.menu_shown = False
         self.menu_icon_size = get_icon_size()
         self.handshake_menuitem: Callable = self.do_handshake_menuitem
+        self.client = None
         self.set_client(client)
 
     def set_client(self, client) -> None:
