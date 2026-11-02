@@ -5,6 +5,9 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from contextlib import redirect_stdout
+from io import StringIO
+from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 from subprocess import TimeoutExpired
 
@@ -254,7 +257,8 @@ class TestRunGlprobeExitCodes(unittest.TestCase):
 
     def _call(self, props):
         opts = MagicMock()
-        with patch("xpra.scripts.glprobe.do_run_glcheck", return_value=props), \
+        with patch("xpra.scripts.glprobe.init_gl_backend"), \
+             patch("xpra.scripts.glprobe.do_run_glcheck", return_value=props), \
              patch("xpra.scripts.glprobe.signal"):   # avoid touching real signal handlers
             return run_glprobe(opts, show=False)
 
@@ -269,6 +273,98 @@ class TestRunGlprobeExitCodes(unittest.TestCase):
 
     def test_failure_when_empty_props(self):
         assert self._call({}) == ExitCode.FAILURE
+
+
+class TestGlCommandInitialization(unittest.TestCase):
+
+    def test_commands_initialize_the_selected_backend_before_probing(self):
+        from xpra.scripts.main import do_run_mode
+        for mode in ("opengl", "opengl-probe", "opengl-test"):
+            for backend in ("gtk", "win32"):
+                with self.subTest(mode=mode, backend=backend):
+                    calls = []
+                    display_source = SimpleNamespace(init_display_source=lambda: calls.append("display"))
+
+                    def check(*_args):
+                        self.assertEqual(calls, ["native"] if backend == "win32" else ["gtk", "display"])
+                        return {"success": True, "safe": True}
+
+                    with patch.dict("sys.modules", {"xpra.gtk.util": display_source}), \
+                         patch("xpra.scripts.main.check_gtk_client", side_effect=lambda: calls.append("gtk")), \
+                         patch("xpra.scripts.common.no_gi_gtk_modules", side_effect=lambda: calls.append("native")), \
+                         patch("xpra.platform.gui.init"), patch("xpra.platform.gui.set_default_icon"), \
+                         patch("xpra.scripts.glprobe.find_spec", return_value=object()), \
+                         patch("xpra.scripts.glprobe.signal"), \
+                         patch("xpra.scripts.glprobe.do_run_glcheck", side_effect=check) as probe, \
+                         redirect_stdout(StringIO()):
+                        result = do_run_mode("xpra", ["xpra", mode], _opts(backend=backend), [], mode, None)
+                    self.assertEqual(result, ExitCode.OK)
+                    self.assertEqual(probe.call_count, 1)
+
+    def test_save_probe_does_not_require_gtk(self):
+        from xpra.scripts.main import do_run_mode
+        with patch("xpra.scripts.main.check_gtk_client", side_effect=AssertionError("unexpected Gtk initialization")), \
+             patch("xpra.scripts.glprobe.run_opengl_probe", return_value=("success", {"safe": True})), \
+             patch("xpra.scripts.glprobe.save_opengl_probe"), redirect_stdout(StringIO()):
+            self.assertEqual(do_run_mode("xpra", [], _opts(), [], "opengl-save-probe", None), ExitCode.OK)
+
+
+class TestGlTestWindow(unittest.TestCase):
+
+    def test_native_window_loop_does_not_import_gtk(self):
+        from xpra.opengl.window import run_gltest_window
+        glib = MagicMock()
+        loop = glib.MainLoop.return_value
+        glib.timeout_add.return_value = 42
+        inject = MagicMock(return_value=43)
+        window = MagicMock()
+        draw = MagicMock(return_value=True)
+
+        def run():
+            draw()
+            signal, close = window.connect.call_args.args
+            self.assertEqual(signal, "closed")
+            close(window)
+
+        loop.run.side_effect = run
+
+        def gi_import(name):
+            self.assertEqual(name, "GLib")
+            return glib
+
+        with patch("xpra.opengl.window.gi_import", side_effect=gi_import), \
+             patch.dict("sys.modules", {
+                 "xpra.gtk.util": None, "xpra.gtk.window": None,
+                 "xpra.client.win32.glib": SimpleNamespace(inject_windows_message_source=inject),
+             }):
+            run_gltest_window(window, draw, 16, "win32")
+        inject.assert_called_once_with(loop)
+        window.show_all.assert_called_once_with()
+        draw.assert_called_once_with()
+        loop.quit.assert_called_once_with()
+        self.assertEqual([call.args for call in glib.source_remove.call_args_list], [(42,), (43,)])
+
+    def test_gtk_window_close_quits_and_removes_timer(self):
+        from xpra.opengl.window import run_gltest_window
+        glib = MagicMock()
+        gtk = MagicMock()
+        window = MagicMock()
+        draw = MagicMock(return_value=True)
+
+        def run():
+            signal, close = window.connect.call_args.args
+            self.assertEqual(signal, "delete-event")
+            self.assertTrue(close(window, None))
+
+        with patch("xpra.opengl.window.gi_import", side_effect={"GLib": glib, "Gtk": gtk}.get), \
+             patch.dict("sys.modules", {
+                 "xpra.gtk.util": SimpleNamespace(gtk_main=run),
+                 "xpra.gtk.window": SimpleNamespace(add_close_accel=MagicMock()),
+             }):
+            run_gltest_window(window, draw, 16, "gtk")
+        window.show.assert_called_once_with()
+        gtk.main_quit.assert_called_once_with()
+        glib.source_remove.assert_called_once_with(glib.timeout_add.return_value)
 
 
 class TestProbeOpengl(unittest.TestCase):
@@ -331,11 +427,17 @@ class TestDoRunGlcheck(unittest.TestCase):
         assert isinstance(result, dict)
 
     def test_backend_selects_the_window_module(self):
-        resolver = MagicMock(return_value=({}, None))
+        module = MagicMock()
+        resolver = MagicMock(return_value=({"safe": True}, module))
+        opts = _opts(opengl="auto", backend="win32")
+        opts.pixel_depth = 24
         with patch("xpra.scripts.glprobe.get_gl_client_window_module", resolver), \
+             patch("xpra.opengl.window.test_gl_client_window", return_value={"success": True}) as render, \
              patch("xpra.scripts.glprobe.use_tty", return_value=False):
-            do_run_glcheck(_opts(opengl="auto", backend="win32"))
+            result = do_run_glcheck(opts, show=True)
+        self.assertTrue(result["success"])
         resolver.assert_called_once_with("win32", "auto")
+        render.assert_called_once_with(module.GLClientWindow, pixel_depth=24, show=True, backend="win32")
 
     def test_logging_level_restored_on_exception(self):
         import logging

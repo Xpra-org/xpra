@@ -19,6 +19,12 @@ class FakePointerSubsystem:
         self.middle_click = True
         self.button_transform: dict[tuple[str, int], int] = {}
 
+    def get_mouse_position(self) -> tuple[int, int]:
+        return 0, 0
+
+    def split_pointer_position(self, position) -> tuple[tuple[int, ...], dict]:
+        return tuple(position[:2]), {}
+
     def send_button(self, *_args) -> None:
         log("send_button ignored")
 

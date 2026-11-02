@@ -123,10 +123,46 @@ def get_test_gl_icon() -> tuple[str, int, int, int, bytes]:
     return encoding, w, h, stride, data
 
 
+def run_gltest_window(window, draw: Callable, repaint_delay: int, backend: str) -> None:
+    GLib = gi_import("GLib")
+    message_source = 0
+    if backend == "win32":
+        from xpra.client.win32.glib import inject_windows_message_source
+        loop = GLib.MainLoop()
+        message_source = inject_windows_message_source(loop)
+        run = loop.run
+        quit_loop = loop.quit
+        window.connect("closed", lambda *_args: quit_loop())
+        window.show_all()
+    else:
+        Gtk = gi_import("Gtk")
+        from xpra.gtk.util import gtk_main
+        from xpra.gtk.window import add_close_accel
+        run = gtk_main
+        quit_loop = Gtk.main_quit
+
+        def window_close_event(*_args) -> bool:
+            quit_loop()
+            return True
+
+        add_close_accel(window, window_close_event)
+        window.connect("delete-event", window_close_event)
+        window.show()
+    timer = GLib.timeout_add(repaint_delay, draw)
+    try:
+        run()
+    finally:
+        if repaint_delay > 0:
+            GLib.source_remove(timer)
+        if message_source:
+            GLib.source_remove(message_source)
+
+
 def test_gl_client_window(gl_client_window_class: Callable,
                           max_window_size=(1024, 1024),
                           pixel_depth=24,
-                          show=False) -> dict[str, int | bool | str]:
+                          show=False,
+                          backend="gtk") -> dict[str, int | bool | str]:
     # try to render using a temporary window:
     draw_result: dict[str, int | bool | str] = {}
     window = None
@@ -211,19 +247,7 @@ def test_gl_client_window(gl_client_window_class: Callable,
         # so we can check the present_fbo() result:
         if show:
             widget.show()
-            window.show()
-            Gtk = gi_import("Gtk")  # @UndefinedVariable
-            GLib = gi_import("GLib")
-
-            def window_close_event(*_args) -> None:
-                Gtk.main_quit()
-
-            from xpra.gtk.util import gtk_main
-            from xpra.gtk.window import add_close_accel
-            add_close_accel(window, window_close_event)
-            noclient.get_subsystem("window").window_close_callback = window_close_event
-            GLib.timeout_add(REPAINT_DELAY, draw)
-            gtk_main()
+            run_gltest_window(window, draw, REPAINT_DELAY, backend)
         else:
             draw()
             # ugly workaround for calling the paint handler
