@@ -87,7 +87,7 @@ class CaptureWindow(GtkStubWindow):
             return False
         if self._override_redirect or self.is_readonly():
             return False
-        remoteinfo = self._client.get_subsystem("remote-info")
+        remoteinfo = self.get_subsystem("remote-info")
         server_mode = remoteinfo.server_mode if remoteinfo else ""
         return any(x == "*" or server_mode.find(x) >= 0 for x in CAPTURE_MODES)
 

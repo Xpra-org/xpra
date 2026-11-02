@@ -1803,7 +1803,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # and a pager source indication, only user-initiated moves are allowed to leave a window partially offscreen,
         # so with `sharing=combine`, a window overlapping this client's area may end up at the edge of the screen instead
         if CLAMP_WINDOW_TO_SCREEN:
-            display = self._client.get_subsystem("display")
+            display = self.get_subsystem("display")
             mw, mh = display.get_root_size() if display else (0, 0)
             if (ax + w) <= 0:
                 ax = -w + 1

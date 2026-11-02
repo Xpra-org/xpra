@@ -70,7 +70,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.group_leader = group_leader
         self._pos = (wx, wy)
         self._size = (ww, wh)
-        display = client.get_subsystem("display")
+        display = self.get_subsystem("display")
         self._xscale = display.xscale if display else 1
         self._yscale = display.yscale if display else 1
         self._client_properties = client_properties
@@ -257,7 +257,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def get_session_colourspace(self) -> Colourspace:
         """ the colourspace the session renders into, which is what we use for untagged windows """
-        display = self._client.get_subsystem("display")
+        display = self.get_subsystem("display")
         if not display:
             return SRGB
         return getattr(display, "server_colourspace", SRGB)
@@ -712,7 +712,7 @@ class ClientWindowBase(ClientWidgetBase):
             log("new min-speed=%s", enc.min_speed)
 
     def scaleup(self, *_args) -> None:
-        if display := self._client.get_subsystem("display"):
+        if display := self.get_subsystem("display"):
             display.scaleup()
 
     def window_scaleup(self, *_args) -> None:
@@ -723,7 +723,7 @@ class ClientWindowBase(ClientWidgetBase):
             self._scaleto(min(options))
 
     def scaledown(self, *_args) -> None:
-        if display := self._client.get_subsystem("display"):
+        if display := self.get_subsystem("display"):
             display.scaledown()
 
     def window_scaledown(self, *_args) -> None:
@@ -734,7 +734,7 @@ class ClientWindowBase(ClientWidgetBase):
             self._scaleto(max(options))
 
     def scalingoff(self) -> None:
-        if display := self._client.get_subsystem("display"):
+        if display := self.get_subsystem("display"):
             display.scalingoff()
 
     def window_scalingoff(self) -> None:
@@ -751,7 +751,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.resize(nw, nh)
 
     def scalereset(self, *_args) -> None:
-        if display := self._client.get_subsystem("display"):
+        if display := self.get_subsystem("display"):
             display.scalereset()
 
     def magic_key(self, *args) -> None:
@@ -809,7 +809,7 @@ class ClientWindowBase(ClientWidgetBase):
             rw, rh = self.get_size()
             self.idle_add(self.repaint, 0, 0, rw, rh)
             return
-        display = self._client.get_subsystem("display")
+        display = self.get_subsystem("display")
         for x, y, w, h in pr:
             rx, ry, rw, rh = display.srect(x, y, w, h) if display else (x, y, w, h)
             if self.window_offset:
