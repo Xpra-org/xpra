@@ -458,10 +458,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def setup_following(self) -> None:
         # find a parent window we should follow when it moves:
-        def find(attr: str):
-            return self._client.find_window(self._metadata, attr)
-
-        follow = find("transient-for") or find("parent")
+        follow = self.find_related_window("transient-for") or self.find_related_window("parent")
         log("setup_following() follow=%s", follow)
         if not follow or not isinstance(follow, Gtk.Window):
             return
@@ -1565,7 +1562,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # the server has moved this window relative to its parent (ie: a Wayland `xdg_popup` reposition),
         # resolve it against where the parent is on our side, just like when the window was created,
         # so this also works for nested popups: the parent's position already includes its own offset
-        parent = self._client.find_window(self._metadata, "parent")
+        parent = self.find_related_window("parent")
         ppos: tuple[int, int] | None = getattr(parent, "_pos", None)
         geomlog("apply_relative_position(%s) parent=%s, parent position=%s", rel_pos, parent, ppos)
         if len(rel_pos) != 2 or not ppos:

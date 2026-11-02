@@ -293,6 +293,12 @@ class ClientWindowBase(ClientWidgetBase):
     def apply_relative_position(self, rel_pos: Sequence[int]) -> None:
         """ the windows that can follow their parent override this """
 
+    def find_related_window(self, metadata_key: str):
+        """ the window referenced by the given metadata key, ie: "transient-for" or "parent" """
+        wid = self._metadata.intget(metadata_key, -1)
+        window = self.get_subsystem("window")
+        return window.get_window(wid) if wid > 0 and window else None
+
     def _get_window_title(self, metadata: typedict) -> str:
         try:
             return do_get_window_title(self._client, self.wid, dict(self._metadata) | dict(metadata))

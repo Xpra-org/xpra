@@ -37,6 +37,9 @@ class FakeWindowSubsystem:
         self._window_with_grab = None
         self.pointer_grabbed = None
 
+    def get_window(self, wid: int):
+        return self._id_to_window.get(wid)
+
     def has_focus(self, *_args) -> bool:
         return False
 
@@ -58,7 +61,6 @@ class FakeClient(GLibScheduler):
         self.title = ""
         self.readonly = False
         self._remote_server_mode = "seamless"
-        self.find_window = noop
         self.request_frame_extents = noop
         self.server_readonly = False
         self.window_ungrab = noop

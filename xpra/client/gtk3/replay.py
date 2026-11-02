@@ -30,7 +30,6 @@ class GtkReplay(Replay):
         self.encoding_defaults = {}
         self.readonly = True
         self.title = "replay: @title@"
-        self.find_window = noop
         self.request_frame_extents = noop
         self._current_screen_sizes = ()
         self.subsystems = {
