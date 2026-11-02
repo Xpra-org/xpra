@@ -47,11 +47,18 @@ class KeyboardHelperTest(unittest.TestCase):
 
     def test_keymap_properties(self):
         kh = KeyboardHelper(noop)
+        self.addCleanup(kh.cleanup)
         kh.query_xkbmap()
         p = kh.get_keymap_properties()
-        assert p, "no keymap properties returned"
-        assert len(p) >= 8, "not enough keymap properties (%i): %s" % (len(p), p)
-        kh.cleanup()
+        self.assertIs(p["raw"], False)
+        self.assertIs(p["sync"], True)
+        self.assertIs(p["layout_groups"], kh.layout_groups)
+        # Detected properties may be empty when no native keymap is available.
+        self.assertEqual(p.get("layout", ""), kh.layout)
+        self.assertEqual(p.get("query_struct", {}), kh.query_struct)
+        self.assertEqual(p.get("native", {}), kh.native)
+        self.assertEqual(p.get("mod_meanings", {}), kh.mod_meanings)
+        self.assertEqual(p.get("x11_keycodes", {}), kh.x11_keycodes)
 
     def test_parse_shortcuts(self):
         shortcuts = [
