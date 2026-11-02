@@ -47,10 +47,10 @@ class ClientWindow(WindowBaseClass):
     """
     __gsignals__ = get_all_gsignals()
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         self.menu_helper = None
         for bc in WINDOW_BASES:
-            bc.init_window(self, client, metadata, client_props)
+            bc.init_window(self, metadata, client_props)
 
     def destroy(self) -> None:  # pylint: disable=method-hidden
         for bc in WINDOW_BASES:

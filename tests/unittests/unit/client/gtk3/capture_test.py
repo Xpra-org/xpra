@@ -79,7 +79,7 @@ class CaptureTestWindow(CaptureWindow, FakePointerBase):
         }
         self._client = SimpleNamespace(is_readonly=lambda: False,
                                        get_subsystem=self.subsystems.get)
-        self.init_window(None, None, None)
+        self.init_window(None, None)
 
     def get_subsystem(self, name: str):
         return self.subsystems.get(name)

@@ -58,7 +58,7 @@ class ClientWindow(ClientWindowBase):
     Everything that touches the terminal runs on the UI thread.
     """
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         # this backing can always paint with alpha, so honour the server's request:
         self._window_alpha = self._has_alpha and TerminalBacking.HAS_ALPHA
         self._mapped = False
@@ -78,7 +78,7 @@ class ClientWindow(ClientWindowBase):
         self._title = ""
         self._icon_name = ""
         self._opacity = 1
-        super().init_window(client, metadata, client_props)
+        super().init_window(metadata, client_props)
 
     def __repr__(self):
         return f"TerminalClientWindow({self.wid:#x})"

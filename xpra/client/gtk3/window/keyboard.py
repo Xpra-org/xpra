@@ -22,7 +22,7 @@ UNICODE_KEYNAMES = envbool("XPRA_UNICODE_KEYNAMES", False)
 
 class KeyboardWindow(GtkStubWindow):
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         self.connect("key-press-event", self.handle_key_press_event)
         self.connect("key-release-event", self.handle_key_release_event)
 

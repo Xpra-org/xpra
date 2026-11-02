@@ -109,7 +109,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.pending_refresh: list[tuple[int, int, int, int]] = []
         self.headerbar = headerbar
 
-        self.init_window(client, metadata, client_properties)
+        self.init_window(metadata, client_properties)
         self.setup_window(bw, bh)
         self.update_metadata(metadata)
         self.finalize_window()
@@ -117,7 +117,7 @@ class ClientWindowBase(ClientWidgetBase):
     def __repr__(self):
         return f"ClientWindow({self.wid:#x})"
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         self._backing = None
         self._metadata = typedict()
         # used for only sending focus events *after* the window is mapped:

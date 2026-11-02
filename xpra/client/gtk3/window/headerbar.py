@@ -63,7 +63,7 @@ def get_header_bar_image(size: int = 24):
 
 class HeaderBarWindow(GtkStubWindow):
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         self.header_bar_image: Gtk.Image | None = None
         if self.can_use_header_bar(metadata):
             title = metadata.strget("title", "")

@@ -72,7 +72,7 @@ def norm_scroll(value: float):
 
 class PointerWindow(GtkStubWindow):
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         self.cursor_data = ()
         self.remove_pointer_overlay_timer = 0
         self.show_pointer_overlay_timer = 0

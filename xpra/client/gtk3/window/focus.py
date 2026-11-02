@@ -32,7 +32,7 @@ class FocusWindow(GtkStubWindow):
         "x11-focus-in-event": one_arg_signal,
     }
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         self._focus_latest = None
         self.recheck_focus_timer: int = 0
         self.remove_event_receiver = noop

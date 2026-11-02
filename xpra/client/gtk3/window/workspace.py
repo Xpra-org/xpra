@@ -81,7 +81,7 @@ POLL_WORKSPACE = envbool("XPRA_POLL_WORKSPACE", WIN32_WORKSPACE)
 
 class WorkspaceWindow(GtkStubWindow):
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         self._can_set_workspace = CAN_SET_WORKSPACE
         self._window_workspace = WORKSPACE_UNSET
         self._desktop_workspace = WORKSPACE_UNSET
