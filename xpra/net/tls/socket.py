@@ -5,6 +5,7 @@
 
 import os.path
 from typing import Any
+from collections.abc import Sequence
 
 from xpra.exit_codes import ExitCode
 from xpra.net.tls.common import (
@@ -28,9 +29,15 @@ SSL_RETRY = envbool("XPRA_SSL_RETRY", True)
 SSL_HANDSHAKE_TIMEOUT = envint("XPRA_SSL_HANDSHAKE_TIMEOUT", 20)
 
 
-def ssl_wrap_socket(sock, **kwargs):
+def ssl_wrap_socket(sock, alpn_protocols: Sequence[str] = (), **kwargs):
     context, wrap_kwargs = get_ssl_wrap_socket_context(**kwargs)
     log = get_ssl_logger()
+    if alpn_protocols:
+        import ssl
+        if getattr(ssl, "HAS_ALPN", False):
+            context.set_alpn_protocols(list(alpn_protocols))
+        else:
+            log("ALPN is not supported, cannot advertise %s", alpn_protocols)
     log("ssl_wrap_socket(%s, %s) context=%s, wrap_kwargs=%s", sock, kwargs, context, wrap_kwargs)
     return do_wrap_socket(sock, context, **wrap_kwargs)
 
