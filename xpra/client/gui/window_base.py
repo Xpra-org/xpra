@@ -278,7 +278,7 @@ class ClientWindowBase(ClientWidgetBase):
         if "content-type" in metadata:
             metadata = typedict(metadata)
             metadata.pop("content-type")
-        if self._client.readonly:
+        if self.is_readonly():
             metadata.update(force_size_constraint(*self._size))
         self._metadata.update(metadata)
         try:

@@ -34,6 +34,11 @@ class ClientWidgetBase:
         """ look up a client subsystem (delegates to the owning client) """
         return self._client.get_subsystem(name)
 
+    def is_readonly(self) -> bool:
+        """ read-only mode (local or server side): no input or window changes are sent to the server """
+        client = self._client
+        return bool(client.readonly or client.server_readonly)
+
     def get_info(self) -> dict[str, Any]:
         info = {
             "has-alpha": self._has_alpha,

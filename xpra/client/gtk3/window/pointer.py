@@ -217,7 +217,7 @@ class PointerWindow(GtkStubWindow):
             self.remove_pointer_overlay()
         # `server_pointer` is owned by the `pointer` subsystem (which may be disabled):
         pointer = self.get_subsystem("pointer")
-        if self._client.readonly or self._client.server_readonly or (pointer and not pointer.server_pointer):
+        if self.is_readonly() or (pointer and not pointer.server_pointer):
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
         if self.button_polling_timer:
@@ -271,7 +271,7 @@ class PointerWindow(GtkStubWindow):
         return v
 
     def _do_scroll_event(self, event) -> bool:
-        if self._client.readonly:
+        if self.is_readonly():
             return True
         if event.direction == Gdk.ScrollDirection.SMOOTH:
             log("smooth scroll event: %s, raw delta: %s,%s", event, event.delta_x, event.delta_y)
@@ -316,7 +316,7 @@ class PointerWindow(GtkStubWindow):
             return
         # button events are sent by the `pointer` subsystem, which may be disabled:
         pointer = self.get_subsystem("pointer")
-        if not pointer or self._client.readonly or self._client.server_readonly or not pointer.server_pointer:
+        if not pointer or self.is_readonly() or not pointer.server_pointer:
             return
         if not pointer.middle_click and button == 2:
             log("_button_action: middle click suppressed (middle-click=no)")

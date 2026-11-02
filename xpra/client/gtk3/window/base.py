@@ -746,7 +746,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.update_window_state(state_updates)
 
     def update_window_state(self, state_updates: dict[str, bool]):
-        if self._client.readonly:
+        if self.is_readonly():
             log("update_window_state(%s) ignored in readonly mode", state_updates)
             return
         if state_updates.get("maximized") is False or state_updates.get("fullscreen") is False:
@@ -823,7 +823,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def schedule_send_iconify(self) -> None:
         # calculate a good delay to prevent races causing minimize/unminimize loops:
-        if self._client.readonly:
+        if self.is_readonly():
             return
         delay = ICONIFY_LATENCY
         if delay > 0:
@@ -1649,7 +1649,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             sw, sh = self.snap_to_server_grid(sw, sh, nearest=sw != w or sh != h)
 
         config: dict[str, PacketElement] = {}
-        if not self._client.readonly:
+        if not self.is_readonly():
             if pointer := self.get_subsystem("pointer"):
                 position, pointer_props = pointer.split_pointer_position(pointer.get_mouse_position())
                 pointer_data = {
@@ -1691,7 +1691,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.new_backing(bw, bh)
 
     def may_update_metadata(self, w: int, h: int) -> None:
-        if self._client.readonly:
+        if self.is_readonly():
             # change size-constraints first,
             # so the resize can be honoured:
             sc = typedict(force_size_constraint(w, h))

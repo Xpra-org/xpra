@@ -10,6 +10,7 @@ from unittest.mock import MagicMock
 
 from xpra.os_util import gi_import
 from xpra.constants import NotificationID
+from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gtk3.window.capture import CaptureWindow, accumulate
 
 Gdk = gi_import("Gdk")
@@ -26,6 +27,8 @@ CENTER = (640, 400)
 
 class FakePointerBase:
     """ records the calls that `CaptureWindow` passes on to `PointerWindow` and `GrabWindow` """
+
+    is_readonly = ClientWidgetBase.is_readonly
 
     def __init__(self):
         self.forwarded: list[tuple] = []

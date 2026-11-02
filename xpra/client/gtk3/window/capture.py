@@ -85,7 +85,7 @@ class CaptureWindow(GtkStubWindow):
         pointer = self.get_subsystem("pointer")
         if not pointer or not getattr(pointer, "input_capture", False):
             return False
-        if self._override_redirect or self._client.readonly or self._client.server_readonly:
+        if self._override_redirect or self.is_readonly():
             return False
         remoteinfo = self._client.get_subsystem("remote-info")
         server_mode = remoteinfo.server_mode if remoteinfo else ""
