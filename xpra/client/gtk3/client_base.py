@@ -20,7 +20,6 @@ from xpra.common import is_covered_by_opaque_region
 from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
 from xpra.constants import DEFAULT_METADATA_SUPPORTED
 from xpra.util.parsing import FALSE_OPTIONS
-from xpra.gtk.cursors import get_default_cursor, make_cursor
 from xpra.gtk.util import get_default_root_window, init_display_source
 from xpra.gtk.window import GDKWindow
 from xpra.gtk.widget import scaled_image
@@ -60,7 +59,7 @@ VREFRESH = envint("XPRA_VREFRESH", 0)
 inject_css_overrides()
 init_display_source(False)
 # must come after init_display_source()
-from xpra.client.gtk3.window.base import HAS_X11_BINDINGS  # noqa: E402
+from xpra.client.gtk3.window.base import HAS_X11_BINDINGS, make_window_cursor  # noqa: E402
 
 
 def get_group_ref(metadata: dict) -> str:
@@ -298,18 +297,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def set_windows_cursor(self, windows, cursor_data: Sequence) -> None:
         cursorlog(f"set_windows_cursor({windows}, args[{len(cursor_data)}])")
-        cursor = None
-        if cursor_data:
-            try:
-                display = self.get_subsystem("display")
-                xscale, yscale = (display.xscale, display.yscale) if display else (1, 1)
-                cursor = make_cursor(cursor_data, xscale, yscale)
-                cursorlog(f"make_cursor(..)={cursor}")
-            except Exception as e:
-                log.warn("error creating cursor: %s (using default)", e, exc_info=True)
-            if cursor is None:
-                # use default:
-                cursor = get_default_cursor()
+        cursor = make_window_cursor(cursor_data, self.get_subsystem("display"))
         # the `cursor` subsystem records the last cursor (in its set_windows_cursor);
         # here we only track which windows got a cursor, for reset_windows_cursors:
         cur = self.get_subsystem("cursor")
@@ -317,17 +305,10 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             # weak dependency on PointerWindow:
             set_cursor_data = getattr(w, "set_cursor_data", noop)
             set_cursor_data(cursor_data)
-            # the cursor should only apply to the window contents (aka "drawingarea"),
-            # and not the headerbar:
-            gtkwin = getattr(w, "drawing_area", w)
-            gdkwin = gtkwin.get_window()
-            # trays don't have a gdk window
-            if gdkwin:
-                if cur:
-                    cur._cursors[w] = cursor_data
-                # a local move or resize drag owns the cursor until it ends:
-                if not getattr(w, "moveresize_cursor", ""):
-                    gdkwin.set_cursor(cursor)
+            # trays don't have a gdk window:
+            set_gdk_cursor = getattr(w, "set_gdk_cursor", None)
+            if set_gdk_cursor and set_gdk_cursor(cursor) and cur:
+                cur._cursors[w] = cursor_data
 
     def window_bell(self, window, device: int, percent: int, pitch: int, duration: int, bell_class,
                     bell_id: int, bell_name: str) -> None:

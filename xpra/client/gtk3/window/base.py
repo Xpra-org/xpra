@@ -23,7 +23,7 @@ from xpra.util.thread import check_main_thread
 from xpra.gtk.info import get_monitor_plug_name
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.window import set_visual
-from xpra.gtk.cursors import new_cursor
+from xpra.gtk.cursors import new_cursor, make_cursor, get_default_cursor
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.common import (
     force_size_constraint, noop,
@@ -53,6 +53,7 @@ metalog = Logger("metadata")
 statelog = Logger("state")
 eventslog = Logger("events")
 geomlog = Logger("geometry")
+cursorlog = Logger("gtk", "client", "cursor")
 alphalog = Logger("alpha")
 
 HAS_X11_BINDINGS = False
@@ -197,6 +198,23 @@ MOVERESIZE_CURSOR_MAP: dict[int, str] = {int(d): name for d, name in {
     MoveResize.MOVE: "move",
     MoveResize.MOVE_KEYBOARD: "move",
 }.items()}
+
+
+def make_window_cursor(cursor_data: Sequence, display=None) -> Gdk.Cursor | None:
+    """
+    The Gdk cursor for the cursor data the server sent us, scaled for the `display` subsystem,
+    the default cursor if we fail to create it, or `None` to reset the cursor when there is no data.
+    """
+    if not cursor_data:
+        return None
+    cursor = None
+    try:
+        xscale, yscale = (display.xscale, display.yscale) if display else (1, 1)
+        cursor = make_cursor(cursor_data, xscale, yscale)
+        cursorlog(f"make_cursor(..)={cursor}")
+    except Exception as e:
+        cursorlog.warn("error creating cursor: %s (using default)", e, exc_info=True)
+    return cursor or get_default_cursor()
 
 
 def get_follow_window_types() -> Sequence[Gdk.WindowTypeHint]:
@@ -1328,7 +1346,20 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.moveresize_cursor = ""
         # re-apply whatever the server asked for whilst we were dragging:
         # (weak dependency on `PointerWindow`)
-        self._client.set_windows_cursor([self], getattr(self, "cursor_data", ()))
+        cursor_data = getattr(self, "cursor_data", ())
+        self.set_gdk_cursor(make_window_cursor(cursor_data, self.get_subsystem("display")))
+
+    def set_gdk_cursor(self, cursor: Gdk.Cursor | None) -> bool:
+        """ show this cursor, returns `False` if there is no gdk window to show it on (yet) """
+        # the cursor should only apply to the window contents (aka "drawingarea"),
+        # and not the headerbar:
+        gdkwin = getattr(self, "drawing_area", self).get_window()
+        if not gdkwin:
+            return False
+        # a local move or resize drag owns the cursor until it ends:
+        if not self.moveresize_cursor:
+            gdkwin.set_cursor(cursor)
+        return True
 
     def snap_to_server_grid(self, sw: int, sh: int, nearest: bool = False) -> tuple[int, int]:
         """snap server-coordinate dimensions to the application's resize increment grid"""
