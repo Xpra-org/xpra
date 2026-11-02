@@ -36,8 +36,7 @@ class Win32ConfigureTest(unittest.TestCase):
         from xpra.client.win32.window import ClientWindow
         sent = []
         subsystems.setdefault("window", SimpleNamespace(send=lambda *packet: sent.append(packet)))
-        client = SimpleNamespace(get_subsystem=subsystems.get)
-        window = SimpleNamespace(client=client, wid=7, x=20, y=40, width=200, height=100,
+        window = SimpleNamespace(get_subsystem=subsystems.get, wid=7, x=20, y=40, width=200, height=100,
                                  state_updates={"fullscreen": True}, resize_counter=3,
                                  pop_client_properties=lambda: {},
                                  get_monitor_position=lambda: {"index": 1, "position": (10, 20)})

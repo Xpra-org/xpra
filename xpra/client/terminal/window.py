@@ -58,6 +58,11 @@ class ClientWindow(ClientWindowBase):
     Everything that touches the terminal runs on the UI thread.
     """
 
+    def __init__(self, client, *args, **kwargs):
+        # unlike the other windows, this one is given the whole client:
+        self._client = client
+        super().__init__(client.get_subsystem, client.is_readonly, *args, **kwargs)
+
     def init_window(self, metadata: typedict, client_props: typedict) -> None:
         # this backing can always paint with alpha, so honour the server's request:
         self._window_alpha = self._has_alpha and TerminalBacking.HAS_ALPHA

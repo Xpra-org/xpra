@@ -35,9 +35,6 @@ class TestClient(FakeClient):
         self.title = "@title@"
         self.get_subsystem("window").window_close_callback = self.window_close_event
 
-    def get_window_menu_helper(self):
-        return None
-
     def get_root_size(self) -> tuple[int, int]:
         screen = Gtk.Window().get_screen()
         return screen.get_width(), screen.get_height()
@@ -181,7 +178,7 @@ def make_xpra_window(args):
     geom = args.geometry
     metadata = make_metadata(args)
     window = ClientWindow(
-        client, None, wid,
+        client.get_subsystem, client.is_readonly, None, wid,
         geom, geom[2:4],
         metadata, False, typedict(),
         WindowBorder(False),

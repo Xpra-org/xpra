@@ -5,7 +5,7 @@
 
 from time import time
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from xpra.net.packet_type import WINDOW_CONFIGURE
 from xpra.os_util import gi_import
@@ -33,9 +33,9 @@ class ClientTray(ClientWidgetBase):
     DEFAULT_SIZE = [64, 64]
     DEFAULT_GEOMETRY: tuple[int, int, int, int] = tuple(DEFAULT_LOCATION + DEFAULT_SIZE)
 
-    def __init__(self, client, wid: int, w: int, h: int, metadata, tray_widget, mmap_area):
-        log("ClientTray(%s, %#x, %i, %i, %s, %s, %s)", client, wid, w, h, metadata, tray_widget, mmap_area)
-        super().__init__(client, wid, True)
+    def __init__(self, get_subsystem: Callable, wid: int, w: int, h: int, metadata, tray_widget, mmap_area):
+        log("ClientTray(%s, %#x, %i, %i, %s, %s, %s)", get_subsystem, wid, w, h, metadata, tray_widget, mmap_area)
+        super().__init__(get_subsystem, wid, True)
         self._size = w, h
         self._metadata = metadata
         self.title = metadata.strget("title")

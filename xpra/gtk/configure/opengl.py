@@ -146,7 +146,7 @@ def create_twin_test_windows(parent: Gtk.Window) -> tuple[dict[str, Any], list[G
         (1, ClientWindow, "Non-OpenGL Window"),
     ):
         x, y = 100+ww*i, 100
-        window = window_class(noclient, None, 0, 2 ** 32 - 1,
+        window = window_class(noclient.get_subsystem, noclient.is_readonly, None, 0, 2 ** 32 - 1,
                               (x, y, ww, wh), (ww, wh),
                               metadata, False, typedict({}),
                               border, max_window_size, pixel_depth,

@@ -101,7 +101,7 @@ class GtkReplay(Replay):
         border = WindowBorder()
         max_window_size = 2 ** 15, 2 ** 15
         pixel_depth = metadata.intget("pixel-depth", 24)
-        window = ClientWindow(self, group_leader, wid,
+        window = ClientWindow(self.get_subsystem, self.is_readonly, group_leader, wid,
                               geometry,
                               backing_size,
                               metadata, override_redirect, client_props,

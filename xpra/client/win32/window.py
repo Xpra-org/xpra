@@ -259,12 +259,15 @@ class ClientWindow(GObject.GObject):
     module_handle = GetModuleHandleA(None)
     log("module-handle=%#x", module_handle)
 
-    def __init__(self, client, group_leader_window, wid: int, geom, backing_size, metadata: dict,
-                 override_redirect, client_properties,
+    def __init__(self, get_subsystem: Callable, is_readonly: Callable, group_leader_window, wid: int, geom, backing_size,
+                 metadata: dict, override_redirect, client_properties,
                  border, max_window_size, pixel_depth,
-                 headerbar=None):
+                 headerbar=None, get_xpra_menu=None):
         GObject.GObject.__init__(self)
-        self.client = client
+        # the window is only given what it needs from the client
+        # (the system menu is our own, `get_xpra_menu` is not used):
+        self.get_subsystem: Callable = get_subsystem
+        self.is_readonly: Callable[[], bool] = is_readonly
         self.wid = wid
         self.x = geom[0]
         self.y = geom[1]
@@ -383,7 +386,7 @@ class ClientWindow(GObject.GObject):
         """
         if not self.backing:
             return
-        enc = self.client.get_subsystem("encoding") if self.client else None
+        enc = self.get_subsystem("encoding")
         encoding_defaults = enc.encoding_defaults if enc else {}
         self._client_properties.update(get_backing_client_properties(self.backing, encoding_defaults))
 
@@ -408,7 +411,7 @@ class ClientWindow(GObject.GObject):
         backing = self.backing
         if not backing:
             return
-        display = self.client.get_subsystem("display") if self.client else None
+        display = self.get_subsystem("display")
         if display:
             bw, bh = display.cx(width), display.cy(height)
         else:
@@ -753,8 +756,8 @@ class ClientWindow(GObject.GObject):
         if not self.hwnd:
             return
         owner_hwnd = 0
-        if wid and self.client:
-            wm = self.client.get_subsystem("window")
+        if wid:
+            wm = self.get_subsystem("window")
             owner = wm.get_window(wid) if wm else None
             owner_hwnd = getattr(owner, "hwnd", 0) or 0
         SetWindowLongPtrValueW(self.hwnd, GWLP_HWNDPARENT, owner_hwnd)
@@ -777,7 +780,7 @@ class ClientWindow(GObject.GObject):
     def get_server_geometry(self) -> tuple[tuple[int, int, int, int], tuple[int, int]]:
         """ the geometry in server coordinates, and the scaled position before the server offset """
         geometry = (self.x, self.y, self.width, self.height)
-        display = self.client.get_subsystem("display") if self.client else None
+        display = self.get_subsystem("display")
         if not display:
             return geometry, geometry[:2]
         geometry = display.crect(*geometry)
@@ -786,12 +789,12 @@ class ClientWindow(GObject.GObject):
 
     def get_server_monitor_position(self) -> dict[str, Any]:
         monitor = self.get_monitor_position()
-        if monitor and (display := self.client.get_subsystem("display") if self.client else None):
+        if monitor and (display := self.get_subsystem("display")):
             monitor["position"] = display.cp(*monitor["position"])
         return monitor
 
     def send_configure(self) -> None:
-        wm = self.client.get_subsystem("window") if self.client else None
+        wm = self.get_subsystem("window")
         if not wm:
             return
         geometry, raw_position = self.get_server_geometry()
@@ -928,8 +931,8 @@ class ClientWindow(GObject.GObject):
 
     def get_menu_states(self) -> dict[str, bool]:
         # the state of the checkbox items of xpra's window menu:
-        kb = self.client.get_subsystem("keyboard") if self.client else None
-        wm = self.client.get_subsystem("window") if self.client else None
+        kb = self.get_subsystem("keyboard")
+        wm = self.get_subsystem("window")
         return {
             "fullscreen": self.fullscreen,
             "above": self._above,
@@ -1092,7 +1095,7 @@ class ClientWindow(GObject.GObject):
         grablog("do_window_grab() handle=%#x, pointer_grab=%s", handle, grabbed)
         # also grab the keyboard so the user can't Alt-Tab / Super away:
         # (the `WH_KEYBOARD_LL` hook swallows Win/Tab keys while `grabbed` and focused)
-        if kb := self.client.get_subsystem("keyboard"):
+        if kb := self.get_subsystem("keyboard"):
             kb.grabbed = True
 
     def do_window_ungrab(self) -> None:
@@ -1100,7 +1103,7 @@ class ClientWindow(GObject.GObject):
         handle = self.get_window_handle()
         grablog("do_window_ungrab() handle=%#x", handle)
         pointer_ungrab(handle)
-        if kb := self.client.get_subsystem("keyboard"):
+        if kb := self.get_subsystem("keyboard"):
             kb.grabbed = False
 
     def show_all(self):

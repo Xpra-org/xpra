@@ -84,7 +84,7 @@ class ClientWindow(WindowBaseClass):
 
     def show_xpra_menu(self, *_args) -> None:
         # this is called by the headerbar
-        if mh := self._client.get_window_menu_helper():
+        if self.get_xpra_menu and (mh := self.get_xpra_menu()):
             mh.build()
             mh.popup(0, 0)
 

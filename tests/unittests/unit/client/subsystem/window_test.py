@@ -53,8 +53,14 @@ class WindowManagerTest(ClientMixinTest):
                     ):
                         window = manager.make_new_window(3, geometry, geometry[2:], metadata, True, typedict())
                     self.assertIs(window, window_class.return_value)
-                    self.assertEqual(window_class.call_args.args[5]["transient-for"], expected_parent)
-                    self.assertEqual(window_class.call_args.args[3], geometry)
+                    args = window_class.call_args.args
+                    self.assertEqual(args[6]["transient-for"], expected_parent)
+                    self.assertEqual(args[4], geometry)
+                    # the window is only given what it needs from the client:
+                    self.assertNotIn(client, args)
+                    self.assertIs(args[0], client.get_subsystem)
+                    self.assertIs(args[1], client.is_readonly)
+                    self.assertIs(args[-1], client.get_window_menu_helper)
 
     def test_dismiss_popups(self):
         from xpra.client.subsystem.window import WindowClient

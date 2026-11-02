@@ -32,9 +32,14 @@ class FakePointerSubsystem:
         log("wheel_event ignored")
 
 
-class FakeWindowSubsystem:
+class FakeWindowSubsystem(GLibScheduler):
     def __init__(self, client=None):
         self.client = client
+        if client:
+            # like `StubClientSubsystem`, use the client's own scheduler:
+            self.idle_add = client.idle_add
+            self.timeout_add = client.timeout_add
+            self.source_remove = client.source_remove
         self.modal_windows = False
         self.server_window_states: Sequence[str] = ()
         self.server_window_frame_extents = False

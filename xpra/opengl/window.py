@@ -196,7 +196,7 @@ def test_gl_client_window(gl_client_window_class: Callable,
             def schedule_recheck_focus(self) -> None:
                 """ pretend to handle focus checks """
 
-        window = NoHeaderGLClientWindow(noclient, None, 0,
+        window = NoHeaderGLClientWindow(noclient.get_subsystem, noclient.is_readonly, None, 0,
                                         (x, y, ww, wh), (ww, wh),
                                         metadata, False, typedict({}),
                                         border, max_window_size, pixel_depth)

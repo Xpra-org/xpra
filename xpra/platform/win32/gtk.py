@@ -186,12 +186,12 @@ def add_window_hooks(window) -> None:
                 y = lParam >> 16
                 x = lParam & 0xFFFF
                 units = distance / WHEEL_DELTA
-                client = getattr(window, "_client")
                 wid = window.wid
+                pointer_sub = window.get_subsystem("pointer")
                 pointerlog(
-                    "win32 mousewheel: orientation=%s, distance=%i, wheel-delta=%s, units=%.3f, new value=%.1f, keys=%#x, x=%i, y=%i, client=%s, wid=%#x",
-                    orientation, distance, WHEEL_DELTA, units, distance, keys, x, y, client, wid)
-                if client and wid > 0:
+                    "win32 mousewheel: orientation=%s, distance=%i, wheel-delta=%s, units=%.3f, new value=%.1f, keys=%#x, x=%i, y=%i, pointer=%s, wid=%#x",
+                    orientation, distance, WHEEL_DELTA, units, distance, keys, x, y, pointer_sub, wid)
+                if pointer_sub and wid > 0:
                     if orientation == VERTICAL:
                         deltax = 0
                         deltay = units
@@ -200,8 +200,7 @@ def add_window_hooks(window) -> None:
                         deltay = 0
                     pointer = window.get_mouse_position()
                     device_id = -1
-                    if pointer_sub := client.get_subsystem("pointer"):
-                        pointer_sub.wheel_event(device_id, wid, deltax, deltay, pointer)
+                    pointer_sub.wheel_event(device_id, wid, deltax, deltay, pointer)
 
             def mousewheel(_hwnd: int, _event: int, wParam: int, lParam: int) -> int:
                 handle_wheel(VERTICAL, wParam, lParam)

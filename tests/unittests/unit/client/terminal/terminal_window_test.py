@@ -28,6 +28,18 @@ class FakeWindowSubsystem:
         self.client = client
         self.focus_events = []
 
+    @property
+    def idle_add(self):
+        return self.client.idle_add
+
+    @property
+    def timeout_add(self):
+        return self.client.timeout_add
+
+    @property
+    def source_remove(self):
+        return self.client.source_remove
+
     def send(self, *args) -> None:
         # windows send their packets via the `window` subsystem:
         self.client.send(*args)

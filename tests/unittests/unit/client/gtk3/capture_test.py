@@ -10,7 +10,6 @@ from unittest.mock import MagicMock
 
 from xpra.os_util import gi_import
 from xpra.constants import NotificationID
-from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gtk3.window.capture import CaptureWindow, accumulate
 
 Gdk = gi_import("Gdk")
@@ -27,8 +26,6 @@ CENTER = (640, 400)
 
 class FakePointerBase:
     """ records the calls that `CaptureWindow` passes on to `PointerWindow` and `GrabWindow` """
-
-    is_readonly = ClientWidgetBase.is_readonly
 
     def __init__(self):
         self.forwarded: list[tuple] = []
@@ -77,8 +74,7 @@ class CaptureTestWindow(CaptureWindow, FakePointerBase):
             "remote-info": SimpleNamespace(server_mode=server_mode),
             "notification": SimpleNamespace(notify_client=MagicMock()),
         }
-        self._client = SimpleNamespace(is_readonly=lambda: False,
-                                       get_subsystem=self.subsystems.get)
+        self.is_readonly = lambda: False
         self.init_window(None, None)
 
     def get_subsystem(self, name: str):

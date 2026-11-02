@@ -128,7 +128,7 @@ class WindowAltGrTest(unittest.TestCase):
         from xpra.client.win32.window import ClientWindow
         altgr.altgr_layouts.clear()
         self.client = FakeClient()
-        self.window = ClientWindow(self.client, None, 1, (100, 100, 200, 100), (200, 100), typedict(),
+        self.window = ClientWindow(self.client.get_subsystem, lambda: False, None, 1, (100, 100, 200, 100), (200, 100), typedict(),
                                    False, {}, None, (4096, 4096), 32, None)
         self.window.create()
         self.client.window_manager.windows[1] = self.window

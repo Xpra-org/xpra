@@ -97,7 +97,8 @@ class HeaderBarWindow(GtkStubWindow):
         self.header_bar_image = get_header_bar_image(self._icon_size())
         # soft dependency on window methods:
         show_window_menu = getattr(self, "show_window_menu", noop)
-        show_xpra_menu = getattr(self, "show_xpra_menu", noop)
+        # only offered when the client has an xpra menu to show:
+        show_xpra_menu = getattr(self, "show_xpra_menu", noop) if getattr(self, "get_xpra_menu", None) else noop
         hb = make_header_bar(title, self.header_bar_image, show_window_menu, show_xpra_menu)
         self.set_titlebar(hb)
 

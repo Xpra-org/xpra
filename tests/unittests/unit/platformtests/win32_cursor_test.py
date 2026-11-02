@@ -258,7 +258,7 @@ class WindowCursorTest(unittest.TestCase):
     def make_window(self, wid=1):
         from xpra.util.objects import typedict
         from xpra.client.win32.window import ClientWindow
-        window = ClientWindow(self.client, None, wid, (100, 100, 200, 100), (200, 100), typedict(),
+        window = ClientWindow(self.client.get_subsystem, lambda: False, None, wid, (100, 100, 200, 100), (200, 100), typedict(),
                               False, {}, None, (4096, 4096), 32, None)
         window.create()
         self.windows.append(window)

@@ -60,11 +60,6 @@ class DragNDropWindow(GtkStubWindow):
             self._file_handler = file_handler
             self.init_dragndrop()
 
-    def is_readonly(self) -> bool:
-        # inject dependency on UI client,
-        # the readonly flag can be changed from the tray menu:
-        return getattr(self, "readonly", False)
-
     ######################################################################
     # drag and drop:
     def init_dragndrop(self) -> None:

@@ -9,7 +9,7 @@ import select
 import signal
 import logging
 from typing import Any, Final
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.constants import DEFAULT_METADATA_SUPPORTED
@@ -1311,9 +1311,12 @@ class XpraTerminalClient(GObjectClientAdapter, UIXpraClient):
         encoding = self.get_subsystem("encoding")
         return encoding.get_encodings() if encoding else ()
 
-    def get_client_window_classes(self, _geom, _metadata, _override_redirect) -> Sequence[type]:
-        # there is no OpenGL alternative to fall back from:
-        return (ClientWindow, )
+    def get_client_window_classes(self, _geom, _metadata, _override_redirect) -> Sequence[Callable]:
+        # there is no OpenGL alternative to fall back from,
+        # and the terminal window is given the whole client rather than just what the other windows get:
+        def make_window(_get_subsystem, _is_readonly, *args, **kwargs) -> ClientWindow:
+            return ClientWindow(self, *args, **kwargs)
+        return (make_window, )
 
     def get_group_leader(self, wid: int, metadata: typedict, override_redirect: bool):
         # there is no window manager to group anything for:

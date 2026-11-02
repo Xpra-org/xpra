@@ -333,8 +333,13 @@ class TerminalClientTest(unittest.TestCase):
     def test_client_window_classes(self):
         client = self.make_client()
         from xpra.client.terminal.window import ClientWindow
-        self.assertEqual(tuple(client.get_client_window_classes((0, 0, 1, 1), typedict(), False)),
-                         (ClientWindow, ))
+        classes = tuple(client.get_client_window_classes((0, 0, 1, 1), typedict(), False))
+        self.assertEqual(len(classes), 1)
+        # the window subsystem's arguments, the terminal window is given the client instead:
+        window = classes[0](None, None, None, 1, (0, 0, 10, 10), (10, 10), typedict({"has-alpha": True}), False, typedict(),
+                            None, (0, 0), 24, "no", None)
+        self.assertIsInstance(window, ClientWindow)
+        self.assertIs(window._client, client)
 
     def test_windows_cannot_grab_natively(self):
         # the `window` subsystem only records grabs for windows without `do_window_grab`:

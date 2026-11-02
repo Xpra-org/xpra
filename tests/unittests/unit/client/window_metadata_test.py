@@ -50,7 +50,7 @@ class WindowMetadataTest(unittest.TestCase):
 
     def test_legacy_metadata_is_normalized_or_ignored(self):
         window = self.make_window()
-        window._client = SimpleNamespace(is_readonly=lambda: False)
+        window.is_readonly = lambda: False
         window._size = (100, 100)
         window.update_metadata(typedict({"content-type": "text"}))
         expected = {}
@@ -60,7 +60,7 @@ class WindowMetadataTest(unittest.TestCase):
         for readonly in (False, True):
             with self.subTest(readonly=readonly):
                 window = self.make_window()
-                window._client = SimpleNamespace(is_readonly=lambda ro=readonly: ro)
+                window.is_readonly = lambda ro=readonly: ro
                 window._size = (100, 50)
                 window.set_metadata = lambda _metadata: None
                 window.update_metadata(typedict({}))

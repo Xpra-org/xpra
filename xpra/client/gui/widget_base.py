@@ -18,25 +18,18 @@ USE_FAKE_BACKING = envbool("XPRA_USE_FAKE_BACKING", False)
 
 class ClientWidgetBase:
 
-    def __init__(self, client, wid: int, has_alpha: bool):
+    def __init__(self, get_subsystem: Callable, wid: int, has_alpha: bool):
+        # look up a client subsystem, by name:
+        self.get_subsystem: Callable = get_subsystem
         self.wid = wid
         # tells us if the server-side window has an alpha channel
         # (whether we are capable of rendering it is down the backing)
         self._has_alpha = has_alpha
         # tells us if this window instance can paint with alpha
         self._window_alpha = False
-        self._client = client
         self._current_icon = None
         self._backing = None
         self.pixel_depth = 24
-
-    def get_subsystem(self, name: str):
-        """ look up a client subsystem (delegates to the owning client) """
-        return self._client.get_subsystem(name)
-
-    def is_readonly(self) -> bool:
-        """ read-only mode (local or server side): no input or window changes are sent to the server """
-        return self._client.is_readonly()
 
     def get_info(self) -> dict[str, Any]:
         info = {
