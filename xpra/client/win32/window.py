@@ -11,6 +11,7 @@ from ctypes.wintypes import HWND, BYTE, HICON, HDC, POINT, MSG
 from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER
 
 from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING
+from xpra.net.packet_type import WINDOW_CONFIGURE
 from xpra.client.gui.window.backing import fire_paint_callbacks, get_backing_client_properties
 from xpra.client.gui.window.info import geom_str, hsc, get_backing_info
 from xpra.client.win32.gdi_backing import GDIBacking
@@ -772,6 +773,43 @@ class ClientWindow(GObject.GObject):
             geom = self._pre_fullscreen_geom or (self.x, self.y, self.width, self.height)
             self._pre_fullscreen_geom = None
             self.move_resize(*geom)
+
+    def get_server_geometry(self) -> tuple[tuple[int, int, int, int], tuple[int, int]]:
+        """ the geometry in server coordinates, and the scaled position before the server offset """
+        geometry = (self.x, self.y, self.width, self.height)
+        display = self.client.get_subsystem("display") if self.client else None
+        if not display:
+            return geometry, geometry[:2]
+        geometry = display.crect(*geometry)
+        raw_position = geometry[:2]
+        return display.get_server_position(raw_position) + geometry[2:], raw_position
+
+    def get_server_monitor_position(self) -> dict[str, Any]:
+        monitor = self.get_monitor_position()
+        if monitor and (display := self.client.get_subsystem("display") if self.client else None):
+            monitor["position"] = display.cp(*monitor["position"])
+        return monitor
+
+    def send_configure(self) -> None:
+        wm = self.client.get_subsystem("window") if self.client else None
+        if not wm:
+            return
+        geometry, raw_position = self.get_server_geometry()
+        geomlog("send_configure() geometry=%s", geometry)
+        config = {
+            "state": self.state_updates,
+            "geometry": geometry,
+            "resize-counter": self.resize_counter,
+            "raw-position": raw_position,
+        }
+        # the backing's encoding properties change with the render size:
+        if props := self.pop_client_properties():
+            config["properties"] = props
+        if monitor := self.get_server_monitor_position():
+            config["monitor"] = monitor
+        wm.send(WINDOW_CONFIGURE, self.wid, config)
+        # we have consumed it, so we can reset it now:
+        self.state_updates = {}
 
     def get_monitor_position(self) -> dict[str, Any]:
         if not self.hwnd:

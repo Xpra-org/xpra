@@ -249,15 +249,9 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     def window_mapped_event(self, window) -> None:
         log("window_mapped_event(%s)", window)
-        geometry = (window.x, window.y, window.width, window.height)
-        if display := self.get_subsystem("display"):
-            geometry = display.crect(*geometry)
-            raw_position = geometry[:2]
-            geometry = display.get_server_position(raw_position) + geometry[2:]
-        else:
-            raw_position = geometry[:2]
+        geometry, raw_position = window.get_server_geometry()
         packet = [WINDOW_MAP, window.wid, *geometry, window.pop_client_properties(), {}]
-        monitor = self.get_monitor_position(window)
+        monitor = window.get_server_monitor_position()
         monitor["raw-position"] = raw_position
         if monitor:
             packet.append(monitor)
@@ -291,43 +285,11 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     def window_moved_event(self, window) -> None:
         log("window_moved_event(%s)", window)
-        self.send_configure(window)
+        window.send_configure()
 
     def window_resized_event(self, window) -> None:
         log("window_resized_event(%s)", window)
-        self.send_configure(window)
-
-    def send_configure(self, window) -> None:
-        geometry = (window.x, window.y, window.width, window.height)
-        if display := self.get_subsystem("display"):
-            geometry = display.crect(*geometry)
-            raw_position = geometry[:2]
-            geometry = display.get_server_position(raw_position) + geometry[2:]
-        else:
-            raw_position = geometry[:2]
-        log("send_configure: geometry=%s", geometry)
-        config = {
-            "state": window.state_updates,
-            "geometry": geometry,
-            "resize-counter": window.resize_counter,
-            "raw-position": raw_position,
-        }
-        # the backing's encoding properties change with the render size:
-        if props := window.pop_client_properties():
-            config["properties"] = props
-        if monitor := self.get_monitor_position(window):
-            config["monitor"] = monitor
-        self.send(WINDOW_CONFIGURE, window.wid, config)
-        # we have consumed it, so we can reset it now:
-        window.state_updates = {}
-
-    def get_monitor_position(self, window) -> dict[str, Any]:
-        monitor = window.get_monitor_position()
-        if not monitor:
-            return {}
-        if display := self.get_subsystem("display"):
-            monitor["position"] = display.cp(*monitor["position"])
-        return monitor
+        window.send_configure()
 
     def _pointer_data(self, window, x: int, y: int) -> tuple[int, int, int, int]:
         hwnd = window.hwnd
