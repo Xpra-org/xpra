@@ -108,6 +108,7 @@ class FakeClient:
 class FakeWindow:
     # borrow the real resolution logic without constructing a real window:
     from xpra.client.gui.window_base import ClientWindowBase
+    get_subsystem = ClientWindowBase.get_subsystem
     get_session_colourspace = ClientWindowBase.get_session_colourspace
     get_colourspace = ClientWindowBase.get_colourspace
     del ClientWindowBase
