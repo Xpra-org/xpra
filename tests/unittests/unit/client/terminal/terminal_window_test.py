@@ -23,8 +23,10 @@ except ImportError:
 
 
 class FakeWindowSubsystem:
-    def __init__(self):
+    def __init__(self, send=None):
         self.focus_events = []
+        # windows send their packets via the `window` subsystem:
+        self.send = send
 
     def update_focus(self, wid: int, focused=True) -> None:
         self.focus_events.append((wid, focused))
@@ -44,7 +46,7 @@ class FakeClient:
         self.packets = []
         self.buffer = BytesIO()
         self.terminal_output = TerminalOutput(self.buffer)
-        self.subsystems = {"window": FakeWindowSubsystem()}
+        self.subsystems = {"window": FakeWindowSubsystem(self.send)}
         self._focused = 0
         self.zorder = {}
         self.raised = []

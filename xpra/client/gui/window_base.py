@@ -235,7 +235,8 @@ class ClientWindowBase(ClientWidgetBase):
         self._client_properties.update(get_backing_client_properties(self._backing, encoding_defaults))
 
     def send(self, packet_type: str, *args: PacketElement) -> None:
-        self._client.send(packet_type, *args)
+        """ window packets are sent by the `window` subsystem """
+        self.get_subsystem("window").send(packet_type, *args)
 
     def reset_icon(self) -> None:
         current_icon = self._current_icon

@@ -11,6 +11,7 @@ from xpra.util.objects import typedict
 from xpra.client.gtk3.menu_helper import GTKMenuHelper, gen_non_none_menu_items
 from xpra.gtk.widget import checkitem
 from xpra.constants import RESOLUTION_ALIASES, MoveResize
+from xpra.net.packet_type import WINDOW_ACTION
 from xpra.platform.gui import get_icon_size
 from xpra.log import Logger
 
@@ -431,7 +432,8 @@ class WindowMenuHelper(GTKMenuHelper):
             def action_cb() -> None:
                 wid = self.window.wid
                 log("action_cb() for window %#x, action=%s", wid, action)
-                self.client.send("window-action", wid, action)
+                if window := self.client.get_subsystem("window"):
+                    window.send(WINDOW_ACTION, wid, action)
             return self.menuitem(action, icon_name, cb=action_cb)
 
         if len(actions) == 1:

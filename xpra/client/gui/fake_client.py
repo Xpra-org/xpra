@@ -69,6 +69,9 @@ class FakeWindowSubsystem:
     def window_close_event(self, *_args) -> None:
         log("window_close_event ignored")
 
+    def send(self, *args) -> None:
+        log("send%s", args)
+
 
 class FakeClient(GLibScheduler):
     def __init__(self):
