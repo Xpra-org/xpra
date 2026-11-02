@@ -124,14 +124,15 @@ class ClientTray(ClientWidgetBase):
                 if orientation := tw.get_orientation():
                     client_properties["orientation"] = orientation
             # scale to server coordinates
-            display = self._client.get_subsystem("display")
+            display = self.get_subsystem("display")
             sx, sy, sw, sh = display.crect(x, y, w, h) if display else (x, y, w, h)
             log("%s.reconfigure(%s) sending configure for geometry=%s : %s",
                 self, force_send_configure, geometry, (sx, sy, sw, sh, client_properties))
-            self._client.send(WINDOW_CONFIGURE, self.wid, {
-                "geometry": (sx, sy, sw, sh),
-                "properties": client_properties,
-            })
+            if window_sub := self.get_subsystem("window"):
+                window_sub.send(WINDOW_CONFIGURE, self.wid, {
+                    "geometry": (sx, sy, sw, sh),
+                    "properties": client_properties,
+                })
         if self._size != (w, h):
             self.new_backing(w, h)
 
