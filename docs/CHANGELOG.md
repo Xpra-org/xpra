@@ -1,8 +1,20 @@
 # Changelog
 
 ## [6.5.6] 2026-10-20
+* Major:
+  * [programmatic X11 window moves can use incorrect coordinates](https://github.com/Xpra-org/xpra/commit/fe087ac89233ee09b6d6f88de2d660977ce0eda4)
+  * [recording a session can alter its keyboard layout and repeat settings](https://github.com/Xpra-org/xpra/commit/fa159ae16dd8979553bcecc05ca939d259dede2f)
+  * [NVENC cleanup can abort the server when a client disconnects](https://github.com/Xpra-org/xpra/commit/f377755c7bfc42106b713dd6d6638a0c4fbb37fb)
+  * [launcher connections and dialogs can stall with the GLib idle workaround](https://github.com/Xpra-org/xpra/commit/0b6433dc3ab8d50163dd2886bb7ed7fb13e9acce)
+* 🖧 Network:
+  * [SSH agent authentication fails when the server offers public-key authentication](https://github.com/Xpra-org/xpra/commit/1d387fc21e49a9f2a440f62e8f447075cf053158)
+* 📋 Clipboard:
+  * [pending clipboard requests are left waiting during cleanup](https://github.com/Xpra-org/xpra/commit/687fa8039c361931d0b76147a365c6c9e414a780)
 * Minor:
   * [numeric list values can fail to parse](https://github.com/Xpra-org/xpra/commit/b9d8f90022dbcfc0094b4cd779ef05387cb8edb9)
+  * [continuous partial updates can postpone lossless refresh excessively](https://github.com/Xpra-org/xpra/commit/66c79a780669c872a362bf23e77d2899c846bb82)
+  * [default PulseAudio monitor selection crashes on Python 3](https://github.com/Xpra-org/xpra/commit/cd6190f46449279d927ab184f9166e17300e11e2)
+  * [MS Windows GDI screenshots can fail with invalid image data](https://github.com/Xpra-org/xpra/commit/2e2a8d4b03efb0e68d808c1b3e12086603b8a5fe)
 
 ## [6.5.5] 2026-10-11
 * 🔧 Platforms, build and packaging:
