@@ -89,6 +89,31 @@ class WindowManagerTest(ClientMixinTest):
                 self.assertFalse(keyboard.grabbed)
                 self.assertEqual([tuple(args) for args, _kwargs in client.send.call_args_list], expected)
 
+    def test_force_ungrab_on_focus_loss(self):
+        from xpra.client.subsystem.window import WindowClient
+        from xpra.client.subsystem.window import grab as grab_module
+
+        for enabled, caps, readonly, expected in (
+            (True, {"force_ungrab": True}, False, [(7, )]),
+            (True, {}, False, []),
+            (False, {"force_ungrab": True}, False, []),
+            (True, {"force_ungrab": True}, True, []),
+        ):
+            with self.subTest(enabled=enabled, caps=caps, readonly=readonly):
+                client = Mock(readonly=readonly, subsystems={})
+                window_client = WindowClient(client)
+                self.assertTrue(window_client.parse_server_capabilities(typedict(caps)))
+                window = Mock()
+                window_client._id_to_window = {7: window}
+                window_client._window_with_grab = 7
+                # GTK's client method clears the subsystem's grab state:
+                client.window_ungrab.side_effect = lambda: setattr(window_client, "_window_with_grab", None)
+                with patch.object(grab_module, "FORCE_UNGRAB", enabled):
+                    window_client.update_focus(7, False)
+                client.window_ungrab.assert_called_once_with()
+                self.assertIsNone(window_client._window_with_grab)
+                self.assertEqual([args for args, _kwargs in client.send_force_ungrab.call_args_list], expected)
+
     def test_destroy_grabbed_window_ungrabs_first(self):
         from xpra.client.subsystem.window import WindowClient
 
