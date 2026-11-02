@@ -5,10 +5,12 @@
 
 """
 Minimal H.264 Annex-B parser, just enough to recover the colour range
-(the VUI `video_full_range_flag`) from a bitstream.
+(the VUI `video_full_range_flag`) and the `pic_order_cnt_type` from a bitstream.
 
 Some decoder libraries (ie: openh264) do not expose this flag through their API,
 but the SPS is present in the bitstream we feed them, so we can parse it ourselves.
+Some encoders (ie: MediaFoundation's) do not let us choose the `pic_order_cnt_type`,
+so we have to look at what they wrote.
 """
 import re
 
@@ -89,12 +91,8 @@ def _skip_scaling_list(br: BitReader, size: int) -> None:
         last_scale = last_scale if next_scale == 0 else next_scale
 
 
-def parse_sps_full_range(rbsp: SizedBuffer) -> ColorRange:
-    """
-    Parse an H.264 SPS RBSP (without the 1-byte NAL header) and return its
-    VUI `video_full_range_flag`, or None if the SPS carries no video signal type.
-    """
-    br = BitReader(rbsp)
+def _read_pic_order_cnt_type(br: BitReader) -> int:
+    """ read an SPS RBSP up to and including its `pic_order_cnt_type`, and return it """
     profile_idc = br.read_bits(8)
     br.read_bits(8)                     # constraint_set flags + reserved
     br.read_bits(8)                     # level_idc
@@ -112,7 +110,16 @@ def parse_sps_full_range(rbsp: SizedBuffer) -> ColorRange:
                 if br.read_bit():       # seq_scaling_list_present_flag[i]
                     _skip_scaling_list(br, 16 if i < 6 else 64)
     br.read_ue()                        # log2_max_frame_num_minus4
-    pic_order_cnt_type = br.read_ue()
+    return br.read_ue()                 # pic_order_cnt_type
+
+
+def parse_sps_full_range(rbsp: SizedBuffer) -> ColorRange:
+    """
+    Parse an H.264 SPS RBSP (without the 1-byte NAL header) and return its
+    VUI `video_full_range_flag`, or None if the SPS carries no video signal type.
+    """
+    br = BitReader(rbsp)
+    pic_order_cnt_type = _read_pic_order_cnt_type(br)
     if pic_order_cnt_type == 0:
         br.read_ue()                    # log2_max_pic_order_cnt_lsb_minus4
     elif pic_order_cnt_type == 1:
@@ -179,3 +186,21 @@ def get_video_full_range(data: SizedBuffer) -> ColorRange:
     except Exception as e:
         log("get_video_full_range(%i bytes) parsing failed: %s", len(data), e)
     return ColorRange.UNKNOWN
+
+
+def get_pic_order_cnt_type(data: SizedBuffer) -> int:
+    """
+    Return the `pic_order_cnt_type` of the first SPS in an H.264 Annex-B stream,
+    or -1 if there is no SPS (ie: a non-keyframe) or it cannot be parsed.
+    """
+    try:
+        for nal_type, payload in iter_annexb_nals(data):
+            if nal_type == NAL_SPS:
+                pic_order_cnt_type = _read_pic_order_cnt_type(BitReader(payload))
+                # a truncated SPS reads as zeros, which makes nonsense of the exp-golomb values:
+                return pic_order_cnt_type if pic_order_cnt_type in (0, 1, 2) else -1
+            if nal_type in VCL_NAL_TYPES:
+                break                   # the SPS always precedes the coded slices
+    except Exception as e:
+        log("get_pic_order_cnt_type(%i bytes) parsing failed: %s", len(data), e)
+    return -1

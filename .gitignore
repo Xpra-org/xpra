@@ -70,6 +70,7 @@ packaging/MSWindows/service/DesktopLogon/packages/
 *.exe
 *.zip
 *.msi
+/Xpra*.json
 /msi.xml
 *.pxi
 *.html
@@ -224,6 +225,9 @@ tests/unittests/test-file*
 
 # a place where we can stash local files without polluting:
 /local
+
+# win32 build keeps a copy of the html5 client:
+/xpra-html5
 
 # macos build logs:
 /packaging/MacOS/logs/

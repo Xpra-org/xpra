@@ -363,12 +363,15 @@ class DisplayManager(StubSubsystem):
 
     def get_client_refresh_rate(self, ss) -> int:
         vrefresh = []
-        # use the real refresh-rate value from the monitors
-        # (value is pre-multiplied by 1000!) and apply our own `--refresh-rate`
-        # policy below - the client only cooks the value it applies to its own display:
+        # Monitor rates are in mHz. Honour the client's cooked rates unless an
+        # explicit server policy overrides them, using raw rates to avoid applying percentages twice:
+        override = self.refresh_rate and self.refresh_rate.lower() not in ("auto", "none")
         if ss.monitors:
             for mdef in ss.monitors.values():
-                if v := mdef.get("refresh-rate", 0):
+                v = mdef.get("refresh-rate", 0)
+                if not override:
+                    v = mdef.get("refresh-rate.cooked") or v
+                if v:
                     vrefresh.append(v)
         if not vrefresh and getattr(ss, "vrefresh", 0) > 0:
             vrefresh.append(ss.vrefresh * 1000)
@@ -521,13 +524,18 @@ class DisplayManager(StubSubsystem):
     ######################################################################
     # screenshots:
     def _handle_hello_request_screenshot(self, proto, _caps: typedict) -> bool:
-        packet = self.make_screenshot_packet()
-        proto.send_now(packet)
-        return True
+        return self.send_hello_image(proto, self.make_screenshot_packet(), "screenshot")
 
     def _handle_hello_request_icon(self, proto, _caps: typedict) -> bool:
-        packet = self.make_icon_packet()
-        proto.send_now(packet)
+        return self.send_hello_image(proto, self.make_icon_packet(), "icon")
+
+    def send_hello_image(self, proto, packet: Packet | None, request: str) -> bool:
+        # the client exits once it has the image,
+        # so tell it why when there is none instead of leaving it to time out:
+        if not packet:
+            self.network.send_disconnect(proto, ConnectionMessage.SERVER_ERROR, f"{request} failed")
+        else:
+            proto.send_now(packet)
         return True
 
     def _process_request_screenshot(self, proto, _packet: Packet) -> None:
@@ -555,19 +563,6 @@ class DisplayManager(StubSubsystem):
 
     def do_make_icon_packet(self) -> Packet:
         raise NotImplementedError("no icon capability in %s" % type(self))
-
-    def send_screenshot(self, proto) -> None:
-        # this is a screenshot request, handle it and disconnect
-        try:
-            packet = self.make_screenshot_packet()
-            if not packet:
-                self.network.send_disconnect(proto, "screenshot failed")
-                return
-            proto.send_now(packet)
-            self.timeout_add(5 * 1000, self.network.send_disconnect, proto, "screenshot sent")
-        except Exception as e:
-            log.error("failed to capture screenshot", exc_info=True)
-            self.network.send_disconnect(proto, "screenshot failed: %s" % e)
 
     def init_packet_handlers(self) -> None:
         self.add_packets("display-configure", "display-request-screenshot", "display-request-icon", main_thread=True)

@@ -170,7 +170,7 @@ class SystemProbeTest(unittest.TestCase):
                     self.assertEqual(system.is_VirtualBox(), expected)
 
     def test_platform_names_and_icons(self):
-        for platform, expected in (("win32", "win32"), ("darwin", "osx"), ("linux2", "linux"),
+        for platform, expected in (("win32", "win32"), ("darwin", "macos"), ("linux2", "linux"),
                                    ("freebsd14", "freebsd"), ("openbsd7", "openbsd"), ("other", "")):
             with self.subTest(platform=platform):
                 self.assertEqual(system.get_platform_icon_name(platform), expected)

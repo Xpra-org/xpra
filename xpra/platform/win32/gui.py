@@ -140,9 +140,9 @@ def gl_check() -> str:
             # cythonized code can bind None for missing imports
             raise ImportError("OpenGL.platform.win32")
     except ImportError as e:
-        get_util_logger().warn("gl_check()", exc_info=True)
-        get_util_logger().warn("Warning: OpenGL bindings are missing")
-        get_util_logger().warn(" %s", e)
+        log = get_util_logger()
+        log.warn("Warning: OpenGL bindings are missing")
+        log.warn(" %s", e)
         return "OpenGL bindings are missing"
     from xpra.platform.win32 import is_wine
     if is_wine():
@@ -459,14 +459,14 @@ def remove_window_hooks(window) -> None:
             win32hooks.cleanup()
             window.win32hooks = None
     except Exception:
-        log.error("remove_window_hooks(%s)", exc_info=True)
+        log.error("Error removing window hooks for %r", window, exc_info=True)
 
 
 def get_xdpi() -> int:
     try:
         return _get_device_caps(win32con.LOGPIXELSX)
     except Exception as e:
-        log.warn("failed to get xdpi: %s", e)
+        log.warn("Warning: failed to get xdpi: %s", e)
     return -1
 
 
@@ -474,7 +474,7 @@ def get_ydpi() -> int:
     try:
         return _get_device_caps(win32con.LOGPIXELSY)
     except Exception as e:
-        log.warn("failed to get ydpi: %s", e)
+        log.warn("Warning: failed to get ydpi: %s", e)
     return -1
 
 

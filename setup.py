@@ -674,7 +674,7 @@ SWITCHES += [
     "wayland_client", "wayland_server",
     "qt6_client", "pyglet_client", "tk_client", "terminal_client", "win32_client",
     "ism_ext",
-    "pam", "xdg_open", "peercred", "landlock",
+    "pam", "xdg_open", "peercred", "landlock", "seccomp",
     "audio", "opengl", "printing", "webcam", "notifications", "keyboard",
     "rebuild",
     "docs", "pandoc_lua",
@@ -792,7 +792,7 @@ def build_cuda_kernels(kernels: Sequence[str]) -> None:
     env = os.environ.copy()
     paths = env.pop("PYTHONPATH", "").split(os.pathsep)+[os.getcwd()]
     env["PYTHONPATH"] = os.pathsep.join(paths)
-    r = subprocess.Popen(["./fs/bin/build_cuda_kernels.py"]+list(kernels), env=env).wait()
+    r = subprocess.Popen([sys.executable, "./fs/bin/build_cuda_kernels.py"]+list(kernels), env=env).wait()
     if r!=0:
         print(f"failed to rebuild the cuda kernels {kernels}")
         sys.exit(1)
@@ -887,7 +887,7 @@ def build_package() -> int:
     if run(cmd).returncode != 0:
         raise RuntimeError("failed to install dev-env using %r" % command_string(cmd))
     print("* creating source archive")
-    cmd = ["python3", "./setup.py", "sdist", "--formats=xztar"]
+    cmd = [sys.executable, "./setup.py", "sdist", "--formats=xztar"]
     if run(cmd).returncode != 0:
         raise RuntimeError("failed to install create sdist source using %r" % command_string(cmd))
     src_xz = f"./dist/xpra-{XPRA_VERSION}.tar.xz"
@@ -3781,10 +3781,11 @@ if amf_ENABLED:
         print(f"using default amf args: {amf_kwargs}")
     tace(amf_encoder_ENABLED, "xpra.codecs.amf.common", **amf_kwargs)
     tace(amf_encoder_ENABLED, "xpra.codecs.amf.encoder", **amf_kwargs)
-    toggle_packages(dxgi_ENABLED, "xpra.platform.win32.d3d11")
-    tace(dxgi_ENABLED, "xpra.platform.win32.d3d11.device")
-    tace(dxgi_ENABLED, "xpra.platform.win32.d3d11.capture",
-         extra_link_args=("-ld3d11", "-ldxgi", "-ldxguid"))
+toggle_packages(dxgi_ENABLED, "xpra.platform.win32.d3d11")
+tace(dxgi_ENABLED, "xpra.platform.win32.d3d11.device",
+     extra_link_args=("-ld3d11", "-ldxgi", "-ldxguid"))
+tace(dxgi_ENABLED, "xpra.platform.win32.d3d11.capture",
+     extra_link_args=("-ld3d11", "-ldxgi", "-ldxguid"))
 toggle_packages(vt_ENABLED, "xpra.codecs.vt")
 VT_FRAMEWORKS = (
     "-framework", "VideoToolbox",

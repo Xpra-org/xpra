@@ -47,7 +47,7 @@ def clamp(value: int) -> int:
 
 
 def get_quality_score(csc_format: str, csc_spec: CSCSpec | None, encoder_spec: VideoSpec, scaling: tuple[int, int],
-                      target_quality: int = 100, min_quality: int = 0) -> int:
+                      width: int, height: int, target_quality: int = 100, min_quality: int = 0) -> float:
     quality = encoder_spec.quality
     div = SUBSAMPLING_QUALITY_LOSS.get(csc_format, 100)
     quality = quality * 100 // div
@@ -71,7 +71,16 @@ def get_quality_score(csc_format: str, csc_spec: CSCSpec | None, encoder_spec: V
         # when downscaling, YUV420P should always win:
         if csc_format in ("YUV420P", "NV12") and scaling != (1, 1):
             qscore *= 2.0
-    return round(qscore)
+
+    qscore = clamp(round(qscore))
+    if csc_spec and scaling != (1, 1):
+        # if we are (down)scaling, we should prefer lossy pixel formats:
+        qscore *= LOSSY_PIXEL_FORMATS.get(csc_format, 1) / 2
+    requested_quality = max(target_quality, min_quality)
+    effective_quality = encoder_spec.get_effective_quality(requested_quality, width, height)
+    # Keep negative scores so quality limits can outweigh the cost of switching
+    # away from an encoder that is already running.
+    return qscore - 5 * max(0, requested_quality - effective_quality)
 
 
 def get_speed_score(csc_format: str, csc_spec: CSCSpec | None, encoder_spec: VideoSpec, scaling: tuple[int, int],
@@ -125,7 +134,6 @@ def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spe
         Can be called from any thread.
     """
 
-    qscore = clamp(get_quality_score(enc_in_format, csc_spec, encoder_spec, scaling, target_quality, min_quality))
     sscore = get_speed_score(enc_in_format, csc_spec, encoder_spec, scaling, target_speed, min_speed)
 
     # multiplier for setup_cost:
@@ -190,10 +198,6 @@ def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spe
             # csc cannot take care of scaling, so encoder will have to:
             encoder_scaling = scaling
             csc_scaling = (1, 1)
-        if scaling != (1, 1):
-            # if we are (down)scaling, we should prefer lossy pixel formats:
-            v = LOSSY_PIXEL_FORMATS.get(enc_in_format, 1)
-            qscore *= (v / 2)
         enc_width, enc_height = get_encoder_dimensions(encoder_spec, csc_width, csc_height, scaling)
     else:
         # not using csc at all!
@@ -218,6 +222,9 @@ def get_pipeline_score(enc_in_format: str, csc_spec: CSCSpec | None, encoder_spe
         log("video size %ix%i out of range for %s, max %ix%i",
             enc_width, enc_height, encoder_spec.codec_type, encoder_spec.max_w, encoder_spec.max_h)
         return None
+
+    qscore = get_quality_score(enc_in_format, csc_spec, encoder_spec, scaling,
+                               enc_width, enc_height, target_quality, min_quality)
 
     ee_score = 100
     if current_ve is None or current_ve.get_type() != encoder_spec.codec_type or \

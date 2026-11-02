@@ -95,6 +95,7 @@ OPTION_TYPES: dict[str, Any] = {
     "pointer"           : str,
     "middle-click"      : bool,
     "mousewheel"        : str,
+    "input-capture"     : str,
     "input-devices"     : str,
     "shortcut-modifiers": str,
     "open-files"        : str,
@@ -305,7 +306,7 @@ CLIENT_OPTIONS: list[str] = [
     "quality", "min-quality", "speed", "min-speed",
     "compression_level",
     "dpi", "video-scaling", "auto-refresh-delay",
-    "webcam", "mousewheel", "pointer", "middle-click", "input-devices", "shortcut-modifiers", "pings",
+    "webcam", "mousewheel", "pointer", "middle-click", "input-capture", "input-devices", "shortcut-modifiers", "pings",
     "tray", "keyboard-sync", "cursors", "bell", "notifications",
     "xsettings", "gsettings-sync", "system-tray", "sharing", "lock",
     "delay-tray", "windows", "readonly",
@@ -327,6 +328,7 @@ CLIENT_ONLY_OPTIONS: list[str] = [
     "attach-urls",
     "reconnect",
     "audio-sink",
+    "input-capture",
 ]
 
 # options that clients can pass to the proxy
@@ -380,6 +382,8 @@ CLONES: dict[str, str] = {}
 
 # these options should not be specified in config files:
 NO_FILE_OPTIONS = ("daemon", )
+LEGACY_OPTIONS = ("fake-xinerama", "dbus-proxy", "proxy-video-encoders")
+DISCARD_OPTIONS = NO_FILE_OPTIONS + LEGACY_OPTIONS
 
 # URLs (ie: "xpra+tcp://host:port/?param=value") are untrusted input:
 # they can come from a clicked link, a web page, a QR code, etc.
@@ -402,7 +406,7 @@ URL_SAFE_OPTIONS: tuple[str, ...] = (
     "title", "session-name", "border", "headerbar", "splash",
     "min-size", "max-size", "windows", "modal-windows", "desktop-fullscreen",
     # input / pointer:
-    "mousewheel", "middle-click", "pointer", "shortcut-modifiers", "key-shortcut", "swap-keys",
+    "mousewheel", "middle-click", "pointer", "input-capture", "shortcut-modifiers", "key-shortcut", "swap-keys",
     "keyboard-sync",
     # benign feature toggles:
     "clipboard", "clipboard-direction",

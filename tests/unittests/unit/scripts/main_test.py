@@ -186,12 +186,21 @@ class TestMain(unittest.TestCase):
              patch("xpra.client.base.command.RequestStartClient", return_value=app), \
              patch("xpra.scripts.clients.gi_import", return_value=glib), \
              patch("xpra.util.thread.start_thread", side_effect=lambda fn, *a, **kw: fn()), \
-             patch("xpra.scripts.clients.connect_or_fail", side_effect=lambda target: events.append("connect") or object()):
+             patch("xpra.scripts.clients.connect_or_fail", side_effect=lambda target, *_args: events.append("connect") or object()):
             result = run_remote_server("xpra", [], opts, ["tcp://localhost:12345/"], "desktop", make_defaults_struct())
         self.assertEqual(result, ExitCode.OK)
         self.assertIs(app.display_desc, desc)
         self.assertEqual(events, ["run", "connect", "protocol"])
         app.cleanup.assert_called_once_with()
+
+    def test_reconnect_remote_display(self):
+        from xpra.scripts.start import get_remote_display
+        remote_info = SimpleNamespace(display_name=":10")
+        app = SimpleNamespace(get_subsystem={"remote-info": remote_info}.get)
+        self.assertEqual(get_remote_display(app), ":10")
+        self.assertEqual(get_remote_display(SimpleNamespace(get_subsystem=lambda name: None)), "")
+        self.assertEqual(get_remote_display(SimpleNamespace()), "")
+        self.assertEqual(get_remote_display(None), "")
 
     def test_run_failure_still_cleans_up(self):
         error = InitExit(ExitCode.FAILURE, "Landlock unavailable")

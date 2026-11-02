@@ -9,6 +9,8 @@
 # using `docs/Build/CVE.md` to tell which vulnerabilities are new and which ones have been switched off,
 # and to skip the packages listed in its ignored packages table:
 # python3 sbom_vulnerabilities.py --scan 6.5.5-r0 grype.json [--scan 7.0-r42750 grype-beta.json] [--update]
+# Use `--variant-scan VARIANT XPRA_VERSION GRYPE_JSON` to report variants in order,
+# listing each vulnerability only in the first variant which contains it.
 # `--update` adds the new vulnerabilities to `docs/Build/CVE.md`.
 # The number of new vulnerabilities is written to `$GITHUB_OUTPUT` as `new`.
 
@@ -190,36 +192,15 @@ def table(rows: list[dict[str, str]]) -> list[str]:
     return lines
 
 
-def main(argv: list[str]) -> int:
-    parser = argparse.ArgumentParser(description="summarize grype reports for the xpra SBOMs")
-    parser.add_argument("--scan", nargs=2, action="append", required=True, metavar=("XPRA_VERSION", "GRYPE_JSON"),
-                        help="the xpra version of the SBOM and the grype JSON report for it")
-    parser.add_argument("--doc", default=CVE_DOC, help="the markdown document recording the vulnerabilities")
-    parser.add_argument("--update", action="store_true", help="add the new vulnerabilities to the document")
-    args = parser.parse_args(argv[1:])
-
-    before, after, rows = load_doc(args.doc)
-    ignored = load_ignored(before + after)
-    # merge the scans, remembering which xpra versions match each vulnerability:
-    matches: dict[str, dict] = {}
-    versions: dict[str, list[str]] = {}
-    skipped: set[str] = set()
-    for xpra_version, filename in args.scan:
-        for vuln_id, m in load_matches(filename).items():
-            for package in ignored & set(m["packages"]):
-                del m["packages"][package]
-            if not m["packages"]:
-                skipped.add(vuln_id)
-                continue
-            if vuln_id in matches:
-                matches[vuln_id]["packages"].update(m["packages"])
-            else:
-                matches[vuln_id] = m
-            if xpra_version not in versions.setdefault(vuln_id, []):
-                versions[vuln_id].append(xpra_version)
-
+def report(matches: dict[str, dict], versions: dict[str, list[str]], rows: dict[str, dict[str, str]],
+           skipped: set[str], heading_level: int = 2) -> list[str]:
     new = [new_row(m, versions[vuln_id]) for vuln_id, m in matches.items() if vuln_id not in rows]
-    known = [rows[vuln_id] for vuln_id in matches if vuln_id in rows]
+    known = []
+    for vuln_id, m in matches.items():
+        if vuln_id in rows:
+            row = rows[vuln_id].copy()
+            update_row(row, m)
+            known.append(row)
     live = [row for row in known if is_live(row)]
     off = len(known) - len(live)
 
@@ -228,17 +209,73 @@ def main(argv: list[str]) -> int:
         if (count := sum(1 for m in matches.values() if m["severity"] == severity))
     )
     lines = [
-        f"{len(matches)} vulnerabilities" + (f": {counts}" if counts else ""),
+        f"{len(matches)} {'vulnerability' if len(matches) == 1 else 'vulnerabilities'}" + (f": {counts}" if counts else ""),
         "",
         f"{len(new)} new, {len(live)} live and {off} switched off in [CVE.md]({CVE_DOC_URL}),"
         f" {len(skipped - set(matches))} more in ignored packages.",
     ]
     if new:
-        lines += ["", "## New vulnerabilities", ""] + table(new)
+        lines += ["", f"{'#' * heading_level} New vulnerabilities", ""] + table(new)
     if live:
         lines += ["", "<details><summary>Live vulnerabilities</summary>", ""] + table(live) + ["", "</details>"]
+    return lines
+
+
+def main(argv: list[str]) -> int:
+    parser = argparse.ArgumentParser(description="summarize grype reports for the xpra SBOMs")
+    scans = parser.add_mutually_exclusive_group(required=True)
+    scans.add_argument("--scan", nargs=2, action="append", metavar=("XPRA_VERSION", "GRYPE_JSON"),
+                       help="the xpra version of the SBOM and the grype JSON report for it")
+    scans.add_argument("--variant-scan", nargs=3, action="append", metavar=("VARIANT", "XPRA_VERSION", "GRYPE_JSON"),
+                       help="report variants in order, showing each CVE once and merging affected packages across variants")
+    parser.add_argument("--doc", default=CVE_DOC, help="the markdown document recording the vulnerabilities")
+    parser.add_argument("--update", action="store_true", help="add the new vulnerabilities to the document")
+    args = parser.parse_args(argv[1:])
+
+    before, after, rows = load_doc(args.doc)
+    ignored = load_ignored(before + after)
+    # Merge all scans before reporting so shared CVEs retain every affected package and version.
+    matches: dict[str, dict] = {}
+    versions: dict[str, list[str]] = {}
+    skipped: set[str] = set()
+    groups: list[tuple[str, set[str], set[str]]] = []
+    scan_args = args.variant_scan or [("", version, filename) for version, filename in args.scan]
+    for variant, xpra_version, filename in scan_args:
+        scan_ids: set[str] = set()
+        scan_skipped: set[str] = set()
+        for vuln_id, m in load_matches(filename).items():
+            for package in ignored & set(m["packages"]):
+                del m["packages"][package]
+            if not m["packages"]:
+                scan_skipped.add(vuln_id)
+                continue
+            scan_ids.add(vuln_id)
+            if vuln_id in matches:
+                matches[vuln_id]["packages"].update(m["packages"])
+            else:
+                matches[vuln_id] = m
+            if xpra_version not in versions.setdefault(vuln_id, []):
+                versions[vuln_id].append(xpra_version)
+        skipped.update(scan_skipped)
+        groups.append((f"{variant} {xpra_version}", scan_ids, scan_skipped))
+
+    if args.variant_scan:
+        lines = []
+        seen: set[str] = set()
+        seen_skipped: set[str] = set()
+        for index, (title, scan_ids, scan_skipped) in enumerate(groups):
+            group_matches = {vuln_id: matches[vuln_id] for vuln_id in scan_ids - seen}
+            group_skipped = scan_skipped - matches.keys() - seen_skipped
+            suffix = " (additional vulnerabilities)" if index else ""
+            lines += [f"## {escape(title)}{suffix}", ""]
+            lines += report(group_matches, versions, rows, group_skipped, heading_level=3) + [""]
+            seen.update(scan_ids)
+            seen_skipped.update(group_skipped)
+    else:
+        lines = report(matches, versions, rows, skipped)
     print("\n".join(lines))
 
+    new = [new_row(m, versions[vuln_id]) for vuln_id, m in matches.items() if vuln_id not in rows]
     if args.update and new:
         for vuln_id, m in matches.items():
             if vuln_id in rows:

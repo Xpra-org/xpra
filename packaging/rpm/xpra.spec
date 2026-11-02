@@ -232,7 +232,12 @@ BuildRequires:		pkgconfig(libqrencode)
 %endif
 Recommends:			qrencode
 BuildRequires:		%{pygobject_requires}
+%if 0%{?el8}
+# el8 predates the rename to python3-gobject-devel:
+BuildRequires:		pygobject3-devel
+%else
 BuildRequires:		python3-gobject-devel
+%endif
 BuildRequires:		pkgconfig(pygobject-3.0)
 BuildRequires:		pkgconfig(py3cairo)
 BuildRequires:		pkgconfig(gtk+-3.0)
@@ -778,6 +783,7 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/xpra/README.md
 %{_datadir}/xpra/COPYING
 %{_datadir}/xpra/icons
+%{_datadir}/xpra/css
 %{_datadir}/xpra/images
 %{_datadir}/xpra/locales
 %{_datadir}/xpra/*.wav
@@ -971,7 +977,6 @@ rm -rf $RPM_BUILD_ROOT
 /lib/systemd/system/xpra-encoder.service
 /lib/systemd/system/xpra-encoder.socket
 %{_prefix}/lib/udev/rules.d/71-xpra-virtual-pointer.rules
-%{_datadir}/xpra/css
 %{_datadir}/applications/xpra-shadow.desktop
 %{_libexecdir}/xpra/xdg-open
 %{_libexecdir}/xpra/gnome-open

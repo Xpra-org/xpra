@@ -25,7 +25,7 @@ class EVDIModel(CaptureWindowModel):
 
     def get_image(self, x, y, width, height) -> ImageWrapper | None:
         dev = self.capture.evdi_device
-        log.warn(f"get_image({x}, {y}, {width}, {height}) using {self.capture}, device={dev}")
+        log(f"get_image({x}, {y}, {width}, {height}) using {self.capture}, device={dev}")
         if not dev:
             return None
         # r = dev.refresh()
@@ -76,7 +76,7 @@ class ExpandServer(ShadowX11Server):
         return True
 
     def evdi_io_event(self, channel, condition) -> bool:
-        log.warn(f"io_event({channel}, {condition})")
+        log(f"io_event({channel}, {condition})")
         self.evdi_device.handle_events()
         # self.evdi_device.refresh()
         return True

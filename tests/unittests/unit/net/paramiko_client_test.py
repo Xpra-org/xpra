@@ -242,6 +242,53 @@ class TestConnectToErrors(unittest.TestCase):
             })
 
 
+@unittest.skipUnless(HAVE_PARAMIKO, "paramiko not available")
+class TestProgressCallback(unittest.TestCase):
+
+    def test_connect_messages(self):
+        from paramiko import SSHConfig
+        from xpra.config import InitExit
+        from xpra.net.ssh.paramiko import client
+        messages: list[str] = []
+        desc = {
+            "host": "example.com",
+            "port": 2222,
+            "remote_xpra": ["xpra"],
+            "proxy_command": ["_proxy_start"],
+            "display_as_args": [],
+        }
+        with (
+            patch.object(client, "load_ssh_config", return_value=SSHConfig()),
+            patch("xpra.net.socket_util.socket_connect", return_value=None),
+        ):
+            with self.assertRaises(InitExit):
+                client.connect_to(desc, debug_cb=messages.append)
+        assert messages == ["connecting to example.com:2222"]
+
+    def test_authentication_messages(self):
+        from xpra.net.ssh.paramiko import client
+        messages: list[str] = []
+        transport = MagicMock()
+        transport.get_remote_server_key.return_value = paramiko.RSAKey.generate(1024)
+        transport.get_banner.return_value = b""
+        transport.is_authenticated.side_effect = lambda: transport.auth_none.called
+        manager = client.AuthenticationManager(
+            transport, "example.com", 22, "user", "", {}, (), {"verify-hostkey": False},
+            auth_modes=("none", ), debug_cb=messages.append,
+        )
+        manager.run()
+        assert messages == ["authenticating as user: none"]
+
+    def test_connect_to_ssh_forwards_callback(self):
+        from xpra.net.connect import connect_to_ssh
+        debug_cb = MagicMock()
+        conn = MagicMock()
+        desc = {"type": "ssh", "is_paramiko": True}
+        with patch("xpra.net.ssh.paramiko.client.connect_to", return_value=conn) as connect_to:
+            assert connect_to_ssh(desc, debug_cb=debug_cb) is conn
+        connect_to.assert_called_once_with(desc, debug_cb)
+
+
 def start_fake_win32_agent() -> list[int]:
     """
     Serve a minimal OpenSSH agent on its named pipe, unless a real one is already there.
@@ -412,10 +459,10 @@ class TestAgentForwarding(unittest.TestCase):
     def tearDown(self):
         self.server.close()
 
-    def open_channel(self, agent: str, override: bool = True):
+    def open_channel(self, agent: str, override: bool = True, debug_cb=None):
         from xpra.net.ssh.paramiko import client
         crf = client.ChannelRunFactory(self.server.client_transport, ["_proxy_start"], ["xpra"], [], [":100"],
-                                       {"agent": agent})
+                                       {"agent": agent}, debug_cb=debug_cb or client.noop)
         with (
             patch.object(client.ChannelRunFactory, "get_xpra_command", return_value="xpra _proxy_start :100"),
             patch.object(client, "AGENT_OVERRIDE", override),
@@ -428,6 +475,11 @@ class TestAgentForwarding(unittest.TestCase):
     def test_agent_disabled(self):
         self.open_channel("no")
         assert not self.server.agent_forwarding_requested
+
+    def test_progress_messages(self):
+        messages: list[str] = []
+        self.open_channel("no", debug_cb=messages.append)
+        assert messages == ["starting remote xpra"]
 
     def test_agent_override_default(self):
         from xpra.net.ssh.paramiko import client

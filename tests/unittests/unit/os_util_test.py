@@ -95,6 +95,11 @@ class TestOSUtil(unittest.TestCase):
         assert memoryview_to_bytes(memoryview(b"foo"))==b"foo"
         assert memoryview_to_bytes(bytearray(b"foo"))==b"foo"
         assert memoryview_to_bytes(u"foo")==b"foo"
+        # ie: the pixels of `GDICapture` images, NUL bytes included:
+        from ctypes import c_char
+        buf = (c_char * 4)()
+        buf.raw = b"a\0\0b"
+        assert memoryview_to_bytes(buf)==b"a\0\0b"
 
     def test_hexstr(self):
         assert hexstr("01")=="3031"

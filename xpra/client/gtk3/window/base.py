@@ -23,7 +23,7 @@ from xpra.util.thread import check_main_thread
 from xpra.gtk.info import get_monitor_plug_name
 from xpra.gtk.util import get_default_root_window
 from xpra.gtk.window import set_visual
-from xpra.gtk.cursors import new_cursor
+from xpra.gtk.cursors import new_cursor, make_cursor, get_default_cursor
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.common import (
     force_size_constraint, noop,
@@ -31,6 +31,7 @@ from xpra.common import (
 from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING
 from xpra.net.common import PacketElement
 from xpra.client.gui.window_base import ClientWindowBase, NOT_REQUESTED
+from xpra.client.gtk3.frame_extents import get_frame_extents, get_window_frame_sizes, request_frame_extents
 from xpra.client.gtk3.window.common import (
     use_x11_bindings, is_awt, is_popup, mask_buttons,
     WINDOW_NAME_TO_HINT, ALL_WINDOW_TYPES, BUTTON_MASK,
@@ -52,6 +53,7 @@ metalog = Logger("metadata")
 statelog = Logger("state")
 eventslog = Logger("events")
 geomlog = Logger("geometry")
+cursorlog = Logger("gtk", "client", "cursor")
 alphalog = Logger("alpha")
 
 HAS_X11_BINDINGS = False
@@ -196,6 +198,23 @@ MOVERESIZE_CURSOR_MAP: dict[int, str] = {int(d): name for d, name in {
     MoveResize.MOVE: "move",
     MoveResize.MOVE_KEYBOARD: "move",
 }.items()}
+
+
+def make_window_cursor(cursor_data: Sequence, display=None) -> Gdk.Cursor | None:
+    """
+    The Gdk cursor for the cursor data the server sent us, scaled for the `display` subsystem,
+    the default cursor if we fail to create it, or `None` to reset the cursor when there is no data.
+    """
+    if not cursor_data:
+        return None
+    cursor = None
+    try:
+        xscale, yscale = (display.xscale, display.yscale) if display else (1, 1)
+        cursor = make_cursor(cursor_data, xscale, yscale)
+        cursorlog(f"make_cursor(..)={cursor}")
+    except Exception as e:
+        cursorlog.warn("error creating cursor: %s (using default)", e, exc_info=True)
+    return cursor or get_default_cursor()
 
 
 def get_follow_window_types() -> Sequence[Gdk.WindowTypeHint]:
@@ -395,7 +414,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             # workaround for new window offsets:
             # keep the window contents where they were and adjust the frame
             # this generates a configure event which ensures the server has the correct window position
-            wfs = self._client.get_window_frame_sizes()
+            wfs = get_window_frame_sizes()
             if wfs and decorated and not was_decorated:
                 geomlog("set_decorated(%s) re-adjusting window location using %s", decorated, wfs)
                 normal = wfs.get("normal")
@@ -431,7 +450,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self.is_OR():
             # make sure OR windows are mapped on screen
             display = self.get_subsystem("display")
-            if display and display._current_screen_sizes:
+            if display and display.screen_sizes:
                 self.window_offset = self.calculate_window_offset(x, y, w, h)
                 geomlog("OR offsets=%s", self.window_offset)
                 if self.window_offset:
@@ -442,7 +461,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             # Note: we cannot just call self.get_window_frame_size() here because
             # the window is not realized yet, and it may take a while for the window manager
             # to set the frame-extents property anyway
-            if wfs := self._client.get_window_frame_sizes():
+            if wfs := get_window_frame_sizes():
                 geomlog("setup_window() window frame sizes=%s", wfs)
                 if v := wfs.get("offset"):
                     dx, dy = v
@@ -458,10 +477,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def setup_following(self) -> None:
         # find a parent window we should follow when it moves:
-        def find(attr: str):
-            return self._client.find_window(self._metadata, attr)
-
-        follow = find("transient-for") or find("parent")
+        follow = self.find_related_window("transient-for") or self.find_related_window("parent")
         log("setup_following() follow=%s", follow)
         if not follow or not isinstance(follow, Gtk.Window):
             return
@@ -524,7 +540,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def adjusted_position(self, ox, oy) -> tuple[int, int]:
         if AWT_RECENTER and is_awt(self._metadata):
             display = self.get_subsystem("display")
-            ss = display._current_screen_sizes if display else ()
+            ss = display.screen_sizes if display else ()
             if ss and len(ss) == 1:
                 screen0 = ss[0]
                 monitors = screen0[5]
@@ -557,7 +573,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def calculate_window_offset(self, wx: int, wy: int, ww: int, wh: int) -> tuple[int, int] | None:
         display = self.get_subsystem("display")
-        ss = display._current_screen_sizes if display else ()
+        ss = display.screen_sizes if display else ()
         if not ss:
             return None
         if len(ss) != 1:
@@ -635,7 +651,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 callback(*args)
         if HAS_X11_BINDINGS:
             # request frame extents if the window manager supports it
-            self._client.request_frame_extents(self)
+            request_frame_extents(self)
         if self.group_leader:
             self.get_window().set_group(self.group_leader)
 
@@ -749,7 +765,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.update_window_state(state_updates)
 
     def update_window_state(self, state_updates: dict[str, bool]):
-        if self._client.readonly:
+        if self.is_readonly():
             log("update_window_state(%s) ignored in readonly mode", state_updates)
             return
         if state_updates.get("maximized") is False or state_updates.get("fullscreen") is False:
@@ -826,7 +842,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def schedule_send_iconify(self) -> None:
         # calculate a good delay to prevent races causing minimize/unminimize loops:
-        if self._client.readonly:
+        if self.is_readonly():
             return
         delay = ICONIFY_LATENCY
         if delay > 0:
@@ -1330,7 +1346,20 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.moveresize_cursor = ""
         # re-apply whatever the server asked for whilst we were dragging:
         # (weak dependency on `PointerWindow`)
-        self._client.set_windows_cursor([self], getattr(self, "cursor_data", ()))
+        cursor_data = getattr(self, "cursor_data", ())
+        self.set_gdk_cursor(make_window_cursor(cursor_data, self.get_subsystem("display")))
+
+    def set_gdk_cursor(self, cursor: Gdk.Cursor | None) -> bool:
+        """ show this cursor, returns `False` if there is no gdk window to show it on (yet) """
+        # the cursor should only apply to the window contents (aka "drawingarea"),
+        # and not the headerbar:
+        gdkwin = getattr(self, "drawing_area", self).get_window()
+        if not gdkwin:
+            return False
+        # a local move or resize drag owns the cursor until it ends:
+        if not self.moveresize_cursor:
+            gdkwin.set_cursor(cursor)
+        return True
 
     def snap_to_server_grid(self, sw: int, sh: int, nearest: bool = False) -> tuple[int, int]:
         """snap server-coordinate dimensions to the application's resize increment grid"""
@@ -1444,7 +1473,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.when_realized("transient-for-root", set_root_transient)
         else:
             # gtk window is easier:
-            window = self.get_subsystem("window")._id_to_window.get(wid)
+            window = self.get_subsystem("window").get_window(wid)
             log("%s.apply_transient_for(%#x) window=%s", self, wid, window)
             if window and isinstance(window, Gtk.Window):
                 self.set_transient_for(window)
@@ -1501,10 +1530,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self.get_subsystem("window").update_focus(self.wid, htf)
 
     def get_window_frame_size(self) -> Sequence[int]:
-        frame = self._client.get_frame_extents(self).get("frame", ())
+        frame = get_frame_extents(self).get("frame", ())
         if not frame:
             # default to global value we may have:
-            if wfs := self._client.get_window_frame_sizes():
+            if wfs := get_window_frame_sizes():
                 frame = wfs.get("frame", ())
         return frame
 
@@ -1565,7 +1594,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # the server has moved this window relative to its parent (ie: a Wayland `xdg_popup` reposition),
         # resolve it against where the parent is on our side, just like when the window was created,
         # so this also works for nested popups: the parent's position already includes its own offset
-        parent = self._client.find_window(self._metadata, "parent")
+        parent = self.find_related_window("parent")
         ppos: tuple[int, int] | None = getattr(parent, "_pos", None)
         geomlog("apply_relative_position(%s) parent=%s, parent position=%s", rel_pos, parent, ppos)
         if len(rel_pos) != 2 or not ppos:
@@ -1652,7 +1681,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             sw, sh = self.snap_to_server_grid(sw, sh, nearest=sw != w or sh != h)
 
         config: dict[str, PacketElement] = {}
-        if not self._client.readonly:
+        if not self.is_readonly():
             if pointer := self.get_subsystem("pointer"):
                 position, pointer_props = pointer.split_pointer_position(pointer.get_mouse_position())
                 pointer_data = {
@@ -1694,7 +1723,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self.new_backing(bw, bh)
 
     def may_update_metadata(self, w: int, h: int) -> None:
-        if self._client.readonly:
+        if self.is_readonly():
             # change size-constraints first,
             # so the resize can be honoured:
             sc = typedict(force_size_constraint(w, h))
@@ -1805,7 +1834,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # and a pager source indication, only user-initiated moves are allowed to leave a window partially offscreen,
         # so with `sharing=combine`, a window overlapping this client's area may end up at the edge of the screen instead
         if CLAMP_WINDOW_TO_SCREEN:
-            display = self._client.get_subsystem("display")
+            display = self.get_subsystem("display")
             mw, mh = display.get_root_size() if display else (0, 0)
             if (ax + w) <= 0:
                 ax = -w + 1

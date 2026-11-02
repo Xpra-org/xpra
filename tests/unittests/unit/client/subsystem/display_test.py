@@ -5,17 +5,70 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 from xpra.net.common import Packet
 from xpra.net.dispatch import SubsystemPacketHandlers
-from xpra.util.objects import AdHocStruct
+from xpra.util.objects import AdHocStruct, typedict
 from unit.test_util import silence_info, stubbable
 from unit.process_test_util import DisplayContext
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
 class DisplayClientTest(ClientMixinTest):
+
+    def test_xsettings_negotiation(self):
+        with DisplayContext():
+            from xpra.client.subsystem.display import DisplayClient
+            from xpra.x11.subsystem.xsettings import XSettingsServer
+            from xpra.x11.xroot_props import GTK_WORKAREAS_PREFIX
+
+            server = XSettingsServer()
+            opts = AdHocStruct()
+            server_caps = [({}, False)]
+            for value in ("no", "yes"):
+                opts.xsettings = value
+                server.init(opts)
+                server_caps.append((server.get_caps(None), value == "yes"))
+            settings = (1, ((0, "Xft/DPI", 98304, 1), ))
+            resource_manager = b"Xft.dpi:\t96\n"
+            for caps, server_enabled in server_caps:
+                for enabled in (False, True):
+                    with self.subTest(caps=caps, enabled=enabled):
+                        client = Mock(subsystems={})
+                        display = DisplayClient(client)
+                        opts.xsettings = enabled
+                        display.init_display_watcher(opts)
+                        watcher = display._x11_props
+                        self.assertIsNotNone(watcher)
+                        client.after_handshake.assert_called_once_with(watcher.do_setup_xprops)
+                        self.assertTrue(display.parse_server_capabilities(typedict(caps | {"display": {}})))
+                        xsettings_watcher = Mock()
+                        xsettings_watcher.get_settings.return_value = settings
+                        root_watcher = Mock()
+                        root_watcher.do_notify.side_effect = lambda prop: watcher._handle_root_prop_changed(root_watcher, prop)
+                        with patch.object(watcher, "init_x11_filter"), \
+                             patch("xpra.x11.subsystem.xsettings_manager.XSettingsWatcher", return_value=xsettings_watcher) as xsettings_class, \
+                             patch("xpra.x11.xroot_props.XRootPropWatcher", return_value=root_watcher) as root_class, \
+                             patch("xpra.platform.posix.display.get_resource_manager", return_value=resource_manager):
+                            callback = client.after_handshake.call_args.args[0]
+                            callback()
+                        sync = enabled and server_enabled
+                        if sync:
+                            xsettings_class.assert_called_once_with()
+                            self.assertEqual(client.send_setting_change.call_args_list, [
+                                call("xsettings", {"xsettings-blob": settings}),
+                                call("xsettings", {"resource-manager": resource_manager}),
+                            ])
+                        else:
+                            xsettings_class.assert_not_called()
+                            client.send_setting_change.assert_not_called()
+                        if enabled:
+                            props = (["RESOURCE_MANAGER"] if sync else []) + ["_NET_WORKAREA", "_NET_CURRENT_DESKTOP"]
+                            root_class.assert_called_once_with(props, (GTK_WORKAREAS_PREFIX, ))
+                        else:
+                            root_class.assert_not_called()
+                        display.cleanup()
 
     def test_x11_filter_lifecycle(self):
         from xpra.platform.posix.display import X11DisplayPropsWatcher
@@ -133,9 +186,11 @@ class DisplayClientTest(ClientMixinTest):
                         "desktop_size": (1024, 768),
                         "max_desktop_size": (3840, 2160),
                         "actual_desktop_size": (1024, 768),
-                        "resize_screen": True,
                     },
+                    # a server feature, not part of the `display` namespace:
+                    "resize_screen": True,
                 })
+            self.assertTrue(self.mixin.server_randr)
             self.assertIsNotNone(self.mixin._x11_props)
             self.assertFalse(self.mixin._x11_props.xsettings_enabled)
             # `get_monitors_info` now calls through to `xpra.platform.gui.get_monitors_info`
@@ -155,6 +210,46 @@ class DisplayClientTest(ClientMixinTest):
             self.assertEqual(called, [(self.mixin.xscale, self.mixin.yscale)])
             self.assertEqual(info, {0: {"geometry": (0, 0, 1024, 768)}})
             self.assertEqual(self.mixin.get_server_position((-100, 50)), (-100, 50))
+
+    def test_server_mode_capabilities(self):
+        from xpra.util.objects import typedict
+        from xpra.client.subsystem import display  # pylint: disable=import-outside-toplevel
+        display_caps = {
+            "name": ":999",
+            "desktop_size": (1920, 1080),
+            "actual_desktop_size": (1920, 1080),
+        }
+
+        def parse(caps: dict):
+            dc = stubbable(display.DisplayClient)()
+            with silence_info(display):
+                self.assertTrue(dc.parse_server_capabilities(typedict(caps | {"display": display_caps})))
+            return dc
+
+        # the server mode and monitor features are top-level server features,
+        # not part of the `display` namespace:
+        dc = parse({})
+        self.assertFalse(dc.server_is_desktop)
+        self.assertFalse(dc.server_is_monitor)
+        self.assertFalse(dc.server_multi_monitors)
+        for mode in ("shadow", "desktop"):
+            dc = parse({mode: True})
+            self.assertTrue(dc.server_is_desktop, mode)
+            self.assertFalse(dc.server_is_monitor, mode)
+        monitors = {0: {"geometry": (0, 0, 1920, 1080)}}
+        dc = parse({
+            "monitor": True,
+            "multi-monitors": True,
+            "monitors": monitors,
+            "monitors.add-resolutions": ("1920x1080", "1280x720"),
+            "monitors.add-label": "Add a virtual monitor",
+        })
+        self.assertTrue(dc.server_is_desktop)
+        self.assertTrue(dc.server_is_monitor)
+        self.assertTrue(dc.server_multi_monitors)
+        self.assertEqual(dc.server_monitors, monitors)
+        self.assertEqual(dc.server_new_monitor_resolutions, ("1920x1080", "1280x720"))
+        self.assertEqual(dc.server_add_monitor_label, "Add a virtual monitor")
 
 
 def main():

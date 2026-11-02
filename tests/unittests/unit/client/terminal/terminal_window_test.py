@@ -4,16 +4,13 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import unittest
 from io import BytesIO
 
-# `XPRA_UNIT_TEST` is read at import time by the client window modules:
-os.environ.setdefault("XPRA_UNIT_TEST", "1")
-
-from xpra.util.objects import typedict                                  # noqa: E402
-from xpra.net.packet_type import WINDOW_MAP, WINDOW_UNMAP, WINDOW_CONFIGURE   # noqa: E402
-from unit.client.terminal.terminal_test_util import parse_output, actions, graphics_keys   # noqa: E402
+from xpra.util.objects import typedict
+from xpra.client.gui.window_title import get_window_title
+from xpra.net.packet_type import WINDOW_MAP, WINDOW_UNMAP, WINDOW_CONFIGURE
+from unit.client.terminal.terminal_test_util import parse_output, actions, graphics_keys
 
 try:
     from xpra.client.terminal.tty import TerminalOutput
@@ -27,8 +24,16 @@ except ImportError:
 
 
 class FakeWindowSubsystem:
-    def __init__(self):
+    def __init__(self, client=None):
+        self.client = client
         self.focus_events = []
+
+    def send(self, *args) -> None:
+        # windows send their packets via the `window` subsystem:
+        self.client.send(*args)
+
+    def get_window_title(self, wid: int, metadata: dict) -> str:
+        return get_window_title(self.client, wid, metadata)
 
     def update_focus(self, wid: int, focused=True) -> None:
         self.focus_events.append((wid, focused))
@@ -37,6 +42,7 @@ class FakeWindowSubsystem:
 class FakeClient:
     """ the minimal client surface a terminal `ClientWindow` reaches through """
     readonly = False
+    server_readonly = False
     # a title template with a variable, so the metadata title is used:
     title = "@title@"
     headerbar = "no"
@@ -47,7 +53,7 @@ class FakeClient:
         self.packets = []
         self.buffer = BytesIO()
         self.terminal_output = TerminalOutput(self.buffer)
-        self.subsystems = {"window": FakeWindowSubsystem()}
+        self.subsystems = {"window": FakeWindowSubsystem(self)}
         self._focused = 0
         self.zorder = {}
         self.raised = []

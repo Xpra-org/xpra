@@ -11,8 +11,8 @@ from xpra.x11.error import XError
 from xpra.x11.bindings.xlib cimport (
     Display, Drawable, Visual, Window, Bool, XID, Status, Atom, Time, CurrentTime, Cursor, XPointer,
     XVisualInfo,
-    XGetVisualInfo, VisualIDMask, XDefaultVisual,
-    GrabModeAsync, XGrabPointer,
+    XGetVisualInfo, VisualIDMask, XDefaultVisual, XDefaultScreen,
+    GrabModeAsync, XGrabPointer, XWarpPointer,
     Expose,
     XEvent,
     XWMHints, XSizeHints,
@@ -56,8 +56,6 @@ log = Logger("x11", "bindings", "window")
 DEF XNone = 0
 
 DEF isUnmapped = 0
-
-DEF screen_number = 0
 
 cdef extern from "X11/Xlib.h":
     int CWX
@@ -211,7 +209,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 
     def Withdraw(self, Window xwindow) -> None:
         self.context_check("Withdraw")
-        return XWithdrawWindow(self.display, xwindow, screen_number)
+        return XWithdrawWindow(self.display, xwindow, XDefaultScreen(self.display))
 
     def Reparent(self, Window xwindow, Window xparent, int x, int y) -> None:
         self.context_check("Reparent")
@@ -219,7 +217,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
 
     def Iconify(self, Window xwindow) -> None:
         self.context_check("Iconify")
-        return XIconifyWindow(self.display, xwindow, screen_number)
+        return XIconifyWindow(self.display, xwindow, XDefaultScreen(self.display))
 
     ###################################
     # XUnmapWindow
@@ -452,10 +450,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
     ###################################
     # Clipboard
     ###################################
-    def selectSelectionInput(self, Window xwindow) -> None:
-        self.context_check("selectSelectionInput")
-        self.addXSelectInput(xwindow, SelectionNotify)
-
     def sendSelectionNotify(self, Window xwindow, selection, target, property, Time time=CurrentTime) -> None:
         self.context_check("sendSelectionNotify")
         cdef XEvent e
@@ -562,7 +556,7 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         return visual
 
     def get_default_visualid(self) -> int:
-        cdef Visual *visual = XDefaultVisual(self.display, 0)
+        cdef Visual *visual = XDefaultVisual(self.display, XDefaultScreen(self.display))
         if not visual:
             return 0
         return visual.visualid
@@ -947,6 +941,12 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
                 protocols.append(self.get_atom_name(protocols_return[i]))
                 i += 1
         return tuple(protocols)
+
+    def XWarpPointer(self, Window src_w, Window dest_w,
+                     int src_x, int src_y, unsigned int src_width, unsigned int src_height,
+                     int dest_x, int dest_y) -> None:
+        self.context_check("XWarpPointer")
+        XWarpPointer(self.display, src_w, dest_w, src_x, src_y, src_width, src_height, dest_x, dest_y)
 
     def pointer_grab(self, Window xwindow) -> bool:
         self.context_check("pointer_grab")

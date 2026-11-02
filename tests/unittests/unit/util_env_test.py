@@ -230,6 +230,18 @@ class TestIgnoreWarningsContext(unittest.TestCase):
     def test_repr(self):
         self.assertIn("IgnoreWarnings", repr(IgnoreWarningsContext()))
 
+    def test_filters_restored(self):
+        # the warnings which are ignored by default must stay ignored afterwards:
+        with warnings.catch_warnings():
+            warnings.resetwarnings()
+            warnings.simplefilter("ignore", ResourceWarning)
+            before = list(warnings.filters)
+            with IgnoreWarningsContext():
+                pass
+            self.assertEqual(warnings.filters, before)
+            ignorewarnings(lambda: None)
+            self.assertEqual(warnings.filters, before)
+
 
 class TestIgnorewarnings(unittest.TestCase):
 
@@ -260,6 +272,50 @@ class TestSilenceWarningsContext(unittest.TestCase):
     def test_no_categories(self):
         with SilenceWarningsContext():
             pass  # should not raise
+
+    def test_filters_restored(self):
+        # contexts used from different threads must not enable the warnings which are ignored by default,
+        # ie: a `ResourceWarning` for a process which is deliberately left running
+        with warnings.catch_warnings():
+            # the unittest runner shows all warnings, start from the interpreter's defaults instead:
+            warnings.resetwarnings()
+            warnings.simplefilter("ignore", ResourceWarning)
+            self.enter_while_exiting()
+            # `catch_warnings` is not thread safe, so the categories we ignore may stay ignored,
+            # but no warnings must be enabled:
+            self.assertEqual([f for f in warnings.filters if f[0] != "ignore"], [])
+            self.assertIn(("ignore", None, ResourceWarning, None, 0), warnings.filters)
+
+    @staticmethod
+    def enter_while_exiting() -> None:
+        # another thread enters a context while the first one is exiting,
+        # so it saves the filters before the first one has restored them, and restores those last:
+        import threading
+        exiting, entered = threading.Event(), threading.Event()
+        catch_warnings_exit = warnings.catch_warnings.__exit__
+
+        def slow_exit(context, *args):
+            if threading.current_thread() is first_thread:
+                exiting.set()
+                entered.wait(5)
+            return catch_warnings_exit(context, *args)
+
+        def first() -> None:
+            with SilenceWarningsContext(DeprecationWarning):
+                pass
+
+        def second() -> None:
+            exiting.wait(5)
+            with SilenceWarningsContext(DeprecationWarning):
+                entered.set()
+                first_thread.join(5)
+
+        with patch.object(warnings.catch_warnings, "__exit__", slow_exit):
+            first_thread = threading.Thread(target=first)
+            second_thread = threading.Thread(target=second)
+            second_thread.start()
+            first_thread.start()
+            second_thread.join(10)
 
 
 class TestGetExecEnv(unittest.TestCase):

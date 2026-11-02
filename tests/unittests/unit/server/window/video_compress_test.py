@@ -7,6 +7,8 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from xpra.codecs.image import ImageWrapper
+from xpra.codecs.loader import load_codec
 from xpra.server.window.compress import WindowSource
 from xpra.server.window.video_compress import WindowVideoSource
 from xpra.util.objects import typedict
@@ -98,7 +100,7 @@ class VideoContextCleanTest(unittest.TestCase):
         encoder.get_encoding.return_value = "h264"
         encoder.flush.return_value = b"data", {}
         source._video_encoder = encoder
-        source.b_frame_flush_data = encoder, None, 1, 0, 0, None
+        source.b_frame_flush_data = encoder, None, 1, 0, 0, None, False
         source.b_frame_flush_timer = 0
         source.start_video_frame = 0
         events = []
@@ -124,7 +126,7 @@ class VideoContextCleanTest(unittest.TestCase):
         old_encoder = Mock()
         old_encoder.is_closed.return_value = False
         source._video_encoder = Mock()
-        source.b_frame_flush_data = old_encoder, None, 1, 0, 0, None
+        source.b_frame_flush_data = old_encoder, None, 1, 0, 0, None, False
 
         source.do_flush_video_encoder()
 
@@ -136,7 +138,7 @@ class VideoContextCleanTest(unittest.TestCase):
         encoder = Mock()
         encoder.is_closed.return_value = True
         source._video_encoder = encoder
-        source.b_frame_flush_data = encoder, None, 1, 0, 0, None
+        source.b_frame_flush_data = encoder, None, 1, 0, 0, None, False
 
         source.do_flush_video_encoder()
 
@@ -153,7 +155,7 @@ class VideoContextCleanTest(unittest.TestCase):
         encoder.get_height.return_value = 64
         encoder.flush.return_value = b"data", {}
         source._video_encoder = encoder
-        source.b_frame_flush_data = encoder, None, 1, 0, 0, None
+        source.b_frame_flush_data = encoder, None, 1, 0, 0, None, False
         source.b_frame_flush_timer = 0
         source.start_video_frame = 0
         source.video_stream_file = None
@@ -166,7 +168,44 @@ class VideoContextCleanTest(unittest.TestCase):
 
         encoder.flush.assert_called_once_with(1)
         self.assertEqual(source.b_frame_flush_data, ())
-        source.schedule_video_encoder_timer.assert_called_once_with()
+        source.schedule_video_encoder_timer.assert_called_once_with(encoder, None)
+
+
+class VideoEncodeTest(unittest.TestCase):
+
+    def test_grayscale_conversion(self) -> None:
+        if load_codec("csc_libyuv") is None:
+            self.skipTest("libyuv converter is not available")
+
+        pixels = bytes((0, 0, 255, 255, 0, 255, 0, 255, 255, 0, 0, 255, 50, 100, 200, 255))
+        image = ImageWrapper(0, 0, 2, 2, pixels, "BGRX", 24, 8)
+        self.addCleanup(image.free)
+        source = WindowVideoSource.__new__(WindowVideoSource)
+        source.pixel_format = "BGRX"
+        source.supports_transparency = False
+        source.encoding = "grayscale"
+        source.may_use_scrolling = Mock(return_value=False)
+        source.video_helper = Mock()
+        source.common_video_encodings = ("h264",)
+        source.check_pipeline = Mock(return_value=False)
+        source.video_fallback = Mock(return_value=("fallback",))
+        options = typedict()
+
+        self.assertEqual(source.do_video_encode("grayscale", image, options), ("fallback",))
+
+        converted = source.video_fallback.call_args.args[0]
+        self.addCleanup(converted.free)
+        source.video_fallback.assert_called_once_with(converted, options, info="pipeline failed")
+        source.check_pipeline.assert_called_once_with(("h264",), 2, 2, "BGRX")
+        self.assertEqual(converted.get_geometry()[:4], image.get_geometry()[:4])
+        self.assertEqual(converted.get_pixel_format(), "BGRX")
+        gray_pixels = bytes(converted.get_pixels())
+        self.assertEqual(len(gray_pixels), len(pixels))
+        self.assertNotEqual(gray_pixels, pixels)
+        for offset in range(0, len(gray_pixels), 4):
+            b, g, r = gray_pixels[offset:offset + 3]
+            self.assertEqual(b, g)
+            self.assertEqual(g, r)
 
 
 class NonVideoEncodingsTest(unittest.TestCase):

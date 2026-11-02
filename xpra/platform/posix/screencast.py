@@ -4,6 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from xpra.platform.posix.fd_portal import SCREENCAST_IFACE
 from xpra.platform.posix.shadow.fd_portal import PortalShadow
 from xpra.log import Logger
 
@@ -11,6 +12,7 @@ log = Logger("shadow")
 
 
 class ScreenCast(PortalShadow):
+    SESSION_IFACE = SCREENCAST_IFACE
 
     def __init__(self, attrs: dict[str, str]):
         super().__init__(attrs)

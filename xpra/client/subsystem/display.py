@@ -159,6 +159,11 @@ class DisplayClient(StubClientSubsystem):
     def get_screen_sizes(self, xscale=1, yscale=1) -> list[tuple[int, int]]:
         raise NotImplementedError()
 
+    @property
+    def screen_sizes(self) -> Sequence:
+        """ the cached screen sizes (unlike `get_screen_sizes()` which queries the platform) """
+        return self._current_screen_sizes
+
     def get_root_size(self) -> tuple[int, int]:
         raise NotImplementedError()
 
@@ -296,6 +301,8 @@ class DisplayClient(StubClientSubsystem):
         return caps
 
     def parse_server_capabilities(self, caps: typedict) -> bool:
+        if self._x11_props:
+            self._x11_props.server_xsettings = caps.boolget("xsettings")
         d = caps.get("display")
         if isinstance(d, dict):
             c = typedict(d)
@@ -307,21 +314,22 @@ class DisplayClient(StubClientSubsystem):
         self.server_max_desktop_size = c.intpair("max_desktop_size", (2 ** 15, 2 ** 15))
         self.server_actual_desktop_size = c.intpair("actual_desktop_size")
         log("server actual desktop size=%s", self.server_actual_desktop_size)
-        self.server_randr = c.boolget("resize_screen")
-        log("server has randr: %s", self.server_randr)
         self.server_opengl = c.dictget("opengl")
         Logger("screen", "opengl")("server opengl=%s", self.server_opengl)
-        self.server_multi_monitors = c.boolget("multi-monitors", False)
-        self.server_monitors = c.dictget("monitors")
+        # the server mode, randr and monitor features are not part of the `display` namespace:
+        self.server_randr = caps.boolget("resize_screen")
+        log("server has randr: %s", self.server_randr)
+        self.server_multi_monitors = caps.boolget("multi-monitors", False)
+        self.server_monitors = caps.dictget("monitors")
         # resolutions the server allows for new monitors (ie: parsec-vdd EDID modes);
         # falls back to the client's own list when the server does not provide one:
-        self.server_new_monitor_resolutions = c.strtupleget("monitors.add-resolutions")
+        self.server_new_monitor_resolutions = caps.strtupleget("monitors.add-resolutions")
         # optional label for the "add monitor" menu entry (ie: "Add a virtual monitor"):
-        self.server_add_monitor_label = c.strget("monitors.add-label")
+        self.server_add_monitor_label = caps.strget("monitors.add-label")
         log("server multi-monitors=%s, monitors=%s, new-monitor-resolutions=%s",
             self.server_multi_monitors, self.server_monitors, self.server_new_monitor_resolutions)
-        self.server_is_desktop = c.boolget("shadow") or c.boolget("desktop") or c.boolget("monitor")
-        self.server_is_monitor = c.boolget("monitor")
+        self.server_is_desktop = caps.boolget("shadow") or caps.boolget("desktop") or caps.boolget("monitor")
+        self.server_is_monitor = caps.boolget("monitor")
         # the colourspace capability is not part of the `display` namespace,
         # servers without it are assumed to be rendering into sRGB:
         self.server_colourspace = Colourspace.from_dict(caps.dictget("colourspace"))
@@ -334,7 +342,7 @@ class DisplayClient(StubClientSubsystem):
         return True
 
     def print_desktop_size(self, c: typedict) -> None:
-        if c.boolget("desktop") or c.boolget("shadow"):
+        if self.server_is_desktop and not self.server_is_monitor:
             v = c.intpair("actual_desktop_size")
             if v != (0, 0):
                 w, h = v
@@ -384,6 +392,9 @@ class DisplayClient(StubClientSubsystem):
         if not p or p.TYPE != "xpra":
             return
         root_w, root_h = self.cp(*self.get_root_size())
+        # clamp to avoid overly large values when scaling:
+        root_w = min(32768, root_w)
+        root_h = min(32768, root_h)
         maxw, maxh = root_w, root_h
         try:
             server_w, server_h = self.server_actual_desktop_size
@@ -391,13 +402,11 @@ class DisplayClient(StubClientSubsystem):
             maxh = max(root_h, server_h)
         except (TypeError, ValueError):
             pass
-        if maxw <= 0 or maxh <= 0 or maxw >= 32768 or maxh >= 32768:
+        if maxw <= 0 or maxh <= 0 or maxw > 32768 or maxh > 32768:
             message = "invalid maximum desktop size: %ix%i" % (maxw, maxh)
             log(message)
             self.client.quit(ExitCode.INTERNAL_ERROR)
             return
-        if maxw >= 16384 or maxh >= 16384:
-            log.warn("Warning: the desktop size is extremely large: %ix%i", maxw, maxh)
         # max packet size to accommodate
         # a full screen RGBX (32 bits) uncompressed image
         # also with enough headroom for some metadata (4k)

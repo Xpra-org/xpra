@@ -15,6 +15,7 @@ from xpra.net.packet_type import WINDOW_UNMAP
 
 
 class Window:
+    is_readonly = GTKClientWindowBase.is_readonly
     set_iconic = GTKClientWindowBase.set_iconic
     update_window_state = GTKClientWindowBase.update_window_state
     schedule_send_iconify = GTKClientWindowBase.schedule_send_iconify
@@ -27,7 +28,7 @@ class Window:
 
     def __init__(self):
         self.wid = 7
-        self._client = SimpleNamespace(readonly=False)
+        self._client = SimpleNamespace(readonly=False, server_readonly=False)
         self.window_subsystem = SimpleNamespace(server_window_states=("iconified",))
         self._iconified = False
         self._server_iconify_pending = False

@@ -88,6 +88,10 @@ class ClientWindow(WindowBaseClass):
             mh.build()
             mh.popup(0, 0)
 
+    def show_window_info(self, *_args) -> None:
+        from xpra.client.gtk3.window.window_info import WindowInfo
+        WindowInfo(self).show()
+
     def show_window_menu(self, *_args) -> None:
         if not self.menu_helper:
             from xpra.client.gtk3.window.menu import WindowMenuHelper
@@ -113,7 +117,9 @@ class ClientWindow(WindowBaseClass):
             metalog("xget_u32_property(%s, %s, %s)=%s", target, name, default_value, prop[2][0])
             return prop[2][0]
         except Exception as e:
-            metalog.error("xget_u32_property error on %s / %s: %s", target, name, e)
+            metalog.error("Error: retrieving CARDINAL property %r on %r", name, target)
+            metalog.error(" returning default %i", default_value)
+            metalog.estr(e)
             return default_value
 
     def get_drawing_area_geometry(self) -> tuple[int, int, int, int]:

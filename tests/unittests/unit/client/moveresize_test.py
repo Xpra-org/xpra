@@ -184,11 +184,6 @@ class TestMoveResizeCursor(unittest.TestCase):
 
         applied = []
 
-        class FakeClient:
-            @staticmethod
-            def set_windows_cursor(windows, cursor_data) -> None:
-                applied.append((tuple(windows), cursor_data))
-
         class FakeWindow:
             set_moveresize_cursor = GTKClientWindowBase.set_moveresize_cursor
             cancel_moveresize_cursor = GTKClientWindowBase.cancel_moveresize_cursor
@@ -201,7 +196,6 @@ class TestMoveResizeCursor(unittest.TestCase):
                 self.moveresize_event = ()
                 self.cursor_data = ()
                 self.button_pressed: dict[int, int] = {}
-                self._client = FakeClient()
                 self.toplevel = Gtk.Window()
                 self.drawing_area = Gtk.DrawingArea()
                 self.toplevel.add(self.drawing_area)
@@ -215,6 +209,11 @@ class TestMoveResizeCursor(unittest.TestCase):
             @staticmethod
             def get_subsystem(_name):
                 return None
+
+            def set_gdk_cursor(self, cursor) -> bool:
+                # records the server cursors we (re-)apply:
+                applied.append(cursor)
+                return GTKClientWindowBase.set_gdk_cursor(self, cursor)
 
         return FakeWindow(), applied
 
@@ -243,9 +242,15 @@ class TestMoveResizeCursor(unittest.TestCase):
         window.cursor_data = ("raw", 0, 0, 16, 16, 0, 0, 0x1234, b"\xff" * 1024, "left_ptr")
         window.set_moveresize_cursor(MoveResize.SIZE_BOTTOMRIGHT)
         assert not applied, "nothing should have been re-applied yet"
+        gdkwin = window.drawing_area.get_window()
+        shown = []
+        gdkwin.set_cursor = shown.append
         window.cancel_moveresize_cursor()
         assert window.moveresize_cursor == ""
-        assert applied == [((window, ), window.cursor_data)], f"{applied=}"
+        assert len(applied) == 1, f"{applied=}"
+        # the server cursor is shown again, now that the drag is over:
+        assert shown == applied, f"{shown=}, {applied=}"
+        assert shown[0] is not None
         # a second cancel is a no-op:
         window.cancel_moveresize_cursor()
         assert len(applied) == 1

@@ -8,7 +8,7 @@ import re
 import sys
 from time import sleep, monotonic
 from typing import Any, NoReturn
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from xpra.net.ssh.paramiko.util import (
     keymd5, get_key_fingerprints, get_sha256_fingerprint_for_key, load_private_key, SSHSocketConnection,
@@ -24,7 +24,7 @@ from xpra.net.ssh.util import get_default_keyfiles
 from xpra.net.bytestreams import SOCKET_TIMEOUT
 from xpra.exit_codes import ExitCode
 from xpra.util.io import stderr_print, umask_context
-from xpra.common import noerr
+from xpra.common import noerr, noop
 from xpra.os_util import WIN32
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, envfloat, first_time
@@ -249,7 +249,11 @@ def parse_proxyjump(value: str) -> list[dict]:
     return jumphosts
 
 
-def connect_to(display_desc: dict) -> SSHSocketConnection:
+def connect_to(display_desc: dict, debug_cb: Callable = noop) -> SSHSocketConnection:
+    """
+    `debug_cb(message)` is called with progress messages during connection setup,
+    so that callers can surface them (ie: client splash screen, launcher status line).
+    """
     log(f"connect_to({display_desc})")
     # plain socket attributes:
     host: str = display_desc["host"]
@@ -320,6 +324,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
             raise InitExit(ExitCode.SSH_FAILURE, f"invalid ssh port specified: {port!r}") from None
         if proxycommand := host_config.get("proxycommand", ""):
             log(f"found proxycommand={proxycommand!r} for host {host!r}")
+            debug_cb(f"connecting to {host} using proxy command")
             from paramiko import ProxyCommand
             sock = ProxyCommand(proxycommand)
             log(f"ProxyCommand({proxycommand})={sock}")
@@ -343,8 +348,10 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
                           username, password,
                           host_config,
                           proxy_keys,
-                          paramiko_config)
-            chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dirs, display_as_args, paramiko_config)
+                          paramiko_config,
+                          debug_cb=debug_cb)
+            chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dirs, display_as_args, paramiko_config,
+                                   debug_cb=debug_cb)
             peername = (host, port)
             conn = SSHProxyCommandConnection(chan, peername, peername, {"host": host, "port": port})
             conn.target = host_target_string("ssh", username, host, port or 22, display)
@@ -385,25 +392,29 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
             keyfiles = hop_keyfiles(hop_config, hop.get("key", ""))
             if transport is None:
                 log("opening socket connection to jump host %r:%i", real_host, hop_port)
+                debug_cb(f"connecting to jump host {real_host}:{hop_port}")
                 sock = socket_connect(real_host, hop_port)
                 if not sock:
                     fail(f"SSH proxy transport failed to connect to {real_host}:{hop_port}")
             else:
                 log("opening proxy channel to jump host %r:%i", real_host, hop_port)
+                debug_cb(f"connecting to jump host {real_host}:{hop_port}")
                 sock = transport.open_channel("direct-tcpip", (real_host, hop_port), ("localhost", 0))
             transport = do_connect(sock, real_host, hop_port,
                                    hop_username, hop.get("password", ""),
-                                   hop_config, keyfiles, paramiko_config)
+                                   hop_config, keyfiles, paramiko_config, debug_cb=debug_cb)
         return transport
 
     def connect_via_jumphosts(jumphosts: list[dict]):
         middle_transport = connect_jumphosts(jumphosts)
         log("opening channel to %r:%i through %i jump host(s)", host, port, len(jumphosts))
+        debug_cb(f"connecting to {host}:{port}")
         chan_to_target = middle_transport.open_channel("direct-tcpip", (host, port), ("localhost", 0))
         transport = do_connect(chan_to_target, host, port,
                                username or default_username, password,
-                               host_config, keys, paramiko_config)
-        chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dirs, display_as_args, paramiko_config)
+                               host_config, keys, paramiko_config, debug_cb=debug_cb)
+        chan = run_remote_xpra(transport, proxy_command, remote_xpra, socket_dirs, display_as_args, paramiko_config,
+                               debug_cb=debug_cb)
         first = jumphosts[0]
         first_port = int(first.get("port") or 22)
         peername = (first["host"], first_port)
@@ -445,6 +456,7 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     port = port or 22
     while not transport:
         log("opening socket connection to %r:%i", host, port)
+        debug_cb(f"connecting to {host}:{port}")
         sock = socket_connect(host, port)
         if not sock:
             fail(f"SSH failed to connect to {host}:{port}")
@@ -457,7 +469,8 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
                                    host_config,
                                    keys,
                                    paramiko_config,
-                                   auth_modes)
+                                   auth_modes,
+                                   debug_cb=debug_cb)
         except SSHAuthenticationError as e:
             log(f"paramiko authentication errors on socket {sock} with modes {auth_modes}: {e.errors}",
                 exc_info=True)
@@ -485,11 +498,12 @@ def connect_to(display_desc: dict) -> SSHSocketConnection:
     if remote_port:
         # we want to connect directly to a remote port,
         # we don't need to run a command
+        debug_cb(f"opening channel to port {remote_port}")
         chan = transport.open_channel("direct-tcpip", ("localhost", remote_port), ('localhost', 0))
         log(f"direct channel to remote port {remote_port} : {chan}")
     else:
         chan = run_remote_xpra(transport, proxy_command, remote_xpra,
-                               socket_dirs, display_as_args, paramiko_config)
+                               socket_dirs, display_as_args, paramiko_config, debug_cb=debug_cb)
     conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), {"host": host, "port": port})
     conn.target = host_target_string("ssh", username, host, port, display)
     conn.timeout = SOCKET_TIMEOUT
@@ -549,10 +563,12 @@ class IAuthHandler:
 
 def do_connect(chan, host: str, port: int,
                username: str, password: str,
-               host_config: dict, keyfiles: list[str], paramiko_config: dict, auth_modes=AUTH_MODES):
+               host_config: dict, keyfiles: list[str], paramiko_config: dict, auth_modes=AUTH_MODES,
+               debug_cb: Callable = noop):
     transport = Transport(chan)
     transport.use_compression(False)
     log("SSH transport %s", transport)
+    debug_cb("SSH negotiation")
     try:
         transport.start_client()
     except SSHException as e:
@@ -560,14 +576,16 @@ def do_connect(chan, host: str, port: int,
         raise InitExit(ExitCode.SSH_FAILURE, "SSH negotiation failed: %s" % e) from None
     return do_connect_to(transport, host, port,
                          username, password,
-                         host_config, keyfiles, paramiko_config, auth_modes)
+                         host_config, keyfiles, paramiko_config, auth_modes, debug_cb=debug_cb)
 
 
 def do_connect_to(transport, host: str, port: int,
                   username: str, password: str,
-                  host_config, keyfiles: Sequence[str], paramiko_config: dict, auth_modes=AUTH_MODES):
+                  host_config, keyfiles: Sequence[str], paramiko_config: dict, auth_modes=AUTH_MODES,
+                  debug_cb: Callable = noop):
     AuthenticationManager(transport, host, port,
-                          username, password, host_config, keyfiles, paramiko_config, auth_modes).run()
+                          username, password, host_config, keyfiles, paramiko_config, auth_modes,
+                          debug_cb=debug_cb).run()
     return transport
 
 
@@ -727,7 +745,8 @@ def save_host_key(host_keys, host_keys_filename: str) -> None:
 
 class AuthenticationManager:
     def __init__(self, transport, host: str, port: int, username: str, password: str,
-                 host_config, keyfiles: Sequence[str], paramiko_config: dict, auth_modes=AUTH_MODES):
+                 host_config, keyfiles: Sequence[str], paramiko_config: dict, auth_modes=AUTH_MODES,
+                 debug_cb: Callable = noop):
         log("AuthenticationManager%s",
             (transport, host, username, "..", host_config, keyfiles, paramiko_config, auth_modes))
         self.transport = transport
@@ -741,6 +760,7 @@ class AuthenticationManager:
         self.auth_modes = tuple(auth_modes)
         self.valid_auth_modes = list(auth_modes)
         self.auth_errors: dict[str, list[str]] = {}
+        self.debug_cb = debug_cb
 
     def configvalue(self, key: str) -> Any:
         # if the paramiko config has a setting, honour it:
@@ -775,6 +795,7 @@ class AuthenticationManager:
         assert host_key, "no remote server key"
         log("remote_server_key=%s", keymd5(host_key))
         if self.configbool("verify-hostkey", VERIFY_HOSTKEY):
+            self.debug_cb("verifying host key")
             self.verify_hostkey(host_key)
         else:
             log("ssh host key verification skipped")
@@ -790,6 +811,7 @@ class AuthenticationManager:
         while not self.transport.is_authenticated() and self.valid_auth_modes:
             a = self.valid_auth_modes.pop(0)
             log("auth=%s", a)
+            self.debug_cb(f"authenticating as {self.username}: {a}")
             if a == "none":
                 self.auth_none()
             elif a == "agent":
@@ -1018,23 +1040,27 @@ def run_test_command(transport, cmd: str) -> tuple[list[str], list[str], int]:
 
 
 def run_remote_xpra(transport, xpra_proxy_command: Sequence[str], remote_xpra: Sequence[str],
-                    socket_dirs: Sequence[str], display_as_args: Sequence[str], paramiko_config: dict):
+                    socket_dirs: Sequence[str], display_as_args: Sequence[str], paramiko_config: dict,
+                    debug_cb: Callable = noop):
     log("run_remote_xpra%s", (transport, xpra_proxy_command, remote_xpra,
                               socket_dirs, display_as_args, paramiko_config))
-    crf = ChannelRunFactory(transport, xpra_proxy_command, remote_xpra, socket_dirs, display_as_args, paramiko_config)
+    crf = ChannelRunFactory(transport, xpra_proxy_command, remote_xpra, socket_dirs, display_as_args, paramiko_config,
+                            debug_cb=debug_cb)
     return crf.open()
 
 
 class ChannelRunFactory:
 
     def __init__(self, transport, xpra_proxy_command: Sequence[str], remote_xpra: Sequence[str],
-                 socket_dirs: Sequence[str], display_as_args: Sequence[str], paramiko_config: dict):
+                 socket_dirs: Sequence[str], display_as_args: Sequence[str], paramiko_config: dict,
+                 debug_cb: Callable = noop):
         self.transport = transport
         self.xpra_proxy_command = xpra_proxy_command
         self.remote_xpra = remote_xpra
         self.socket_dirs = socket_dirs
         self.display_as_args = display_as_args
         self.paramiko_config = paramiko_config
+        self.debug_cb = debug_cb
 
     def rtc(self, cmd: str) -> tuple[list[str], list[str], int]:
         return run_test_command(self.transport, cmd)
@@ -1137,6 +1163,7 @@ class ChannelRunFactory:
 
     def get_xpra_command(self) -> str:
         log(f"will try to run xpra from: {self.remote_xpra}")
+        self.debug_cb("locating remote xpra")
         xpra_cmd = self.find_remote_xpra() or "xpra"
         log(f"adding {xpra_cmd=!r}")
         cmd = '"' + xpra_cmd + '" ' + ' '.join(shellquote(x) for x in self.xpra_proxy_command)
@@ -1171,6 +1198,7 @@ class ChannelRunFactory:
                 from paramiko.agent import AgentRequestHandler
                 AgentRequestHandler(chan)
         log(f"channel exec_command({cmd!r})")
+        self.debug_cb("starting remote xpra")
         chan.exec_command(cmd)
         log("exec_command sent, returning channel for service")
         return chan

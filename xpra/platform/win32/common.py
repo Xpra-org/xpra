@@ -591,6 +591,15 @@ GetAsyncKeyState.argtypes = [INT]
 GetAsyncKeyState.restype = SHORT
 VkKeyScanW = user32.VkKeyScanW
 VkKeyScanW.argtypes = [WCHAR]
+VkKeyScanExW = user32.VkKeyScanExW
+VkKeyScanExW.argtypes = [WCHAR, HKL]
+VkKeyScanExW.restype = SHORT
+MapVirtualKeyExW = user32.MapVirtualKeyExW
+MapVirtualKeyExW.argtypes = [UINT, UINT, HKL]
+MapVirtualKeyExW.restype = UINT
+ToUnicodeEx = user32.ToUnicodeEx
+ToUnicodeEx.argtypes = [UINT, UINT, PBYTE, LPWSTR, c_int, UINT, HKL]
+ToUnicodeEx.restype = c_int
 keybd_event = user32.keybd_event
 
 ULONG_PTR = c_size_t

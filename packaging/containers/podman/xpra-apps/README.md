@@ -1,8 +1,10 @@
 # xpra + apps
 
-A simpler variant of the [split](../split/) pod, with only two containers:
+A simpler variant of the [split](../split/) pod, with only two main containers:
 * `xpra` runs the xpra server, which also starts the X server
 * `apps` runs the desktop environment and the applications
+
+and a `cups` container for [printing](#printing).
 
 The images are the same `xpra` and `apps` images used by the split pod, the [pod](./pod.sh) script builds them using the [split](../split/) scripts if they do not exist yet. \
 Compared to the split pod, there is no `xvfb` image to build and no waiting for an X server provided by another container,
@@ -12,7 +14,8 @@ but the X server can no longer outlive the xpra server.
 
 The [pod](./pod.sh) script creates a pod named `xpra-apps` and attempts to open a browser to access it.
 
-Both containers run their processes as uid `1000`, and the `apps` container joins the namespaces of the `xpra` container:
+The `xpra` and `apps` containers run their processes as uid `1000`, and the `apps` container joins the namespaces of the `xpra` container,
+the `cups` container runs the cups server used for [printing](#printing), without any network access:
 
 ```mermaid
 flowchart LR
@@ -23,9 +26,10 @@ flowchart LR
             xpra["<b>xpra</b> (fedora, read-only)<br/>xpra seamless :10<br/>Xorg :10 -nolisten tcp -auth<br/>--dbus=wait<br/>--exec-wrapper='xpra run ...'<br/>pulseaudio"]
             apps["<b>apps</b> (ubuntu, --init)<br/>dbus-daemon --session<br/>xpra runner<br/>lxpanel and applications"]
         end
+        cups["<b>cups</b> (fedora, --network none)<br/>cupsd -f<br/>xpraforwarder backend"]
         menus[("'apps' image, read-only<br/>menus, icons, cached icons")]
         x11[("volume 'xpra-apps-x11'<br/>/tmp/.X11-unix/X10")]
-        run[("volume 'xpra-apps-run' at /run<br/>user/1000/bus<br/>user/1000/pulse/native<br/>user/1000/runner/socket<br/>user/1000/xpra/Xauthority-10")]
+        run[("volume 'xpra-apps-run' at /run<br/>user/1000/bus<br/>user/1000/pulse/native<br/>user/1000/runner/socket<br/>user/1000/xpra/Xauthority-10<br/>cups/cups.sock")]
     end
 
     client -- "port 10000<br/>tcp + quic" --> xpra
@@ -38,6 +42,10 @@ flowchart LR
     xpra -- "xpra run ... -- command" --> run
     run -- "runner socket:<br/>start the command" --> apps
     menus -- "image mounts" --> xpra
+    xpra -- "lpadmin: add the client's printers" --> run
+    apps -- "print" --> run
+    run -- "cups socket" --> cups
+    cups -- "xpraforwarder: xpra print" --> run
 ```
 
 Shared resources:
@@ -48,13 +56,14 @@ Shared resources:
 | ipc namespace | `xpra` (`--ipc shareable`) | `apps` | required for `XShm`: the X server, xpra and the applications exchange pixel data using SysV shared memory segments, `/dev/shm` is also shared and sized by the pod's `--shm-size` |
 | uts namespace | `xpra` | `apps` | both containers use the same hostname: `xpra`, which the X11 authorization cookie is bound to |
 | `xpra-apps-x11` volume | `xpra` | `apps` (`--volumes-from`) | populated from the `xpra` image, which creates `/tmp/.X11-unix` with mode `1777` so that the X server can create its socket there |
-| `xpra-apps-run` volume | `xpra` | `apps` (`--volumes-from`) | populated from the `xpra` image, which pre-creates `/run/user/1000`, it contains the session bus, the pulseaudio socket, the xpra sockets and the X11 authorization cookie |
+| `xpra-apps-run` volume | `xpra` | `apps` (`--volumes-from`), `cups` | populated from the `xpra` image, which pre-creates `/run/user/1000`, it contains the session bus, the pulseaudio socket, the xpra sockets, the X11 authorization cookie and the cups socket |
 | X11 authorization | `xpra` | `apps` | unlike the `xvfb` container, xpra starts the X server with `-auth`, the applications use the cookie from `/run/user/1000/xpra/Xauthority-10` |
 | session bus | `apps` | `xpra` | runs in `apps` so that dbus activation starts services where the applications are installed, xpra connects to it with `--dbus=wait` |
 | system bus | none | | xpra does not start one (`XPRA_SYSTEM_DBUS=0`), nothing in the pod needs it |
 | runner socket | `apps` | `xpra` | the `xpra runner` started in `apps` listens on `/run/user/1000/runner/socket`, in a directory which only uid `1000` can access, xpra uses it to start the applications in `apps`, see [starting applications](#starting-applications) |
 | menus and icons | `apps` image | `xpra` | mounted read-only (`--mount type=image`) at the same locations: the menu definitions, the `.desktop` files, the icons, and the SVG icons cached as PNG when the image is built, in `/var/cache/xpra/menu-icons`, see [menus](#menus) |
 | pulseaudio | `xpra` | `apps` | started by xpra once the session bus is available, the applications use the socket at `/run/user/1000/pulse/native` |
+| cups server | `cups` | `xpra`, `apps` | listens on `/run/cups/cups.sock` only, see [printing](#printing) |
 
 The containers start in parallel, so each one waits for the resources it needs:
 
@@ -72,6 +81,15 @@ sequenceDiagram
     apps->>apps: exec lxpanel (seamless) or lxsession (desktop)
     xpra->>xpra: accept connections on port 10000
 ```
+
+## Printing
+
+The `cups` container is the same as in the [split](../split/README.md#printing) pod:
+it runs the cups server from the [xpra-cups](../../docker/cups/Dockerfile) image, which only listens on `/run/cups/cups.sock` in the shared `/run` volume. \
+The xpra server adds the client's printers to it, the applications print to them,
+and its `xpraforwarder` backend sends the print jobs back to the xpra server, which forwards them to the client. \
+It must be started after the `xpra` container, which populates the shared `/run` volume. \
+The cups server logs to the container's output: `podman logs xpra-apps-cups`
 
 ## Starting applications
 

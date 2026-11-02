@@ -26,7 +26,7 @@ jobs:
       matrix:
         # add `beta`, and `lts` once 7.0 is released
         branch: [stable]
-        variant: [Xpra, Xpra-Light]
+        variant: [Xpra-Light, Xpra]
     env:
       NAME: ${{ matrix.branch }}-${{ matrix.variant }}
     steps:
@@ -35,7 +35,6 @@ jobs:
       # `Xpra.json` is the same file as the latest versioned one, ie: `Xpra-x86_64_6.5.5-r0.json`,
       # which tells us the xpra version:
       - name: Download SBOM
-        id: download
         run: |
           URL="https://xpra.org/${{ matrix.branch }}/windows/"
           FILENAME=$(curl -sSfL "$URL" | grep -o "${{ matrix.variant }}-x86_64_[0-9][^\"/]*\.json\"" | tr -d '"' | sort -uV | tail -n 1)
@@ -45,7 +44,7 @@ jobs:
           fi
           curl -sSfL -o sbom.json "$URL$FILENAME"
           VERSION="${FILENAME#${{ matrix.variant }}-x86_64_}"
-          echo "version=${VERSION%.json}" >> "$GITHUB_OUTPUT"
+          echo "${VERSION%.json}" > version.txt
 
       # SBOMs generated without the MSYS2 references cannot be matched by scanners:
       - name: Add MSYS2 references
@@ -66,22 +65,58 @@ jobs:
           GRYPE_MATCH_PYTHON_USING_CPES: true
           GRYPE_MATCH_RUST_USING_CPES: true
 
-      - name: Report
-        id: report
-        run: |
-          python3 packaging/MSWindows/sbom_vulnerabilities.py --scan "${{ steps.download.outputs.version }}" "${{ steps.scan.outputs.json }}" > report.md
-          { echo "# ${NAME} ${{ steps.download.outputs.version }}"; echo; cat report.md; } >> "$GITHUB_STEP_SUMMARY"
+      # Keep all artifact files in one directory, independent of the scanner's temporary path.
+      - name: Prepare scan artifact
+        run: cp "${{ steps.scan.outputs.json }}" grype.json
 
       - uses: actions/upload-artifact@v7
         with:
           name: sbom-vulnerabilities-${{ env.NAME }}
+          if-no-files-found: error
           path: |
             sbom-references.json
-            ${{ steps.scan.outputs.json }}
-            report.md
+            grype.json
+            version.txt
+
+  report:
+    needs: scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        # Keep in sync with the scan branch matrix above.
+        branch: [stable]
+    env:
+      BRANCH: ${{ matrix.branch }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: sbom-vulnerabilities-${{ matrix.branch }}-*
+          path: scans
+
+      - name: Report
+        id: report
+        run: |
+          LIGHT="scans/sbom-vulnerabilities-${BRANCH}-Xpra-Light"
+          FULL="scans/sbom-vulnerabilities-${BRANCH}-Xpra"
+          LIGHT_VERSION=$(cat "$LIGHT/version.txt")
+          FULL_VERSION=$(cat "$FULL/version.txt")
+          python3 packaging/MSWindows/sbom_vulnerabilities.py \
+            --variant-scan Xpra-Light "$LIGHT_VERSION" "$LIGHT/grype.json" \
+            --variant-scan Xpra "$FULL_VERSION" "$FULL/grype.json" > report.md
+          { echo "# ${BRANCH}"; echo; cat report.md; } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sbom-report-${{ matrix.branch }}
+          path: report.md
+          if-no-files-found: error
 
       - name: Check for new vulnerabilities
         if: steps.report.outputs.new != '0'
         run: |
-          echo "::error::${{ steps.report.outputs.new }} vulnerabilities found in ${NAME} which are not recorded in docs/Build/CVE.md, see the job summary"
+          echo "::error::${{ steps.report.outputs.new }} vulnerabilities found in ${BRANCH} which are not recorded in docs/Build/CVE.md, see the job summary"
           exit 1

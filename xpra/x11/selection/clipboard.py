@@ -55,7 +55,6 @@ def init_event_window(gtk_filter: bool) -> int:
         event_mask |= constants["StructureNotifyMask"]
     xid = X11Window.CreateWindow(rxid, -1, -1, event_mask=event_mask, inputoutput=InputOnly)
     prop_set(xid, "WM_TITLE", "latin1", "Xpra-Clipboard")
-    X11Window.selectSelectionInput(xid)
     log(f"init_event_window()={xid=}")
     return xid
 
@@ -153,10 +152,7 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         proxy.set_direction(self.can_send, self.can_receive)
         proxy.connect("send-clipboard-token", self._send_clipboard_token_handler)
         proxy.connect("send-clipboard-request", self._send_clipboard_request_handler)
-        from xpra.x11.bindings.core import get_root_xid
-        rxid = get_root_xid()
         xfixes_selection_input(xid, selection)
-        xfixes_selection_input(rxid, selection)
         return proxy
 
     ############################################################################

@@ -59,7 +59,8 @@ def is_svg(data: bytes) -> bool:
             data = data.split(b"-->", 1)[1].strip(b"\n\r ")
         except IndexError:
             pass
-    return data[:5] == b"<?xml" or data[:4] == b"<svg"
+    # ie: breeze icons start with `<!DOCTYPE svg>`:
+    return data[:5] == b"<?xml" or data[:4] == b"<svg" or data[:13] == b"<!DOCTYPE svg"
 
 
 XPM_HEADER = b"/* XPM */"

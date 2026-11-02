@@ -27,6 +27,10 @@ class PerMonitorCaptureWindowModel(CaptureWindowModel):
             image.set_target_y(y)
         return image
 
+    def take_screenshot(self):
+        # `GDICapture.take_screenshot()` shows the whole desktop, not just this monitor:
+        return self.encode_screenshot()
+
 
 class SeamlessCaptureWindowModel(CaptureWindowModel):
 

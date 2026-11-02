@@ -117,6 +117,26 @@ class TestParsing(unittest.TestCase):
         self.assertIn("--socket-dirs=/tmp/b", args)
         self.assertIn("--socket-dirs=/tmp/c", args)
 
+    def test_kvm_mode(self):
+        for cmdline, mode in (
+            (["xpra", "kvm", "ssh://host/"], "shadow"),
+            (["xpra", "kvm", "ssh:host:7"], "shadow"),
+            (["xpra", "kvm", "tcp://host:10000/"], "attach"),
+            (["xpra", "kvm"], "attach"),
+        ):
+            opts, args = parse_cmdline(cmdline)
+            self.assertEqual(args[0], mode, cmdline)
+            self.assertEqual((opts.refresh_rate, opts.desktop_scaling, opts.input_capture), ("5", "0.2", "click"))
+            # the command line is rewritten, so reconnecting uses the same mode and options:
+            self.assertNotIn("kvm", cmdline)
+            self.assertIn(mode, cmdline)
+        # options given on the command line override the presets, wherever they are:
+        opts, args = parse_cmdline(["xpra", "--desktop-scaling=0.1", "kvm", "ssh://host/", "--refresh-rate=10"])
+        self.assertEqual(args, ["shadow", "ssh://host/"])
+        self.assertEqual((opts.refresh_rate, opts.desktop_scaling, opts.input_capture), ("10", "0.1", "click"))
+        # the client-only input capture option is not passed to the remote shadow server:
+        self.assertNotIn("--input-capture=click", get_start_server_args(opts, compat=True))
+
     def test_restricted_encoding_warnings(self):
         def warnings_for(*args: str) -> list[str]:
             command_args = list(args)

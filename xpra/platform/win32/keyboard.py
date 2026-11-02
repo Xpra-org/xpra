@@ -7,7 +7,7 @@
 from typing import Any, Final
 import ctypes
 from ctypes.wintypes import HANDLE
-from ctypes import create_string_buffer, create_unicode_buffer, byref
+from ctypes import create_string_buffer, create_unicode_buffer, byref, sizeof
 from functools import cache
 from ctypes.wintypes import DWORD, BYTE
 from collections.abc import Callable, Sequence
@@ -18,8 +18,9 @@ from xpra.platform.win32.common import (
     GetKeyState, GetKeyboardLayoutList, GetKeyboardLayout,
     GetIntSystemParametersInfo, GetKeyboardLayoutName,
     GetWindowThreadProcessId, LCIDToLocaleName,
-    GetKeyboardState, SetKeyboardState, MapVirtualKeyW, keybd_event,
-    SystemParametersInfoA, VkKeyScanW,
+    GetKeyboardState, MapVirtualKeyExW, keybd_event,
+    SystemParametersInfoA, VkKeyScanW, VkKeyScanExW, ToUnicodeEx,
+    GetForegroundWindow, SendInput, INPUT, KEYBDINPUT,
 )
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.keyboard_base import KeyboardBase
@@ -38,6 +39,14 @@ LAYOUT_MASKS: dict[int, Sequence[int]] = {
 }
 
 MAPVK_VK_TO_VSC: Final[int] = 0
+# `ToUnicodeEx` flag: don't change the keyboard state, ie: the dead keys
+TOUNICODE_NO_STATE_CHANGE: Final[int] = 0x4
+# the "keycodes" of the characters that the keyboard layout cannot type,
+# they are injected using `KEYEVENTF_UNICODE`:
+UNICODE_KEY: Final[int] = 1 << 24
+# `VkKeyScanExW` shift states:
+SHIFT_STATE_SHIFT: Final[int] = 0x1
+SHIFT_STATE_ALTGR: Final[int] = 0x6
 
 
 def _GetKeyboardLayoutList() -> list[int]:
@@ -222,24 +231,136 @@ def get_keys_pressed() -> Sequence[int]:
     return pressed
 
 
-def clear_keys_pressed() -> None:
-    # noinspection PyCallingNonCallable,PyTypeChecker
+# Windows switches the input language (Left Alt+Shift) or the keyboard layout (Ctrl+Shift)
+# when a chord made only of modifier keys is released.
+# We inject such chords when a client key shortcut swallows the key that completes them,
+# ie: the Escape key of `Alt+Shift+Escape`.
+# Pressing an unassigned virtual key before the release cancels the hotkey (0 to disable):
+MASK_KEY = envint("XPRA_WIN32_MASK_KEY", 0xE8)
+
+CHORD_MODIFIERS: dict[int, int] = {
+    # the generic virtual keys are injected using the scancode of the left key:
+    win32con.VK_SHIFT: win32con.VK_LSHIFT,
+    win32con.VK_CONTROL: win32con.VK_LCONTROL,
+    win32con.VK_MENU: win32con.VK_LMENU,
+} | {vk: vk for vk in (
+    win32con.VK_LSHIFT, win32con.VK_RSHIFT,
+    win32con.VK_LCONTROL, win32con.VK_RCONTROL,
+    win32con.VK_LMENU, win32con.VK_RMENU,
+    win32con.VK_LWIN, win32con.VK_RWIN,
+)}
+
+
+class InjectedModifiers:
+    """
+    Tracks the modifier keys we inject, so that we can:
+    * release them, even when they were pressed by `make_keymask_match` rather than by a key event
+    * stop modifier-only chords from triggering the Windows hotkeys
+    """
+
+    def __init__(self):
+        self.held: set[int] = set()
+        # a key was pressed since the last modifier, which cancels the hotkey:
+        self.cancelled = False
+
+    def key_event(self, vk: int, press: bool) -> None:
+        modifier = CHORD_MODIFIERS.get(vk, 0)
+        if not modifier:
+            if press:
+                self.cancelled = True
+            return
+        if press:
+            self.held.add(modifier)
+            self.cancelled = False
+            return
+        if MASK_KEY and modifier in self.held and len(self.held) > 1 and not self.cancelled:
+            log("masking modifier chord %s", csv(VK_NAMES.get(k, k) for k in self.held))
+            keybd_event(MASK_KEY, 0, 0, 0)
+            keybd_event(MASK_KEY, 0, win32con.KEYEVENTF_KEYUP, 0)
+            self.cancelled = True
+        self.held.discard(modifier)
+
+
+injected_modifiers = InjectedModifiers()
+
+
+def get_foreground_layout() -> int:
+    """
+    The layout of the window that receives the key events:
+    MS Windows keyboard layouts are per thread, and may even be set per application window.
+    """
+    hwnd = GetForegroundWindow()
+    tid = GetWindowThreadProcessId(hwnd, None) if hwnd else 0
+    return GetKeyboardLayout(tid) or 0
+
+
+def to_unicode(vk: int, shift_state: int, lock: bool, hkl: int) -> str:
+    """ the character that `vk` types with this layout, empty for dead keys """
     keystate = (BYTE * 256)()
-    for i in range(256):
-        keystate[i] = 0
-    SetKeyboardState(keystate)
+    if shift_state & SHIFT_STATE_SHIFT:
+        keystate[win32con.VK_SHIFT] = keystate[win32con.VK_LSHIFT] = 0x80
+    if (shift_state & SHIFT_STATE_ALTGR) == SHIFT_STATE_ALTGR:
+        for vk_mod in (win32con.VK_CONTROL, win32con.VK_LCONTROL, win32con.VK_MENU, win32con.VK_LMENU):
+            keystate[vk_mod] = 0x80
+    if lock:
+        keystate[win32con.VK_CAPITAL] = 0x01
+    buf = create_unicode_buffer(8)
+    scancode = MapVirtualKeyExW(vk, MAPVK_VK_TO_VSC, hkl)
+    count = ToUnicodeEx(vk, scancode, keystate, buf, len(buf), TOUNICODE_NO_STATE_CHANGE, hkl)
+    return buf.value[:count] if count > 0 else ""
+
+
+def find_character_key(char: str, lock: bool, hkl: int) -> tuple[int, int]:
+    """
+    Find the virtual key and the shift state (`SHIFT_STATE_SHIFT` and / or `SHIFT_STATE_ALTGR`)
+    that type `char` with this keyboard layout, given the state of `Caps Lock`.
+    Returns `(0, 0)` if the layout cannot type it, or only using a dead key.
+    """
+    v = VkKeyScanExW(char, hkl)
+    vk = v & 0xff
+    if vk in (0, 0xff):
+        return 0, 0
+    shift_state = (v >> 8) & 0x7
+    if (shift_state & SHIFT_STATE_ALTGR) not in (0, SHIFT_STATE_ALTGR):
+        # needs `Control` or `Alt` on their own: a control character
+        return 0, 0
+    # `VkKeyScanExW` ignores `Caps Lock`, which inverts `Shift` for some keys:
+    for state in (shift_state, shift_state ^ SHIFT_STATE_SHIFT):
+        if to_unicode(vk, state, lock, hkl) == char:
+            return vk, state
+    return 0, 0
+
+
+def send_unicode(char: str, press: bool) -> None:
+    flags = win32con.KEYEVENTF_UNICODE
+    if not press:
+        flags |= win32con.KEYEVENTF_KEYUP
+    # one event per UTF-16 code unit, so two for the characters outside the BMP:
+    data = char.encode("utf-16-le")
+    units = [int.from_bytes(data[i:i + 2], "little") for i in range(0, len(data), 2)]
+    # noinspection PyCallingNonCallable,PyTypeChecker
+    inputs = (INPUT * len(units))()
+    for i, unit in enumerate(units):
+        inputs[i].type = win32con.INPUT_KEYBOARD
+        inputs[i].ki = KEYBDINPUT(0, unit, flags, 0, 0)
+    log("send_unicode(%r, %s) calling SendInput for %s", char, press, csv(hex(unit) for unit in units))
+    SendInput(len(units), inputs, sizeof(INPUT))
 
 
 def fake_key(keycode: int, press: bool):
     if keycode <= 0:
         log.warn("no keycode found for %s", keycode)
         return
+    injected_modifiers.key_event(keycode, press)
+    if keycode & UNICODE_KEY:
+        send_unicode(chr(keycode & ~UNICODE_KEY), press)
+        return
     # KEYEVENTF_SILENT = 0X4
     flags = 0
     if not press:
         flags |= win32con.KEYEVENTF_KEYUP
-    # get the scancode:
-    scancode = MapVirtualKeyW(keycode, MAPVK_VK_TO_VSC)
+    # get the scancode, which depends on the layout for some keys, ie: `VK_OEM_7`:
+    scancode = MapVirtualKeyExW(keycode, MAPVK_VK_TO_VSC, get_foreground_layout())
     # see: http://msdn.microsoft.com/en-us/library/windows/desktop/ms646304(v=vs.85).aspx
     log("fake_key(%s, %s) calling keybd_event(%s, %s, %s, 0)", keycode, press, keycode, scancode, flags)
     keybd_event(keycode, scancode, flags, 0)
@@ -252,8 +373,11 @@ class Win32Keyboard:
         fake_key(keycode, press)
 
     @staticmethod
-    def clear_keys_pressed(_keycodes) -> None:
-        clear_keys_pressed()
+    def clear_keys_pressed(keycodes: Sequence[int]) -> None:
+        # the keys stay pressed for the whole system until we inject their release,
+        # including the modifiers pressed without a key event:
+        for keycode in dict.fromkeys((*keycodes, *injected_modifiers.held)):
+            fake_key(keycode, False)
 
     @staticmethod
     def set_repeat_rate(delay: int, interval: int) -> None:
@@ -706,13 +830,13 @@ VIRTUAL_KEYS = [
     ("MEDIA_PREV_TRACK", "Previous"),
     ("MEDIA_STOP", "Stop"),
     ("MODECHANGE", "Mode"),
-    ("NEXT", "Page"),
+    ("NEXT", "Page_Down"),
     ("NONCONVERT", "Non"),
     ("NUMLOCK", "Num"),
     ("OEM_FJ_JISHO", "Jisho"),
     ("PAUSE", "Pause"),
     ("PRINT", "Print"),
-    ("PRIOR", "Page"),
+    ("PRIOR", "Page_Up"),
     ("RCONTROL", "Control_R"),
     ("RIGHT", "Right"),
     ("RMENU", "Alt_R"),
@@ -727,6 +851,23 @@ VIRTUAL_KEYS = [
     ("VOLUME_UP", "XF86AudioRaiseVolume"),
     ("XBUTTON1", "X1"),
     ("XBUTTON2", "X2"),
+    ("APPS", "Menu"),
+    # the keypad with `Num_Lock` off,
+    # these come last so that `VK_X11_MAP` keeps the names of the dedicated keys:
+    ("HOME", "KP_Home"),
+    ("UP", "KP_Up"),
+    ("PRIOR", "KP_Page_Up"),
+    ("PRIOR", "KP_Prior"),
+    ("LEFT", "KP_Left"),
+    ("CLEAR", "KP_Begin"),
+    ("RIGHT", "KP_Right"),
+    ("END", "KP_End"),
+    ("DOWN", "KP_Down"),
+    ("NEXT", "KP_Page_Down"),
+    ("NEXT", "KP_Next"),
+    ("INSERT", "KP_Insert"),
+    ("DELETE", "KP_Delete"),
+    ("RETURN", "KP_Enter"),
 ]
 KEYSYM_DEFS = {
     "bracketleft": "[",

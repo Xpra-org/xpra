@@ -293,6 +293,7 @@ class WSLBridge:
 
     def drain_stderr(self) -> None:
         stderr = self.process.stderr
+        warning = False
         while True:
             try:
                 line = stderr.readline()
@@ -304,6 +305,12 @@ class WSLBridge:
             if s := decode_wsl_output(line.rstrip(b"\r\n")).rstrip():
                 log("wsl: %s", s)
                 self.diagnostics.append(s)
+                # warnings are shown as they come, with their indented details,
+                # ie: a command that could not be started in an existing session.
+                # (errors are part of the error message if the connection fails)
+                warning = s.startswith("Warning:") or (warning and s[:1].isspace())
+                if warning:
+                    log.warn(s)
 
     def poll(self) -> int | None:
         return self.process.poll() if self.process else None
@@ -423,7 +430,12 @@ def connect_to(display_desc: dict[str, Any], debug_cb: Callable = noop, fail_cb:
         if exit_code is None:
             return
         had_connected = conn.input_bytecount > 0 or conn.output_bytecount > 0
-        report(bridge.get_error_message(exit_code, had_connected))
+        if had_connected and exit_code == 0:
+            # ie: the server has closed the connection after a `detach` request,
+            # and the proxy command exited before we closed our end:
+            log("wsl bridge %s has exited cleanly", child.pid)
+        else:
+            report(bridge.get_error_message(exit_code, had_connected))
         raise ConnectionClosedException(f"cannot {action} using WSL")
 
     def close() -> None:

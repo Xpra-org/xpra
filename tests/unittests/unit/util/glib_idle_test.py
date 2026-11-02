@@ -63,6 +63,9 @@ class FakeSource:
     def set_priority(self, priority):
         self.priority = priority
 
+    def set_can_recurse(self, can_recurse):
+        self.can_recurse = can_recurse
+
     def attach(self, context):
         self.context = context
 
@@ -211,6 +214,45 @@ class NativeIdleQueueTest(unittest.TestCase):
             self.assertEqual(calls, ["dispatched"])
             self.assertFalse(glib._xpra_idle_queue.check())
             self.assertIs(GLib.idle_add, original_idle_add)
+        finally:
+            register.call_args.args[0]()
+
+    def test_nested_main_loop_dispatches_other_callbacks(self):
+        # the launcher runs the client's main loop from an idle callback (#5106)
+        try:
+            from xpra.os_util import gi_import
+            GLib = gi_import("GLib")
+        except ImportError:
+            self.skipTest("PyGObject is not installed")
+        context = GLib.MainContext.new()
+        glib = SimpleNamespace(Source=GLib.Source, PRIORITY_DEFAULT_IDLE=GLib.PRIORITY_DEFAULT_IDLE,
+                               SOURCE_CONTINUE=GLib.SOURCE_CONTINUE, idle_add=GLib.idle_add, source_remove=GLib.source_remove,
+                               MainContext=SimpleNamespace(default=lambda: context))
+        with patch.object(glib_idle, "needs_idle_queue", return_value=True), \
+                patch.object(glib_idle, "get_girepository_version", return_value="1.72.0"), \
+                patch("xpra.log.Logger"), patch("atexit.register") as register:
+            glib_idle.install(glib)
+        try:
+            calls = []
+            nested = GLib.MainLoop(context)
+
+            def inner():
+                calls.append("inner")
+                nested.quit()
+
+            def outer():
+                calls.append("outer")
+                glib.idle_add(inner)
+                timeout = GLib.timeout_source_new(2000)
+                timeout.set_callback(lambda *_args: (calls.append("timeout"), nested.quit()))
+                timeout.attach(context)
+                nested.run()
+                timeout.destroy()
+
+            glib.idle_add(outer)
+            self.assertTrue(context.iteration(False))
+            self.assertEqual(calls, ["outer", "inner"])
+            self.assertFalse(glib._xpra_idle_queue.check())
         finally:
             register.call_args.args[0]()
 

@@ -1346,16 +1346,6 @@ class XpraTerminalClient(GObjectClientAdapter, UIXpraClient):
     def get_menu_helper_class():
         return None
 
-    def window_grab(self, wid: int, window) -> None:
-        log("window_grab(%#x, %s) the terminal client cannot grab the pointer", wid, window)
-        if w := self.get_subsystem("window"):
-            w._window_with_grab = wid
-
-    def window_ungrab(self) -> None:
-        log("window_ungrab()")
-        if w := self.get_subsystem("window"):
-            w._window_with_grab = 0
-
     def get_info(self) -> dict[str, Any]:
         info = UIXpraClient.get_info(self)
         info["terminal"] = {

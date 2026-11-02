@@ -7,7 +7,8 @@
 
 from io import BytesIO
 from time import monotonic
-from typing import Any
+from typing import Any, BinaryIO
+from collections.abc import Callable
 
 try:
     from PIL import Image
@@ -21,7 +22,9 @@ from xpra.net.packet_type import WINDOW_ICON
 from xpra.codecs.image import to_png
 from xpra.util.thread import check_main_thread
 from xpra.util.str_fn import csv
+from xpra.util.system import get_generic_os_name
 from xpra.util.env import envint, envbool
+from xpra.common import noop
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -35,6 +38,52 @@ DEFAULT_ICONS = envbool("XPRA_DEFAULT_ICONS", True)
 LOG_THEME_DEFAULT_ICONS = envbool("XPRA_LOG_THEME_DEFAULT_ICONS", False)
 SAVE_WINDOW_ICONS = envbool("XPRA_SAVE_WINDOW_ICONS", False)
 MAX_ARGB_PIXELS = envint("XPRA_MAX_ARGB_PIXELS", 1024)
+DEFAULT_ICON_CACHE_SIZE = envint("XPRA_DEFAULT_ICON_CACHE_SIZE", 256)
+
+
+def load_icon_file(filename: str | BinaryIO, size: int) -> tuple[int, int, str, bytes] | None:
+    """
+    Loads the icon using pillow, scaled to `size` and encoded as png.
+    This does not use any Gtk or Gdk calls.
+    """
+    if not Image:
+        return None
+    try:
+        with Image.open(filename) as img:
+            img.load()
+            w = int(img.width)
+            h = int(img.height)
+            log("load_icon_file(%r, %i) size=%ix%i", filename, size, w, h)
+            if w != size or h != size:
+                try:
+                    NEAREST = Image.Resampling.NEAREST
+                except AttributeError:
+                    NEAREST = Image.NEAREST
+                img = img.resize((size, size), NEAREST)
+            return size, size, "png", to_png(img)
+    except (OSError, ValueError, TypeError) as e:
+        log("load_icon_file(%r, %i) %s", filename, size, e)
+    return None
+
+
+def load_cached_svg_icon(filename: str, size: int) -> tuple[int, int, str, bytes] | None:
+    """
+    Loads the png rendering of this SVG file from the menu icon cache, if it has one.
+    This does not use any Gtk or Gdk calls.
+    """
+    if not POSIX or OSX:
+        return None
+    try:
+        from xpra.platform.posix.menu_helper import load_cached_svg
+        if not (svg_data := load_binary_file(filename)):
+            return None
+        cached = load_cached_svg(svg_data)
+        log("load_cached_svg(%r)=%s", filename, bool(cached))
+        if cached:
+            return load_icon_file(BytesIO(cached[0]), size)
+    except (OSError, ValueError, TypeError, ImportError) as e:
+        log("load_cached_svg_icon(%r, %i) %s", filename, size, e)
+    return None
 
 
 def do_get_default_window_icon(size: int, name: str) -> tuple[int, int, str, bytes] | None:
@@ -42,37 +91,147 @@ def do_get_default_window_icon(size: int, name: str) -> tuple[int, int, str, byt
     if POSIX and not OSX and Image:
         try:
             from xpra.platform.posix.menu_helper import find_icon
-            filename = find_icon(name)
+            # prefer raster formats over SVG:
+            filename = find_icon(name, extensions=("png", "xpm", "svg"))
             log("find_icon(%r)=%r", name, filename)
+            if filename.endswith(".svg"):
+                return load_cached_svg_icon(filename, size)
             if filename:
-                img = Image.open(filename)
-                img.load()
-                w = int(img.width)
-                h = int(img.height)
-                log("size=%ix%i", w, h)
-                if w != size or h != size:
-                    try:
-                        NEAREST = Image.Resampling.NEAREST
-                    except AttributeError:
-                        NEAREST = Image.NEAREST
-                    img = img.resize((size, size), NEAREST)
-                data = to_png(img)
-                img.close()
-                return size, size, "png", data
+                return load_icon_file(filename, size)
         except (OSError, ValueError, TypeError, ImportError) as e:
             log("do_get_default_window_icon(%i, %r) %s", size, name, e)
     return None
 
 
-get_default_window_icon = do_get_default_window_icon
+def no_theme_icon(_size: int, _wmclass_name: str) -> tuple[str, Any]:
+    return "", None
+
+
+# GTK servers replace these with lookups in the GTK icon theme,
+# both must be called from the main thread:
+# `find_theme_icon(size, wmclass_name)` returns the icon's filename and an opaque object
+# which `load_theme_icon(obj)` can use to load the icon if the file cannot be loaded with pillow (ie: SVG)
+find_theme_icon: Callable[[int, str], tuple[str, Any]] = no_theme_icon
+load_theme_icon: Callable[[Any], tuple[int, int, str, bytes] | None] = noop
+
+
+def get_default_window_icon(size: int, wmclass_name: str) -> tuple[int, int, str, bytes] | None:
+    # main thread, the icon theme cache:
+    filename, theme_icon = find_theme_icon(size, wmclass_name)
+    svg = filename.endswith(".svg")
+    # any thread, file I/O:
+    if filename and not svg:
+        if icon := load_icon_file(filename, size):
+            return icon
+    # the menu icon cache may have a rendering of this SVG,
+    # that's cheaper than searching for another icon:
+    if svg:
+        if icon := load_cached_svg_icon(filename, size):
+            return icon
+    # rendering SVGs is expensive, so try everything else first:
+    if icon := do_get_default_window_icon(size, wmclass_name):
+        return icon
+    # main thread, may use Gtk and rsvg:
+    if theme_icon:
+        return load_theme_icon(theme_icon)
+    return None
+
+
+# results of `get_default_window_icon` by (size, wmclass name), misses included,
+# least recently used first:
+default_icon_cache: dict[tuple[int, str], tuple[int, int, str, bytes] | None] = {}
+
+
+def get_cached_default_window_icon(size: int, wmclass_name: str) -> tuple[int, int, str, bytes] | None:
+    key = (size, wmclass_name)
+    try:
+        # move it to the end:
+        icon = default_icon_cache.pop(key)
+    except KeyError:
+        icon = get_default_window_icon(size, wmclass_name)
+        # the wmclass is chosen by the application, so we must limit the number of entries:
+        while default_icon_cache and len(default_icon_cache) >= DEFAULT_ICON_CACHE_SIZE:
+            default_icon_cache.pop(next(iter(default_icon_cache)))
+    default_icon_cache[key] = icon
+    return icon
+
+
+def clear_default_icon_cache() -> None:
+    log("clear_default_icon_cache() %i entries", len(default_icon_cache))
+    default_icon_cache.clear()
+
+
+# the icon of the operating system, used by desktop windows:
+OS_ICON = get_generic_os_name().lower() + ".png"
+
+# icons shipped with xpra, by name, loaded once:
+xpra_icons: dict[str, tuple[int, int, str, bytes] | None] = {}
+
+
+def get_xpra_icon(name: str) -> tuple[int, int, str, bytes] | None:
+    """
+    Returns one of the icons shipped with xpra, encoded as png.
+    The ones we use are preloaded by `warmup_default_window_icons`.
+    This does not use any Gtk or Gdk calls.
+    """
+    try:
+        return xpra_icons[name]
+    except KeyError:
+        pass
+    icon = None
+    from xpra.platform.paths import get_icon_filename
+    filename = get_icon_filename(name)
+    if Image and filename and (data := load_binary_file(filename)):
+        try:
+            with Image.open(BytesIO(data)) as img:
+                if img.format != "PNG":
+                    data = to_png(img)
+                icon = img.width, img.height, "png", data
+        except (OSError, ValueError) as e:
+            log("get_xpra_icon(%r) %s", name, e)
+    log("get_xpra_icon(%r) filename=%r, found=%s", name, filename, bool(icon))
+    xpra_icons[name] = icon
+    return icon
+
+
+def warmup_default_window_icons() -> None:
+    """
+    Loads pillow's plugins, our own icons and the icon themes,
+    so the first default window icon lookup doesn't have to.
+    This does not use Gtk, it runs in the background worker thread.
+    """
+    start = monotonic()
+    if Image:
+        Image.init()
+    for name in ("xpra.png", OS_ICON):
+        get_xpra_icon(name)
+    if POSIX and not OSX:
+        try:
+            from xpra.platform.posix.menu_helper import find_icon, load_theme_icon_names
+            load_theme_icon_names()
+            # a miss goes through all the themes:
+            find_icon("xpra-warmup-no-such-icon")
+        except (OSError, ValueError, TypeError, ImportError) as e:
+            log("warmup_default_window_icons() %s", e)
+    log("warmup_default_window_icons() took %ims", 1000 * (monotonic() - start))
+
+
+def schedule_warmup() -> None:
+    from xpra.util.background_worker import add_work_item
+    add_work_item(warmup_default_window_icons)
+
+
+def menus_reloaded() -> None:
+    # the menu entries can provide icons,
+    # and loading them clears the icon theme caches:
+    clear_default_icon_cache()
+    schedule_warmup()
 
 
 class WindowIconSource:
     """
     Mixin for handling the sending of window icon pixels.
     """
-
-    fallback_window_icon: bool | tuple[int, int, str, bytes] = False
 
     def __init__(self, window_icon_encodings, icons_encoding_options):
         self.window_icon_encodings = window_icon_encodings
@@ -136,29 +295,15 @@ class WindowIconSource:
         return {"icon": info}
 
     @staticmethod
-    def get_fallback_window_icon():
-        if WindowIconSource.fallback_window_icon is False and Image:
-            try:
-                from xpra.platform.paths import get_icon_filename  # pylint: disable=import-outside-toplevel
-                icon_filename = get_icon_filename("xpra.png")
-                log(f"get_fallback_window_icon() icon filename={icon_filename}")
-                img = Image.open(icon_filename)
-                icon_data = load_binary_file(icon_filename)
-                icon = (img.size[0], img.size[1], "png", icon_data)
-                img.close()
-                WindowIconSource.fallback_window_icon = icon
-                return icon
-            except Exception as e:
-                log.warn(f"Warning: failed to get fallback icon: {e}")
-                WindowIconSource.fallback_window_icon = False
-        return WindowIconSource.fallback_window_icon
+    def get_fallback_window_icon() -> tuple[int, int, str, bytes] | None:
+        return get_xpra_icon("xpra.png")
 
     def get_default_window_icon(self, size=48) -> tuple[int, int, str, bytes] | None:
         # return the icon which would be used from the wmclass
         wmclass_name = self.get_window_wm_class_name()
         if not wmclass_name:
             return None
-        return get_default_window_icon(size, wmclass_name)
+        return get_cached_default_window_icon(size, wmclass_name)
 
     def get_window_wm_class_name(self) -> str:
         try:
@@ -174,34 +319,40 @@ class WindowIconSource:
         return wm_class and wm_class in self.theme_default_icons
 
     def send_window_icon(self) -> None:
-        # some of this code could be moved to the work queue half, meh
         check_main_thread()
         if self.suspended or not self.has_png:
             return
-        # this runs in the UI thread
         icons = self.window.get_property("icons")
         log("send_window_icon window %s found %i icons, window_icon_greedy=%s, has_default=%s",
             self.window, len(icons or ()), self.window_icon_greedy, self.has_default)
+        if icons:
+            self.icon_lookup_done(icons)
+            return
+        if self.client_has_theme_icon():
+            log("%s in client theme icons already (not sending default icon)", self.theme_default_icons)
+            return
+        self.icon_lookup_done(self.get_default_icons())
+
+    def get_default_icons(self) -> list[tuple[int, int, str, bytes]]:
+        # try to load the icon for this class-instance from the theme:
+        icons = []
+        sizes = []
+        for size in (self.window_icon_size, self.window_icon_max_size, (48, 64)):
+            if size:
+                for dim in size:  # ie: 48
+                    if dim not in sizes:
+                        sizes.append(dim)
+        for size in sizes:
+            if icon := self.window.get_default_window_icon(size):
+                icons.append(icon)
         if not icons:
-            if self.client_has_theme_icon():
-                log("%s in client theme icons already (not sending default icon)", self.theme_default_icons)
-                return
-            # try to load the icon for this class-instance from the theme:
-            icons = []
-            sizes = []
-            for size in (self.window_icon_size, self.window_icon_max_size, (48, 64)):
-                if size:
-                    for dim in size:  # ie: 48
-                        if dim not in sizes:
-                            sizes.append(dim)
-            for size in sizes:
-                if icon := self.window.get_default_window_icon(size):
-                    icons.append(icon)
-            if not icons:
-                # try to find one using the wmclass:
-                if icon := self.get_default_window_icon():
-                    log("send_window_icon window %s using default window icon", self.window)
-                    icons.append(icon)
+            # try to find one using the wmclass:
+            if icon := self.get_default_window_icon():
+                log("send_window_icon window %s using default window icon", self.window)
+                icons.append(icon)
+        return icons
+
+    def icon_lookup_done(self, icons) -> None:
         max_w, max_h = self.window_icon_max_size
         icon = self.choose_icon(icons, max_w, max_h)
         if not icon:

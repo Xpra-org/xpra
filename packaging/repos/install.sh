@@ -3,6 +3,8 @@
 # choose the channel with the REPO environment variable:
 # "xpra" (stable, the default), "xpra-lts" or "xpra-beta"
 # ie: curl https://xpra.org/get-xpra.sh | REPO=xpra-beta bash
+# without it, some distributions default to a different channel, see deb_default_repo
+REPO_SET="${REPO:+1}"
 REPO="${REPO:-xpra}"
 case "${REPO}" in
   xpra|xpra-lts|xpra-beta)
@@ -67,6 +69,29 @@ get_ubuntu_codename_from_mint() {
   fi
 
   printf '%s\n' "${codename}"
+}
+
+# the default channel for the distributions that do not have stable builds, or should not use them,
+# this is the same choice as the download page, see "channels" and "discouraged" in docs/_data/downloads.yml
+deb_default_repo() {
+  if [ -n "${REPO_SET}" ]; then
+    return
+  fi
+  case "$1" in
+    bookworm|jammy)
+      echo "version 8 requires Python 3.12 or later and will not be available for '$1': using the LTS channel"
+      echo "(use REPO=xpra to install the stable channel anyway)"
+      REPO="xpra-lts"
+      ;;
+    bullseye)
+      echo "the stable channel is not available for '$1': using the LTS channel"
+      REPO="xpra-lts"
+      ;;
+    forky|sid)
+      echo "'$1' has no stable ABI: using the beta channel"
+      REPO="xpra-beta"
+      ;;
+  esac
 }
 
 # the repository files are found in ${GITHUB_REPOS}/${DIR}/
@@ -152,6 +177,7 @@ if [ "${ID}" == "linuxmint" ]; then
   fi
 
   echo "Linux Mint detected, using Ubuntu codename: ${VERSION_CODENAME}"
+  deb_default_repo "${VERSION_CODENAME}"
   echo "installing xpra.org repository file"
   download "${GITHUB_REPOS}/${VERSION_CODENAME}/${REPO}.sources" "/etc/apt/sources.list.d/${REPO}.sources"
   sudo apt-get update
@@ -167,6 +193,7 @@ if [ "${ID}" == "debian" ] || [ "${ID}" == "ubuntu" ]; then
   download "https://xpra.org/xpra.asc" "/usr/share/keyrings/xpra.asc"
   echo "installing xpra.org repository file"
   VERSION_CODENAME=$(grep -e "^VERSION_CODENAME=" /etc/os-release | awk -F= '{print $2}' | sed 's/"//g')
+  deb_default_repo "${VERSION_CODENAME}"
   download "${GITHUB_REPOS}/${VERSION_CODENAME}/${REPO}.sources" "/etc/apt/sources.list.d/${REPO}.sources"
   sudo apt-get update
   sudo apt-get install -y xpra

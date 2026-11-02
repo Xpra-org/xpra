@@ -13,7 +13,7 @@ from xpra.util.gobject import one_arg_signal
 from xpra.x11.error import xsync, xlog
 from xpra.x11.common import X11Event
 from xpra.x11.prop import prop_set, prop_get, raw_prop_set
-from xpra.x11.bindings.core import constants, get_root_xid
+from xpra.x11.bindings.core import constants, get_root_xid, get_default_screen
 from xpra.x11.bindings.window import X11WindowBindings
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.selection.common import xfixes_selection_input
@@ -64,7 +64,7 @@ class XEMBED_FOCUS(IntEnum):
     LAST = 2
 
 
-SELECTION: Final[str] = "_NET_SYSTEM_TRAY_S0"
+SELECTION: Final[str] = f"_NET_SYSTEM_TRAY_S{get_default_screen()}"
 SYSTRAY_VISUAL: Final[str] = "_NET_SYSTEM_TRAY_VISUAL"
 SYSTRAY_ORIENTATION: Final[str] = "_NET_SYSTEM_TRAY_ORIENTATION"
 
@@ -208,7 +208,7 @@ class SystemTray(GObject.GObject):
         elif event.message_type in IGNORED_MESSAGE_TYPES:
             log("do_x11_client_message_event(%s) in ignored message type list", event)
         else:
-            log.info("do_x11_client_message_event(%s)", event)
+            log.warn("Warning: unhandled X11 message %r", event)
 
     def undock(self, xid) -> None:
         log("undock(%#x)", xid)

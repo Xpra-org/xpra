@@ -59,7 +59,7 @@ class WindowManagerTest(ClientMixinTest):
     def test_dismiss_popups(self):
         from xpra.client.subsystem.window import WindowClient
 
-        client = Mock(readonly=False)
+        client = Mock(readonly=False, server_readonly=False)
         keyboard = Mock(grabbed=True)
         client.subsystems = {"keyboard": keyboard}
         window_client = WindowClient(client)
@@ -77,17 +77,81 @@ class WindowManagerTest(ClientMixinTest):
                                          ({"window": {"dismiss": True}}, False, [("window-dismiss", 2)])):
             with self.subTest(caps=caps, readonly=readonly):
                 client.reset_mock()
+                popup.reset_mock()
                 client.readonly = readonly
                 keyboard.grabbed = True
                 window_client._window_with_grab = 2
                 window_client.pointer_grabbed = 2
                 self.assertTrue(window_client.parse_server_capabilities(typedict(caps)))
                 window_client.dismiss_popups()
-                client.window_ungrab.assert_called_once_with()
+                # the window which has the grab releases it natively:
+                popup.do_window_ungrab.assert_called_once_with()
                 self.assertIsNone(window_client._window_with_grab)
                 self.assertIsNone(window_client.pointer_grabbed)
                 self.assertFalse(keyboard.grabbed)
                 self.assertEqual([tuple(args) for args, _kwargs in client.send.call_args_list], expected)
+
+    def test_window_grab(self):
+        from xpra.client.subsystem.window import WindowClient
+
+        client = Mock(readonly=False, server_readonly=False, subsystems={})
+        window_client = WindowClient(client)
+        native = Mock()
+        # windows that cannot grab natively (ie: the terminal client's) only record the state:
+        plain = object()
+        window_client._id_to_window = {1: native, 2: plain}
+        window_client.window_grab(1, native)
+        native.do_window_grab.assert_called_once_with()
+        self.assertTrue(window_client.is_grabbed(1))
+        self.assertFalse(window_client.is_grabbed(2))
+        window_client.window_ungrab()
+        native.do_window_ungrab.assert_called_once_with()
+        self.assertFalse(window_client.is_grabbed(1))
+        window_client.window_grab(2, plain)
+        self.assertTrue(window_client.is_grabbed(2))
+        window_client.window_ungrab()
+        self.assertFalse(window_client.is_grabbed(2))
+        # nothing grabbed, nothing to release:
+        native.reset_mock()
+        window_client.window_ungrab()
+        native.do_window_ungrab.assert_not_called()
+
+    def test_force_ungrab_on_focus_loss(self):
+        from xpra.client.subsystem.window import WindowClient
+        from xpra.client.subsystem.window import grab as grab_module
+
+        for enabled, caps, readonly, expected in (
+            (True, {"force_ungrab": True}, False, [(7, )]),
+            (True, {}, False, []),
+            (False, {"force_ungrab": True}, False, []),
+            (True, {"force_ungrab": True}, True, []),
+        ):
+            with self.subTest(enabled=enabled, caps=caps, readonly=readonly):
+                client = Mock(readonly=readonly, server_readonly=False, subsystems={})
+                window_client = WindowClient(client)
+                self.assertTrue(window_client.parse_server_capabilities(typedict(caps)))
+                window = Mock()
+                window_client._id_to_window = {7: window}
+                window_client.window_grab(7, window)
+                with patch.object(grab_module, "FORCE_UNGRAB", enabled):
+                    window_client.update_focus(7, False)
+                window.do_window_ungrab.assert_called_once_with()
+                self.assertFalse(window_client.is_grabbed(7))
+                self.assertEqual([args for args, _kwargs in client.send_force_ungrab.call_args_list], expected)
+
+    def test_destroy_grabbed_window_ungrabs_first(self):
+        from xpra.client.subsystem.window import WindowClient
+
+        client = Mock(readonly=False, server_readonly=False, subsystems={})
+        window_client = WindowClient(client)
+        calls = []
+        window = Mock()
+        window.do_window_ungrab.side_effect = lambda: calls.append("ungrab")
+        window.destroy.side_effect = lambda: calls.append("destroy")
+        window_client.window_grab(3, window)
+        window_client.destroy_window(3, window)
+        self.assertEqual(calls, ["ungrab", "destroy"])
+        self.assertFalse(window_client.is_grabbed(3))
 
     def test_missing_resize_counter_defaults_to_zero(self):
         from xpra.client.subsystem.window.manager import WindowManagerClient

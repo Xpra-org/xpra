@@ -107,7 +107,7 @@ class FocusWindow(GtkStubWindow):
         self.send_latest_focus()
 
     def send_latest_focus(self) -> None:
-        focused = self.get_subsystem("window")._focused
+        focused = self.get_subsystem("window").focused_wid
         log("send_latest_focus() wid=%#x, focused=%s, latest=%s", self.wid, focused, self._focus_latest)
         if self._focus_latest:
             self._focus()
@@ -123,11 +123,12 @@ class FocusWindow(GtkStubWindow):
         return change
 
     def _unfocus(self) -> bool:
-        client = self._client
-        client.window_ungrab()
-        if client.pointer_grabbed and client.pointer_grabbed == self.wid:
+        window = self.get_subsystem("window")
+        if window:
+            window.window_ungrab()
+        if window and window.pointer_grabbed == self.wid:
             # we lost focus, assume we also lost the grab:
-            client.pointer_grabbed = None
+            window.pointer_grabbed = None
         changed = super()._unfocus()
         if changed and AUTOGRAB_WITH_FOCUS:
             # soft dependency on GrabWindow:

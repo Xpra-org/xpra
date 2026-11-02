@@ -226,7 +226,7 @@ class TestConnectOrFail(unittest.TestCase):
 
             orig_connect_to = getattr(connect_mod, "connect_to", None)
 
-            def fail_connect(display_desc):
+            def fail_connect(display_desc, **_kwargs):
                 raise bytestreams_mod.ConnectionClosedException("gone")
 
             connect_mod.connect_to = fail_connect

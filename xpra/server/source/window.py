@@ -104,6 +104,7 @@ class WindowsConnection(StubClientConnection):
         self.window_sync_focus = False
         # receive the complete stacking order reported by another client
         self.window_sync_stacking = False
+        self.window_stacking: tuple[int, ...] = ()
         self.window_metadata_supported: Sequence[str] = ()
         self.window_grabs = False
         self.system_tray = False
@@ -285,6 +286,49 @@ class WindowsConnection(StubClientConnection):
         focuslog("send_window_stacking(%s)", stacking)
         self.send(WINDOW_STACKING, list(stacking))
 
+    def set_window_stacking(self, wids: Sequence[int]) -> None:
+        stacking = tuple(dict.fromkeys(wids))
+        if stacking == self.window_stacking:
+            return
+        self.window_stacking = stacking
+        self.schedule_coverage_recalculation()
+
+    def schedule_coverage_recalculation(self) -> None:
+        # Moving or unmapping one window can expose any of the windows below it.
+        if may_recalculate := getattr(self, "may_recalculate", None):
+            for wid in tuple(self.window_sources):
+                may_recalculate(wid, 0, force=True)
+
+    def get_window_coverage(self, wid: int) -> bool | None:
+        """Whether one opaque window above this window fully covers it, or unknown."""
+        stacking = self.window_stacking
+        try:
+            index = stacking.index(wid)
+        except ValueError:
+            return None
+        ws = self.window_sources.get(wid)
+        if ws is None or ws.suspended:
+            return None
+        geometry = ws.mapped_at
+        if not geometry or len(geometry) != 4:
+            return None
+        x, y, w, h = geometry
+        if w <= 0 or h <= 0:
+            return None
+        for above in stacking[index + 1:]:
+            source = self.window_sources.get(above)
+            if source is None or source.suspended or source.iconic or source.has_alpha or source.has_shape:
+                continue
+            if source.opacity not in (-1, 0xffffffff):
+                continue
+            geometry = source.mapped_at
+            if not geometry or len(geometry) != 4:
+                continue
+            ax, ay, aw, ah = geometry
+            if ax <= x and ay <= y and ax + aw >= x + w and ay + ah >= y + h:
+                return True
+        return False
+
     def bell(self, wid: int, device: int, percent: int, pitch: int, duration: int,
              bell_class, bell_id: int, bell_name: str) -> None:
         if not self.window_bell or self.suspended or not self.hello_sent:
@@ -420,14 +464,14 @@ class WindowsConnection(StubClientConnection):
             self.send(WINDOW_METADATA, wid, metadata)
         # a hidden window is unmapped as far as this client is concerned,
         # so we can stop sending it any pixels:
-        if ws := self.window_sources.get(wid):
+        if wid in self.window_sources:
             if hidden:
-                ws.unmap()
+                self.unmap_window(wid, window)
             else:
                 if self.get_server_geometry:
                     # `mapped_at` is in server coordinates, as recorded by `_window_mapped_at`
                     # (the client will correct it when it maps the window again):
-                    ws.map(self.get_server_geometry(window)[:2])
+                    self.map_window(wid, window, self.get_server_geometry(window))
                 # it may have changed a lot since we stopped sending it:
                 self.refresh(wid, window, {})
         return hidden
@@ -565,11 +609,17 @@ class WindowsConnection(StubClientConnection):
 
     def map_window(self, wid: int, window, coords=None) -> None:
         ws = self.make_window_source(wid, window)
+        geometry_changed = ws.mapped_at != coords
         ws.map(coords)
+        if geometry_changed and self.window_stacking:
+            self.schedule_coverage_recalculation()
 
     def unmap_window(self, wid: int, _window) -> None:
         if ws := self.window_sources.get(wid):
+            was_mapped = ws.mapped_at is not None
             ws.unmap()
+            if was_mapped and self.window_stacking:
+                self.schedule_coverage_recalculation()
 
     def restack_window(self, wid: int, window, detail: int, sibling: int) -> None:
         focuslog("restack_window(%#x, %s, %i, %i)", wid, window, detail, sibling)
@@ -596,6 +646,8 @@ class WindowsConnection(StubClientConnection):
         if ws := self.window_sources.pop(wid, None):
             self.emit("remove-window-source", ws)
             ws.cleanup()
+            if self.window_stacking:
+                self.schedule_coverage_recalculation()
         self.calculate_window_pixels.pop(wid, None)
 
     def refresh(self, wid: int, window, opts) -> None:

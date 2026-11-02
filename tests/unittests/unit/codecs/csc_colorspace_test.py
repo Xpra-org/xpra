@@ -292,6 +292,40 @@ class Test_CSC_Colorspace(unittest.TestCase):
             value = "lossless" if snr == float("inf") else f"{snr:5.1f} dB"
             print(f"  {f'{mod} BGRX->{out_csc} {cs_range}':40} : {value}")
 
+    def test_libyuv_downscale_thin_lines(self):
+        # 1-pixel lines every 5 pixels must come out as the same grey when downscaling by 5,
+        # wherever they fall: a bilinear filter only samples 2x2 source pixels per output pixel,
+        # so the lines would either vanish or stay at full intensity depending on their phase
+        csc_mod = loader.load_codec("csc_libyuv")
+        if not csc_mod:
+            self.skipTest("csc_libyuv is not available")
+        factor = 5
+        width, height = 32 * factor, 8 * factor
+        ow, oh = width // factor, height // factor
+        grey = 255 // factor
+        for vertical in (True, False):
+            for phase in range(factor):
+                with self.subTest(vertical=vertical, phase=phase):
+                    image = make_test_image("BGRX", width, height, ())
+                    stride = image.get_rowstride()
+                    pixels = bytearray(stride * height)
+                    for y in range(height):
+                        for x in range(width):
+                            if (x if vertical else y) % factor == phase:
+                                offset = y * stride + x * 4
+                                pixels[offset:offset + 4] = b"\xff" * 4
+                    image.set_pixels(bytes(pixels))
+                    converter = csc_mod.Converter()
+                    converter.init_context(width, height, "BGRX", ow, oh, "YUV420P",
+                                           typedict({"full-range": True}))
+                    out = converter.convert_image(image)
+                    converter.clean()
+                    y_stride = out.get_rowstride()[0]
+                    y_plane = memoryview_to_bytes(out.get_pixels()[0])
+                    values = {y_plane[y * y_stride + x] for y in range(oh) for x in range(ow)}
+                    self.assertTrue(all(abs(v - grey) <= 3 for v in values),
+                                    f"expected Y={grey} everywhere, got {sorted(values)}")
+
 
 def main():
     unittest.main()

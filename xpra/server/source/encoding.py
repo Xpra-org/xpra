@@ -83,6 +83,7 @@ class EncodingsConnection(StubClientConnection):
         self.cuda_device_context = None
 
     def init_from(self, _protocol, server) -> None:
+        self.get_capture_adapter_luid = server.get_capture_adapter_luid
         # `EncodingServer` is the standalone subsystem instance:
         enc = server.subsystems["encoding"]
         self.server_core_encodings = enc.core_encodings
@@ -101,11 +102,18 @@ class EncodingsConnection(StubClientConnection):
         # was skipped in parse_encoding_caps. Allocate it now if still missing.
         if not self.cuda_device_context and self.wants_cuda_device():
             self.allocate_cuda_device_context()
-        # Propagate cuda context to any window sources created before it was available.
-        if self.cuda_device_context:
-            for ws in self.all_window_sources():
-                if not ws.cuda_device_context:
-                    ws.cuda_device_context = self.cuda_device_context
+        for ws in self.all_window_sources():
+            # Propagate cuda context to any window sources created before it was available.
+            if self.cuda_device_context and not ws.cuda_device_context:
+                ws.cuda_device_context = self.cuda_device_context
+            # window sources copy the encodings when they are created,
+            # and those which already existed before the client sent its `encoding-config`
+            # (ie: shadow windows) would otherwise never get the client's video decoders:
+            ws.server_core_encodings = self.server_core_encodings
+            ws.server_encodings = self.server_encodings
+            ws.encodings = self.encodings
+            ws.core_encodings = self.core_encodings
+            ws.rgb_formats = self.rgb_formats
 
     def cleanup(self) -> None:
         self.cancel_recalculate_timer()
@@ -198,6 +206,7 @@ class EncodingsConnection(StubClientConnection):
         sources = self.window_sources.items()
         maximized_wids = tuple(wid for wid, source in sources if source is not None and source.maximized)
         fullscreen_wids = tuple(wid for wid, source in sources if source is not None and source.fullscreen)
+        get_coverage = getattr(self, "get_window_coverage", lambda _wid: None)
         log("recalculate_delays() wids=%s, focus=%s, maximized=%s, fullscreen=%s",
             wids, focus, maximized_wids, fullscreen_wids)
         for wid in wids:
@@ -211,7 +220,8 @@ class EncodingsConnection(StubClientConnection):
                 ws.statistics.update_averages()
                 ws.calculate_batch_delay(wid == focus,
                                          len(fullscreen_wids) > 0 and wid not in fullscreen_wids,
-                                         len(maximized_wids) > 0 and wid not in maximized_wids)
+                                         len(maximized_wids) > 0 and wid not in maximized_wids,
+                                         get_coverage(wid))
                 ws.reconfigure()
             if self.is_closed():
                 return
@@ -244,12 +254,12 @@ class EncodingsConnection(StubClientConnection):
             log("delay_per_megapixel=%i, delay=%i, for wdelay=%i, avg_size=%i, ratio=%.2f",
                 normalized_delay, delay, wdelay, avg_size, ratio)
 
-    def may_recalculate(self, wid: int, pixel_count: int) -> None:
+    def may_recalculate(self, wid: int, pixel_count: int, *, force=False) -> None:
         if wid in self.calculate_window_ids:
             return  # already scheduled
         v = self.calculate_window_pixels.get(wid, 0) + pixel_count
         self.calculate_window_pixels[wid] = v
-        if v < MIN_PIXEL_RECALCULATE:
+        if not force and v < MIN_PIXEL_RECALCULATE:
             return  # not enough pixel updates
         statslog("may_recalculate(%#x, %i) total %i pixels, scheduling recalculate work item", wid, pixel_count, v)
         self.calculate_window_ids.add(wid)
@@ -371,6 +381,15 @@ class EncodingsConnection(StubClientConnection):
             except ImportError as e:
                 cudalog(f"unable to import cuda context: {e}")
                 return None
+            # Server-owned hint consumed by CUDA device selection: prefer the adapter holding
+            # the captured D3D11 textures, so NVENC can copy them without a system-memory round trip.
+            # Refresh after parsing client options, including clearing any client-supplied or stale value.
+            self.encoding_options.pop("cuda-adapter-luid", None)
+            try:
+                if adapter_luid := self.get_capture_adapter_luid():
+                    self.encoding_options["cuda-adapter-luid"] = adapter_luid
+            except Exception:
+                cudalog("failed to query the capture adapter LUID", exc_info=True)
             try:
                 self.cuda_device_context = get_device_context(self.encoding_options)
                 cudalog("cuda_device_context=%s", self.cuda_device_context)

@@ -7,7 +7,7 @@
 import unittest
 from types import SimpleNamespace
 
-from xpra.client.gui.window_title import do_get_window_title, MAX_TITLE
+from xpra.client.gui.window_title import do_get_window_title, get_window_title, MAX_TITLE
 
 
 class FakeClient:
@@ -18,7 +18,7 @@ class FakeClient:
         remote_hostname = kwargs.pop("_remote_hostname", "")
         remote_display = kwargs.pop("_remote_display", "")
         if remote_hostname or remote_display:
-            self.subsystems["remote-info"] = SimpleNamespace(_remote_hostname=remote_hostname, _remote_display=remote_display)
+            self.subsystems["remote-info"] = SimpleNamespace(hostname=remote_hostname, display_name=remote_display)
         for k, v in kwargs.items():
             setattr(self, k, v)
 
@@ -78,8 +78,8 @@ class WindowTitleTest(unittest.TestCase):
 
     def test_composed_remote_info(self):
         remote_info = SimpleNamespace(
-            _remote_hostname="major.example.org",
-            _remote_display="1\\WinSta0\\Default",
+            hostname="major.example.org",
+            display_name="1\\WinSta0\\Default",
         )
         out = self._title(
             "@server-machine@@server-display@",
@@ -134,6 +134,17 @@ class WindowTitleTest(unittest.TestCase):
         out = self._title("[@title@]", {"title": "x" * (MAX_TITLE * 2)})
         self.assertEqual(len(out), MAX_TITLE + 2)
         self.assertTrue(out.endswith("\u2026]"))
+
+    def test_error_falls_back_to_the_template(self):
+        client = FakeClient(title="@title@ on @server-machine@\0")
+
+        def broken(_name):
+            raise RuntimeError("test")
+        client.get_subsystem = broken
+        self.assertEqual(get_window_title(client, 1, {"title": "xterm"}), "@title@ on @server-machine@")
+        # no error:
+        client = FakeClient(title="@title@")
+        self.assertEqual(get_window_title(client, 1, {"title": "xterm"}), "xterm")
 
 
 def main():

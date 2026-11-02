@@ -77,11 +77,10 @@ class ShadowX11Server(GObject.GObject, ShadowServerBase):
     def makeDynamicWindowModels(self):
         assert self.window_matches
         rwmc = self.get_root_window_model_class()
-        from xpra.gtk.util import get_default_root_window
-        root = get_default_root_window()
+        capture = self._make_monitor_capture(0, self.get_display_name(), 0, 0, *self.get_display_size())
 
         def model_class(title, geometry):
-            model = rwmc(root, self.capture, title, geometry)
+            model = rwmc(capture, title, geometry)
             model.dynamic_property_names.append("size-constraints")
             return model
 

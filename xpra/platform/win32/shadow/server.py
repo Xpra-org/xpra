@@ -16,7 +16,6 @@ from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet
 from xpra.config import InitException, InitExit
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
-from xpra.server.shadow.root_window_model import CaptureWindowModel
 from xpra.platform.win32 import constants as win32con
 from xpra.platform.win32.gui import get_desktop_name, get_display_size
 from xpra.platform.win32.events import get_win32_event_listener
@@ -93,6 +92,31 @@ def parse_capture_backend(backend: str) -> str:
         raise InitExit(ExitCode.UNSUPPORTED,
                        f"invalid capture backend {backend!r}, use: " + csv(SHADOW_OPTIONS))
     return backend
+
+
+MONITOR_BACKENDS = ("auto", "dxgi", "gdi")
+
+
+def setup_per_monitor_capture(backend: str, title: str, x: int, y: int):
+    if DXGI and backend in ("auto", "dxgi"):
+        try:
+            from xpra.platform.win32.d3d11.capture import get_capture_for_monitor
+            if capture := get_capture_for_monitor(x, y):
+                capture.refresh()
+                log.info("monitor %r at (%i,%i): capture using %s", title, x, y, capture.get_type())
+                return capture
+        except Exception:
+            log("DXGI capture failed for monitor %r at (%i,%i)", title, x, y, exc_info=True)
+        if backend == "dxgi":
+            raise RuntimeError(f"DXGI capture unavailable for monitor {title!r} at ({x},{y})")
+
+    if GDI and backend in ("auto", "gdi"):
+        from xpra.platform.win32.gdi_screen_capture import GDICapture
+        capture = GDICapture(offset_x=x, offset_y=y)
+        log.info("monitor %r at (%i,%i): capture using %s", title, x, y, capture.get_type())
+        return capture
+
+    raise RuntimeError(f"no capture backend available for monitor {title!r}")
 
 
 def _setup_nvfbc_capture(w: int, h: int, pixel_depth: int = 32):
@@ -443,6 +467,7 @@ class ShadowServer(ShadowServerBase):
             if title not in monitors:
                 vddlog.info("removing shadow window for monitor %r", title)
                 window_sub._remove_window(model)
+                self._discard_capture(model)
         # add new monitors, and update the geometry of existing ones:
         model_class = self.get_root_window_model_class()
         for plug, monitor in monitors.items():
@@ -468,8 +493,21 @@ class ShadowServer(ShadowServerBase):
                 # size-constraints reach the client cleanly:
                 vddlog.info("monitor %r resolution changed: %s -> %s, recreating window", plug, old, geometry)
                 window_sub._remove_window(model)
+                # release the old capture first:
+                # DXGI cannot duplicate an output twice from the same process
+                self._discard_capture(model)
                 capture = self._make_monitor_capture(len(existing), plug, x, y, width, height)
                 window_sub._add_new_window(model_class(capture, plug, geometry))
+
+    def _discard_capture(self, model) -> None:
+        capture = getattr(model, "capture", None)
+        if capture is None or capture is self.capture:
+            # the shared full-desktop capture is still used by the other windows
+            return
+        if capture in self._captures:
+            self._captures.remove(capture)
+        vddlog("discarding capture %s", capture)
+        capture.clean()
 
     def _process_display_monitor_configure(self, _proto, packet: Packet) -> None:
         if not self._vdd_multimonitor:
@@ -530,6 +568,15 @@ class ShadowServer(ShadowServerBase):
         w, h = get_display_size()
         return 0, 0, w, h
 
+    def get_capture_adapter_luid(self) -> bytes:
+        luids = set()
+        for capture in self._captures:
+            get_luid = getattr(capture, "get_adapter_luid", None)
+            if get_luid and (luid := get_luid()):
+                luids.add(luid)
+        # Each client has one CUDA context, so only prefer an unambiguous capture adapter.
+        return luids.pop() if len(luids) == 1 else b""
+
     def setup_monitor_capture(self, index: int, title: str, x: int, y: int, w: int, h: int):
         """
         Per-monitor capture dispatch.  DXGI is tried first (by desktop position),
@@ -539,28 +586,9 @@ class ShadowServer(ShadowServerBase):
         backend = self.backend
 
         # Full-desktop backends: delegate to shared-capture path (global coords).
-        if backend not in ("auto", "dxgi", "gdi"):
+        if backend not in MONITOR_BACKENDS:
             return super().setup_monitor_capture(index, title, x, y, w, h)
-
-        if DXGI and backend in ("auto", "dxgi"):
-            try:
-                from xpra.platform.win32.d3d11.capture import get_capture_for_monitor
-                if capture := get_capture_for_monitor(x, y):
-                    capture.refresh()
-                    log.info("monitor %r at (%i,%i): capture using %s", title, x, y, capture.get_type())
-                    return capture
-            except Exception:
-                log("DXGI capture failed for monitor %r at (%i,%i)", title, x, y, exc_info=True)
-            if backend == "dxgi":
-                raise RuntimeError(f"DXGI capture unavailable for monitor {title!r} at ({x},{y})")
-
-        if GDI and backend in ("auto", "gdi"):
-            from xpra.platform.win32.gdi_screen_capture import GDICapture
-            capture = GDICapture(offset_x=x, offset_y=y)
-            log.info("monitor %r at (%i,%i): capture using %s", title, x, y, capture.get_type())
-            return capture
-
-        raise RuntimeError(f"no capture backend available for monitor {title!r}")
+        return setup_per_monitor_capture(backend, title, x, y)
 
     def setup_capture(self):
         """Full-desktop capture used by the nvfbc explicit-backend mode."""
@@ -691,16 +719,40 @@ class ShadowServer(ShadowServerBase):
         return v
 
 
-def main() -> None:
+def main(argv) -> int:
+    import time
     from xpra.platform import program_context
+    from xpra.platform.win32.shadow.model import PerMonitorCaptureWindowModel
     with program_context("Shadow-Test", "Shadow Server Screen Capture Test"):
-        rwm = CaptureWindowModel(None)
-        pngdata = rwm.take_screenshot()
-        filename = "screenshot.png"
+        backend = parse_capture_backend(argv[1] if len(argv) > 1 else "auto")
+        if backend not in MONITOR_BACKENDS:
+            print(f"usage: {argv[0]} [" + "|".join(MONITOR_BACKENDS) + "]")
+            return ExitCode.FAILURE
+        # the first monitor, captured the way the server does it:
+        x1, y1, x2, y2 = get_monitors()[0]["Monitor"]
+        title = "monitor 0"
+        capture = setup_per_monitor_capture(backend, title, x1, y1)
+        try:
+            # the first frame may not be ready yet:
+            for _ in range(10):
+                if capture.refresh():
+                    break
+                time.sleep(0.05)
+            rwm = PerMonitorCaptureWindowModel(capture, title, (x1, y1, x2 - x1, y2 - y1))
+            screenshot = rwm.take_screenshot()
+        finally:
+            capture.clean()
+        if not screenshot:
+            print(f"no screenshot from {capture.get_type()}")
+            return ExitCode.FAILURE
+        w, h, encoding, _rowstride, data = screenshot
+        filename = f"screenshot.{encoding}"
         with open(filename, "wb") as f:
-            f.write(pngdata[4])
-        print(f"saved screenshot as {filename}")
+            f.write(data)
+        print(f"saved {w}x{h} screenshot from {capture.get_type()} as {filename}")
+    return ExitCode.OK
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+    sys.exit(main(sys.argv))

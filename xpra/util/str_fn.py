@@ -277,7 +277,11 @@ def memoryview_to_bytes(v) -> bytes:
         return v.tobytes()
     if isinstance(v, bytearray):
         return bytes(v)
-    return strtobytes(v)
+    try:
+        # other buffers, ie: ctypes arrays, which `strtobytes` would turn into their repr
+        return memoryview(v).tobytes()
+    except TypeError:
+        return strtobytes(v)
 
 
 def parse_function_call(s: str) -> tuple[str, dict]:

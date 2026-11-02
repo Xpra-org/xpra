@@ -12,7 +12,7 @@ from typing import Any, NamedTuple, Protocol
 
 from xpra.codecs.constants import CSCSpec, VideoSpec
 from xpra.codecs.protocols import ColorspaceConverter, VideoEncoder
-from xpra.server.window.video_scoring import PipelineScore, get_pipeline_score
+from xpra.server.window.video_scoring import LOSSY_CSC, PipelineScore, get_pipeline_score
 from xpra.log import Logger
 
 log = Logger("score")
@@ -116,7 +116,8 @@ def get_pipeline_options(encodings: Iterable[str], width: int, height: int, src_
                 else:
                     scaling = (1, 1)
                 score_delta = encoding_score_delta
-                lossy_csc = enc_in_format in ("NV12", "YUV420P", "YUV422P")
+                # the subsampling may also happen inside the encoder (ie: "BGRX" in, "YUV420P" out):
+                lossy_csc = enc_in_format in LOSSY_CSC or all(cs in LOSSY_CSC for cs in matches)
                 if scaling != (1, 1) or lossy_csc:
                     if settings.text_hint:
                         score_delta -= 500

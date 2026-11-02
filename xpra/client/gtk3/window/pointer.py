@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import math
+from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
@@ -159,6 +160,8 @@ class PointerWindow(GtkStubWindow):
         else:
             if prev and prev[:2] == pos[:2]:
                 return
+            if len(pos) == 2:
+                pos = (*pos, 10, monotonic())
             # store both scaled and unscaled value:
             # (the opengl client uses the raw value)
             value = pos[:2] + self.sp(*pos[:2]) + pos[2:]
@@ -214,7 +217,7 @@ class PointerWindow(GtkStubWindow):
             self.remove_pointer_overlay()
         # `server_pointer` is owned by the `pointer` subsystem (which may be disabled):
         pointer = self.get_subsystem("pointer")
-        if self._client.readonly or self._client.server_readonly or (pointer and not pointer.server_pointer):
+        if self.is_readonly() or (pointer and not pointer.server_pointer):
             return
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
         if self.button_polling_timer:
@@ -223,7 +226,7 @@ class PointerWindow(GtkStubWindow):
             self.start_button_polling()
         wid = self.get_mouse_event_wid(*pointer_data)
         log("do_motion_notify_event(%s) wid=%#x / focus=%s / window wid=%#x",
-            event, wid, self.get_subsystem("window")._focused, self.wid)
+            event, wid, self.get_subsystem("window").focused_wid, self.wid)
         log(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
             _device_info(event), pointer_data, modifiers, buttons)
         device_id = 0
@@ -268,7 +271,7 @@ class PointerWindow(GtkStubWindow):
         return v
 
     def _do_scroll_event(self, event) -> bool:
-        if self._client.readonly:
+        if self.is_readonly():
             return True
         if event.direction == Gdk.ScrollDirection.SMOOTH:
             log("smooth scroll event: %s, raw delta: %s,%s", event, event.delta_x, event.delta_y)
@@ -313,7 +316,7 @@ class PointerWindow(GtkStubWindow):
             return
         # button events are sent by the `pointer` subsystem, which may be disabled:
         pointer = self.get_subsystem("pointer")
-        if not pointer or self._client.readonly or self._client.server_readonly or not pointer.server_pointer:
+        if not pointer or self.is_readonly() or not pointer.server_pointer:
             return
         if not pointer.middle_click and button == 2:
             log("_button_action: middle click suppressed (middle-click=no)")
@@ -321,7 +324,7 @@ class PointerWindow(GtkStubWindow):
         pointer_data, modifiers, buttons = self._pointer_modifiers(event)
         wid = self.get_mouse_event_wid(*pointer_data)
         log("_button_action(%s, %s, %s) wid=%#x / focus=%s / window wid=%#x",
-            button, event, depressed, wid, self.get_subsystem("window")._focused, self.wid)
+            button, event, depressed, wid, self.get_subsystem("window").focused_wid, self.wid)
         log(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
             _device_info(event), pointer_data, modifiers, buttons)
         device_id = 0

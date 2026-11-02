@@ -292,7 +292,7 @@ class TrayMenuTest(unittest.TestCase):
         sent = []
         keyboard = SimpleNamespace(send_key_sequence=sent.append)
         helper = object.__new__(tray_menu.GTKTrayMenu)
-        helper.client = SimpleNamespace(readonly=False, get_subsystem=lambda name: keyboard if name == "keyboard" else None)
+        helper.client = SimpleNamespace(readonly=False, server_readonly=False, get_subsystem=lambda name: keyboard if name == "keyboard" else None)
 
         def menuitem(title, _icon_name="", _tooltip="", cb=None):
             item = FakeMenuItem(title)

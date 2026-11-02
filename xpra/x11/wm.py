@@ -72,6 +72,9 @@ WINDOW_TYPE_ATOMS = tuple(f"_NET_WM_WINDOW_TYPE{wtype}" for wtype in (
 
 
 rxid = get_root_xid()
+screen = X11CoreBindings().get_default_screen()
+WM_S = f"WM_S{screen}"
+_NET_WM_CM_S = f"_NET_WM_CM_S{screen}"
 
 
 class Wm(GObject.GObject):
@@ -118,7 +121,7 @@ class Wm(GObject.GObject):
             # so that setting the root window EWMH properties and managing windows later on
             # is served from the atom cache instead of a round-trip per atom:
             atoms = WINDOW_TYPE_ATOMS + tuple(NET_SUPPORTED) + (
-                "_NET_SUPPORTED", "DEFAULT_NET_FRAME_EXTENTS", "WM_S0", "_NET_WM_CM_S0",
+                "_NET_SUPPORTED", "DEFAULT_NET_FRAME_EXTENTS", WM_S, _NET_WM_CM_S,
             )
             X11CoreBindings().intern_atoms(atoms)
 
@@ -129,7 +132,7 @@ class Wm(GObject.GObject):
         # else steals it, then we should exit.
 
         # Become the Official Window Manager of this year's display:
-        self._wm_selection = ManagerSelection("WM_S0", "_NET_WM_CM_S0")
+        self._wm_selection = ManagerSelection(WM_S, _NET_WM_CM_S)
         self._wm_selection.connect("selection-lost", self._lost_wm_selection)
         self._wm_selection.connect("selection-acquired", self._got_wm_selection)
         # May throw AlreadyOwned:

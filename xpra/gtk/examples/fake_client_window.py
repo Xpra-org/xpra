@@ -8,7 +8,6 @@
 
 import os
 import sys
-from typing import Any
 
 os.environ.setdefault("XPRA_USE_FAKE_BACKING", "1")
 
@@ -25,7 +24,7 @@ GLib = gi_import("GLib")
 log = Logger("window")
 
 MIXIN_NAMES: tuple[str, ...] = (
-    "action", "headerbar", "dragndrop", "focus",
+    "headerbar", "dragndrop", "focus",
     "grab", "workspace", "keyboard", "pointer",
 )
 
@@ -38,9 +37,6 @@ class TestClient(FakeClient):
 
     def get_window_menu_helper(self):
         return None
-
-    def get_frame_extents(self, *_args) -> dict[str, Any]:
-        return {}
 
     def get_root_size(self) -> tuple[int, int]:
         screen = Gtk.Window().get_screen()
@@ -128,10 +124,7 @@ def make_metadata(args) -> typedict:
 
 def patch_window_base_classes(args) -> None:
     def add_mixin(bases: list[type], name: str) -> None:
-        if name == "action":
-            from xpra.client.gui.window.action import ActionWindow
-            bases.append(ActionWindow)
-        elif name == "headerbar":
+        if name == "headerbar":
             from xpra.client.gtk3.window.headerbar import HeaderBarWindow
             bases.append(HeaderBarWindow)
         elif name == "dragndrop":

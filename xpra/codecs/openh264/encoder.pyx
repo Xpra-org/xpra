@@ -15,6 +15,7 @@ log = Logger("encoder", "openh264")
 from xpra.util.env import envint
 
 from xpra.codecs.image import ImageWrapper
+from xpra.codecs.openh264 import OpenH264Spec, get_effective_quality
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict, AtomicInteger
 from xpra.codecs.constants import (
@@ -418,9 +419,9 @@ def get_specs() -> Sequence[VideoSpec]:
     for encoding in get_encodings():
         for in_cs in tuple(COLORSPACES.keys()):
             out_cs = in_cs
-            # we can handle high quality and any speed
+            # quality is capped to stay within OpenH264's buffer limits
             # setup cost is moderate (about 10ms)
-            specs.append(VideoSpec(
+            specs.append(OpenH264Spec(
                     encoding=encoding, input_colorspace=in_cs, output_colorspaces=(out_cs, ),
                     has_lossless_mode=False,
                     codec_class=Encoder, codec_type=get_type(),
@@ -488,9 +489,10 @@ def get_h264_level(options: typedict) -> float:
 
 # with rate-control off, the quantizer is fixed and taken from `iDLayerQp`;
 # H.264 QP ranges from 0 (best quality) to 51 (worst). We map our 0..100 quality
-# percentage onto [MIN_QP, MAX_QP]. QP 0 is the encoder's maximum quality - still
-# lossy (4:2:0 subsampling + transform rounding), so it does not contradict the
-# has_lossless_mode=False spec, and we never signal it as lossless to the client:
+# percentage onto [MIN_QP, MAX_QP]. The quality policy caps requests before this
+# mapping to keep noisy frames within OpenH264's bitstream buffers. This remains
+# lossy (4:2:0 subsampling + transform rounding), including when quality=100 was
+# requested, and must never be signalled as lossless to the client:
 DEF MIN_QP = 0
 DEF MAX_QP = 51
 
@@ -578,7 +580,7 @@ cdef class Encoder:
         self.profile = get_h264_profile(options)
         self.level = get_h264_level(options)
         self.full_range = options.boolget("full-range", True)
-        self.quality = options.intget("quality", 50)
+        self.quality = get_effective_quality(options.intget("quality", 50), width, height)
         self.speed = options.intget("speed", 50)
         self.content_types = options.strtupleget("content-types", ())
         self.screen_content = int(not use_video_usage_type(self.content_types))
@@ -682,7 +684,10 @@ cdef class Encoder:
 
     cdef void set_encoding_quality(self, int quality):
         # update the fixed quantizer on the fly (RC is off, so this maps straight to iDLayerQp):
-        if quality < 0 or quality == self.quality:
+        if quality < 0:
+            return
+        quality = get_effective_quality(quality, self.width, self.height)
+        if quality == self.quality:
             return
         self.quality = quality
         cdef int qp = quality_to_qp(quality)
@@ -870,6 +875,7 @@ cdef class Encoder:
         cdef int is_idr = frame_info.eFrameType == videoFrameTypeIDR
         client_options = {
             "frame": self.frames,
+            "quality": self.quality,
         }
         # the colour range is signalled on every keyframe (so a decoder resuming from any
         # keyframe knows it) and on every transition; steady-state full-range is omitted:

@@ -336,13 +336,11 @@ class TerminalClientTest(unittest.TestCase):
         self.assertEqual(tuple(client.get_client_window_classes((0, 0, 1, 1), typedict(), False)),
                          (ClientWindow, ))
 
-    def test_grabs_are_recorded_only(self):
-        client = self.make_client()
-        window = client.subsystems["window"] = FakeWindowSubsystem()
-        client.window_grab(5, None)
-        self.assertEqual(window._window_with_grab, 5)
-        client.window_ungrab()
-        self.assertEqual(window._window_with_grab, 0)
+    def test_windows_cannot_grab_natively(self):
+        # the `window` subsystem only records grabs for windows without `do_window_grab`:
+        from xpra.client.terminal.window import ClientWindow
+        self.assertFalse(hasattr(ClientWindow, "do_window_grab"))
+        self.assertFalse(hasattr(ClientWindow, "do_window_ungrab"))
 
     def test_get_info(self):
         client = self.make_client()

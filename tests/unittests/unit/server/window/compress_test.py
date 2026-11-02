@@ -44,6 +44,8 @@ class CompressTest(unittest.TestCase):
         source._rgb_auto_threshold = 0
         source.has_shape = False
         source.client_bit_depth = 24
+        source.client_render_size = (0, 0)
+        source.window_dimensions = 3840, 2160
         return source
 
     @staticmethod
@@ -54,6 +56,55 @@ class CompressTest(unittest.TestCase):
             get_internal_property_names=lambda: ["frame-has-alpha"] if frame_property else [],
             get_property=lambda name: {"frame-has-alpha": frame_has_alpha}[name],
         )
+
+    @patch.object(compress, "monotonic", return_value=100)
+    def test_coverage_change_recalculates_with_no_damage(self, _monotonic):
+        source = self.make_source()
+        source.wid = 1
+        source.batch_config = SimpleNamespace(locked=False, delay=40, start_delay=50)
+        source._mmap = False
+        source._batch_covered = None
+        source.statistics.last_recalculate = 99
+        source.statistics.last_damage_events = ()
+        source.is_OR = False
+        source.soft_expired = 0
+        source.global_statistics = object()
+        source.bandwidth_limit = 0
+        source.jitter = 0
+        source.update_av_sync_frame_delay = Mock()
+        with patch.object(compress, "calculate_batch_delay") as calculate:
+            for covered in (False, True, False, None):
+                source.calculate_batch_delay(False, False, False, covered)
+                self.assertEqual(calculate.call_args.args[-1], covered)
+                self.assertEqual(source.statistics.last_recalculate, 100)
+                calculate.reset_mock()
+                # With no further coverage change, the low-activity shortcut still applies.
+                source.calculate_batch_delay(False, False, False, covered)
+                calculate.assert_not_called()
+            source.batch_config.locked = True
+            source.calculate_batch_delay(False, False, False, True)
+            self.assertEqual(source.batch_config.delay, 40)
+            self.assertTrue(source.batch_config.covered)
+            calculate.assert_not_called()
+            source.batch_config.locked = False
+            source.batch_config.min_delay = 16
+            source._mmap = True
+            source.calculate_batch_delay(False, False, False, True)
+            self.assertEqual(source.batch_config.delay, 16)
+            self.assertEqual(source.batch_config.effective_min_delay, 16)
+            self.assertTrue(source.batch_config.covered)
+            calculate.assert_not_called()
+
+    def test_unmap_clears_client_geometry(self):
+        source = self.make_source()
+        source.mapped_at = (10, 20, 800, 600)
+        source.cancel_damage = Mock()
+        source.statistics.reset = Mock()
+        source.go_idle = Mock()
+        source.unmap()
+        self.assertIsNone(source.mapped_at)
+        source.cancel_damage.assert_called_once_with()
+        source.go_idle.assert_called_once_with()
 
     def make_alpha_source(self, **window_kwargs) -> WindowSource:
         source = self.make_source()
@@ -195,6 +246,53 @@ class CompressTest(unittest.TestCase):
         source._quality_hint = 80
         assigned = source.assign_sq_options({})
         self.assertEqual(assigned["quality"], 80)
+
+    @patch.object(compress, "monotonic", return_value=100)
+    def test_downscaled_quality_is_discounted(self, _monotonic) -> None:
+        # ie: a client using `--desktop-scaling=0.2`
+        for content_types in ((), ("desktop",), ("video",)):
+            with self.subTest(content_types=content_types):
+                source = self.make_source(content_types)
+                source.client_render_size = 768, 432
+                source._current_quality = 100
+                assigned = source.assign_sq_options({})
+                self.assertEqual(assigned["quality"], 80)
+
+    @patch.object(compress, "monotonic", return_value=100)
+    def test_downscaled_idle_bonus_does_not_absorb_the_discount(self, _monotonic) -> None:
+        source = self.make_source(("desktop",))
+        source.client_render_size = 768, 432
+        # idle for 10 seconds: +250
+        source.statistics.last_packet_time = 90
+        assigned = source.assign_sq_options({})
+        self.assertEqual(assigned["quality"], 80)
+
+    @patch.object(compress, "monotonic", return_value=100)
+    def test_small_render_size_difference_is_not_downscaled(self, _monotonic) -> None:
+        source = self.make_source(("desktop",))
+        source.client_render_size = 3830, 2150
+        self.assertFalse(source.is_downscaled())
+        self.assertEqual(source.assign_sq_options({})["quality"], 100)
+
+    @patch.object(compress, "monotonic", return_value=100)
+    def test_downscaled_explicit_quality_is_honoured(self, _monotonic) -> None:
+        source = self.make_source(("desktop",))
+        source.client_render_size = 768, 432
+        self.assertEqual(source.assign_sq_options({"quality": 100})["quality"], 100)
+
+        source._fixed_quality = 100
+        self.assertEqual(source.assign_sq_options({})["quality"], 100)
+
+        # `update_quality` copies the hint to the current quality:
+        source._fixed_quality = -1
+        source._quality_hint = 100
+        source._current_quality = 100
+        self.assertEqual(source.assign_sq_options({})["quality"], 100)
+
+        source._quality_hint = -1
+        source._current_quality = 80
+        source._fixed_min_quality = 100
+        self.assertEqual(source.assign_sq_options({})["quality"], 100)
 
     @patch.object(compress, "monotonic", return_value=100)
     def test_auto_encoding_uses_assigned_quality(self, _monotonic) -> None:

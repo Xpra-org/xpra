@@ -52,9 +52,32 @@ class TestBatchConfig(unittest.TestCase):
         bc.locked = True
         assert bc.get_info().get("delay")==bc.delay
 
+    def test_batch_tuning_info(self):
+        bc = DamageBatchConfig()
+        self.assertEqual(bc.get_info()["coverage"], "unknown")
+        self.assertEqual(bc.get_info()["effective-min-delay"], "unknown")
+        for covered, status, minimum in ((True, "covered", 100), (False, "uncovered", 40), (None, "unknown", 0)):
+            with self.subTest(covered=covered):
+                bc.covered = covered
+                bc.effective_min_delay = minimum
+                info = bc.get_info()
+                self.assertEqual(info["coverage"], status)
+                self.assertEqual(info["effective-min-delay"], minimum)
+                self.assertEqual(info["min-delay"], bc.min_delay)
+        bc.locked = True
+        bc.delay = 250
+        self.assertEqual(bc.get_info()["effective-min-delay"], 250)
+        bc.locked = False
+        self.assertEqual(bc.get_info()["effective-min-delay"], 0)
+        bc.covered = True
+        clone = bc.clone()
+        self.assertEqual(clone.get_info()["coverage"], "unknown")
+        self.assertEqual(clone.get_info()["effective-min-delay"], "unknown")
+
 
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()

@@ -65,13 +65,16 @@ class KeyboardWindow(GtkStubWindow):
         key_event.pressed = pressed
         key_event.string = ""
         try:
-            codepoint = Gdk.keyval_to_unicode(keyval)
-            key_event.string = chr(codepoint)
-        except ValueError as e:
+            # zero for the keys that have no character, ie: `Page_Up`:
+            if codepoint := Gdk.keyval_to_unicode(keyval):
+                key_event.string = chr(codepoint)
+        except ValueError:
             log(f"failed to parse unicode string value of {event}", exc_info=True)
+        if not key_event.string:
+            # ie: `\r` for `KP_Enter`
             try:
                 key_event.string = event.string or ""
-            except UnicodeDecodeError as ve:
+            except UnicodeDecodeError as e:
                 if first_time(f"key-{keycode}-{keyname}"):
                     log("parse_key_event(%s, %s)", event, pressed, exc_info=True)
                     log.warn("Warning: failed to parse string for key")
@@ -79,7 +82,6 @@ class KeyboardWindow(GtkStubWindow):
                     log.warn(f" {keyval=}, group={event.group}")
                     log.warn(" modifiers=%s", csv(key_event.modifiers))
                     log.warn(f" {e}")
-                    log.warn(f" {ve}")
         log("parse_key_event(%s, %s)=%s", event, pressed, key_event)
         return key_event
 

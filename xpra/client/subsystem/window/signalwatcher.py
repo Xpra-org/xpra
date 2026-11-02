@@ -161,8 +161,8 @@ class WindowSignalWatcher(StubClientSubsystem):
                     else:
                         log(f"Warning: signal {signame!r} cannot be forwarded to this server")
             except Exception as e:
-                log.error("signal_watcher_event%s", (fd, cb_condition, proc, pid, wid), exc_info=True)
                 log.error("Error: processing signal watcher output for pid %i of window %#x", pid, wid)
+                log.error(" fd=%i, condition=%r, process=%r", fd, cb_condition, proc, exc_info=True)
                 log.estr(e)
         if proc.poll():
             # watcher ended, stop watching its stdout

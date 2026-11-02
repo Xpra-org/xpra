@@ -110,10 +110,11 @@ LAUNCHER_DEFAULTS = {
     "proxy_username": get_username(),
     "proxy_password": "",
     "proxy_key": "",
-    # an empty distribution or user selects WSL's configured default:
+    # an empty distribution or user selects WSL's configured default,
+    # and an empty display connects to the only session running:
     "wsl_distribution": "",
     "wsl_user": "",
-    "wsl_display": "100",
+    "wsl_display": "",
 }
 
 
@@ -539,8 +540,10 @@ class ApplicationWindow:
         self.wsl_user_entry.connect("activate", self.connect_clicked)
         self.wsl_display_entry = Gtk.Entry()
         self.wsl_display_entry.set_max_length(5)
-        self.wsl_display_entry.set_width_chars(5)
-        self.wsl_display_entry.set_tooltip_text("Display number of the session")
+        self.wsl_display_entry.set_width_chars(8)
+        self.wsl_display_entry.set_placeholder_text("optional")
+        self.wsl_display_entry.set_tooltip_text("Display number of the session (optional),\n"
+                                                "connects to the only session running otherwise")
         self.wsl_display_entry.connect("changed", self.validate)
         self.wsl_display_entry.connect("activate", self.connect_clicked)
         grid.attach(label("Distribution:"), 0, 0, 1, 1)
@@ -609,7 +612,9 @@ class ApplicationWindow:
         display = self.wsl_display_entry.get_text()
         user = self.wsl_user_entry.get_text()
         return [
-            (self.wsl_display_entry, not (display.isdigit() and int(display) < 2 ** 16), "invalid display number"),
+            # the display is optional: `xpra _proxy` connects to the only session running otherwise
+            (self.wsl_display_entry, bool(display) and not (display.isdigit() and int(display) < 2 ** 16),
+             "invalid display number"),
             (self.wsl_user_entry, any(c in user for c in ":@/ "), "invalid Linux username"),
         ]
 
@@ -1020,9 +1025,9 @@ class ApplicationWindow:
         self.client.after_handshake(handshake_complete)
         self.set_info_text("Connecting...")
         # The launcher already owns the GTK main loop; start the client's
-        # subsystems before scheduling its transport connection.
-        from xpra.client.gui.ui_client_base import UIXpraClient
-        UIXpraClient.run(self.client)
+        # subsystems before scheduling its transport connection,
+        # `client.run()` will not start them again once connected:
+        self.client.run_subsystems()
         start_thread(self.do_connect_builtin, "connect", daemon=True, args=(display_desc,))
 
     def ssh_failed(self, message) -> None:
@@ -1154,16 +1159,15 @@ class ApplicationWindow:
             self.window.hide()
 
         self.client.connect("first-ui-received", first_ui_received)
-        if Gtk.main_level() > 0:
-            # no need to start a new main loop:
-            self.client.gtk_main = noop
+        # the launcher's own main loop may already be running:
+        nested = Gtk.main_level() > 0
         try:
             r = self.client.run()
             log("client.run() returned %s", r)
         except Exception as e:
             log.error("client error", exc_info=True)
             self.handle_exception(e)
-        if self.client.gtk_main == noop:
+        if nested:
             return
         log("exit_launcher=%s", self.exit_launcher)
         # if we're using "autoconnect",

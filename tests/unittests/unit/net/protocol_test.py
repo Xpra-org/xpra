@@ -7,6 +7,7 @@
 import os
 import time
 import unittest
+from threading import Thread, current_thread, main_thread
 from unittest.mock import patch
 from collections.abc import Sequence
 
@@ -14,12 +15,14 @@ from xpra.os_util import gi_import
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.common import noop, SizedBuffer
+from xpra.net import compression
 from xpra.net.protocol import socket_handler, check
 from xpra.net.packet_type import CONNECTION_LOST, INFO_RESPONSE
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.constants import MAX_PACKET_SIZE
+from xpra.util.objects import typedict
 from xpra.log import Logger
 
 from unit.test_util import silence_error
@@ -94,7 +97,6 @@ class ProtocolTest(unittest.TestCase):
         unittest.TestCase.setUpClass()
         from xpra.net import packet_encoding
         packet_encoding.init_all()
-        from xpra.net import compression
         compression.init_all()
 
     def make_memory_protocol(self, data=(b"", ), read_buffer_size=1, hangup_delay=0,
@@ -112,6 +114,96 @@ class ProtocolTest(unittest.TestCase):
         p.enable_default_compressor()
         p.enable_default_encoder()
         return p
+
+    def test_parse_worker_startup(self) -> None:
+        for retire in (None, "close", "steal_connection"):
+            with self.subTest(retire=retire):
+                proto = self.make_memory_protocol()
+                events = []
+                with patch.object(proto, "idle_add"), \
+                        patch.object(socket_handler, "install_parse_thread_seccomp", side_effect=events.append), \
+                        patch.object(proto, "do_read_parse_thread_loop", side_effect=lambda: events.append("parse")):
+                    if retire:
+                        getattr(proto, retire)()
+                    proto._read_parse_thread_loop()
+                self.assertEqual(events, [] if retire else ["tcp", "parse"])
+
+    def test_close_during_parse_startup(self) -> None:
+        proto = self.make_memory_protocol()
+        conn = proto._conn
+        worker = proto._read_parser_thread
+
+        def close_after_check():
+            proto.close()
+            return False
+
+        with patch.object(proto, "idle_add") as idle, \
+                patch.object(worker, "is_alive", side_effect=close_after_check), \
+                patch.object(worker, "start"), \
+                patch.object(socket_handler, "prepare_parse_thread_seccomp") as prepare:
+            proto.start()
+            idle.call_args.args[0]()
+        prepare.assert_called_once_with(conn)
+
+    def test_close_from_filtered_thread(self) -> None:
+        try:
+            from xpra.seccomp import thread_state
+        except ImportError:
+            self.skipTest("seccomp module is unavailable")
+        for filtered in (False, True):
+            for cleanup_first in (False, True):
+                with self.subTest(filtered=filtered, cleanup_first=cleanup_first):
+                    pending = []
+                    events = []
+                    errors = []
+
+                    def connection_lost(_proto, packet) -> None:
+                        self.assertEqual(packet.get_type(), CONNECTION_LOST)
+                        self.assertEqual(packet.get_str(1), "closing")
+                        self.assertFalse(conn.active)
+                        events.append(("connection-lost", current_thread()))
+
+                    proto = self.make_memory_protocol(process_packet_cb=connection_lost)
+                    conn = proto._conn
+                    close_connection = conn.close
+
+                    def close() -> None:
+                        self.assertFalse(thread_state.filtered)
+                        close_connection()
+                        events.append(("close", current_thread()))
+
+                    def schedule(fn, *args) -> int:
+                        pending.append((fn, args))
+                        return len(pending)
+
+                    def worker_close() -> None:
+                        try:
+                            thread_state.filtered = filtered
+                            proto.close("closing")
+                            proto.close("closing")
+                        except Exception as exc:
+                            errors.append(exc)
+
+                    worker = Thread(target=worker_close, name="test-parse-close", daemon=True)
+                    with patch.object(proto, "idle_add", side_effect=schedule), patch.object(conn, "close", side_effect=close):
+                        worker.start()
+                        worker.join(5)
+                        self.assertFalse(worker.is_alive())
+                        self.assertEqual(errors, [])
+                        self.assertEqual(conn.active, filtered)
+                        self.assertEqual(proto.is_closed(), not filtered)
+                        if cleanup_first:
+                            # Main-thread cleanup must work even if its loop stops
+                            # before the filtered thread's queued close runs.
+                            proto.close("closing")
+                            self.assertFalse(conn.active)
+                        while pending:
+                            fn, args = pending.pop(0)
+                            fn(*args)
+                    self.assertEqual(events, [
+                        ("close", main_thread() if filtered else worker),
+                        ("connection-lost", main_thread()),
+                    ])
 
     def test_verify_packet(self) -> None:
         verify_packet = check.verify_packet
@@ -181,6 +273,88 @@ class ProtocolTest(unittest.TestCase):
                 items = p.encode(packet)
                 assert items
 
+    def make_compression_protocol(self, compressors=("lz4", "brotli"), level=1, **kwargs):
+        proto = self.make_memory_protocol(**kwargs)
+        proto.set_compression_level(level)
+        proto.enable_compressor_from_caps(typedict({"compressors": compressors}))
+        return proto
+
+    def test_packet_compression_preferences(self) -> None:
+        if not compression.use("brotli"):
+            self.skipTest("Brotli is not available")
+        text = "clipboard contents and notification text " * 100
+        options = {"claim": True, "data": {"UTF8_STRING": ("UTF8_STRING", 8, "bytes", text.encode())}}
+        packets = (
+            Packet("clipboard-data", "CLIPBOARD", options),
+            Packet("clipboard-record", "client", "clipboard-data", "CLIPBOARD", options),
+            Packet("notification-show", "", 1, "Xpra", 0, "", "Summary", text, 10000, (), (), {}),
+            Packet(INFO_RESPONSE, {"details": {"text": text}}),
+            Packet("encoding-set", {"encodings": {"description": text}}),
+        )
+        received = []
+        receiver = self.make_memory_protocol(process_packet_cb=lambda _proto, packet: received.append(list(packet)))
+        sender = self.make_compression_protocol()
+        for packet in packets:
+            with self.subTest(packet=packet.get_type()):
+                chunks = sender.encode(packet)
+                self.assertEqual(len(chunks), 1)
+                flags, index, level, data = chunks[0]
+                self.assertEqual(index, 0)
+                self.assertEqual(compression.get_compression_type(level), "brotli")
+                info = socket_handler.PacketReadInfo(flags, level, index, len(data), 0, len(data))
+                self.assertTrue(receiver.process_payload(socket_handler.ReceiveState(), info, data))
+                self.assertEqual(received[-1], list(packet))
+        # The preference must not change the default for other packet types.
+        self.assertEqual(sender.compressor, "lz4")
+        level = sender.encode(Packet("test", {"text": text}))[0][2]
+        self.assertEqual(compression.get_compression_type(level), "lz4")
+
+    def test_packet_compression_fallback(self) -> None:
+        packet = Packet(INFO_RESPONSE, {"text": "compressible text " * 100})
+        sender = self.make_memory_protocol()
+        sender.set_compression_level(1)
+        sender.enable_compressor("lz4")
+        # Before learning the peer's capabilities, no preferred compressor can be used.
+        self.assertEqual(compression.get_compression_type(sender.encode(packet)[0][2]), "lz4")
+        for compressors, expected in (((), ""), (("lz4",), "lz4")):
+            with self.subTest(compressors=compressors):
+                sender.enable_compressor_from_caps(typedict({"compressors": compressors}))
+                level = sender.encode(packet)[0][2]
+                self.assertEqual(compression.get_compression_type(level) if level else "", expected)
+        available = {name: codec for name, codec in compression.COMPRESSION.items() if name != "brotli"}
+        with patch.dict(compression.COMPRESSION, available, clear=True):
+            sender = self.make_compression_protocol()
+            self.assertEqual(compression.get_compression_type(sender.encode(packet)[0][2]), "lz4")
+
+    def test_packet_compression_limits(self) -> None:
+        for level, text in ((0, "text " * 100), (1, "short")):
+            with self.subTest(level=level, size=len(text)):
+                sender = self.make_compression_protocol(level=level)
+                self.assertEqual(sender.encode(Packet(INFO_RESPONSE, {"text": text}))[0][2], 0)
+
+    def test_packet_compression_does_not_expand_data(self) -> None:
+        if not compression.use("brotli"):
+            self.skipTest("Brotli is not available")
+        sender = self.make_compression_protocol()
+        packet = Packet(INFO_RESPONSE, {"text": "test data " * 100})
+        raw, flags = sender._encoder(list(packet))
+
+        def expanding_compressor(data, _level):
+            return 0x41, bytes(data) + b"larger"
+
+        with patch.object(compression, "get_compressor", return_value=expanding_compressor):
+            self.assertEqual(sender.encode(packet), [(flags, 0, 0, raw)])
+
+    def test_packet_compression_state_restore(self) -> None:
+        if not compression.use("brotli"):
+            self.skipTest("Brotli is not available")
+        sender = self.make_compression_protocol()
+        restored = self.make_memory_protocol()
+        restored.restore_state(sender.save_state())
+        packet = Packet(INFO_RESPONSE, {"text": "test data " * 100})
+        level = restored.encode(packet)[0][2]
+        self.assertEqual(compression.get_compression_type(level), "brotli")
+
     def test_input_packet_statistics(self) -> None:
         from xpra.net.packet_encoding import get_encoder
 
@@ -248,8 +422,6 @@ class ProtocolTest(unittest.TestCase):
 
     def test_modern_initial_packet_size(self) -> None:
         from xpra.net.protocol.header import FLAGS_FLUSH, FLAGS_RENCODEPLUS, pack_header
-        from xpra.util.objects import typedict
-
         proto = self.make_memory_protocol()
 
         if BACKWARDS_COMPATIBLE:

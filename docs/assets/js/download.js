@@ -66,7 +66,45 @@
     }
   }
 
+  // the channels to grey out: the ones that the selected distribution does not have, or does not recommend
+  function get_greyed() {
+    if (!controls.method || !controls[get_value("method")]) {
+      return [];
+    }
+    const select = controls[get_value("method")];
+    const option = select.options[select.selectedIndex];
+    return option && option.dataset.grey ? option.dataset.grey.split(" ") : [];
+  }
+
+  function update_greyed() {
+    if (!controls.channel) {
+      return;
+    }
+    const greyed = get_greyed();
+    controls.channel.querySelectorAll("input").forEach(function (input) {
+      input.parentElement.classList.toggle("dl-greyed", greyed.indexOf(input.value) >= 0);
+    });
+  }
+
+  // steer the visitor away from a greyed out channel, towards the first one that isn't
+  function steer_channel() {
+    if (!controls.channel) {
+      return;
+    }
+    const greyed = get_greyed();
+    if (greyed.indexOf(get_value("channel")) < 0) {
+      return;
+    }
+    const input = Array.from(controls.channel.querySelectorAll("input")).find(function (i) {
+      return greyed.indexOf(i.value) < 0;
+    });
+    if (input) {
+      input.checked = true;
+    }
+  }
+
   function update(save) {
+    update_greyed();
     const selection = {};
     Object.keys(controls).forEach(function (key) {
       selection[key] = get_value(key);
@@ -130,6 +168,9 @@
     document.querySelectorAll("[data-key]").forEach(function (el) {
       controls[el.dataset.key] = el;
       el.addEventListener("change", function () {
+        if (el.dataset.key !== "channel") {
+          steer_channel();
+        }
         update(true);
       });
     });
@@ -143,6 +184,9 @@
         set_value(key, params.get(key));
       }
     });
+    if (!params.has("channel")) {
+      steer_channel();
+    }
     update(false);
     if (!params.has("arch")) {
       guess_arch().then(function (arch) {

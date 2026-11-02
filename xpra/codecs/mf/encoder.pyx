@@ -5,6 +5,7 @@
 
 # ABOUTME: MediaFoundation video encoder for Windows (H.264, HEVC).
 # ABOUTME: Wraps the C mf_encode API to implement xpra's VideoEncoder protocol.
+# ABOUTME: Takes YUV420P, or BGRX converted to NV12 on the GPU - from D3D11 textures without a copy.
 
 #cython: wraparound=False
 
@@ -15,7 +16,7 @@ from collections.abc import Sequence
 from xpra.codecs.constants import (
     VideoSpec, EncodingNotSupported, get_profile, get_level, get_level_value, get_level_tuple, is_screen_content,
 )
-from xpra.util.env import envint
+from xpra.util.env import envint, envbool, first_time
 from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
@@ -52,6 +53,10 @@ cdef extern from "mf_encode.h":
         MF_CONTENT_SCREEN
         MF_CONTENT_VIDEO
 
+    ctypedef enum MFInputFormat:
+        MF_INPUT_YUV420P
+        MF_INPUT_BGRX
+
     ctypedef enum MFEncodeProfile:
         MF_ENC_PROFILE_CONSTRAINED_BASELINE
         MF_ENC_PROFILE_MAIN
@@ -86,8 +91,9 @@ cdef extern from "mf_encode.h":
 
     MFEncodeStatus mf_encode_startup()
     void           mf_encode_shutdown()
-    MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int height,
-                                     const MFEncoderTuning *tuning)
+    MFEncodeStatus mf_encode_set_device(void *d3d11_device)
+    MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int input_format,
+                                     int width, int height, const MFEncoderTuning *tuning)
     void           mf_encoder_destroy(MFEncoder *enc)
     MFEncodeStatus mf_encoder_set_tuning(MFEncoder *enc, const MFEncoderTuning *tuning)
     void           mf_encoder_get_tuning_info(MFEncoder *enc, MFTuningInfo *info)
@@ -98,6 +104,10 @@ cdef extern from "mf_encode.h":
                                       const uint8_t *v_data, int v_stride,
                                       int width, int height,
                                       MFEncodedFrame *frame) nogil
+    MFEncodeStatus mf_encoder_encode_texture(MFEncoder *enc, void *texture, int x, int y,
+                                             MFEncodedFrame *frame) nogil
+    MFEncodeStatus mf_encoder_encode_bgrx(MFEncoder *enc, const uint8_t *pixels, int stride,
+                                          MFEncodedFrame *frame) nogil
     MFEncodeStatus mf_encoder_flush(MFEncoder *enc, MFEncodedFrame *frame) nogil
     const char*    mf_encode_status_str(MFEncodeStatus status)
     long           mf_encoder_get_last_hr(MFEncoder *enc)
@@ -150,6 +160,31 @@ CODECS: dict[str, int] = {
     "h265": MF_CODEC_HEVC,
 }
 
+# the encodings which can also take "BGRX" input, converted to NV12 by the D3D11 video processor
+# on the device shared with the DXGI screen capture, so that its frames never leave the GPU.
+# The selftest probes these separately, so that a failure only disables this input format:
+BGRX_ENCODINGS: Sequence[str] = tuple(CODECS) if envbool("XPRA_MF_BGRX", True) else ()
+
+INPUT_FORMATS: dict[str, int] = {
+    "YUV420P": MF_INPUT_YUV420P,
+    "BGRX": MF_INPUT_BGRX,
+}
+
+
+def get_shared_device_ptr() -> int:
+    """
+    The D3D11 device shared with the DXGI screen capture, whatever its vendor:
+    the hardware MFTs of AMD, Intel and NVIDIA all take textures.
+    """
+    try:
+        from xpra.platform.win32.d3d11.device import get_shared_device
+        return get_shared_device().get_ptr()
+    except (ImportError, RuntimeError) as e:
+        log("get_shared_device()", exc_info=True)
+        if first_time("mf-shared-device"):
+            log.warn("Warning: cannot use the shared D3D11 device: %s", e)
+        return 0
+
 
 H264_PROFILE_IDS = {
     "baseline": MF_ENC_PROFILE_CONSTRAINED_BASELINE,
@@ -168,6 +203,13 @@ def get_h264_profile(options: typedict) -> str:
     if profile == "baseline":
         return "constrained-baseline"
     return profile
+
+
+# The `pic_order_cnt_type` of the Main / High profile streams of the MFT we get for each
+# encoding and input format, once we have seen one: MediaFoundation has no setting for it,
+# AMD's MFTs write 0 and NVIDIA's write 2. openh264 cannot decode type 0 at these profiles:
+# it holds the frames back until it runs out of buffers, see `Encoder.check_poc_type`.
+POC_TYPES: dict[tuple[str, str], int] = {}
 
 
 def get_encodings() -> Sequence[str]:
@@ -229,25 +271,43 @@ CONTENT_TYPE_NAMES: dict[int, str] = {
 }
 
 
+def get_spec(encoding: str, input_colorspace: str) -> VideoSpec:
+    min_w, min_h = get_min_size(encoding)
+    if input_colorspace == "BGRX":
+        # the colourspace conversion runs on the GPU, and it subsamples:
+        kwargs = {
+            "cpu_cost": 10,
+            "gpu_cost": 100,
+            "full_range": False,
+        }
+    else:
+        kwargs = {
+            "cpu_cost": 100,
+            "gpu_cost": 0,
+        }
+    return VideoSpec(
+        encoding=encoding,
+        input_colorspace=input_colorspace,
+        output_colorspaces=("YUV420P", ),
+        has_lossless_mode=False,
+        codec_class=Encoder,
+        codec_type=get_type(),
+        quality=40, speed=60,
+        size_efficiency=40,
+        setup_cost=50,
+        min_w=min_w, min_h=min_h,
+        width_mask=0xFFFE, height_mask=0xFFFE,
+        max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
+        **kwargs,
+    )
+
+
 def get_specs() -> Sequence[VideoSpec]:
     specs = []
     for encoding in CODECS:
-        min_w, min_h = get_min_size(encoding)
-        specs.append(VideoSpec(
-            encoding=encoding,
-            input_colorspace="YUV420P",
-            output_colorspaces=("YUV420P", ),
-            has_lossless_mode=False,
-            codec_class=Encoder,
-            codec_type=get_type(),
-            quality=40, speed=60,
-            size_efficiency=40,
-            setup_cost=50,
-            min_w=min_w, min_h=min_h,
-            width_mask=0xFFFE, height_mask=0xFFFE,
-            max_w=MAX_WIDTH, max_h=MAX_HEIGHT,
-            cpu_cost=100, gpu_cost=0,
-        ))
+        specs.append(get_spec(encoding, "YUV420P"))
+        if encoding in BGRX_ENCODINGS:
+            specs.append(get_spec(encoding, "BGRX"))
     return tuple(specs)
 
 
@@ -267,6 +327,9 @@ cdef class Encoder:
     cdef int content_type
     cdef object content_types
     cdef double last_reinit
+    cdef uintptr_t device       # the D3D11 device of a "BGRX" encoder
+    cdef bint poc_type_2        # the client can only decode `pic_order_cnt_type` 2 at Main and High
+    cdef int poc_type           # what our stream uses, -1 until it has been checked
 
     cdef object __weakref__
 
@@ -274,15 +337,22 @@ cdef class Encoder:
                      src_format: str, options: typedict) -> None:
         log("mf.encoder.init_context%s", (encoding, width, height, src_format, options))
         assert encoding in CODECS, "unsupported encoding: %s" % encoding
-        assert src_format == "YUV420P", "invalid source format: %s" % src_format
+        assert src_format in INPUT_FORMATS, "invalid source format: %s" % src_format
         self.encoding   = encoding
         self.profile    = get_h264_profile(options) if encoding == "h264" else "main"
-        self.level      = get_level(options, encoding=encoding, csc_mode=src_format)
+        self.poc_type_2 = encoding == "h264" and options.boolget("h264.poc-type-2", True)
+        self.poc_type   = -1
+        if self.needs_poc_check() and POC_TYPES.get((encoding, src_format)) == 0:
+            # we already know that this MFT's stream would have to be replaced:
+            log("using constrained-baseline instead of %r, for pic_order_cnt_type 2", self.profile)
+            self.profile = "constrained-baseline"
+        self.level      = get_level(options, encoding=encoding, csc_mode="YUV420P")
         self.src_format = src_format
         self.width      = width
         self.height     = height
         self.frames     = 0
-        self.full_range = options.boolget("full-range", True)
+        # the video processor converts "BGRX" to studio range:
+        self.full_range = src_format != "BGRX" and options.boolget("full-range", True)
         self.quality    = options.intget("quality", 50)
         self.speed      = options.intget("speed", 50)
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
@@ -306,7 +376,15 @@ cdef class Encoder:
         cdef MFEncoderTuning tuning
         self.fill_tuning(&tuning, self.quality, self.speed, self.bandwidth_limit)
         cdef int codec = CODECS[self.encoding]
-        cdef MFEncodeStatus status = mf_encoder_create(&self.context, codec,
+        cdef int input_format = INPUT_FORMATS[self.src_format]
+        cdef uintptr_t device = 0
+        if input_format == MF_INPUT_BGRX:
+            # the textures to encode live on this device, so the encoder has to run on it too:
+            device = get_shared_device_ptr()
+            if not device or mf_encode_set_device(<void *> device) != MF_ENC_OK:
+                raise EncodingNotSupported("no D3D11 device for MF %s encoding from %s" % (
+                    self.encoding, self.src_format))
+        cdef MFEncodeStatus status = mf_encoder_create(&self.context, codec, input_format,
                                                        self.width, self.height, &tuning)
         if status != MF_ENC_OK:
             if status == MF_ENC_NOT_AVAILABLE:
@@ -316,10 +394,44 @@ cdef class Encoder:
             raise RuntimeError("failed to create MF %s encoder (%dx%d): %s" % (
                 self.encoding, self.width, self.height,
                 mf_encode_status_str(status).decode("latin-1")))
+        self.device = device
         self.last_reinit = monotonic()
-        log("mf %s encoder created (%dx%d) content-type=%s quality=%i speed=%i",
-            self.encoding, self.width, self.height,
+        log("mf %s encoder created (%dx%d) from %s, content-type=%s quality=%i speed=%i",
+            self.encoding, self.width, self.height, self.src_format,
             CONTENT_TYPE_NAMES.get(self.content_type, ""), self.quality, self.speed)
+
+    def supports_gpu_input(self) -> bool:
+        """ can we encode `D3D11Texture` buffers directly, see `DXGIImageWrapper.freeze_on_gpu()` """
+        return self.context != NULL and self.device != 0
+
+    cdef bint needs_poc_check(self) noexcept:
+        # openh264 decodes Baseline whatever its `pic_order_cnt_type`:
+        return self.poc_type_2 and self.poc_type < 0 and self.profile != "constrained-baseline"
+
+    cdef bint check_poc_type(self, data) except -1:
+        """
+        Can the client decode this stream? Only its first keyframe needs checking:
+        the `pic_order_cnt_type` is in its SPS, and MediaFoundation has no setting for it.
+        Returns False if the encoder has to be replaced with a Baseline one.
+        """
+        if not data or not self.needs_poc_check():
+            return True
+        from xpra.codecs.h264_util import get_pic_order_cnt_type
+        poc_type = get_pic_order_cnt_type(data)
+        name = mf_encoder_get_name(self.context).decode("utf-8", "replace")
+        log("%r writes pic_order_cnt_type %i at %s", name, poc_type, self.profile)
+        if poc_type == 2:
+            self.poc_type = poc_type
+            POC_TYPES[(self.encoding, self.src_format)] = poc_type
+            return True
+        # 0, 1, or -1 if we cannot tell: Baseline is safe whatever it is
+        POC_TYPES[(self.encoding, self.src_format)] = 0
+        if first_time(f"mf-poc-type-{name}"):
+            log.info("the %r encoder does not use pic_order_cnt_type 2 at %s", name, self.profile)
+            log.info(" using constrained-baseline for openh264 clients")
+        self.profile = "constrained-baseline"
+        self.reinit_encoder()
+        return False
 
     cdef void reinit_encoder(self) except *:
         # close and reopen the MFT with the current tuning:
@@ -378,6 +490,7 @@ cdef class Encoder:
         if context:
             self.context = NULL
             mf_encoder_destroy(context)
+        self.device = 0
         self.frames = 0
         self.width  = 0
         self.height = 0
@@ -407,6 +520,9 @@ cdef class Encoder:
             # which of the MFTs `MFTEnumEx` offered we ended up with:
             info["mft"] = mf_encoder_get_name(self.context).decode("utf-8", "replace")
             info["hardware"] = bool(mf_encoder_is_hardware(self.context))
+            info["gpu-input"] = self.device != 0
+            if self.poc_type >= 0:
+                info["pic-order-cnt-type"] = self.poc_type
             info["tuning"] = self.get_tuning_info()
         return info
 
@@ -446,12 +562,18 @@ cdef class Encoder:
 
         cdef int width  = image.get_width()
         cdef int height = image.get_height()
-        assert width  == self.width,  "width mismatch: %d vs %d"  % (width,  self.width)
-        assert height == self.height, "height mismatch: %d vs %d" % (height, self.height)
+        if self.src_format == "BGRX":
+            # the video pipeline rounds the encoder size down, and sends the edges separately:
+            if width < self.width or height < self.height:
+                raise ValueError("image %dx%d is smaller than the encoder size %dx%d" % (
+                    width, height, self.width, self.height))
+        else:
+            assert width  == self.width,  "width mismatch: %d vs %d"  % (width,  self.width)
+            assert height == self.height, "height mismatch: %d vs %d" % (height, self.height)
 
         pf = image.get_pixel_format()
-        if pf != "YUV420P":
-            raise ValueError("expected YUV420P but got %s" % pf)
+        if pf.replace("A", "X") != self.src_format:
+            raise ValueError("expected %s but got %s" % (self.src_format, pf))
 
         content_types = options.strtupleget("content-types", ()) or self.content_types
         cdef int content_type = get_content_type(content_types)
@@ -476,7 +598,10 @@ cdef class Encoder:
                 self.bandwidth_limit = bandwidth_limit
                 self.reinit_encoder()
 
-        status = self._compress_yuv420p(image, width, height, &frame)
+        if self.src_format == "BGRX":
+            status = self._compress_bgrx(image, &frame)
+        else:
+            status = self._compress_yuv420p(image, width, height, &frame)
 
         if status == MF_ENC_NEED_MORE_INPUT:
             # a hardware MFT that has not finished with this frame yet:
@@ -495,10 +620,15 @@ cdef class Encoder:
             raise RuntimeError("mf encode error: %s (detail: %s, hr=0x%08X)" % (
                 mf_encode_status_str(status).decode("latin-1"), detail, last_hr))
 
-        cdef bint full_range = image.get_full_range()
+        data = bytes(frame.data[:frame.data_len])
+        if not self.check_poc_type(data):
+            # this is the first frame we send, so encode it again with the Baseline encoder:
+            return self.compress_image(image, options)
+
+        # the video processor converts "BGRX" to studio range:
+        cdef bint full_range = self.src_format != "BGRX" and image.get_full_range()
         cdef bint range_changed = full_range != self.full_range
         self.full_range = full_range
-        data = bytes(frame.data[:frame.data_len])
 
         log("mf encoded %8d bytes %dx%d keyframe=%s (input=%dus output=%dus)",
             frame.data_len, width, height, bool(frame.is_keyframe),
@@ -507,6 +637,8 @@ cdef class Encoder:
         client_options: dict[str, Any] = {
             "frame"     : int(self.frames),
         }
+        if self.src_format == "BGRX":
+            client_options["csc"] = "YUV420P"
         if range_changed or (self.frames == 0 and not full_range):
             client_options["full-range"] = bool(full_range)
         if frame.is_keyframe:
@@ -530,6 +662,10 @@ cdef class Encoder:
         if status != MF_ENC_OK:
             return b"", {}
         data = bytes(frame.data[:frame.data_len])
+        if not self.check_poc_type(data):
+            # we no longer have the frame to encode it again,
+            # the next one will be the first keyframe from the Baseline encoder:
+            return b"", {}
         client_options: dict[str, Any] = {
             "frame"     : int(self.frames),
         }
@@ -541,6 +677,49 @@ cdef class Encoder:
         log("mf flushed %8d bytes keyframe=%s delayed=%d",
             frame.data_len, bool(frame.is_keyframe), frame.delayed)
         return data, client_options
+
+    cdef MFEncodeStatus _compress_bgrx(self, image, MFEncodedFrame *frame):
+        """ from the texture the image is frozen in on the GPU, or else from its pixels """
+        cdef MFEncodeStatus status
+        cdef uintptr_t texture_ptr = 0
+        cdef int x = 0
+        cdef int y = 0
+        texture = image.get_gpu_buffer()
+        if texture is not None:
+            from xpra.platform.win32.d3d11.image import D3D11Texture
+            if (isinstance(texture, D3D11Texture) and texture.device == self.device
+                    and texture.width >= self.width and texture.height >= self.height):
+                texture_ptr = texture.texture
+                x = texture.x
+                y = texture.y
+            else:
+                log("cannot use GPU buffer %s", texture)
+        if texture_ptr:
+            with nogil:
+                status = mf_encoder_encode_texture(self.context, <void *> texture_ptr, x, y, frame)
+            return status
+
+        cdef Py_buffer py_buf
+        cdef const uint8_t *pixels_ptr
+        cdef int stride = image.get_rowstride()
+        if stride < self.width * 4:
+            raise ValueError("invalid stride %d for width %d" % (stride, self.width))
+        pixels = image.get_pixels()
+        if not pixels:
+            raise ValueError("failed to get pixels from %s" % image)
+        memset(&py_buf, 0, sizeof(Py_buffer))
+        if PyObject_GetBuffer(pixels, &py_buf, PyBUF_ANY_CONTIGUOUS):
+            raise ValueError("failed to read pixels from %s" % type(pixels))
+        try:
+            if py_buf.len < stride * (self.height - 1) + self.width * 4:
+                raise ValueError("pixel buffer is too small: %d bytes for %dx%d with stride %d" % (
+                    py_buf.len, self.width, self.height, stride))
+            pixels_ptr = <const uint8_t *> py_buf.buf
+            with nogil:
+                status = mf_encoder_encode_bgrx(self.context, pixels_ptr, stride, frame)
+        finally:
+            PyBuffer_Release(&py_buf)
+        return status
 
     cdef MFEncodeStatus _compress_yuv420p(self, image, int width, int height,
                                            MFEncodedFrame *frame):
@@ -585,10 +764,34 @@ cdef class Encoder:
         return status
 
 
+def probe_bgrx(encodings: Sequence[str], full: bool) -> Sequence[str]:
+    from xpra.codecs.checks import test_encoder_spec, DEFAULT_TEST_SIZE
+    W, H = DEFAULT_TEST_SIZE
+    working = []
+    for encoding in encodings:
+        try:
+            test_encoder_spec(get_spec(encoding, "BGRX"), encoding, "BGRX", "YUV420P", W, H, full, typedict())
+            working.append(encoding)
+        except EncodingNotSupported as e:
+            # ie: no hardware encoder on the adapter that owns the screen
+            log("BGRX input is not available for %s: %s", encoding, e)
+        except Exception as e:
+            log("BGRX input test failed for %s", encoding, exc_info=True)
+            log.warn("Warning: the MF %s encoder cannot use BGRX input:", encoding)
+            log.warn(" %s", e)
+    return tuple(working)
+
+
 def selftest(full=False) -> None:
     log("mf encoder selftest: %s", get_info())
     from xpra.codecs.checks import testencoder
     from xpra.codecs.mf import encoder
+    global CODECS, BGRX_ENCODINGS
+    bgrx = BGRX_ENCODINGS
+    # test the YUV420P input on its own first, so that a failure of the colourspace conversion
+    # on the GPU only disables the "BGRX" input, and not the whole encoding:
+    BGRX_ENCODINGS = ()
     working = testencoder(encoder, full, typedict())
-    global CODECS
     CODECS = dict((k, v) for k, v in CODECS.items() if k in working)
+    BGRX_ENCODINGS = probe_bgrx(tuple(encoding for encoding in bgrx if encoding in CODECS), full)
+    log("mf specs()=%s", get_specs())

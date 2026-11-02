@@ -54,6 +54,7 @@ In the Xpra Keyboard Shortcuts window, the `#` placeholder is named as "Prefix:"
 * When connecting over high latency links, use the `--no-keyboard-sync` option to prevent keys from repeating.
   This toggle is also accessible from the system tray menu. (this switch may cause other problems though)
 * US layout and most common layouts should work OK
+* MS Windows shadow servers type the character of each key using the layout of the window receiving it, so the client layout decides which character is typed. Characters this layout cannot type are injected as unicode, which some applications ignore (ie: games and virtual machines). Set `XPRA_WIN32_KEYS_BY_CHARACTER=0` on the server to map the keys by name instead, so that the MS Windows layout decides the character.
 * If starting xpra from an environment which has non-standard input methods, this can interfere, see [#286](https://github.com/Xpra-org/xpra/issues/286)
 * [Input methods](https://tedyin.com/posts/a-brief-intro-to-linux-input-method-framework/) don't work by default: [#634](https://github.com/Xpra-org/xpra/issues/634)
 * Supporting multiple layouts and switching layouts reliably and/or manually: [#230](https://github.com/Xpra-org/xpra/issues/230), [#166](https://github.com/Xpra-org/xpra/issues/166), [#86](https://github.com/Xpra-org/xpra/issues/86), [#1607](https://github.com/Xpra-org/xpra/issues/1607), [#1665](https://github.com/Xpra-org/xpra/issues/1665), [#1380](https://github.com/Xpra-org/xpra/issues/1380)

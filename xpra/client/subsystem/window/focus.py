@@ -38,6 +38,10 @@ class WindowFocus(StubClientSubsystem):
             packet.append(keyboard.get_current_modifiers())
         self.send(*packet)
 
+    @property
+    def focused_wid(self) -> int:
+        return self._focused or 0
+
     def has_focus(self, wid: int) -> bool:
         return bool(self._focused) and self._focused == wid
 
@@ -50,11 +54,9 @@ class WindowFocus(StubClientSubsystem):
                 self._focused = wid
             self.cancel_lost_focus_timer()
         else:
-            if self._window_with_grab:
-                self.client.window_ungrab()
-                if wwgrab := self._window_with_grab:
-                    self.do_force_ungrab(wwgrab)
-                self._window_with_grab = None
+            if wwgrab := self._window_with_grab:
+                self.window_ungrab()
+                self.do_force_ungrab(wwgrab)
             if wid and focused and focused != wid:
                 # if this window lost focus, it must have had it!
                 # (catch up - makes things like OR windows work:

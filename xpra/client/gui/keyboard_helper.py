@@ -210,7 +210,8 @@ class KeyboardHelper:
             log("key_handled_as_shortcut(%s,%s,%s,%s) has been handled: %s",
                 window, key_name, modifiers, depressed, method)
         except Exception:
-            log.error("Error: key_handled_as_shortcut(%s,%s,%s,%s)", window, key_name, modifiers, depressed)
+            log.error("Error: key handled as shortcut")
+            log.error(" for window %r, key %r with modifiers %r and pressed=%s", window, key_name, modifiers, depressed)
             log.error(" failed to execute shortcut=%s", shortcut)
             log.error("", exc_info=True)
         return True

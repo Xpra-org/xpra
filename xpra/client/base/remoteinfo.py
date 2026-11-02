@@ -86,6 +86,46 @@ class RemoteInfo(StubClientSubsystem):
         self._remote_server_log = ""
         self._remote_server_mode = ""
 
+    @property
+    def server_mode(self) -> str:
+        return self._remote_server_mode
+
+    @property
+    def hostname(self) -> str:
+        return self._remote_hostname
+
+    @property
+    def display_name(self) -> str:
+        return self._remote_display
+
+    @property
+    def platform(self) -> str:
+        return self._remote_platform
+
+    @property
+    def version(self):
+        return self._remote_version
+
+    @property
+    def branch(self) -> str:
+        return self._remote_branch
+
+    @property
+    def modifications(self) -> int:
+        return self._remote_modifications
+
+    @property
+    def build_date(self) -> str:
+        return self._remote_build_date
+
+    @property
+    def build_time(self) -> str:
+        return self._remote_build_time
+
+    @property
+    def lib_versions(self) -> dict:
+        return self._remote_lib_versions
+
     def get_caps(self) -> dict[str, Any]:
         caps = {}
         if FULL_INFO > 0:

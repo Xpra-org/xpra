@@ -121,6 +121,10 @@ def set_focused_state(window, focused: bool) -> None:
     window.update_wm_state("focused", focused)
 
 
+def is_readonly_source(ss) -> bool:
+    return bool(getattr(ss, "effective_readonly", lambda: getattr(ss, "readonly", False))())
+
+
 def is_window_hidden(ss, window) -> bool:
     """ is this window outside this client's area of the virtual display? (`sharing=combine`)
         (weak dependency on the `WindowsConnection` mixin) """
@@ -164,6 +168,25 @@ class SeamlessWindowServer(WindowServer):
         super().init(opts)
         self.wm_name = opts.wm_name
         self._exit_with_windows = opts.exit_with_windows
+
+    def setup(self) -> None:
+        super().setup()
+        self.server.connect("new-ui-driver", self._new_ui_driver)
+
+    def _new_ui_driver(self, _server, source) -> None:
+        """
+        If a window currently holds a grab, move it to the new ui driver:
+        the client which was driving the session must not be left with its local input grabbed.
+        """
+        if not self._has_grab:
+            return
+        grab_sources = self.grab_sources()
+        grablog("new ui driver %s, moving grab of %#x to %s", source, self._has_grab, grab_sources)
+        for ss in self.window_sources():
+            if ss not in grab_sources:
+                ss.window_ungrab(self._has_grab)
+        for ss in grab_sources:
+            ss.window_grab(self._has_grab)
 
     def cleanup(self) -> None:
         # there may not be any X11 display to talk to if the server failed to start:
@@ -626,8 +649,21 @@ class SeamlessWindowServer(WindowServer):
         if grab_id < 0 or self._has_grab == grab_id:
             return
         self._has_grab = grab_id
-        for ss in self.window_sources():
+        for ss in self.grab_sources():
             ss.window_grab(self._has_grab)
+
+    def grab_sources(self) -> tuple:
+        """
+        The clients that should grab their local pointer and keyboard when an X11 window grabs them:
+        the client driving the session - its input is almost always what triggered the grab.
+        If there is no ui driver, all the clients that are allowed to interact with the session.
+        """
+        sources = self.window_sources()
+        ui_driver = self.server.ui_driver
+        if ui_driver:
+            if driver := tuple(ss for ss in sources if ss.uuid == ui_driver):
+                return driver
+        return tuple(ss for ss in sources if not is_readonly_source(ss))
 
     def _window_ungrab(self, window, event) -> None:
         grab_id = self.get_wid(window)
@@ -636,6 +672,8 @@ class SeamlessWindowServer(WindowServer):
         if not self._has_grab:
             return
         self._has_grab = 0
+        # sending an ungrab to a client which does not hold the grab is harmless,
+        # and this ensures that no client is left holding a stale grab:
         for ss in self.window_sources():
             ss.window_ungrab(grab_id)
 

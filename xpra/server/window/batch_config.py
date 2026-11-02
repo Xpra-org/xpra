@@ -61,7 +61,7 @@ class DamageBatchConfig:
         "start_delay", "delay", "delay_per_megapixel",
         "saved", "locked",
         "last_event", "last_delays", "last_delay", "last_actual_delays", "last_actual_delay",
-        "last_updated", "factors",
+        "last_updated", "factors", "covered", "effective_min_delay",
     )
 
     def __init__(self):
@@ -87,6 +87,8 @@ class DamageBatchConfig:
         self.last_actual_delays: deque[tuple[float, int]] = deque(maxlen=64)
         self.last_actual_delay = None
         self.last_updated: int = 0
+        self.covered: bool | None = None
+        self.effective_min_delay: int | None = None
         # the metrics derived from statistics which we use for calculating the new batch delay:
         # (see batch delay calculator)
         self.factors: Sequence[tuple[str, dict, int, int]] = ()
@@ -95,8 +97,11 @@ class DamageBatchConfig:
         self.factors = ()
 
     def get_info(self) -> dict[str, Any]:
+        min_delay = self.delay if self.locked else self.effective_min_delay
         info: dict[str, Any] = {
             "min-delay": self.min_delay,
+            "effective-min-delay": "unknown" if min_delay is None else min_delay,
+            "coverage": "unknown" if self.covered is None else ("covered" if self.covered else "uncovered"),
             "max-delay": self.max_delay,
             "expire": self.expire_delay,
             "timeout-delay": self.timeout_delay,

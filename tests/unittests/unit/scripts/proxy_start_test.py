@@ -73,7 +73,7 @@ class TestStartServerSubprocess(unittest.TestCase):
 
 class TestStartOnExisting(unittest.TestCase):
 
-    def run_start(self, start=(), start_child=(), returncode=0, default_start=()):
+    def run_start(self, start=(), start_child=(), returncode=0, default_start=(), display_name=":100"):
         from subprocess import CompletedProcess
         from xpra.scripts import proxy
         opts = TestStartServerSubprocess.make_opts()
@@ -82,10 +82,15 @@ class TestStartOnExisting(unittest.TestCase):
         opts.start_child = list(start_child)
         defaults.start = list(default_start)
         defaults.start_child = []
-        result = CompletedProcess([], returncode, b"", b"new command started with pid=1\n")
+        output = b"new command started with pid=1\n" if not returncode else (
+            b"2026-10-28 00:57:53,082 server returned error code 127\n"
+            b"2026-10-28 00:57:53,082   failed to start new child command 'nosuchcommand'\n"
+        )
+        result = CompletedProcess([], returncode, b"", output)
         with patch("subprocess.run", return_value=result) as run, \
-                patch.object(proxy, "stderr_print"):
-            proxy.start_commands_on_existing("/usr/bin/xpra", ":100", opts, defaults)
+                patch.object(proxy, "stderr_print") as stderr_print:
+            self.failed = proxy.start_commands_on_existing("/usr/bin/xpra", display_name, opts, defaults)
+        self.stderr = [c.args[0] for c in stderr_print.call_args_list]
         return run
 
     def test_commands(self):
@@ -105,13 +110,25 @@ class TestStartOnExisting(unittest.TestCase):
         run = self.run_start(default_start=["ibus-daemon"])
         run.assert_not_called()
 
-    def test_failure_reported(self):
-        from xpra.config import InitExit
-        with self.assertRaises(InitExit) as cm:
-            self.run_start(start=["nosuchcommand", "xterm"], returncode=1)
-        # the exit code tells the client that something went wrong:
-        self.assertNotEqual(int(cm.exception.status), 0)
-        self.assertIn("failed to start 'nosuchcommand', 'xterm' on display :100", str(cm.exception))
+    def test_success_is_quiet(self):
+        self.run_start(start=["xterm"])
+        self.assertEqual(self.failed, [])
+        # our stderr is shown to the user, the control command's output is not needed there:
+        self.assertEqual(self.stderr, [])
+
+    def test_failure_is_a_warning(self):
+        # all the commands are tried, and the client still connects to the session:
+        run = self.run_start(start=["nosuchcommand", "xterm"], returncode=1)
+        self.assertEqual(run.call_count, 2)
+        self.assertEqual(self.failed, ["nosuchcommand", "xterm"])
+        warnings = [line for line in self.stderr if line.startswith("Warning:")]
+        self.assertEqual(len(warnings), 2)
+        self.assertTrue(warnings[0].startswith("Warning: failed to start 'nosuchcommand' on display :100"))
+        # with the colon, even when the display was given without it, ie: `wsl://Ubuntu/100`:
+        self.run_start(start=["nosuchcommand"], returncode=1, display_name="100")
+        self.assertTrue(self.stderr[0].startswith("Warning: failed to start 'nosuchcommand' on display :100:"))
+        # with the reason, indented and without the timestamps:
+        self.assertIn(" failed to start new child command 'nosuchcommand'", self.stderr)
 
 
 class TestProxyStartedClient(unittest.TestCase):

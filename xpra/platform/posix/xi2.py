@@ -6,7 +6,8 @@
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.platform.posix.gui import X11XI2Bindings, X11WindowBindings
+from xpra.platform.posix.gui import X11WindowBindings
+from xpra.x11.bindings.xi2 import X11XI2Bindings
 from xpra.util.env import envint
 from xpra.util.str_fn import csv
 from xpra.log import Logger
@@ -90,13 +91,12 @@ class XI2_Window:
 
     def do_xi_button(self, event, device) -> None:
         window = self.window
-        client = window._client
-        if client.readonly:
+        if window.is_readonly():
             return
         # the input device list is owned by the `window` subsystem,
         # the wheel capabilities by the `pointer` subsystem:
-        wp = client.get_subsystem("window")
-        pointer = client.get_subsystem("pointer")
+        wp = window.get_subsystem("window")
+        pointer = window.get_subsystem("pointer")
         server_input_devices = wp.server_input_devices if wp else ""
         xinputlog("do_xi_button(%s, %s) server_input_devices=%s", event, device, server_input_devices)
         if server_input_devices == "xi" or (
@@ -115,18 +115,21 @@ class XI2_Window:
 
     def do_xi_motion(self, event, device) -> None:
         window = self.window
+        # soft dependency on `CaptureWindow`:
+        capture_motion = getattr(window, "capture_motion", None)
+        if capture_motion and capture_motion(event):
+            return
         if window.moveresize_event:
             xinputlog("do_xi_motion(%s, %s) handling as a moveresize event on window %s", event, device, window)
             window.motion_moveresize(event.x_root, event.y_root, event.state)
             self._do_motion_notify_event(event)
             return
-        client = window._client
-        if client.readonly:
+        if window.is_readonly():
             return
         # the input device list is owned by the `window` subsystem,
         # the wheel state by the `pointer` subsystem:
-        wp = client.get_subsystem("window")
-        pointer_sub = client.get_subsystem("pointer")
+        wp = window.get_subsystem("window")
+        pointer_sub = window.get_subsystem("pointer")
         pointer_data, modifiers, buttons = window._pointer_modifiers(event)
         wid = self.window.get_mouse_event_wid(*pointer_data)
         valuators = event.valuators
@@ -174,11 +177,11 @@ class XI2_Window:
         props = self.get_pointer_extra_args(event)
         if unused_valuators:
             xinputlog("do_xi_motion(%s, %s) wid=%#x / focus=%s / window wid=%#x",
-                      event, device, wid, window._client._focused, window.wid)
+                      event, device, wid, wp.focused_wid if wp else 0, window.wid)
             xinputlog(" device=%s, pointer=%s, modifiers=%s, buttons=%s",
                       event.device, pointer_data, modifiers, buttons)
             device_id = 0
-            if pointer := client.get_subsystem("pointer"):
+            if pointer := window.get_subsystem("pointer"):
                 pointer.send_mouse_position(device_id, wid, pointer_data, modifiers, buttons, props)
         # now see if we have anything to send as a wheel event:
         if dx != 0 or dy != 0:

@@ -10,6 +10,7 @@ from xpra.util.objects import typedict
 from xpra.platform.win32.common import SendMessageW
 from xpra.platform.win32.gui import pointer_grab, pointer_ungrab
 from xpra.client.win32.system_menu import popup_menu
+from xpra.client.gui.shortcuts import ShortcutTarget as BaseShortcutTarget
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -35,33 +36,11 @@ def set_clipboard_text(hwnd: int, text: str) -> bool:
         CloseClipboard()
 
 
-class ShortcutTarget:
+class ShortcutTarget(BaseShortcutTarget):
     """
-    The keyboard shortcut actions are looked up on the window,
-    but the native windows don't implement them (unlike the GTK ones):
-    the actions are implemented here for the native windows,
-    and anything else is looked up on the window, then on the client,
-    ie: `show_menu`, `quit`, `show_shortcuts`
+    The native windows don't implement the key shortcut actions (unlike the GTK ones),
+    so they are implemented here.
     """
-
-    def __init__(self, client, window):
-        self.client = client
-        self.window = window
-
-    def __repr__(self):
-        return f"ShortcutTarget({self.window})"
-
-    def __getattr__(self, name: str):
-        for obj in (self.window, self.client):
-            if hasattr(obj, name):
-                return getattr(obj, name)
-        raise AttributeError(f"no shortcut action {name!r} for {self.window}")
-
-    def void(self, *_args) -> None:
-        """
-        This method can be used to capture key shortcuts
-        without triggering any specific action.
-        """
 
     def show_window_menu(self, *_args) -> None:
         # show the native system menu, which includes xpra's items, as `Alt`+`Space` would

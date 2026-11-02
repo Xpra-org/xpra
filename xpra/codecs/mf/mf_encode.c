@@ -3,7 +3,7 @@
  * Xpra is released under the terms of the GNU GPL v2, or, at your option, any
  * later version. See the file COPYING for details.
  * ABOUTME: MediaFoundation video encoder - C implementation.
- * ABOUTME: Encodes YUV420P CPU buffers to H.264 or HEVC via IMFTransform. */
+ * ABOUTME: Encodes YUV420P CPU buffers or BGRA D3D11 textures to H.264 or HEVC via IMFTransform. */
 
 #include "mf_encode.h"
 
@@ -58,6 +58,11 @@ MF_CODECAPI_GUID(AVEncH264CABACEnable,       STATIC_CODECAPI_AVEncH264CABACEnabl
 static const GUID MF_IID_ICodecAPI =
     {0x901db4c7, 0x31ce, 0x41a2, {0x85, 0xdc, 0x8f, 0xa0, 0xbf, 0x41, 0xb8, 0xda}};
 
+/* `MFT_ENUM_ADAPTER_LUID`, which the mingw headers do not have: the adapter a
+   hardware MFT runs on, set on the activation objects `MFTEnumEx` returns */
+static const GUID MF_MFT_ENUM_ADAPTER_LUID =
+    {0x1d39518c, 0xe220, 0x4da8, {0xa0, 0x7f, 0xba, 0x17, 0x25, 0x52, 0xd6, 0xb1}};
+
 /* xpra sends frames when something changes rather than on a clock, so this is
    not a real frame rate - it is just the time base the encoder's rate control
    and GOP length are expressed in. The input samples are timestamped to match. */
@@ -86,12 +91,23 @@ static const GUID MF_IID_ICodecAPI =
    can have one still queued when the next frame is encoded. */
 #define MF_MAX_QUEUED_FRAMES 8
 
+/* The NV12 textures a "BGRX" encoder converts its frames into. The MFT holds on
+   to each one for as long as it is encoding from it, which is normally a single
+   frame, so a few are enough: past this many, the oldest one is reused anyway. */
+#define MF_MAX_NV12_TEXTURES 8
+
 typedef struct {
     uint8_t *data;
     int      size;        /* allocated */
     int      len;         /* used */
     int      is_keyframe;
 } MFEncodedBuf;
+
+typedef struct {
+    ID3D11Texture2D                *texture;
+    ID3D11VideoProcessorOutputView *view;
+    ULONG                           idle_refs;  /* the texture's references while the MFT has none */
+} MFNV12Texture;
 
 struct MFEncoder {
     IMFActivate    *activate;     /* kept so the MFT can be shut down properly */
@@ -110,8 +126,20 @@ struct MFEncoder {
     int             wedged;       /* stopped answering: must not be taken apart */
     char            name[128];    /* MFT friendly name, for logging */
     int             codec;
+    int             input_format; /* MFInputFormat */
     int             width;
     int             height;
+    /* "BGRX" input: the D3D11 video processor converting it to NV12 */
+    ID3D11Device                   *device;
+    ID3D11DeviceContext            *context;
+    ID3D11VideoDevice              *video_device;
+    ID3D11VideoContext             *video_context;
+    ID3D11VideoProcessorEnumerator *vp_enum;
+    ID3D11VideoProcessor           *vp;
+    ID3D11Texture2D                *upload;    /* for pixels that are not on the GPU yet */
+    MFNV12Texture   nv12_textures[MF_MAX_NV12_TEXTURES];
+    int             nv12_count;
+    int             nv12_next;    /* the one to reuse when none is idle */
     MFEncoderTuning tuning;
     MFTuningInfo    applied;
     DWORD           mean_bitrate;
@@ -141,6 +169,15 @@ static ID3D11Device         *g_enc_d3d_device   = NULL;
 static IMFDXGIDeviceManager *g_enc_dxgi_manager = NULL;
 static UINT                  g_enc_dxgi_token   = 0;
 static int                   g_enc_d3d_failed   = 0;
+
+/* The device "BGRX" encoders run on, given to us by `mf_encode_set_device`: it
+   is the screen capture's, which is what lets its textures be encoded without
+   ever leaving the GPU. It gets its own device manager, so that the encoders
+   using the device above are not moved to another one under their feet. */
+static ID3D11Device         *g_shared_device    = NULL;
+static IMFDXGIDeviceManager *g_shared_manager   = NULL;
+static UINT                  g_shared_token     = 0;
+static LUID                  g_shared_luid      = {0, 0};
 
 /* Set once a hardware MFT has stopped answering: see `mf_encoder_destroy` for
    why one of those can never be trusted again, or taken apart. */
@@ -212,6 +249,7 @@ MFEncodeStatus mf_encode_startup(void) {
 }
 
 void mf_encode_shutdown(void) {
+    mf_encode_set_device(NULL);
     if (g_enc_dxgi_manager) {
         IMFDXGIDeviceManager_Release(g_enc_dxgi_manager);
         g_enc_dxgi_manager = NULL;
@@ -281,6 +319,69 @@ static IMFDXGIDeviceManager* get_dxgi_manager(void) {
     enc_log("mf encoder: D3D11 device created (feature level 0x%lX)", (unsigned long)feature_level);
     g_enc_d3d_failed = 0;
     return g_enc_dxgi_manager;
+}
+
+static HRESULT get_adapter_luid(ID3D11Device *device, LUID *luid) {
+    IDXGIDevice *dxgi_device = NULL;
+    IDXGIAdapter *adapter = NULL;
+    DXGI_ADAPTER_DESC desc;
+    HRESULT hr = ID3D11Device_QueryInterface(device, &IID_IDXGIDevice, (void **)&dxgi_device);
+    if (SUCCEEDED(hr)) {
+        hr = IDXGIDevice_GetAdapter(dxgi_device, &adapter);
+        IDXGIDevice_Release(dxgi_device);
+    }
+    if (SUCCEEDED(hr)) {
+        hr = IDXGIAdapter_GetDesc(adapter, &desc);
+        IDXGIAdapter_Release(adapter);
+    }
+    if (SUCCEEDED(hr))
+        *luid = desc.AdapterLuid;
+    return hr;
+}
+
+MFEncodeStatus mf_encode_set_device(void *d3d11_device) {
+    ID3D11Device *device = (ID3D11Device *)d3d11_device;
+    HRESULT hr;
+    LUID luid = {0, 0};
+
+    if (device == g_shared_device)
+        return MF_ENC_OK;
+    if (g_shared_manager) {
+        IMFDXGIDeviceManager_Release(g_shared_manager);
+        g_shared_manager = NULL;
+    }
+    if (g_shared_device) {
+        ID3D11Device_Release(g_shared_device);
+        g_shared_device = NULL;
+    }
+    if (!device)
+        return MF_ENC_OK;
+
+    hr = get_adapter_luid(device, &luid);
+    if (FAILED(hr)) {
+        enc_log("mf encoder: cannot find the adapter of device %p: 0x%08lX", d3d11_device, (unsigned long)hr);
+        return MF_ENC_ERROR;
+    }
+    /* a new manager rather than `ResetDevice` on the old one, which would move
+       the encoders still using it to a device their textures do not live on */
+    hr = MFCreateDXGIDeviceManager(&g_shared_token, &g_shared_manager);
+    if (SUCCEEDED(hr))
+        hr = IMFDXGIDeviceManager_ResetDevice(g_shared_manager, (IUnknown *)device, g_shared_token);
+    if (FAILED(hr)) {
+        enc_log("mf encoder: cannot create a device manager for device %p: 0x%08lX",
+                d3d11_device, (unsigned long)hr);
+        if (g_shared_manager) {
+            IMFDXGIDeviceManager_Release(g_shared_manager);
+            g_shared_manager = NULL;
+        }
+        return MF_ENC_ERROR;
+    }
+    ID3D11Device_AddRef(device);
+    g_shared_device = device;
+    g_shared_luid = luid;
+    enc_log("mf encoder: using device %p on adapter %08lX:%08lX", d3d11_device,
+            (unsigned long)luid.HighPart, (unsigned long)luid.LowPart);
+    return MF_ENC_OK;
 }
 
 /* ── codec helpers ───────────────────────────────────────────────── */
@@ -747,6 +848,238 @@ static HRESULT next_event(MFEncoder *enc, MediaEventType *met, int wait_ms) {
     }
 }
 
+/* ── D3D11 video processor ("BGRX" input) ────────────────────────── */
+
+/* Nothing here takes the device's multithread lock explicitly: every call takes
+   it on its own, and all the state that has to stay together between calls
+   belongs to this encoder's video processor, which only one thread uses. */
+
+static void release_video_processor(MFEncoder *enc) {
+    int i;
+    for (i = 0; i < enc->nv12_count; i++) {
+        MFNV12Texture *t = &enc->nv12_textures[i];
+        if (t->view)    ID3D11VideoProcessorOutputView_Release(t->view);
+        if (t->texture) ID3D11Texture2D_Release(t->texture);
+        memset(t, 0, sizeof(*t));
+    }
+    enc->nv12_count = 0;
+    enc->nv12_next  = 0;
+    if (enc->upload)        { ID3D11Texture2D_Release(enc->upload);                 enc->upload = NULL; }
+    if (enc->vp)            { ID3D11VideoProcessor_Release(enc->vp);                enc->vp = NULL; }
+    if (enc->vp_enum)       { ID3D11VideoProcessorEnumerator_Release(enc->vp_enum); enc->vp_enum = NULL; }
+    if (enc->video_context) { ID3D11VideoContext_Release(enc->video_context);       enc->video_context = NULL; }
+    if (enc->video_device)  { ID3D11VideoDevice_Release(enc->video_device);         enc->video_device = NULL; }
+    if (enc->context)       { ID3D11DeviceContext_Release(enc->context);            enc->context = NULL; }
+    if (enc->device)        { ID3D11Device_Release(enc->device);                    enc->device = NULL; }
+}
+
+static int vp_supports(MFEncoder *enc, DXGI_FORMAT format, UINT flag) {
+    UINT support = 0;
+    return SUCCEEDED(ID3D11VideoProcessorEnumerator_CheckVideoProcessorFormat(enc->vp_enum, format, &support))
+        && (support & flag);
+}
+
+/* BGRX to NV12 on the GPU, into textures the MFT can encode from directly */
+static MFEncodeStatus init_video_processor(MFEncoder *enc) {
+    D3D11_VIDEO_PROCESSOR_CONTENT_DESC desc;
+    D3D11_VIDEO_PROCESSOR_COLOR_SPACE in_cs, out_cs;
+    RECT rect = {0, 0, enc->width, enc->height};
+    HRESULT hr;
+
+    if (!g_shared_device) {
+        enc_log("mf_encoder_create: there is no device to encode textures from");
+        return MF_ENC_NOT_AVAILABLE;
+    }
+    enc->device = g_shared_device;
+    ID3D11Device_AddRef(enc->device);
+    ID3D11Device_GetImmediateContext(enc->device, &enc->context);
+    hr = ID3D11Device_QueryInterface(enc->device, &IID_ID3D11VideoDevice, (void **)&enc->video_device);
+    if (SUCCEEDED(hr))
+        hr = ID3D11DeviceContext_QueryInterface(enc->context, &IID_ID3D11VideoContext,
+                                                (void **)&enc->video_context);
+    if (FAILED(hr)) {
+        enc_log("mf_encoder_create: the device has no video support: 0x%08lX", (unsigned long)hr);
+        return MF_ENC_NOT_AVAILABLE;
+    }
+
+    memset(&desc, 0, sizeof(desc));
+    desc.InputFrameFormat           = D3D11_VIDEO_FRAME_FORMAT_PROGRESSIVE;
+    desc.InputFrameRate.Numerator   = MF_FPS;
+    desc.InputFrameRate.Denominator = 1;
+    desc.InputWidth                 = (UINT)enc->width;
+    desc.InputHeight                = (UINT)enc->height;
+    desc.OutputFrameRate            = desc.InputFrameRate;
+    desc.OutputWidth                = (UINT)enc->width;
+    desc.OutputHeight               = (UINT)enc->height;
+    desc.Usage                      = D3D11_VIDEO_USAGE_PLAYBACK_NORMAL;
+    hr = ID3D11VideoDevice_CreateVideoProcessorEnumerator(enc->video_device, &desc, &enc->vp_enum);
+    if (FAILED(hr)) {
+        enc_log("mf_encoder_create: CreateVideoProcessorEnumerator failed: 0x%08lX", (unsigned long)hr);
+        return MF_ENC_NOT_AVAILABLE;
+    }
+    if (!vp_supports(enc, DXGI_FORMAT_B8G8R8A8_UNORM, D3D11_VIDEO_PROCESSOR_FORMAT_SUPPORT_INPUT) ||
+        !vp_supports(enc, DXGI_FORMAT_NV12, D3D11_VIDEO_PROCESSOR_FORMAT_SUPPORT_OUTPUT)) {
+        enc_log("mf_encoder_create: the video processor cannot convert BGRA to NV12");
+        return MF_ENC_NOT_AVAILABLE;
+    }
+    hr = ID3D11VideoDevice_CreateVideoProcessor(enc->video_device, enc->vp_enum, 0, &enc->vp);
+    if (FAILED(hr)) {
+        enc_log("mf_encoder_create: CreateVideoProcessor failed: 0x%08lX", (unsigned long)hr);
+        return MF_ENC_NOT_AVAILABLE;
+    }
+
+    ID3D11VideoContext_VideoProcessorSetStreamFrameFormat(enc->video_context, enc->vp, 0,
+                                                          D3D11_VIDEO_FRAME_FORMAT_PROGRESSIVE);
+    /* a driver may "enhance" the picture on its own (denoising, edge enhancement),
+       which would blur the text that a desktop is mostly made of */
+    ID3D11VideoContext_VideoProcessorSetStreamAutoProcessingMode(enc->video_context, enc->vp, 0, FALSE);
+    /* BT.601 at studio range: what xpra's own colourspace conversions produce,
+       and so what the clients expect. This older API only names the matrix and
+       the range, where the newer `DXGI_COLOR_SPACE_TYPE` would also bring in the
+       BT.601 primaries - and with them a gamut conversion the CPU path never does */
+    memset(&in_cs, 0, sizeof(in_cs));
+    in_cs.RGB_Range = 0;                /* 0-255 */
+    memset(&out_cs, 0, sizeof(out_cs));
+    out_cs.YCbCr_Matrix  = 0;           /* BT.601 */
+    out_cs.Nominal_Range = D3D11_VIDEO_PROCESSOR_NOMINAL_RANGE_16_235;
+    ID3D11VideoContext_VideoProcessorSetStreamColorSpace(enc->video_context, enc->vp, 0, &in_cs);
+    ID3D11VideoContext_VideoProcessorSetOutputColorSpace(enc->video_context, enc->vp, &out_cs);
+    ID3D11VideoContext_VideoProcessorSetStreamDestRect(enc->video_context, enc->vp, 0, TRUE, &rect);
+    ID3D11VideoContext_VideoProcessorSetOutputTargetRect(enc->video_context, enc->vp, TRUE, &rect);
+    enc_log("mf_encoder_create: video processor ready for %dx%d BGRA to NV12", enc->width, enc->height);
+    return MF_ENC_OK;
+}
+
+/* a COM object's reference count, which is only ever used here to tell
+   whether the MFT has let go of one of our textures */
+static ULONG com_refs(IUnknown *obj) {
+    IUnknown_AddRef(obj);
+    return IUnknown_Release(obj);
+}
+
+/* An NV12 texture the MFT is not encoding from, or -1. The MFT keeps a texture
+   for as long as it needs it, which we can see from the references it holds -
+   an asynchronous MFT can still have one when we come back with the next frame. */
+static int get_nv12_texture(MFEncoder *enc) {
+    D3D11_TEXTURE2D_DESC desc;
+    D3D11_VIDEO_PROCESSOR_OUTPUT_VIEW_DESC view_desc;
+    MFNV12Texture *t;
+    HRESULT hr;
+    int i;
+
+    for (i = 0; i < enc->nv12_count; i++) {
+        t = &enc->nv12_textures[i];
+        if (com_refs((IUnknown *)t->texture) <= t->idle_refs)
+            return i;
+    }
+    if (enc->nv12_count >= MF_MAX_NV12_TEXTURES) {
+        /* an MFT that keeps its references for longer than it encodes (ie: one
+           that caches what it knows about each texture) has long finished with
+           the one we gave it this many frames ago */
+        i = enc->nv12_next;
+        enc->nv12_next = (i + 1) % MF_MAX_NV12_TEXTURES;
+        return i;
+    }
+
+    t = &enc->nv12_textures[enc->nv12_count];
+    memset(&desc, 0, sizeof(desc));
+    desc.Width            = (UINT)enc->width;
+    desc.Height           = (UINT)enc->height;
+    desc.MipLevels        = 1;
+    desc.ArraySize        = 1;
+    desc.Format           = DXGI_FORMAT_NV12;
+    desc.SampleDesc.Count = 1;
+    desc.Usage            = D3D11_USAGE_DEFAULT;
+    /* render target for the video processor, video encoder for the MFT -
+       which some drivers want to be told about, and older ones do not know */
+    desc.BindFlags        = D3D11_BIND_RENDER_TARGET | D3D11_BIND_VIDEO_ENCODER;
+    hr = ID3D11Device_CreateTexture2D(enc->device, &desc, NULL, &t->texture);
+    if (FAILED(hr)) {
+        desc.BindFlags = D3D11_BIND_RENDER_TARGET;
+        hr = ID3D11Device_CreateTexture2D(enc->device, &desc, NULL, &t->texture);
+    }
+    if (FAILED(hr)) {
+        t->texture = NULL;
+        set_enc_error(enc, hr, "CreateTexture2D(NV12)");
+        return -1;
+    }
+    memset(&view_desc, 0, sizeof(view_desc));
+    view_desc.ViewDimension      = D3D11_VPOV_DIMENSION_TEXTURE2D;
+    view_desc.Texture2D.MipSlice = 0;
+    hr = ID3D11VideoDevice_CreateVideoProcessorOutputView(enc->video_device, (ID3D11Resource *)t->texture,
+                                                          enc->vp_enum, &view_desc, &t->view);
+    if (FAILED(hr)) {
+        ID3D11Texture2D_Release(t->texture);
+        memset(t, 0, sizeof(*t));
+        set_enc_error(enc, hr, "CreateVideoProcessorOutputView");
+        return -1;
+    }
+    t->idle_refs = com_refs((IUnknown *)t->texture);
+    enc_log("mf encode: NV12 texture %d created (bind flags 0x%X, %lu references)",
+            enc->nv12_count, desc.BindFlags, (unsigned long)t->idle_refs);
+    return enc->nv12_count++;
+}
+
+/* convert the encoder sized region at (x, y) of a BGRA texture into an NV12 one */
+static int convert_texture(MFEncoder *enc, ID3D11Texture2D *texture, int x, int y) {
+    D3D11_VIDEO_PROCESSOR_INPUT_VIEW_DESC view_desc;
+    ID3D11VideoProcessorInputView *input = NULL;
+    D3D11_VIDEO_PROCESSOR_STREAM stream;
+    RECT rect = {x, y, x + enc->width, y + enc->height};
+    HRESULT hr;
+    int slot = get_nv12_texture(enc);
+
+    if (slot < 0)
+        return -1;
+    memset(&view_desc, 0, sizeof(view_desc));
+    view_desc.ViewDimension = D3D11_VPIV_DIMENSION_TEXTURE2D;
+    hr = ID3D11VideoDevice_CreateVideoProcessorInputView(enc->video_device, (ID3D11Resource *)texture,
+                                                         enc->vp_enum, &view_desc, &input);
+    if (FAILED(hr)) {
+        set_enc_error(enc, hr, "CreateVideoProcessorInputView");
+        return -1;
+    }
+    ID3D11VideoContext_VideoProcessorSetStreamSourceRect(enc->video_context, enc->vp, 0, TRUE, &rect);
+    memset(&stream, 0, sizeof(stream));
+    stream.Enable        = TRUE;
+    stream.pInputSurface = input;
+    hr = ID3D11VideoContext_VideoProcessorBlt(enc->video_context, enc->vp,
+                                              enc->nv12_textures[slot].view, 0, 1, &stream);
+    ID3D11VideoProcessorInputView_Release(input);
+    if (FAILED(hr)) {
+        set_enc_error(enc, hr, "VideoProcessorBlt");
+        return -1;
+    }
+    /* start converting now, rather than whenever the MFT first touches the texture */
+    ID3D11DeviceContext_Flush(enc->context);
+    return slot;
+}
+
+static MFEncodeStatus make_texture_sample(MFEncoder *enc, ID3D11Texture2D *texture, IMFSample **out) {
+    IMFMediaBuffer *buf    = NULL;
+    IMF2DBuffer    *buf2d  = NULL;
+    IMFSample      *sample = NULL;
+    DWORD           length = 0;
+    HRESULT hr = MFCreateDXGISurfaceBuffer(&IID_ID3D11Texture2D, (IUnknown *)texture, 0, FALSE, &buf);
+    if (FAILED(hr))
+        return set_enc_error(enc, hr, "MFCreateDXGISurfaceBuffer");
+    /* a texture has no length until it is given one, and some MFTs check it */
+    if (SUCCEEDED(IMFMediaBuffer_QueryInterface(buf, &IID_IMF2DBuffer, (void **)&buf2d))) {
+        if (SUCCEEDED(IMF2DBuffer_GetContiguousLength(buf2d, &length)))
+            IMFMediaBuffer_SetCurrentLength(buf, length);
+        IMF2DBuffer_Release(buf2d);
+    }
+    hr = MFCreateSample(&sample);
+    if (FAILED(hr)) {
+        IMFMediaBuffer_Release(buf);
+        return set_enc_error(enc, hr, "MFCreateSample(input)");
+    }
+    IMFSample_AddBuffer(sample, buf);
+    IMFMediaBuffer_Release(buf);
+    *out = sample;
+    return MF_ENC_OK;
+}
+
 /* ── encoder creation ────────────────────────────────────────────── */
 
 /* release everything that belongs to one MFT, so the next candidate starts clean */
@@ -830,6 +1163,24 @@ static MFEncodeStatus activate_mft(MFEncoder *enc, IMFActivate *activate, const 
         return MF_ENC_NOT_AVAILABLE;
     }
 
+    /* "BGRX" frames are textures, which only a hardware MFT on the adapter they
+       live on can encode from - on a machine with two GPUs, there is one of each */
+    if (enc->input_format == MF_INPUT_BGRX) {
+        LUID luid;
+        if (!enc->is_hw) {
+            enc_log("mf_encoder_create: skipping '%s', textures need a hardware MFT", enc->name);
+            return MF_ENC_NOT_AVAILABLE;
+        }
+        /* only missing before Windows 10, where there is only ever the one adapter to choose */
+        if (SUCCEEDED(IMFActivate_GetBlob(activate, &MF_MFT_ENUM_ADAPTER_LUID,
+                                          (UINT8 *)&luid, sizeof(luid), NULL)) &&
+            (luid.LowPart != g_shared_luid.LowPart || luid.HighPart != g_shared_luid.HighPart)) {
+            enc_log("mf_encoder_create: skipping '%s', it is on adapter %08lX:%08lX",
+                    enc->name, (unsigned long)luid.HighPart, (unsigned long)luid.LowPart);
+            return MF_ENC_NOT_AVAILABLE;
+        }
+    }
+
     hr = IMFActivate_ActivateObject(activate, &IID_IMFTransform, (void **)&enc->transform);
     if (FAILED(hr)) {
         enc_log("mf_encoder_create: ActivateObject(%s) failed: 0x%08lX",
@@ -860,8 +1211,9 @@ static MFEncodeStatus activate_mft(MFEncoder *enc, IMFActivate *activate, const 
     enc_log("mf_encoder_create: async=%d d3d11_aware=%u", enc->is_async, d3d_aware);
 
     /* the device manager has to be handed over before the media types are set */
+    hr = E_NOTIMPL;
     if (d3d_aware) {
-        IMFDXGIDeviceManager *manager = get_dxgi_manager();
+        IMFDXGIDeviceManager *manager = enc->input_format == MF_INPUT_BGRX ? g_shared_manager : get_dxgi_manager();
         if (manager) {
             hr = IMFTransform_ProcessMessage(enc->transform, MFT_MESSAGE_SET_D3D_MANAGER,
                                              (ULONG_PTR)manager);
@@ -869,6 +1221,11 @@ static MFEncodeStatus activate_mft(MFEncoder *enc, IMFActivate *activate, const 
                memory buffers either way, just without its own device */
             enc_log("mf_encoder_create: SET_D3D_MANAGER: 0x%08lX", (unsigned long)hr);
         }
+    }
+    if (enc->input_format == MF_INPUT_BGRX && FAILED(hr)) {
+        /* but textures are no use to one that does not have our device */
+        enc_log("mf_encoder_create: '%s' cannot use our device (d3d11-aware=%u)", enc->name, d3d_aware);
+        return MF_ENC_NOT_AVAILABLE;
     }
 
     /* the tuning knobs live behind ICodecAPI, which not every MFT exposes */
@@ -1020,8 +1377,8 @@ static MFEncodeStatus activate_mft(MFEncoder *enc, IMFActivate *activate, const 
     return MF_ENC_OK;
 }
 
-MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int height,
-                                 const MFEncoderTuning *tuning) {
+MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int input_format,
+                                 int width, int height, const MFEncoderTuning *tuning) {
     HRESULT hr;
     MFEncoder *enc;
     IMFActivate **activates = NULL;
@@ -1042,6 +1399,7 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
         return MF_ENC_ERROR;
 
     enc->codec  = codec;
+    enc->input_format = input_format;
     enc->width  = width;
     enc->height = height;
     if (tuning) {
@@ -1059,6 +1417,17 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
             content_type_str(enc->tuning.content_type), enc->tuning.quality, enc->tuning.speed,
             (unsigned long)enc->mean_bitrate, (unsigned long)enc->max_bitrate);
 
+    if (input_format == MF_INPUT_BGRX) {
+        status = init_video_processor(enc);
+        if (status != MF_ENC_OK) {
+            mf_encoder_destroy(enc);
+            return status;
+        }
+    } else if (input_format != MF_INPUT_YUV420P) {
+        free(enc);
+        return MF_ENC_NOT_AVAILABLE;
+    }
+
     /* enumerate encoders that produce the requested compressed format */
     output_info.guidMajorType = MFMediaType_Video;
     output_info.guidSubtype   = *out_subtype;
@@ -1073,7 +1442,7 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
 
     if (FAILED(hr) || num_activates == 0) {
         if (activates) CoTaskMemFree(activates);
-        free(enc);
+        mf_encoder_destroy(enc);
         return MF_ENC_NOT_AVAILABLE;
     }
 
@@ -1101,13 +1470,16 @@ MFEncodeStatus mf_encoder_create(MFEncoder **out, int codec, int width, int heig
 
     /* allocate the NV12 scratch buffer at the pitch `activate_mft` negotiated with
        the MFT - do not recompute it here, or a width that is not a multiple of 16
-       gets staged at a pitch the MFT does not read it back at */
-    enc->nv12_buf_size = enc->nv12_stride * height * 3 / 2;
-    enc->nv12_buf      = (uint8_t *)malloc((size_t)enc->nv12_buf_size);
-    if (!enc->nv12_buf) {
-        enc_log("mf_encoder_create: malloc nv12_buf failed");
-        mf_encoder_destroy(enc);
-        return MF_ENC_ERROR;
+       gets staged at a pitch the MFT does not read it back at.
+       "BGRX" frames are converted into textures instead. */
+    if (input_format == MF_INPUT_YUV420P) {
+        enc->nv12_buf_size = enc->nv12_stride * height * 3 / 2;
+        enc->nv12_buf      = (uint8_t *)malloc((size_t)enc->nv12_buf_size);
+        if (!enc->nv12_buf) {
+            enc_log("mf_encoder_create: malloc nv12_buf failed");
+            mf_encoder_destroy(enc);
+            return MF_ENC_ERROR;
+        }
     }
 
     enc_log("mf_encoder_create: encoder ready: '%s' (%dx%d nv12_stride=%d provides_samples=%d async=%d)",
@@ -1195,26 +1567,63 @@ static MFEncodeStatus encode_async(MFEncoder *enc, IMFSample *in_sample) {
     }
 }
 
-/* ── shared inner encode — NV12 buffer already in enc->nv12_buf ──── */
+/* ── shared inner encode ─────────────────────────────────────────── */
 
+/* Once it has given up, say so on every frame rather than quietly handing
+   back nothing: an error is what makes the caller drop this encoder and
+   pick another one, where empty frames would just stop the window
+   updating. Restarting the stream can make a wedged MFT accept input
+   again, but it never produces another frame. */
+static MFEncodeStatus check_wedged(MFEncoder *enc) {
+    if (!enc->wedged)
+        return MF_ENC_OK;
+    enc->last_hr = E_FAIL;
+    snprintf(enc->last_error, sizeof(enc->last_error),
+             "the '%s' MFT has stopped encoding", enc->name);
+    return MF_ENC_ERROR;
+}
+
+static MFEncodeStatus wrong_input(MFEncoder *enc, int input_format) {
+    enc->last_hr = E_INVALIDARG;
+    snprintf(enc->last_error, sizeof(enc->last_error), "this encoder takes %s input",
+             input_format == MF_INPUT_BGRX ? "YUV420P" : "BGRX");
+    return MF_ENC_ERROR;
+}
+
+/* hand one frame to the MFT, and take the encoded one if it is ready -
+   `t0` is when we started preparing the frame */
+static MFEncodeStatus encode_sample(MFEncoder *enc, IMFSample *in_sample, long long t0,
+                                    MFEncodedFrame *frame) {
+    long long t1, t2;
+    MFEncodeStatus st;
+
+    /* timestamps on the same time base as the media types, in 100-ns units */
+    IMFSample_SetSampleTime(in_sample,     enc->frame_count * MF_FRAME_DURATION);
+    IMFSample_SetSampleDuration(in_sample, MF_FRAME_DURATION);
+
+    t1 = enc_usec_now();
+    st = enc->is_async ? encode_async(enc, in_sample) : encode_sync(enc, in_sample);
+    IMFSample_Release(in_sample);
+    if (st == MF_ENC_ERROR)
+        return st;
+
+    st = queue_pop(enc, frame);
+    t2 = enc_usec_now();
+    frame->us_input  = (int)(t1 - t0);
+    frame->us_output = (int)(t2 - t1);
+    return st;
+}
+
+/* NV12 buffer already in enc->nv12_buf */
 static MFEncodeStatus do_encode_nv12(MFEncoder *enc, MFEncodedFrame *frame) {
     HRESULT hr;
     IMFSample      *in_sample = NULL;
     IMFMediaBuffer *in_mbuf   = NULL;
     BYTE           *buf_ptr   = NULL;
-    long long       t0, t1, t2;
+    long long       t0;
 
-    /* Once it has given up, say so on every frame rather than quietly handing
-       back nothing: an error is what makes the caller drop this encoder and
-       pick another one, where empty frames would just stop the window
-       updating. Restarting the stream can make a wedged MFT accept input
-       again, but it never produces another frame. */
-    if (enc->wedged) {
-        enc->last_hr = E_FAIL;
-        snprintf(enc->last_error, sizeof(enc->last_error),
-                 "the '%s' MFT has stopped encoding", enc->name);
+    if (check_wedged(enc) != MF_ENC_OK)
         return MF_ENC_ERROR;
-    }
 
     /* wrap the pre-converted NV12 scratch buffer in an MF sample */
     t0 = enc_usec_now();
@@ -1231,22 +1640,22 @@ static MFEncodeStatus do_encode_nv12(MFEncoder *enc, MFEncodedFrame *frame) {
     if (FAILED(hr)) { IMFMediaBuffer_Release(in_mbuf); return set_enc_error(enc, hr, "MFCreateSample(input)"); }
     IMFSample_AddBuffer(in_sample, in_mbuf);
     IMFMediaBuffer_Release(in_mbuf);
+    return encode_sample(enc, in_sample, t0, frame);
+}
 
-    /* timestamps on the same time base as the media types, in 100-ns units */
-    IMFSample_SetSampleTime(in_sample,     enc->frame_count * MF_FRAME_DURATION);
-    IMFSample_SetSampleDuration(in_sample, MF_FRAME_DURATION);
+static MFEncodeStatus do_encode_texture(MFEncoder *enc, ID3D11Texture2D *texture, int x, int y,
+                                        long long t0, MFEncodedFrame *frame) {
+    IMFSample *in_sample = NULL;
+    int slot;
 
-    t1 = enc_usec_now();
-    MFEncodeStatus st = enc->is_async ? encode_async(enc, in_sample) : encode_sync(enc, in_sample);
-    IMFSample_Release(in_sample);
-    if (st == MF_ENC_ERROR)
-        return st;
-
-    st = queue_pop(enc, frame);
-    t2 = enc_usec_now();
-    frame->us_input  = (int)(t1 - t0);
-    frame->us_output = (int)(t2 - t1);
-    return st;
+    if (check_wedged(enc) != MF_ENC_OK)
+        return MF_ENC_ERROR;
+    slot = convert_texture(enc, texture, x, y);
+    if (slot < 0)
+        return MF_ENC_ERROR;
+    if (make_texture_sample(enc, enc->nv12_textures[slot].texture, &in_sample) != MF_ENC_OK)
+        return MF_ENC_ERROR;
+    return encode_sample(enc, in_sample, t0, frame);
 }
 
 /* ── flush ───────────────────────────────────────────────────────── */
@@ -1389,10 +1798,53 @@ MFEncodeStatus mf_encoder_encode(MFEncoder *enc,
                                   int width, int height,
                                   MFEncodedFrame *frame) {
     memset(frame, 0, sizeof(*frame));
+    if (enc->input_format != MF_INPUT_YUV420P)
+        return wrong_input(enc, MF_INPUT_YUV420P);
     yuv420p_to_nv12(enc->nv12_buf, enc->nv12_stride,
                     y_data, y_stride, u_data, u_stride, v_data, v_stride,
                     width, height);
     return do_encode_nv12(enc, frame);
+}
+
+MFEncodeStatus mf_encoder_encode_texture(MFEncoder *enc, void *texture, int x, int y,
+                                         MFEncodedFrame *frame) {
+    memset(frame, 0, sizeof(*frame));
+    if (enc->input_format != MF_INPUT_BGRX || !texture)
+        return wrong_input(enc, MF_INPUT_BGRX);
+    return do_encode_texture(enc, (ID3D11Texture2D *)texture, x, y, enc_usec_now(), frame);
+}
+
+MFEncodeStatus mf_encoder_encode_bgrx(MFEncoder *enc, const uint8_t *pixels, int stride,
+                                      MFEncodedFrame *frame) {
+    D3D11_BOX box = {0, 0, 0, (UINT)enc->width, (UINT)enc->height, 1};
+    long long t0 = enc_usec_now();
+    HRESULT hr;
+
+    memset(frame, 0, sizeof(*frame));
+    if (enc->input_format != MF_INPUT_BGRX || !pixels)
+        return wrong_input(enc, MF_INPUT_BGRX);
+    if (!enc->upload) {
+        D3D11_TEXTURE2D_DESC desc;
+        memset(&desc, 0, sizeof(desc));
+        desc.Width            = (UINT)enc->width;
+        desc.Height           = (UINT)enc->height;
+        desc.MipLevels        = 1;
+        desc.ArraySize        = 1;
+        desc.Format           = DXGI_FORMAT_B8G8R8A8_UNORM;
+        desc.SampleDesc.Count = 1;
+        desc.Usage            = D3D11_USAGE_DEFAULT;
+        /* the same as the screen capture's textures, which the video processor takes */
+        desc.BindFlags        = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_RENDER_TARGET;
+        hr = ID3D11Device_CreateTexture2D(enc->device, &desc, NULL, &enc->upload);
+        if (FAILED(hr)) {
+            enc->upload = NULL;
+            return set_enc_error(enc, hr, "CreateTexture2D(BGRA)");
+        }
+    }
+    /* the pixels are copied before this returns, so the texture can be reused straight away */
+    ID3D11DeviceContext_UpdateSubresource(enc->context, (ID3D11Resource *)enc->upload, 0, &box,
+                                          pixels, (UINT)stride, 0);
+    return do_encode_texture(enc, enc->upload, 0, 0, t0, frame);
 }
 
 /* ── destroy ─────────────────────────────────────────────────────── */
@@ -1413,6 +1865,8 @@ void mf_encoder_destroy(MFEncoder *enc) {
            is paid at most once. */
         enc_log("mf_encoder_destroy: leaving the wedged MFT '%s' allocated on purpose",
                 enc->name);
+        /* only our own references: the MFT keeps whatever it holds */
+        release_video_processor(enc);
         free(enc->nv12_buf);
         for (i = 0; i < MF_MAX_QUEUED_FRAMES; i++)
             free(enc->queue[i].data);
@@ -1437,6 +1891,7 @@ void mf_encoder_destroy(MFEncoder *enc) {
         }
     }
     release_mft(enc);
+    release_video_processor(enc);
     free(enc->nv12_buf);
     for (i = 0; i < MF_MAX_QUEUED_FRAMES; i++)
         free(enc->queue[i].data);

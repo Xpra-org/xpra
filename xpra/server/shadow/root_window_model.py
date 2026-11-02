@@ -3,13 +3,15 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import sys
 import socket
 from typing import Any
 from collections import namedtuple
 from collections.abc import Sequence
 
-from xpra.util.system import get_linux_distribution, get_generic_os_name
+from xpra.util.system import get_linux_distribution, get_generic_os_name, get_platform_icon_name
 from xpra.util.io import load_binary_file
+from xpra.util.objects import ScreenshotData
 from xpra.platform.paths import get_icon_filename
 from xpra.log import Logger
 
@@ -21,7 +23,7 @@ def get_os_icons() -> Sequence[tuple[int, int, str, bytes]]:
         from PIL import Image  # pylint: disable=import-outside-toplevel
     except ImportError:
         return ()
-    filename = (get_generic_os_name() or "").lower() + ".png"
+    filename = (get_platform_icon_name(sys.platform) or get_generic_os_name().lower()) + ".png"
     icon_name = get_icon_filename(filename)
     if not icon_name:
         log(f"get_os_icons() no icon matching {filename!r}")
@@ -72,8 +74,33 @@ class CaptureWindowModel:
             info["capture"] = c.get_info()
         return info
 
-    def take_screenshot(self):
-        return self.capture.take_screenshot()
+    def take_screenshot(self) -> ScreenshotData | None:
+        if take_screenshot := getattr(self.capture, "take_screenshot", None):
+            return take_screenshot()
+        return self.encode_screenshot()
+
+    def encode_screenshot(self) -> ScreenshotData | None:
+        """
+        For captures without a `take_screenshot()` of their own (DXGI, NvFBC):
+        encode the area of this model as a PNG.
+        """
+        w, h = self.geometry[2:4]
+        image = self.get_image(0, 0, w, h)
+        if not image:
+            return None
+        try:
+            # downloads the pixels of images that live on the GPU:
+            image.get_pixels()
+            width = image.get_width()
+            stride = width * image.get_bytesperpixel()
+            # Pillow expects rows without any padding:
+            if image.get_rowstride() != stride:
+                image.restride(stride)
+            from xpra.codecs.image import to_pil_encoding
+            data = to_pil_encoding(image, "png")
+            return width, image.get_height(), "png", 0, data
+        finally:
+            image.free()
 
     def get_image(self, x: int, y: int, width: int, height: int):
         ox, oy = self.geometry[:2]

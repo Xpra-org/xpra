@@ -3,7 +3,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any
 from types import FrameType
 
 from xpra.exit_codes import ExitValue
@@ -11,7 +10,6 @@ from xpra.util.glib import install_signal_handlers
 from xpra.util.objects import typedict
 from xpra.client.base.replay import Replay, WindowModel
 from xpra.client.gui.fake_client import FakePointerSubsystem, FakeWindowSubsystem
-from xpra.common import noop
 from xpra.log import Logger
 
 log = Logger("client")
@@ -30,14 +28,12 @@ class GtkReplay(Replay):
         self.encoding_defaults = {}
         self.readonly = True
         self.title = "replay: @title@"
-        self.find_window = noop
-        self.request_frame_extents = noop
-        self._current_screen_sizes = ()
+        self.screen_sizes = ()
         self.subsystems = {
             "display": self,
             "encoding": self,
             "pointer": FakePointerSubsystem(),
-            "window": FakeWindowSubsystem(),
+            "window": FakeWindowSubsystem(self),
         }
         self.sp = self.sx = self.sy = self.srect = self.no_scaling
         self.cx = self.cy = self.no_scaling
@@ -81,10 +77,6 @@ class GtkReplay(Replay):
                 log("failed to load default cursor from %r: %s", filename, e)
         return ()
 
-    @staticmethod
-    def get_window_frame_sizes(*_args) -> dict[str, Any]:
-        return {}
-
     def make_client_window(self, wid: int, geometry: tuple[int, int, int, int], metadata: typedict):
         if wid == 0:
             return WindowModel(wid)
@@ -123,10 +115,6 @@ class GtkReplay(Replay):
     def get_root_size() -> tuple[int, int]:
         from xpra.gtk.util import get_root_size
         return get_root_size()
-
-    @staticmethod
-    def get_frame_extents(*_args) -> dict[str, Any]:
-        return {}
 
     def client_toolkit(self) -> str:
         return "gtk replay"

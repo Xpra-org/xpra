@@ -139,7 +139,9 @@ Description: tool to detach/reattach running X programs,
 
 Package: xpra-common
 Conflicts: python2-xpra, python3-xpra, xpra (<< 5)
-Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< ${binary:Version})
+Breaks: python2-xpra (<< 5), python3-xpra (<< 5), xpra (<< ${binary:Version}), xpra-server (<< ${binary:Version})
+# share/xpra/css moved from xpra-server:
+Replaces: xpra-server (<< ${binary:Version})
 Architecture: any
 Depends: ${misc:Depends}, ${python3:Depends}, ${shlibs:Depends}
         ,python3-gi

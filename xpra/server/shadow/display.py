@@ -40,11 +40,15 @@ class ShadowDisplayMixin:
             self.server.set_refresh_delay(1000 // rrate)
         return rrate
 
-    def do_make_screenshot_packet(self) -> tuple[str, int, int, str, int, Compressed]:
+    def do_make_screenshot_packet(self) -> tuple[str, int, int, str, int, Compressed] | None:
         models = self.get_subsystem("window").models()
         assert len(models) == 1, "multi root window screenshot not implemented yet"
         rwm = models[0]
-        w, h, encoding, rowstride, data = rwm.take_screenshot()
+        screenshot = rwm.take_screenshot()
+        if not screenshot:
+            log.warn("Warning: no screenshot available from %s", rwm)
+            return None
+        w, h, encoding, rowstride, data = screenshot
         assert encoding == "png"  # use fixed encoding for now
         return DISPLAY_SCREENSHOT, w, h, encoding, rowstride, Compressed(encoding, data)
 

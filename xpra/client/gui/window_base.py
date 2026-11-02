@@ -19,7 +19,7 @@ from xpra.util.colourspace import Colourspace, SRGB
 from xpra.util.parsing import scaleup_value, scaledown_value
 from xpra.util.system import is_Wayland
 from xpra.util.objects import typedict
-from xpra.client.gui.window_title import do_get_window_title, window_title_str
+from xpra.client.gui.window_title import window_title_str
 from xpra.util.env import envint, envbool, ignorewarnings
 from xpra.log import Logger
 
@@ -60,6 +60,9 @@ class ClientWindowBase(ClientWidgetBase):
              metadata, override_redirect, client_properties,
              border, max_window_size, pixel_depth,
              headerbar))
+        # schedule callbacks on the client's own main loop, the same way `StubClientSubsystem` does:
+        # the window code then does not assume GLib, which is only what the current clients happen to use,
+        # and tests can give the window a client which runs callbacks immediately, or never:
         self.idle_add: Callable = client.idle_add
         self.timeout_add: Callable = client.timeout_add
         self.source_remove: Callable = client.source_remove
@@ -70,7 +73,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.group_leader = group_leader
         self._pos = (wx, wy)
         self._size = (ww, wh)
-        display = client.get_subsystem("display")
+        display = self.get_subsystem("display")
         self._xscale = display.xscale if display else 1
         self._yscale = display.yscale if display else 1
         self._client_properties = client_properties
@@ -235,7 +238,8 @@ class ClientWindowBase(ClientWidgetBase):
         self._client_properties.update(get_backing_client_properties(self._backing, encoding_defaults))
 
     def send(self, packet_type: str, *args: PacketElement) -> None:
-        self._client.send(packet_type, *args)
+        """ window packets are sent by the `window` subsystem """
+        self.get_subsystem("window").send(packet_type, *args)
 
     def reset_icon(self) -> None:
         current_icon = self._current_icon
@@ -257,7 +261,7 @@ class ClientWindowBase(ClientWidgetBase):
 
     def get_session_colourspace(self) -> Colourspace:
         """ the colourspace the session renders into, which is what we use for untagged windows """
-        display = self._client.get_subsystem("display")
+        display = self.get_subsystem("display")
         if not display:
             return SRGB
         return getattr(display, "server_colourspace", SRGB)
@@ -278,7 +282,7 @@ class ClientWindowBase(ClientWidgetBase):
         if "content-type" in metadata:
             metadata = typedict(metadata)
             metadata.pop("content-type")
-        if self._client.readonly:
+        if self.is_readonly():
             metadata.update(force_size_constraint(*self._size))
         self._metadata.update(metadata)
         try:
@@ -293,13 +297,14 @@ class ClientWindowBase(ClientWidgetBase):
     def apply_relative_position(self, rel_pos: Sequence[int]) -> None:
         """ the windows that can follow their parent override this """
 
+    def find_related_window(self, metadata_key: str):
+        """ the window referenced by the given metadata key, ie: "transient-for" or "parent" """
+        wid = self._metadata.intget(metadata_key, -1)
+        window = self.get_subsystem("window")
+        return window.get_window(wid) if wid > 0 and window else None
+
     def _get_window_title(self, metadata: typedict) -> str:
-        try:
-            return do_get_window_title(self._client, self.wid, dict(self._metadata) | dict(metadata))
-        except Exception as e:
-            log.error("Error parsing window title:")
-            log.estr(e)
-            return self._client.title.replace("\0", "")
+        return self.get_subsystem("window").get_window_title(self.wid, dict(self._metadata) | dict(metadata))
 
     def set_metadata(self, metadata: typedict):
         metalog("set_metadata(%s)", metadata)
@@ -706,7 +711,7 @@ class ClientWindowBase(ClientWidgetBase):
             log("new min-speed=%s", enc.min_speed)
 
     def scaleup(self, *_args) -> None:
-        if display := self._client.get_subsystem("display"):
+        if display := self.get_subsystem("display"):
             display.scaleup()
 
     def window_scaleup(self, *_args) -> None:
@@ -717,7 +722,7 @@ class ClientWindowBase(ClientWidgetBase):
             self._scaleto(min(options))
 
     def scaledown(self, *_args) -> None:
-        if display := self._client.get_subsystem("display"):
+        if display := self.get_subsystem("display"):
             display.scaledown()
 
     def window_scaledown(self, *_args) -> None:
@@ -728,7 +733,7 @@ class ClientWindowBase(ClientWidgetBase):
             self._scaleto(max(options))
 
     def scalingoff(self) -> None:
-        if display := self._client.get_subsystem("display"):
+        if display := self.get_subsystem("display"):
             display.scalingoff()
 
     def window_scalingoff(self) -> None:
@@ -745,7 +750,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.resize(nw, nh)
 
     def scalereset(self, *_args) -> None:
-        if display := self._client.get_subsystem("display"):
+        if display := self.get_subsystem("display"):
             display.scalereset()
 
     def magic_key(self, *args) -> None:
@@ -803,7 +808,7 @@ class ClientWindowBase(ClientWidgetBase):
             rw, rh = self.get_size()
             self.idle_add(self.repaint, 0, 0, rw, rh)
             return
-        display = self._client.get_subsystem("display")
+        display = self.get_subsystem("display")
         for x, y, w, h in pr:
             rx, ry, rw, rh = display.srect(x, y, w, h) if display else (x, y, w, h)
             if self.window_offset:

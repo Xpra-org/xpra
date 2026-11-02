@@ -249,7 +249,7 @@ def system_bell(xid: int, device: int, percent: int, _pitch, _duration: int, bel
 def get_xsettings():
     from xpra.x11.bindings.window import X11WindowBindings  # @UnresolvedImport
     X11Window = X11WindowBindings()
-    selection = "_XSETTINGS_S0"
+    selection = f"_XSETTINGS_S{X11Window.get_default_screen()}"
     owner = X11Window.XGetSelectionOwner(selection)
     if not owner:
         return None

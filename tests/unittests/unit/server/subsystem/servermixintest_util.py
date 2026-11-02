@@ -160,6 +160,9 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter, GLibScheduler):
     def set_dpi(self, *_args, **_kwargs) -> None:
         pass
 
+    def get_capture_adapter_luid(self) -> bytes:
+        return b""
+
     def set_screen_size(self, width: int, height: int):
         return width, height
 

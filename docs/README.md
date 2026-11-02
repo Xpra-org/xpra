@@ -93,6 +93,7 @@ Choose a connection method and secure access to Xpra sessions.
 - [SSH](Network/SSH.md)
 - [SSL / TLS](Network/SSL.md)
 - [QUIC](Network/QUIC.md)
+- [Windows Subsystem for Linux (WSL)](Usage/WSL.md)
 - [Encryption](Network/Encryption.md)
 - [Authentication](Usage/Authentication.md)
 

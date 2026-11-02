@@ -297,23 +297,24 @@ def first_time(key: str) -> bool:
 
 class IgnoreWarningsContext(AbstractContextManager):
 
+    def __init__(self):
+        self.context = warnings.catch_warnings()
+
     def __enter__(self):
+        self.context.__enter__()
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        warnings.filterwarnings("default")
+        # restore the filters saved on entry, so the warnings ignored by default stay ignored:
+        self.context.__exit__(exc_type, exc_val, exc_tb)
 
     def __repr__(self):
         return "IgnoreWarningsContext"
 
 
 def ignorewarnings(fn: Callable, *args) -> Any:
-    import warnings
-    try:
-        warnings.filterwarnings("ignore", category=DeprecationWarning)
+    with IgnoreWarningsContext():
         return fn(*args)
-    finally:
-        warnings.filterwarnings("default")
 
 
 class nomodule_context:
@@ -453,7 +454,7 @@ class SilenceWarningsContext(AbstractContextManager):
             warnings.filterwarnings("ignore", category=category)
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        warnings.filterwarnings("default")
+        # restore the filters saved on entry, so the warnings ignored by default stay ignored:
         self.context.__exit__(exc_type, exc_val, exc_tb)
 
     def __repr__(self):

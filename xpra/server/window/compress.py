@@ -71,6 +71,7 @@ AUTO_REFRESH_SPEED = envint("XPRA_AUTO_REFRESH_SPEED", 50)
 INITIAL_QUALITY = envint("XPRA_INITIAL_QUALITY", 65)
 INITIAL_SPEED = envint("XPRA_INITIAL_SPEED", 40)
 TEXT_QUALITY = envint("XPRA_TEXT_QUALITY", 100)
+SCALING_QUALITY_DISCOUNT = envint("XPRA_SCALING_QUALITY_DISCOUNT", 20)
 
 LOCKED_BATCH_DELAY = envint("XPRA_LOCKED_BATCH_DELAY", 1000)
 
@@ -303,11 +304,13 @@ class WindowSource(WindowIconSource):
         self.has_alpha: bool = HAS_ALPHA and window.has_alpha()
         self.discard_alpha = False
         self.has_shape = False
+        self.opacity = -1
         self.window_dimensions = ww, wh
         # ugly callback for window filters:
         self.window_dimensions_updated = noop
         # where the window is mapped on the client:
         self.mapped_at = None
+        self._batch_covered: bool | None = None
         self.fullscreen: bool = not self.is_tray and window.get("fullscreen")
         if default_encoding_options.get("scaling.control") is None:
             self.scaling_control = None     # means "auto"
@@ -336,6 +339,12 @@ class WindowSource(WindowIconSource):
             sid = window.connect("notify::shape", self._shape_changed)
             self.window_signal_handlers.append(sid)
             self.has_shape = bool(window.get("shape"))
+        if "opacity" in window.get_dynamic_property_names():
+            def opacity_updated(*_args) -> None:
+                self.opacity = window.get_property("opacity")
+            sid = window.connect("notify::opacity", opacity_updated)
+            self.window_signal_handlers.append(sid)
+            opacity_updated()
         if "children" in window.get_internal_property_names():
             # we just copy the value to an attribute of window-source,
             # so that we can access it from any thread
@@ -1189,6 +1198,7 @@ class WindowSource(WindowIconSource):
         self.no_idle()
 
     def unmap(self) -> None:
+        self.mapped_at = None
         self.cancel_damage()
         self.statistics.reset()
         self.go_idle()
@@ -1263,21 +1273,26 @@ class WindowSource(WindowIconSource):
         """ See cancel_damage(wid) """
         return self._damage_cancelled >= sequence
 
-    def calculate_batch_delay(self, has_focus: bool, other_is_fullscreen: bool, other_is_maximized: bool) -> None:
+    def calculate_batch_delay(self, has_focus: bool, other_is_fullscreen: bool, other_is_maximized: bool,
+                              covered: bool | None = None) -> None:
         bc = self.batch_config
+        bc.covered = covered
         if bc.locked:
             return
         if self._mmap:
             # mmap is so fast that we don't need to use the batch delay:
             bc.delay = bc.min_delay
+            bc.effective_min_delay = bc.min_delay
             return
+        coverage_changed = covered != self._batch_covered
+        self._batch_covered = covered
         # calculations take time (CPU), see if we can just skip it this time around:
         now = monotonic()
         lr = self.statistics.last_recalculate
         elapsed = now-lr
         statslog("calculate_batch_delay for wid=%#x current batch delay=%i, last update %.1f seconds ago",
                  self.wid, bc.delay, elapsed)
-        if bc.delay <= 2*bc.start_delay and lr > 0 and elapsed < 60 and self.get_packets_backlog() == 0:
+        if not coverage_changed and bc.delay <= 2*bc.start_delay and lr > 0 and elapsed < 60 and self.get_packets_backlog() == 0:
             # delay is low-ish, figure out if we should bother updating it
             lde = tuple(self.statistics.last_damage_events)
             if not lde:
@@ -1309,7 +1324,7 @@ class WindowSource(WindowIconSource):
         calculate_batch_delay(self.wid, self.window_dimensions, has_focus,
                               other_is_fullscreen, other_is_maximized,
                               self.is_OR, self.soft_expired, bc,
-                              self.global_statistics, self.statistics, self.bandwidth_limit, self.jitter)
+                              self.global_statistics, self.statistics, self.bandwidth_limit, self.jitter, covered)
         # update the normalized value:
         ww, wh = self.window_dimensions
         bc.delay_per_megapixel = round(bc.delay * 1000000 // max(1, (ww*wh)))
@@ -2036,6 +2051,9 @@ class WindowSource(WindowIconSource):
                 speed = min(self._fixed_max_speed, max(1, self._fixed_min_speed, speed))
         quality = options.get("quality", 0)
         automatic_quality = quality == 0 and self._fixed_quality <= 0 and self._quality_hint < 0
+        # `scaled-width` is only added to the options once the image is captured,
+        # so ask directly whether this frame is going to be downscaled:
+        downscaled = self.is_downscaled()
         if quality == 0:
             if self._fixed_quality > 0:
                 quality = self._fixed_quality
@@ -2051,13 +2069,16 @@ class WindowSource(WindowIconSource):
                     # at least for the first packet:
                     elapsed = now-self.statistics.last_packet_time
                     quality += int(elapsed*25)
-                scaling_discount = 0
-                if "scaled-width" in options or "scaled-height" in options:
-                    scaling_discount = 20
-                quality = (quality - packets_backlog*20 - scaling_discount) * quality_pct // 100
+                quality = (quality - packets_backlog*20) * quality_pct // 100
+                if downscaled and automatic_quality:
+                    # the frame loses detail to the downscaling anyway,
+                    # apply the discount after capping the idle bonus so that it cannot be absorbed:
+                    quality = min(100, quality) - SCALING_QUALITY_DISCOUNT
                 quality = min(self._fixed_max_quality, max(1, self._fixed_min_quality, quality))
         if all((
             automatic_quality,
+            # a downscaled frame cannot be lossless:
+            not downscaled,
             not is_video_content(self.content_types),
             self._lossless_threshold_base < quality < 100,
         )):
@@ -2197,18 +2218,23 @@ class WindowSource(WindowIconSource):
         log("process_damage_region: wid=%#x, sequence=%i, adding pixel data to encode queue (%4ix%-4i - %5s), elapsed time: %3.1f ms, request time: %3.1f ms",
             self.wid, sequence, w, h, coding, 1000 * (now - damage_time), elapsed)
 
-    def scaled_size(self, image: ImageWrapper) -> tuple[int, int] | None:
+    def is_downscaled(self) -> bool:
+        # resize if the render size is smaller
         crs = self.client_render_size
         if crs == (0, 0) or not DOWNSCALE:
+            return False
+        ww, wh = self.window_dimensions
+        crsw, crsh = crs
+        return ww-crsw > DOWNSCALE_THRESHOLD and wh-crsh > DOWNSCALE_THRESHOLD
+
+    def scaled_size(self, image: ImageWrapper) -> tuple[int, int] | None:
+        if not self.is_downscaled():
             return None
         w, h = image.get_width(), image.get_height()
         ww, wh = self.window_dimensions
-        crsw, crsh = crs
-        # resize if the render size is smaller
-        if ww-crsw > DOWNSCALE_THRESHOLD and wh-crsh > DOWNSCALE_THRESHOLD:
-            # keep the same proportions:
-            return w*crsw//ww, h*crsh//wh
-        return None
+        crsw, crsh = self.client_render_size
+        # keep the same proportions:
+        return w*crsw//ww, h*crsh//wh
 
     def make_data_packet_cb(self, w: int, h: int, damage_time: float, process_damage_time: float,
                             image: ImageWrapper, coding: str, sequence: int, options: typedict, flush=0) -> None:

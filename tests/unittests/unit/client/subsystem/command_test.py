@@ -42,6 +42,17 @@ class MenuTest(unittest.TestCase):
         self.assertIn("Term[2Jinal", names)
         self.assertEqual(max(len(name) for name in names), MAX_MENU_NAME)
 
+    def test_labels(self):
+        menu, _ = validated_menu({"Accessories": {"Entries": {
+            "org.gnome.Nautilus": {"Name": "Files", "command": "nautilus"},
+            "nemo": {"Name": "Files", "command": "nemo"},
+            "org.gnome.Calculator": {"Name": b"Calculator", "command": "gnome-calculator"},
+            "xterm": {"command": "xterm"},
+        }}})
+        entries = menu["Accessories"]["Entries"]
+        self.assertEqual(list(entries), ["Calculator", "Files (nemo)", "Files (org.gnome.Nautilus)", "xterm"])
+        self.assertEqual(entries["Files (nemo)"]["command"], "nemo")
+
     def test_limits(self):
         menu, trimmed = validated_menu(make_menu(command.MAX_MENU_CATEGORIES * 2, command.MAX_MENU_ENTRIES * 2))
         self.assertTrue(trimmed)

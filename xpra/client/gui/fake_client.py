@@ -3,11 +3,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any
 from collections.abc import Sequence
 
-from xpra.common import noop
 from xpra.util.glib_scheduler import GLibScheduler
+from xpra.client.gui.window_title import get_window_title
 from xpra.log import Logger
 
 log = Logger("client")
@@ -28,7 +27,8 @@ class FakePointerSubsystem:
 
 
 class FakeWindowSubsystem:
-    def __init__(self):
+    def __init__(self, client=None):
+        self.client = client
         self.modal_windows = False
         self.server_window_states: Sequence[str] = ()
         self.server_window_frame_extents = False
@@ -36,6 +36,25 @@ class FakeWindowSubsystem:
         self._focused = None
         self._window_with_grab = None
         self.pointer_grabbed = None
+
+    @property
+    def focused_wid(self) -> int:
+        return self._focused or 0
+
+    def is_grabbed(self, wid: int) -> bool:
+        return bool(wid) and self._window_with_grab == wid
+
+    def grab_lost(self) -> None:
+        self._window_with_grab = None
+
+    def window_grab(self, wid: int, _window) -> None:
+        self._window_with_grab = wid
+
+    def window_ungrab(self, _window=None) -> None:
+        self._window_with_grab = None
+
+    def get_window(self, wid: int):
+        return self._id_to_window.get(wid)
 
     def has_focus(self, *_args) -> bool:
         return False
@@ -52,27 +71,26 @@ class FakeWindowSubsystem:
     def window_close_event(self, *_args) -> None:
         log("window_close_event ignored")
 
+    def send(self, *args) -> None:
+        log("send%s", args)
+
+    def get_window_title(self, wid: int, metadata: dict) -> str:
+        return get_window_title(self.client, wid, metadata) if self.client else ""
+
 
 class FakeClient(GLibScheduler):
     def __init__(self):
         self.title = ""
         self.readonly = False
         self._remote_server_mode = "seamless"
-        self.pointer_grabbed = None
-        self.find_window = noop
-        self.request_frame_extents = noop
         self.server_readonly = False
-        self.window_ungrab = noop
         self.subsystems = {
-            "window": FakeWindowSubsystem(),
+            "window": FakeWindowSubsystem(self),
             "pointer": FakePointerSubsystem(),
         }
 
     def get_subsystem(self, name: str):
         return self.subsystems.get(name)
-
-    def get_window_frame_sizes(self, *_args) -> dict[str, Any]:
-        return {}
 
     def signal_disconnect_and_quit(self, *_args):
         log.info("signal_disconnect_and_quit")

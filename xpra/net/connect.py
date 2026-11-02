@@ -30,8 +30,9 @@ def connect_to_ssh(display_desc: dict[str, Any], debug_cb=noop, ssh_fail_cb=noop
     """
     Open an ssh tunnel and return a connection wrapping it.
 
-    `debug_cb(message)` is called with progress messages during connection setup, so UI clients
-    can surface them (e.g. the GTK launcher displays them in its status area).
+    `debug_cb(message)` is called with progress messages during connection setup by the paramiko
+    and exec backends, so UI clients can surface them (e.g. the GTK launcher displays them in its
+    status area, the client forwards them to its splash screen).
 
     `ssh_fail_cb(message)` is the side-channel for *asynchronous* tunnel failures: when the ssh
     subprocess dies after the initial connect, the failure is detected by a read/write on the
@@ -45,7 +46,7 @@ def connect_to_ssh(display_desc: dict[str, Any], debug_cb=noop, ssh_fail_cb=noop
         conn = connect_to(display_desc)
     elif display_desc.get("is_paramiko", False):
         from xpra.net.ssh.paramiko.client import connect_to
-        conn = connect_to(display_desc)
+        conn = connect_to(display_desc, debug_cb)
     else:
         from xpra.net.ssh import exec_client
         conn = exec_client.connect_to(display_desc, debug_cb, ssh_fail_cb)
@@ -157,8 +158,12 @@ def connect_to_tcp(display_desc: dict[str, Any]):
             from xpra.net.tls.socket import ssl_handshake, ssl_wrap_socket
             # convert option names to function arguments:
             ssl_options = {k.replace("-", "_"): v for k, v in display_desc.get("ssl-options", {}).items()}
+            # advertise `http/1.1` for `wss` so that a server listening on a multi-protocol socket (ie: `tcp`)
+            # can tell from the `ClientHello` that this is a websocket connection,
+            # instead of having to wait for our http upgrade request after the handshake:
+            alpn_protocols = ("http/1.1", ) if dtype == "wss" else ()
             try:
-                sock = ssl_wrap_socket(sock, **ssl_options)
+                sock = ssl_wrap_socket(sock, alpn_protocols, **ssl_options)
             except ValueError as e:
                 raise InitExit(ExitCode.SSL_FAILURE, f"ssl setup failed: {e}")
             if not sock:

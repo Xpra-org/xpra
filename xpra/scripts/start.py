@@ -167,7 +167,8 @@ def run_server(script_file, cmdline: list[str], options, args: list[str], full_m
         from xpra.scripts.server import do_run_server
         return do_run_server(script_file, cmdline, options, args, full_mode, defaults)
     except ImportError as e:
-        raise InitExit(ExitCode.COMPONENT_MISSING, f"`xpra-server` is not installed: {e}")
+        message = "server is not available in this xpra 'light' build, install the full xpra package" if (OSX or WIN32) else f"`xpra-server` is not installed: {e}"
+        raise InitExit(ExitCode.COMPONENT_MISSING, message)
 
 
 def get_current_root_size(display_is_remote: bool) -> tuple[int, int]:
@@ -196,6 +197,13 @@ def get_current_root_size(display_is_remote: bool) -> tuple[int, int]:
     except (OSError, ValueError):
         pass
     return root_w, root_h
+
+
+def get_remote_display(app) -> str:
+    """ the display name of the server we connected to, as reported by the `remote-info` subsystem """
+    get_subsystem = getattr(app, "get_subsystem", None)
+    remote_info = get_subsystem("remote-info") if get_subsystem else None
+    return remote_info.display_name if remote_info else ""
 
 
 def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults) -> ExitValue:
@@ -315,7 +323,7 @@ def run_remote_server(script_file: str, cmdline, opts, args, mode: str, defaults
         if not params.get("display", ""):
             # try to find which display was used,
             # so we can re-connect to this specific one:
-            display = getattr(app, "_remote_display", None)
+            display = get_remote_display(app)
             if not display:
                 warn("cannot identify the remote display to reconnect to")
                 warn(" this may fail if there is more than one")

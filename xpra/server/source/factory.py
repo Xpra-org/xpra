@@ -152,8 +152,9 @@ def get_client_connection_class(caps: typedict):
                     bc.__init__(self, *initargs)
                     bc.init_from(self, protocol, server)
                 except Exception as e:
-                    log.error("%s.__init__(..)", bc, exc_info=True)
-                    raise RuntimeError(f"failed to initialize {bc}: {e}") from None
+                    msg = f"failed to initialize {bc}: {e}"
+                    log.error(f"Error: {msg}", exc_info=True)
+                    raise RuntimeError(msg) from None
 
             for c in CC_BASES:
                 c.init_state(self)

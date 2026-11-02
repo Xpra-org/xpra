@@ -68,9 +68,24 @@ class BatchDelayCalculatorTest(unittest.TestCase):
             calc.calculate_batch_delay(1, (100, 100), False, False, False, False,
                                        0, b, gs, stats, 0, 5)
             self.assertEqual(update.call_args.args[2], 40)
+            self.assertIsNone(b.covered)
+            self.assertEqual(b.effective_min_delay, 40)
             calc.calculate_batch_delay(1, (100, 100), True, True, False, False,
                                        0, b, gs, stats, 0, 5)
             self.assertEqual(update.call_args.args[2], 100)
+            for focused, covered, expected in ((False, True, 100), (False, False, 40),
+                                               (True, True, 0), (True, False, 0)):
+                with self.subTest(focused=focused, covered=covered):
+                    calc.calculate_batch_delay(1, (100, 100), focused, True, True, False,
+                                               0, b, gs, stats, 0, 5, covered=covered)
+                    self.assertEqual(update.call_args.args[2], expected)
+                    self.assertEqual(b.effective_min_delay, expected)
+                    self.assertEqual(b.covered, covered)
+            b.always = True
+            b.min_delay = 120
+            calc.calculate_batch_delay(1, (100, 100), False, False, False, False,
+                                       0, b, gs, stats, 0, 5, covered=True)
+            self.assertEqual(b.effective_min_delay, 120)
         self.assertEqual(stats.target_latency, 0.025)
 
     @patch.object(calc, "monotonic", return_value=100.0)

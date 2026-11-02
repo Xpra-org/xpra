@@ -42,7 +42,7 @@ def main() -> int:
         try:
             props = check_support()
         except Exception:
-            log.error("%s().check_support()", exc_info=True)
+            log.error("Error: checking OpenGL support using %s", check_support, exc_info=True)
             return 1
         log.info("")
         log.info("OpenGL properties:")

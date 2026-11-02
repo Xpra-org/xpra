@@ -298,6 +298,17 @@ class UIXpraClient(XpraClientBase):
     ######################################################################
     # trigger notifications on disconnection,
     # and wait before actually exiting so the notification has a chance of being seen
+    # Defer cleanup to the disconnect timer so the notifier and tray stay alive.
+    def _schedule_disconnect(self, disconnect: Callable, reason: str, *info) -> None:
+        def cleanup_and_disconnect() -> None:
+            try:
+                self.cleanup()
+            finally:
+                disconnect(self, reason, *info)
+
+        delay = NOTIFICATION_EXIT_DELAY * int(features.notification)
+        self.timeout_add(delay * 1000, cleanup_and_disconnect)
+
     def server_disconnect_warning(self, reason, *info):
         if self.exit_code is None:
             body = "\n".join(info)
@@ -317,19 +328,15 @@ class UIXpraClient(XpraClientBase):
                     self.exit_code = ExitCode.CONNECTION_FAILED
             may_notify_client(self, NotificationID.DISCONNECT, title, body, icon_name="disconnected")
             # show text notification then quit:
-            delay = NOTIFICATION_EXIT_DELAY * int(features.notification)
-            self.timeout_add(delay * 1000, XpraClientBase.server_disconnect_warning, self, title, *info)
-        self.cleanup()
+            self._schedule_disconnect(XpraClientBase.server_disconnect_warning, title, *info)
 
     def server_disconnect(self, reason: str, *info) -> None:
         body = "\n".join(info)
         may_notify_client(self, NotificationID.DISCONNECT,
                           f"Xpra Session Disconnected: {reason}", body, icon_name="disconnected")
-        delay = NOTIFICATION_EXIT_DELAY * int(features.notification)
         if self.exit_code is None:
             self.exit_code = self.server_disconnect_exit_code(reason, *info)
-        self.timeout_add(delay * 1000, XpraClientBase.server_disconnect, self, reason, *info)
-        self.cleanup()
+        self._schedule_disconnect(XpraClientBase.server_disconnect, reason, *info)
 
     ######################################################################
     # hello:
@@ -366,10 +373,10 @@ class UIXpraClient(XpraClientBase):
         self.server_lock_toggle = c.boolget("lock-toggle")
         sharinglog("server sharing=%s (toggle=%s), lock=%s (toggle=%s)",
                    self.server_sharing, self.server_sharing_toggle, self.server_lock, self.server_lock_toggle)
+        # `readonly` remains the user's own choice, so the server can turn its own off again:
         self.server_readonly = c.boolget("readonly")
         if self.server_readonly and not self.readonly:
             log.info("server is read only")
-            self.readonly = True
         print_proxy_caps(c)
         return True
 
@@ -418,8 +425,6 @@ class UIXpraClient(XpraClientBase):
                 "ibus-layouts", "border",
         ):
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
-            if setting == "readonly" and value:
-                self.readonly = True
         else:
             log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(value))
             return

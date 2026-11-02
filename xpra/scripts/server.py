@@ -27,7 +27,7 @@ from xpra.common import noerr
 from xpra.server import CLOBBER_UPGRADE, CLOBBER_USE_DISPLAY, is_virtual_session
 from xpra.net.constants import SocketState, ConnectionMessage
 from xpra.exit_codes import ExitCode, ExitValue
-from xpra.os_util import POSIX, WIN32, OSX, getuid, get_hex_uuid
+from xpra.os_util import POSIX, LINUX, WIN32, OSX, getuid, get_hex_uuid
 from xpra.util.str_fn import csv
 from xpra.util.io import stderr_print
 from xpra.util.env import envbool, envint, osexpand, get_saved_env, get_saved_env_var, OSEnvContext
@@ -473,6 +473,30 @@ def resolve_server_display_name(opts, extra_args: list[str], desktop_display: st
     return display_name, display_options
 
 
+def choose_vfb_display(display_name: str, uid: int, gid: int) -> str:
+    """
+    The X11 server cannot choose its display number with `-displayfd`
+    when it cannot create its socket in '/tmp/.X11-unix' (ie: WSLg mounts it read-only),
+    so we choose one before the session directory is created:
+    the X11 server's command line refers to the session directory (ie: Xorg's log file),
+    and renaming it while the X11 server is starting would make it fail.
+    """
+    # "S" + pid is the placeholder used until the X11 server has chosen the display:
+    if not (LINUX and display_name.startswith("S")):
+        return display_name
+    from xpra.x11.vfb_util import x11_socket_dir_writable
+    if POSIX and uid and not gid:
+        from xpra.os_util import find_group
+        gid = find_group(uid)
+    if x11_socket_dir_writable(uid, gid):
+        return display_name
+    from xpra.scripts.display import X11_SOCKET_DIR, find_free_x11_display
+    new_display_name = find_free_x11_display()
+    from xpra.log import Logger
+    Logger("server", "x11").info(f"{X11_SOCKET_DIR!r} is not writable, using display {new_display_name}")
+    return new_display_name
+
+
 def request_upgrade_display(display_name: str, session: dict) -> bool:
     if not session:
         return False
@@ -635,6 +659,8 @@ def do_run_server(script_file: str, cmdline: list[str], opts,
         not (shadowing or proxying or clobber or expanding or encoder or runner)
         and opts.xvfb.lower() not in FALSE_OPTIONS and opts.backend != "wayland"
     )
+    if start_vfb:
+        display_name = choose_vfb_display(display_name, int(opts.uid), int(opts.gid))
     xauth_data: str = get_hex_uuid() if start_vfb else ""
     if start_vfb and opts.sync_xvfb is None and any(x in opts.xvfb for x in ("Xephyr", "Xnest")):
         # automatically enable sync-xvfb for Xephyr and Xnest:

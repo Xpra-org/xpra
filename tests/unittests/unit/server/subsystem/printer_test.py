@@ -146,6 +146,57 @@ class PrintClientTest(unittest.TestCase):
         self.assertEqual(client.warn_and_quit.call_args.args[0], ExitCode.FAILURE)
 
 
+class PrinterLandlockTest(unittest.TestCase):
+
+    def get_paths(self, printing="yes", env=None):
+        from xpra.server.subsystem.printer import PrinterServer
+        printer = PrinterServer(Owner())
+        printer.file_transfer.init_attributes("no", "1M", printing)
+        with patch.dict("os.environ", env or {}, clear=True):
+            return printer.get_landlock_paths()
+
+    def test_disabled(self):
+        self.assertEqual(self.get_paths("no"), {})
+
+    def test_default_socket(self):
+        self.assertEqual(self.get_paths(), {"socket": ("/run/cups", )})
+
+    def test_cups_server_socket(self):
+        self.assertEqual(self.get_paths(env={"CUPS_SERVER": "/shared/cups/cups.sock"}), {"socket": ("/shared/cups", )})
+        # a remote cups server does not use a socket path:
+        self.assertEqual(self.get_paths(env={"CUPS_SERVER": "localhost:631"}), {"socket": ("/run/cups", )})
+
+
+class PrinterDefinitionTest(unittest.TestCase):
+
+    def setUp(self):
+        try:
+            from xpra.platform import pycups_printing
+        except ImportError as e:
+            raise unittest.SkipTest(f"pycups is not available: {e}") from None
+        self.pycups = pycups_printing
+
+    def add(self, definition):
+        with patch.dict(self.pycups.UNPROBED_PRINTER_DEFS, clear=True):
+            self.pycups.add_printer_def("application/pdf", definition)
+            return dict(self.pycups.UNPROBED_PRINTER_DEFS)
+
+    def test_driver(self):
+        self.assertEqual(self.add("drv:///sample.drv/generic.ppd"), {"application/pdf": ["-m", "drv:///sample.drv/generic.ppd"]})
+
+    def test_model(self):
+        model = "lsb/usr/cupsfilters/Generic-PDF_Printer-PDF.ppd"
+        self.assertEqual(self.add(model), {"application/pdf": ["-m", model]})
+
+    def test_ppd_file(self):
+        import tempfile
+        with tempfile.NamedTemporaryFile(suffix=".ppd") as f:
+            self.assertEqual(self.add(f.name), {"application/pdf": ["-P", f.name]})
+
+    def test_missing_ppd_file(self):
+        self.assertEqual(self.add("/does/not/exist.ppd"), {})
+
+
 def main():
     unittest.main()
 

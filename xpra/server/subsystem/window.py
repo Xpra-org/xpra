@@ -512,19 +512,13 @@ class WindowServer(StubSubsystem):
             ss.unmap_window(wid, window)
 
     def _process_close(self, proto, packet: Packet) -> None:
-        if self.is_readonly(proto):
-            return
-        log.info("_process_close(%s, %s)", proto, packet)
+        log.warn("Warning: unimplemented packet handler for %r", packet.get_type())
 
     def _process_map(self, proto, packet: Packet) -> None:
-        if self.is_readonly(proto):
-            return
-        log.info("_process_map(%s, %s)", proto, packet)
+        log.warn("Warning: unimplemented packet handler for %r", packet.get_type())
 
     def _process_unmap(self, proto, packet: Packet) -> None:
-        if self.is_readonly(proto):
-            return
-        log.info("_process_window_unmaps, %s)", proto, packet)
+        log.warn("Warning: unimplemented packet handler for %r", packet.get_type())
 
     def _process_configure(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
@@ -542,13 +536,15 @@ class WindowServer(StubSubsystem):
         return tuple(geometry)
 
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
-        log.info("do_process_window_configure(%s, %i, %s)", proto, wid, config)
+        log.warn("Warning: no implementation for window-configure handler in %s", type(self))
 
     def _process_stacking(self, proto, packet: Packet) -> None:
         stacking = packet.get_ints(1)
         focuslog("process_window_stacking: %s", stacking)
         self.update_window_stacking(stacking)
         source = self.get_server_source(proto)
+        if source:
+            source.set_window_stacking(stacking)
         for ss in self.window_sources(exclude=source):
             if ss.window_sync_stacking:
                 ss.send_window_stacking(stacking)

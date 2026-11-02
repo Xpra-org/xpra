@@ -13,6 +13,7 @@ import argparse
 import csv
 import json
 import sys
+from pathlib import Path
 from collections.abc import Sequence
 from typing import Any
 
@@ -34,7 +35,7 @@ CSV_HEADERS = (
 
 def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("refs", nargs="*", default=("HEAD",), help="Git refs to include")
+    parser.add_argument("refs", nargs="*", help="Git refs to include (legacy: HEAD; evolution: five major branches)")
     parser.add_argument("--repo", default=".", help="Git repository to inspect")
     parser.add_argument("--base", default="", help="Base ref used for branch commit counts")
     parser.add_argument(
@@ -54,7 +55,22 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
         default="markdown",
         help="Output format",
     )
-    return parser.parse_args(argv)
+    parser.add_argument("--evolution", action="store_true", help="Collect versioned evolution metrics instead of the legacy summary")
+    parser.add_argument("--sample", choices=("tips", "tags", "monthly", "quarterly"), default="tips")
+    parser.add_argument("--since", default="", help="Earliest history sample (ISO date, UTC)")
+    parser.add_argument("--until", default="", help="Latest history sample (ISO date, UTC); tips are always included")
+    parser.add_argument("--age", action="store_true", help="Include expensive source-line age analysis")
+    parser.add_argument("--survival", action="append", default=[], metavar="BASE..END", help="Include a historical survival curve; repeatable")
+    parser.add_argument("--cache-dir", default="", help="Reusable analysis cache directory")
+    parser.add_argument("--output-dir", default="", help="Write metrics.json, metrics.csv, and report.md")
+    args = parser.parse_args(argv)
+    if args.evolution and args.fresh_checkout:
+        parser.error("--evolution reads committed objects directly; --fresh-checkout is a legacy option")
+    if args.evolution and args.base:
+        parser.error("--base is a legacy branch-count option; use --survival BASE..END for evolution lifetime analysis")
+    if not args.evolution and (args.sample != "tips" or args.age or args.survival or args.output_dir or args.since or args.until or args.cache_dir):
+        parser.error("history, lifetime, cache, and output-directory options require --evolution")
+    return args
 
 
 def reports_from_args(args: argparse.Namespace) -> list[dict[str, Any]]:
@@ -68,7 +84,7 @@ def reports_from_args(args: argparse.Namespace) -> list[dict[str, Any]]:
             fresh_checkout=args.fresh_checkout,
             top_files=0,
         )
-        for ref in args.refs
+        for ref in args.refs or ("HEAD",)
     ]
 
 
@@ -80,6 +96,22 @@ def print_csv(reports: Sequence[dict[str, Any]]) -> None:
 
 def main(argv: Sequence[str]) -> int:
     args = parse_args(argv)
+    if args.evolution:
+        from source_metrics import collect_evolution, csv_data, markdown_report, write_data
+        try:
+            report = collect_evolution(args)
+            if args.output_dir:
+                write_data(report, Path(args.output_dir))
+            if args.format == "json":
+                print(json.dumps(report, indent=2, sort_keys=True))
+            elif args.format == "csv":
+                print(csv_data(report), end="")
+            else:
+                print(markdown_report(report), end="")
+        except (RuntimeError, ValueError, OSError) as e:
+            print(f"source evolution: {e}", file=sys.stderr)
+            return 1
+        return 0
     reports = reports_from_args(args)
     if args.format == "json":
         print(json.dumps(reports, indent=2, sort_keys=True))
