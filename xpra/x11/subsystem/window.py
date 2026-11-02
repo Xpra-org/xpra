@@ -164,6 +164,25 @@ class SeamlessWindowServer(WindowServer):
         self.wm_name = opts.wm_name
         self._exit_with_windows = opts.exit_with_windows
 
+    def setup(self) -> None:
+        super().setup()
+        self.server.connect("new-ui-driver", self._new_ui_driver)
+
+    def _new_ui_driver(self, _server, source) -> None:
+        """
+        If a window currently holds a grab, move it to the new ui driver:
+        the client which was driving the session must not be left with its local input grabbed.
+        """
+        if not self._has_grab:
+            return
+        grab_sources = self.grab_sources()
+        grablog("new ui driver %s, moving grab of %#x to %s", source, self._has_grab, grab_sources)
+        for ss in self.window_sources():
+            if ss not in grab_sources:
+                ss.window_ungrab(self._has_grab)
+        for ss in grab_sources:
+            ss.window_grab(self._has_grab)
+
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()
         self.add_packets("window-signal", "window-dismiss", main_thread=True)
