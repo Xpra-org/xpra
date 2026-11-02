@@ -250,7 +250,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
                 "window": window_caps,
                 "encoding": self.encoding_options,
                 "share": True,
-                "keyboard": {"record": True},
+                "keyboard": {"record": True, "input": False},
                 "cursor": {"encodings": ("png", ), "backwards-compatible": False},
                 "pointer": {"record": True},
                 "clipboard": {"record": True},

@@ -114,6 +114,9 @@ class RecordClientTest(unittest.TestCase):
         hello = typedict(self.client.make_hello())
         for capability in ("encoders", "compressors"):
             self.assertIn(capability, hello)
+        keyboard_caps = typedict(hello.dictget("keyboard"))
+        self.assertTrue(keyboard_caps.boolget("record"))
+        self.assertFalse(keyboard_caps.boolget("input", True))
         window_caps = typedict(hello.dictget("window"))
         for capability in (
                 "enabled", "record", "restack", "sync-position", "sync-focus", "sync-stacking", "grabs",
