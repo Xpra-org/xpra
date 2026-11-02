@@ -25,14 +25,28 @@ autoprov: no
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 %endif
 
+# The default build already compiles Cython's smaller accelerator modules.
+# --cython-compile-all additionally compiles the two largest self-hosted
+# modules, Compiler/Nodes.py (~11k lines) and Compiler/ExprNodes.py (~16k
+# lines), plus a handful of other big ones. On slow emulated builds (aarch64,
+# riscv64 on an x86_64 buildbot) generating and compiling that much C takes
+# drastically longer (and is what triggered the aarch64 var-tracking gcc
+# failure on Nodes.c), while only saving a little runtime in Cython itself
+# when it later cythonizes other packages. So skip it on those arches.
+%ifarch aarch64 riscv64
+%global cython_compile_all %{nil}
+%else
+%global cython_compile_all --cython-compile-all
+%endif
+
 Name:		%{py3rpmname}-cython
-Version:	3.2.9
-Release:	2%{?dist}
+Version:	3.3.1
+Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
 URL:		http://www.cython.org
-Source0:    https://github.com/cython/cython/releases/download/%{version}/cython-%{version}.tar.gz
+Source0:    https://files.pythonhosted.org/packages/source/c/cython/cython-%{version}.tar.gz
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 Requires:   %{py3rpmname}
 Provides:   %{py3rpmname}-Cython = %{version}-%{release}
@@ -50,7 +64,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "d249c9022ab13286b17bd66f30609e800c5f95efeecb06168990c7a66cecde6c" ]; then
+if [ "${sha256}" != "e0e45989e821bef6aa9ae15c7d583ab5e055f7406c4b3624e49e06d24e90375a" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -58,11 +72,11 @@ fi
 
 %build
 NPROCS=${NPROCS:-`nproc`}
-CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build -j ${NPROCS} --cython-compile-all
+CFLAGS="$RPM_OPT_FLAGS" %{python3} setup.py build -j ${NPROCS} %{cython_compile_all}
 
 %install
 rm -rf %{buildroot}
-%{python3} setup.py install -O1 --skip-build --root %{buildroot} --cython-compile-all
+%{python3} setup.py install -O1 --skip-build --root %{buildroot} %{cython_compile_all}
 rm -fr %{buildroot}%{python3_sitearch}/UNKNOWN-*.egg-info
 %if "%{bin_prefix}" != ""
 mv %{buildroot}%{_bindir}/cygdb %{buildroot}%{_bindir}/%{bin_prefix}cygdb
@@ -86,13 +100,21 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
-* Fri Jul 24 2026 Antoine Martin <antoine@xpra.org> 3.2.9-1
+* Wed Jul 08 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a2-3
+- skip --cython-compile-all on aarch64 and riscv64: avoids compiling Nodes.c
+  and ExprNodes.c, which dominate build time (and gcc struggles with) on
+  emulated buildbots
+
+* Mon Jul 06 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a2-2
+- use upstream git commit snapshot instead of the pythonhosted sdist
+
+* Mon Jun 29 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a2-1
 - new upstream release
 
-* Wed Jul 08 2026 Antoine Martin <antoine@xpra.org> 3.2.8-2
+* Sat Jun 27 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a1-2
 - disable LTO: gcc 16 -flto miscompiles Compiler/Nodes.c and breaks if/else codegen
 
-* Tue Jun 30 2026 Antoine Martin <antoine@xpra.org> 3.2.8-1
+* Thu Jun 25 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a1-1
 - new upstream release
 
 * Sun May 24 2026 Antoine Martin <antoine@xpra.org> 3.2.5-1

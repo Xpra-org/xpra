@@ -11,8 +11,8 @@
 %endif
 
 Name:           %{py3rpmname}-pylsqpack
-Version:        0.3.24
-Release:        1%{?dist}
+Version:        1.0.0
+Release:        2%{?dist}
 Summary:        pylsqpack is a wrapper around the ls-qpack library
 Group:          Development/Languages
 License:        MIT
@@ -25,6 +25,9 @@ BuildRequires:  %{py3rpmname}-setuptools
 BuildRequires:  %{py3rpmname}-wheel
 BuildRequires:  gcc
 Requires:       %{py3rpmname}
+# vendor/ls-qpack (lsqpack.h LSQPACK_*_VERSION), xxhash is unversioned:
+Provides:       bundled(ls-qpack) = 2.7.0
+Provides:       bundled(xxhash)
 
 %description
 It provides Python Decoder and Encoder objects
@@ -33,7 +36,7 @@ to read or write HTTP/3 headers compressed with QPACK.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "8ec455f44614228f89e38d40c1b1e37895620e20ec6b21e3b562fa8b79a23890" ]; then
+if [ "${sha256}" != "4674adc2c833c1c70a36454f5774e9def94fc3109e4a8464d804af2a2030957a" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -62,6 +65,12 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 1.0.0-2
+- declare the bundled ls-qpack and xxhash
+
+* Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 1.0.0-1
+- new upstream release
+
 * Fri May 08 2026 Antoine Martin <antoine@xpra.org> - 0.3.24-1
 - new upstream release
 

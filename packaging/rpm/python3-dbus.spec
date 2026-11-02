@@ -16,23 +16,23 @@
 
 Summary: D-Bus Python3 Bindings
 Name:    %{py3rpmname}-dbus
-Version: 1.4.0
-Release: 2%{?dist}
+Version: 1.5.0
+Release: 1%{?dist}
 
 License: MIT
 URL:     http://www.freedesktop.org/wiki/Software/DBusBindings/
-Source0: https://files.pythonhosted.org/packages/source/d/dbus-python/dbus-python-%{version}.tar.gz
+Source0: https://files.pythonhosted.org/packages/source/d/dbus-python/dbus_python-%{version}.tar.gz
+# dbus-python only builds with meson >= 0.60, newer than what el8 ships,
+# so we run meson straight from its source tarball:
+%define meson_version 1.12.1
+Source1: https://files.pythonhosted.org/packages/source/m/meson/meson-%{meson_version}.tar.gz
 
 Requires:      %{py3rpmname}
+BuildRequires: gcc
 BuildRequires: dbus-devel
-BuildRequires: dbus-glib-devel
+BuildRequires: pkgconfig(glib-2.0)
 BuildRequires: %{py3rpmname}-devel
-BuildRequires: %{py3rpmname}-setuptools
-BuildRequires: %{py3rpmname}-wheel
-BuildRequires: autoconf-archive
-BuildRequires: automake
-BuildRequires: make
-BuildRequires: libtool
+BuildRequires: ninja-build
 
 
 %description
@@ -40,34 +40,26 @@ D-Bus python bindings for use with %{python3} programs.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "991666e498f60dbf3e49b8b7678f5559b8a65034fdf61aae62cdecdb7d89c770" ]; then
+if [ "${sha256}" != "ac94ce330879108e5d37105164cc14b595bdf9326d2ce4a5acad6c1ab2bf6476" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%autosetup -p1 -n dbus-python-%{version}
+sha256=`sha256sum %{SOURCE1} | awk '{print $1}'`
+if [ "${sha256}" != "ab0a6ca09f8ef70c564c8241fb5a23957886a0b53fb58412b5e07eaf07dba743" ]; then
+	echo "invalid checksum for %{SOURCE1}"
+	exit 1
+fi
+%autosetup -p1 -n dbus_python-%{version} -a 1
 
 %build
 %set_build_flags
-export DBUS_PYTHON_USE_AUTOTOOLS=1
-export PYTHON="%{python3}"
-export PYTHON_VERSION="%{python3_version}"
-NOCONFIGURE=1 ./autogen.sh
-%if 0%{?el8}
-# automake 1.16.1 (RHEL8) ships a py-compile that imports the 'imp' module,
-# which was removed in Python 3.12 - alias it to importlib.util instead
-# (importlib.util.cache_from_source is a drop-in for imp.cache_from_source):
-sed -i 's/import sys, os, py_compile, imp/import sys, os, py_compile, importlib.util as imp/' $(find . -name py-compile)
-%endif
-%configure PYTHON="%{python3}"
-make
+%{python3} meson-%{meson_version}/meson.py setup build \
+	--prefix=%{_prefix} --libdir=%{_libdir} --buildtype=plain \
+	-Dpython=%{python3} -Dtests=disabled -Ddoc=disabled
+%{python3} meson-%{meson_version}/meson.py compile -C build
 
 %install
-export PYTHON="%{python3}"
-%make_install
-
-# unpackaged files
-rm -fv %{buildroot}%{python3_sitearch}/*.la
-rm -rfv %{buildroot}%{_datadir}/doc/dbus-python/
+DESTDIR=%{buildroot} %{python3} meson-%{meson_version}/meson.py install -C build --no-rebuild
 %if "%{python3}" != "python3"
 rm -fv %{buildroot}%{_includedir}/dbus-1.0/dbus/dbus-python.h
 rm -fv %{buildroot}%{_libdir}/pkgconfig/dbus-python.pc
@@ -77,7 +69,7 @@ rm -fv %{buildroot}%{_libdir}/pkgconfig/dbus-python.pc
 %files
 %doc NEWS
 %license COPYING
-%{python3_sitelib}/dbus*
+%{python3_sitearch}/dbus/
 %{python3_sitearch}/_dbus_*
 #only include the development files for the "main" python3 package:
 %if "%{python3}" == "python3"
@@ -86,6 +78,9 @@ rm -fv %{buildroot}%{_libdir}/pkgconfig/dbus-python.pc
 %endif
 
 %changelog
+* Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 1.5.0-1
+- new upstream release, build using meson (autotools support was removed)
+
 * Mon Jun 08 2026 Antoine Martin <antoine@xpra.org> - 1.4.0-2
 - fix build on RHEL8 with Python 3.12: automake's py-compile uses removed 'imp' module
 

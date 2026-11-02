@@ -25,8 +25,8 @@
 %define gobject_introspection_version  1.56.0
 %global pygobject_series               3.44
 %global pygobject_archive_ext          tar.xz
-%global pygobject_sha256               3c6805d1321be90cc32e648215a562430e0d3d6edcda8f4c5e7a9daffcad5710
-%define pygobject_version              3.44.1
+%global pygobject_sha256               6f806023c43c446e2a8dac5a9c2b0f2db13ff715bb579fcb8e049449ffcd82b7
+%define pygobject_version              3.44.2
 %else
 # el9+ ships gobject-introspection 1.68: use pygobject's real minimum (1.64.0)
 # instead of Fedora's shipped 1.81.0 so el9 can build the 3.50 series:
@@ -167,6 +167,9 @@ rmdir --ignore-fail-on-non-empty %{buildroot}%{_includedir}/pygobject-3.0/
 %endif
 
 %changelog
+* Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 3.44.2-1
+- el8: new upstream release (adds Python 3.12 support)
+
 * Tue Jun 09 2026 Antoine Martin <antoine@xpra.org> - 3.50.2-1
 - el9+: use pygobject's real gobject-introspection minimum (1.64.0) instead of
   Fedora's shipped 1.81.0, which RHEL9 (gi 1.68) cannot satisfy

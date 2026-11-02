@@ -12,7 +12,7 @@
 %endif
 
 Name:           %{py3rpmname}-%{srcname}
-Version:        82.0.1
+Version:        84.0.0
 Release:        1%{?dist}
 Summary:        The blessed package to manage your versions by scm tags
 License:        MIT
@@ -28,7 +28,7 @@ It also handles file finders for the suppertes scms.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "7d872682c5d01cfde07da7bccc7b65469d3dca203318515ada1de5eda35efbf9" ]; then
+if [ "${sha256}" != "f4695c21257f0d9b537ec2692c941d02ee143b7cc1276941349a546573b2ef73" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -46,6 +46,9 @@ fi
 %{python3_sitelib}/*
 
 %changelog
+* Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 84.0.0-1
+- new upstream release
+
 * Tue Jun 09 2026 Antoine Martin <antoine@xpra.org> - 82.0.1-1
 - new upstream release (integrated bdist_wheel, vendored packaging)
 
