@@ -905,15 +905,12 @@ def do_run_mode(script_file: str, cmdline: list[str], options, args: list[str], 
         from xpra.scripts.glprobe import run_glcheck
         return run_glcheck(options)
     if mode == "opengl-probe":
-        check_gtk_client()
         from xpra.scripts.glprobe import run_glprobe
         return run_glprobe(options)
     if mode == "opengl-test":
-        check_gtk_client()
         from xpra.scripts.glprobe import run_glprobe
         return run_glprobe(options, True)
     if mode == "opengl-save-probe":
-        check_gtk_client()
         from xpra.scripts.glprobe import run_glsaveprobe
         return run_glsaveprobe()
     if mode == "example":
