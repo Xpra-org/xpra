@@ -327,11 +327,11 @@ class DisplayClient(StubClientSubsystem):
         self.server_max_desktop_size = c.intpair("max_desktop_size", (2 ** 15, 2 ** 15))
         self.server_actual_desktop_size = c.intpair("actual_desktop_size")
         log("server actual desktop size=%s", self.server_actual_desktop_size)
-        self.server_randr = c.boolget("resize_screen")
-        log("server has randr: %s", self.server_randr)
         self.server_opengl = c.dictget("opengl")
         Logger("screen", "opengl")("server opengl=%s", self.server_opengl)
-        # the server mode and monitor features are not part of the `display` namespace:
+        # the server mode, randr and monitor features are not part of the `display` namespace:
+        self.server_randr = caps.boolget("resize_screen")
+        log("server has randr: %s", self.server_randr)
         self.server_multi_monitors = caps.boolget("multi-monitors", False)
         self.server_monitors = caps.dictget("monitors")
         # resolutions the server allows for new monitors (ie: parsec-vdd EDID modes);
