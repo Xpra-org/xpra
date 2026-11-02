@@ -159,6 +159,11 @@ class DisplayClient(StubClientSubsystem):
     def get_screen_sizes(self, xscale=1, yscale=1) -> list[tuple[int, int]]:
         raise NotImplementedError()
 
+    @property
+    def screen_sizes(self) -> Sequence:
+        """ the cached screen sizes (unlike `get_screen_sizes()` which queries the platform) """
+        return self._current_screen_sizes
+
     def get_root_size(self) -> tuple[int, int]:
         raise NotImplementedError()
 

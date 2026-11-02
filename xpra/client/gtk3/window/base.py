@@ -431,7 +431,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self.is_OR():
             # make sure OR windows are mapped on screen
             display = self.get_subsystem("display")
-            if display and display._current_screen_sizes:
+            if display and display.screen_sizes:
                 self.window_offset = self.calculate_window_offset(x, y, w, h)
                 geomlog("OR offsets=%s", self.window_offset)
                 if self.window_offset:
@@ -521,7 +521,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def adjusted_position(self, ox, oy) -> tuple[int, int]:
         if AWT_RECENTER and is_awt(self._metadata):
             display = self.get_subsystem("display")
-            ss = display._current_screen_sizes if display else ()
+            ss = display.screen_sizes if display else ()
             if ss and len(ss) == 1:
                 screen0 = ss[0]
                 monitors = screen0[5]
@@ -554,7 +554,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def calculate_window_offset(self, wx: int, wy: int, ww: int, wh: int) -> tuple[int, int] | None:
         display = self.get_subsystem("display")
-        ss = display._current_screen_sizes if display else ()
+        ss = display.screen_sizes if display else ()
         if not ss:
             return None
         if len(ss) != 1:
