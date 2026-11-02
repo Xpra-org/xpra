@@ -60,6 +60,9 @@ class ClientWindowBase(ClientWidgetBase):
              metadata, override_redirect, client_properties,
              border, max_window_size, pixel_depth,
              headerbar))
+        # schedule callbacks on the client's own main loop, the same way `StubClientSubsystem` does:
+        # the window code then does not assume GLib, which is only what the current clients happen to use,
+        # and tests can give the window a client which runs callbacks immediately, or never:
         self.idle_add: Callable = client.idle_add
         self.timeout_add: Callable = client.timeout_add
         self.source_remove: Callable = client.source_remove
