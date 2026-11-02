@@ -8,7 +8,6 @@
 
 import os
 import sys
-from typing import Any
 
 os.environ.setdefault("XPRA_USE_FAKE_BACKING", "1")
 
@@ -38,9 +37,6 @@ class TestClient(FakeClient):
 
     def get_window_menu_helper(self):
         return None
-
-    def get_frame_extents(self, *_args) -> dict[str, Any]:
-        return {}
 
     def get_root_size(self) -> tuple[int, int]:
         screen = Gtk.Window().get_screen()

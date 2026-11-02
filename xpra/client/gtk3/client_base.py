@@ -12,7 +12,7 @@ from typing import Any
 from xpra.common import noop
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
-from xpra.util.env import envint, envbool, first_time, ignorewarnings
+from xpra.util.env import envint, envbool, ignorewarnings
 from xpra.os_util import gi_import, WIN32, POSIX
 from xpra.util.system import is_Wayland
 from xpra.net.common import Packet, FULL_INFO
@@ -34,16 +34,13 @@ from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.gtk3.dialogs import GTKDialogClient
 from xpra.client.gtk3.keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk3.subsystem.display import Gtk3DisplayClient
-from xpra.platform.gui import (
-    get_window_frame_sizes, get_window_frame_size,
-    system_bell, get_wm_name,
-)
+from xpra.client.gtk3.frame_extents import setup_frame_request_window, get_window_frame_sizes
+from xpra.platform.gui import system_bell
 from xpra.log import Logger
 
 log = Logger("gtk", "client")
 opengllog = Logger("gtk", "opengl")
 cursorlog = Logger("gtk", "client", "cursor")
-framelog = Logger("gtk", "client", "frame")
 focuslog = Logger("client", "focus")
 
 GLib = gi_import("GLib")
@@ -134,26 +131,10 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         # opengl state is owned by the `opengl` subsystem; cursor tracking state
         # (`_cursors`, `last_data`) by the `cursor` subsystem; the methods
         # below reach them via `get_subsystem(...)`.
-        # frame request hidden window:
-        self.frame_request_window = None
         # group leader bits:
         self._ref_to_group_leader = {}
         self._group_leader_wids = {}
         self.video_max_size = VIDEO_MAX_SIZE
-
-    def setup_frame_request_windows(self) -> None:
-        # query the window manager to get the frame size:
-        from xpra.x11.error import xsync
-        from xpra.x11.bindings.send_wm import send_wm_request_frame_extents
-        self.frame_request_window = Gtk.Window(type=Gtk.WindowType.TOPLEVEL)
-        self.frame_request_window.set_title("Xpra-FRAME_EXTENTS")
-        self.frame_request_window.realize()
-        win = self.frame_request_window.get_window()
-        xid = win.get_xid()
-        framelog("setup_frame_request_windows() window=%#x", xid)
-        with xsync:
-            root_xid = self.get_root_xid()
-            send_wm_request_frame_extents(root_xid, xid)
 
     def get_menu_helper(self):
         """
@@ -187,7 +168,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             # call this once early:
             ignorewarnings(self.get_mouse_position)
             if HAS_X11_BINDINGS:
-                self.setup_frame_request_windows()
+                setup_frame_request_window()
         UIXpraClient.run(self)
         return GObjectClientAdapter.run(self)
 
@@ -219,70 +200,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                 return None
             return scaled_image(pixbuf, size)
 
-    def request_frame_extents(self, window) -> None:
-        from xpra.x11.bindings.send_wm import send_wm_request_frame_extents
-        from xpra.x11.error import xsync
-        win = window.get_window()
-        xid = win.get_xid()
-        framelog(f"request_frame_extents({window}) xid={xid:x}")
-        with xsync:
-            root_xid = self.get_root_xid()
-            send_wm_request_frame_extents(root_xid, xid)
-
-    def get_frame_extents(self, window) -> dict[str, Any]:
-        # try native platform code first:
-        x, y = window.get_position()
-        w, h = window.get_size()
-        v = get_window_frame_size(x, y, w, h)  # pylint: disable=assignment-from-none
-        framelog(f"get_window_frame_size{(x, y, w, h)}={v}")
-        if v:
-            # (OSX does give us these values via Quartz API)
-            return v
-        if not HAS_X11_BINDINGS:
-            # nothing more we can do!
-            return {}
-        from xpra.x11.prop import array_get
-        gdkwin = window.get_window()
-        assert gdkwin
-        v = array_get(gdkwin.get_xid(), "_NET_FRAME_EXTENTS", "u32", ignore_errors=False)
-        framelog(f"get_frame_extents({window.get_title()})={v}")
-        if not v:
-            return {}
-        return {"frame": v}
-
-    def get_window_frame_sizes(self) -> dict[str, Any]:
-        wfs = get_window_frame_sizes()
-        if self.frame_request_window:
-            extents = self.get_frame_extents(self.frame_request_window)
-            if v := extents.get("frame", ()):
-                try:
-                    wm_name = get_wm_name()  # pylint: disable=assignment-from-none
-                except Exception:
-                    wm_name = ""
-                try:
-                    if len(v) == 8:
-                        if first_time("invalid-frame-extents"):
-                            framelog.warn(f"Warning: invalid frame extents value {v!r}")
-                            framelog.warn(" expected 8 elements but found %s", len(v))
-                            if wm_name:
-                                framelog.warn(f" this is probably a bug in {wm_name!r}")
-                            framelog.warn(f" using {v[4:]} instead")
-                        v = v[4:]
-                    if max(abs(value) for value in v) > 256:
-                        if first_time("invalid-frame-extents"):
-                            framelog.warn(f"Warning: invalid frame extents value {v!r}")
-                    else:
-                        l, r, t, b = v
-                        wfs["frame"] = (l, r, t, b)
-                        wfs["offset"] = (l, t)
-                except Exception as e:
-                    framelog.warn(f"Warning: invalid frame extents value {v!r}")
-                    framelog.warn(f" {e}")
-                    if wm_name:
-                        framelog.warn(f" this is probably a bug in {wm_name!r}")
-        framelog(f"get_window_frame_sizes()={wfs}")
-        return wfs
-
     def get_tray_classes(self) -> list[type]:
         return _add_statusicon_tray(super().get_tray_classes())
 
@@ -297,11 +214,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
 
     def get_root_window(self):
         return get_default_root_window()
-
-    def get_root_xid(self) -> int:
-        assert HAS_X11_BINDINGS
-        from xpra.x11.bindings.window import X11WindowBindings
-        return X11WindowBindings().get_root_xid()
 
     def get_raw_mouse_position(self) -> tuple[int, int]:
         root = self.get_root_window()
@@ -375,7 +287,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                     ms += ["shape"]
             log("metadata.supported: %s", ms)
             capabilities["metadata.supported"] = ms
-            capabilities.setdefault("window", {})["frame_sizes"] = self.get_window_frame_sizes()
+            capabilities.setdefault("window", {})["frame_sizes"] = get_window_frame_sizes()
         if features.encoding:
             capabilities.setdefault("encoding", {})["icons"] = {
                 "greedy": True,  # we don't set a default window icon anymore

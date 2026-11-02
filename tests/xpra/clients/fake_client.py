@@ -4,7 +4,6 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from typing import Any
 from collections.abc import Sequence
 
 from xpra.net.file_transfer import FileTransferHandler
@@ -131,12 +130,6 @@ class FakeClient(FileTransferHandler):
 
     def get_mouse_position(self):
         return 0, 0
-
-    def request_frame_extents(self, window):
-        pass
-
-    def get_window_frame_sizes(self) -> dict[str, Any]:
-        return {}
 
     def fsx(self, v):
         return v

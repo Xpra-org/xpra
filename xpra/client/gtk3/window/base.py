@@ -31,6 +31,7 @@ from xpra.common import (
 from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING
 from xpra.net.common import PacketElement
 from xpra.client.gui.window_base import ClientWindowBase, NOT_REQUESTED
+from xpra.client.gtk3.frame_extents import get_frame_extents, get_window_frame_sizes, request_frame_extents
 from xpra.client.gtk3.window.common import (
     use_x11_bindings, is_awt, is_popup, mask_buttons,
     WINDOW_NAME_TO_HINT, ALL_WINDOW_TYPES, BUTTON_MASK,
@@ -395,7 +396,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             # workaround for new window offsets:
             # keep the window contents where they were and adjust the frame
             # this generates a configure event which ensures the server has the correct window position
-            wfs = self._client.get_window_frame_sizes()
+            wfs = get_window_frame_sizes()
             if wfs and decorated and not was_decorated:
                 geomlog("set_decorated(%s) re-adjusting window location using %s", decorated, wfs)
                 normal = wfs.get("normal")
@@ -442,7 +443,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             # Note: we cannot just call self.get_window_frame_size() here because
             # the window is not realized yet, and it may take a while for the window manager
             # to set the frame-extents property anyway
-            if wfs := self._client.get_window_frame_sizes():
+            if wfs := get_window_frame_sizes():
                 geomlog("setup_window() window frame sizes=%s", wfs)
                 if v := wfs.get("offset"):
                     dx, dy = v
@@ -632,7 +633,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 callback(*args)
         if HAS_X11_BINDINGS:
             # request frame extents if the window manager supports it
-            self._client.request_frame_extents(self)
+            request_frame_extents(self)
         if self.group_leader:
             self.get_window().set_group(self.group_leader)
 
@@ -1498,10 +1499,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 self.get_subsystem("window").update_focus(self.wid, htf)
 
     def get_window_frame_size(self) -> Sequence[int]:
-        frame = self._client.get_frame_extents(self).get("frame", ())
+        frame = get_frame_extents(self).get("frame", ())
         if not frame:
             # default to global value we may have:
-            if wfs := self._client.get_window_frame_sizes():
+            if wfs := get_window_frame_sizes():
                 frame = wfs.get("frame", ())
         return frame
 
