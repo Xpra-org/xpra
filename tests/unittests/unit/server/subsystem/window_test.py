@@ -83,6 +83,29 @@ class WebcamMixinTest(ServerMixinTest):
         other.window_grab.assert_called_once_with(5)
         observer.window_grab.assert_not_called()
 
+    def test_x11_grab_follows_ui_driver(self):
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+
+        first, second = Mock(uuid="first"), Mock(uuid="second")
+        for ss in (first, second):
+            ss.effective_readonly.return_value = False
+        server = AdHocStruct()
+        server.ui_driver = "first"
+        manager = stubbable(SeamlessWindowServer)(server)
+        manager.window_sources = lambda: (first, second)
+        # no grab, nothing to move:
+        manager._new_ui_driver(server, second)
+        first.window_ungrab.assert_not_called()
+        second.window_grab.assert_not_called()
+
+        manager._has_grab = 7
+        server.ui_driver = "second"
+        manager._new_ui_driver(server, second)
+        first.window_ungrab.assert_called_once_with(7)
+        first.window_grab.assert_not_called()
+        second.window_grab.assert_called_once_with(7)
+        second.window_ungrab.assert_not_called()
+
     def test_x11_window_stacking_capability(self):
         from xpra.server.base import ServerBase
         from xpra.x11.server.seamless import SeamlessServer
