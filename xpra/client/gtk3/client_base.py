@@ -12,7 +12,7 @@ from typing import Any
 from xpra.common import noop
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
-from xpra.util.env import envint, envbool, first_time, IgnoreWarningsContext, ignorewarnings
+from xpra.util.env import envint, envbool, first_time, ignorewarnings
 from xpra.os_util import gi_import, WIN32, POSIX
 from xpra.util.system import is_Wayland
 from xpra.net.common import Packet, FULL_INFO
@@ -21,7 +21,7 @@ from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
 from xpra.constants import DEFAULT_METADATA_SUPPORTED
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.gtk.cursors import get_default_cursor, make_cursor
-from xpra.gtk.util import get_default_root_window, GRAB_STATUS_STRING, init_display_source
+from xpra.gtk.util import get_default_root_window, init_display_source
 from xpra.gtk.window import GDKWindow
 from xpra.gtk.widget import scaled_image
 from xpra.gtk.pixbuf import get_icon_pixbuf
@@ -44,7 +44,6 @@ log = Logger("gtk", "client")
 opengllog = Logger("gtk", "opengl")
 cursorlog = Logger("gtk", "client", "cursor")
 framelog = Logger("gtk", "client", "frame")
-grablog = Logger("client", "grab")
 focuslog = Logger("client", "focus")
 
 GLib = gi_import("GLib")
@@ -140,7 +139,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         # group leader bits:
         self._ref_to_group_leader = {}
         self._group_leader_wids = {}
-        # `_window_with_grab` is owned by the `window` subsystem (grab.py)
         self.video_max_size = VIDEO_MAX_SIZE
 
     def setup_frame_request_windows(self) -> None:
@@ -418,32 +416,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
                 # a local move or resize drag owns the cursor until it ends:
                 if not getattr(w, "moveresize_cursor", ""):
                     gdkwin.set_cursor(cursor)
-
-    def window_grab(self, wid: int, window) -> None:
-        event_mask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK
-        event_mask |= Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK
-        event_mask |= Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK
-        confine_to = None
-        cursor = None
-        etime = Gtk.get_current_event_time()
-        with IgnoreWarningsContext():
-            r = Gdk.pointer_grab(window.get_window(), True, event_mask, confine_to, cursor, etime)
-            grablog("pointer_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
-            # also grab the keyboard so the user won't Alt-Tab away:
-            r = Gdk.keyboard_grab(window.get_window(), False, etime)
-            grablog("keyboard_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
-        # grab-tracking state is owned by the `window` subsystem:
-        if w := self.get_subsystem("window"):
-            w._window_with_grab = wid
-
-    def window_ungrab(self) -> None:
-        grablog("window_ungrab()")
-        etime = Gtk.get_current_event_time()
-        with IgnoreWarningsContext():
-            Gdk.pointer_ungrab(etime)
-            Gdk.keyboard_ungrab(etime)
-        if w := self.get_subsystem("window"):
-            w._window_with_grab = 0
 
     def window_bell(self, window, device: int, percent: int, pitch: int, duration: int, bell_class,
                     bell_id: int, bell_name: str) -> None:

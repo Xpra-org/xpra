@@ -47,6 +47,12 @@ class FakeWindowSubsystem:
     def grab_lost(self) -> None:
         self._window_with_grab = None
 
+    def window_grab(self, wid: int, _window) -> None:
+        self._window_with_grab = wid
+
+    def window_ungrab(self, _window=None) -> None:
+        self._window_with_grab = None
+
     def get_window(self, wid: int):
         return self._id_to_window.get(wid)
 
@@ -73,7 +79,6 @@ class FakeClient(GLibScheduler):
         self._remote_server_mode = "seamless"
         self.request_frame_extents = noop
         self.server_readonly = False
-        self.window_ungrab = noop
         self.subsystems = {
             "window": FakeWindowSubsystem(),
             "pointer": FakePointerSubsystem(),

@@ -14,6 +14,7 @@ from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.platform.gui import pointer_grab, pointer_ungrab
 from xpra.log import Logger
 
+Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
 
 log = Logger("window", "grab")
@@ -29,6 +30,10 @@ GRAB_EVENT_MASK: Gdk.EventMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask
 GRAB_EVENT_MASK |= Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK
 GRAB_EVENT_MASK |= Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK
 GRAB_EVENT_MASK |= Gdk.EventMask.FOCUS_CHANGE_MASK
+
+WINDOW_GRAB_EVENT_MASK: Gdk.EventMask = Gdk.EventMask.BUTTON_PRESS_MASK | Gdk.EventMask.BUTTON_RELEASE_MASK
+WINDOW_GRAB_EVENT_MASK |= Gdk.EventMask.POINTER_MOTION_MASK | Gdk.EventMask.POINTER_MOTION_HINT_MASK
+WINDOW_GRAB_EVENT_MASK |= Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK
 
 
 class GrabWindow(GtkStubWindow):
@@ -58,6 +63,24 @@ class GrabWindow(GtkStubWindow):
             self.connect("grab-broken-event", self.grab_broken)
         else:
             log("do_init_grab: skipping grab-broken-event handler")
+
+    def do_window_grab(self) -> None:
+        """ the native part of the `window` subsystem's `window_grab` """
+        gdkwin = self.get_window()
+        etime = Gtk.get_current_event_time()
+        with IgnoreWarningsContext():
+            r = Gdk.pointer_grab(gdkwin, True, WINDOW_GRAB_EVENT_MASK, None, None, etime)
+            log("pointer_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
+            # also grab the keyboard so the user won't Alt-Tab away:
+            r = Gdk.keyboard_grab(gdkwin, False, etime)
+            log("keyboard_grab(..)=%s", GRAB_STATUS_STRING.get(r, r))
+
+    def do_window_ungrab(self) -> None:
+        """ the native part of the `window` subsystem's `window_ungrab` """
+        etime = Gtk.get_current_event_time()
+        with IgnoreWarningsContext():
+            Gdk.pointer_ungrab(etime)
+            Gdk.keyboard_ungrab(etime)
 
     def grab_broken(self, win, event) -> None:
         log("grab_broken%s", (win, event))

@@ -481,7 +481,7 @@ class WindowManagerClient(StubClientSubsystem):
                 cur.set_windows_cursor([window], last_cursor)
         if override_redirect and should_force_grab(metadata):
             log.warn("forcing grab for OR window %#x", wid)
-            self.client.window_grab(wid, window)
+            self.window_grab(wid, window)
         # mapping a window places it at the top of the stack:
         self.window_stacking_changed()
 
@@ -717,11 +717,10 @@ class WindowManagerClient(StubClientSubsystem):
         log("destroy_window(%s#x, %s)", wid, window)
         # it may have been closed before we ever got a chance to show it:
         self._locked_windows.pop(wid, None)
-        window.destroy()
         if self._window_with_grab == wid:
             log("destroying window %s which has grab, ungrabbing!", wid)
-            self.client.window_ungrab()
-            self._window_with_grab = None
+            self.window_ungrab(window)
+        window.destroy()
         if self.pointer_grabbed == wid:
             self.pointer_grabbed = None
         # deal with signal watchers:

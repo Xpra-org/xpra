@@ -377,9 +377,9 @@ class WindowMenuHelper(GTKMenuHelper):
         def toggle_grab(*args) -> None:
             log("toggle_grab%s", args)
             if is_grabbed():
-                self.client.window_ungrab()
+                window.window_ungrab()
             else:
-                self.client.window_grab(self.window.wid, self.window)
+                window.window_grab(self.window.wid, self.window)
             self._set_ticked(self.grab_menuitem, is_grabbed())
 
         self.grab_menuitem = self.menuitem("Grabbed", ticked_icon(is_grabbed()), cb=toggle_grab)

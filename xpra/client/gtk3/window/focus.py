@@ -123,8 +123,9 @@ class FocusWindow(GtkStubWindow):
         return change
 
     def _unfocus(self) -> bool:
-        self._client.window_ungrab()
         window = self.get_subsystem("window")
+        if window:
+            window.window_ungrab()
         if window and window.pointer_grabbed == self.wid:
             # we lost focus, assume we also lost the grab:
             window.pointer_grabbed = None

@@ -79,12 +79,24 @@ class WindowGrab(StubClientSubsystem):
     def grab_lost(self) -> None:
         self._window_with_grab = None
 
-    def window_grab(self, wid: int, _window) -> None:
-        log.warn(f"Warning: window grab not implemented in {self.client.client_type}")
+    def window_grab(self, wid: int, window) -> None:
+        """
+        grab the pointer and keyboard for this window,
+        the native part is done by the window itself, if it can (`do_window_grab`)
+        """
+        log("window_grab(%#x, %s)", wid, window)
+        if do_window_grab := getattr(window, "do_window_grab", None):
+            do_window_grab()
         self._window_with_grab = wid
 
-    def window_ungrab(self) -> None:
-        log.warn(f"Warning: window ungrab not implemented in {self.client.client_type}")
+    def window_ungrab(self, window=None) -> None:
+        """ release the grab, `window` defaults to the window which has it """
+        wid = self._window_with_grab
+        if window is None and wid:
+            window = self.get_window(wid)
+        log("window_ungrab(%s) grabbed=%s", window, wid)
+        if do_window_ungrab := getattr(window, "do_window_ungrab", None):
+            do_window_ungrab()
         self._window_with_grab = None
 
     def do_force_ungrab(self, wid: int) -> None:
@@ -94,8 +106,7 @@ class WindowGrab(StubClientSubsystem):
 
     def dismiss_popups(self) -> None:
         # Release our local grabs immediately, even with an older server or in readonly mode.
-        self.client.window_ungrab()
-        self._window_with_grab = None
+        self.window_ungrab()
         self.pointer_grabbed = None
         if keyboard := self.get_subsystem("keyboard"):
             keyboard.grabbed = False
@@ -114,13 +125,13 @@ class WindowGrab(StubClientSubsystem):
         window = self.get_window(wid)
         log("grabbing %#x: %s", wid, window)
         if window:
-            self.client.window_grab(wid, window)
+            self.window_grab(wid, window)
 
     def _process_ungrab(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         log("ungrabbing %#x: %s", wid, window)
-        self.client.window_ungrab()
+        self.window_ungrab()
 
     ######################################################################
     # packets:

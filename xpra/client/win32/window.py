@@ -20,7 +20,7 @@ from xpra.util.gobject import n_arg_signal, no_arg_signal
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.platform.win32.constants import FLASHW_ALL, FLASHW_TIMERNOFG, FLASHW_STOP
-from xpra.platform.win32.gui import _apply_title_bar_theme
+from xpra.platform.win32.gui import _apply_title_bar_theme, pointer_grab, pointer_ungrab
 from xpra.platform.win32.common import (
     GetModuleHandleA,
     WNDPROC, WNDCLASSEX, RegisterClassExW, UnregisterClassW,
@@ -51,6 +51,7 @@ from xpra.client.win32.system_menu import add_system_menu_items, get_command_act
 from xpra.log import Logger
 
 log = Logger("client", "window")
+grablog = Logger("client", "grab")
 iconlog = Logger("icon")
 drawlog = Logger("draw")
 geomlog = Logger("geometry")
@@ -1044,6 +1045,25 @@ class ClientWindow(GObject.GObject):
     def get_window_handle(self) -> int:
         # the native window handle is simply our `HWND`:
         return int(self.hwnd) or 0
+
+    def do_window_grab(self) -> None:
+        """ the native part of the `window` subsystem's `window_grab` """
+        # confine the pointer to the window (via `ClipCursor`):
+        handle = self.get_window_handle()
+        grabbed = pointer_grab(handle)
+        grablog("do_window_grab() handle=%#x, pointer_grab=%s", handle, grabbed)
+        # also grab the keyboard so the user can't Alt-Tab / Super away:
+        # (the `WH_KEYBOARD_LL` hook swallows Win/Tab keys while `grabbed` and focused)
+        if kb := self.client.get_subsystem("keyboard"):
+            kb.grabbed = True
+
+    def do_window_ungrab(self) -> None:
+        """ the native part of the `window` subsystem's `window_ungrab` """
+        handle = self.get_window_handle()
+        grablog("do_window_ungrab() handle=%#x", handle)
+        pointer_ungrab(handle)
+        if kb := self.client.get_subsystem("keyboard"):
+            kb.grabbed = False
 
     def show_all(self):
         # the server sends X11-style geometry (the position of the window
