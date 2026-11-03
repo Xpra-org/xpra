@@ -16,7 +16,7 @@ from xpra.os_util import POSIX, gi_import
 from xpra.util.io import load_binary_file
 from xpra.log import Logger
 from xpra.platform.paths import get_icon_filename
-from xpra.client.gui.fake_client import FakeClient
+from xpra.client.gui.fake_client import FakeWindowHost
 
 log = Logger("opengl", "paint")
 
@@ -176,8 +176,7 @@ def test_gl_client_window(gl_client_window_class: Callable,
         from xpra.codecs.loader import load_codec
         load_codec("dec_pillow")
         from xpra.client.gui.window_border import WindowBorder
-        border = WindowBorder()
-        noclient = FakeClient()
+        noclient = FakeWindowHost()
         metadata = typedict({
             # test with alpha on every platform: win32 does support it after all,
             # the native backend through DWM composition and gtk3 through an RGBA visual
@@ -196,10 +195,8 @@ def test_gl_client_window(gl_client_window_class: Callable,
             def schedule_recheck_focus(self) -> None:
                 """ pretend to handle focus checks """
 
-        window = NoHeaderGLClientWindow(noclient.get_subsystem, noclient.is_readonly, None, 0,
-                                        (x, y, ww, wh), (ww, wh),
-                                        metadata, False, typedict({}),
-                                        border, max_window_size, pixel_depth)
+        window = noclient.make_window(NoHeaderGLClientWindow, 0, (x, y, ww, wh), metadata,
+                                      WindowBorder(), max_window_size, pixel_depth)
         window_backing = window._backing
         window.realize()
         window_backing.paint_screen = True

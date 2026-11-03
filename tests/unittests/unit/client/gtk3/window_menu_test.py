@@ -10,7 +10,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from xpra.client.gui.fake_client import FakeClient
+from xpra.client.gui.fake_client import FakeWindowHost
 from xpra.client.gtk3.window.menu import WindowMenuHelper
 
 
@@ -20,7 +20,7 @@ class MenuHelper:
     make_grabmenuitem = WindowMenuHelper.make_grabmenuitem
 
     def __init__(self):
-        self.get_subsystem = FakeClient().get_subsystem
+        self.get_subsystem = FakeWindowHost().get_subsystem
         self.window = Mock(wid=5, border=SimpleNamespace(shown=False))
         self.ticked = []
 
