@@ -19,6 +19,9 @@ MenuItem = TypeVar("MenuItem")
 
 
 class MenuHelper:
+    # whether `show_menu` can pop up this menu,
+    # (not when the platform shows the menu itself, ie: the macOS menu bar)
+    can_popup = True
 
     def __init__(self, client):
         self.menu = None
