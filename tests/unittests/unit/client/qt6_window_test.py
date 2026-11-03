@@ -4,7 +4,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-"""The qt6 client windows: focus and pointer buttons."""
+"""The qt6 client windows: focus, pointer buttons and double-clicks."""
 
 import os
 import unittest
@@ -56,14 +56,34 @@ class Qt6WindowTest(unittest.TestCase):
         from PyQt6.QtGui import QMouseEvent
         from PyQt6.QtCore import QEvent
         label = self.window.label
-        for button in (Qt.MouseButton.LeftButton, Qt.MouseButton.MiddleButton, Qt.MouseButton.RightButton):
+        buttons = (
+            Qt.MouseButton.LeftButton, Qt.MouseButton.MiddleButton, Qt.MouseButton.RightButton,
+            Qt.MouseButton.BackButton, Qt.MouseButton.ForwardButton,
+        )
+        for button in buttons:
             for event_type, handler in (
                 (QEvent.Type.MouseButtonPress, label.mousePressEvent),
                 (QEvent.Type.MouseButtonRelease, label.mouseReleaseEvent),
             ):
                 handler(QMouseEvent(event_type, QPointF(5, 6), QPointF(15, 26), button, button,
                                     Qt.KeyboardModifier.NoModifier))
-        self.assertEqual(self.client.buttons(), [(b, pressed) for b in (1, 2, 3) for pressed in (True, False)])
+        self.assertEqual(self.client.buttons(), [(b, pressed) for b in (1, 2, 3, 8, 9) for pressed in (True, False)])
+
+    def test_double_click(self) -> None:
+        # what Qt sends for a double-click:
+        from PyQt6.QtCore import Qt, QPointF, QEvent
+        from PyQt6.QtGui import QMouseEvent
+        label = self.window.label
+        button = Qt.MouseButton.LeftButton
+        for event_type, handler in (
+            (QEvent.Type.MouseButtonPress, label.mousePressEvent),
+            (QEvent.Type.MouseButtonRelease, label.mouseReleaseEvent),
+            (QEvent.Type.MouseButtonDblClick, label.mouseDoubleClickEvent),
+            (QEvent.Type.MouseButtonRelease, label.mouseReleaseEvent),
+        ):
+            handler(QMouseEvent(event_type, QPointF(5, 6), QPointF(15, 26), button, button,
+                                Qt.KeyboardModifier.NoModifier))
+        self.assertEqual(self.client.buttons(), [(1, True), (1, False)] * 2)
 
     def test_wheel(self) -> None:
         # a mouse wheel only sets the `angleDelta`:
