@@ -66,11 +66,13 @@ class ClientWindow(Toplevel):
         self.bind("<FocusOut>", self.on_focus_out)
         self.bind("<Key>", self.on_key_press)
         self.bind("<KeyRelease>", self.on_key_release)
+        # (the bindings of a toplevel also receive the events of the widgets it contains,
+        # see `is_own_event`)
         self.bind("<Configure>", self.on_configure)
         self.bind("<Map>", self.on_map)
         self.bind("<Unmap>", self.on_unmap)
-        self.bind("<Destroy>", self.on_destroy)
-        self.protocol("WM_DELETE_WINDOW", self.on_destroy)
+        # the server decides what to do when the user closes the window:
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def update_metadata(self, metadata: typedict):
         self.metadata.update(metadata)
@@ -110,9 +112,6 @@ class ClientWindow(Toplevel):
         log(f"focus_out: {event!r}")
         # no real need to update anything
         # (tracking where the focus is actually going to would add the same complexity as the Gtk client)
-
-    def on_hide(self) -> None:
-        self.client.send(WINDOW_UNMAP, self.wid)
 
     def on_key_press(self, event) -> None:
         log(f"key press: {event!r}")
@@ -180,24 +179,35 @@ class ClientWindow(Toplevel):
             for pressed in (True, False):
                 self.client.send(POINTER_BUTTON, -1, 0, self.wid, button, pressed, pos, {})
 
+    def is_own_event(self, event) -> bool:
+        return event.widget is self
+
     def on_map(self, event) -> None:
         log(f"map: {event!r}")
+        if not self.is_own_event(event):
+            return
         x = self.winfo_x()
         y = self.winfo_y()
         w = self.winfo_width()
         h = self.winfo_height()
         self.client.send(WINDOW_MAP, self.wid, x, y, w, h, {}, {})
 
-    def on_unmap(self, _event) -> None:
-        self.client.send(WINDOW_CLOSE, self.wid)
+    def on_unmap(self, event) -> None:
+        log(f"unmap: {event!r}")
+        if not self.is_own_event(event):
+            return
+        iconified = self.state() == "iconic"
+        self.client.send(WINDOW_UNMAP, self.wid, iconified)
 
     def on_configure(self, event) -> None:
         log(f"configure: {event}")
+        if not self.is_own_event(event):
+            return
         self.client.send(WINDOW_CONFIGURE, self.wid, {
             "geometry": (event.x, event.y, event.width, event.height),
         })
 
-    def on_destroy(self, _event=None) -> None:
+    def on_close(self) -> None:
         self.client.send(WINDOW_CLOSE, self.wid)
 
     def on_resize(self, _event) -> None:
