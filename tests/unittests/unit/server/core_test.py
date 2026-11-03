@@ -22,7 +22,6 @@ class TestServerCore(unittest.TestCase):
     @unittest.skipUnless(POSIX and not OSX, "X11 server classes require a POSIX X11 build")
     def test_display_mode_hello(self):
         from xpra.server.shadow.shadow_server_base import ShadowServerBase
-        from xpra.wayland.server.seamless import WaylandSeamlessServer
         from xpra.x11.desktop.desktop_server import XpraDesktopServer
         from xpra.x11.desktop.monitor_server import XpraMonitorServer
         from xpra.x11.server.seamless import SeamlessServer
@@ -32,8 +31,13 @@ class TestServerCore(unittest.TestCase):
             (XpraDesktopServer, "desktop", ("desktop",)),
             (XpraMonitorServer, "monitor", ("desktop", "monitor")),
             (SeamlessServer, "seamless", ()),
-            (WaylandSeamlessServer, "seamless", ()),
         )
+        with self.subTest(server="WaylandSeamlessServer"):
+            try:
+                from xpra.wayland.server.seamless import WaylandSeamlessServer
+            except ImportError as e:
+                self.skipTest(f"Wayland server is not available: {e}")
+            cases += ((WaylandSeamlessServer, "seamless", ()),)
         for cls, mode, legacy_flags in cases:
             for wants in ((), ("features",)):
                 with self.subTest(server=cls.__name__, wants=wants):
