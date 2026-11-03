@@ -67,6 +67,8 @@ class DrawingArea(QLabel):
             Qt.MouseButton.LeftButton: 1,
             Qt.MouseButton.MiddleButton: 2,
             Qt.MouseButton.RightButton: 3,
+            Qt.MouseButton.BackButton: 8,
+            Qt.MouseButton.ForwardButton: 9,
         }.get(event.button(), -1)
         if button < 0:
             return
@@ -81,7 +83,8 @@ class DrawingArea(QLabel):
         self.send_mouse_button_event(event, False)
 
     def mouseDoubleClickEvent(self, event) -> None:
-        self.send_mouse_button_event(event, True)
+        # Qt sends: press, release, double-click, release
+        # so the double-click is just the second press:
         self.send_mouse_button_event(event, True)
 
     def wheelEvent(self, event) -> None:
