@@ -433,6 +433,8 @@ def is_request_allowed(proto, request="info", default=True) -> bool:
     if request == "exec":
         # The immediate-launch alias must not bypass existing run restrictions.
         r = r and str_to_bool(options.get("run", default), default)
+    elif request == "windowshot":
+        r = r and str_to_bool(options.get("screenshot", default), default)
     get_logger().debug(f"is_request_allowed%s={r}", (proto, request, default))
     return r
 

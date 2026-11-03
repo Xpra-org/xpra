@@ -527,6 +527,7 @@ def get_usage() -> list[str]:
             "stop [DISPLAY]",
             "exit [DISPLAY]",
             "screenshot filename [DISPLAY]",
+            "windowshot filename selector [DISPLAY]",
             "control DISPLAY command [arg1] [arg2]..",
             "run [DISPLAY] command [arg1] [arg2]..",
             "exec [DISPLAY] command [arg1] [arg2]..",

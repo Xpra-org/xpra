@@ -99,7 +99,7 @@ STDOUT_SUBCOMMANDS = (
 )
 CLIENT_SUBCOMMANDS = (
     "attach", "listen", "detach",
-    "screenshot", "icon", "version", "info", "id",
+    "screenshot", "windowshot", "icon", "version", "info", "id",
     "control", "run", "exec", "_monitor", "shell", "print",
     "qrcode",
     "show-menu", "show-about", "show-session-info",

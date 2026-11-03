@@ -32,6 +32,7 @@ xpra \- viewer for remote, persistent X applications
 .HP
 \fBxpra\fP \fBstop\fP | \fBxpra\fP \fBexit\fP | \fBxpra\fP \fBdetach\fP |
 \fBxpra\fP \fBscreenshot\fP \fIfilename\fP | \fBxpra\fP \fBversion\fP |
+\fBxpra\fP \fBwindowshot\fP \fIfilename\fP \fIselector\fP [CONNECTIONSTRING] |
 \fBxpra\fP \fBinfo\fP [CONNECTIONSTRING] |
 \fBxpra\fP \fBid\fP [CONNECTIONSTRING] |
 \fBxpra\fP \fBtop\fP [CONNECTIONSTRING]
@@ -349,6 +350,24 @@ Detaches the given xpra display.
 .SS xpra screenshot
 Takes a screenshot and saves it to the filename specified.
 Note: screenshots can only be taken when a client is attached.
+.SS xpra windowshot
+Captures one managed window and saves its pixels as a PNG on the client.
+Use \fBxpra windowshot\fP \fIfilename\fP \fIselector\fP [CONNECTIONSTRING].
+A filename of \fB\-\fP writes the PNG to standard output.
+Decimal selectors match Xpra window IDs; selectors beginning with \fB0x\fP
+match hexadecimal X11 window IDs. Other selectors match a case-sensitive
+substring of the window title.
+The prefixes \fBwid:\fP, \fBxid:\fP and \fBname:\fP override this inference.
+The \fBxid:\fP prefix accepts decimal or hexadecimal IDs.
+For example, \fBxpra windowshot window.png "Terminal" :100\fP captures
+the window whose title contains "Terminal" on display :100.
+Use \fBname:123\fP to select a numeric title.
+Missing or ambiguous matches are errors; ambiguous matches list candidate
+window IDs and titles so that a window can be selected by ID instead.
+Only windows managed by the server can be selected. For desktop and shadow
+sessions these may represent desktops or capture regions.
+The image contains the selected window's pixels without separate popups or
+client-side decorations. Pixels must be available from the window model.
 .SS xpra version
 Queries the server version and prints it out.
 Note: older servers may not support this feature.
@@ -2163,7 +2182,7 @@ By default it uses a simple default 'xpra' icon.
 (On Microsoft Windows, the icon must be in \fBico\fP format.)
 
 
-.SS Options for attach, stop, info, screenshot, version
+.SS Options for attach, stop, info, screenshot, windowshot, version
 .TP
 \fB\-\-ssh\fP\=\fICMD\fP
 When you use an \fBssh:\fP address to connect to a remote display,

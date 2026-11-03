@@ -270,6 +270,50 @@ class WindowServer(StubSubsystem):
     def get_window(self, wid: int):
         return self._id_to_window.get(wid)
 
+    def find_window(self, selector: str):
+        """Resolve an ID or title substring to exactly one managed model."""
+        kind, sep, value = selector.partition(":")
+        if not sep or kind not in ("wid", "xid", "name"):
+            value = selector
+            if selector.lower().startswith("0x"):
+                kind = "xid"
+            elif selector.isdecimal():
+                kind = "wid"
+            else:
+                kind = "name"
+        if not value:
+            raise ValueError("window selector must not be empty")
+        identifier = 0
+        if kind != "name":
+            base = 16 if kind == "xid" and value.lower().startswith("0x") else 10
+            try:
+                if base == 10 and not value.isdecimal():
+                    raise ValueError()
+                identifier = int(value, base)
+                if identifier <= 0:
+                    raise ValueError()
+            except ValueError:
+                raise ValueError(f"invalid {kind} selector: {value!r}") from None
+        matches = []
+        for wid, window in tuple(self._id_to_window.items()):
+            if not window.is_managed():
+                continue
+            if kind == "wid":
+                match = wid == identifier
+            elif kind == "xid":
+                match = "xid" in window.get_property_names() and window.get_property("xid") == identifier
+            else:
+                title = window.get_property("title") if "title" in window.get_property_names() else ""
+                match = value in (title or "")
+            if match:
+                matches.append((wid, window))
+        if not matches:
+            raise ValueError(f"no managed window matches {selector!r}")
+        if len(matches) > 1:
+            candidates = ", ".join(f"wid:{wid} ({window.get_property('title')!r})" for wid, window in matches)
+            raise ValueError(f"ambiguous window selector {selector!r}: {candidates}")
+        return matches[0][1]
+
     def show_all_windows(self) -> None:
         for w in self._id_to_window.values():
             if show := getattr(w, "show", None):

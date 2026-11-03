@@ -235,6 +235,17 @@ class ScreenshotXpraClient(AbstractImageXpraClient):
         self.add_packets("display-screenshot", main_thread=True)
 
 
+class WindowshotXpraClient(ScreenshotXpraClient):
+    """Request the pixels of a single managed window and save them."""
+
+    def __init__(self, opts, image_filename: str, selector: str):
+        self.window_selector = selector
+        super().__init__(opts, image_filename, "windowshot")
+
+    def hello_request(self) -> dict[str, Any]:
+        return super().hello_request() | {"window": self.window_selector}
+
+
 class IconXpraClient(AbstractImageXpraClient):
     """
         Request the session's icon and save it

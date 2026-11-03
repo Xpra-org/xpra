@@ -7,16 +7,61 @@
 import io
 import os
 import unittest
+from tempfile import TemporaryDirectory
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from xpra.client.base.command import AbstractImageXpraClient, CommandConnectClient, InfoXpraClient, RunClient, StopXpraClient
+from xpra.client.base.command import WindowshotXpraClient
 from xpra.net.common import Packet
 from xpra.net.packet_type import SHUTDOWN_SERVER
 from xpra.exit_codes import ExitCode
 from xpra.config.defaults import make_defaults_struct
 from xpra.net.constants import MAX_PACKET_SIZE
 from xpra.util.objects import typedict
+
+
+class WindowshotClientTest(unittest.TestCase):
+
+    def test_hello_request(self):
+        with patch.object(CommandConnectClient, "make_hello_base", return_value={"base": True}), \
+             patch.object(CommandConnectClient, "make_hello", return_value={"full": True}):
+            client = WindowshotXpraClient(make_defaults_struct(), "window.png", "name:Terminal")
+            for hello in (client.make_hello_base(), client.make_hello()):
+                self.assertEqual(hello["request"], "windowshot")
+                self.assertEqual(hello["window"], "name:Terminal")
+
+    def test_png_output(self):
+        packet = Packet("display-screenshot", 2, 2, "png", 8, b"png-data")
+        with TemporaryDirectory() as directory:
+            filename = Path(directory) / "window.png"
+            client = WindowshotXpraClient(make_defaults_struct(), str(filename), "1")
+            client.warn_and_quit = Mock()
+            client._process_display_screenshot(packet)
+            self.assertEqual(filename.read_bytes(), b"png-data")
+            self.assertEqual(client.warn_and_quit.call_args.args[0], ExitCode.OK)
+
+    def test_stdout(self):
+        client = WindowshotXpraClient(make_defaults_struct(), "-", "1")
+        client.warn_and_quit = Mock()
+        stdout = Mock()
+        output = Mock()
+        output.__enter__ = Mock(return_value=output)
+        output.__exit__ = Mock(return_value=False)
+        with patch("sys.stdout", stdout), patch("os.fdopen", return_value=output) as fdopen:
+            client._process_display_screenshot(Packet("display-screenshot", 2, 2, "png", 8, b"png-data"))
+        fdopen.assert_called_once_with(stdout.fileno.return_value, "wb", closefd=False)
+        output.write.assert_called_once_with(b"png-data")
+
+    def test_error_does_not_open_output(self):
+        with TemporaryDirectory() as directory:
+            filename = Path(directory) / "window.png"
+            client = WindowshotXpraClient(make_defaults_struct(), str(filename), "1")
+            client.quit = Mock()
+            client._process_connection_close(Packet("connection-close", "server error", "windowshot failed: no pixels"))
+            self.assertNotEqual(client.quit.call_args.args[0], ExitCode.OK)
+            self.assertFalse(filename.exists())
 
 
 class FakeProtocol:

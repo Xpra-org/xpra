@@ -13,6 +13,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from xpra.client.base.command import RunClient
+from xpra.client.base.command import WindowshotXpraClient
 from xpra.client.base.client import XpraClientBase
 from xpra.exit_codes import ExitCode
 from xpra.net.constants import SocketState
@@ -24,6 +25,25 @@ from xpra.scripts.start import run_server_mode, split_start_child_args
 from xpra.scripts.proxy import run_proxy_run
 from xpra.scripts.clients import connect_client_app, create_client_app
 from xpra.scripts.parsing import mode_needs_ssh_agent, get_usage, MODE_ALIAS
+
+
+class WindowshotRoutingTest(unittest.TestCase):
+
+    def test_client_dispatch(self):
+        for display in ([], ["socket:///tmp/test"]):
+            with self.subTest(display=display), patch("xpra.scripts.clients.basic_client_features"):
+                client, displays, command = create_client_app(make_defaults_struct(), ["window.png", "name:Terminal", *display], "windowshot")
+            self.assertIsInstance(client, WindowshotXpraClient)
+            self.assertEqual(client.image_filename, "window.png")
+            self.assertEqual(client.window_selector, "name:Terminal")
+            self.assertEqual(displays, display)
+            self.assertEqual(command, [])
+
+    def test_argument_count(self):
+        for args in ([], ["window.png"], ["window.png", "1", ":100", "extra"]):
+            with self.subTest(args=args), patch("xpra.scripts.clients.basic_client_features"), self.assertRaises(InitExit) as cm:
+                create_client_app(make_defaults_struct(), args, "windowshot")
+            self.assertEqual(cm.exception.status, ExitCode.ARGUMENT_MISMATCH)
 
 
 class RunRoutingTest(unittest.TestCase):

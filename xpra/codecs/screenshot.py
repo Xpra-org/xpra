@@ -14,6 +14,22 @@ from xpra.net.packet_type import DISPLAY_SCREENSHOT
 log = Logger("encoding")
 
 
+def make_windowshot_packet(image: ImageWrapper) -> tuple[str, int, int, str, int, Any]:
+    """Encode one window, preserving its buffer and respecting row padding."""
+    from PIL import Image
+    if image.get_planes() != ImageWrapper.PACKED:
+        raise ValueError("windowshot requires packed window pixels")
+    pixel_format = image.get_pixel_format()
+    if pixel_format not in ("RGB", "BGR", "RGBX", "XRGB", "BGRX", "RGBA", "ARGB", "BGRA"):
+        raise ValueError(f"unsupported window pixel format: {pixel_format!r}")
+    w, h = image.get_width(), image.get_height()
+    mode = "RGBA" if "A" in pixel_format else "RGB"
+    pixels = memoryview(image.get_plane(0)).tobytes()
+    screenshot = Image.frombytes(mode, (w, h), pixels, "raw", pixel_format, image.get_rowstride(), 1)
+    data = to_png(screenshot)
+    return DISPLAY_SCREENSHOT, w, h, "png", w * 4, Compressed("png", data)
+
+
 def make_screenshot_packet_from_regions(regions: Sequence[tuple[int, int, int, ImageWrapper]]) \
         -> tuple[str, int, int, str, int, Any]:
     # regions = array of (wid, x, y, PIL.Image)
