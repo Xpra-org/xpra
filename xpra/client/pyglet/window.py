@@ -6,6 +6,7 @@
 
 from collections.abc import Sequence
 
+from pyglet import compat_platform
 from pyglet.window import Window, event, mouse
 from pyglet.image import ImageData, SolidColorImagePattern
 from pyglet.sprite import Sprite
@@ -23,6 +24,10 @@ log = Logger()
 def get_modifiers(_modifiers: int) -> Sequence[str]:
     return ()
 
+
+# pyglet's X11 backend subtracts one more from the vertical position of the motion events
+# than from the position of the button events:
+MOTION_Y_OFFSET = 1 if compat_platform.startswith("linux") else 0
 
 # pyglet's mouse buttons are bit flags, the server uses the X11 button numbers:
 BUTTONS: dict[int, int] = {
@@ -109,11 +114,23 @@ class ClientWindow(Window):
             "backend": "pyglet",
         })
 
+    def get_pointer_position(self, x: int, y: int) -> tuple[int, int, int, int]:
+        """ the position on the screen, and relative to the window """
+        # pyglet's vertical axis points up, from the bottom of the window:
+        y = self.height - y
+        # (the position of the window contents on the screen)
+        wx, wy = self.get_location()
+        return wx + x, wy + y, x, y
+
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
         device_id = -1
         seq = 0
-        pos = (x, y, dx, dy)
+        pos = self.get_pointer_position(x, y + MOTION_Y_OFFSET)
         self.client.send(POINTER_MOTION, device_id, seq, self.wid, pos, {})
+
+    def on_mouse_drag(self, x: int, y: int, dx: int, dy: int, _buttons: int, _modifiers: int) -> None:
+        # the motion events while a button is held down
+        self.on_mouse_motion(x, y, dx, dy)
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> None:
         if xbutton := BUTTONS.get(button, 0):
@@ -130,7 +147,7 @@ class ClientWindow(Window):
     def on_mouse_button_event(self, pressed: bool, x: int, y: int, button: int, modifiers: int) -> None:
         # `button` is an X11 button number
         seq = 0
-        pos = (x, y)
+        pos = self.get_pointer_position(x, y)
         self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, {})
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
