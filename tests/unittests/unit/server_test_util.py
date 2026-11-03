@@ -243,10 +243,23 @@ class ServerTestUtil(ProcessTestUtil):
         raise Exception(
             "server socket for display %s should have been removed, but it is still found in %s" % (display, displays))
 
+    def wait_for_client_connection(self, client, client_uuid: str, *connect_args: str, timeout=20) -> None:
+        """Wait for this client's handshake, even when other clients are connected."""
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if client.poll() is not None:
+                self.show_proc_error(client, "client exited before connecting")
+            info = self.get_server_info(*connect_args)
+            for key, value in info.items():
+                if key.startswith("client.") and key.endswith(".uuid") and value == client_uuid:
+                    if info.get(key.removesuffix("uuid") + "hello-sent") == "True":
+                        return
+            time.sleep(0.1)
+        self.show_proc_error(client, f"client {client_uuid} did not connect to {connect_args}")
+
     @classmethod
-    def get_server_info(cls, display: str):
-        #wait for client to own the clipboard:
-        cmd = cls.get_xpra_cmd() + ["info", display]
+    def get_server_info(cls, *connect_args: str):
+        cmd = cls.get_xpra_cmd() + ["info", *connect_args]
         out = cls.get_command_output(cmd)
         #print("info=%s" % (out,))
         info = {}
