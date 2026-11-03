@@ -6,7 +6,7 @@
 
 from collections.abc import Sequence
 
-from pyglet.window import Window, event
+from pyglet.window import Window, event, mouse
 from pyglet.image import ImageData, SolidColorImagePattern
 from pyglet.sprite import Sprite
 
@@ -24,6 +24,16 @@ log = Logger()
 
 def get_modifiers(_modifiers: int) -> Sequence[str]:
     return ()
+
+
+# pyglet's mouse buttons are bit flags, the server uses the X11 button numbers:
+BUTTONS: dict[int, int] = {
+    mouse.LEFT: 1,
+    mouse.MIDDLE: 2,
+    mouse.RIGHT: 3,
+    mouse.MOUSE4: 8,
+    mouse.MOUSE5: 9,
+}
 
 
 class ClientWindow(Window):
@@ -44,6 +54,8 @@ class ClientWindow(Window):
         self.set_location(x, y)
         self.set_size(w, h)
         self.focused = False
+        # the X11 numbers of the buttons we have sent a press for:
+        self.buttons_pressed: set[int] = set()
 
         # A logger class, which prints events to stdout or to a file:
         win_event_logger = event.WindowEventLogger()
@@ -57,8 +69,7 @@ class ClientWindow(Window):
 
     def on_activate(self) -> None:
         self.focused = True
-        if wc := self.client.get_subsystem("window"):
-            wc.update_focus(self.wid)
+        self.client.update_focus(self.wid)
 
     def on_deactivate(self) -> None:
         self.focused = False
@@ -114,24 +125,31 @@ class ClientWindow(Window):
         self.client.send(POINTER_MOTION, device_id, seq, self.wid, pos, {})
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> None:
-        self.on_mouse_button_event(True, x, y, button, modifiers)
+        if xbutton := BUTTONS.get(button, 0):
+            self.buttons_pressed.add(xbutton)
+            self.on_mouse_button_event(True, x, y, xbutton, modifiers)
 
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int) -> None:
-        self.on_mouse_button_event(False, x, y, button, modifiers)
+        xbutton = BUTTONS.get(button, 0)
+        # pyglet also reports the release of the wheel buttons, as `MOUSE4` and `MOUSE5`:
+        if xbutton in self.buttons_pressed:
+            self.buttons_pressed.discard(xbutton)
+            self.on_mouse_button_event(False, x, y, xbutton, modifiers)
 
     def on_mouse_button_event(self, pressed: bool, x: int, y: int, button: int, modifiers: int) -> None:
+        # `button` is an X11 button number
         seq = 0
         pos = (x, y)
         self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, {})
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
-        button = 4
-        pointer = (x, y)
-        modifiers = ()
-        buttons = ()
-        if pointer_sub := self.client.get_subsystem("pointer"):
-            for state in True, False:
-                pointer_sub.send_button(-1, self.wid, button, state, pointer, modifiers, buttons, {})
+        # sent as clicks of the wheel buttons: 4 and 5 for up and down, 6 and 7 for left and right
+        for button, scroll in ((4, scroll_y), (6, -scroll_x)):
+            if scroll:
+                if scroll < 0:
+                    button += 1
+                for pressed in (True, False):
+                    self.on_mouse_button_event(pressed, x, y, button, 0)
 
     def on_move(self, x: int, y: int) -> None:
         w, h = self.get_size()
