@@ -11,10 +11,12 @@ import signal
 import tempfile
 import unittest
 from subprocess import Popen, DEVNULL, PIPE
+from unittest.mock import patch
 
 from xpra.os_util import OSEnvContext, pollwait, getuid, POSIX, OSX
 from xpra.util import AdHocStruct
 from xpra.platform.paths import get_xpra_command
+from xpra.platform.dotxpra import DotXpra
 from xpra.common import noop
 from xpra.scripts.config import InitException
 from xpra.scripts.main import (
@@ -26,7 +28,24 @@ from xpra.scripts.main import (
     find_session_by_name,
     connect_to,
     find_mode_pos,
+    get_sockpath,
 )
+
+
+class TestGetSockpath(unittest.TestCase):
+
+    def test_socket_becomes_live_between_probes(self):
+        dir_servers = {"/tmp": [(DotXpra.LIVE, ":10", "/tmp/xpra/:10")]}
+        desc = {"display": ":10", "socket_dir": "/tmp", "socket_dirs": []}
+
+        def error_cb(message):
+            raise ValueError(message)
+
+        with patch.object(DotXpra, "socket_details", side_effect=[{}, dir_servers]), \
+             patch.object(DotXpra, "get_display_state", return_value=DotXpra.LIVE):
+            result = get_sockpath(desc, error_cb, timeout=1)
+        self.assertEqual(result, "/tmp/xpra/:10")
+
 
 def _get_test_socket_dir():
     return tempfile.gettempdir()

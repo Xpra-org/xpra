@@ -1252,7 +1252,8 @@ def get_sockpath(display_desc:Dict[str,Any], error_cb, timeout=CONNECT_TIMEOUT) 
                         #found a final state
                         break
                     time.sleep(0.1)
-                dir_servers = socket_details()
+            # The socket may already have become LIVE between the two probes.
+            dir_servers = socket_details()
         sockpath = single_display_match(dir_servers, error_cb,
                                         nomatch=f"cannot find live server for display {display}")[-1]
     return sockpath
