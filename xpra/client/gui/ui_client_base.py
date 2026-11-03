@@ -283,8 +283,9 @@ class UIXpraClient(XpraClientBase):
         return get_menu_helper_class()
 
     def show_menu(self, *_args) -> None:
-        if self.menu_helper:
-            self.menu_helper.activate()
+        # (the menu helper may not exist yet: only the tray creates it up front)
+        if mh := self.get_menu_helper():
+            mh.activate()
 
     def get_tray_classes(self) -> list[type]:
         # the canonical tray class list lives on the client: concrete clients
