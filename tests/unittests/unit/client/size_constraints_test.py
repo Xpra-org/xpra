@@ -5,14 +5,14 @@
 # later version. See the file COPYING for details.
 
 """
-The size limits of the win32 windows: the server's size constraints are for the window contents,
+The size limits of the native windows (ie: win32): the server's size constraints are for the window contents,
 in server pixels, the native limits include the frame and are in local pixels.
 """
 
 import unittest
 
 from xpra.util.objects import typedict
-from xpra.client.win32.size_constraints import get_track_sizes
+from xpra.client.gui.size_constraints import get_track_sizes
 
 FRAME = (16, 39)
 
@@ -21,7 +21,7 @@ def double(w: int, h: int) -> tuple[int, int]:
     return w * 2, h * 2
 
 
-class Win32SizeConstraintsTest(unittest.TestCase):
+class SizeConstraintsTest(unittest.TestCase):
 
     def test_no_constraints(self) -> None:
         self.assertEqual(get_track_sizes(typedict(), (0, 0), FRAME), ((0, 0), (0, 0)))
