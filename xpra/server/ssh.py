@@ -11,9 +11,10 @@ import base64
 import hashlib
 import binascii
 from typing import Any
-from subprocess import Popen, PIPE
+from subprocess import DEVNULL, Popen, PIPE
 from threading import Event
 from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor
 import paramiko
 
 from xpra.server.common import SSH_AGENT_DISPATCH
@@ -89,7 +90,7 @@ def detect_ssh_stanza(cmd: Sequence[str]) -> Sequence[str]:
     log(f"subcommands={subcommands}")
     # we must return a list as default value here,
     # for cythonized-more to match the type defined for `subcommands` values:
-    return subcommands.get("_proxy", [])
+    return subcommands.get("_proxy", subcommands.get("list", []))
 
 
 def find_fingerprint(filename: str, fingerprint) -> bool:
@@ -214,6 +215,41 @@ def get_echo_value(echo: str) -> str:
     return ""
 
 
+def run_list_command(channel, args: list[str]) -> None:
+    cmd = get_xpra_command() + ["list"] + args
+    status = 1
+    try:
+        try:
+            with Popen(cmd, stdin=DEVNULL, stdout=PIPE, stderr=PIPE) as proc, ThreadPoolExecutor(max_workers=1) as executor:
+                def forward(stream, send) -> None:
+                    try:
+                        while data := stream.read1(65536):
+                            send(data)
+                    except (OSError, EOFError):
+                        if proc.poll() is None:
+                            proc.terminate()
+                        raise
+
+                try:
+                    stderr = executor.submit(forward, proc.stderr, channel.sendall_stderr)
+                    forward(proc.stdout, channel.sendall)
+                    stderr.result()
+                    code = proc.wait()
+                    status = code if code >= 0 else 128 - code
+                finally:
+                    if proc.poll() is None:
+                        proc.terminate()
+                    proc.wait()
+        except OSError as e:
+            log("running ssh list command", exc_info=True)
+            channel.sendall_stderr(f"Error running xpra list: {e}\n".encode())
+        channel.send_exit_status(status)
+    except (OSError, EOFError):
+        log("sending ssh list response", exc_info=True)
+    finally:
+        channel.close()
+
+
 class SSHServer(paramiko.ServerInterface):
     def __init__(self, none_auth=False, pubkey_auth=True, password_auth=None, options=None, display_name=""):
         self.event = Event()
@@ -333,6 +369,11 @@ class SSHServer(paramiko.ServerInterface):
         log(f"check_channel_exec_request({channel}, {command!r})")
         cmd = shlex.split(decode_str(command))
         log(f"check_channel_exec_request: cmd={cmd}")
+        if not cmd:
+            return fail("Warning: empty ssh command")
+        stanza = detect_ssh_stanza(cmd)
+        if stanza and stanza[1] == "list":
+            cmd = stanza
         if cmd[0] == "command" and len(cmd) == 1:
             return csend(out="\r\n")
         if cmd == ["command", "-v", "xpra"]:
@@ -362,6 +403,12 @@ class SSHServer(paramiko.ServerInterface):
         if (cmd[0].endswith("xpra") or cmd[0].endswith("Xpra_cmd.exe")) and len(cmd) >= 2:
             subcommand = cmd[1].strip("\"'").rstrip(";")
             log(f"ssh xpra subcommand: {subcommand}")
+            if subcommand == "list":
+                if any(not arg.startswith(("--socket-dir=", "--socket-dirs=")) for arg in cmd[2:]):
+                    return fail("Warning: unsupported arguments for ssh xpra list")
+                channel.list_args = cmd[2:]
+                self.event.set()
+                return True
             if subcommand.startswith("_proxy_"):
                 proxy_start_enabled = str_to_bool(self.options.get("proxy-start"), False)
                 if not proxy_start_enabled:
@@ -385,8 +432,8 @@ class SSHServer(paramiko.ServerInterface):
             # we're ready to use this socket as an xpra channel
             self._run_proxy(channel)
             return True
-        if proxy_cmd := detect_ssh_stanza(cmd):
-            self.setup_agent(proxy_cmd)
+        if stanza:
+            self.setup_agent(stanza)
             self._run_proxy(channel)
             return True
         return fail("Warning: unsupported ssh command:", f" {cmd!r}")
@@ -556,6 +603,10 @@ def make_ssh_server_connection(conn, socket_options: dict,
             return SSHSocketConnection(proxy_channel, sock,
                                        conn.local, conn.endpoint, conn.target,
                                        socket_options=socket_options)
+        if (list_args := getattr(chan, "list_args", None)) is not None:
+            ssh_server.event.clear()
+            run_list_command(chan, list_args)
+            continue
         exec_response = getattr(chan, "exec_response", None)
         log(f"proxy channel={proxy_channel}, timedout={timedout}, exec_response={exec_response}")
         if exec_response:

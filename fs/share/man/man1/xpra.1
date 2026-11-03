@@ -412,6 +412,8 @@ current user on the current machine, and lists them.
 An optional SSH URL, such as \fBxpra list ssh://user@host/\fP, runs
 \fBxpra list\fP on the remote host and returns its output and exit status.
 The usual SSH and \fB\-\-remote\-xpra\fP options apply.
+Remote listing also works with Xpra's built-in SSH server and lists
+sessions accessible to the user running that server.
 .SS xpra upgrade
 This command starts a new xpra server, but instead of creating it from
 scratch, it attaches to another existing server, tells it to exit, and

@@ -36,7 +36,7 @@ import paramiko
 
 from xpra.server.ssh import (
     SSHServer, detect_ssh_stanza, get_keyclass, get_echo_value, find_fingerprint,
-    load_host_key,
+    load_host_key, run_list_command,
 )
 from xpra.net.ssh.paramiko.util import (
     keymd5, get_sha256_fingerprint_for_keyfile, get_key_fingerprints,
@@ -229,6 +229,51 @@ class TestLoadHostKey(unittest.TestCase):
 
 
 class TestSSHServerUnit(unittest.TestCase):
+
+    def test_list_request(self):
+        server = SSHServer()
+        channel = MagicMock()
+        self.assertTrue(server.check_channel_exec_request(channel, 'xpra list "--socket-dirs=/tmp/socket directory"'))
+        self.assertEqual(channel.list_args, ["--socket-dirs=/tmp/socket directory"])
+        self.assertTrue(server.event.is_set())
+        self.assertIsNone(server.proxy_channel)
+
+    def test_list_shell_request(self):
+        from xpra.net.ssh.exec_client import get_ssh_command
+        command = get_ssh_command({
+            "remote_xpra": ["xpra"], "proxy_command": ["list"], "display_as_args": [],
+            "full_ssh": ["ssh", "host"], "socket_dirs": ["/tmp/socket directory"],
+        })[-1]
+        server = SSHServer()
+        channel = MagicMock()
+        self.assertTrue(server.check_channel_exec_request(channel, command))
+        self.assertEqual(channel.list_args, ["--socket-dirs=/tmp/socket directory"])
+        self.assertIsNone(server.proxy_channel)
+
+    def test_proxy_shell_request(self):
+        server = SSHServer()
+        channel = MagicMock()
+        command = 'sh -c \'if command -v "xpra" > /dev/null 2>&1; then xpra _proxy; fi\''
+        with patch.object(server, "setup_agent") as setup:
+            self.assertTrue(server.check_channel_exec_request(channel, command))
+        setup.assert_called_once_with(["xpra", "_proxy"])
+        self.assertIs(server.proxy_channel, channel)
+
+    def test_list_rejects_other_arguments(self):
+        for command in ("xpra list ssh://host/", "xpra list --start=xterm", "xpra list ; id"):
+            with self.subTest(command=command):
+                server = SSHServer()
+                channel = MagicMock()
+                self.assertFalse(server.check_channel_exec_request(channel, command))
+                self.assertNotIn("list_args", vars(channel))
+
+    def test_list_start_failure(self):
+        channel = MagicMock()
+        with patch("xpra.server.ssh.Popen", side_effect=OSError("command missing")):
+            run_list_command(channel, [])
+        channel.send_exit_status.assert_called_once_with(1)
+        self.assertIn(b"command missing", channel.sendall_stderr.call_args.args[0])
+        channel.close.assert_called_once()
 
     def test_get_banner(self):
         srv = SSHServer()
@@ -910,6 +955,57 @@ class TestMakeSSHServerConnection(unittest.TestCase):
         self.assertTrue(ready.wait(10), "SSH server did not finish")
         assert b"xpra" in output, f"expected xpra in {output!r}"
         assert exit_status == 0
+
+    def test_list_commands(self):
+        from xpra.net.ssh.exec_client import get_ssh_command
+        direct = 'xpra list "--socket-dirs=/tmp/socket directory"'
+        shell = get_ssh_command({
+            "remote_xpra": ["xpra"], "proxy_command": ["list"], "display_as_args": [],
+            "full_ssh": ["ssh", "host"], "socket_dirs": ["/tmp/socket directory"],
+        })[-1]
+        stdout = "LIVE session at :10 — 测试\n" * 8192
+        stderr = "remote diagnostic\n" * 8192
+        script = (
+            "import sys\n"
+            "sys.stderr.write('remote diagnostic\\n' * 8192)\n"
+            "print(repr(sys.argv[1:]))\n"
+            "sys.stdout.write('LIVE session at :10 — 测试\\n' * 8192)\n"
+            "raise SystemExit(23)\n"
+        )
+        s1, s2 = socket.socketpair()
+        self.addCleanup(s1.close)
+        self.addCleanup(s2.close)
+        with patch("xpra.server.ssh.get_xpra_command", return_value=[sys.executable, "-c", script]):
+            _results, ready = self._run_make_ssh_server_connection(s1)
+            transport = _test_transport(s2)
+            self.addCleanup(transport.close)
+            transport.start_client(timeout=SSH_TIMEOUT)
+            transport.auth_none("testuser")
+            for command in (direct, shell):
+                with self.subTest(command=command):
+                    channel = transport.open_session(window_size=32768, timeout=SSH_TIMEOUT)
+                    channel.settimeout(5)
+                    channel.exec_command(command)
+                    err = BytesIO()
+
+                    def read_stderr():
+                        while data := channel.recv_stderr(4096):
+                            err.write(data)
+
+                    reader = threading.Thread(target=read_stderr, daemon=True)
+                    reader.start()
+                    out = BytesIO()
+                    while data := channel.recv(4096):
+                        out.write(data)
+                    reader.join(5)
+                    self.assertFalse(reader.is_alive(), "stderr reader did not finish")
+                    self.assertEqual(channel.recv_exit_status(), 23)
+                    expected = "['list', '--socket-dirs=/tmp/socket directory']\n" + stdout
+                    self.assertEqual(out.getvalue(), expected.encode())
+                    self.assertEqual(err.getvalue(), stderr.encode())
+                    channel.close()
+            transport.close()
+            self.assertTrue(ready.wait(10), "SSH server did not finish")
 
 
 @unittest.skipUnless(_can_run_integration(), "paramiko not available")
