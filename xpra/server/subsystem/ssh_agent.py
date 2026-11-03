@@ -19,8 +19,8 @@ from xpra.log import Logger
 log = Logger("network", "ssh")
 
 
-def accept_client_ssh_agent(uuid: str, ssh_auth_sock: str) -> None:
-    sockpath = setup_client_ssh_agent_socket(uuid, ssh_auth_sock)
+def accept_client_ssh_agent(uuid: str, ssh_auth_sock: str, ssh_auth_sock_stat: tuple[int, ...] = ()) -> None:
+    sockpath = setup_client_ssh_agent_socket(uuid, ssh_auth_sock, ssh_auth_sock_stat)
     if sockpath and os.path.exists(sockpath) and is_socket(sockpath):
         set_ssh_agent(uuid)
 
@@ -116,4 +116,4 @@ class SshAgent(StubSubsystem):
             return
         assert ss
         if ss.uuid:
-            accept_client_ssh_agent(ss.uuid, getattr(ss, "ssh_auth_sock", ""))
+            accept_client_ssh_agent(ss.uuid, getattr(ss, "ssh_auth_sock", ""), getattr(ss, "ssh_auth_sock_stat", ()))
