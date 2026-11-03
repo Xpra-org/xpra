@@ -129,7 +129,10 @@ class WindowshotTest(unittest.TestCase):
         self.assertIn("does not manage windows", self.network.send_disconnect.call_args.args[2])
 
     def test_wayland_model_keeps_its_image(self):
-        from xpra.wayland.server.models.window import Window
+        try:
+            from xpra.wayland.server.models.window import Window
+        except ImportError as e:
+            raise unittest.SkipTest(f"Wayland window model is not available: {e}") from None
         image = ImageWrapper(0, 0, 2, 2, (b"\xff\0\0\xff" * 4,), "RGBA", 32, 8)
         window = Window({"title": "Wayland", "geometry": (0, 0, 2, 2), "image": image})
         window.setup()
