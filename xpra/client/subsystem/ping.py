@@ -12,7 +12,7 @@ from collections.abc import Sequence, Iterable
 
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
-from xpra.net.common import Packet, FULL_INFO
+from xpra.net.common import Packet, FULL_INFO, parse_thread_getloadavg
 from xpra.net.packet_type import PING_ECHO
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
@@ -28,6 +28,9 @@ MIN_PING_TIMEOUT: int = envint("XPRA_MIN_PING_TIMEOUT", 2)
 MAX_PING_TIMEOUT: int = envint("XPRA_MAX_PING_TIMEOUT", 10)
 SWALLOW_PINGS: bool = envbool("XPRA_SWALLOW_PINGS", False)
 PING_DETAILS = envbool("XPRA_PING_DETAILS", FULL_INFO > 0)
+# with the network parse seccomp filter and glibc older than 2.35,
+# `getloadavg()` would open `/proc/loadavg` from the parse thread and trip the filter:
+PING_LOAD = PING_DETAILS and parse_thread_getloadavg()
 
 
 class PingClient(StubClientSubsystem):
@@ -194,7 +197,7 @@ class PingClient(StubClientSubsystem):
         if len(packet) >= 4:
             sid = packet.get_str(3)
         l1, l2, l3 = 0, 0, 0
-        if PING_DETAILS:
+        if PING_LOAD:
             try:
                 l1, l2, l3 = getloadavg()
             except OSError:
