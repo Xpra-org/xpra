@@ -102,6 +102,10 @@ class DisplayContext(OSEnvContext):
             # the next time any code iterates a GTK main loop,
             # and GDK's IO error handler terminates the whole process
             # (killing every test that would have run after this one)
+            # the toolkit objects which are no longer referenced must also be freed before that:
+            # once the display is gone, freeing them crashes
+            import gc
+            gc.collect()
             self.close_display_source()
             self.xvfb_process.terminate()
             self.xvfb_process = None
@@ -123,6 +127,13 @@ class DisplayContext(OSEnvContext):
             manager.set_default_display(gdk_display)
         from xpra.x11.gtk.display_source import init_gdk_display_source
         init_gdk_display_source()
+        # a test module may have imported Gtk before there was a display,
+        # and Gtk's python overrides then refuse to create any window:
+        gtk_overrides = sys.modules.get("gi.overrides.Gtk")
+        if gtk_overrides and not getattr(gtk_overrides, "initialized", True):
+            Gtk = gi_import("Gtk")
+            result = Gtk.init_check()
+            gtk_overrides.initialized = result[0] if isinstance(result, tuple) else bool(result)
 
     @staticmethod
     def close_display_source() -> None:

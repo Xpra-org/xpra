@@ -6,12 +6,12 @@
 # ABOUTME: Tests for resize increment snapping in manual moveresize.
 # ABOUTME: Verifies that alt-drag resize respects size hint increments (eg terminal cells).
 
-import os
 import unittest
 
 from xpra.os_util import gi_import
 from xpra.constants import MoveResize
 from xpra.client.gtk3.window.base import calculate_moveresize_data, snap_to_increment
+from unit.process_test_util import DisplayContext
 
 
 class TestCalculateMoveResizeData(unittest.TestCase):
@@ -173,8 +173,7 @@ class TestMoveResizeCursor(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
-            raise unittest.SkipTest("no display")
+        cls.enterClassContext(DisplayContext())
 
     def make_window(self):
         """ the smallest object the moveresize cursor methods need """

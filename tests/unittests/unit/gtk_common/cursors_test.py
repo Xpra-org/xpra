@@ -14,6 +14,7 @@ import os
 import unittest
 
 from xpra.os_util import gi_import, WIN32
+from unit.process_test_util import DisplayContext
 
 Gdk = gi_import("Gdk")
 
@@ -24,6 +25,8 @@ def cursor_data(name: str, w=16, h=16, xhot=3, yhot=1) -> tuple:
 
 # what the tests pretend the size of the system cursors is:
 SYSTEM_CURSOR_SIZE = (48, 48)
+# and the largest cursor the platform supports:
+MAX_CURSOR_SIZE = (256, 256)
 
 
 def made(w: int, h: int, x: int, y: int) -> tuple:
@@ -40,18 +43,22 @@ class TestCursors(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        if not WIN32 and not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY"):
-            raise unittest.SkipTest("no display")
+        cls.enterClassContext(DisplayContext())
+        # (the environment is restored when the display context exits)
         os.environ["XPRA_USE_LOCAL_CURSORS"] = "1"
 
     def setUp(self):
         import xpra.platform.gui as platform_gui
         self.get_default_cursor_size = platform_gui.get_default_cursor_size
+        self.get_max_cursor_size = platform_gui.get_max_cursor_size
         platform_gui.get_default_cursor_size = lambda: SYSTEM_CURSOR_SIZE
+        # (the display's own limit may be too small for the scaling tests, see `test_max_size`)
+        platform_gui.get_max_cursor_size = lambda: MAX_CURSOR_SIZE
 
     def tearDown(self):
         import xpra.platform.gui as platform_gui
         platform_gui.get_default_cursor_size = self.get_default_cursor_size
+        platform_gui.get_max_cursor_size = self.get_max_cursor_size
 
     def make(self, name: str, xscale=1.0, yscale=1.0, **kwargs) -> tuple:
         """ the size and hotspot make_cursor() ends up using """

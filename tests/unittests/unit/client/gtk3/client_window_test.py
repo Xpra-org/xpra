@@ -19,13 +19,10 @@ os.environ["XPRA_USE_FAKE_BACKING"] = "1"
 
 from xpra.os_util import gi_import  # noqa: E402
 from xpra.util.objects import typedict  # noqa: E402
+from unit.process_test_util import DisplayContext  # noqa: E402
 
 Gtk = gi_import("Gtk")
 Gdk = gi_import("Gdk")
-
-
-def has_display() -> bool:
-    return Gdk.Display.get_default() is not None
 
 
 class Recorder:
@@ -44,8 +41,11 @@ class Recorder:
         return record
 
 
-@unittest.skipUnless(has_display(), "requires a display")
 class ClientWindowTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.enterClassContext(DisplayContext())
 
     def setUp(self) -> None:
         from xpra.client.gui.fake_client import FakeWindowHost, FakePointerSubsystem
@@ -61,6 +61,9 @@ class ClientWindowTest(unittest.TestCase):
     def tearDown(self) -> None:
         for window in self.windows:
             window.destroy()
+        # drop our references, so they are freed before the display is closed:
+        self.windows.clear()
+        self.host = None
 
     def make_window(self, wid=3, geometry=(10, 20, 200, 100), metadata=None, **kwargs):
         from xpra.client.gtk3.window.window import ClientWindow

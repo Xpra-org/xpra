@@ -4,18 +4,20 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-import os
 import unittest
 
-from xpra.os_util import POSIX
 from xpra.gtk.keymap import get_gtk_keymap
+from unit.process_test_util import DisplayContext
 
 
 class TestKeymap(unittest.TestCase):
 
+    @classmethod
+    def setUpClass(cls):
+        cls.enterClassContext(DisplayContext())
+
     def test_get_gtk_keymap(self):
-        if not POSIX or os.environ.get("DISPLAY"):
-            assert get_gtk_keymap()
+        self.assertTrue(get_gtk_keymap())
 
 
 def main():
