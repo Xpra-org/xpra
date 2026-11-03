@@ -48,6 +48,7 @@ from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
 from xpra.client.win32.altgr import KeyMessage, is_altgr_fake_control, add_altgr_layout, get_alt_r_keyname
 from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_lparam, img_to_hicon
 from xpra.client.win32.glib import start_modal_message_pump, stop_modal_message_pump
+from xpra.client.win32.size_constraints import get_track_sizes
 from xpra.client.win32.system_menu import add_system_menu_items, get_command_action, update_checks
 from xpra.log import Logger
 
@@ -518,7 +519,7 @@ class ClientWindow(GObject.GObject):
                 # (and let `DefWindowProc` update the standard items)
                 update_checks(wparam, self.get_menu_states())
             if msg == win32con.WM_GETMINMAXINFO and lparam:
-                self.apply_size_constraints(lparam)
+                self.apply_size_constraints(hwnd, lparam)
                 return 0
             if msg == win32con.WM_SETCURSOR and (lparam & 0xffff) == win32con.HTCLIENT and self.hcursor:
                 # only over the window contents,
@@ -1062,20 +1063,18 @@ class ClientWindow(GObject.GObject):
         # and not from within this packet handler:
         PostMessageW(self.hwnd, win32con.WM_SYSCOMMAND, command, lparam)
 
-    def apply_size_constraints(self, lparam) -> None:
+    def apply_size_constraints(self, hwnd: int, lparam) -> None:
         info = cast(lparam, POINTER(MINMAXINFO)).contents
-        minw, minh = self.size_constraints.intpair("minimum-size")
+        # (this message is received before `CreateWindowExW` returns the `hwnd`)
+        exstyle = GetWindowLongW(hwnd, win32con.GWL_EXSTYLE)
+        frame = system_geometry(0, 0, 0, 0, self.style, exstyle)[2:]
+        display = self.get_subsystem("display")
+        to_local = display.sp if display else None
+        (minw, minh), (maxw, maxh) = get_track_sizes(self.size_constraints, self.max_window_size, frame, to_local)
+        geomlog("apply_size_constraints: frame=%s, min=%s, max=%s", frame, (minw, minh), (maxw, maxh))
         if minw > 0 and minh > 0:
             info.ptMinTrackSize.x = minw
             info.ptMinTrackSize.y = minh
-        maxw, maxh = self.size_constraints.intpair("maximum-size")
-        # `max_window_size` is a hard limit (OpenGL windows lower it to the
-        # maximum texture / viewport size), it wins over the server's request:
-        mww, mwh = self.max_window_size
-        if mww > 0:
-            maxw = min(maxw, mww) if maxw > 0 else mww
-        if mwh > 0:
-            maxh = min(maxh, mwh) if maxh > 0 else mwh
         if maxw > 0 and maxh > 0:
             info.ptMaxTrackSize.x = maxw
             info.ptMaxTrackSize.y = maxh
