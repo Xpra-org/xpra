@@ -32,11 +32,12 @@ class Display:
 @unittest.skipUnless(WIN32, "the win32 client is only available on MS Windows")
 class Win32ConfigureTest(unittest.TestCase):
 
-    def make_window(self, subsystems):
+    def make_window(self, subsystems, readonly=False):
         from xpra.client.win32.window import ClientWindow
         sent = []
         subsystems.setdefault("window", SimpleNamespace(send=lambda *packet: sent.append(packet)))
-        window = SimpleNamespace(get_subsystem=subsystems.get, wid=7, x=20, y=40, width=200, height=100,
+        window = SimpleNamespace(get_subsystem=subsystems.get, is_readonly=lambda: readonly,
+                                 wid=7, x=20, y=40, width=200, height=100,
                                  state_updates={"fullscreen": True}, resize_counter=3,
                                  pop_client_properties=lambda: {},
                                  get_monitor_position=lambda: {"index": 1, "position": (10, 20)})
@@ -61,6 +62,13 @@ class Win32ConfigureTest(unittest.TestCase):
         window.send_configure()
         self.assertEqual(sent[0][2]["geometry"], (20, 40, 200, 100))
         self.assertEqual(sent[0][2]["monitor"], {"index": 1, "position": (10, 20)})
+
+    def test_readonly(self) -> None:
+        # the server would ignore it:
+        window, sent = self.make_window({"display": Display()}, readonly=True)
+        window.send_configure()
+        self.assertEqual(sent, [])
+        self.assertEqual(window.state_updates, {})
 
 
 def main():

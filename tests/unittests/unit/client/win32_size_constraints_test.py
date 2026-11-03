@@ -40,6 +40,12 @@ class Win32SizeConstraintsTest(unittest.TestCase):
         self.assertEqual(get_track_sizes(constraints, (1000, 500), FRAME, double), ((0, 0), (1016, 539)))
         self.assertEqual(get_track_sizes(typedict(), (1000, 500), FRAME), ((0, 0), (1016, 539)))
 
+    def test_fixed_size(self) -> None:
+        # read-only mode: the local size, which replaces all the other limits
+        constraints = typedict({"minimum-size": (100, 50), "maximum-size": (800, 600)})
+        sizes = get_track_sizes(constraints, (1000, 500), FRAME, double, fixed_size=(300, 200))
+        self.assertEqual(sizes, ((316, 239), (316, 239)))
+
     def test_invalid(self) -> None:
         constraints = typedict({"minimum-size": (100, ), "maximum-size": (1, 2, 3)})
         self.assertEqual(get_track_sizes(constraints, (0, 0), FRAME, double), ((0, 0), (0, 0)))
