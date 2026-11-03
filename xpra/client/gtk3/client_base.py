@@ -114,7 +114,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         UIXpraClient.__init__(self)
         self.client_type = "Python/GTK3"
         self.menu_helper = None
-        self.window_menu_helper = None
+        # only used when the main menu cannot be popped up, see `get_popup_menu_helper`:
+        self.popup_menu_helper = None
         # the keyboard subsystem holds `helper_class`; inject the GTK
         # implementation into it (it is created by UIXpraClient.__init__ above):
         if kb := self.get_subsystem("keyboard"):
@@ -147,14 +148,16 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             self.menu_helper = make_instance(mhc, self)
         return self.menu_helper
 
-    def get_window_menu_helper(self):
-        if not self.window_menu_helper:
+    def get_popup_menu_helper(self):
+        if mh := super().get_popup_menu_helper():
+            return mh
+        # ie: macOS, where the main menu is the menu bar
+        if not self.popup_menu_helper:
             from xpra.client.gtk3.tray_menu import GTKTrayMenu
             from xpra.util.objects import make_instance
-            mhc = (GTKTrayMenu, )
-            log("get_window_menu_helper() tray menu helper classes: %s", mhc)
-            self.window_menu_helper = make_instance(mhc, self)
-        return self.window_menu_helper
+            self.popup_menu_helper = make_instance((GTKTrayMenu, ), self)
+            log("get_popup_menu_helper()=%s", self.popup_menu_helper)
+        return self.popup_menu_helper
 
     def run(self) -> ExitValue:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
@@ -173,9 +176,10 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         log("GTKXpraClient.cleanup()")
         if dialogs := self.get_subsystem("dialogs"):
             dialogs.cleanup()
-        if mh := self.menu_helper:
-            self.menu_helper = None
-            mh.cleanup()
+        for attr in ("menu_helper", "popup_menu_helper"):
+            if mh := getattr(self, attr):
+                setattr(self, attr, None)
+                mh.cleanup()
         UIXpraClient.cleanup(self)
 
     def _process_startup_complete(self, packet: Packet) -> None:

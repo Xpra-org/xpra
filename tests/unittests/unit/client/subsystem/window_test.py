@@ -60,7 +60,7 @@ class WindowManagerTest(ClientMixinTest):
                     self.assertNotIn(client, args)
                     self.assertIs(args[0], client.get_subsystem)
                     self.assertIs(args[1], client.is_readonly)
-                    self.assertIs(args[-1], client.get_window_menu_helper)
+                    self.assertIs(args[-1], client.get_popup_menu_helper)
 
     def test_dismiss_popups(self):
         from xpra.client.subsystem.window import WindowClient

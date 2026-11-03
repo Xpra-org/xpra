@@ -272,9 +272,18 @@ class UIXpraClient(XpraClientBase):
         from xpra.platform.systray import get_menu_helper_class
         return get_menu_helper_class()
 
+    def get_popup_menu_helper(self):
+        """
+        the xpra menu, as a menu we can pop up (ie: from a window's header bar):
+        the same one as the tray's, unless the platform shows that one itself
+        """
+        mh = self.get_menu_helper()
+        return mh if mh and mh.can_popup else None
+
     def show_menu(self, *_args) -> None:
-        # (the menu helper may not exist yet: only the tray creates it up front)
-        if mh := self.get_menu_helper():
+        # (the menu may not exist yet: only the tray creates it up front)
+        if mh := self.get_popup_menu_helper():
+            mh.build()
             mh.activate()
 
     def get_tray_classes(self) -> list[type]:

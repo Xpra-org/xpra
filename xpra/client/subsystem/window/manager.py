@@ -423,7 +423,7 @@ class WindowManagerClient(StubClientSubsystem):
                              geom, backing_size,
                              metadata, override_redirect, client_properties,
                              border, self.max_window_size, self.pixel_depth,
-                             client.headerbar, getattr(client, "get_window_menu_helper", None))
+                             client.headerbar, getattr(client, "get_popup_menu_helper", None))
                 break
             except (RuntimeError, ValueError):
                 log.warn(f"Warning: failed to instantiate {cwc!r}", exc_info=True)
