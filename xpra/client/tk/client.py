@@ -86,7 +86,7 @@ class XpraTkClient:
         log("send_hello()")
         hello = {
             "version": __version__,
-            "client_type": "pyglet",
+            "client_type": "tk",
             "rencodeplus": True,
             "session-id": uuid.uuid4().hex,
             "window": {"enabled": True},
