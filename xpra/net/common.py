@@ -195,11 +195,13 @@ class Packet(Sequence):
             return tuple(int(x) for x in v)
         raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 
-    def get_u16s(self, i: int) -> Sequence[int]:
+    def get_coordinates(self, i: int) -> Sequence[int]:
+        # pointer positions can be negative: left of or above the primary monitor,
+        # or outside the window for window-relative positions (ie: while dragging)
         values = self.get_ints(i)
         for value in values:
-            if value < 0 or value >= 2**16:
-                raise ValueError(f"invalid u16 value {value!r}")
+            if abs(value) >= 2**16:
+                raise ValueError(f"invalid coordinate {value!r}")
         return values
 
 

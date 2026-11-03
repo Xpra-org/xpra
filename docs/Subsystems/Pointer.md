@@ -47,8 +47,12 @@ The client should expose the following `pointer` dictionary in its `hello` packe
 | `record`           | boolean                         | Optional, legacy alias for `sync`                                             |
 | `grabs`            | boolean                         | Legacy only, superseded by the `window` capability of the same name          |
 
-Modern packets keep the `pointer` field as a non-negative
+Modern packets keep the `pointer` field as an
 `(absolute_x, absolute_y)` pair normalized against the client monitor layout.
+Legacy packets append the window-relative position: `(absolute_x, absolute_y, window_x, window_y)`.\
+Each coordinate must be within -65535 and 65535: they can be negative,
+ie: on a monitor to the left of the primary one, or outside the window while dragging.
+When the server knows the window, it uses the window-relative position rather than the absolute one.
 They carry alternative coordinate spaces in the properties dictionary:
 
 - `raw-position`: the absolute position before layout normalization
