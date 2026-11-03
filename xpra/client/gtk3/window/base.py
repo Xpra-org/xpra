@@ -250,6 +250,9 @@ def _get_monitor_index(monitor) -> int:
 
 
 class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("display", "keyboard", "ping", "pointer", "window")
+
     __gsignals__ = {
         "state-updated": no_arg_signal,
     }

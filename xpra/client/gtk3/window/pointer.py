@@ -72,6 +72,9 @@ def norm_scroll(value: float):
 
 class PointerWindow(GtkStubWindow):
 
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("keyboard", "pointer", "window")
+
     def init_window(self, metadata: typedict, client_props: typedict) -> None:
         self.cursor_data = ()
         self.remove_pointer_overlay_timer = 0

@@ -29,6 +29,9 @@ class ClientTray(ClientWidgetBase):
         to capture the tray pixels and forward them
         to the real tray widget class.
     """
+
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("display", "window")
     DEFAULT_LOCATION = [0, 0]
     DEFAULT_SIZE = [64, 64]
     DEFAULT_GEOMETRY: tuple[int, int, int, int] = tuple(DEFAULT_LOCATION + DEFAULT_SIZE)

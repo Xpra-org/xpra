@@ -18,6 +18,9 @@ USE_FAKE_BACKING = envbool("XPRA_USE_FAKE_BACKING", False)
 
 class ClientWidgetBase:
 
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("mmap",)
+
     def __init__(self, get_subsystem: Callable, wid: int, has_alpha: bool):
         # look up a client subsystem, by name:
         self.get_subsystem: Callable = get_subsystem

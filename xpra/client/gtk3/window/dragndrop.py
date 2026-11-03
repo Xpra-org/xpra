@@ -53,6 +53,9 @@ def drag_motion_cb(wid: int, context, x: int, y: int, time: int) -> bool:
 
 class DragNDropWindow(GtkStubWindow):
 
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("file",)
+
     def init_window(self, metadata: typedict, client_props: typedict) -> None:
         # opengl probing uses a fake client, whose `get_subsystem` returns
         # `None` for "file", in which case we don't want dragndrop initialized:

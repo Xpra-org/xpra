@@ -48,6 +48,9 @@ NOT_REQUESTED: Final[tuple[int, int]] = (-2 ** 32, -2 ** 32)
 
 class ClientWindowBase(ClientWidgetBase):
 
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("display", "encoding", "window")
+
     def __init__(self, get_subsystem: Callable, is_readonly: Callable, group_leader, wid: int,
                  geom: tuple[int, int, int, int],
                  backing_size: tuple[int, int],

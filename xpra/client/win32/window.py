@@ -239,6 +239,9 @@ def get_keyname(vk_code: int, scancode: int, extended: bool, string: str, local_
 
 class ClientWindow(GObject.GObject):
 
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("display", "encoding", "keyboard", "window")
+
     __gsignals__ = {
         "mapped": no_arg_signal,
         "focused": no_arg_signal,

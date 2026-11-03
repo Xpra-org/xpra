@@ -60,6 +60,9 @@ def get_resize_direction(x: int, y: int, wx: int, wy: int, ww: int, wh: int) -> 
 
 class WindowMenuHelper(GTKMenuHelper):
 
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("tray", "window")
+
     def __init__(self, get_subsystem: Callable, window):
         # the window menu only needs the client's subsystems, not the client itself:
         super().__init__(None)

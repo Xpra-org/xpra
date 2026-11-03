@@ -85,6 +85,9 @@ class GLClientWindow(ClientWindow):
     `GLWin32Backing` bound to the window's own `HWND`.
     """
 
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("display",)
+
     # populated by the opengl subsystem (see `OpenGLClient.init_opengl`):
     MAX_VIEWPORT_DIMS: tuple[int, int] = (16 * 1024, 16 * 1024)
     MAX_BACKING_DIMS: tuple[int, int] = (16 * 1024, 16 * 1024)

@@ -58,6 +58,9 @@ class ClientWindow(ClientWindowBase):
     Everything that touches the terminal runs on the UI thread.
     """
 
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("encoding",)
+
     def __init__(self, client, *args, **kwargs):
         # unlike the other windows, this one is given the whole client:
         self._client = client

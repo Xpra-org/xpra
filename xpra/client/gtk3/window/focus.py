@@ -27,6 +27,9 @@ AUTOGRAB_WITH_FOCUS = envbool("XPRA_AUTOGRAB_WITH_FOCUS", False)
 
 
 class FocusWindow(GtkStubWindow):
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("window",)
+
     __gsignals__ = {
         "x11-focus-out-event": one_arg_signal,
         "x11-focus-in-event": one_arg_signal,
