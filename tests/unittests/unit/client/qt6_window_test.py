@@ -95,6 +95,18 @@ class Qt6WindowTest(unittest.TestCase):
                                                      Qt.ScrollPhase.NoScrollPhase, False))
         self.assertEqual(self.client.buttons(), [(b, pressed) for b in (4, 5, 6, 7) for pressed in (True, False)])
 
+    def test_position(self) -> None:
+        # the position on the screen, and relative to the window:
+        from PyQt6.QtCore import Qt, QPointF, QEvent
+        from PyQt6.QtGui import QMouseEvent
+        label = self.window.label
+        button = Qt.MouseButton.LeftButton
+        label.mouseMoveEvent(QMouseEvent(QEvent.Type.MouseMove, QPointF(5, 6), QPointF(15, 26),
+                                         Qt.MouseButton.NoButton, Qt.MouseButton.NoButton, Qt.KeyboardModifier.NoModifier))
+        label.mousePressEvent(QMouseEvent(QEvent.Type.MouseButtonPress, QPointF(5, 6), QPointF(15, 26), button, button,
+                                          Qt.KeyboardModifier.NoModifier))
+        self.assertEqual(self.client.positions(), [(15, 26, 5, 6)] * 2)
+
 
 def main():
     unittest.main()

@@ -9,7 +9,7 @@
 import unittest
 from types import SimpleNamespace
 
-from xpra.net.packet_type import POINTER_MOTION, WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE
+from xpra.net.packet_type import WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE
 from unit.process_test_util import DisplayContext
 from unit.client.pyglet_window_test import FakeClient
 
@@ -63,7 +63,7 @@ class TkWindowTest(unittest.TestCase):
         event = SimpleNamespace(num=1, x=0, y=0, x_root=wx + 30, y_root=wy + 40)
         self.window.on_mouse_motion(event)
         self.window.on_mouse_button_press(event)
-        positions = [packet[4] if packet[0] == POINTER_MOTION else packet[6] for packet in self.client.sent]
+        positions = self.client.positions()
         self.assertEqual(positions, [(wx + 30, wy + 40, 30, 40)] * 2)
 
     def window_packets(self) -> list[tuple]:

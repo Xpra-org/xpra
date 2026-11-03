@@ -28,6 +28,15 @@ class FakeClient:
     def buttons(self) -> list[tuple[int, bool]]:
         return [(packet[4], packet[5]) for packet in self.sent if packet[0] == POINTER_BUTTON]
 
+    def positions(self) -> list[tuple[int, int, int, int]]:
+        """ the positions on the screen and relative to the window, of the pointer packets sent """
+        positions = []
+        for packet in self.sent:
+            if packet[0] in (POINTER_MOTION, POINTER_BUTTON):
+                pos, props = (packet[4], packet[5]) if packet[0] == POINTER_MOTION else (packet[6], packet[7])
+                positions.append(tuple(pos) + tuple(props["window-position"]))
+        return positions
+
 
 class PygletWindowTest(unittest.TestCase):
 
@@ -85,7 +94,7 @@ class PygletWindowTest(unittest.TestCase):
         y = h - 40 - MOTION_Y_OFFSET
         self.window.on_mouse_motion(30, y, 0, 0)
         self.window.on_mouse_drag(30, y, 0, 0, mouse.LEFT, 0)
-        positions = [packet[4] if packet[0] == POINTER_MOTION else packet[6] for packet in self.client.sent]
+        positions = self.client.positions()
         self.assertEqual(positions, [expected] * 3)
 
 

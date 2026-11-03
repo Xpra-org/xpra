@@ -14,6 +14,7 @@ from xpra.net.packet_type import (
 )
 from xpra.util.objects import typedict
 from xpra.client.gui.window_title import window_title_str
+from xpra.client.gui.simple_pointer import split_position
 from xpra.log import Logger
 
 log = Logger("client", "window")
@@ -147,8 +148,8 @@ class ClientWindow(Toplevel):
         log(f"mouse motion: {event!r}")
         device_id = -1
         seq = 0
-        pos = self.get_pointer_position(event)
-        self.client.send(POINTER_MOTION, device_id, seq, self.wid, pos, {})
+        pos, props = split_position(self.get_pointer_position(event))
+        self.client.send(POINTER_MOTION, device_id, seq, self.wid, pos, props)
 
     def on_mouse_button_press(self, event) -> None:
         log(f"mouse button press: {event!r}")
@@ -161,8 +162,8 @@ class ClientWindow(Toplevel):
     def on_mouse_button_event(self, pressed: bool, event) -> None:
         seq = 0
         button = event.num
-        pos = self.get_pointer_position(event)
-        self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, {})
+        pos, props = split_position(self.get_pointer_position(event))
+        self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, props)
 
     def on_mouse_wheel(self, event) -> None:
         # Tk 8.7 and later, and Tk on MS Windows and macOS: the delta is a multiple of 120 with most mice,
@@ -174,10 +175,10 @@ class ClientWindow(Toplevel):
         if event.delta < 0:
             button += 1
         # sent as clicks of the wheel buttons:
-        pos = self.get_pointer_position(event)
+        pos, props = split_position(self.get_pointer_position(event))
         for _ in range(max(1, abs(event.delta) // 120)):
             for pressed in (True, False):
-                self.client.send(POINTER_BUTTON, -1, 0, self.wid, button, pressed, pos, {})
+                self.client.send(POINTER_BUTTON, -1, 0, self.wid, button, pressed, pos, props)
 
     def is_own_event(self, event) -> bool:
         return event.widget is self
