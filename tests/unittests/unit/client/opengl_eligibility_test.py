@@ -11,7 +11,7 @@ from unittest.mock import patch, MagicMock
 
 from xpra.util.objects import typedict
 
-# GTKXpraClient import triggers X11 display init, so skip if no display
+# (this does not need a display, only the gtk3 client modules)
 GTKXpraClient = None
 try:
     from xpra.client.gtk3.client_base import GTKXpraClient
@@ -42,7 +42,7 @@ def _can_use_opengl(w, h, metadata, override_redirect=False, xscale=1, yscale=1)
     return GTKXpraClient.can_use_opengl(client, w, h, metadata, override_redirect)
 
 
-@unittest.skipIf(GTKXpraClient is None, "no display available")
+@unittest.skipIf(GTKXpraClient is None, "gtk3 client not available")
 class TestCanUseOpenGLWin32Alpha(unittest.TestCase):
     """Test that can_use_opengl() allows OpenGL on Win32 when opaque-region covers the window."""
 
