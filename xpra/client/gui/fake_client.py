@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from xpra.util.glib_scheduler import GLibScheduler
 from xpra.util.objects import typedict
@@ -112,9 +112,14 @@ class FakeWindowHost(GLibScheduler):
     def is_readonly(self) -> bool:
         return self.readonly
 
-    def make_window(self, window_class: type, wid: int, geometry: tuple[int, int, int, int], metadata: dict,
+    def make_window(self, window_class: Callable[..., Any], wid: int, geometry: tuple[int, int, int, int], metadata: dict,
                     border=None, max_window_size=(0, 0), pixel_depth=0, headerbar="no", get_xpra_menu=None):
-        """ create a window which is not a transient for any other, and register it with the window subsystem """
+        """
+        Create a window which is not a transient for any other, and register it with the window subsystem.
+
+        Use Callable[..., Any] for window_class because Cython enforces an exact builtin type for a `type` annotation,
+        rejecting GTK window classes whose GObjectMeta metaclass subclasses type.
+        """
         from xpra.client.gui.window_border import WindowBorder
         window = window_class(self.get_subsystem, self.is_readonly, None, wid,
                               geometry, geometry[2:4],
