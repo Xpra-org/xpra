@@ -17,6 +17,7 @@ from xpra.net.common import Packet
 from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.util.env import envbool, envint, first_time
+from xpra.client.base import features
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
@@ -290,9 +291,13 @@ class NotificationClient(StubClientSubsystem):
         if not self.enabled or not self.notifier:
             return
         # this one of the few places where we actually do care about character encoding:
-        # `get_tray_window` is owned by the `window` subsystem (which may be disabled):
-        window = self.get_subsystem("window")
-        tray = window.get_tray_window(app_name, hints) if window else None
+        # WindowTray is composed into the window subsystem only with systray enabled.
+        window = self.get_subsystem("window") if features.systray else None
+        if window:
+            tray = window.get_tray_window(app_name, hints)
+        else:
+            tray_subsystem = self.get_subsystem("tray")
+            tray = tray_subsystem.tray if tray_subsystem else None
         log("get_tray_window(%s)=%s", app_name, tray)
         try:
             self.notifier.show_notify(dbus_id, tray, nid,
