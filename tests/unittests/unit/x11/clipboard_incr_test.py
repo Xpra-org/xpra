@@ -130,6 +130,28 @@ check("big", big == [("STRING", 8, b"".join(CHUNKS))], "the incremental conversi
 # let any leftover incremental timer fire:
 pump(lambda: False, 1.5)
 check("incr", not proxy.incr_transfers, "an incremental transfer was left behind")
+
+# Cleanup must reply before removing the pending requests, including their timers.
+callbacks, timers = [], []
+for index, target in enumerate((BIG, SMALL)):
+    proxy.remote_requests[target] = [(oxid, target, "PROPERTY", 0)]
+    callback = Mock()
+    timer = GLib.timeout_add(60000, lambda: False)
+    proxy.local_requests[target] = {index: (timer, callback)}
+    callbacks.append(callback)
+    timers.append(timer)
+with patch.object(proxy, "set_selection_response") as reply:
+    proxy.cleanup()
+check("cleanup replies", reply.call_count == 2, "pending remote requests were not answered")
+check("cleanup empty replies", all(args[0][5] is None for args in reply.call_args_list), "cleanup supplied data")
+for callback in callbacks:
+    check("cleanup local reply", callback.call_args_list == [((None, None, None), {})], "pending local request was not answered")
+for timer in timers:
+    source = GLib.MainContext.default().find_source_by_id(timer)
+    check("cleanup timer", source is None, "a local request timer was left behind")
+    if source is not None:
+        GLib.source_remove(timer)
+check("cleanup requests", not proxy.remote_requests and not proxy.local_requests, "pending requests were left behind")
 helper.cleanup()
 remove_event_receiver(proxy.xid, owner)
 remove_event_receiver(oxid, owner)
