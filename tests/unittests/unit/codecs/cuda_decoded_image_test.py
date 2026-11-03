@@ -8,9 +8,14 @@ import unittest
 from unittest.mock import Mock
 
 from xpra.codecs.image import ImageWrapper
-from xpra.codecs.nvidia.cuda.decoded_image import CUDADecodedImageWrapper
+
+try:
+    from xpra.codecs.nvidia.cuda.decoded_image import CUDADecodedImageWrapper
+except ImportError:
+    CUDADecodedImageWrapper = None
 
 
+@unittest.skipIf(CUDADecodedImageWrapper is None, "NVIDIA CUDA decoded image module is not available")
 class TestCUDADecodedImage(unittest.TestCase):
 
     def make_image(self, nplanes=0):
