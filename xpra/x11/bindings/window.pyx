@@ -845,10 +845,6 @@ cdef class X11WindowBindingsInstance(X11CoreBindingsInstance):
         cdef Atom selection = self.xatom(selection_str)
         XFixesSelectSelectionInput(self.display, window, selection, event_mask)
 
-    def selectSelectionInput(self, Window xwindow):
-        self.context_check("selectSelectionInput")
-        self.addXSelectInput(xwindow, SelectionNotify)
-
     def sendSelectionNotify(self, Window xwindow, selection, target, property, time=CurrentTime):
         self.context_check("sendSelectionNotify")
         cdef XEvent e

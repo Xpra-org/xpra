@@ -694,8 +694,6 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
                                    wclass=Gdk.WindowWindowClass.INPUT_ONLY)
         self.window.set_events(Gdk.EventMask.PROPERTY_CHANGE_MASK | self.window.get_events())
         xid = self.window.get_xid()
-        with xsync:
-            X11Window.selectSelectionInput(xid)
         add_event_receiver(xid, self)
 
     def cleanup_window(self) -> None:

@@ -116,6 +116,10 @@ with xsync:
     check("owner", X11Window.XGetSelectionOwner(SELECTION) == oxid, "could not take the selection")
 
 helper = X11Clipboard(lambda *_args: None)
+with xsync:
+    event_mask = X11Window.getEventMask(helper.window.get_xid())
+# SelectionNotify (31) is an event type, not the mask for selection events.
+check("clipboard input mask", event_mask & 31 == 0, "the clipboard window selected key, button or enter events")
 helper.init_proxies([SELECTION])
 proxy = helper._clipboard_proxies[SELECTION]
 proxy.set_enabled(True)
