@@ -8,13 +8,20 @@
   * [launcher connections and dialogs can stall with the GLib idle workaround](https://github.com/Xpra-org/xpra/commit/0b6433dc3ab8d50163dd2886bb7ed7fb13e9acce)
 * 🖧 Network:
   * [SSH agent authentication fails when the server offers public-key authentication](https://github.com/Xpra-org/xpra/commit/1d387fc21e49a9f2a440f62e8f447075cf053158)
+  * [connecting can miss a server socket that becomes ready during discovery](https://github.com/Xpra-org/xpra/commit/94876a45af59374eb11309d9d9626d7483774b4f)
 * 📋 Clipboard:
   * [pending clipboard requests are left waiting during cleanup](https://github.com/Xpra-org/xpra/commit/687fa8039c361931d0b76147a365c6c9e414a780)
+  * [local and remote clipboard selection options are ignored until changed from the tray menu](https://github.com/Xpra-org/xpra/commit/417b160375efa39308f47a9105b6362ed97798fc)
+  * [the X11 clipboard window subscribes to unintended input events](https://github.com/Xpra-org/xpra/commit/e9b056a07c0b37b4f69cf73567b45248fee94652)
 * Minor:
   * [numeric list values can fail to parse](https://github.com/Xpra-org/xpra/commit/b9d8f90022dbcfc0094b4cd779ef05387cb8edb9)
   * [continuous partial updates can postpone lossless refresh excessively](https://github.com/Xpra-org/xpra/commit/66c79a780669c872a362bf23e77d2899c846bb82)
   * [default PulseAudio monitor selection crashes on Python 3](https://github.com/Xpra-org/xpra/commit/cd6190f46449279d927ab184f9166e17300e11e2)
   * [MS Windows GDI screenshots can fail with invalid image data](https://github.com/Xpra-org/xpra/commit/2e2a8d4b03efb0e68d808c1b3e12086603b8a5fe)
+  * [read-only clients can resize windows because their fixed size constraints are malformed](https://github.com/Xpra-org/xpra/commit/f6a60cfced46b370f20ed0b7622f80e7e9e2c74a)
+  * [grayscale video encoding fails to load the libyuv converter](https://github.com/Xpra-org/xpra/commit/312949fba936c2b3cc1d9d93b1a7a31a8a9dd0f7)
+  * [audio forwarding is attempted after the audio subsystem query fails](https://github.com/Xpra-org/xpra/commit/3c9b596797342f022ca42659827d4f3e3a8a0092)
+  * [MS Windows printing helper commands crash when choosing a printer automatically](https://github.com/Xpra-org/xpra/commit/ee6fbef1a9681b7490e1403dea6b46f241259445)
 
 ## [6.5.5] 2026-10-11
 * 🔧 Platforms, build and packaging:
