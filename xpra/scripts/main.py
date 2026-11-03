@@ -886,7 +886,6 @@ CMDLINE_MODES: dict[str, tuple[str, Callable | str]] = {
     "version-info": ("", "xpra.scripts.version:main"),
 }
 OPTIONS_ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
-    "list": ("no_extra_args,no_gtk", "xpra.scripts.sessions:run_list"),
     "list-windows": ("no_extra_args,no_gtk", "xpra.scripts.sessions:run_list_windows"),
     "list-clients": ("no_extra_args,no_gtk", "xpra.scripts.sessions:run_list_clients"),
     "list-sessions": ("no_extra_args,no_gtk", "xpra.scripts.sessions:run_list_sessions"),
@@ -900,6 +899,7 @@ OPTIONS_ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
     "xvfb": ("max_one_arg,x11", "xpra.x11.vfb_util:run_xvfb"),
 }
 OPTIONS_ARGS_CMDLINE_MODES: dict[str, tuple[str, Callable | str]] = {
+    "list": ("max_one_arg,no_gtk", "xpra.scripts.sessions:run_list"),
     "top": ("no_gtk", "xpra.scripts.clients:run_top"),
     "stop": ("no_gtk", "xpra.scripts.sessions:run_stop"),
     "exit": ("no_gtk", "xpra.scripts.sessions:run_exit"),

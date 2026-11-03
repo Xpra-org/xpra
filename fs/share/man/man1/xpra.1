@@ -409,6 +409,9 @@ below \fB/var/cache/xpra\fP.
 .SS xpra list
 This command finds all xpra servers that have been started by the
 current user on the current machine, and lists them.
+An optional SSH URL, such as \fBxpra list ssh://user@host/\fP, runs
+\fBxpra list\fP on the remote host and returns its output and exit status.
+The usual SSH and \fB\-\-remote\-xpra\fP options apply.
 .SS xpra upgrade
 This command starts a new xpra server, but instead of creating it from
 scratch, it attaches to another existing server, tells it to exit, and

@@ -547,7 +547,7 @@ def get_usage() -> list[str]:
         "showconfig",
         "setup-ssl",
         "show-ssl",
-        "list",
+        "list [ssh://[USER@]HOST[:PORT]/]",
         "list-sessions",
         "list-windows",
         "displays",

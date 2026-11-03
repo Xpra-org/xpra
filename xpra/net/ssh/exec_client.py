@@ -8,8 +8,9 @@ import os
 import shlex
 from typing import Any
 from shutil import which
-from subprocess import PIPE, Popen
+from subprocess import DEVNULL, PIPE, Popen
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 
 from xpra.scripts.main import InitException, InitExit
 from xpra.scripts.args import shellquote
@@ -84,7 +85,7 @@ def get_ssh_command(display_desc: dict) -> list[str]:
             pc = [f'{check} [ -x {x} ]; then']
         pc += [x] + proxy_command + [shellquote(x) for x in display_as_args]
         for socket_dir in socket_dirs:
-            pc.append(f"--socket-dirs={socket_dir}")
+            pc.append(shellquote(f"--socket-dirs={socket_dir}"))
         remote_cmd += " ".join(pc) + ";"
     remote_cmd += "else echo \"no xpra command found\"; exit 1; fi"
     # how many times we need to escape the remote command string
@@ -121,7 +122,7 @@ def get_ssh_kwargs(exit_ssh=False) -> dict:
     return kwargs
 
 
-def connect_to(display_desc: dict, debug_cb: Callable = noop, ssh_fail_cb=connect_failed):
+def start_ssh(display_desc: dict, debug_cb: Callable = noop, **popen_kwargs) -> tuple[Popen, list[str], str]:
     if display_desc.get("is_putty"):
         # special env used by plink:
         env = os.environ.copy()
@@ -129,6 +130,7 @@ def connect_to(display_desc: dict, debug_cb: Callable = noop, ssh_fail_cb=connec
     else:
         env = display_desc.get("env", get_saved_env())
     kwargs = get_ssh_kwargs(display_desc.get("exit_ssh", False))
+    kwargs.update(popen_kwargs)
     cmd = get_ssh_command(display_desc)
     try:
         debug_cb(f"starting {cmd[0]} tunnel")
@@ -152,11 +154,32 @@ def connect_to(display_desc: dict, debug_cb: Callable = noop, ssh_fail_cb=connec
         log_fn = log.info if is_debug_enabled("ssh") else log.debug
         log_fn("executing ssh command: " + shlex.join(cmd))
         log_fn(f"{kwargs=}")
-        child = Popen(cmd, stdin=PIPE, stdout=PIPE, **kwargs)
+        child = Popen(cmd, **kwargs)
     except OSError as e:
         cmd_info = shlex.join(cmd)
         raise InitExit(ExitCode.SSH_FAILURE,
                        f"Error running ssh command {cmd_info!r}: {e}") from None
+    return child, cmd, sshpass_command
+
+
+def run_command(display_desc: dict) -> int:
+    from xpra.net.ssh.command import copy_output
+    child, _cmd, _sshpass = start_ssh(display_desc, stdin=DEVNULL, stdout=PIPE, stderr=PIPE)
+    with child, ThreadPoolExecutor(max_workers=1) as executor:
+        try:
+            stderr = executor.submit(copy_output, child.stderr.read1, sys.stderr)
+            copy_output(child.stdout.read1, sys.stdout)
+            stderr.result()
+            code = child.wait()
+            return code if code >= 0 else 128 - code
+        finally:
+            if child.poll() is None:
+                child.terminate()
+            child.wait()
+
+
+def connect_to(display_desc: dict, debug_cb: Callable = noop, ssh_fail_cb=connect_failed):
+    child, cmd, sshpass_command = start_ssh(display_desc, debug_cb, stdin=PIPE, stdout=PIPE)
 
     def abort_test(action) -> None:
         """ if ssh dies, we don't need to try to read/write from its sockets """
@@ -216,7 +239,7 @@ def connect_to(display_desc: dict, debug_cb: Callable = noop, ssh_fail_cb=connec
     conn.endpoint = host_target_string("ssh", username, host, port, display)
     conn.timeout = 0            # taken care of by abort_test
     conn.process = (child, "ssh", cmd)
-    if kwargs.get("stderr") == PIPE:
+    if child.stderr is not None:
         start_thread(stderr_reader, "ssh-stderr-reader", args=(child,), daemon=True)
     return conn
 

@@ -314,6 +314,30 @@ class ModeTableTest(unittest.TestCase):
             self.assertIn("usage: xpra list-sessions", str(cm.exception))
             handler.assert_called_once()
 
+    def test_remote_list(self):
+        opts = make_defaults_struct()
+        opts.ssh = "ssh"
+        opts.socket_dirs = ["/remote sockets"]
+        cmdline = ["xpra", "list", "ssh://user@host:2222/", "--socket-dirs=/remote sockets"]
+        with patch("xpra.net.ssh.command.run_command", return_value=17) as run:
+            self.assertEqual(do_run_mode("xpra", cmdline, opts, [cmdline[2]], "list", None), 17)
+        desc = run.call_args.args[0]
+        self.assertEqual(desc["proxy_command"], ["list"])
+        self.assertEqual(desc["display_as_args"], [])
+        self.assertEqual(desc["socket_dirs"], ["/remote sockets"])
+        self.assertEqual((desc["host"], desc["port"], desc["username"]), ("host", 2222, "user"))
+        self.assertFalse(desc["agent"])
+
+    def test_list_rejects_invalid_targets(self):
+        for args in (["ssh://one/", "ssh://two/"], ["tcp://host/"], [":10"], ["ssh://host/10"]):
+            with self.subTest(args=args), patch("xpra.net.ssh.command.run_command") as run:
+                opts = make_defaults_struct()
+                opts.ssh = "ssh"
+                with self.assertRaises(InitExit) as cm:
+                    do_run_mode("xpra", [], opts, args, "list", None)
+                self.assertEqual(cm.exception.status, ExitCode.ARGUMENT_MISMATCH)
+                run.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()
