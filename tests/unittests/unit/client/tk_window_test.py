@@ -9,6 +9,7 @@
 import unittest
 from types import SimpleNamespace
 
+from xpra.net.packet_type import POINTER_MOTION
 from unit.process_test_util import DisplayContext
 from unit.client.pyglet_window_test import FakeClient
 
@@ -39,10 +40,21 @@ class TkWindowTest(unittest.TestCase):
 
     def test_buttons(self) -> None:
         for button in (1, 2, 3):
-            event = SimpleNamespace(num=button, x=5, y=6)
+            event = SimpleNamespace(num=button, x_root=100, y_root=80)
             self.window.on_mouse_button_press(event)
             self.window.on_mouse_button_release(event)
         self.assertEqual(self.client.buttons(), [(b, pressed) for b in (1, 2, 3) for pressed in (True, False)])
+
+    def test_position(self) -> None:
+        # the position on the screen, and relative to the window:
+        # (`event.x` and `event.y` are relative to the widget under the pointer)
+        self.window.update()
+        wx, wy = self.window.winfo_rootx(), self.window.winfo_rooty()
+        event = SimpleNamespace(num=1, x=0, y=0, x_root=wx + 30, y_root=wy + 40)
+        self.window.on_mouse_motion(event)
+        self.window.on_mouse_button_press(event)
+        positions = [packet[4] if packet[0] == POINTER_MOTION else packet[6] for packet in self.client.sent]
+        self.assertEqual(positions, [(wx + 30, wy + 40, 30, 40)] * 2)
 
 
 def main():

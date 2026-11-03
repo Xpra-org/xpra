@@ -8,7 +8,7 @@
 
 import unittest
 
-from xpra.net.packet_type import POINTER_BUTTON
+from xpra.net.packet_type import POINTER_BUTTON, POINTER_MOTION
 from unit.process_test_util import DisplayContext
 
 
@@ -72,6 +72,21 @@ class PygletWindowTest(unittest.TestCase):
         self.window.on_mouse_release(5, 6, mouse.MOUSE4, 0)
         self.window.on_mouse_release(5, 6, mouse.MOUSE5, 0)
         self.assertEqual(self.client.buttons(), [])
+
+    def test_position(self) -> None:
+        # the position on the screen, and relative to the window, top-down:
+        from pyglet.window import mouse
+        from xpra.client.pyglet.window import MOTION_Y_OFFSET
+        wx, wy = self.window.get_location()
+        h = self.window.height
+        expected = (wx + 30, wy + 40, 30, 40)
+        self.window.on_mouse_press(30, h - 40, mouse.LEFT, 0)
+        # pyglet's motion events are one pixel lower on X11:
+        y = h - 40 - MOTION_Y_OFFSET
+        self.window.on_mouse_motion(30, y, 0, 0)
+        self.window.on_mouse_drag(30, y, 0, 0, mouse.LEFT, 0)
+        positions = [packet[4] if packet[0] == POINTER_MOTION else packet[6] for packet in self.client.sent]
+        self.assertEqual(positions, [expected] * 3)
 
 
 def main():

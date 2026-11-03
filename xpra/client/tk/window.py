@@ -136,11 +136,17 @@ class ClientWindow(Toplevel):
                 "backend": "tk",
             })
 
+    def get_pointer_position(self, event) -> tuple[int, int, int, int]:
+        """ the position on the screen, and relative to the window """
+        # (`event.x` and `event.y` are relative to the widget under the pointer, not the window)
+        x, y = event.x_root, event.y_root
+        return x, y, x - self.winfo_rootx(), y - self.winfo_rooty()
+
     def on_mouse_motion(self, event) -> None:
         log(f"mouse motion: {event!r}")
         device_id = -1
         seq = 0
-        pos = (event.x, event.y)
+        pos = self.get_pointer_position(event)
         self.client.send(POINTER_MOTION, device_id, seq, self.wid, pos, {})
 
     def on_mouse_button_press(self, event) -> None:
@@ -154,7 +160,7 @@ class ClientWindow(Toplevel):
     def on_mouse_button_event(self, pressed: bool, event) -> None:
         seq = 0
         button = event.num
-        pos = (event.x, event.y)
+        pos = self.get_pointer_position(event)
         self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, {})
 
     def on_map(self, event) -> None:
