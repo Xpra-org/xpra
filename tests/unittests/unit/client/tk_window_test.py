@@ -4,12 +4,12 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-"""The tk client windows: focus and pointer buttons."""
+"""The tk client windows: focus, pointer buttons and window events."""
 
 import unittest
 from types import SimpleNamespace
 
-from xpra.net.packet_type import POINTER_MOTION
+from xpra.net.packet_type import POINTER_MOTION, WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE
 from unit.process_test_util import DisplayContext
 from unit.client.pyglet_window_test import FakeClient
 
@@ -32,7 +32,8 @@ class TkWindowTest(unittest.TestCase):
         self.window = ClientWindow(self.client, 5, 10, 20, 200, 100, {"title": "test"})
 
     def tearDown(self) -> None:
-        self.window.destroy()
+        if self.window.winfo_exists():
+            self.window.destroy()
 
     def test_focus(self) -> None:
         self.window.on_focus_in(SimpleNamespace())
@@ -64,6 +65,34 @@ class TkWindowTest(unittest.TestCase):
         self.window.on_mouse_button_press(event)
         positions = [packet[4] if packet[0] == POINTER_MOTION else packet[6] for packet in self.client.sent]
         self.assertEqual(positions, [(wx + 30, wy + 40, 30, 40)] * 2)
+
+    def window_packets(self) -> list[tuple]:
+        self.window.update()
+        types = (WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE)
+        packets = [packet[:3] for packet in self.client.sent if packet[0] in types]
+        self.client.sent.clear()
+        return packets
+
+    def test_window_events(self) -> None:
+        self.window.show()
+        packets = self.window_packets()
+        # only the window's own events, not the ones from the image widget it contains:
+        self.assertEqual([packet[0] for packet in packets], [WINDOW_CONFIGURE, WINDOW_MAP])
+        # (the window has a fixed geometry, so it does not follow the size of the image)
+        self.window.label.configure(width=150)
+        self.assertEqual(self.window_packets(), [])
+        self.window.withdraw()
+        self.assertEqual(self.window_packets(), [(WINDOW_UNMAP, 5, False)])
+        self.window.show()
+        self.assertEqual([packet[0] for packet in self.window_packets()], [WINDOW_MAP])
+        # closing the window is up to the server:
+        self.window.on_close()
+        self.assertEqual(self.window_packets(), [(WINDOW_CLOSE, 5)])
+        self.assertTrue(self.window.winfo_exists())
+        # and destroying it when the server tells us to sends nothing back:
+        self.window.destroy()
+        self.window.update_idletasks()
+        self.assertEqual([packet for packet in self.client.sent if packet[0] in (WINDOW_UNMAP, WINDOW_CLOSE)], [])
 
 
 def main():
