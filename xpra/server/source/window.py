@@ -528,7 +528,7 @@ class WindowsConnection(StubClientConnection):
         if getattr(self, "effective_readonly", lambda: self.readonly)():
             metalog("overriding size-constraints for readonly mode")
             size = window.get_dimensions()
-            metadata["size-constraints"] = force_size_constraint(*size)
+            metadata.update(force_size_constraint(*size))
         return metadata
 
     def new_window(self, packet_type: str, wid: int, window, x: int, y: int, w: int, h: int,
