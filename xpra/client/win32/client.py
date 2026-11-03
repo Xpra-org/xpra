@@ -304,9 +304,14 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
             w.update_focus(window.wid, False)
 
     def window_minimized_event(self, window) -> None:
+        if self.is_readonly():
+            return
         self.send(WINDOW_UNMAP, window.wid)
 
     def window_maximized_event(self, window) -> None:
+        if self.is_readonly():
+            window.state_updates = {}
+            return
         if not window.state_updates:
             return
         self.send(WINDOW_CONFIGURE, window.wid, {
@@ -324,6 +329,10 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         self.send_configure(window)
 
     def send_configure(self, window) -> None:
+        if self.is_readonly():
+            log("send_configure() skipped in read-only mode, state updates dropped: %s", window.state_updates)
+            window.state_updates = {}
+            return
         geometry = (window.x, window.y, window.width, window.height)
         if display := self.get_subsystem("display"):
             geometry = display.crect(*geometry)
@@ -380,6 +389,8 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     def window_mouse_moved_event(self, window, x: int, y: int, vk: Sequence[str], buttons: Sequence[int]) -> None:
         log("window_mouse_moved_event(%s, %i, %i, %s, %s)", window, x, y, vk, buttons)
+        if self.is_readonly():
+            return
         device_id = -1
         modifiers = self.get_modifiers()
         props = {}
@@ -396,6 +407,8 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     def window_wheel_event(self, window, x: int, y: int, vertical: bool, vk: Sequence[str], delta: int) -> None:
         log("window_wheel_event(%s, %i, %i, %s, %s, %s)", window, x, y, vertical, vk, delta)
+        if self.is_readonly():
+            return
         device_id = -1
         props = {}
         pos = self._pointer_data(window, x, y)
@@ -424,6 +437,9 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         keylog("window_key_event(%s, %r, %s, %i, %r, %i, %s)", window, keyname, pressed, vk_code, string, scancode, extended)
         mods = self.get_modifiers()
         if self.key_handled_as_shortcut(window, keyname, pressed, mods):
+            return
+        # Local shortcuts still work when the connection is read-only.
+        if self.is_readonly():
             return
         if self.legacy_server():
             keyval = scancode

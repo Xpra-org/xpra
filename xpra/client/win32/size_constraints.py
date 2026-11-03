@@ -17,13 +17,18 @@ Size = tuple[int, int]
 
 
 def get_track_sizes(size_constraints: typedict, max_window_size: Size, frame: Size,
-                    to_local: Callable[[int, int], Size] | None = None) -> tuple[Size, Size]:
+                    to_local: Callable[[int, int], Size] | None = None,
+                    fixed_size: Size | None = None) -> tuple[Size, Size]:
     """
     The minimum and maximum track sizes of the window, `0` means that there is no limit.
     `to_local` converts a size from server to local pixels,
     `max_window_size` is a hard limit in local pixels (the OpenGL windows lower it to the maximum texture size),
     and `frame` is the size of the borders and title bar.
+    A `fixed_size`, in local pixels, replaces all the other limits (read-only mode).
     """
+    if fixed_size:
+        size = add_frame(fixed_size, frame)
+        return size, size
 
     def local_size(name: str) -> Size:
         w, h = size_constraints.intpair(name)

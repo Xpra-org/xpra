@@ -170,6 +170,10 @@ class UIXpraClient(XpraClientBase):
             info["session-name"] = self.session_name
         return info
 
+    def is_readonly(self) -> bool:
+        """The user's read-only choice, or the read-only policy enforced by the server."""
+        return bool(self.readonly or self.server_readonly)
+
     ######################################################################
     # dialogs: every one of these is served by the optional `dialogs`
     # subsystem, which is toolkit specific (see `xpra.client.gtk3.dialogs`).

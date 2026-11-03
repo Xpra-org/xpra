@@ -246,6 +246,8 @@ class ClientWindow(GObject.GObject):
         self.state_updates = {}
         self.fullscreen_monitors = ()
         self.size_constraints = typedict()
+        # the size the server has asked for, until we get it (see `move_resize`):
+        self._requested_size: tuple[int, int] | None = None
         self._above = False
         self._below = False
         self._skip_taskbar = False
@@ -478,6 +480,7 @@ class ClientWindow(GObject.GObject):
             if msg == win32con.WM_SIZE:
                 width = lparam & 0xffff
                 height = (lparam >> 16) & 0xffff
+                self._requested_size = None
                 log("WM_SIZE %r: %ix%i", SIZE_SUBCOMMAND.get(wparam, str(wparam)), width, height)
                 if wparam == win32con.SIZE_MINIMIZED:
                     if not self.minimized:
@@ -966,6 +969,8 @@ class ClientWindow(GObject.GObject):
         self.resize_counter = resize_counter
         if not self.hwnd:
             return
+        # in read-only mode, this is the only size allowed (see `apply_size_constraints`):
+        self._requested_size = w, h
         exstyle = GetWindowLongW(self.hwnd, win32con.GWL_EXSTYLE)
         wx, wy, ww, wh = system_geometry(x, y, w, h, self.style, exstyle)
         flags = win32con.SWP_NOACTIVATE | win32con.SWP_NOOWNERZORDER | win32con.SWP_NOZORDER
@@ -1007,17 +1012,31 @@ class ClientWindow(GObject.GObject):
         frame = system_geometry(0, 0, 0, 0, self.style, exstyle)[2:]
         display = self.client.get_subsystem("display") if self.client else None
         to_local = display.sp if display else None
-        (minw, minh), (maxw, maxh) = get_track_sizes(self.size_constraints, self.max_window_size, frame, to_local)
-        geomlog("apply_size_constraints: frame=%s, min=%s, max=%s", frame, (minw, minh), (maxw, maxh))
+        fixed_size = None
+        if self.is_readonly():
+            # the size can only be changed by the server:
+            fixed_size = self._requested_size or (self.width, self.height)
+        (minw, minh), (maxw, maxh) = get_track_sizes(self.size_constraints, self.max_window_size, frame, to_local,
+                                                     fixed_size)
+        geomlog("apply_size_constraints: frame=%s, fixed size=%s, min=%s, max=%s",
+                frame, fixed_size, (minw, minh), (maxw, maxh))
         if minw > 0 and minh > 0:
             info.ptMinTrackSize.x = minw
             info.ptMinTrackSize.y = minh
         if maxw > 0 and maxh > 0:
             info.ptMaxTrackSize.x = maxw
             info.ptMaxTrackSize.y = maxh
+        if fixed_size:
+            # maximizing does not use the track sizes:
+            info.ptMaxSize.x = maxw
+            info.ptMaxSize.y = maxh
 
     def is_tray(self) -> bool:
         return False
+
+    def is_readonly(self) -> bool:
+        client = self.client
+        return bool(client and (client.readonly or client.server_readonly))
 
     def is_OR(self) -> bool:
         return self.metadata.get("override-redirect", False)

@@ -23,6 +23,14 @@ def make_client(readonly: bool) -> UIXpraClient:
 
 class ReadonlyTest(unittest.TestCase):
 
+    def test_effective_readonly(self) -> None:
+        for readonly in (False, True):
+            for server_readonly in (False, True):
+                with self.subTest(readonly=readonly, server_readonly=server_readonly):
+                    client = make_client(readonly)
+                    client.server_readonly = server_readonly
+                    self.assertEqual(client.is_readonly(), readonly or server_readonly)
+
     def test_server_turns_readonly_off(self) -> None:
         for readonly in (False, True):
             with self.subTest(readonly=readonly):
