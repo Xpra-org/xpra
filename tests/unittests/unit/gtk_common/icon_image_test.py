@@ -8,11 +8,16 @@ import unittest
 
 from xpra.os_util import gi_import
 from xpra.gtk.widget import icon_image
+from unit.process_test_util import DisplayContext
 
 Gtk = gi_import("Gtk")
 
 
 class IconImageTest(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        cls.enterClassContext(DisplayContext())
 
     def test_icon(self) -> None:
         image = icon_image("xpra.png")
