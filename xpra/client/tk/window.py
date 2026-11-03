@@ -18,6 +18,8 @@ from xpra.log import Logger
 
 log = Logger("client", "window")
 
+SHIFT_MASK = 1
+
 
 def modifiers(value: int) -> list[str]:
     mod_mask = {
@@ -56,10 +58,10 @@ class ClientWindow(Toplevel):
         self.label.pack()
 
         self.bind("<Motion>", self.on_mouse_motion)
-        for button in range(1, 3):
-            self.bind(f"<Button-{button}>", self.on_mouse_button_press)
-            self.bind(f"<ButtonRelease-{button}>", self.on_mouse_button_release)
-        # self.bind("<MouseWheel>", self.on_mouse_wheel)
+        # all the buttons, including the wheel with Tk 8.6 on X11 (buttons 4 to 7):
+        self.bind("<ButtonPress>", self.on_mouse_button_press)
+        self.bind("<ButtonRelease>", self.on_mouse_button_release)
+        self.bind("<MouseWheel>", self.on_mouse_wheel)
         self.bind("<FocusIn>", self.on_focus_in)
         self.bind("<FocusOut>", self.on_focus_out)
         self.bind("<Key>", self.on_key_press)
@@ -162,6 +164,21 @@ class ClientWindow(Toplevel):
         button = event.num
         pos = self.get_pointer_position(event)
         self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, {})
+
+    def on_mouse_wheel(self, event) -> None:
+        # Tk 8.7 and later, and Tk on MS Windows and macOS: the delta is a multiple of 120 with most mice,
+        # and the horizontal wheel (X11 buttons 6 and 7) is sent with the shift modifier
+        log(f"mouse wheel: {event!r}")
+        if not event.delta:
+            return
+        button = 6 if event.state & SHIFT_MASK else 4
+        if event.delta < 0:
+            button += 1
+        # sent as clicks of the wheel buttons:
+        pos = self.get_pointer_position(event)
+        for _ in range(max(1, abs(event.delta) // 120)):
+            for pressed in (True, False):
+                self.client.send(POINTER_BUTTON, -1, 0, self.wid, button, pressed, pos, {})
 
     def on_map(self, event) -> None:
         log(f"map: {event!r}")

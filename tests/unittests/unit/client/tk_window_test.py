@@ -39,11 +39,20 @@ class TkWindowTest(unittest.TestCase):
         self.assertEqual(self.client.focus, [5])
 
     def test_buttons(self) -> None:
-        for button in (1, 2, 3):
+        # (Tk 8.6 on X11 also sends the wheel as buttons 4 to 7)
+        buttons = (1, 2, 3, 4, 5, 6, 7, 8, 9)
+        for button in buttons:
             event = SimpleNamespace(num=button, x_root=100, y_root=80)
             self.window.on_mouse_button_press(event)
             self.window.on_mouse_button_release(event)
-        self.assertEqual(self.client.buttons(), [(b, pressed) for b in (1, 2, 3) for pressed in (True, False)])
+        self.assertEqual(self.client.buttons(), [(b, pressed) for b in buttons for pressed in (True, False)])
+
+    def test_wheel(self) -> None:
+        # Tk 8.7 and later: the horizontal wheel has the shift modifier
+        for delta, state in ((120, 0), (-240, 0), (120, 1), (-120, 1), (0, 0), (30, 0)):
+            self.window.on_mouse_wheel(SimpleNamespace(delta=delta, state=state, x_root=100, y_root=80))
+        clicks = (4, 5, 5, 6, 7, 4)
+        self.assertEqual(self.client.buttons(), [(b, pressed) for b in clicks for pressed in (True, False)])
 
     def test_position(self) -> None:
         # the position on the screen, and relative to the window:
