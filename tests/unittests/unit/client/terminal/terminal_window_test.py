@@ -50,9 +50,55 @@ class FakeWindowSubsystem:
     def update_focus(self, wid: int, focused=True) -> None:
         self.focus_events.append((wid, focused))
 
+    def window_z(self, wid: int) -> int:
+        return self.client.window_z(wid)
+
+    def window_mapped(self, window) -> None:
+        self.client.window_mapped(window)
+
+    def raise_window(self, wid: int) -> None:
+        self.client.raise_window(wid)
+
+    def restack_window(self, wid: int, other_wid: int, above: int) -> None:
+        self.client.restack_window(wid, other_wid, above)
+
+    def focus_window(self, wid: int) -> None:
+        self.client.focus_window(wid)
+
+    def is_focused(self, wid: int) -> bool:
+        return self.client._focused == wid
+
+
+class FakeDisplaySubsystem:
+    xscale = yscale = 1
+
+    def __init__(self, client):
+        self.client = client
+
+    @property
+    def terminal_output(self):
+        return self.client.terminal_output
+
+    @property
+    def shm_ok(self) -> bool:
+        return self.client.shm_ok
+
+    @property
+    def frame_edits(self) -> bool:
+        return self.client.frame_edits
+
+    def cell_size(self) -> tuple:
+        return self.client.cell_size()
+
+    def terminal_pixel_size(self) -> tuple:
+        return self.client.terminal_pixel_size()
+
+    def shm_transfer(self, pixels) -> str:
+        return self.client.shm_transfer(pixels)
+
 
 class FakeClient:
-    """ the minimal client surface a terminal `ClientWindow` reaches through """
+    """ host for the terminal window's callbacks and subsystems """
     readonly = False
     server_readonly = False
     # a title template with a variable, so the metadata title is used:
@@ -65,7 +111,7 @@ class FakeClient:
         self.packets = []
         self.buffer = BytesIO()
         self.terminal_output = TerminalOutput(self.buffer)
-        self.subsystems = {"window": FakeWindowSubsystem(self)}
+        self.subsystems = {"window": FakeWindowSubsystem(self), "display": FakeDisplaySubsystem(self)}
         self._focused = 0
         self.zorder = {}
         self.raised = []
@@ -179,7 +225,7 @@ class TerminalWindowTest(unittest.TestCase):
         client = client or FakeClient()
         md = typedict({"has-alpha": True})
         md.update(metadata or {})
-        window = ClientWindow(client, None, wid, geom, geom[2:],
+        window = ClientWindow(client.get_subsystem, client.is_readonly, None, wid, geom, geom[2:],
                               md, override_redirect, typedict(),
                               None, (0, 0), 24, "no")
         # the paints are normally deferred to the GLib main loop, run them inline:
@@ -209,6 +255,7 @@ class TerminalWindowTest(unittest.TestCase):
 
     def test_attributes(self):
         client, window = self.make_window()
+        self.assertFalse(hasattr(window, "_client"))
         self.assertEqual(window._pos, (20, 40))
         self.assertEqual(window._size, (64, 32))
         self.assertEqual(window.get_size(), (64, 32))
@@ -618,15 +665,6 @@ class TerminalWindowTest(unittest.TestCase):
         client, window = self.make_window(client, geom=(0, 0, 8192, 4096), metadata={"desktop": True})
         window.show_all()
         self.assertNotIn(WINDOW_CONFIGURE, client.packet_types())
-
-    def test_quit_shortcut_action(self):
-        # `KeyboardHelper.key_handled_as_shortcut` invokes the shortcut action
-        # on the window: the default `#+F4:quit` binding must detach the client:
-        client, window = self.make_window()
-        quits = []
-        client.quit = lambda *args: quits.append(args)
-        window.quit()
-        self.assertEqual(quits, [(0, )])
 
     ######################################################################
     # stacking and focus
