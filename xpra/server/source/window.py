@@ -496,7 +496,7 @@ class WindowsConnection(StubClientConnection):
         if getattr(self, "effective_readonly", lambda: self.readonly)():
             metalog("overriding size-constraints for readonly mode")
             size = window.get_dimensions()
-            metadata["size-constraints"] = force_size_constraint(*size)
+            metadata.update(force_size_constraint(*size))
         return metadata
 
     def new_tray(self, wid: int, window, w: int, h: int) -> None:
