@@ -45,6 +45,7 @@ class WaylandClientTest(WestonTestUtil):
             self.assertTrue(info.get("windows.1.title"))
             client = self.run_wayland_client(server.display)
             self.assert_running(client, "Wayland client")
+            self.wait_for_server_info(server.display, "clients", "1")
             self.stop_wayland_server(server)
             self.wait_for_exit(client,
                                "Wayland client after Wayland server shutdown")
