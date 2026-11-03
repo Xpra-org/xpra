@@ -9,9 +9,12 @@ The `show_menu` key shortcut and the windows' header bar share the tray's xpra m
 unless that one cannot be popped up (the macOS menu bar).
 """
 
+import os
 import unittest
 from unittest.mock import Mock, patch
 
+from unit.process_test_util import ProcessTestUtil
+from xpra.os_util import POSIX, OSX
 from xpra.client.gui.ui_client_base import UIXpraClient
 
 
@@ -60,7 +63,44 @@ class ShowMenuTest(unittest.TestCase):
         helper.activate.assert_not_called()
 
 
-class GTKPopupMenuTest(unittest.TestCase):
+class GTKPopupMenuTest(ProcessTestUtil):
+    # importing the gtk3 client binds a GDK display, which is process-global:
+    # use an Xvfb of our own rather than whatever display the environment points at
+    xvfb = None
+    gdk_display = None
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        if not POSIX or OSX:
+            return
+        display = cls.find_free_display()
+        cls.xvfb = cls.start_Xvfb(display)
+        os.environ["DISPLAY"] = display
+        os.environ["GDK_BACKEND"] = "x11"
+        os.environ.pop("WAYLAND_DISPLAY", None)
+        from xpra.gtk.util import open_gdk_display
+        cls.gdk_display = open_gdk_display(display)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        if gdk_display := cls.gdk_display:
+            # close the connection and drop every reference to it before the Xvfb goes away,
+            # or GDK's final `XSync` kills this process
+            # (the gtk3 client's `init_display_source` holds one too)
+            cls.gdk_display = None
+            try:
+                from xpra.x11.gtk.display_source import close_gdk_display_source
+            except ImportError:
+                pass
+            else:
+                close_gdk_display_source()
+            gdk_display.close()
+            del gdk_display
+        if xvfb := cls.xvfb:
+            cls.xvfb = None
+            xvfb.terminate()
+        super().tearDownClass()
 
     @staticmethod
     def make_client(helper: Mock | None):
