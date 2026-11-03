@@ -12,6 +12,7 @@ from xpra.constants import MoveResize
 from xpra.net.packet_type import POINTER_BUTTON, WINDOW_MAP, WINDOW_CLOSE, WINDOW_CONFIGURE, POINTER_MOTION
 from xpra.client.qt6.keys import key_names
 from xpra.client.gui.window_title import window_title_str
+from xpra.client.gui.simple_pointer import split_position
 from xpra.log import Logger
 
 log = Logger()
@@ -54,15 +55,11 @@ class DrawingArea(QLabel):
         self.seq = 0
 
     def mouseMoveEvent(self, event) -> None:
-        pos = get_pointer_position(event)
-        self.send(POINTER_MOTION, -1, self.seq, self.wid, pos, {})
+        pos, props = split_position(get_pointer_position(event))
+        self.send(POINTER_MOTION, -1, self.seq, self.wid, pos, props)
         self.seq += 1
 
     def send_mouse_button_event(self, event, pressed=True) -> None:
-        props = {
-            # "modifiers": (),
-            # "buttons": (),
-        }
         button = {
             Qt.MouseButton.LeftButton: 1,
             Qt.MouseButton.MiddleButton: 2,
@@ -72,7 +69,7 @@ class DrawingArea(QLabel):
         }.get(event.button(), -1)
         if button < 0:
             return
-        pos = get_pointer_position(event)
+        pos, props = split_position(get_pointer_position(event))
         self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, pressed, pos, props)
         self.seq += 1
 
@@ -88,10 +85,9 @@ class DrawingArea(QLabel):
         self.send_mouse_button_event(event, True)
 
     def wheelEvent(self, event) -> None:
-        pos = get_pointer_position(event)
+        pos, props = split_position(get_pointer_position(event))
         # (`pixelDelta()` is only set by high resolution devices, not by mouse wheels)
         delta = event.angleDelta()
-        props = {}
         # sent as clicks of the wheel buttons: 4 and 5 for up and down, 6 and 7 for left and right
         for button, value in ((4, delta.y()), (6, delta.x())):
             if value:

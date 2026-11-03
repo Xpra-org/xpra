@@ -16,6 +16,7 @@ from xpra.net.packet_type import (
 )
 from xpra.client.pyglet.keys import keynames
 from xpra.client.gui.window_title import window_title_str
+from xpra.client.gui.simple_pointer import split_position
 from xpra.log import Logger
 
 log = Logger()
@@ -125,8 +126,8 @@ class ClientWindow(Window):
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
         device_id = -1
         seq = 0
-        pos = self.get_pointer_position(x, y + MOTION_Y_OFFSET)
-        self.client.send(POINTER_MOTION, device_id, seq, self.wid, pos, {})
+        pos, props = split_position(self.get_pointer_position(x, y + MOTION_Y_OFFSET))
+        self.client.send(POINTER_MOTION, device_id, seq, self.wid, pos, props)
 
     def on_mouse_drag(self, x: int, y: int, dx: int, dy: int, _buttons: int, _modifiers: int) -> None:
         # the motion events while a button is held down
@@ -147,8 +148,8 @@ class ClientWindow(Window):
     def on_mouse_button_event(self, pressed: bool, x: int, y: int, button: int, modifiers: int) -> None:
         # `button` is an X11 button number
         seq = 0
-        pos = self.get_pointer_position(x, y)
-        self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, {})
+        pos, props = split_position(self.get_pointer_position(x, y))
+        self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, props)
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
         # sent as clicks of the wheel buttons: 4 and 5 for up and down, 6 and 7 for left and right
