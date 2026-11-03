@@ -548,7 +548,7 @@ class DirectShowCamera(CameraDevice):
                     rs = self._stride
                     raw = b"".join(raw[i * rs:(i + 1) * rs] for i in range(h - 1, -1, -1))
 
-                image = ImageWrapper(0, 0, w, h, raw, self._pixel_format, 0, self._stride,
+                image = ImageWrapper(0, 0, w, h, (raw,), self._pixel_format, 0, self._stride,
                                      planes=ImageWrapper.PACKED)
                 log("%r.read()=%s", self, image)
                 return image

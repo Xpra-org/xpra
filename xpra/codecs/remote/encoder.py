@@ -97,7 +97,8 @@ class EncoderClient(RemoteCodecClient):
             metadata[attr] = int(getattr(image, f"get_{attr}")())
         for attr in ("rowstride", "pixel_format", "full_range"):
             metadata[attr] = getattr(image, f"get_{attr}")()
-        pixels = image.get_pixels()
+        pixels = (image.get_plane(0) if image.get_planes() == PlanarFormat.PACKED
+                  else tuple(image.get_plane(i) for i in range(image.get_planes())))
         nplanes = image.get_planes()
         send_opts = {}
         if self.lz4:

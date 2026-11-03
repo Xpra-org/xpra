@@ -6,11 +6,11 @@
 
 from collections.abc import Sequence
 
-from pyglet.window import Window, event
+from pyglet import compat_platform
+from pyglet.window import Window, event, mouse
 from pyglet.image import ImageData, SolidColorImagePattern
 from pyglet.sprite import Sprite
 from xpra.net.packet_type import (
-    POINTER_MOTION, POINTER_BUTTON,
     WINDOW_MAP, WINDOW_UNMAP, WINDOW_CONFIGURE, WINDOW_CLOSE,
 )
 from xpra.client.pyglet.keys import keynames
@@ -22,6 +22,20 @@ log = Logger()
 
 def get_modifiers(_modifiers: int) -> Sequence[str]:
     return ()
+
+
+# pyglet's X11 backend subtracts one more from the vertical position of the motion events
+# than from the position of the button events:
+MOTION_Y_OFFSET = 1 if compat_platform.startswith("linux") else 0
+
+# pyglet's mouse buttons are bit flags, the server uses the X11 button numbers:
+BUTTONS: dict[int, int] = {
+    mouse.LEFT: 1,
+    mouse.MIDDLE: 2,
+    mouse.RIGHT: 3,
+    mouse.MOUSE4: 8,
+    mouse.MOUSE5: 9,
+}
 
 
 class ClientWindow(Window):
@@ -42,6 +56,7 @@ class ClientWindow(Window):
         self.set_location(x, y)
         self.set_size(w, h)
         self.focused = False
+        # the X11 numbers of the buttons we have sent a press for:
 
         # A logger class, which prints events to stdout or to a file:
         win_event_logger = event.WindowEventLogger()
@@ -55,8 +70,7 @@ class ClientWindow(Window):
 
     def on_activate(self) -> None:
         self.focused = True
-        if wc := self.client.get_subsystem("window"):
-            wc.update_focus(self.wid)
+        self.client.update_focus(self.wid)
 
     def on_deactivate(self) -> None:
         self.focused = False
@@ -98,31 +112,35 @@ class ClientWindow(Window):
             "backend": "pyglet",
         })
 
+    def get_pointer_position(self, x: int, y: int) -> tuple[int, int, int, int]:
+        """ the position on the screen, and relative to the window """
+        # pyglet's vertical axis points up, from the bottom of the window:
+        y = self.height - y
+        # (the position of the window contents on the screen)
+        wx, wy = self.get_location()
+        return wx + x, wy + y, x, y
+
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
-        device_id = -1
-        seq = 0
-        pos = (x, y, dx, dy)
-        self.client.send(POINTER_MOTION, device_id, seq, self.wid, pos, {})
+        self.client.pointer.motion(self.wid, self.get_pointer_position(x, y + MOTION_Y_OFFSET))
+
+    def on_mouse_drag(self, x: int, y: int, dx: int, dy: int, _buttons: int, _modifiers: int) -> None:
+        # the motion events while a button is held down
+        self.on_mouse_motion(x, y, dx, dy)
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> None:
-        self.on_mouse_button_event(True, x, y, button, modifiers)
+        self.on_mouse_button_event(True, x, y, button)
 
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int) -> None:
-        self.on_mouse_button_event(False, x, y, button, modifiers)
+        # (pyglet also reports the release of the wheel buttons, as `MOUSE4` and `MOUSE5`,
+        # `SimplePointer` ignores those since it has not sent their press)
+        self.on_mouse_button_event(False, x, y, button)
 
-    def on_mouse_button_event(self, pressed: bool, x: int, y: int, button: int, modifiers: int) -> None:
-        seq = 0
-        pos = (x, y)
-        self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, {})
+    def on_mouse_button_event(self, pressed: bool, x: int, y: int, button: int) -> None:
+        if xbutton := BUTTONS.get(button, 0):
+            self.client.pointer.button(self.wid, xbutton, pressed, self.get_pointer_position(x, y))
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
-        button = 4
-        pointer = (x, y)
-        modifiers = ()
-        buttons = ()
-        if pointer_sub := self.client.get_subsystem("pointer"):
-            for state in True, False:
-                pointer_sub.send_button(-1, self.wid, button, state, pointer, modifiers, buttons, {})
+        self.client.pointer.wheel(self.wid, scroll_x, scroll_y, self.get_pointer_position(x, y))
 
     def on_move(self, x: int, y: int) -> None:
         w, h = self.get_size()

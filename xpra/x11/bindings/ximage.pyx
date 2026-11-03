@@ -4,6 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Buffer, Sequence
+from xpra.codecs.image import ImageWrapper
+
 from time import monotonic
 from threading import Lock, RLock
 
@@ -274,10 +277,17 @@ cdef class XImageWrapper:
     def get_pixel_format(self):
         return self.pixel_format
 
-    def get_pixels(self):
+    def get_pixels(self) -> Buffer:
+        return self.get_plane(0)
+
+    def get_plane(self, i: int) -> Buffer:
         cdef void *pix_ptr
         cdef int flags
         with self._lock:
+            if self.freed:
+                raise RuntimeError("image wrapper has already been freed")
+            if i != 0:
+                raise IndexError(i)
             if self.sub:
                 #we don't own the pixel buffer, our parent does:
                 #ensure it is still alive and hasn't been freed from under us
@@ -285,7 +295,7 @@ cdef class XImageWrapper:
                 assert (<XImageWrapper> self.parent).has_pixels(), "sub-image parent buffer has been freed"
             pix_ptr = self.get_pixels_ptr()
             if pix_ptr==NULL:
-                return None
+                raise IndexError(i)
             flags = PyBUF_READ
             if self.pixels!=NULL:
                 flags = PyBUF_WRITE
@@ -418,8 +428,14 @@ cdef class XImageWrapper:
         assert pixel_format is not None and pixel_format in RGB_FORMATS, "invalid pixel format: %s" % pixel_format
         self.pixel_format = pixel_format
 
-    def set_pixels(self, pixels) -> None:
+    def set_pixels(self, pixels: Sequence[Buffer]) -> None:
         """ overrides the context of the image with the given pixels buffer """
+        ImageWrapper._validate_pixels(pixels)
+        if self.freed:
+            raise RuntimeError("image wrapper has already been freed")
+        if len(pixels) != 1:
+            raise ValueError("XImageWrapper requires one packed plane")
+        pixels = pixels[0]
         if self.pixels!=NULL:
             if not self.sub:
                 free(self.pixels)

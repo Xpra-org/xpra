@@ -5,6 +5,7 @@
 
 import os
 import shlex
+import stat
 from collections.abc import Iterable
 
 from xpra.os_util import valid_uuid
@@ -146,7 +147,7 @@ def setup_proxy_ssh_socket(
     return agent_uuid_sockpath
 
 
-def setup_client_ssh_agent_socket(uuid: str, ssh_auth_sock: str) -> str:
+def setup_client_ssh_agent_socket(uuid: str, ssh_auth_sock: str, ssh_auth_sock_stat: tuple[int, ...] = ()) -> str:
     if not uuid:
         log("cannot setup ssh agent without client uuid")
         return ""
@@ -163,17 +164,29 @@ def setup_client_ssh_agent_socket(uuid: str, ssh_auth_sock: str) -> str:
                 log(f"os.unlink({sockpath!r})", exc_info=True)
                 log.error("Error: removing the broken ssh agent symlink")
                 log.estr(e)
-        # perhaps this is a local client,
-        # and we can find its agent socket and create the symlink now:
+        # Only reuse a client path when its socket identity matches. Identical
+        # paths on different machines need not refer to the same agent.
         log(f"client supplied ssh-auth-sock={ssh_auth_sock}")
-        if ssh_auth_sock and os.path.isabs(ssh_auth_sock) and os.path.exists(ssh_auth_sock) and is_socket(
-                ssh_auth_sock):  # noqa: E501
-            try:
-                # ie: /run/user/1000/xpra/10/$UUID -> /tmp/ssh-XXXXvjt4hN/agent.766599
-                os.symlink(ssh_auth_sock, sockpath)
-            except OSError as e:
-                log(f"os.symlink({ssh_auth_sock}, {sockpath})", exc_info=True)
-                log.error("Error setting up ssh agent socket symlink")
-                log.estr(e)
-                sockpath = ""
+        if not ssh_auth_sock or not os.path.isabs(ssh_auth_sock) or len(ssh_auth_sock_stat) != 2:
+            return ""
+        try:
+            sockstat = os.stat(ssh_auth_sock)
+        except (OSError, ValueError):
+            log(f"cannot stat client ssh-auth-sock={ssh_auth_sock!r}", exc_info=True)
+            return ""
+        identity = (getattr(sockstat, "st_dev", None), getattr(sockstat, "st_ino", None))
+        if not stat.S_ISSOCK(sockstat.st_mode) or identity != ssh_auth_sock_stat or not identity[1]:
+            log(f"client ssh-auth-sock identity mismatch: {identity} != {ssh_auth_sock_stat}")
+            return ""
+        if not hasattr(os, "geteuid") or sockstat.st_uid != os.geteuid():
+            log(f"client ssh-auth-sock is not owned by the server user: {ssh_auth_sock!r}")
+            return ""
+        try:
+            # ie: /run/user/1000/xpra/10/$UUID -> /tmp/ssh-XXXXvjt4hN/agent.766599
+            os.symlink(ssh_auth_sock, sockpath)
+        except OSError as e:
+            log(f"os.symlink({ssh_auth_sock}, {sockpath})", exc_info=True)
+            log.error("Error setting up ssh agent socket symlink")
+            log.estr(e)
+            sockpath = ""
     return sockpath

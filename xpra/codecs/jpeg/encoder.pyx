@@ -389,7 +389,7 @@ cdef MemBuf encode_rgb(tjhandle compressor, image, int quality, int grayscale=0,
     cdef int width = image.get_width()
     cdef int height = image.get_height()
     cdef int stride = image.get_rowstride()
-    pixels = image.get_pixels()
+    pixels = image.get_plane(0)
     return do_encode_rgb(compressor, pfstr, pixels,
                          width, height, stride,
                          quality, tjpf, subsamp)
@@ -444,7 +444,7 @@ cdef MemBuf encode_yuv(tjhandle compressor, image, int quality, int grayscale=0)
     cdef int width = image.get_width()
     cdef int height = image.get_height()
     rowstrides = image.get_rowstride()
-    planes = image.get_pixels()
+    planes = tuple(image.get_plane(plane_no) for plane_no in range(image.get_planes()))
     return do_encode_yuv(compressor, pfstr, planes,
                          width, height, rowstrides,
                          quality, subsamp)

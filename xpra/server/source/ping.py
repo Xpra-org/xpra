@@ -11,7 +11,7 @@ from xpra.os_util import gi_import, get_hex_uuid
 from xpra.util.objects import typedict
 from xpra.util.env import envint, envbool
 from xpra.util.system import getloadavg
-from xpra.net.common import FULL_INFO
+from xpra.net.common import FULL_INFO, parse_thread_getloadavg
 from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import PING_ECHO
 from xpra.server.source.stub import StubClientConnection
@@ -22,6 +22,9 @@ GLib = gi_import("GLib")
 log = Logger("network", "ping")
 
 PING_DETAILS = envbool("XPRA_PING_DETAILS", FULL_INFO > 0)
+# with the network parse seccomp filter and glibc older than 2.35,
+# `getloadavg()` would open `/proc/loadavg` from the parse thread and trip the filter:
+PING_LOAD = PING_DETAILS and parse_thread_getloadavg()
 PING_TIMEOUT = envint("XPRA_PING_TIMEOUT", 60)
 
 
@@ -91,12 +94,13 @@ class PingConnection(StubClientConnection):
     def process_ping(self, time_to_echo, sid) -> None:
         l1, l2, l3 = 0, 0, 0
         cl = -1
-        if PING_DETAILS:
+        if PING_LOAD:
             # send back the load average:
             try:
                 l1, l2, l3 = getloadavg()
             except OSError:
-                log("cannot read load averages", exc_info=True)
+                pass
+        if PING_DETAILS:
             # and the last client ping latency we measured (if any):
             stats = getattr(self, "statistics", None)
             if stats and stats.client_ping_latency:

@@ -343,19 +343,18 @@ def fixup_window_style(self, *_args) -> None:
             log("fixup_window_style() unchanged style %s (%#x) on window %#x",
                 style_str(style), style, hwnd)
         ws_visible = bool(style & win32con.WS_VISIBLE)
-        client = self._client
         cur_ws_visible = getattr(self, "_ws_visible", True)
         iconified = getattr(self, "_iconified", False)
         been_mapped = getattr(self, "_been_mapped", False)
         log("fixup_window_style() ws_visible=%s (was %s), iconified=%s, been_mapped=%s", ws_visible, cur_ws_visible,
             iconified, been_mapped)
-        if client and been_mapped and not iconified and ws_visible != cur_ws_visible:
+        if been_mapped and not iconified and ws_visible != cur_ws_visible:
             log("window changed visibility to: %s", ws_visible)
             setattr(self, "_ws_visible", ws_visible)
             send_control_refresh = getattr(self, "send_control_refresh", noop)
             if ws_visible:
                 # with opengl, we need to re-create the window (PITA):
-                if REINIT_VISIBLE_WINDOWS and (wp := client.get_subsystem("window")):
+                if REINIT_VISIBLE_WINDOWS and (wp := self.get_subsystem("window")):
                     wp.reinit_window(self.wid, self)
             send_control_refresh(not ws_visible)
     except Exception:

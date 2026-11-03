@@ -60,9 +60,16 @@ def get_resize_direction(x: int, y: int, wx: int, wy: int, ww: int, wh: int) -> 
 
 class WindowMenuHelper(GTKMenuHelper):
 
-    def __init__(self, client, window):
-        super().__init__(client)
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("tray", "window")
+
+    def __init__(self, get_subsystem: Callable, window):
+        # the window menu only needs the client's subsystems, not the client itself:
+        super().__init__(None)
+        self.get_subsystem = get_subsystem
         self.window = window
+        # windows only exist once the handshake has completed:
+        self.handshake_menuitem = self.menuitem
 
     def get_menu_items(self) -> Sequence[Gtk.ImageMenuItem | Gtk.MenuItem]:
         log("get_menu_items()")
@@ -368,7 +375,7 @@ class WindowMenuHelper(GTKMenuHelper):
 
     def make_grabmenuitem(self) -> Gtk.ImageMenuItem:
         # the grab state is owned by the `window` subsystem:
-        window = self.client.get_subsystem("window")
+        window = self.get_subsystem("window")
         if not window:
             return None
 
@@ -407,9 +414,9 @@ class WindowMenuHelper(GTKMenuHelper):
     def make_reinitmenuitem(self) -> Gtk.ImageMenuItem:
         def force_reinit(*args) -> None:
             log("force reinit%s", args)
-            if window := self.client.get_subsystem("window"):
+            if window := self.get_subsystem("window"):
                 window.reinit_window(self.window.wid, self.window)
-            if tray := self.client.get_subsystem("tray"):
+            if tray := self.get_subsystem("tray"):
                 tray.reset_tray_icon()
 
         return self.menuitem("Re-initialize", "reinitialize.png", cb=force_reinit)
@@ -432,7 +439,7 @@ class WindowMenuHelper(GTKMenuHelper):
             def action_cb() -> None:
                 wid = self.window.wid
                 log("action_cb() for window %#x, action=%s", wid, action)
-                if window := self.client.get_subsystem("window"):
+                if window := self.get_subsystem("window"):
                     window.send(WINDOW_ACTION, wid, action)
             return self.menuitem(action, icon_name, cb=action_cb)
 

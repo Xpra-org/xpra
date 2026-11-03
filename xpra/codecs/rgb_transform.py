@@ -60,7 +60,7 @@ def rgb_reformat(image: ImageWrapper, rgb_formats: Sequence[str], supports_trans
     """ convert the RGB pixel data into a format supported by the client """
     # need to convert to a supported format!
     pixel_format = image.get_pixel_format()
-    pixels = image.get_pixels()
+    pixels = image.get_plane(0)
     if not pixels:
         raise RuntimeError(f"failed to get pixels from {image}")
     if pixel_format in ("r210", "BGR565"):
@@ -82,7 +82,7 @@ def rgb_reformat(image: ImageWrapper, rgb_formats: Sequence[str], supports_trans
             rowstride = image.get_rowstride()
             if w != rowstride:
                 image.restride(w)
-                pixels = image.get_pixels()
+                pixels = image.get_plane(0)
             img = Image.frombuffer("P", (w, h), pixels, "raw", "P", 0, 1)
             if not image.get_palette():
                 log.error("Error: no palette found in %s", image)
@@ -95,7 +95,7 @@ def rgb_reformat(image: ImageWrapper, rgb_formats: Sequence[str], supports_trans
             pixel_format = "RGBA" if supports_transparency else "RGBX"
             img = img.convert(pixel_format)
             data = img.tobytes("raw", pixel_format)
-            image.set_pixels(data)
+            image.set_pixels((data,))
             image.set_rowstride(w * len(pixel_format))
             image.set_pixel_format(pixel_format)
             return True
@@ -128,7 +128,7 @@ def rgb_reformat(image: ImageWrapper, rgb_formats: Sequence[str], supports_trans
     data = img.tobytes("raw", target_format)
     if len(data) != rowstride*h:
         raise RuntimeError(f"expected {rowstride*h} bytes in {target_format} format but got {len(data)}")
-    image.set_pixels(data)
+    image.set_pixels((data,))
     image.set_rowstride(rowstride)
     image.set_pixel_format(target_format)
     end = monotonic()

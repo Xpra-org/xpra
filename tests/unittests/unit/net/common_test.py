@@ -6,6 +6,7 @@
 
 import os
 import unittest
+from types import SimpleNamespace
 
 from xpra.util.env import OSEnvContext
 from xpra.net import common
@@ -69,6 +70,17 @@ class TestLogPackets(unittest.TestCase):
                 mlp(True, pt, (1, 2))
                 mlp(False, pt, (1, 2))
                 self.lm(0)
+
+
+class TestWindowshotPermissions(unittest.TestCase):
+
+    def test_screenshot_restrictions(self):
+        for options, allowed in (({}, True), ({"screenshot": "no"}, False),
+                                 ({"windowshot": "no"}, False), ({"screenshot": "no", "windowshot": "yes"}, False),
+                                 ({"screenshot": "yes", "windowshot": "yes"}, True)):
+            with self.subTest(options=options):
+                proto = SimpleNamespace(_conn=SimpleNamespace(options=options))
+                self.assertEqual(common.is_request_allowed(proto, "windowshot"), allowed)
 
 
 class TestConnectionCloseInfo(unittest.TestCase):

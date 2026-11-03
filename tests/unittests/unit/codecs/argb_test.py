@@ -195,7 +195,7 @@ class ARGBSwapTest(unittest.TestCase):
         bpp = len(pixel)
         rowstride = self.WIDTH * bpp
         pixels = bytes(bytearray(pixel)) * (self.WIDTH * self.HEIGHT)
-        image = ImageWrapper(0, 0, self.WIDTH, self.HEIGHT, memoryview(pixels), pixel_format, 24, rowstride,
+        image = ImageWrapper(0, 0, self.WIDTH, self.HEIGHT, (memoryview(pixels),), pixel_format, 24, rowstride,
                              bytesperpixel=bpp, planes=ImageWrapper.PACKED)
         r = argb_swap(image, rgb_formats, transparency)
         assert r is True, f"argb_swap failed for {pixel_format} to one of {rgb_formats}"
@@ -204,7 +204,7 @@ class ARGBSwapTest(unittest.TestCase):
     def check(self, pixel_format, pixel, rgb_formats, out_format, out_pixel, transparency=True):
         image = self.swap(pixel_format, pixel, rgb_formats, transparency)
         self.assertEqual(image.get_pixel_format(), out_format)
-        pixels = bytes(bytearray(image.get_pixels()))
+        pixels = bytes(bytearray(image.get_plane(0)))
         self.assertEqual(hexstr(pixels), hexstr(bytes(bytearray(out_pixel)) * (self.WIDTH * self.HEIGHT)))
         # the rowstride must match the new number of bytes per pixel:
         self.assertEqual(image.get_rowstride(), self.WIDTH * len(out_pixel),
@@ -248,7 +248,7 @@ class ARGBSwapTest(unittest.TestCase):
         from unit.test_util import LoggerSilencer
         from xpra.codecs.argb import argb  # pylint: disable=no-name-in-module
         pixels = memoryview(bytes(bytearray(16)))
-        image = ImageWrapper(0, 0, 2, 2, pixels, "BGRX", 24, 8, planes=ImageWrapper.PACKED)
+        image = ImageWrapper(0, 0, 2, 2, (pixels,), "BGRX", 24, 8, planes=ImageWrapper.PACKED)
         with LoggerSilencer(argb):
             self.assertFalse(argb_swap(image, ("YUV420P", )))
 

@@ -445,7 +445,7 @@ def make_test_image(pixel_format: str, w: int, h: int, plane_values: Sequence[in
             rgb_data = bytes(makebuf(stride*h))
         if pixel_format == "YUYV":
             stride = w * 2
-        return makeimage(rgb_data, bytesperpixel=Bpp, rowstride=stride)
+        return makeimage((rgb_data,), bytesperpixel=Bpp, rowstride=stride)
     raise ValueError(f"don't know how to create a {pixel_format} image")
 
 

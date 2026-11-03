@@ -104,7 +104,7 @@ def worker_main(args: argparse.Namespace) -> int:
 
     def make_image() -> ImageWrapper:
         return ImageWrapper(
-            0, 0, W, H, pixels, "BGRX", 32, W * 4,
+            0, 0, W, H, (pixels,), "BGRX", 32, W * 4,
             planes=ImageWrapper.PACKED, thread_safe=True,
         )
 

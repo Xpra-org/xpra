@@ -85,6 +85,9 @@ class GLClientWindow(ClientWindow):
     `GLWin32Backing` bound to the window's own `HWND`.
     """
 
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("display",)
+
     # populated by the opengl subsystem (see `OpenGLClient.init_opengl`):
     MAX_VIEWPORT_DIMS: tuple[int, int] = (16 * 1024, 16 * 1024)
     MAX_BACKING_DIMS: tuple[int, int] = (16 * 1024, 16 * 1024)
@@ -131,7 +134,7 @@ class GLClientWindow(ClientWindow):
         clamp_to(*self.MAX_VIEWPORT_DIMS)
         # the backing dimensions are in server pixels,
         # so they have to be converted if desktop scaling is used:
-        display = self.client.get_subsystem("display") if self.client else None
+        display = self.get_subsystem("display")
         clamp_to(*(display.sp(*self.MAX_BACKING_DIMS) if display else self.MAX_BACKING_DIMS))
         if self.max_window_size != saved_mws:
             log("init_max_window_size() max-window-size changed from %s to %s",

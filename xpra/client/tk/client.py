@@ -19,6 +19,7 @@ from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.common import Packet
+from xpra.client.gui.simple_pointer import SimplePointer
 from xpra.log import Logger
 
 log = Logger("client")
@@ -51,6 +52,7 @@ class XpraTkClient:
         self._ordinary_packets = []
         self.protocol = None
         self.have_more = noop
+        self.pointer = SimplePointer(self.send, TkScheduler.timeout_add)
 
     def run(self) -> int:
         app.mainloop()
@@ -86,7 +88,7 @@ class XpraTkClient:
         log("send_hello()")
         hello = {
             "version": __version__,
-            "client_type": "pyglet",
+            "client_type": "tk",
             "rencodeplus": True,
             "session-id": uuid.uuid4().hex,
             "window": {"enabled": True},

@@ -418,7 +418,7 @@ class GTKTrayMenu(GTKMenuHelper):
 
         def set_readonly_menuitem(*args) -> None:
             log("set_readonly_menuitem%s readonly=%s, server readonly=%s", args, self.client.readonly, self.client.server_readonly)
-            readonly.set_active(self.client.readonly or self.client.server_readonly)
+            readonly.set_active(self.client.is_readonly())
             sens_tooltip(readonly, not self.client.server_readonly,
                          _("Disable all mouse and keyboard input"),
                          _("Cannot disable readonly mode: the server has locked the session to read only"))
@@ -695,7 +695,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 keyboard.send_key_sequence(keynames)
 
         item = self.menuitem(title or combo, icon_name, cb=send_keys)
-        sens_tooltip(item, not (self.client.readonly or self.client.server_readonly),
+        sens_tooltip(item, not self.client.is_readonly(),
                      _("Send the %s key sequence to the server") % combo,
                      _("Connection is read-only"))
         return item
@@ -717,7 +717,7 @@ class GTKTrayMenu(GTKMenuHelper):
                 continue
             menu.append(self.make_keysequencemenuitem(title, keynames))
         send.set_submenu(menu)
-        set_sensitive(send, not (self.client.readonly or self.client.server_readonly))
+        set_sensitive(send, not self.client.is_readonly())
         return send
 
     def make_openglmenuitem(self) -> Gtk.ImageMenuItem:

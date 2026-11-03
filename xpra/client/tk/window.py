@@ -7,7 +7,6 @@
 from tkinter import Toplevel, Label
 from PIL import Image, ImageTk
 from xpra.net.packet_type import (
-    POINTER_BUTTON, POINTER_MOTION,
     WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE,
 )
 from xpra.util.objects import typedict
@@ -15,6 +14,8 @@ from xpra.client.gui.window_title import window_title_str
 from xpra.log import Logger
 
 log = Logger("client", "window")
+
+SHIFT_MASK = 1
 
 
 def modifiers(value: int) -> list[str]:
@@ -54,19 +55,21 @@ class ClientWindow(Toplevel):
         self.label.pack()
 
         self.bind("<Motion>", self.on_mouse_motion)
-        for button in range(1, 3):
-            self.bind(f"<Button-{button}>", self.on_mouse_button_press)
-            self.bind(f"<ButtonRelease-{button}>", self.on_mouse_button_release)
-        # self.bind("<MouseWheel>", self.on_mouse_wheel)
+        # all the buttons, including the wheel with Tk 8.6 on X11 (buttons 4 to 7):
+        self.bind("<ButtonPress>", self.on_mouse_button_press)
+        self.bind("<ButtonRelease>", self.on_mouse_button_release)
+        self.bind("<MouseWheel>", self.on_mouse_wheel)
         self.bind("<FocusIn>", self.on_focus_in)
         self.bind("<FocusOut>", self.on_focus_out)
         self.bind("<Key>", self.on_key_press)
         self.bind("<KeyRelease>", self.on_key_release)
+        # (the bindings of a toplevel also receive the events of the widgets it contains,
+        # see `is_own_event`)
         self.bind("<Configure>", self.on_configure)
         self.bind("<Map>", self.on_map)
         self.bind("<Unmap>", self.on_unmap)
-        self.bind("<Destroy>", self.on_destroy)
-        self.protocol("WM_DELETE_WINDOW", self.on_destroy)
+        # the server decides what to do when the user closes the window:
+        self.protocol("WM_DELETE_WINDOW", self.on_close)
 
     def update_metadata(self, metadata: typedict):
         self.metadata.update(metadata)
@@ -99,17 +102,13 @@ class ClientWindow(Toplevel):
 
     def on_focus_in(self, event) -> None:
         log(f"focus-in: {event!r}")
-        if wc := self.client.get_subsystem("window"):
-            wc.update_focus(self.wid)
+        self.client.update_focus(self.wid)
 
     @staticmethod
     def on_focus_out(event) -> None:
         log(f"focus_out: {event!r}")
         # no real need to update anything
         # (tracking where the focus is actually going to would add the same complexity as the Gtk client)
-
-    def on_hide(self) -> None:
-        self.client.send(WINDOW_UNMAP, self.wid)
 
     def on_key_press(self, event) -> None:
         log(f"key press: {event!r}")
@@ -131,12 +130,15 @@ class ClientWindow(Toplevel):
             "backend": "tk",
         })
 
+    def get_pointer_position(self, event) -> tuple[int, int, int, int]:
+        """ the position on the screen, and relative to the window """
+        # (`event.x` and `event.y` are relative to the widget under the pointer, not the window)
+        x, y = event.x_root, event.y_root
+        return x, y, x - self.winfo_rootx(), y - self.winfo_rooty()
+
     def on_mouse_motion(self, event) -> None:
         log(f"mouse motion: {event!r}")
-        device_id = -1
-        seq = 0
-        pos = (event.x, event.y)
-        self.client.send(POINTER_MOTION, device_id, seq, self.wid, pos, {})
+        self.client.pointer.motion(self.wid, self.get_pointer_position(event))
 
     def on_mouse_button_press(self, event) -> None:
         log(f"mouse button press: {event!r}")
@@ -147,29 +149,46 @@ class ClientWindow(Toplevel):
         self.on_mouse_button_event(False, event)
 
     def on_mouse_button_event(self, pressed: bool, event) -> None:
-        seq = 0
-        button = event.num
-        pos = (event.x, event.y)
-        self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, {})
+        self.client.pointer.button(self.wid, event.num, pressed, self.get_pointer_position(event))
+
+    def on_mouse_wheel(self, event) -> None:
+        # Tk 8.7 and later, and Tk on MS Windows and macOS: the delta is a multiple of 120 with most mice,
+        # and the horizontal wheel (X11 buttons 6 and 7) is sent with the shift modifier
+        log(f"mouse wheel: {event!r}")
+        steps = event.delta / 120
+        # (left is a positive delta)
+        dx, dy = (-steps, 0) if event.state & SHIFT_MASK else (0, steps)
+        self.client.pointer.wheel(self.wid, dx, dy, self.get_pointer_position(event))
+
+    def is_own_event(self, event) -> bool:
+        return event.widget is self
 
     def on_map(self, event) -> None:
         log(f"map: {event!r}")
+        if not self.is_own_event(event):
+            return
         x = self.winfo_x()
         y = self.winfo_y()
         w = self.winfo_width()
         h = self.winfo_height()
         self.client.send(WINDOW_MAP, self.wid, x, y, w, h, {}, {})
 
-    def on_unmap(self, _event) -> None:
-        self.client.send(WINDOW_CLOSE, self.wid)
+    def on_unmap(self, event) -> None:
+        log(f"unmap: {event!r}")
+        if not self.is_own_event(event):
+            return
+        iconified = self.state() == "iconic"
+        self.client.send(WINDOW_UNMAP, self.wid, iconified)
 
     def on_configure(self, event) -> None:
         log(f"configure: {event}")
+        if not self.is_own_event(event):
+            return
         self.client.send(WINDOW_CONFIGURE, self.wid, {
             "geometry": (event.x, event.y, event.width, event.height),
         })
 
-    def on_destroy(self, _event=None) -> None:
+    def on_close(self) -> None:
         self.client.send(WINDOW_CLOSE, self.wid)
 
     def on_resize(self, _event) -> None:

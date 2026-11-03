@@ -482,6 +482,39 @@ class SourceMixinsTest(unittest.TestCase):
             ("window-metadata", 2, {"iconic": False, "skip-taskbar": False, "skip-pager": True}),
         ])
 
+    def test_window_readonly_size_constraints(self):
+        # a read-only client cannot resize the windows, so their size is fixed:
+        from xpra.server.source.window import WindowsConnection
+
+        class FakeWindow:
+            @staticmethod
+            def is_tray() -> bool:
+                return False
+
+            @staticmethod
+            def get_dimensions() -> tuple[int, int]:
+                return 800, 600
+
+            @staticmethod
+            def get_property(prop):
+                return {"title": "test"}.get(prop)
+
+        source = WindowsConnection()
+        WindowsConnection.__init__(source)
+        source.init_state()
+        source.window_metadata_supported = ("title", )
+        window = FakeWindow()
+        self.assertEqual(source._make_metadata(window, "title"), {"title": "test"})
+        source.effective_readonly = lambda: True
+        self.assertEqual(source._make_metadata(window, "title"), {
+            "title": "test",
+            "size-constraints": {
+                "maximum-size": (800, 600),
+                "minimum-size": (800, 600),
+                "base-size": (800, 600),
+            },
+        })
+
     def test_window_hidden_damage(self):
         # a hidden window is unmapped as far as that client is concerned:
         # no pixels are sent for it, and its window source is told to go idle

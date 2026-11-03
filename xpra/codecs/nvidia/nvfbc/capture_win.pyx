@@ -692,7 +692,7 @@ cdef class NvFBC_SysCapture:
             buf_ptr = <uintptr_t> buf.get_mem()
             with nogil:
                 memcpy(<void *> buf_ptr, <void *> grab_ptr, size)
-        image = ImageWrapper(0, 0, width, height, memoryview(buf), self.pixel_format, Bpp*8, stride, Bpp)
+        image = ImageWrapper(0, 0, width, height, (memoryview(buf),), self.pixel_format, Bpp*8, stride, Bpp)
         end = monotonic()
         log("image=%s buffer size=%i, (copy took %ims)", image, size, int((end-start)*1000))
         return image
@@ -809,7 +809,8 @@ cdef class NvFBC_CUDACapture:
         assert x+width<=self.grab_info.dwWidth, "invalid capture width: %i+%i, capture size is only %i" % (x, width, self.grab_info.dwWidth)
         assert y+height<=self.grab_info.dwHeight, "invalid capture height: %i+%i, capture size is only %i" % (y, height, self.grab_info.dwHeight)
         Bpp = len(self.pixel_format)    # ie: "BGR" -> 3
-        image = SharedCUDAImageWrapper(0, 0, width, height, None, self.pixel_format, Bpp*8, int(self.grab_info.dwBufferWidth*Bpp), Bpp, False, None)
+        image = SharedCUDAImageWrapper(0, 0, width, height, (), self.pixel_format, Bpp*8, int(self.grab_info.dwBufferWidth*Bpp),
+                                       Bpp, ImageWrapper.PACKED, False, None)
         image.cuda_device_buffer = self.cuda_device_buffer
         image.cuda_context = self.cuda_context
         image.buffer_size = self.max_buffer_size

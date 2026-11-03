@@ -244,13 +244,13 @@ class ScreenCaptureDevice:
         if x == 0 and width == fw:
             # rows are contiguous, no per-row copy needed:
             data = raw[y * stride:(y + height) * stride]
-            return ImageWrapper(x, y, fw, height, data, "BGRX", 24, stride)
+            return ImageWrapper(x, y, fw, height, (data,), "BGRX", 24, stride)
         row_bytes = width * 4
         out = bytearray(row_bytes * height)
         for i in range(height):
             src = (y + i) * stride + x * 4
             out[i * row_bytes:(i + 1) * row_bytes] = raw[src:src + row_bytes]
-        return ImageWrapper(x, y, width, height, bytes(out), "BGRX", 24, row_bytes)
+        return ImageWrapper(x, y, width, height, (bytes(out),), "BGRX", 24, row_bytes)
 
     def get_info(self) -> dict[str, Any]:
         return {

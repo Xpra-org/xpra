@@ -994,7 +994,8 @@ cdef class Encoder:
             else:
                 pixels = self.blank_buffer
         else:
-            pixels = image.get_pixels()
+            pixels = (image.get_plane(0) if image.get_planes() == ImageWrapper.PACKED
+                      else tuple(image.get_plane(plane_no) for plane_no in range(image.get_planes())))
         assert pixels, "failed to get pixels from %s" % image
         istrides = image.get_rowstride()
 

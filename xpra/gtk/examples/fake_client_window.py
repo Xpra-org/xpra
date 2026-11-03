@@ -4,15 +4,14 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-"""Create a real GTK3 xpra ClientWindow using FakeClient."""
+"""Create a real GTK3 xpra ClientWindow without a client."""
 
 import os
 import sys
 
 os.environ.setdefault("XPRA_USE_FAKE_BACKING", "1")
 
-from xpra.client.gui.fake_client import FakeClient  # noqa: E402
-from xpra.client.gui.window_border import WindowBorder  # noqa: E402
+from xpra.client.gui.fake_client import FakeWindowHost  # noqa: E402
 from xpra.os_util import gi_import  # noqa: E402
 from xpra.util.objects import typedict  # noqa: E402
 from xpra.log import consume_verbose_argv  # noqa: E402
@@ -27,39 +26,6 @@ MIXIN_NAMES: tuple[str, ...] = (
     "headerbar", "dragndrop", "focus",
     "grab", "workspace", "keyboard", "pointer",
 )
-
-
-class TestClient(FakeClient):
-    def __init__(self):
-        super().__init__()
-        self.title = "@title@"
-        self.get_subsystem("window").window_close_callback = self.window_close_event
-
-    def get_window_menu_helper(self):
-        return None
-
-    def get_root_size(self) -> tuple[int, int]:
-        screen = Gtk.Window().get_screen()
-        return screen.get_width(), screen.get_height()
-
-    def after_handshake(self, callback, *args) -> None:
-        GLib.idle_add(callback, *args)
-
-    def get_image(self, icon_name: str, size=None):
-        try:
-            from xpra.gtk.pixbuf import get_icon_pixbuf
-            pixbuf = get_icon_pixbuf(icon_name)
-            if pixbuf and size:
-                pixbuf = pixbuf.scale_simple(size, size, 2)
-            if pixbuf:
-                return Gtk.Image.new_from_pixbuf(pixbuf)
-        except Exception:
-            pass
-        return Gtk.Image()
-
-    def window_close_event(self, wid: int, *_args) -> None:
-        if window := self.get_subsystem("window")._id_to_window.get(wid):
-            window.destroy()
 
 
 def parse_geometry(value: str) -> tuple[int, int, int, int]:
@@ -188,20 +154,10 @@ def make_xpra_window(args):
     patch_window_methods(args)
     log.info("fake client window MRO: %s", [c.__name__ for c in ClientWindow.__mro__])
 
-    client = TestClient()
-    wid = 1
-    geom = args.geometry
-    metadata = make_metadata(args)
-    window = ClientWindow(
-        client, None, wid,
-        geom, geom[2:4],
-        metadata, False, typedict(),
-        WindowBorder(False),
-        (32768, 32768), 24,
-        headerbar=args.headerbar,
-    )
-    window_subsystem = client.get_subsystem("window")
-    window_subsystem._id_to_window[wid] = window
+    # a title template with a variable, so the metadata title is used:
+    host = FakeWindowHost(title="@title@")
+    window = host.make_window(ClientWindow, 1, args.geometry, make_metadata(args),
+                              max_window_size=(32768, 32768), pixel_depth=24, headerbar=args.headerbar)
 
     def close_window(_window, _event) -> bool:
         window.destroy()

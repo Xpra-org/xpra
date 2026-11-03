@@ -401,7 +401,7 @@ cdef class Encoder:
         self.set_encoding_quality(options.intget("quality", -1))
         self.set_encoding_speed(options.intget("speed", -1))
 
-        pixels = image.get_pixels()
+        pixels = tuple(image.get_plane(plane_no) for plane_no in range(image.get_planes()))
         strides = image.get_rowstride()
         assert len(pixels) == 2, "NV12 image pixels does not have 2 planes"
         assert len(strides) == 2, "NV12 image rowstride does not have 2 values"

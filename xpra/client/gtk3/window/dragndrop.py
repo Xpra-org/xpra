@@ -53,17 +53,15 @@ def drag_motion_cb(wid: int, context, x: int, y: int, time: int) -> bool:
 
 class DragNDropWindow(GtkStubWindow):
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("file",)
+
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         # opengl probing uses a fake client, whose `get_subsystem` returns
         # `None` for "file", in which case we don't want dragndrop initialized:
         if file_handler := self.get_subsystem("file"):
             self._file_handler = file_handler
             self.init_dragndrop()
-
-    def is_readonly(self) -> bool:
-        # inject dependency on UI client,
-        # the readonly flag can be changed from the tray menu:
-        return getattr(self, "readonly", False)
 
     ######################################################################
     # drag and drop:

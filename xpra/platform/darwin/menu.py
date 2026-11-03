@@ -66,6 +66,8 @@ class OSXMenuHelper(GTKTrayMenu):
     and change the callbacks if needed.
     (that way, the launcher and the client can both change the menus)
     """
+    # the menu bar is shown by the OS:
+    can_popup = False
 
     def __init__(self, client=None):
         # MenuHelper.__init__ calls set_client, so initialize the menu state first.

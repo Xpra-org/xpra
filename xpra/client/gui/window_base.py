@@ -48,25 +48,36 @@ NOT_REQUESTED: Final[tuple[int, int]] = (-2 ** 32, -2 ** 32)
 
 class ClientWindowBase(ClientWidgetBase):
 
-    def __init__(self, client, group_leader, wid: int,
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("display", "encoding", "window")
+
+    def __init__(self, get_subsystem: Callable, is_readonly: Callable, group_leader, wid: int,
                  geom: tuple[int, int, int, int],
                  backing_size: tuple[int, int],
                  metadata: typedict, override_redirect: bool, client_properties: typedict,
                  border: WindowBorder, max_window_size, pixel_depth: int,
-                 headerbar="no"):
+                 headerbar="no", get_xpra_menu: Callable | None = None):
         log("%s%s", type(self),
-            (client, group_leader, wid,
+            (get_subsystem, is_readonly, group_leader, wid,
              geom, backing_size,
              metadata, override_redirect, client_properties,
              border, max_window_size, pixel_depth,
-             headerbar))
-        # schedule callbacks on the client's own main loop, the same way `StubClientSubsystem` does:
+             headerbar, get_xpra_menu))
+        # windows are only given what they need from the client:
+        # `get_subsystem` to look up a client subsystem by name,
+        # `is_readonly` tells us if input and window changes must not be sent to the server
+        # (the user's own choice, or the server's - this can change at any time),
+        # `get_xpra_menu` returns the client's xpra menu, if it has one:
+        self.is_readonly: Callable[[], bool] = is_readonly
+        self.get_xpra_menu: Callable | None = get_xpra_menu
+        # schedule callbacks on the client's own main loop, which every client subsystem copies (`StubClientSubsystem`):
         # the window code then does not assume GLib, which is only what the current clients happen to use,
-        # and tests can give the window a client which runs callbacks immediately, or never:
-        self.idle_add: Callable = client.idle_add
-        self.timeout_add: Callable = client.timeout_add
-        self.source_remove: Callable = client.source_remove
-        super().__init__(client, wid, metadata.boolget("has-alpha"))
+        # and tests can give the window a scheduler which runs callbacks immediately, or never:
+        window_sub = get_subsystem("window")
+        self.idle_add: Callable = window_sub.idle_add
+        self.timeout_add: Callable = window_sub.timeout_add
+        self.source_remove: Callable = window_sub.source_remove
+        super().__init__(get_subsystem, wid, metadata.boolget("has-alpha"))
         wx, wy, ww, wh = geom
         bw, bh = backing_size
         self._override_redirect = override_redirect
@@ -109,7 +120,7 @@ class ClientWindowBase(ClientWidgetBase):
         self.pending_refresh: list[tuple[int, int, int, int]] = []
         self.headerbar = headerbar
 
-        self.init_window(client, metadata, client_properties)
+        self.init_window(metadata, client_properties)
         self.setup_window(bw, bh)
         self.update_metadata(metadata)
         self.finalize_window()
@@ -117,7 +128,7 @@ class ClientWindowBase(ClientWidgetBase):
     def __repr__(self):
         return f"ClientWindow({self.wid:#x})"
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         self._backing = None
         self._metadata = typedict()
         # used for only sending focus events *after* the window is mapped:

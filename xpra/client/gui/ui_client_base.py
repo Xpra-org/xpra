@@ -154,6 +154,10 @@ class UIXpraClient(XpraClientBase):
         reaper_cleanup()
         log("UIXpraClient.signal_cleanup() done")
 
+    def is_readonly(self) -> bool:
+        """ no input or window changes are sent to the server: the user's own choice, or the server's """
+        return bool(self.readonly or self.server_readonly)
+
     def get_info(self) -> dict[str, Any]:
         info = XpraClientBase.get_info(self)
         if FULL_INFO > 0:
@@ -268,9 +272,19 @@ class UIXpraClient(XpraClientBase):
         from xpra.platform.systray import get_menu_helper_class
         return get_menu_helper_class()
 
+    def get_popup_menu_helper(self):
+        """
+        the xpra menu, as a menu we can pop up (ie: from a window's header bar):
+        the same one as the tray's, unless the platform shows that one itself
+        """
+        mh = self.get_menu_helper()
+        return mh if mh and mh.can_popup else None
+
     def show_menu(self, *_args) -> None:
-        if self.menu_helper:
-            self.menu_helper.activate()
+        # (the menu may not exist yet: only the tray creates it up front)
+        if mh := self.get_popup_menu_helper():
+            mh.build()
+            mh.activate()
 
     def get_tray_classes(self) -> list[type]:
         # the canonical tray class list lives on the client: concrete clients

@@ -38,7 +38,10 @@ WINDOW_GRAB_EVENT_MASK |= Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_
 
 class GrabWindow(GtkStubWindow):
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("keyboard", "remote-info", "window")
+
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         self.init_grab()
 
     def get_window_event_mask(self) -> Gdk.EventMask:

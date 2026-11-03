@@ -36,6 +36,10 @@ class XI2_Window:
     The posix client will call XI2_Window on every Gtk window that it manages
     via `add_window_hooks`.
     """
+
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("pointer", "window")
+
     def __init__(self, window):
         log("XI2_Window(%s)", window)
         self.XI2 = X11XI2Bindings()

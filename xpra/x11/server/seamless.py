@@ -55,6 +55,7 @@ def log_composite_error(msg: str) -> NoReturn:
 
 class SeamlessServer(GObject.GObject, ServerBase):
     __gsignals__ = GSIGNALS
+    SESSION_MODE = "seamless"
 
     def __init__(self, clobber):
         self.clobber = clobber

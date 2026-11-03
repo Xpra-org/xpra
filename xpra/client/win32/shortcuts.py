@@ -66,7 +66,7 @@ class ShortcutTarget(BaseShortcutTarget):
         log("toggle_above() above=%s", above)
         window.set_metadata(typedict({"above": above}))
         window.state_updates["above"] = above
-        self.client.send_configure(window)
+        window.send_configure()
 
     def show_window_info(self, *_args) -> None:
         from xpra.client.win32.gtk import is_loaded
@@ -90,7 +90,7 @@ class ShortcutTarget(BaseShortcutTarget):
         log("toggle_fullscreen() fullscreen=%s", fullscreen)
         window.set_fullscreen(fullscreen)
         window.state_updates["fullscreen"] = fullscreen
-        self.client.send_configure(window)
+        window.send_configure()
 
     def toggle_keyboard_grab(self, *_args) -> None:
         # while `grabbed`, the `WH_KEYBOARD_LL` hook keeps the Win/Tab keys for the focused window:

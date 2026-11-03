@@ -9,7 +9,7 @@ from collections.abc import Sequence
 from xpra.util.env import envint
 from xpra.util.parsing import DEFAULT_REFRESH_RATE
 from xpra.client.subsystem.display import DisplayClient
-from xpra.client.terminal.tty import DEFAULT_COLUMNS, DEFAULT_ROWS, DEFAULT_CELL_WIDTH, DEFAULT_CELL_HEIGHT, DPI
+from xpra.client.terminal.tty import TerminalOutput, DEFAULT_COLUMNS, DEFAULT_ROWS, DEFAULT_CELL_WIDTH, DEFAULT_CELL_HEIGHT, DPI
 from xpra.log import Logger
 
 log = Logger("screen", "terminal")
@@ -38,6 +38,29 @@ class TerminalDisplayClient(DisplayClient):
     """
     __slots__ = ()
 
+    # The client owns terminal mode and probes its capabilities. Windows read
+    # these through the display subsystem so they always see the current state.
+    @property
+    def terminal_output(self) -> TerminalOutput | None:
+        return self.client.terminal_output
+
+    @property
+    def shm_ok(self) -> bool:
+        return self.client.shm_ok
+
+    @property
+    def frame_edits(self) -> bool:
+        return self.client.frame_edits
+
+    def cell_size(self) -> tuple[int, int]:
+        return self.client.cell_size()
+
+    def terminal_pixel_size(self) -> tuple[int, int]:
+        return self.client.terminal_pixel_size()
+
+    def shm_transfer(self, pixels: bytes) -> str:
+        return self.client.shm_transfer(pixels)
+
     def init_display_watcher(self, opts) -> None:
         # `DisplayClient.init` would otherwise start an `X11DisplayPropsWatcher` (or its
         # darwin equivalent): that watcher belongs to the window system this terminal
@@ -48,7 +71,7 @@ class TerminalDisplayClient(DisplayClient):
     def get_root_size(self) -> tuple[int, int]:
         # this is called from `init` (via `parse_scaling`), long before the client
         # switches the terminal to raw mode:
-        w, h = self.client.terminal_pixel_size()
+        w, h = self.terminal_pixel_size()
         if w > 0 and h > 0:
             return w, h
         log("get_root_size() no terminal size available from %s, using %s", self.client, DEFAULT_ROOT_SIZE)

@@ -259,7 +259,15 @@ def create_client_app(opts, extra_args: list[str], mode: str):
             "show-menu", "show-about", "show-session-info",
     ) and extra_args:
         opts.socket_dirs += opts.client_socket_dirs or []
-    if mode in ("screenshot", "icon"):
+    if mode == "windowshot":
+        basic()
+        if len(extra_args) not in (2, 3):
+            raise InitExit(ExitCode.ARGUMENT_MISMATCH, "usage: xpra windowshot filename selector [DISPLAY]")
+        from xpra.client.base.command import WindowshotXpraClient
+        filename, selector = extra_args[:2]
+        extra_args = extra_args[2:]
+        app = WindowshotXpraClient(opts, filename, selector)
+    elif mode in ("screenshot", "icon"):
         basic()
         if not extra_args:
             raise InitExit(ExitCode.ARGUMENT_MISMATCH, "invalid number of arguments for %s mode" % mode)

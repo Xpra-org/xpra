@@ -19,8 +19,7 @@ from xpra.gtk.window import add_close_accel
 from xpra.util.glib import install_signal_handlers
 from xpra.opengl.window import get_gl_client_window_module
 from xpra.common import force_size_constraint
-from xpra.client.gui.fake_client import FakeClient
-from xpra.client.gui.window_border import WindowBorder
+from xpra.client.gui.fake_client import FakeWindowHost
 
 Gtk = gi_import("Gtk")
 Pango = gi_import("Pango")
@@ -138,19 +137,12 @@ class TestGLRender:
         return window
 
     def init_gl_window(self) -> None:
-        noclient = FakeClient()
         x = 2000
         y = 1000
-        metadata = typedict({"has-alpha": True})
+        metadata = {"has-alpha": True}
         metadata.update(force_size_constraint(self.ww, self.wh))
-        border = WindowBorder()
-        max_window_size = (4096, 4096)
-        default_cursor_data = None
-        pixel_depth = 32
-
-        window = self.GLClientWindowClass(noclient, None, 0, 2 ** 32 - 1, x, y, self.ww, self.wh, self.ww, self.wh,
-                                          metadata, False, typedict({}),
-                                          border, max_window_size, default_cursor_data, pixel_depth)
+        window = FakeWindowHost().make_window(self.GLClientWindowClass, 2 ** 32 - 1, (x, y, self.ww, self.wh), metadata,
+                                              max_window_size=(4096, 4096), pixel_depth=32)
         window_backing = window._backing
         window.realize()
         window_backing.paint_screen = True

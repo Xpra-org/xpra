@@ -155,7 +155,7 @@ def encode(coding: str, image: ImageWrapper, options=None) -> tuple:
     pixel_format = image.get_pixel_format()
     if pixel_format not in INPUT_PIXEL_FORMATS:
         raise ValueError("invalid input format: %s" % pixel_format)
-    pixels = image.get_pixels()
+    pixels = image.get_plane(0)
     cdef uint8_t grayscale = options.boolget("grayscale", False)
     cdef uint8_t alpha = pixel_format.find("A")>=0
     cdef int width = image.get_width()

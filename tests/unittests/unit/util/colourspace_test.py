@@ -113,7 +113,7 @@ class FakeWindow:
     del ClientWindowBase
 
     def __init__(self, client, colourspace=None):
-        self._client = client
+        self.get_subsystem = client.get_subsystem
         self.colourspace = colourspace
 
 

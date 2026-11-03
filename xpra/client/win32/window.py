@@ -11,6 +11,7 @@ from ctypes.wintypes import HWND, BYTE, HICON, HDC, POINT, MSG
 from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER
 
 from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING
+from xpra.net.packet_type import WINDOW_CONFIGURE
 from xpra.client.gui.window.backing import fire_paint_callbacks, get_backing_client_properties
 from xpra.client.gui.window.info import geom_str, hsc, get_backing_info
 from xpra.client.win32.gdi_backing import GDIBacking
@@ -47,6 +48,7 @@ from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
 from xpra.client.win32.altgr import KeyMessage, is_altgr_fake_control, add_altgr_layout, get_alt_r_keyname
 from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_lparam, img_to_hicon
 from xpra.client.win32.glib import start_modal_message_pump, stop_modal_message_pump
+from xpra.client.gui.size_constraints import get_track_sizes
 from xpra.client.win32.system_menu import add_system_menu_items, get_command_action, update_checks
 from xpra.log import Logger
 
@@ -238,6 +240,9 @@ def get_keyname(vk_code: int, scancode: int, extended: bool, string: str, local_
 
 class ClientWindow(GObject.GObject):
 
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("display", "encoding", "keyboard", "window")
+
     __gsignals__ = {
         "mapped": no_arg_signal,
         "focused": no_arg_signal,
@@ -258,12 +263,15 @@ class ClientWindow(GObject.GObject):
     module_handle = GetModuleHandleA(None)
     log("module-handle=%#x", module_handle)
 
-    def __init__(self, client, group_leader_window, wid: int, geom, backing_size, metadata: dict,
-                 override_redirect, client_properties,
+    def __init__(self, get_subsystem: Callable, is_readonly: Callable, group_leader_window, wid: int, geom, backing_size,
+                 metadata: dict, override_redirect, client_properties,
                  border, max_window_size, pixel_depth,
-                 headerbar=None):
+                 headerbar=None, get_xpra_menu=None):
         GObject.GObject.__init__(self)
-        self.client = client
+        # the window is only given what it needs from the client
+        # (the system menu is our own, `get_xpra_menu` is not used):
+        self.get_subsystem: Callable = get_subsystem
+        self.is_readonly: Callable[[], bool] = is_readonly
         self.wid = wid
         self.x = geom[0]
         self.y = geom[1]
@@ -301,6 +309,8 @@ class ClientWindow(GObject.GObject):
         self.state_updates = {}
         self.fullscreen_monitors = ()
         self.size_constraints = typedict()
+        # the size the server has asked for, until we get it (see `move_resize`):
+        self._requested_size: tuple[int, int] | None = None
         self._above = False
         self._below = False
         self._skip_taskbar = False
@@ -382,7 +392,7 @@ class ClientWindow(GObject.GObject):
         """
         if not self.backing:
             return
-        enc = self.client.get_subsystem("encoding") if self.client else None
+        enc = self.get_subsystem("encoding")
         encoding_defaults = enc.encoding_defaults if enc else {}
         self._client_properties.update(get_backing_client_properties(self.backing, encoding_defaults))
 
@@ -407,7 +417,7 @@ class ClientWindow(GObject.GObject):
         backing = self.backing
         if not backing:
             return
-        display = self.client.get_subsystem("display") if self.client else None
+        display = self.get_subsystem("display")
         if display:
             bw, bh = display.cx(width), display.cy(height)
         else:
@@ -511,7 +521,7 @@ class ClientWindow(GObject.GObject):
                 # (and let `DefWindowProc` update the standard items)
                 update_checks(wparam, self.get_menu_states())
             if msg == win32con.WM_GETMINMAXINFO and lparam:
-                self.apply_size_constraints(lparam)
+                self.apply_size_constraints(hwnd, lparam)
                 return 0
             if msg == win32con.WM_SETCURSOR and (lparam & 0xffff) == win32con.HTCLIENT and self.hcursor:
                 # only over the window contents,
@@ -564,6 +574,7 @@ class ClientWindow(GObject.GObject):
             if msg == win32con.WM_SIZE:
                 width = lparam & 0xffff
                 height = (lparam >> 16) & 0xffff
+                self._requested_size = None
                 log("WM_SIZE %r: %ix%i", SIZE_SUBCOMMAND.get(wparam, str(wparam)), width, height)
                 if wparam == win32con.SIZE_MINIMIZED:
                     if not self.minimized:
@@ -752,8 +763,8 @@ class ClientWindow(GObject.GObject):
         if not self.hwnd:
             return
         owner_hwnd = 0
-        if wid and self.client:
-            wm = self.client.get_subsystem("window")
+        if wid:
+            wm = self.get_subsystem("window")
             owner = wm.get_window(wid) if wm else None
             owner_hwnd = getattr(owner, "hwnd", 0) or 0
         SetWindowLongPtrValueW(self.hwnd, GWLP_HWNDPARENT, owner_hwnd)
@@ -772,6 +783,47 @@ class ClientWindow(GObject.GObject):
             geom = self._pre_fullscreen_geom or (self.x, self.y, self.width, self.height)
             self._pre_fullscreen_geom = None
             self.move_resize(*geom)
+
+    def get_server_geometry(self) -> tuple[tuple[int, int, int, int], tuple[int, int]]:
+        """ the geometry in server coordinates, and the scaled position before the server offset """
+        geometry = (self.x, self.y, self.width, self.height)
+        display = self.get_subsystem("display")
+        if not display:
+            return geometry, geometry[:2]
+        geometry = display.crect(*geometry)
+        raw_position = geometry[:2]
+        return display.get_server_position(raw_position) + geometry[2:], raw_position
+
+    def get_server_monitor_position(self) -> dict[str, Any]:
+        monitor = self.get_monitor_position()
+        if monitor and (display := self.get_subsystem("display")):
+            monitor["position"] = display.cp(*monitor["position"])
+        return monitor
+
+    def send_configure(self) -> None:
+        wm = self.get_subsystem("window")
+        if not wm:
+            return
+        if self.is_readonly():
+            geomlog("send_configure() skipped in read-only mode, state updates dropped: %s", self.state_updates)
+            self.state_updates = {}
+            return
+        geometry, raw_position = self.get_server_geometry()
+        geomlog("send_configure() geometry=%s", geometry)
+        config = {
+            "state": self.state_updates,
+            "geometry": geometry,
+            "resize-counter": self.resize_counter,
+            "raw-position": raw_position,
+        }
+        # the backing's encoding properties change with the render size:
+        if props := self.pop_client_properties():
+            config["properties"] = props
+        if monitor := self.get_server_monitor_position():
+            config["monitor"] = monitor
+        wm.send(WINDOW_CONFIGURE, self.wid, config)
+        # we have consumed it, so we can reset it now:
+        self.state_updates = {}
 
     def get_monitor_position(self) -> dict[str, Any]:
         if not self.hwnd:
@@ -890,8 +942,8 @@ class ClientWindow(GObject.GObject):
 
     def get_menu_states(self) -> dict[str, bool]:
         # the state of the checkbox items of xpra's window menu:
-        kb = self.client.get_subsystem("keyboard") if self.client else None
-        wm = self.client.get_subsystem("window") if self.client else None
+        kb = self.get_subsystem("keyboard")
+        wm = self.get_subsystem("window")
         return {
             "fullscreen": self.fullscreen,
             "above": self._above,
@@ -984,6 +1036,8 @@ class ClientWindow(GObject.GObject):
         self.resize_counter = resize_counter
         if not self.hwnd:
             return
+        # in read-only mode, this is the only size allowed (see `apply_size_constraints`):
+        self._requested_size = w, h
         exstyle = GetWindowLongW(self.hwnd, win32con.GWL_EXSTYLE)
         wx, wy, ww, wh = system_geometry(x, y, w, h, self.style, exstyle)
         flags = win32con.SWP_NOACTIVATE | win32con.SWP_NOOWNERZORDER | win32con.SWP_NOZORDER
@@ -1018,23 +1072,31 @@ class ClientWindow(GObject.GObject):
         # and not from within this packet handler:
         PostMessageW(self.hwnd, win32con.WM_SYSCOMMAND, command, lparam)
 
-    def apply_size_constraints(self, lparam) -> None:
+    def apply_size_constraints(self, hwnd: int, lparam) -> None:
         info = cast(lparam, POINTER(MINMAXINFO)).contents
-        minw, minh = self.size_constraints.intpair("minimum-size")
+        # (this message is received before `CreateWindowExW` returns the `hwnd`)
+        exstyle = GetWindowLongW(hwnd, win32con.GWL_EXSTYLE)
+        frame = system_geometry(0, 0, 0, 0, self.style, exstyle)[2:]
+        display = self.get_subsystem("display")
+        to_local = display.sp if display else None
+        fixed_size = None
+        if self.is_readonly():
+            # the size can only be changed by the server:
+            fixed_size = self._requested_size or (self.width, self.height)
+        (minw, minh), (maxw, maxh) = get_track_sizes(self.size_constraints, self.max_window_size, frame, to_local,
+                                                     fixed_size)
+        geomlog("apply_size_constraints: frame=%s, fixed size=%s, min=%s, max=%s",
+                frame, fixed_size, (minw, minh), (maxw, maxh))
         if minw > 0 and minh > 0:
             info.ptMinTrackSize.x = minw
             info.ptMinTrackSize.y = minh
-        maxw, maxh = self.size_constraints.intpair("maximum-size")
-        # `max_window_size` is a hard limit (OpenGL windows lower it to the
-        # maximum texture / viewport size), it wins over the server's request:
-        mww, mwh = self.max_window_size
-        if mww > 0:
-            maxw = min(maxw, mww) if maxw > 0 else mww
-        if mwh > 0:
-            maxh = min(maxh, mwh) if maxh > 0 else mwh
         if maxw > 0 and maxh > 0:
             info.ptMaxTrackSize.x = maxw
             info.ptMaxTrackSize.y = maxh
+        if fixed_size:
+            # maximizing does not use the track sizes:
+            info.ptMaxSize.x = maxw
+            info.ptMaxSize.y = maxh
 
     def is_tray(self) -> bool:
         return False
@@ -1054,7 +1116,7 @@ class ClientWindow(GObject.GObject):
         grablog("do_window_grab() handle=%#x, pointer_grab=%s", handle, grabbed)
         # also grab the keyboard so the user can't Alt-Tab / Super away:
         # (the `WH_KEYBOARD_LL` hook swallows Win/Tab keys while `grabbed` and focused)
-        if kb := self.client.get_subsystem("keyboard"):
+        if kb := self.get_subsystem("keyboard"):
             kb.grabbed = True
 
     def do_window_ungrab(self) -> None:
@@ -1062,7 +1124,7 @@ class ClientWindow(GObject.GObject):
         handle = self.get_window_handle()
         grablog("do_window_ungrab() handle=%#x", handle)
         pointer_ungrab(handle)
-        if kb := self.client.get_subsystem("keyboard"):
+        if kb := self.get_subsystem("keyboard"):
             kb.grabbed = False
 
     def show_all(self):

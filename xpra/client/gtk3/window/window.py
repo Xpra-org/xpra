@@ -47,10 +47,10 @@ class ClientWindow(WindowBaseClass):
     """
     __gsignals__ = get_all_gsignals()
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         self.menu_helper = None
         for bc in WINDOW_BASES:
-            bc.init_window(self, client, metadata, client_props)
+            bc.init_window(self, metadata, client_props)
 
     def destroy(self) -> None:  # pylint: disable=method-hidden
         for bc in WINDOW_BASES:
@@ -84,7 +84,7 @@ class ClientWindow(WindowBaseClass):
 
     def show_xpra_menu(self, *_args) -> None:
         # this is called by the headerbar
-        if mh := self._client.get_window_menu_helper():
+        if self.get_xpra_menu and (mh := self.get_xpra_menu()):
             mh.build()
             mh.popup(0, 0)
 
@@ -95,7 +95,7 @@ class ClientWindow(WindowBaseClass):
     def show_window_menu(self, *_args) -> None:
         if not self.menu_helper:
             from xpra.client.gtk3.window.menu import WindowMenuHelper
-            self.menu_helper = WindowMenuHelper(self._client, self)
+            self.menu_helper = WindowMenuHelper(self.get_subsystem, self)
             self.menu_helper.build()
         self.menu_helper.popup(0, 0)
 

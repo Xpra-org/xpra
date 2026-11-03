@@ -704,7 +704,7 @@ cdef class Encoder:
         cdef int stride = image.get_rowstride()
         if stride < self.width * 4:
             raise ValueError("invalid stride %d for width %d" % (stride, self.width))
-        pixels = image.get_pixels()
+        pixels = image.get_plane(0)
         if not pixels:
             raise ValueError("failed to get pixels from %s" % image)
         memset(&py_buf, 0, sizeof(Py_buffer))
@@ -732,7 +732,7 @@ cdef class Encoder:
         cdef int y_stride, u_stride, v_stride
         cdef MFEncodeStatus status
 
-        pixels  = image.get_pixels()
+        pixels  = tuple(image.get_plane(plane_no) for plane_no in range(image.get_planes()))
         strides = image.get_rowstride()
         assert len(pixels)  == 3, "expected 3 planes for YUV420P, got %d"  % len(pixels)
         assert len(strides) == 3, "expected 3 strides for YUV420P, got %d" % len(strides)

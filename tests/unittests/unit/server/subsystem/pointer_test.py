@@ -302,6 +302,36 @@ class PointerPipelineTest(unittest.TestCase):
             ("click", 2, False, {}),
         ))
 
+    def test_negative_coordinates(self):
+        # ie: dragging past the top-left corner of the window, onto a monitor left of the primary one
+        from xpra.net.common import Packet
+        m = self.make_manager()
+        # use the real target calculation, from the window-relative position:
+        m.get_pointer_target = lambda proto, wid, pos, props=None: PointerManager.get_pointer_target(m, proto, wid, pos, props)
+        window = AdHocStruct()
+        window.get_geometry = lambda: (100, 200, 300, 400)
+        windows = AdHocStruct()
+        windows.get_window = lambda wid: window if wid == 1 else None
+        m.server.subsystems["window"] = windows
+        ss = AdHocStruct()
+        ss.uuid = "driver"
+        ss.update_mouse = None
+        ss.user_event = lambda *_args: None
+        proto = object()
+        m.server.get_server_source = lambda _proto: ss
+        m.server.set_ui_driver = lambda _ss: None
+        m._process_motion(proto, Packet("pointer-motion", -1, 1, 1, (-1820, 190, -20, -10), {}))
+        self.assertIn(("move", 1, (80, 190)), m.calls)
+        m.calls.clear()
+        m._process_button(proto, Packet("pointer-button", -1, 2, 1, 1, False, (-1820, 190, -20, -10), {}))
+        self.assertIn(("move", 1, (80, 190)), m.calls)
+        self.assertIn(("click", 1, False, {}), m.calls)
+        # but not garbage:
+        m.calls.clear()
+        with self.assertRaises(ValueError):
+            m._process_motion(proto, Packet("pointer-motion", -1, 3, 1, (-70000, 0, 0, 0), {}))
+        self.assertEqual(m.calls, [])
+
     def test_only_the_ui_driver_moves_the_pointer(self):
         from xpra.net.common import Packet
         from xpra.util.rectangle import rectangle

@@ -61,6 +61,7 @@ def try_setup_capture(backends: dict[str, Callable], backend: str, *args):
 
 class ShadowServerBase(ServerBase):
     SIGNALS = ServerBase.__signals__
+    SESSION_MODE = "shadow"
     # 50Hz (ie: a 20ms refresh delay), unless the client specifies its own refresh rate:
     DEFAULT_REFRESH_RATE = DEFAULT_REFRESH_RATE
 

@@ -143,7 +143,7 @@ class WindowTray(StubClientSubsystem):
         # the mmap read area is owned by the `mmap` subsystem:
         mmap_sub = self.get_subsystem("mmap")
         mmap = mmap_sub.mmap_read_area if mmap_sub else None
-        return ClientTray(client, wid, w, h, metadata, tray_widget, mmap)
+        return ClientTray(client.get_subsystem, wid, w, h, metadata, tray_widget, mmap)
 
     def get_tray_window(self, app_name: str, hints: dict):
         # try to identify the application tray that generated this notification,

@@ -4,8 +4,7 @@
 # later version. See the file COPYING for details.
 
 
-from xpra.gtk.widget import scaled_image
-from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.widget import icon_image
 from xpra.client.gtk3.window.stub_window import GtkStubWindow
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.util.objects import typedict
@@ -58,14 +57,13 @@ def get_header_bar_image(size: int = 24):
         from xpra.gtk.dialogs.util import nearest_icon_enum
         return Gtk.Image.new_from_gicon(icon, nearest_icon_enum(size))
     if WINDOW_ICON:
-        pixbuf = get_icon_pixbuf("transparent.png")
-        return scaled_image(pixbuf, size)
+        return icon_image("transparent.png", size)
     return None
 
 
 class HeaderBarWindow(GtkStubWindow):
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         self.header_bar_image: Gtk.Image | None = None
         if self.can_use_header_bar(metadata):
             title = metadata.strget("title", "")
@@ -99,7 +97,8 @@ class HeaderBarWindow(GtkStubWindow):
         self.header_bar_image = get_header_bar_image(self._icon_size())
         # soft dependency on window methods:
         show_window_menu = getattr(self, "show_window_menu", noop)
-        show_xpra_menu = getattr(self, "show_xpra_menu", noop)
+        # only offered when the client has an xpra menu to show:
+        show_xpra_menu = getattr(self, "show_xpra_menu", noop) if getattr(self, "get_xpra_menu", None) else noop
         hb = make_header_bar(title, self.header_bar_image, show_window_menu, show_xpra_menu)
         self.set_titlebar(hb)
 

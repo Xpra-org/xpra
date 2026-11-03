@@ -9,7 +9,7 @@ import select
 import signal
 import logging
 from typing import Any, Final
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from xpra.os_util import gi_import
 from xpra.constants import DEFAULT_METADATA_SUPPORTED
@@ -195,6 +195,9 @@ class XpraTerminalClient(GObjectClientAdapter, UIXpraClient):
         if "display" in classes:
             from xpra.client.terminal.subsystem.display import TerminalDisplayClient
             classes["display"] = TerminalDisplayClient
+        if "window" in classes:
+            from xpra.client.terminal.subsystem.window import TerminalWindowClient
+            classes["window"] = TerminalWindowClient
         if "clipboard" in classes:
             from xpra.client.terminal.subsystem.clipboard import TerminalClipboardClient
             classes["clipboard"] = TerminalClipboardClient
@@ -1311,7 +1314,7 @@ class XpraTerminalClient(GObjectClientAdapter, UIXpraClient):
         encoding = self.get_subsystem("encoding")
         return encoding.get_encodings() if encoding else ()
 
-    def get_client_window_classes(self, _geom, _metadata, _override_redirect) -> Sequence[type]:
+    def get_client_window_classes(self, _geom, _metadata, _override_redirect) -> Sequence[Callable]:
         # there is no OpenGL alternative to fall back from:
         return (ClientWindow, )
 

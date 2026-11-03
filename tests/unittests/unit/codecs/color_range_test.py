@@ -45,8 +45,8 @@ def cmp_pixels(pix1: bytes, w1: int, h1: int, stride1: int, bpp1: int,
 
 
 def cmp_images(image1: ImageWrapper, image2: ImageWrapper, tolerance=1) -> bool:
-    pixels1 = memoryview_to_bytes(memoryview(image1.get_pixels()))
-    pixels2 = memoryview_to_bytes(memoryview(image2.get_pixels()))
+    pixels1 = memoryview_to_bytes(memoryview(image1.get_plane(0)))
+    pixels2 = memoryview_to_bytes(memoryview(image2.get_plane(0)))
     return cmp_pixels(
         pixels1, image1.get_width(), image1.get_height(), image1.get_rowstride(), image1.get_bytesperpixel(),
         pixels2, image2.get_width(), image2.get_height(), image2.get_rowstride(), image2.get_bytesperpixel(),
@@ -86,7 +86,7 @@ class TestColorRange(unittest.TestCase):
         enc_mod = loader.load_codec(enc_name)
         for color, pixel in TEST_COLORS.items():
             image = make_test_image(self.rgb_format, self.width, self.height, pixel)
-            self.pixels = image.get_pixels()
+            self.pixels = image.get_plane(0)
             for quality in (100, 90, 50, 10):
                 tolerance = get_tolerance(enc_name, encoding, quality)
                 options = typedict({
@@ -114,7 +114,7 @@ class TestColorRange(unittest.TestCase):
                     image = make_test_image(self.rgb_format, self.width, self.height, pixel)
                     # the encoder may modify the pixels value,
                     # (the spng encoder used to)
-                    self.pixels = image.get_pixels()
+                    self.pixels = image.get_plane(0)
                     for quality in (100, 90, 50, 10):
                         tolerance = get_tolerance(enc_name, encoding, quality)
                         options = typedict({

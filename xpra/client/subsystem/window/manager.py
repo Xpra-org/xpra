@@ -417,13 +417,13 @@ class WindowManagerClient(StubClientSubsystem):
             client_window_classes, group_leader_window)
         for cwc in client_window_classes:
             try:
-                # the window's owning client must be the real client (not this
-                # subsystem instance): it reaches siblings via `client.get_subsystem`
-                window = cwc(self.client, group_leader_window, wid,
+                # windows are only given what they need from the client:
+                client = self.client
+                window = cwc(client.get_subsystem, client.is_readonly, group_leader_window, wid,
                              geom, backing_size,
                              metadata, override_redirect, client_properties,
                              border, self.max_window_size, self.pixel_depth,
-                             self.client.headerbar)
+                             client.headerbar, getattr(client, "get_popup_menu_helper", None))
                 break
             except (RuntimeError, ValueError):
                 log.warn(f"Warning: failed to instantiate {cwc!r}", exc_info=True)

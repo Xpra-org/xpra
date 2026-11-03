@@ -81,7 +81,7 @@ def main(argv):
         from PIL import Image
         w = image.get_width()
         h = image.get_height()
-        pixels = memoryview_to_bytes(image.get_pixels())
+        pixels = memoryview_to_bytes(image.get_plane(0))
         stride = image.get_rowstride()
         rgb_format = image.get_pixel_format()
         try:

@@ -55,7 +55,10 @@ class CaptureWindow(GtkStubWindow):
     so that its methods take precedence.
     """
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    # the client subsystems this class looks up:
+    SUBSYSTEMS: tuple[str, ...] = ("keyboard", "pointer", "remote-info")
+
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         self.input_captured = False
         # the virtual remote pointer, in window-relative server coordinates:
         self.capture_position: tuple[float, float] = (0, 0)

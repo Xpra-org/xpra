@@ -22,8 +22,6 @@ from xpra.constants import DEFAULT_METADATA_SUPPORTED
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.gtk.util import get_default_root_window, init_display_source
 from xpra.gtk.window import GDKWindow
-from xpra.gtk.widget import scaled_image
-from xpra.gtk.pixbuf import get_icon_pixbuf
 from xpra.gtk.versions import get_gtk_version_info
 from xpra.exit_codes import ExitValue
 from xpra.util.gobject import no_arg_signal
@@ -116,7 +114,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         UIXpraClient.__init__(self)
         self.client_type = "Python/GTK3"
         self.menu_helper = None
-        self.window_menu_helper = None
+        # only used when the main menu cannot be popped up, see `get_popup_menu_helper`:
+        self.popup_menu_helper = None
         # the keyboard subsystem holds `helper_class`; inject the GTK
         # implementation into it (it is created by UIXpraClient.__init__ above):
         if kb := self.get_subsystem("keyboard"):
@@ -149,14 +148,16 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             self.menu_helper = make_instance(mhc, self)
         return self.menu_helper
 
-    def get_window_menu_helper(self):
-        if not self.window_menu_helper:
+    def get_popup_menu_helper(self):
+        if mh := super().get_popup_menu_helper():
+            return mh
+        # ie: macOS, where the main menu is the menu bar
+        if not self.popup_menu_helper:
             from xpra.client.gtk3.tray_menu import GTKTrayMenu
             from xpra.util.objects import make_instance
-            mhc = (GTKTrayMenu, )
-            log("get_window_menu_helper() tray menu helper classes: %s", mhc)
-            self.window_menu_helper = make_instance(mhc, self)
-        return self.window_menu_helper
+            self.popup_menu_helper = make_instance((GTKTrayMenu, ), self)
+            log("get_popup_menu_helper()=%s", self.popup_menu_helper)
+        return self.popup_menu_helper
 
     def run(self) -> ExitValue:
         log(f"run() HAS_X11_BINDINGS={HAS_X11_BINDINGS}")
@@ -175,9 +176,10 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
         log("GTKXpraClient.cleanup()")
         if dialogs := self.get_subsystem("dialogs"):
             dialogs.cleanup()
-        if mh := self.menu_helper:
-            self.menu_helper = None
-            mh.cleanup()
+        for attr in ("menu_helper", "popup_menu_helper"):
+            if mh := getattr(self, attr):
+                setattr(self, attr, None)
+                mh.cleanup()
         UIXpraClient.cleanup(self)
 
     def _process_startup_complete(self, packet: Packet) -> None:
@@ -190,14 +192,6 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
     # because the `challenge` subsystem has a working non-GUI fallback:
     def do_process_challenge_prompt(self, *args, **kwargs):
         return self._call_dialogs("do_process_challenge_prompt", *args, **kwargs)
-
-    def get_image(self, icon_name: str, size=None) -> Gtk.Image | None:
-        with log.trap_error(f"Error getting image for icon name {icon_name} and size {size}"):
-            pixbuf = get_icon_pixbuf(icon_name)
-            log(f"get_image({icon_name!r}, {size}) pixbuf={pixbuf}")
-            if not pixbuf:
-                return None
-            return scaled_image(pixbuf, size)
 
     def get_tray_classes(self) -> list[type]:
         return _add_statusicon_tray(super().get_tray_classes())

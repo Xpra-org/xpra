@@ -10,16 +10,17 @@ from xpra.server.common import SSH_AGENT_DISPATCH
 from xpra.util.io import is_socket
 from xpra.util.objects import typedict
 from xpra.util.parsing import FALSE_OPTIONS
-from xpra.server.source.ssh_agent import SSHAgentConnection
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.net.ssh.agent import setup_ssh_auth_sock, set_ssh_agent, setup_client_ssh_agent_socket, clean_agent_socket
+from xpra.net.ssh.agent import (
+    setup_ssh_auth_sock, set_ssh_agent, setup_client_ssh_agent_socket, clean_agent_socket, get_ssh_agent_path,
+)
 from xpra.log import Logger
 
 log = Logger("network", "ssh")
 
 
-def accept_client_ssh_agent(uuid: str, ssh_auth_sock: str) -> None:
-    sockpath = setup_client_ssh_agent_socket(uuid, ssh_auth_sock)
+def accept_client_ssh_agent(uuid: str, ssh_auth_sock: str, ssh_auth_sock_stat: tuple[int, ...] = ()) -> None:
+    sockpath = setup_client_ssh_agent_socket(uuid, ssh_auth_sock, ssh_auth_sock_stat)
     if sockpath and os.path.exists(sockpath) and is_socket(sockpath):
         set_ssh_agent(uuid)
 
@@ -72,8 +73,10 @@ class SshAgent(StubSubsystem):
         # failing that, any client that has one:
         ui_driver = self.server.ui_driver
         agent = ""
-        for ss in self.get_sources_by_type(SSHAgentConnection, exclude=exclude):
-            if not ss.uuid or not ss.ssh_auth_sock:
+        for ss in self.get_sources_by_type(exclude=exclude):
+            # The advertised path belongs to the client's filesystem. Only a
+            # usable server-side socket makes this client an agent provider.
+            if not ss.uuid or not is_socket(get_ssh_agent_path(ss.uuid)):
                 continue
             if ss.uuid == ui_driver:
                 return ss.uuid
@@ -84,28 +87,27 @@ class SshAgent(StubSubsystem):
         log("set_agent(%s, %s) ssh-agent=%s", server, source, self.enabled)
         if not self.enabled:
             return
-        self.update_agent_symlinks(self.get_agent_uuid())
+        self.update_agent_symlinks()
 
     def may_update_agent_symlinks(self, source) -> None:
         # called by the `client-session` subsystem: the generic `cleanup_protocol` hook
         # fires after the source has been removed, too late to look up its uuid
         if not self.enabled:
             return
-        self.update_agent_symlinks(self.get_agent_uuid(exclude=source), remove=source.uuid)
+        self.update_agent_symlinks(source)
 
-    def update_agent_symlinks(self, uuid: str, remove: str = "") -> None:
-        # `uuid` is always a client uuid or an empty string for the default agent:
-        # never a raw `ssh_auth_sock` path, so that `agent` keeps pointing
-        # at the `ssh/$UUID` symlink validated by `accept_client_ssh_agent`
+    def update_agent_symlinks(self, source=None) -> None:
         # both callers above can fire from the disconnect path
         # (`may_update_agent_symlinks`, and `new-ui-driver` re-emitted when the ui driver goes away),
         # which the server runs inline on the network parse thread - where the seccomp filter
         # denies `unlink` and `symlink`. See `docs/Usage/Seccomp.md`.
         # Retargeting the agent symlink is never urgent, so always do it from the main thread:
         def update() -> None:
-            if remove:
-                clean_agent_socket(remove)
-            set_ssh_agent(uuid)
+            if source:
+                clean_agent_socket(source.uuid)
+            # Recheck the sockets when the callback runs: an agent may have
+            # disappeared since the update was queued.
+            set_ssh_agent(self.get_agent_uuid(exclude=source))
 
         self.idle_add(update)
 
@@ -114,4 +116,4 @@ class SshAgent(StubSubsystem):
             return
         assert ss
         if ss.uuid:
-            accept_client_ssh_agent(ss.uuid, getattr(ss, "ssh_auth_sock", ""))
+            accept_client_ssh_agent(ss.uuid, getattr(ss, "ssh_auth_sock", ""), getattr(ss, "ssh_auth_sock_stat", ()))

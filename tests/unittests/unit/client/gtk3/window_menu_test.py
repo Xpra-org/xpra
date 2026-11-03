@@ -8,9 +8,9 @@
 
 import unittest
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
-from xpra.client.gui.fake_client import FakeClient
+from xpra.client.gui.fake_client import FakeWindowHost
 from xpra.client.gtk3.window.menu import WindowMenuHelper
 
 
@@ -20,7 +20,7 @@ class MenuHelper:
     make_grabmenuitem = WindowMenuHelper.make_grabmenuitem
 
     def __init__(self):
-        self.client = FakeClient()
+        self.get_subsystem = FakeWindowHost().get_subsystem
         self.window = Mock(wid=5, border=SimpleNamespace(shown=False))
         self.ticked = []
 
@@ -52,13 +52,25 @@ class WindowMenuTest(unittest.TestCase):
 
     def test_grab(self) -> None:
         helper = MenuHelper()
-        window_subsystem = helper.client.get_subsystem("window")
+        window_subsystem = helper.get_subsystem("window")
         item = helper.make_grabmenuitem()
         item.activate()
         self.assertTrue(window_subsystem.is_grabbed(5))
         item.activate()
         self.assertFalse(window_subsystem.is_grabbed(5))
         self.assertEqual(helper.ticked, [("Grabbed", True), ("Grabbed", False)])
+
+    def test_no_client(self) -> None:
+        # the window menu is given the window's subsystem lookup, never the client:
+        get_subsystem = Mock()
+        # (the icon size would otherwise come from the X11 settings)
+        with patch("xpra.client.gui.menu_helper.get_icon_size", return_value=24):
+            helper = WindowMenuHelper(get_subsystem, Mock())
+        self.assertIsNone(helper.client)
+        self.assertIs(helper.get_subsystem, get_subsystem)
+        # windows only exist after the handshake, so nothing waits for it:
+        self.assertEqual(helper.handshake_menuitem, helper.menuitem)
+        helper.after_handshake(self.fail)
 
 
 def main():

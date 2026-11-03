@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from contextlib import contextmanager
 from typing import Any
 from subprocess import Popen
 from collections.abc import Sequence
@@ -141,6 +142,15 @@ class X11DisplayManager(DisplayManager):
         # explicitly disable it because their virtual monitors are sized
         # by the user, not by the client's hardware.
         self.mirror_client_layout: bool = True
+
+    @contextmanager
+    def windowshot_image(self, window):
+        with xsync:
+            with super().windowshot_image(window) as image:
+                try:
+                    yield image
+                finally:
+                    image.free()
 
     def set_vfb_startup_state(self, state) -> None:
         self.xvfb = state.xvfb

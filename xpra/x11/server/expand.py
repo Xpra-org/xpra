@@ -36,7 +36,7 @@ class EVDIModel(CaptureWindowModel):
         bw, bh, buf = ld[:3]
         if bw != width or bh != height:
             return None
-        return ImageWrapper(0, 0, width, height, buf, "BGRX", 24, width * 4, )
+        return ImageWrapper(0, 0, width, height, (buf,), "BGRX", 24, width * 4, )
 
 
 class ExpandServer(ShadowX11Server):

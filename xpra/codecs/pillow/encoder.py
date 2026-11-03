@@ -124,7 +124,7 @@ def encode(coding: str, image: ImageWrapper, options: typedict) -> tuple[str, Co
     bpp = 32
     in_stride = image.get_rowstride()
     rowstride = in_stride
-    pixels = image.get_pixels()
+    pixels = image.get_plane(0)
     if not pixels:
         raise RuntimeError(f"failed to get pixels from {image}")
     # remove transparency if it cannot be handled,

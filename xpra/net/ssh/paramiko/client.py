@@ -9,6 +9,7 @@ import sys
 from time import sleep, monotonic
 from typing import Any, NoReturn
 from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor
 
 from xpra.net.ssh.paramiko.util import (
     keymd5, get_key_fingerprints, get_sha256_fingerprint_for_key, load_private_key, SSHSocketConnection,
@@ -356,7 +357,8 @@ def connect_to(display_desc: dict, debug_cb: Callable = noop) -> SSHSocketConnec
             conn = SSHProxyCommandConnection(chan, peername, peername, {"host": host, "port": port})
             conn.target = host_target_string("ssh", username, host, port or 22, display)
             conn.timeout = SOCKET_TIMEOUT
-            conn.start_stderr_reader()
+            if not display_desc.get("ssh_command"):
+                conn.start_stderr_reader()
             conn.process = (sock.process, "ssh", cmd)
             from xpra.net import bytestreams
             bytestreams.CLOSED_EXCEPTIONS = tuple(list(bytestreams.CLOSED_EXCEPTIONS) + [ProxyCommandFailure])
@@ -426,7 +428,8 @@ def connect_to(display_desc: dict, debug_cb: Callable = noop) -> SSHSocketConnec
         )
         conn.target = f"{to_str} via {via_str}"
         conn.timeout = SOCKET_TIMEOUT
-        conn.start_stderr_reader()
+        if not display_desc.get("ssh_command"):
+            conn.start_stderr_reader()
         return conn
 
     # an explicit proxy host (from the connection URI / launcher) takes precedence,
@@ -507,9 +510,29 @@ def connect_to(display_desc: dict, debug_cb: Callable = noop) -> SSHSocketConnec
     conn = SSHSocketConnection(chan, sock, sockname, peername, (host, port), {"host": host, "port": port})
     conn.target = host_target_string("ssh", username, host, port, display)
     conn.timeout = SOCKET_TIMEOUT
-    conn.start_stderr_reader()
+    if not display_desc.get("ssh_command"):
+        conn.start_stderr_reader()
     log(f"paramiko.client.connect_to({display_desc})={conn}")
     return conn
+
+
+def run_command(display_desc: dict) -> int:
+    from xpra.net.ssh.command import copy_output
+    conn = connect_to(display_desc | {"ssh_command": True})
+    chan = conn._socket
+    transport = chan.get_transport()
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        try:
+            chan.settimeout(None)
+            chan.shutdown_write()
+            stderr = executor.submit(copy_output, chan.recv_stderr, sys.stderr)
+            copy_output(chan.recv, sys.stdout)
+            stderr.result()
+            code = chan.recv_exit_status()
+            return code if code >= 0 else int(ExitCode.SSH_FAILURE)
+        finally:
+            conn.close()
+            transport.close()
 
 
 def get_auth_modes(paramiko_config, host_config: dict, password: str) -> list[str]:

@@ -13,6 +13,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from xpra.client.base.command import RunClient
+from xpra.client.base.command import WindowshotXpraClient
 from xpra.client.base.client import XpraClientBase
 from xpra.exit_codes import ExitCode
 from xpra.net.constants import SocketState
@@ -24,6 +25,25 @@ from xpra.scripts.start import run_server_mode, split_start_child_args
 from xpra.scripts.proxy import run_proxy_run
 from xpra.scripts.clients import connect_client_app, create_client_app
 from xpra.scripts.parsing import mode_needs_ssh_agent, get_usage, MODE_ALIAS
+
+
+class WindowshotRoutingTest(unittest.TestCase):
+
+    def test_client_dispatch(self):
+        for display in ([], ["socket:///tmp/test"]):
+            with self.subTest(display=display), patch("xpra.scripts.clients.basic_client_features"):
+                client, displays, command = create_client_app(make_defaults_struct(), ["window.png", "name:Terminal", *display], "windowshot")
+            self.assertIsInstance(client, WindowshotXpraClient)
+            self.assertEqual(client.image_filename, "window.png")
+            self.assertEqual(client.window_selector, "name:Terminal")
+            self.assertEqual(displays, display)
+            self.assertEqual(command, [])
+
+    def test_argument_count(self):
+        for args in ([], ["window.png"], ["window.png", "1", ":100", "extra"]):
+            with self.subTest(args=args), patch("xpra.scripts.clients.basic_client_features"), self.assertRaises(InitExit) as cm:
+                create_client_app(make_defaults_struct(), args, "windowshot")
+            self.assertEqual(cm.exception.status, ExitCode.ARGUMENT_MISMATCH)
 
 
 class RunRoutingTest(unittest.TestCase):
@@ -293,6 +313,30 @@ class ModeTableTest(unittest.TestCase):
             self.assertEqual(cm.exception.status, ExitCode.ARGUMENT_MISMATCH)
             self.assertIn("usage: xpra list-sessions", str(cm.exception))
             handler.assert_called_once()
+
+    def test_remote_list(self):
+        opts = make_defaults_struct()
+        opts.ssh = "ssh"
+        opts.socket_dirs = ["/remote sockets"]
+        cmdline = ["xpra", "list", "ssh://user@host:2222/", "--socket-dirs=/remote sockets"]
+        with patch("xpra.net.ssh.command.run_command", return_value=17) as run:
+            self.assertEqual(do_run_mode("xpra", cmdline, opts, [cmdline[2]], "list", None), 17)
+        desc = run.call_args.args[0]
+        self.assertEqual(desc["proxy_command"], ["list"])
+        self.assertEqual(desc["display_as_args"], [])
+        self.assertEqual(desc["socket_dirs"], ["/remote sockets"])
+        self.assertEqual((desc["host"], desc["port"], desc["username"]), ("host", 2222, "user"))
+        self.assertFalse(desc["agent"])
+
+    def test_list_rejects_invalid_targets(self):
+        for args in (["ssh://one/", "ssh://two/"], ["tcp://host/"], [":10"], ["ssh://host/10"]):
+            with self.subTest(args=args), patch("xpra.net.ssh.command.run_command") as run:
+                opts = make_defaults_struct()
+                opts.ssh = "ssh"
+                with self.assertRaises(InitExit) as cm:
+                    do_run_mode("xpra", [], opts, args, "list", None)
+                self.assertEqual(cm.exception.status, ExitCode.ARGUMENT_MISMATCH)
+                run.assert_not_called()
 
 
 if __name__ == "__main__":

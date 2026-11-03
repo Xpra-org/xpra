@@ -99,7 +99,7 @@ STDOUT_SUBCOMMANDS = (
 )
 CLIENT_SUBCOMMANDS = (
     "attach", "listen", "detach",
-    "screenshot", "icon", "version", "info", "id",
+    "screenshot", "windowshot", "icon", "version", "info", "id",
     "control", "run", "exec", "_monitor", "shell", "print",
     "qrcode",
     "show-menu", "show-about", "show-session-info",
@@ -814,7 +814,7 @@ NO_ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
     "about": ("no_extra_args", run_about),
     "license": ("no_extra_args", "xpra.gtk.dialogs.about:run_license"),
     "html5": ("no_extra_args", run_html5),
-    "opengl-save-probe": ("no_extra_args,gtk_client", "xpra.scripts.glprobe:run_glsaveprobe"),
+    "opengl-save-probe": ("no_extra_args", "xpra.scripts.glprobe:run_glsaveprobe"),
     "video": ("no_extra_args", "xpra.codecs.video:main"),
     "nvinfo": ("no_extra_args", "xpra.codecs.nvidia.util:main"),
     "crypto-info": ("no_extra_args", "xpra.net.crypto:main"),
@@ -830,10 +830,10 @@ OPTIONS_MODES: dict[str, tuple[str, Callable | str]] = {
     "mdns-gui": ("no_extra_args,gtk_client", "xpra.gtk.dialogs.mdns_gui:run_mdns_gui"),
     "sessions": ("no_extra_args,gtk_client", "xpra.gtk.dialogs.sessions_gui:run_sessions_gui"),
     "replay": ("no_extra_args", "xpra.gtk.dialogs.replay:do_main"),
-    "opengl-test": ("no_extra_args,gtk_client", "xpra.scripts.glprobe:run_gltest"),
+    "opengl-test": ("no_extra_args", "xpra.scripts.glprobe:run_gltest"),
     "start-gui": ("no_extra_args,gtk_client", "xpra.gtk.dialogs.start_gui:main"),
     "opengl": ("no_extra_args", "xpra.scripts.glprobe:run_glcheck"),
-    "opengl-probe": ("no_extra_args,gtk_client", "xpra.scripts.glprobe:run_glprobe"),
+    "opengl-probe": ("no_extra_args", "xpra.scripts.glprobe:run_glprobe"),
     "root-size": ("no_extra_args", "xpra.scripts.display:run_root_size"),
     "xvfb-command": ("no_extra_args", "xpra.config.vfb:run_xvfb_command"),
 }
@@ -886,7 +886,6 @@ CMDLINE_MODES: dict[str, tuple[str, Callable | str]] = {
     "version-info": ("", "xpra.scripts.version:main"),
 }
 OPTIONS_ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
-    "list": ("no_extra_args,no_gtk", "xpra.scripts.sessions:run_list"),
     "list-windows": ("no_extra_args,no_gtk", "xpra.scripts.sessions:run_list_windows"),
     "list-clients": ("no_extra_args,no_gtk", "xpra.scripts.sessions:run_list_clients"),
     "list-sessions": ("no_extra_args,no_gtk", "xpra.scripts.sessions:run_list_sessions"),
@@ -900,6 +899,7 @@ OPTIONS_ARGS_MODES: dict[str, tuple[str, Callable | str]] = {
     "xvfb": ("max_one_arg,x11", "xpra.x11.vfb_util:run_xvfb"),
 }
 OPTIONS_ARGS_CMDLINE_MODES: dict[str, tuple[str, Callable | str]] = {
+    "list": ("max_one_arg,no_gtk", "xpra.scripts.sessions:run_list"),
     "top": ("no_gtk", "xpra.scripts.clients:run_top"),
     "stop": ("no_gtk", "xpra.scripts.sessions:run_stop"),
     "exit": ("no_gtk", "xpra.scripts.sessions:run_exit"),

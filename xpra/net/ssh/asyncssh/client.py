@@ -482,7 +482,8 @@ async def open_xpra_stream(connection, display_desc: dict[str, Any]):
         except Exception:
             log("asyncssh stderr reader", exc_info=True)
 
-    asyncio.create_task(log_stderr())
+    if not display_desc.get("ssh_command"):
+        asyncio.create_task(log_stderr())
     return process.stdout, process.stdin, process
 
 
@@ -555,3 +556,30 @@ def connect_to(display_desc: dict[str, Any]) -> SSHStreamConnection:
         connection.target += f" via {proxy_target}"
     connection.timeout = SOCKET_TIMEOUT
     return connection
+
+
+def run_command(display_desc: dict[str, Any]) -> int:
+    from xpra.net.ssh.command import output_writer
+    connection = connect_to(display_desc | {"ssh_command": True})
+
+    async def run() -> int:
+        process = connection._process
+
+        async def copy(reader, stream) -> None:
+            write = output_writer(stream)
+            while data := await reader.read(65536):
+                write(data)
+            write(b"")
+
+        try:
+            process.stdin.write_eof()
+            await asyncio.gather(copy(process.stdout, sys.stdout), copy(process.stderr, sys.stderr))
+            await process.wait_closed()
+            code = process.returncode
+            if code is None:
+                return int(ExitCode.SSH_FAILURE)
+            return code if code >= 0 else 128 - code
+        finally:
+            await connection._async_close()
+
+    return get_threaded_loop().sync(run)

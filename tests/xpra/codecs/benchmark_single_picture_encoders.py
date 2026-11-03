@@ -297,7 +297,7 @@ def load_fixtures(directory: Path = FIXTURE_DIR) -> list[Fixture]:
 
 def make_image(fixture: Fixture) -> ImageWrapper:
     return ImageWrapper(
-        0, 0, fixture.width, fixture.height, fixture.pixels,
+        0, 0, fixture.width, fixture.height, (fixture.pixels,),
         fixture.pixel_format, 32, fixture.rowstride,
         planes=ImageWrapper.PACKED, thread_safe=True,
     )
@@ -352,7 +352,7 @@ def decode_rgb(case: CodecCase, decoder: Any, coding: str, cdata: bytes,
         else:
             decoded = decoder.decompress(cdata, options)
         rgba = image_to_rgba(
-            decoded.get_pixel_format(), decoded.get_pixels(),
+            decoded.get_pixel_format(), decoded.get_plane(0),
             decoded.get_width(), decoded.get_height(), decoded.get_rowstride(),
         )
         return normalize_decoded_rgba(case, fixture, rgba)

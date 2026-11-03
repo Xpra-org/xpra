@@ -117,8 +117,7 @@ add_test_images()
 
 def create_twin_test_windows(parent: Gtk.Window) -> tuple[dict[str, Any], list[Gtk.Window]]:
     from xpra.gtk.window import add_close_accel
-    from xpra.client.gui.fake_client import FakeClient
-    from xpra.client.gui.window_border import WindowBorder
+    from xpra.client.gui.fake_client import FakeWindowHost
     from xpra.opengl.window import get_gl_client_window_module
     from xpra.client.gtk3.window.window import ClientWindow
     opengl_props, gl_client_window_module = get_gl_client_window_module("force")
@@ -127,7 +126,7 @@ def create_twin_test_windows(parent: Gtk.Window) -> tuple[dict[str, Any], list[G
     gl_window_class = gl_client_window_module.GLClientWindow
     pixel_depth = 0  # int(opts.pixel_depth)
     wid = 10000
-    noclient = FakeClient()
+    noclient = FakeWindowHost()
     noclient.get_subsystem("window")._id_to_window[wid] = parent
     ww, wh = WW, WH
     metadata = typedict({
@@ -138,19 +137,13 @@ def create_twin_test_windows(parent: Gtk.Window) -> tuple[dict[str, Any], list[G
         "has-alpha": not WIN32,
         "transient-for": wid,
     })
-    border = WindowBorder(False)
-    max_window_size = None  # (1024, 1024)
     windows: list[Gtk.Window] = []
     for i, window_class, title in (
         (0, gl_window_class, "OpenGL Window"),
         (1, ClientWindow, "Non-OpenGL Window"),
     ):
         x, y = 100+ww*i, 100
-        window = window_class(noclient, None, 0, 2 ** 32 - 1,
-                              (x, y, ww, wh), (ww, wh),
-                              metadata, False, typedict({}),
-                              border, max_window_size, pixel_depth,
-                              )
+        window = noclient.make_window(window_class, wid + 1 + i, (x, y, ww, wh), metadata, pixel_depth=pixel_depth)
         window.set_title(title)
         windows.append(window)
 

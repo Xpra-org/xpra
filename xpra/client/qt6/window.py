@@ -9,7 +9,7 @@ from PyQt6.QtGui import QImage, QPixmap, QPainter, QKeyEvent
 from PyQt6.QtWidgets import QMainWindow, QLabel, QSizePolicy
 
 from xpra.constants import MoveResize
-from xpra.net.packet_type import POINTER_BUTTON, WINDOW_MAP, WINDOW_CLOSE, WINDOW_CONFIGURE, POINTER_MOTION
+from xpra.net.packet_type import WINDOW_MAP, WINDOW_CLOSE, WINDOW_CONFIGURE
 from xpra.client.qt6.keys import key_names
 from xpra.client.gui.window_title import window_title_str
 from xpra.log import Logger
@@ -49,30 +49,23 @@ class DrawingArea(QLabel):
     def __init__(self, client, wid):
         super().__init__()
         self.client = client
-        self.send = client.send
+        self.pointer = client.pointer
         self.wid = wid
-        self.seq = 0
 
     def mouseMoveEvent(self, event) -> None:
-        pos = get_pointer_position(event)
-        self.send(POINTER_MOTION, -1, self.seq, self.wid, pos, {})
-        self.seq += 1
+        self.pointer.motion(self.wid, get_pointer_position(event))
 
     def send_mouse_button_event(self, event, pressed=True) -> None:
-        props = {
-            # "modifiers": (),
-            # "buttons": (),
-        }
         button = {
             Qt.MouseButton.LeftButton: 1,
-            Qt.MouseButton.RightButton: 2,
-            Qt.MouseButton.MiddleButton: 3,
+            Qt.MouseButton.MiddleButton: 2,
+            Qt.MouseButton.RightButton: 3,
+            Qt.MouseButton.BackButton: 8,
+            Qt.MouseButton.ForwardButton: 9,
         }.get(event.button(), -1)
         if button < 0:
             return
-        pos = get_pointer_position(event)
-        self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, pressed, pos, props)
-        self.seq += 1
+        self.pointer.button(self.wid, button, pressed, get_pointer_position(event))
 
     def mousePressEvent(self, event) -> None:
         self.send_mouse_button_event(event, True)
@@ -81,23 +74,15 @@ class DrawingArea(QLabel):
         self.send_mouse_button_event(event, False)
 
     def mouseDoubleClickEvent(self, event) -> None:
-        self.send_mouse_button_event(event, True)
+        # Qt sends: press, release, double-click, release
+        # so the double-click is just the second press:
         self.send_mouse_button_event(event, True)
 
     def wheelEvent(self, event) -> None:
-        pos = get_pointer_position(event)
-        delta = event.pixelDelta()
-        props = {}
-        if delta.y() != 0:
-            button = 4 if delta.y() > 0 else 5
-            self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, True, pos, props)
-            self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, False, pos, props)
-            self.seq += 1
-        if delta.x() != 0:
-            button = 6 if delta.y() > 0 else 7
-            self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, True, pos, props)
-            self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, False, pos, props)
-            self.seq += 1
+        # (`pixelDelta()` is only set by high resolution devices, not by mouse wheels)
+        delta = event.angleDelta()
+        # in eighths of a degree, most mice use steps of 15 degrees, and left is positive:
+        self.pointer.wheel(self.wid, -delta.x() / 120, delta.y() / 120, get_pointer_position(event))
 
 
 class ClientWindow(QMainWindow):
@@ -129,13 +114,10 @@ class ClientWindow(QMainWindow):
 
     def eventFilter(self, obj, event) -> bool:
         etype = event.type()
-        wc = self.client.get_subsystem("window")
         if etype == QEvent.Type.WindowDeactivate:
-            if wc:
-                wc.update_focus(0)
+            self.client.update_focus(0)
         elif etype == QEvent.Type.WindowActivate:
-            if wc:
-                wc.update_focus(self.wid)
+            self.client.update_focus(self.wid)
         elif etype == QEvent.Type.Show:
             x = self.pos().x() + self.label.pos().x()
             y = self.pos().y() + self.label.pos().y()

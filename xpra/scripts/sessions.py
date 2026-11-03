@@ -220,7 +220,17 @@ def run_list_sessions(options, _args) -> ExitValue:
     return 0
 
 
-def run_list(opts, _args, clean: bool = True) -> ExitValue:
+def run_list(opts, args, cmdline=(), clean: bool = True) -> ExitValue:
+    if args:
+        from xpra.scripts.parsing import normalize_display_name, parse_display_name
+        if not normalize_display_name(args[0]).startswith("ssh://"):
+            raise InitExit(ExitCode.ARGUMENT_MISMATCH, "list only supports an SSH host URL")
+        desc = parse_display_name(opts, args[0], cmdline)
+        if desc.get("display") or desc.get("remote_port"):
+            raise InitExit(ExitCode.ARGUMENT_MISMATCH, "list requires an SSH host URL without a display")
+        desc["proxy_command"] = ["list"]
+        from xpra.net.ssh.command import run_command
+        return run_command(desc)
     from xpra.platform.dotxpra import DotXpra
     dotxpra = DotXpra(opts.socket_dirs + opts.client_socket_dirs)
     results = dotxpra.socket_details()

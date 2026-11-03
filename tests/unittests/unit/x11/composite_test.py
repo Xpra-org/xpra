@@ -204,18 +204,18 @@ class CompositePixmapTest(ServerTestUtil):
             handle = XImageBindings().wrap_pixmap(pixmap)
             image = handle.get_image(0, 0, W, H)
         assert image, "failed to get an image from the named pixmap"
-        before = bytes(image.get_pixels())
+        before = bytes(image.get_plane(0))
         with xsync:
             handle.cleanup()
         del handle
         gc.collect()
         self.assertFalse(self.alive(pixmap))
-        self.assertEqual(bytes(image.get_pixels()), before, "pixels changed after the pixmap was freed")
+        self.assertEqual(bytes(image.get_plane(0)), before, "pixels changed after the pixmap was freed")
         # zero-copy view, and the bottom-row-at-an-offset case which makes a packed copy:
         sub = image.get_sub_image(4, 2, 32, 16)
         sub_bottom = image.get_sub_image(4, H - 8, 32, 8)
-        self.assertEqual(len(bytes(sub.get_pixels())), sub.get_size())
-        self.assertEqual(len(bytes(sub_bottom.get_pixels())), sub_bottom.get_size())
+        self.assertEqual(len(bytes(sub.get_plane(0))), sub.get_size())
+        self.assertEqual(len(bytes(sub_bottom.get_plane(0))), sub_bottom.get_size())
         sub.free()
         sub_bottom.free()
         image.free()

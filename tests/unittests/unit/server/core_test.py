@@ -11,12 +11,49 @@ from unittest.mock import Mock, call, patch
 
 from xpra.net.common import Packet
 from xpra.net.socket_util import SocketListener
+from xpra.os_util import OSX, POSIX
 from xpra.server.base import ServerBase
 from xpra.server.core import ServerCore
 from xpra.server.subsystem.network import NetworkServer
 
 
 class TestServerCore(unittest.TestCase):
+
+    @unittest.skipUnless(POSIX and not OSX, "X11 server classes require a POSIX X11 build")
+    def test_display_mode_hello(self):
+        from xpra.server.shadow.shadow_server_base import ShadowServerBase
+        from xpra.x11.desktop.desktop_server import XpraDesktopServer
+        from xpra.x11.desktop.monitor_server import XpraMonitorServer
+        from xpra.x11.server.seamless import SeamlessServer
+
+        cases = (
+            (ShadowServerBase, "shadow", ("shadow",)),
+            (XpraDesktopServer, "desktop", ("desktop",)),
+            (XpraMonitorServer, "monitor", ("desktop", "monitor")),
+            (SeamlessServer, "seamless", ()),
+        )
+        with self.subTest(server="WaylandSeamlessServer"):
+            try:
+                from xpra.wayland.server.seamless import WaylandSeamlessServer
+            except ImportError as e:
+                self.skipTest(f"Wayland server is not available: {e}")
+            cases += ((WaylandSeamlessServer, "seamless", ()),)
+        for cls, mode, legacy_flags in cases:
+            for wants in ((), ("features",)):
+                with self.subTest(server=cls.__name__, wants=wants):
+                    server = cls.__new__(cls)
+                    server.subsystems = {}
+                    server.start_time = 0
+                    server.session_type = f"descriptive {mode} server type"
+                    server.session_name = ""
+                    if cls is XpraMonitorServer:
+                        server.get_monitor_config = Mock(return_value={})
+                    caps = server.make_hello(SimpleNamespace(wants=wants))
+                    self.assertEqual(caps["mode"], mode)
+                    self.assertEqual(caps["server.mode"], server.session_type)
+                    if wants:
+                        for flag in legacy_flags:
+                            self.assertTrue(caps[flag])
 
     def test_ui_info_filtering_and_merge(self):
         proto = object()

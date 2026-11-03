@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from contextlib import contextmanager
 from typing import Any
 
 from xpra.net.constants import ConnectionMessage
@@ -85,6 +86,7 @@ class DisplayManager(StubSubsystem):
     def __init__(self, server=None):
         StubSubsystem.__init__(self, server)
         self.server.hello_request_handlers["screenshot"] = self._handle_hello_request_screenshot
+        self.server.hello_request_handlers["windowshot"] = self._handle_hello_request_windowshot
         self.server.hello_request_handlers["icon"] = self._handle_hello_request_icon
         self.display = os.environ.get("DISPLAY", "")
         self.display_options = ""
@@ -525,6 +527,39 @@ class DisplayManager(StubSubsystem):
     # screenshots:
     def _handle_hello_request_screenshot(self, proto, _caps: typedict) -> bool:
         return self.send_hello_image(proto, self.make_screenshot_packet(), "screenshot")
+
+    def _handle_hello_request_windowshot(self, proto, caps: typedict) -> bool:
+        try:
+            windows = self.get_subsystem("window")
+            if not windows:
+                raise ValueError("this server does not manage windows")
+            window = windows.find_window(caps.strget("window"))
+            from xpra.codecs.screenshot import make_windowshot_packet
+            with self.windowshot_image(window) as image:
+                packet = Packet(*make_windowshot_packet(image))
+        except ValueError as e:
+            self.network.send_disconnect(proto, ConnectionMessage.SERVER_ERROR, f"windowshot failed: {e}")
+        except Exception:
+            log.error("Error capturing window pixels", exc_info=True)
+            self.network.send_disconnect(proto, ConnectionMessage.SERVER_ERROR, "windowshot failed: cannot capture window pixels")
+        else:
+            proto.send_now(packet)
+        return True
+
+    @contextmanager
+    def windowshot_image(self, window):
+        if not window.is_managed():
+            raise ValueError("window is no longer managed")
+        w, h = window.get_property("geometry")[2:4]
+        if w <= 0 or h <= 0:
+            raise ValueError("window has no pixel area")
+        image = window.get_image(0, 0, w, h)
+        if image is None:
+            raise ValueError("no pixels available for window")
+        # Wayland can return its model-owned image. Keep it alive for encoding,
+        # without mutating or freeing it. Other models return a new wrapper,
+        # which is released when this context drops its reference.
+        yield image
 
     def _handle_hello_request_icon(self, proto, _caps: typedict) -> bool:
         return self.send_hello_image(proto, self.make_icon_packet(), "icon")

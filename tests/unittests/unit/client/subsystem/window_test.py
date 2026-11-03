@@ -53,13 +53,19 @@ class WindowManagerTest(ClientMixinTest):
                     ):
                         window = manager.make_new_window(3, geometry, geometry[2:], metadata, True, typedict())
                     self.assertIs(window, window_class.return_value)
-                    self.assertEqual(window_class.call_args.args[5]["transient-for"], expected_parent)
-                    self.assertEqual(window_class.call_args.args[3], geometry)
+                    args = window_class.call_args.args
+                    self.assertEqual(args[6]["transient-for"], expected_parent)
+                    self.assertEqual(args[4], geometry)
+                    # the window is only given what it needs from the client:
+                    self.assertNotIn(client, args)
+                    self.assertIs(args[0], client.get_subsystem)
+                    self.assertIs(args[1], client.is_readonly)
+                    self.assertIs(args[-1], client.get_popup_menu_helper)
 
     def test_dismiss_popups(self):
         from xpra.client.subsystem.window import WindowClient
 
-        client = Mock(readonly=False, server_readonly=False)
+        client = Mock(**{"is_readonly.return_value": False})
         keyboard = Mock(grabbed=True)
         client.subsystems = {"keyboard": keyboard}
         window_client = WindowClient(client)
@@ -78,7 +84,7 @@ class WindowManagerTest(ClientMixinTest):
             with self.subTest(caps=caps, readonly=readonly):
                 client.reset_mock()
                 popup.reset_mock()
-                client.readonly = readonly
+                client.is_readonly.return_value = readonly
                 keyboard.grabbed = True
                 window_client._window_with_grab = 2
                 window_client.pointer_grabbed = 2
@@ -94,7 +100,7 @@ class WindowManagerTest(ClientMixinTest):
     def test_window_grab(self):
         from xpra.client.subsystem.window import WindowClient
 
-        client = Mock(readonly=False, server_readonly=False, subsystems={})
+        client = Mock(subsystems={}, **{"is_readonly.return_value": False})
         window_client = WindowClient(client)
         native = Mock()
         # windows that cannot grab natively (ie: the terminal client's) only record the state:
@@ -127,7 +133,7 @@ class WindowManagerTest(ClientMixinTest):
             (True, {"force_ungrab": True}, True, []),
         ):
             with self.subTest(enabled=enabled, caps=caps, readonly=readonly):
-                client = Mock(readonly=readonly, server_readonly=False, subsystems={})
+                client = Mock(subsystems={}, **{"is_readonly.return_value": readonly})
                 window_client = WindowClient(client)
                 self.assertTrue(window_client.parse_server_capabilities(typedict(caps)))
                 window = Mock()
@@ -142,7 +148,7 @@ class WindowManagerTest(ClientMixinTest):
     def test_destroy_grabbed_window_ungrabs_first(self):
         from xpra.client.subsystem.window import WindowClient
 
-        client = Mock(readonly=False, server_readonly=False, subsystems={})
+        client = Mock(subsystems={}, **{"is_readonly.return_value": False})
         window_client = WindowClient(client)
         calls = []
         window = Mock()

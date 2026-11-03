@@ -71,7 +71,7 @@ def encode(coding: str, image, options: dict) -> tuple[str, Compressed, dict[str
     client_options = {"rgb_format": pixel_format}
 
     # compress here and return a wrapper so network code knows it is already zlib compressed:
-    pixels = image.get_pixels()
+    pixels = image.get_plane(0)
     if not pixels:
         raise RuntimeError(f"failed to get pixels from {image}")
     width = image.get_width()

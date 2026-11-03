@@ -2820,7 +2820,7 @@ class WindowSource(WindowIconSource):
                 return ()
             pf = image.get_pixel_format()
         # write to mmap area:
-        data = image.get_pixels()
+        data = image.get_plane(0)
         if not data:
             raise RuntimeError(f"failed to get pixels from {image}")
         mmap_data = ()

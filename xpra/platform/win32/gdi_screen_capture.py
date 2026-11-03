@@ -236,7 +236,7 @@ class GDICapture:
         if not rgb_format:
             raise ValueError("unsupported bit depth: %s" % self.bit_depth)
         bpp = self.bit_depth // 8
-        v = ImageWrapper(0, 0, width, height, pixels, rgb_format,
+        v = ImageWrapper(0, 0, width, height, (pixels,), rgb_format,
                          self.bit_depth, rowstride, bpp, planes=ImageWrapper.PACKED, thread_safe=True)
         if self.bit_depth == 8:
             palette = get_palette(self.dc)

@@ -763,7 +763,7 @@ def main(argv) -> int:
             print("ERROR: no image captured")
             capture.clean()
             return 1
-        pixels = image.get_pixels()
+        pixels = image.get_plane(0)
         print("Image:   %s  pixels=%d bytes" % (image, len(pixels)))
         from xpra.codecs.image import to_pil_encoding
         data = to_pil_encoding(image, "png")

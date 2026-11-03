@@ -6,7 +6,7 @@
 from enum import IntEnum
 from time import monotonic
 from threading import RLock
-from collections.abc import Sequence
+from collections.abc import Buffer, Sequence
 
 from xpra.common import roundup
 from xpra.util.str_fn import memoryview_to_bytes
@@ -18,10 +18,8 @@ log = Logger("image")
 FREE_LOCK_TIMEOUT: float = envfloat("XPRA_IMAGE_FREE_LOCK_TIMEOUT", 5.0)
 
 
-def clone_plane(plane):
-    if isinstance(plane, memoryview):
-        return plane.tobytes()
-    return plane[:]
+def clone_plane(plane: Buffer) -> bytes:
+    return memoryview(plane).tobytes()
 
 
 class PlanarFormat(IntEnum):
@@ -33,6 +31,11 @@ class PlanarFormat(IntEnum):
 
 
 class ImageWrapper:
+    """CPU pixels are a sequence of buffers: one for packed images, one per planar plane.
+
+    An empty sequence means CPU pixels are unavailable. Buffer ownership and
+    lifetime are unchanged by plane access; native views require a live wrapper.
+    """
     PACKED: PlanarFormat = PlanarFormat.PACKED
     PLANAR_2: PlanarFormat = PlanarFormat.PLANAR_2
     PLANAR_3: PlanarFormat = PlanarFormat.PLANAR_3
@@ -41,16 +44,17 @@ class ImageWrapper:
         PACKED, PLANAR_2, PLANAR_3, PLANAR_4,
     )
 
-    def __init__(self, x: int, y: int, width: int, height: int, pixels, pixel_format: str, depth: int, rowstride,
+    def __init__(self, x: int, y: int, width: int, height: int, pixels: Sequence[Buffer], pixel_format: str, depth: int, rowstride,
                  bytesperpixel: int = 4, planes: PlanarFormat = PACKED, thread_safe: bool = True, palette=None,
                  full_range=True):
+        self._validate_pixels(pixels)
         self.x: int = x
         self.y: int = y
         self.target_x: int = x
         self.target_y: int = y
         self.width: int = width
         self.height: int = height
-        self.pixels = pixels
+        self.pixels: Sequence[Buffer] = pixels
         self.pixel_format = pixel_format
         self.depth: int = depth
         self.rowstride = rowstride
@@ -129,8 +133,28 @@ class ImageWrapper:
     def get_pixel_format(self) -> str:
         return self.pixel_format
 
-    def get_pixels(self):
-        return self.pixels
+    @staticmethod
+    def _validate_pixels(pixels: Sequence[Buffer]) -> None:
+        if isinstance(pixels, Buffer) or not isinstance(pixels, Sequence):
+            raise TypeError("pixels must be a sequence of buffers")
+        if any(not isinstance(plane, Buffer) for plane in pixels):
+            raise TypeError("each pixel plane must support the buffer protocol")
+
+    def get_plane(self, i: int) -> Buffer:
+        """Return CPU plane i; packed images use plane zero."""
+        if self.freed:
+            raise RuntimeError("image wrapper has already been freed")
+        if i < 0:
+            raise IndexError(i)
+        return self.pixels[i]
+
+    def get_pixels(self) -> Buffer:
+        """Compatibility accessor for packed images; use get_plane(0)."""
+        if self.freed:
+            raise RuntimeError("image wrapper has already been freed")
+        if self.planes != self.PACKED:
+            raise ValueError("get_pixels() is only supported for packed images")
+        return self.get_plane(0)
 
     def get_planes(self) -> PlanarFormat:
         return self.planes
@@ -179,9 +203,10 @@ class ImageWrapper:
     def set_full_range(self, full_range: bool) -> None:
         self.full_range = full_range
 
-    def set_pixels(self, pixels) -> None:
+    def set_pixels(self, pixels: Sequence[Buffer]) -> None:
         if self.freed:
             raise RuntimeError("image wrapper has already been freed")
+        self._validate_pixels(pixels)
         self.pixels = pixels
 
     def allocate_buffer(self, _buf_len, _free_existing=1) -> int:
@@ -203,7 +228,7 @@ class ImageWrapper:
             if self.planes > 0:
                 # not supported yet for planar images
                 return False
-            pixels = self.pixels
+            pixels = self.get_plane(0)
             assert pixels, "no pixel data to restride"
             oldstride = self.rowstride
             # slicing a memoryview does not copy, so `join` is the only copy:
@@ -221,7 +246,7 @@ class ImageWrapper:
                 if padding > 0:
                     lines.append(b"\0" * padding)
             self.rowstride = rowstride
-            self.pixels = b"".join(lines)
+            self.pixels = (b"".join(lines),)
             return True
 
     def freeze(self) -> bool:
@@ -245,11 +270,7 @@ class ImageWrapper:
                 raise ValueError("no pixel data to clone")
             if planes < 0:
                 raise ValueError(f"invalid number of planes {planes}")
-            if planes == 0:
-                # no planes, simple buffer:
-                self.pixels = clone_plane(pixels)
-            else:
-                self.pixels = [clone_plane(pixels[i]) for i in range(planes)]
+            self.pixels = tuple(clone_plane(pixels[i]) for i in range(planes or 1))
             self.thread_safe = True
             if self.freed:  # pragma: no cover
                 # could be a race since this can run threaded
@@ -269,7 +290,7 @@ class ImageWrapper:
             # same dimensions, use the same wrapper
             return self
         # copy to local variables:
-        pixels = self.pixels
+        pixels = self.get_plane(0)
         oldstride = self.rowstride
         pos = y * oldstride + x * self.bytesperpixel
         newstride = w * self.bytesperpixel
@@ -278,7 +299,7 @@ class ImageWrapper:
         for _ in range(h):
             lines.append(mv[pos:pos + newstride])
             pos += oldstride
-        image = ImageWrapper(self.x + x, self.y + y, w, h, b"".join(lines), self.pixel_format, self.depth, newstride,
+        image = ImageWrapper(self.x + x, self.y + y, w, h, (b"".join(lines),), self.pixel_format, self.depth, newstride,
                              planes=self.planes, thread_safe=True, palette=self.palette, full_range=self.full_range)
         image.set_target_x(self.target_x + x)
         image.set_target_y(self.target_y + y)
@@ -314,7 +335,7 @@ class ImageWrapper:
 def to_pil_image(image: ImageWrapper):
     w = image.get_width()
     h = image.get_height()
-    pixels = image.get_pixels()
+    pixels = image.get_plane(0)
     pixel_format = image.get_pixel_format()
     return to_pil(w, h, pixels, pixel_format)
 

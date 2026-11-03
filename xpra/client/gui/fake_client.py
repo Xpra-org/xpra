@@ -3,9 +3,11 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
-from collections.abc import Sequence
+from typing import Any
+from collections.abc import Callable, Sequence
 
 from xpra.util.glib_scheduler import GLibScheduler
+from xpra.util.objects import typedict
 from xpra.client.gui.window_title import get_window_title
 from xpra.log import Logger
 
@@ -19,6 +21,12 @@ class FakePointerSubsystem:
         self.middle_click = True
         self.button_transform: dict[tuple[str, int], int] = {}
 
+    def get_mouse_position(self) -> tuple[int, int]:
+        return 0, 0
+
+    def split_pointer_position(self, position) -> tuple[tuple[int, ...], dict]:
+        return tuple(position[:2]), {}
+
     def send_button(self, *_args) -> None:
         log("send_button ignored")
 
@@ -26,9 +34,14 @@ class FakePointerSubsystem:
         log("wheel_event ignored")
 
 
-class FakeWindowSubsystem:
+class FakeWindowSubsystem(GLibScheduler):
     def __init__(self, client=None):
         self.client = client
+        if client:
+            # like `StubClientSubsystem`, use the client's own scheduler:
+            self.idle_add = client.idle_add
+            self.timeout_add = client.timeout_add
+            self.source_remove = client.source_remove
         self.modal_windows = False
         self.server_window_states: Sequence[str] = ()
         self.server_window_frame_extents = False
@@ -78,19 +91,57 @@ class FakeWindowSubsystem:
         return get_window_title(self.client, wid, metadata) if self.client else ""
 
 
-class FakeClient(GLibScheduler):
-    def __init__(self):
-        self.title = ""
-        self.readonly = False
-        self._remote_server_mode = "seamless"
-        self.server_readonly = False
-        self.subsystems = {
+class FakeWindowHost(GLibScheduler):
+    """
+    What windows are created with when there is no client (opengl probing, examples and tests):
+    a subsystem lookup and the read-only flag, the main loop is GLib's.
+    """
+
+    def __init__(self, title="", readonly=False):
+        # the window title template, see `get_window_title`:
+        self.title = title
+        self.readonly = readonly
+        self.subsystems: dict[str, Any] = {
             "window": FakeWindowSubsystem(self),
             "pointer": FakePointerSubsystem(),
         }
 
     def get_subsystem(self, name: str):
         return self.subsystems.get(name)
+
+    def is_readonly(self) -> bool:
+        return self.readonly
+
+    def make_window(self, window_class: Callable[..., Any], wid: int, geometry: tuple[int, int, int, int], metadata: dict,
+                    border=None, max_window_size=(0, 0), pixel_depth=0, headerbar="no", get_xpra_menu=None):
+        """
+        Create a window which is not a transient for any other, and register it with the window subsystem.
+
+        Use Callable[..., Any] for window_class because Cython enforces an exact builtin type for a `type` annotation,
+        rejecting GTK window classes whose GObjectMeta metaclass subclasses type.
+        """
+        from xpra.client.gui.window_border import WindowBorder
+        window = window_class(self.get_subsystem, self.is_readonly, None, wid,
+                              geometry, geometry[2:4],
+                              typedict(metadata), False, typedict(),
+                              border or WindowBorder(False), max_window_size, pixel_depth, headerbar, get_xpra_menu)
+        if wid:
+            self.subsystems["window"]._id_to_window[wid] = window
+        return window
+
+    def __repr__(self):
+        return f"<{type(self).__name__} {self.subsystems!r}>"
+
+
+class FakeClient(FakeWindowHost):
+    """ the client surface used by the tray example """
+
+    def __init__(self):
+        super().__init__()
+        self.server_readonly = False
+
+    def is_readonly(self) -> bool:
+        return bool(self.readonly or self.server_readonly)
 
     def signal_disconnect_and_quit(self, *_args):
         log.info("signal_disconnect_and_quit")
@@ -106,6 +157,3 @@ class FakeClient(GLibScheduler):
 
     def get_mouse_position(self) -> tuple[int, int]:
         return 0, 0
-
-    def __repr__(self):
-        return f"<FakeClient {self.subsystems!r}>"

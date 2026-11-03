@@ -10,7 +10,7 @@ from xpra.util.objects import typedict
 
 class StubWindow:
 
-    def init_window(self, client, metadata: typedict, client_props: typedict) -> None:
+    def init_window(self, metadata: typedict, client_props: typedict) -> None:
         """ setup and initialize the window """
 
     def cleanup(self) -> None:

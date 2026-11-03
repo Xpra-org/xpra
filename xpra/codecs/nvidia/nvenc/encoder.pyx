@@ -1687,7 +1687,7 @@ cdef class Encoder:
         cdef unsigned int h = min(image.get_height(), self.input_height)
         cdef unsigned int i = 0
         cdef unsigned int stride, min_stride, x, y
-        pixels = image.get_pixels()
+        pixels = image.get_plane(0)
         if not pixels:
             raise ValueError(f"no pixels in {image}")
         #copy to input buffer:

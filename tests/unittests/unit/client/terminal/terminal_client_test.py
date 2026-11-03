@@ -19,7 +19,7 @@ import unittest
 import subprocess
 from io import BytesIO
 from base64 import b64decode
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from collections.abc import Sequence
 
 from xpra.exit_codes import ExitCode
@@ -31,6 +31,7 @@ from unit.test_util import silence_info, silence_warn
 from unit.client.terminal.terminal_test_util import (
     TERMINAL_SIZE,
     FakeWindow, FakeWindowSubsystem, FakePointerSubsystem, FakeDisplaySubsystem, FakeKeyboardSubsystem,
+    parse_output, actions, graphics_keys,
 )
 
 try:
@@ -42,6 +43,7 @@ try:
         KeyEvent, MouseEvent, GraphicsResponse, KeyboardFlagsResponse, TextReport,
     )
     from xpra.client.terminal.subsystem.display import TerminalDisplayClient
+    from xpra.client.terminal.subsystem.window import TerminalWindowClient
 except ImportError:
     graphics = None
     terminal_client = None
@@ -49,6 +51,7 @@ except ImportError:
     TerminalOutput = None
     KeyEvent = MouseEvent = GraphicsResponse = KeyboardFlagsResponse = TextReport = None
     TerminalDisplayClient = None
+    TerminalWindowClient = None
 
 # `GLib.IO_IN`, spelled out so that this test package never imports `gi`:
 IO_IN = 1
@@ -119,6 +122,9 @@ class TerminalClientTest(unittest.TestCase):
         self.assertIsInstance(display, TerminalDisplayClient)
         # every substitution must keep the subsystem prefix:
         self.assertEqual(type(display).PREFIX, "display")
+        window = client.get_subsystem("window")
+        self.assertIsInstance(window, TerminalWindowClient)
+        self.assertEqual(type(window).PREFIX, "window")
         if clipboard := client.get_subsystem("clipboard"):
             from xpra.client.terminal.subsystem.clipboard import TerminalClipboardClient
             self.assertIsInstance(clipboard, TerminalClipboardClient)
@@ -333,8 +339,89 @@ class TerminalClientTest(unittest.TestCase):
     def test_client_window_classes(self):
         client = self.make_client()
         from xpra.client.terminal.window import ClientWindow
-        self.assertEqual(tuple(client.get_client_window_classes((0, 0, 1, 1), typedict(), False)),
-                         (ClientWindow, ))
+        classes = tuple(client.get_client_window_classes((0, 0, 1, 1), typedict(), False))
+        self.assertEqual(classes, (ClientWindow, ))
+        window = self.make_window(client)
+        self.assertIsInstance(window, ClientWindow)
+        self.assertFalse(hasattr(window, "_client"))
+
+    def make_window(self, client):
+        window_class = client.get_client_window_classes((0, 0, 10, 10), typedict(), False)[0]
+        window = window_class(client.get_subsystem, client.is_readonly, None, 1, (0, 0, 10, 10), (10, 10),
+                              typedict({"has-alpha": True}), False, typedict(), None, (0, 0), 24, "no", None)
+        client.get_subsystem("window").register_window(1, window)
+        return window
+
+    def test_window_tracks_terminal_output_and_capabilities(self):
+        client = self.make_client()
+        client.shm_ok = False
+        client.frame_edits = False
+        window = self.make_window(client)
+        window.show_all()
+        self.assertIsNone(window.terminal_output())
+        # Terminal mode can start after the window was created:
+        buffer = self.make_output(client)
+        window.refresh_placement()
+        self.assertEqual(actions(parse_output(buffer.getvalue())), ["t", "p"])
+        # Stopping terminal output leaves the damage pending:
+        client.terminal_output = None
+        window.repaint(0, 0, 2, 2)
+        self.assertEqual(actions(parse_output(buffer.getvalue())), ["t", "p"])
+        buffer = self.make_output(client)
+        window.present_damage()
+        self.assertEqual(actions(parse_output(buffer.getvalue())), ["t", "p", "d"])
+        # A probe result changes how this same window presents its next update:
+        buffer = self.make_output(client)
+        client.frame_edits = True
+        window.repaint(0, 0, 2, 2)
+        self.assertEqual(actions(parse_output(buffer.getvalue())), ["f"])
+        buffer = self.make_output(client)
+        client.frame_edits = False
+        client.shm_ok = True
+        client.shm_writer = Mock()
+        client.shm_writer.write.return_value = "/fake-shm"
+        window.repaint(0, 0, 2, 2)
+        commands = parse_output(buffer.getvalue())
+        self.assertEqual(actions(commands), ["f"])
+        self.assertEqual(graphics_keys(commands, "f")[0]["t"], "s")
+        client.shm_writer.write.assert_called_once_with(bytes(2 * 2 * 4))
+        # A failed shared-memory transfer falls back to a whole direct image:
+        buffer = self.make_output(client)
+        client.shm_writer.write.return_value = ""
+        window.repaint(0, 0, 2, 2)
+        commands = parse_output(buffer.getvalue())
+        self.assertEqual(actions(commands), ["t", "p", "d"])
+        self.assertNotEqual(graphics_keys(commands, "t")[0].get("t"), "s")
+
+    def test_window_placement_tracks_terminal_size(self):
+        client = self.make_client()
+        window = self.make_window(client)
+        window.show_all()
+        buffer = self.make_output(client)
+        # Both the cell size and clipping bounds changed since construction:
+        client.terminal_size = (100, 30, 900, 600)
+        window.move_resize(999, 999, 10, 10)
+        commands = parse_output(buffer.getvalue())
+        self.assertIn(("cup", (30, 100)), commands)
+        place = graphics_keys(commands, "p")[0]
+        self.assertEqual((place["X"], place["Y"]), ("8", "19"))
+
+    def test_quit_shortcut_action(self):
+        client = self.make_client()
+        window = self.make_window(client)
+        self.assertFalse(hasattr(window, "quit"))
+        keyboard = client.get_subsystem("keyboard")
+        keyboard.helper = keyboard.helper_class(client.send, False, "control+shift", ("#+F4:quit", ))
+        keyboard.helper.parse_shortcuts()
+        from xpra.keyboard.common import KeyEvent as KeyboardEvent
+        event = KeyboardEvent()
+        event.keyname = "F4"
+        event.modifiers = ["control", "shift"]
+        quits = []
+        client.quit = lambda exit_code=ExitCode.OK: quits.append(exit_code)
+        for event.pressed in (True, False):
+            keyboard.handle_key_action(window, event)
+        self.assertEqual(quits, [ExitCode.OK])
 
     def test_windows_cannot_grab_natively(self):
         # the `window` subsystem only records grabs for windows without `do_window_grab`:

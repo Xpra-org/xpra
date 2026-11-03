@@ -6,9 +6,11 @@
 
 import unittest
 from io import BytesIO
+from unittest.mock import patch
 
 from xpra.util.env import OSEnvContext
 from xpra.util.objects import typedict
+from xpra.net.packet_type import WINDOW_MAP, WINDOW_FOCUS
 from xpra.client.gui import ui_client_base
 from unit.test_util import silence_info
 from unit.client.terminal.terminal_test_util import TERMINAL_SIZE, placements
@@ -53,7 +55,7 @@ class TerminalZOrderTest(unittest.TestCase):
     def make_window(self, wid: int, geom=(0, 0, 100, 100), override_redirect=False, metadata=None):
         md = typedict({"has-alpha": True})
         md.update(metadata or {})
-        window = ClientWindow(self.client, None, wid, geom, geom[2:],
+        window = ClientWindow(self.client.get_subsystem, self.client.is_readonly, None, wid, geom, geom[2:],
                               md, override_redirect, typedict(),
                               None, (0, 0), 24, "no")
         # `register_window` fires the "new-window" signal the client listens to:
@@ -293,6 +295,15 @@ class TerminalZOrderTest(unittest.TestCase):
         # later windows do not steal it:
         self.make_window(2)
         self.assertEqual(self.client._focused, 1)
+
+    def test_map_precedes_focus_and_pointer_sync(self):
+        packets = []
+        self.client.send = lambda *packet: packets.append(packet)
+        pointer = self.client.get_subsystem("pointer")
+        with patch.object(type(pointer), "send_mouse_position") as send_position:
+            self.make_window(1, (20, 40, 100, 80))
+            send_position.assert_called_once_with(-1, 1, (70, 80, 50, 40), [], [])
+        self.assertEqual([packet[0] for packet in packets], [WINDOW_MAP, WINDOW_FOCUS])
 
     def test_override_redirect_does_not_take_the_focus(self):
         self.make_window(1, override_redirect=True)

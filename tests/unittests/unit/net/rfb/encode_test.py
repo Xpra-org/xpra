@@ -15,7 +15,7 @@ from xpra.net.rfb import encode
 
 
 def image(pixels: bytes, width=2, height=1, pixel_format="BGRX", rowstride=None):
-    return ImageWrapper(0, 0, width, height, pixels, pixel_format, 24,
+    return ImageWrapper(0, 0, width, height, (pixels,), pixel_format, 24,
                         rowstride or width * len(pixel_format), len(pixel_format))
 
 

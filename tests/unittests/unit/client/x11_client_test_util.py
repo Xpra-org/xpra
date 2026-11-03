@@ -176,7 +176,7 @@ class X11ClientTestUtil(ServerTestUtil):
                 if pixel_format not in ("BGRX", "BGRA"):
                     raise RuntimeError("unexpected pixel format %r reading window %#x on %s" % (
                         pixel_format, xid, client_display))
-                pixels = ximg.get_pixels()
+                pixels = ximg.get_plane(0)
                 b, g, r = pixels[0], pixels[1], pixels[2]
                 return r, g, b
 

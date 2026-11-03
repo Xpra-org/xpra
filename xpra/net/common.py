@@ -195,11 +195,13 @@ class Packet(Sequence):
             return tuple(int(x) for x in v)
         raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 
-    def get_u16s(self, i: int) -> Sequence[int]:
+    def get_coordinates(self, i: int) -> Sequence[int]:
+        # pointer positions can be negative: left of or above the primary monitor,
+        # or outside the window for window-relative positions (ie: while dragging)
         values = self.get_ints(i)
         for value in values:
-            if value < 0 or value >= 2**16:
-                raise ValueError(f"invalid u16 value {value!r}")
+            if abs(value) >= 2**16:
+                raise ValueError(f"invalid coordinate {value!r}")
         return values
 
 
@@ -433,8 +435,22 @@ def is_request_allowed(proto, request="info", default=True) -> bool:
     if request == "exec":
         # The immediate-launch alias must not bypass existing run restrictions.
         r = r and str_to_bool(options.get("run", default), default)
+    elif request == "windowshot":
+        r = r and str_to_bool(options.get("screenshot", default), default)
     get_logger().debug(f"is_request_allowed%s={r}", (proto, request, default))
     return r
+
+
+def parse_thread_getloadavg() -> bool:
+    """
+    Whether the ping handlers can call `getloadavg()`, they run on the network parse thread.
+    Call this before that thread is started, ie: at startup from the main thread.
+    """
+    try:
+        from xpra.seccomp.parse import blocks_getloadavg
+    except ImportError:
+        return True
+    return not blocks_getloadavg()
 
 
 def init() -> None:

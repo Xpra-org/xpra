@@ -11,7 +11,6 @@ import unittest
 
 from xpra.os_util import OSX, POSIX
 from xpra.os_util import get_hex_uuid
-from unit.process_test_util import read_proc_pipe
 from unit.wayland.test_util import WestonTestUtil
 
 
@@ -25,7 +24,6 @@ class WaylandClientTest(WestonTestUtil):
         client = None
         try:
             client = self.run_wayland_client(display)
-            self.assert_running(client, "Wayland client")
             self.check_stop_server(server, "stop", display)
             self.wait_for_exit(client,
                                "Wayland client after X11 server shutdown")
@@ -44,7 +42,6 @@ class WaylandClientTest(WestonTestUtil):
                 "org.freedesktop.weston.wayland-terminal")
             self.assertTrue(info.get("windows.1.title"))
             client = self.run_wayland_client(server.display)
-            self.assert_running(client, "Wayland client")
             self.stop_wayland_server(server)
             self.wait_for_exit(client,
                                "Wayland client after Wayland server shutdown")
@@ -59,7 +56,6 @@ class WaylandClientTest(WestonTestUtil):
         client = second_terminal = None
         try:
             client = self.run_wayland_client(server.display)
-            self.assert_running(client, "Wayland client")
             second_terminal = self.run_command(
                 ["weston-terminal"], env=self.wayland_server_env(server))
             info = self.wait_for_server_info(server.display, "windows.count",
@@ -81,29 +77,22 @@ class WaylandClientTest(WestonTestUtil):
     def test_wayland_focus_and_input(self):
         if not shutil.which("wtype"):
             self.skipTest("wtype is not installed")
+        # Probe support without typing before waiting for a focused window.
+        self.run_wtype("-s", "1")
         server = self.start_wayland_server()
-        client = wtype = None
+        client = None
         value = get_hex_uuid()
         filename = os.path.join(tempfile.gettempdir(),
                                 f"xpra-wayland-input-{value}")
         try:
-            client = self.run_wayland_client(server.display)
-            self.assert_running(client, "Wayland client")
+            client_socket = os.path.join(self.weston_runtime.name, "input-client")
+            client = self.run_wayland_client(server.display, f"--bind={client_socket}")
+            # The client only reports focus after its window has been mapped.
+            self.wait_for_server_info(f"socket://{client_socket}", "window.focused", "1")
             command = f"printf {value} > {filename}"
-            wtype = self.run_command(
-                ["wtype", "-s", "500", command, "-k", "Return"],
-                env=self.wayland_client_env())
-            self.wait_for_exit(wtype, "wtype")
-            if wtype.returncode != 0:
-                error = read_proc_pipe(getattr(wtype, "stderr_file", None),
-                                       "stderr")
-                if "virtual keyboard protocol" in error:
-                    self.skipTest("Wayland compositor does not support the "
-                                  "virtual keyboard protocol")
-                self.show_proc_error(wtype, "wtype failed")
+            self.run_wtype(command, "-k", "Return")
             self.wait_for_file_contents(filename, value)
         finally:
-            self.terminate_process(wtype)
             self.terminate_process(client)
             if os.path.exists(filename):
                 os.unlink(filename)
@@ -115,7 +104,6 @@ class WaylandClientTest(WestonTestUtil):
         client = None
         try:
             client = self.run_wayland_client(server.display)
-            self.assert_running(client, "Wayland client")
             server_env = self.wayland_server_env(server)
             client_value = get_hex_uuid()
             self.set_wayland_clipboard(self.wayland_client_env(), client_value)
@@ -135,7 +123,6 @@ class WaylandClientTest(WestonTestUtil):
         client = None
         try:
             client = self.run_wayland_client(server.display)
-            self.assert_running(client, "Wayland client")
             server_env = self.wayland_server_env(server)
             mime_type = "text/plain;charset=utf-8"
             client_value = ("Xpra clipboard:\n"
@@ -166,7 +153,6 @@ class WaylandClientTest(WestonTestUtil):
             client = self.run_wayland_client(
                 server.display, f"--clipboard-direction={direction}")
             try:
-                self.assert_running(client, f"Wayland {direction} client")
                 client_value = get_hex_uuid()
                 self.set_wayland_clipboard(self.wayland_client_env(),
                                            client_value)
@@ -205,7 +191,6 @@ class WaylandClientTest(WestonTestUtil):
         client = None
         try:
             client = self.run_wayland_client(display)
-            self.assert_running(client, "Wayland client")
             self.stop_weston()
             self.wait_for_exit(client, "Wayland client after Weston shutdown")
         finally:

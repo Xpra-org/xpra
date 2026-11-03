@@ -229,7 +229,7 @@ def decompress_to_rgb(data: SizedBuffer, options: typedict) -> ImageWrapper:
         out_format = out_format.replace("A", "X")
     pixels = PyMemoryView_FromMemory(<char *> buf, size, PyBUF_WRITE)
     img = WebpImageWrapper(
-        0, 0, config.input.width, config.input.height, pixels, out_format,
+        0, 0, config.input.width, config.input.height, (pixels,), out_format,
         len(out_format) * 8, stride,
     )
     img.cython_buffer = <uintptr_t> buf
@@ -362,11 +362,11 @@ def selftest(full=False) -> None:
             assert iw==w and ih==h, f"expected {w}x{h} but got {iw}x{ih}"
             if not alpha:
                 assert not got_alpha, f"expected {alpha=}, got {pf}"
-            assert len(img.get_pixels())>0
+            assert len(img.get_plane(0))>0
             img.free()
 
             img = decompress_to_yuv(bdata, typedict())
             assert img.get_width()==w and img.get_height()==h and (img.get_pixel_format() == "YUV420P")
-            assert len(img.get_pixels())>0
+            assert len(img.get_plane(0))>0
             img.free()
             #print("compressed data(%s)=%s" % (has_alpha, binascii.hexlify(r)))

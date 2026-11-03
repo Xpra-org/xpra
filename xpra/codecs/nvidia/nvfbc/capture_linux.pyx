@@ -609,7 +609,7 @@ cdef class NvFBC_SysCapture:
             buf_ptr = <uintptr_t> buf.get_mem()
             with nogil:
                 memcpy(<void *> buf_ptr, <void *> grab_ptr, size)
-        image = ImageWrapper(0, 0, width, height, memoryview(buf), self.pixel_format, Bpp*8, stride, Bpp)
+        image = ImageWrapper(0, 0, width, height, (memoryview(buf),), self.pixel_format, Bpp*8, stride, Bpp)
         end = monotonic()
         log("image=%s buffer len=%i, (copy took %ims)", image, len(buf), int((end-start)*1000))
         return image
@@ -739,7 +739,7 @@ cdef class NvFBC_CUDACapture:
         copy.dst_y = 0
         copy.dst_pitch = dst_pitch
         copy(stream)
-        image = CUDAImageWrapper(0, 0, width, height, None, self.pixel_format, Bpp*8, dst_pitch, Bpp, ImageWrapper.PACKED, False, None)
+        image = CUDAImageWrapper(0, 0, width, height, (), self.pixel_format, Bpp*8, dst_pitch, Bpp, ImageWrapper.PACKED, False, None)
         image.stream = stream
         image.cuda_device_buffer = cuda_device_buffer
         image.cuda_context = self.cuda_context

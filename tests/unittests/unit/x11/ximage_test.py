@@ -36,7 +36,7 @@ def make_pixels(w=W, h=H, rowstride=ROWSTRIDE):
 
 def make_image():
     img = XImageWrapper(0, 0, W, H, 0, "BGRX", DEPTH, ROWSTRIDE)
-    img.set_pixels(make_pixels())
+    img.set_pixels((make_pixels(),))
     return img
 
 
@@ -45,7 +45,7 @@ def verify_region(sub, x_off, y_off):
     w = sub.get_width()
     h = sub.get_height()
     rowstride = sub.get_rowstride()
-    pixels = sub.get_pixels()
+    pixels = sub.get_plane(0)
     assert len(pixels) == sub.get_size()
     for sy in range(h):
         for sx in range(w):
@@ -68,7 +68,7 @@ class XImageWrapperTest(unittest.TestCase):
         assert img.get_rowstride() == ROWSTRIDE
         assert img.get_size() == ROWSTRIDE * H
         assert img.has_pixels()
-        assert len(img.get_pixels()) == ROWSTRIDE * H
+        assert len(img.get_plane(0)) == ROWSTRIDE * H
         img.free()
 
     def test_zerocopy_sub_image(self):
@@ -93,7 +93,7 @@ class XImageWrapperTest(unittest.TestCase):
         sub = img.get_sub_image(x_off, y_off, SW, SH)
         assert sub.get_rowstride() == SW * BPP, "bottom-edge sub should be re-strided to a tight copy"
         assert sub.get_size() == SW * BPP * SH
-        assert len(sub.get_pixels()) == SW * BPP * SH
+        assert len(sub.get_plane(0)) == SW * BPP * SH
         verify_region(sub, x_off, y_off)
         # the copy is independent: freeing the parent must not affect it
         img.free()
@@ -127,7 +127,7 @@ class XImageWrapperTest(unittest.TestCase):
         sub = img.get_sub_image(2, 1, 8, 8)
         img.free()
         try:
-            sub.get_pixels()
+            sub.get_plane(0)
         except AssertionError:
             pass
         else:

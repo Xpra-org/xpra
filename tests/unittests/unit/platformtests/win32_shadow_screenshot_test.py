@@ -19,7 +19,7 @@ WIN32 = sys.platform == "win32"
 
 
 def make_image(w: int, h: int) -> ImageWrapper:
-    return ImageWrapper(0, 0, w, h, b"\0" * w * h * 4, "BGRX", 24, w * 4, 4, ImageWrapper.PACKED, True)
+    return ImageWrapper(0, 0, w, h, (b"\0" * w * h * 4,), "BGRX", 24, w * 4, 4, ImageWrapper.PACKED, True)
 
 
 class FakeCapture:

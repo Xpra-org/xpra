@@ -17,12 +17,12 @@ from typing import Any, NoReturn
 
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.config.types import XpraConfig
-from xpra.os_util import POSIX, OSX, is_admin, force_quit
-from xpra.util.env import OSEnvContext, get_exec_env, envint, envbool
+from xpra.os_util import is_admin, force_quit
+from xpra.util.env import get_exec_env, envint, envbool
 from xpra.util.io import stderr_print, use_tty
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, pver
-from xpra.util.system import is_Wayland, SIGNAMES
+from xpra.util.system import SIGNAMES
 from xpra.log import Logger, is_debug_enabled
 
 # pylint: disable=import-outside-toplevel
@@ -128,7 +128,21 @@ def run_opengl_probe(backend: str = "") -> tuple[str, dict]:
     return message, props
 
 
+def init_gl_backend(backend: str) -> None:
+    if backend == "win32":
+        from xpra.scripts.common import no_gi_gtk_modules
+        no_gi_gtk_modules()
+    else:
+        from xpra.scripts.main import check_gtk_client
+        check_gtk_client()
+        # Register GDK's display before importing any X11 window or GLX code.
+        # This also honours the selected GDK backend when X11 and Wayland coexist.
+        from xpra.gtk.util import init_display_source
+        init_display_source()
+
+
 def run_glprobe(opts: XpraConfig, show=False) -> ExitValue:
+    init_gl_backend(opts.backend)
     if show:
         from xpra.platform.gui import init, set_default_icon
         set_default_icon("opengl.png")
@@ -191,7 +205,7 @@ def do_run_glcheck(opts: XpraConfig, show=False) -> dict[str, Any]:
             log("do_run_glcheck() gl_client_window_class=%s, pixel_depth=%s", gl_client_window_class, pixel_depth)
             if pixel_depth not in (0, 16, 24, 30) and pixel_depth < 32:
                 pixel_depth = 0
-            draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth, show=show)
+            draw_result = test_gl_client_window(gl_client_window_class, pixel_depth=pixel_depth, show=show, backend=backend)
             log(f"draw result={draw_result}")
             opengl_props.update(draw_result)
             if not draw_result.get("success", False):
@@ -226,23 +240,7 @@ def run_glcheck(opts: XpraConfig) -> ExitValue:
             "success": False,
         }
     else:
-        if opts.backend == "win32":
-            # keep this subprocess as Gtk-free as the client it is probing for:
-            from xpra.scripts.common import no_gi_gtk_modules
-            no_gi_gtk_modules()
-        else:
-            from xpra.scripts.main import check_gtk_client
-            check_gtk_client()
-            if POSIX and not OSX and not is_Wayland():
-                log("forcing x11 Gdk backend")
-                with OSEnvContext(GDK_BACKEND="x11", PYOPENGL_BACKEND="x11"):
-                    try:
-                        from xpra.x11.gtk.display_source import init_gdk_display_source
-                        init_gdk_display_source()
-                    except ImportError as e:
-                        log(f"no bindings x11 bindings: {e}")
-                    except Exception:
-                        log("error initializing gdk display source", exc_info=True)
+        init_gl_backend(opts.backend)
         try:
             props = do_run_glcheck(opts)
         except Exception as e:

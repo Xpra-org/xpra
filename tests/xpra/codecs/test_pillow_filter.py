@@ -32,7 +32,7 @@ def main(files):
         for i, transform in enumerate(transforms):
             rgb_data = img.tobytes("raw")
             source_image = ImageWrapper(0, 0, w, h,
-                                        rgb_data, pixel_format, len(pixel_format) * 8, stride,
+                                        (rgb_data,), pixel_format, len(pixel_format) * 8, stride,
                                         planes=ImageWrapper.PACKED, thread_safe=True)
 
             transform_name = transform.split("(", 1)[0]
@@ -42,7 +42,7 @@ def main(files):
             tfilter = pillow_filter.Filter()
             tfilter.init_context(w, h, pixel_format, w, h, "BGRX", typedict(options))
             output = tfilter.convert_image(source_image)
-            bgrx = memoryview_to_bytes(output.get_pixels())
+            bgrx = memoryview_to_bytes(output.get_plane(0))
             # print("bgrx=%s (%i bytes)" % (repr_ellipsized(bgrx), len(bgrx)))
             result = Image.frombytes("RGBA", (w, h), bgrx, "raw", "RGBA", w*4, 1)
             path, ext = os.path.splitext(f)

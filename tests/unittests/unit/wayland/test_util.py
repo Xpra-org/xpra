@@ -15,6 +15,7 @@ import time
 import unittest
 
 from xpra.exit_codes import exit_str
+from xpra.os_util import get_hex_uuid
 from xpra.util.io import pollwait
 from unit.process_test_util import read_proc_pipe
 from unit.server_test_util import ServerTestUtil
@@ -113,11 +114,31 @@ class WestonTestUtil(ServerTestUtil):
         return env
 
     def run_wayland_client(self, display: str, *args: str):
-        return self.run_xpra([
+        env = self.wayland_client_env()
+        client_uuid = env["XPRA_USER_UUID"] = get_hex_uuid()
+        client = self.run_xpra([
             "attach", display,
             "--clipboard=yes", "--notification=no", "--opengl=no",
             *args,
-        ], env=self.wayland_client_env())
+        ], env=env)
+        try:
+            self.wait_for_client_connection(client, client_uuid, display, timeout=CLIENT_TIMEOUT)
+        except Exception:
+            self.terminate_process(client)
+            raise
+        return client
+
+    def run_wtype(self, *args: str) -> None:
+        proc = self.run_command(["wtype", *args], env=self.wayland_client_env())
+        try:
+            self.wait_for_exit(proc, "wtype")
+            if proc.returncode != 0:
+                error = read_proc_pipe(getattr(proc, "stderr_file", None), "stderr")
+                if "virtual keyboard protocol" in error or "No seat found" in error:
+                    raise unittest.SkipTest("Wayland compositor does not support virtual keyboard input")
+                self.show_proc_error(proc, "wtype failed")
+        finally:
+            self.terminate_process(proc)
 
     def wayland_server_env(self, server) -> dict[str, str]:
         env = self.get_run_env()

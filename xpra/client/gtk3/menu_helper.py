@@ -14,7 +14,7 @@ from xpra.os_util import OSX, gi_import
 from xpra.client.gui.menu_helper import MenuHelper, ImageMenuItem, MenuItem
 from xpra.codecs.icon_util import INKSCAPE_RE
 from xpra.codecs.image_type import get_image_type
-from xpra.gtk.widget import scaled_image, menuitem
+from xpra.gtk.widget import scaled_image, menuitem, icon_image
 from xpra.gtk.pixbuf import get_pixbuf_from_data, load_pixbuf
 from xpra.gtk.dialogs.about import close_about
 from xpra.platform.paths import get_icon_dir
@@ -419,19 +419,7 @@ class GTKMenuHelper(MenuHelper):
             self.menu.popup(None, None, None, None, button, time)
 
     def get_image(self, icon_name, size=None):
-        # loading an icon is pure toolkit work, so do it here if the client
-        # does not provide its own (the Gtk-free backends never do):
-        get_image: Callable | None = getattr(self.client, "get_image", None)
-        if get_image:
-            # noinspection calling-non-callable
-            return get_image(icon_name, size)
-        with log.trap_error(f"Error getting image for icon name {icon_name} and size {size}"):
-            from xpra.gtk.pixbuf import get_icon_pixbuf
-            pixbuf = get_icon_pixbuf(icon_name)
-            if not pixbuf:
-                return None
-            return scaled_image(pixbuf, size)
-        return None
+        return icon_image(icon_name, size or 0)
 
     def menuitem(self, title, icon_name="", tooltip="", cb: Callable = noop, **kwargs) -> ImageMenuItem:
         """ Utility method for easily creating an ImageMenuItem """

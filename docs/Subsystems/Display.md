@@ -35,6 +35,17 @@ This can be used to reduce the amount of pixels needed to cover a monitor.
 | `monitor-relative`      | boolean                     | The client attaches `monitor` descriptors to its window and pointer packets |
 | `dpi`                   | dictionary                  | DPI configuration                       |
 
+The server advertises its display mode in the top-level `mode` capability:
+`shadow`, `desktop`, `monitor`, or `seamless`. Clients prefer this value to the
+legacy top-level `shadow`, `desktop`, and `monitor` booleans, falling back to
+those flags when `mode` is absent or unrecognized. Servers still send the legacy
+flags for older clients.
+
+The top-level `multi-monitors`, `monitors`, and `monitors.add-*` capabilities
+describe monitor features and configuration independently of the display mode.
+For example, a shadow server can support virtual monitors while its mode remains
+`shadow`.
+
 
 
 <div class="docs-section-heading" markdown="1">

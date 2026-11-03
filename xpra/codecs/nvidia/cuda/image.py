@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from collections.abc import Buffer
 from time import monotonic
 
 from xpra.util.env import numpy_import_context
@@ -39,7 +40,7 @@ class CUDAImageWrapper(ImageWrapper):
     def may_download(self) -> None:
         with self._lock:
             ctx = self.cuda_context
-            if self.pixels is not None or not ctx or self.freed:
+            if self.pixels or not ctx or self.freed:
                 return
             assert self.cuda_device_buffer, "bug: no device buffer"
             start = monotonic()
@@ -47,7 +48,7 @@ class CUDAImageWrapper(ImageWrapper):
             host_buffer = pagelocked_empty(self.buffer_size, dtype=byte)  # pylint: disable=no-member
             memcpy_dtoh_async(host_buffer, self.cuda_device_buffer, self.stream)  # pylint: disable=no-member
             self.wait_for_stream()
-            self.pixels = host_buffer.tobytes()
+            self.pixels = (host_buffer.tobytes(),)
             elapsed = monotonic() - start
             if elapsed > 0:
                 mbs = self.buffer_size / elapsed / 1024 / 1024
@@ -68,11 +69,11 @@ class CUDAImageWrapper(ImageWrapper):
         return self.cuda_device_buffer
 
     def has_pixels(self) -> bool:
-        return self.pixels is not None
+        return bool(self.pixels)
 
-    def get_pixels(self):
+    def get_plane(self, i: int) -> Buffer:
         self.may_download()
-        return super().get_pixels()
+        return super().get_plane(i)
 
     def clone_pixel_data(self) -> None:
         self.may_download()

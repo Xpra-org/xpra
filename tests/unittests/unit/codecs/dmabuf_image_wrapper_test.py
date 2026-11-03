@@ -20,7 +20,7 @@ class TestDMABufImageWrapper(unittest.TestCase):
 
         def download():
             calls.append(True)
-            return ImageWrapper(0, 0, 2, 2, b"0123456789abcdef", "BGRA", 32, 8)
+            return ImageWrapper(0, 0, 2, 2, (b"0123456789abcdef",), "BGRA", 32, 8)
 
         image = DMABufImageWrapper(0, 0, 2, 2, 0x34325241, 0,
                                    (read_fd,), (8,), (0,), download)
@@ -55,7 +55,7 @@ class TestDMABufImageWrapper(unittest.TestCase):
         image, calls = self.make_wrapper()
         fds = image.fds
         self.assertFalse(image.has_pixels())
-        self.assertEqual(image.get_pixels(), b"0123456789abcdef")
+        self.assertEqual(image.get_plane(0), b"0123456789abcdef")
         self.assertTrue(image.has_pixels())
         self.assertEqual(len(calls), 1)
         self.assertEqual(image.get_pixel_format(), "BGRA")
@@ -64,7 +64,7 @@ class TestDMABufImageWrapper(unittest.TestCase):
         for fd in fds:
             with self.assertRaises(OSError):
                 os.fstat(fd)
-        self.assertEqual(image.get_pixels(), b"0123456789abcdef")
+        self.assertEqual(image.get_plane(0), b"0123456789abcdef")
         self.assertEqual(len(calls), 1)
         image.free()
 
@@ -72,7 +72,7 @@ class TestDMABufImageWrapper(unittest.TestCase):
         image, calls = self.make_wrapper()
         sub = image.get_sub_image(0, 0, 1, 1)
         self.assertEqual(len(calls), 1)
-        self.assertEqual(sub.get_pixels(), b"0123")
+        self.assertEqual(sub.get_plane(0), b"0123")
         image.free()
 
     def test_free_closes_fds(self):

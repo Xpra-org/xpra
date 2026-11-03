@@ -139,6 +139,8 @@ class ServerCore(GLibServer):
         the connection layer is handled by the `network` subsystem.
     """
     __signals__ = SIGNALS
+    # Canonical display mode, separate from the descriptive `session_type`.
+    SESSION_MODE = ""
 
     def __init__(self):
         log("ServerCore.__init__()")
@@ -558,6 +560,8 @@ class ServerCore(GLibServer):
             capabilities["packet-types"] = packet_types
         if self.session_name:
             capabilities["session_name"] = self.session_name
+        if self.SESSION_MODE:
+            capabilities["mode"] = self.SESSION_MODE
         if source and "features" in source.wants:
             capabilities.update(self.get_server_features(source))
         return capabilities

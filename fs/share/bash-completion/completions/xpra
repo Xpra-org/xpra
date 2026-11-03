@@ -18,7 +18,7 @@ _xpra() {
     local modes="seamless desktop monitor shadow shadow-screen
         upgrade upgrade-seamless upgrade-desktop upgrade-monitor upgrade-shadow
         start start-desktop start-monitor start-shadow start-shadow-screen
-        attach kvm detach info id version stop exit connect-test screenshot
+        attach kvm detach info id version stop exit connect-test screenshot windowshot
         control print shell send-file configure
         sessions launcher gui start-gui bug-report toolbox about example
         encoder encode
@@ -152,6 +152,14 @@ _xpra() {
     # for modes that take a display name as a positional argument,
     # complete from active sessions
     local mode="${words[1]}"
+    if [[ "$mode" == windowshot ]]; then
+        if [[ $cword -eq 2 ]]; then
+            _filedir
+        elif [[ $cword -eq 4 ]]; then
+            _xpra_displays "$cur"
+        fi
+        return 0
+    fi
     case "$mode" in
         attach|kvm|detach|info|id|version|stop|exit|connect-test|control|\
         screenshot|print|shell|upgrade|upgrade-seamless|upgrade-desktop|\

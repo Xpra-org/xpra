@@ -47,6 +47,7 @@ class DesktopServerBase(GObject.GObject, ServerBase):
         used with the `desktop` subcommand.
     """
     __common_gsignals__ = SIGNALS
+    SESSION_MODE = "desktop"
 
     def __init__(self):
         GObject.GObject.__init__(self)

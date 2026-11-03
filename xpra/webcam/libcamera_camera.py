@@ -198,7 +198,7 @@ class LibcameraCamera(CameraDevice):
             return None
 
         w, h = self._width, self._height
-        image = ImageWrapper(0, 0, w, h, raw, self._pixel_format, 0, self._stride, planes=ImageWrapper.PACKED)
+        image = ImageWrapper(0, 0, w, h, (raw,), self._pixel_format, 0, self._stride, planes=ImageWrapper.PACKED)
         log("%r.read()=%s", self, image)
 
         # Re-queue the request so the camera keeps filling buffers

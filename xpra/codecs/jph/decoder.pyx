@@ -81,7 +81,7 @@ def decompress(data: SizedBuffer, options: typedict = None) -> ImageWrapper:
         raise ValueError(f"jph buffer is too small: {pixels_size} bytes for {width}x{height} at rowstride {stride}")
     cdef MemBuf membuf = makebuf(pixels, pixels_size, 1)
     may_save_image("jph", data)
-    return ImageWrapper(0, 0, width, height, memoryview(membuf), "BGRX", 24, stride, planes=ImageWrapper.PACKED)
+    return ImageWrapper(0, 0, width, height, (memoryview(membuf),), "BGRX", 24, stride, planes=ImageWrapper.PACKED)
 
 
 def decompress_to_rgb(data: SizedBuffer, options: typedict = None) -> ImageWrapper:
@@ -96,7 +96,7 @@ def selftest(full=False) -> None:
         for data, options in samples:
             img = decompress(data, typedict(options))
             assert img.get_width()==w and img.get_height()==h
-            assert len(img.get_pixels())>0
+            assert len(img.get_plane(0))>0
             img.free()
             if full:
                 try:
