@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import QApplication
 from xpra import __version__
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.net.common import Packet
+from xpra.client.gui.simple_pointer import SimplePointer
 from xpra.net.rencodeplus.rencodeplus import dumps, loads
 
 from xpra.net.packet_type import WINDOW_FOCUS, WINDOW_ACK
@@ -36,6 +37,7 @@ class Qt6Client:
         self.header = ()
         self.hello = {}
         self.focused = 0
+        self.pointer = SimplePointer(self.send, QTimer.singleShot)
 
     def setup_socket(self) -> QTcpSocket:
         socket = QTcpSocket()

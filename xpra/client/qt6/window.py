@@ -9,10 +9,9 @@ from PyQt6.QtGui import QImage, QPixmap, QPainter, QKeyEvent
 from PyQt6.QtWidgets import QMainWindow, QLabel, QSizePolicy
 
 from xpra.constants import MoveResize
-from xpra.net.packet_type import POINTER_BUTTON, WINDOW_MAP, WINDOW_CLOSE, WINDOW_CONFIGURE, POINTER_MOTION
+from xpra.net.packet_type import WINDOW_MAP, WINDOW_CLOSE, WINDOW_CONFIGURE
 from xpra.client.qt6.keys import key_names
 from xpra.client.gui.window_title import window_title_str
-from xpra.client.gui.simple_pointer import split_position
 from xpra.log import Logger
 
 log = Logger()
@@ -50,14 +49,11 @@ class DrawingArea(QLabel):
     def __init__(self, client, wid):
         super().__init__()
         self.client = client
-        self.send = client.send
+        self.pointer = client.pointer
         self.wid = wid
-        self.seq = 0
 
     def mouseMoveEvent(self, event) -> None:
-        pos, props = split_position(get_pointer_position(event))
-        self.send(POINTER_MOTION, -1, self.seq, self.wid, pos, props)
-        self.seq += 1
+        self.pointer.motion(self.wid, get_pointer_position(event))
 
     def send_mouse_button_event(self, event, pressed=True) -> None:
         button = {
@@ -69,9 +65,7 @@ class DrawingArea(QLabel):
         }.get(event.button(), -1)
         if button < 0:
             return
-        pos, props = split_position(get_pointer_position(event))
-        self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, pressed, pos, props)
-        self.seq += 1
+        self.pointer.button(self.wid, button, pressed, get_pointer_position(event))
 
     def mousePressEvent(self, event) -> None:
         self.send_mouse_button_event(event, True)
@@ -85,17 +79,10 @@ class DrawingArea(QLabel):
         self.send_mouse_button_event(event, True)
 
     def wheelEvent(self, event) -> None:
-        pos, props = split_position(get_pointer_position(event))
         # (`pixelDelta()` is only set by high resolution devices, not by mouse wheels)
         delta = event.angleDelta()
-        # sent as clicks of the wheel buttons: 4 and 5 for up and down, 6 and 7 for left and right
-        for button, value in ((4, delta.y()), (6, delta.x())):
-            if value:
-                if value < 0:
-                    button += 1
-                self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, True, pos, props)
-                self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, False, pos, props)
-                self.seq += 1
+        # in eighths of a degree, most mice use steps of 15 degrees, and left is positive:
+        self.pointer.wheel(self.wid, -delta.x() / 120, delta.y() / 120, get_pointer_position(event))
 
 
 class ClientWindow(QMainWindow):

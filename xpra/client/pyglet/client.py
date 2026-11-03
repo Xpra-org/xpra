@@ -18,6 +18,7 @@ from xpra.exit_codes import ExitValue
 from xpra.net.packet_type import WINDOW_FOCUS, WINDOW_ACK
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.common import Packet
+from xpra.client.gui.simple_pointer import SimplePointer
 from xpra.util.objects import AtomicInteger
 from xpra.log import Logger
 
@@ -79,6 +80,7 @@ class XpraPygletClient:
         self._ordinary_packets = []
         self.protocol = None
         self.have_more = noop
+        self.pointer = SimplePointer(self.send, PygletScheduler().timeout_add)
 
     def run(self) -> int:
         app.run()

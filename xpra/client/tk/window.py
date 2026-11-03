@@ -7,12 +7,10 @@
 from tkinter import Toplevel, Label
 from PIL import Image, ImageTk
 from xpra.net.packet_type import (
-    POINTER_BUTTON, POINTER_MOTION,
     WINDOW_MAP, WINDOW_UNMAP, WINDOW_CLOSE, WINDOW_CONFIGURE,
 )
 from xpra.util.objects import typedict
 from xpra.client.gui.window_title import window_title_str
-from xpra.client.gui.simple_pointer import split_position
 from xpra.log import Logger
 
 log = Logger("client", "window")
@@ -140,10 +138,7 @@ class ClientWindow(Toplevel):
 
     def on_mouse_motion(self, event) -> None:
         log(f"mouse motion: {event!r}")
-        device_id = -1
-        seq = 0
-        pos, props = split_position(self.get_pointer_position(event))
-        self.client.send(POINTER_MOTION, device_id, seq, self.wid, pos, props)
+        self.client.pointer.motion(self.wid, self.get_pointer_position(event))
 
     def on_mouse_button_press(self, event) -> None:
         log(f"mouse button press: {event!r}")
@@ -154,25 +149,16 @@ class ClientWindow(Toplevel):
         self.on_mouse_button_event(False, event)
 
     def on_mouse_button_event(self, pressed: bool, event) -> None:
-        seq = 0
-        button = event.num
-        pos, props = split_position(self.get_pointer_position(event))
-        self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, props)
+        self.client.pointer.button(self.wid, event.num, pressed, self.get_pointer_position(event))
 
     def on_mouse_wheel(self, event) -> None:
         # Tk 8.7 and later, and Tk on MS Windows and macOS: the delta is a multiple of 120 with most mice,
         # and the horizontal wheel (X11 buttons 6 and 7) is sent with the shift modifier
         log(f"mouse wheel: {event!r}")
-        if not event.delta:
-            return
-        button = 6 if event.state & SHIFT_MASK else 4
-        if event.delta < 0:
-            button += 1
-        # sent as clicks of the wheel buttons:
-        pos, props = split_position(self.get_pointer_position(event))
-        for _ in range(max(1, abs(event.delta) // 120)):
-            for pressed in (True, False):
-                self.client.send(POINTER_BUTTON, -1, 0, self.wid, button, pressed, pos, props)
+        steps = event.delta / 120
+        # (left is a positive delta)
+        dx, dy = (-steps, 0) if event.state & SHIFT_MASK else (0, steps)
+        self.client.pointer.wheel(self.wid, dx, dy, self.get_pointer_position(event))
 
     def is_own_event(self, event) -> bool:
         return event.widget is self

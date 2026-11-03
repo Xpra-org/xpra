@@ -11,12 +11,10 @@ from pyglet.window import Window, event, mouse
 from pyglet.image import ImageData, SolidColorImagePattern
 from pyglet.sprite import Sprite
 from xpra.net.packet_type import (
-    POINTER_MOTION, POINTER_BUTTON,
     WINDOW_MAP, WINDOW_UNMAP, WINDOW_CONFIGURE, WINDOW_CLOSE,
 )
 from xpra.client.pyglet.keys import keynames
 from xpra.client.gui.window_title import window_title_str
-from xpra.client.gui.simple_pointer import split_position
 from xpra.log import Logger
 
 log = Logger()
@@ -59,7 +57,6 @@ class ClientWindow(Window):
         self.set_size(w, h)
         self.focused = False
         # the X11 numbers of the buttons we have sent a press for:
-        self.buttons_pressed: set[int] = set()
 
         # A logger class, which prints events to stdout or to a file:
         win_event_logger = event.WindowEventLogger()
@@ -124,41 +121,26 @@ class ClientWindow(Window):
         return wx + x, wy + y, x, y
 
     def on_mouse_motion(self, x: int, y: int, dx: int, dy: int) -> None:
-        device_id = -1
-        seq = 0
-        pos, props = split_position(self.get_pointer_position(x, y + MOTION_Y_OFFSET))
-        self.client.send(POINTER_MOTION, device_id, seq, self.wid, pos, props)
+        self.client.pointer.motion(self.wid, self.get_pointer_position(x, y + MOTION_Y_OFFSET))
 
     def on_mouse_drag(self, x: int, y: int, dx: int, dy: int, _buttons: int, _modifiers: int) -> None:
         # the motion events while a button is held down
         self.on_mouse_motion(x, y, dx, dy)
 
     def on_mouse_press(self, x: int, y: int, button: int, modifiers: int) -> None:
-        if xbutton := BUTTONS.get(button, 0):
-            self.buttons_pressed.add(xbutton)
-            self.on_mouse_button_event(True, x, y, xbutton, modifiers)
+        self.on_mouse_button_event(True, x, y, button)
 
     def on_mouse_release(self, x: int, y: int, button: int, modifiers: int) -> None:
-        xbutton = BUTTONS.get(button, 0)
-        # pyglet also reports the release of the wheel buttons, as `MOUSE4` and `MOUSE5`:
-        if xbutton in self.buttons_pressed:
-            self.buttons_pressed.discard(xbutton)
-            self.on_mouse_button_event(False, x, y, xbutton, modifiers)
+        # (pyglet also reports the release of the wheel buttons, as `MOUSE4` and `MOUSE5`,
+        # `SimplePointer` ignores those since it has not sent their press)
+        self.on_mouse_button_event(False, x, y, button)
 
-    def on_mouse_button_event(self, pressed: bool, x: int, y: int, button: int, modifiers: int) -> None:
-        # `button` is an X11 button number
-        seq = 0
-        pos, props = split_position(self.get_pointer_position(x, y))
-        self.client.send(POINTER_BUTTON, -1, seq, self.wid, button, pressed, pos, props)
+    def on_mouse_button_event(self, pressed: bool, x: int, y: int, button: int) -> None:
+        if xbutton := BUTTONS.get(button, 0):
+            self.client.pointer.button(self.wid, xbutton, pressed, self.get_pointer_position(x, y))
 
     def on_mouse_scroll(self, x: int, y: int, scroll_x: float, scroll_y: float) -> None:
-        # sent as clicks of the wheel buttons: 4 and 5 for up and down, 6 and 7 for left and right
-        for button, scroll in ((4, scroll_y), (6, -scroll_x)):
-            if scroll:
-                if scroll < 0:
-                    button += 1
-                for pressed in (True, False):
-                    self.on_mouse_button_event(pressed, x, y, button, 0)
+        self.client.pointer.wheel(self.wid, scroll_x, scroll_y, self.get_pointer_position(x, y))
 
     def on_move(self, x: int, y: int) -> None:
         w, h = self.get_size()

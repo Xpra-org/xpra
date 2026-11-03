@@ -9,6 +9,7 @@
 import unittest
 
 from xpra.net.packet_type import POINTER_BUTTON, POINTER_MOTION
+from xpra.client.gui.simple_pointer import SimplePointer
 from unit.process_test_util import DisplayContext
 
 
@@ -18,9 +19,19 @@ class FakeClient:
     def __init__(self):
         self.sent = []
         self.focus = []
+        self.timers = []
+        self.pointer = SimplePointer(self.send, self.timeout_add)
 
     def send(self, *packet):
         self.sent.append(packet)
+
+    def timeout_add(self, _delay: int, fn) -> None:
+        self.timers.append(fn)
+
+    def run_timers(self) -> None:
+        timers, self.timers = self.timers, []
+        for fn in timers:
+            fn()
 
     def update_focus(self, wid=0) -> None:
         self.focus.append(wid)
@@ -94,6 +105,8 @@ class PygletWindowTest(unittest.TestCase):
         y = h - 40 - MOTION_Y_OFFSET
         self.window.on_mouse_motion(30, y, 0, 0)
         self.window.on_mouse_drag(30, y, 0, 0, mouse.LEFT, 0)
+        # (the motion packets are sent at most every few milliseconds)
+        self.client.run_timers()
         positions = self.client.positions()
         self.assertEqual(positions, [expected] * 3)
 
