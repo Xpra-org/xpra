@@ -4,9 +4,8 @@
 # later version. See the file COPYING for details.
 
 """
-The size limits of a native window (`MINMAXINFO`) are for the whole window, borders and title bar included,
+The size limits of a native window (ie: win32's `MINMAXINFO`) are for the whole window, borders and title bar included,
 in local pixels, whereas the server's size constraints are for the window contents, in server pixels.
-This module does not use any win32 APIs, so it can be tested on any platform.
 """
 
 from collections.abc import Callable

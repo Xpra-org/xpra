@@ -47,7 +47,7 @@ from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
 from xpra.client.win32.altgr import KeyMessage, is_altgr_fake_control, add_altgr_layout, get_alt_r_keyname
 from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_lparam, img_to_hicon
 from xpra.client.win32.glib import start_modal_message_pump, stop_modal_message_pump
-from xpra.client.win32.size_constraints import get_track_sizes
+from xpra.client.gui.size_constraints import get_track_sizes
 from xpra.client.win32.system_menu import add_system_menu_items, get_command_action, update_checks
 from xpra.log import Logger
 
