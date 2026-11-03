@@ -212,7 +212,6 @@ class DisplayClientTest(ClientMixinTest):
             self.assertEqual(self.mixin.get_server_position((-100, 50)), (-100, 50))
 
     def test_server_mode_capabilities(self):
-        from xpra.util.objects import typedict
         from xpra.client.subsystem import display  # pylint: disable=import-outside-toplevel
         display_caps = {
             "name": ":999",
@@ -228,28 +227,48 @@ class DisplayClientTest(ClientMixinTest):
 
         # the server mode and monitor features are top-level server features,
         # not part of the `display` namespace:
-        dc = parse({})
-        self.assertFalse(dc.server_is_desktop)
-        self.assertFalse(dc.server_is_monitor)
-        self.assertFalse(dc.server_multi_monitors)
-        for mode in ("shadow", "desktop"):
-            dc = parse({mode: True})
-            self.assertTrue(dc.server_is_desktop, mode)
-            self.assertFalse(dc.server_is_monitor, mode)
+        cases = (
+            ({}, False, False),
+            ({"shadow": True}, True, False),
+            ({"desktop": True}, True, False),
+            ({"monitor": True}, True, True),
+            ({"mode": "shadow"}, True, False),
+            ({"mode": "desktop"}, True, False),
+            ({"mode": "monitor"}, True, True),
+            ({"mode": "seamless"}, False, False),
+            ({"mode": b"shadow"}, True, False),
+            # A recognized mode takes precedence over conflicting legacy flags.
+            ({"mode": "seamless", "shadow": True, "desktop": True, "monitor": True}, False, False),
+            ({"mode": "desktop", "monitor": True}, True, False),
+            ({"mode": "shadow", "monitor": True}, True, False),
+            ({"mode": "monitor", "monitor": False}, True, True),
+            # Empty, invalid and unknown modes retain the legacy fallback.
+            ({"mode": "", "shadow": True}, True, False),
+            ({"mode": None, "desktop": True}, True, False),
+            ({"mode": "unknown", "monitor": True}, True, True),
+        )
+        for caps, is_desktop, is_monitor in cases:
+            with self.subTest(caps=caps):
+                dc = parse(caps)
+                self.assertEqual(dc.server_is_desktop, is_desktop)
+                self.assertEqual(dc.server_is_monitor, is_monitor)
+                self.assertFalse(dc.server_multi_monitors)
         monitors = {0: {"geometry": (0, 0, 1920, 1080)}}
-        dc = parse({
-            "monitor": True,
+        monitor_caps = {
             "multi-monitors": True,
             "monitors": monitors,
             "monitors.add-resolutions": ("1920x1080", "1280x720"),
             "monitors.add-label": "Add a virtual monitor",
-        })
-        self.assertTrue(dc.server_is_desktop)
-        self.assertTrue(dc.server_is_monitor)
-        self.assertTrue(dc.server_multi_monitors)
-        self.assertEqual(dc.server_monitors, monitors)
-        self.assertEqual(dc.server_new_monitor_resolutions, ("1920x1080", "1280x720"))
-        self.assertEqual(dc.server_add_monitor_label, "Add a virtual monitor")
+        }
+        for caps in ({"monitor": True}, {"mode": "monitor"}, {"mode": "shadow"}):
+            with self.subTest(caps=caps):
+                dc = parse(caps | monitor_caps)
+                self.assertTrue(dc.server_is_desktop)
+                self.assertEqual(dc.server_is_monitor, caps != {"mode": "shadow"})
+                self.assertTrue(dc.server_multi_monitors)
+                self.assertEqual(dc.server_monitors, monitors)
+                self.assertEqual(dc.server_new_monitor_resolutions, ("1920x1080", "1280x720"))
+                self.assertEqual(dc.server_add_monitor_label, "Add a virtual monitor")
 
 
 def main():

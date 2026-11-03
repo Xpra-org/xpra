@@ -328,8 +328,14 @@ class DisplayClient(StubClientSubsystem):
         self.server_add_monitor_label = caps.strget("monitors.add-label")
         log("server multi-monitors=%s, monitors=%s, new-monitor-resolutions=%s",
             self.server_multi_monitors, self.server_monitors, self.server_new_monitor_resolutions)
-        self.server_is_desktop = caps.boolget("shadow") or caps.boolget("desktop") or caps.boolget("monitor")
-        self.server_is_monitor = caps.boolget("monitor")
+        mode = caps.strget("mode")
+        if mode in ("shadow", "desktop", "monitor", "seamless"):
+            self.server_is_desktop = mode in ("shadow", "desktop", "monitor")
+            self.server_is_monitor = mode == "monitor"
+        else:
+            # Older servers only advertise the individual mode flags.
+            self.server_is_desktop = caps.boolget("shadow") or caps.boolget("desktop") or caps.boolget("monitor")
+            self.server_is_monitor = caps.boolget("monitor")
         # the colourspace capability is not part of the `display` namespace,
         # servers without it are assumed to be rendering into sRGB:
         self.server_colourspace = Colourspace.from_dict(caps.dictget("colourspace"))

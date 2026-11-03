@@ -71,6 +71,7 @@ class XpraMonitorServer(DesktopServerBase):
         Virtualizes monitors
     """
     __gsignals__ = DesktopServerBase.__common_gsignals__
+    SESSION_MODE = "monitor"
 
     def __init__(self):
         super().__init__()

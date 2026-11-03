@@ -20,6 +20,7 @@ GLib = gi_import("GLib")
 
 class WaylandSeamlessServer(GObject.GObject, ServerBase):
     __gsignals__ = to_gsignals(ServerBase.__signals__)
+    SESSION_MODE = "seamless"
 
     def __init__(self):
         os.environ.pop("DISPLAY", None)
