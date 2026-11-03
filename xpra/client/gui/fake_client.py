@@ -129,11 +129,10 @@ class FakeWindowHost(GLibScheduler):
 
 
 class FakeClient(FakeWindowHost):
-    """ the client surface used by the menu and tray examples """
+    """ the client surface used by the tray example """
 
     def __init__(self):
         super().__init__()
-        self._remote_server_mode = "seamless"
         self.server_readonly = False
 
     def is_readonly(self) -> bool:

@@ -10,7 +10,7 @@ from xpra.platform import program_context
 from xpra.platform.systray import get_backends, get_menu_helper_class
 from xpra.client.gui.fake_client import FakeClient
 from xpra.common import noop
-from xpra.util.objects import AdHocStruct
+from xpra.util.signal_emitter import SignalEmitter
 from xpra.log import Logger, consume_verbose_argv
 
 Gtk = gi_import("Gtk")
@@ -19,23 +19,22 @@ GLib = gi_import("GLib")
 log = Logger("client")
 
 
-def struct(**kwargs):
-    obj = AdHocStruct()
-    obj.__dict__.update(kwargs)
-    return obj
+class FakeSubsystem(SignalEmitter):
+    """ a client subsystem with the attributes given, which can emit the same signals as the real one """
+
+    def __init__(self, signals: Sequence[str] = (), **attrs):
+        super().__init__()
+        self.__signals__ = tuple(signals)
+        self.__dict__.update(attrs)
 
 
 class FakeApplication(FakeClient):
 
     def __init__(self):
         super().__init__()
-        self._subsystems = {}
         self.display_desc = {}
         self.session_name = "Test System Tray"
         self.server_session_name = ""
-        self.windows_enabled = True
-        self.modal_windows = False
-        self.server_bell = False
         self.server_client_shutdown = True
         self.server_sharing = True
         self.server_sharing_toggle = True
@@ -43,14 +42,6 @@ class FakeApplication(FakeClient):
         self.server_lock_toggle = True
         self.client_supports_sharing = True
         self.client_lock = False
-        self.remote_file_transfer = True
-        self.remote_file_transfer_ask = True
-        self._remote_subcommands = ()
-        self.remote_printing_ask = False
-        self.remote_open_files_ask = False
-        self.remote_open_url_ask = False
-        self._remote_server_log = ""
-        self.client_supports_system_tray = True
         self.init_fake_subsystems()
         classes = [get_menu_helper_class()]
         try:
@@ -82,24 +73,36 @@ class FakeApplication(FakeClient):
             except Exception as e:
                 log.warn("failed to create tray %s: %s", tray_class, e)
         self.menu_helper.when_ready(self.tray.menu_ready)
-        self._subsystems["tray"] = self.tray
+        self.subsystems["tray"] = self.tray
         self.tray.set_tooltip("Test System Tray")
 
     def init_fake_subsystems(self) -> None:
-        self.server_bell = False
-        self.client_supports_bell = True
-        self.bell_enabled = False
-        self.wheel_map = {
-            4: 4,
-            5: 5,
-        }
+        # the darwin menu can swap the wheel direction:
+        self.get_subsystem("pointer").wheel_map = {4: 4, 5: 5}
 
-        opengl = struct(
+        window = FakeSubsystem(
+            ("new-window", "bell-toggled"),
+            windows_enabled=True,
+            modal_windows=False,
+            server_bell=True,
+            client_supports_bell=True,
+            bell_enabled=False,
+            _window_to_id={},
+            send_refresh_all=noop,
+            reinit_windows=noop,
+            reinit_window_icons=noop,
+        )
+        window.set_bell_enabled = lambda enabled: self.set_value(window, "bell-toggled", "bell_enabled", enabled)
+
+        opengl = FakeSubsystem(
+            ("toggled", ),
             enabled=False,
             client_supports=True,
             properties={},
         )
-        command = struct(
+        opengl.toggle_opengl = lambda: self.set_value(opengl, "toggled", "enabled", not opengl.enabled)
+
+        command = FakeSubsystem(
             server_start_new_commands=True,
             server_commands_info=None,
             server_commands_signals=(),
@@ -107,19 +110,23 @@ class FakeApplication(FakeClient):
             server_menu=False,
             send_start_command=noop,
         )
-        display = struct(
+        display = FakeSubsystem(
+            ("scaling-changed", ),
             can_scale=True,
             xscale=1.0,
             yscale=1.0,
-            server_multi_monitors=False,
-            server_monitors={},
+            server_multi_monitors=True,
+            server_monitors={
+                0: {"name": "Monitor 1", "dynamic": False},
+                1: {"name": "Monitor 2"},
+            },
             server_add_monitor_label="",
-            server_new_monitor_resolutions=(),
+            server_new_monitor_resolutions=("1024x768", "1920x1080"),
         )
         display.scaleset = lambda xscale, yscale: self.set_scaling(display, xscale, yscale)
         display.cp = lambda x, y: (round(x * display.xscale), round(y * display.yscale))
 
-        encoding = struct(
+        encoding = FakeSubsystem(
             encoding="png",
             quality=80,
             min_quality=-1,
@@ -136,13 +143,15 @@ class FakeApplication(FakeClient):
             send_speed=noop,
             send_min_speed=noop,
         )
-        encoding.set_encoding = lambda enc: self.set_encoding(encoding, enc)
+        encoding.set_encoding = lambda enc: setattr(encoding, "encoding", enc)
 
-        audio = struct(
+        audio = FakeSubsystem(
+            ("speaker-changed", "microphone-changed", "audio-initialized"),
             speaker_allowed=True,
             speaker_enabled=True,
             microphone_allowed=True,
             microphone_enabled=True,
+            audio_sink="auto",
             server_send=True,
             server_receive=True,
             av_sync=True,
@@ -150,12 +159,13 @@ class FakeApplication(FakeClient):
             server_av_sync=True,
             send_audio_sync=noop,
         )
-        audio.start_receiving_audio = lambda: self.set_audio_enabled(audio, "speaker_enabled", True)
-        audio.stop_receiving_audio = lambda: self.set_audio_enabled(audio, "speaker_enabled", False)
-        audio.start_sending_audio = lambda: self.set_audio_enabled(audio, "microphone_enabled", True)
-        audio.stop_sending_audio = lambda: self.set_audio_enabled(audio, "microphone_enabled", False)
+        audio.start_receiving_audio = lambda: self.set_value(audio, "speaker-changed", "speaker_enabled", True)
+        audio.stop_receiving_audio = lambda: self.set_value(audio, "speaker-changed", "speaker_enabled", False)
+        audio.start_sending_audio = lambda: self.set_value(audio, "microphone-changed", "microphone_enabled", True)
+        audio.stop_sending_audio = lambda: self.set_value(audio, "microphone-changed", "microphone_enabled", False)
 
-        webcam = struct(
+        webcam = FakeSubsystem(
+            ("webcam-changed", ),
             server_enabled=True,
             forwarding=True,
             device=None,
@@ -164,24 +174,24 @@ class FakeApplication(FakeClient):
         webcam.start_sending_webcam = lambda device_no=0, device="": self.set_webcam_device(webcam, device_no, device)
         webcam.stop_sending_webcam = lambda: self.set_webcam_device(webcam, -1, None)
 
-        self._subsystems.update({
+        self.subsystems.update({
             "audio": audio,
-            "bandwidth": struct(
+            "bandwidth": FakeSubsystem(
                 server_limit=0,
                 limit=0,
                 send_limit=noop,
             ),
-            "clipboard": struct(
+            "clipboard": FakeSubsystem(
+                ("clipboard-toggled", ),
                 server_clipboard=False,
                 client_supports_clipboard=True,
                 clipboard_enabled=True,
                 clipboard_helper=None,
                 client_clipboard_direction="both",
                 send_clipboard_selections=noop,
-                emit=noop,
             ),
             "command": command,
-            "cursor": struct(
+            "cursor": FakeSubsystem(
                 server_enabled=False,
                 client_supports=True,
                 enabled=True,
@@ -190,48 +200,44 @@ class FakeApplication(FakeClient):
             ),
             "display": display,
             "encoding": encoding,
-            "keyboard": struct(helper=None),
-            "notification": struct(
+            "file": FakeSubsystem(
+                remote_file_transfer=True,
+            ),
+            "keyboard": FakeSubsystem(
+                helper=None,
+                server_enabled=False,
+                sync=False,
+                send_key_sequence=noop,
+            ),
+            "notification": FakeSubsystem(
                 client_supports=True,
                 enabled=False,
             ),
             "opengl": opengl,
+            "remote-info": FakeSubsystem(
+                _remote_subcommands=(),
+                _remote_server_log="",
+            ),
             "webcam": webcam,
-            "window": self,
+            "window": window,
         })
 
-    def get_subsystem(self, name: str):
-        return self._subsystems.get(name)
+    @staticmethod
+    def set_value(subsystem: FakeSubsystem, signal: str, name: str, value) -> None:
+        setattr(subsystem, name, value)
+        subsystem.emit(signal)
 
     @staticmethod
-    def set_scaling(display, xscale: float, yscale: float) -> None:
+    def set_scaling(display: FakeSubsystem, xscale: float, yscale: float) -> None:
         display.xscale = xscale
         display.yscale = yscale
+        display.emit("scaling-changed")
 
     @staticmethod
-    def set_encoding(encoding, value: str) -> None:
-        encoding.encoding = value
-
-    @staticmethod
-    def set_audio_enabled(audio, name: str, enabled: bool) -> None:
-        setattr(audio, name, enabled)
-
-    @staticmethod
-    def set_webcam_device(webcam, device_no: int, device) -> None:
+    def set_webcam_device(webcam: FakeSubsystem, device_no: int, device) -> None:
         webcam.device_no = device_no
         webcam.device = device
-
-    def set_bell_enabled(self, enabled: bool) -> None:
-        self.bell_enabled = enabled
-
-    def send_refresh_all(self, *_args) -> None:
-        log("send_refresh_all ignored")
-
-    def reinit_windows(self, *_args) -> None:
-        log("reinit_windows ignored")
-
-    def reinit_window_icons(self, *_args) -> None:
-        log("reinit_window_icons ignored")
+        webcam.emit("webcam-changed")
 
     def after_handshake(self, cb: Callable, *args) -> None:
         GLib.idle_add(cb, *args)
@@ -256,6 +262,15 @@ class FakeApplication(FakeClient):
         """ this method is part of the GUI client "interface" """
 
     def show_file_upload(self, *_args) -> None:
+        """ this method is part of the GUI client "interface" """
+
+    def show_shortcuts(self, *_args) -> None:
+        """ this method is part of the GUI client "interface" """
+
+    def send_keyboard_sync_enabled_status(self, *_args) -> None:
+        """ this method is part of the GUI client "interface" """
+
+    def send_setting_change(self, *_args) -> None:
         """ this method is part of the GUI client "interface" """
 
     def send_sharing_enabled(self, *_args) -> None:
