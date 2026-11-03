@@ -65,8 +65,8 @@ class DrawingArea(QLabel):
         }
         button = {
             Qt.MouseButton.LeftButton: 1,
-            Qt.MouseButton.RightButton: 2,
-            Qt.MouseButton.MiddleButton: 3,
+            Qt.MouseButton.MiddleButton: 2,
+            Qt.MouseButton.RightButton: 3,
         }.get(event.button(), -1)
         if button < 0:
             return
@@ -86,18 +86,17 @@ class DrawingArea(QLabel):
 
     def wheelEvent(self, event) -> None:
         pos = get_pointer_position(event)
-        delta = event.pixelDelta()
+        # (`pixelDelta()` is only set by high resolution devices, not by mouse wheels)
+        delta = event.angleDelta()
         props = {}
-        if delta.y() != 0:
-            button = 4 if delta.y() > 0 else 5
-            self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, True, pos, props)
-            self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, False, pos, props)
-            self.seq += 1
-        if delta.x() != 0:
-            button = 6 if delta.y() > 0 else 7
-            self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, True, pos, props)
-            self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, False, pos, props)
-            self.seq += 1
+        # sent as clicks of the wheel buttons: 4 and 5 for up and down, 6 and 7 for left and right
+        for button, value in ((4, delta.y()), (6, delta.x())):
+            if value:
+                if value < 0:
+                    button += 1
+                self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, True, pos, props)
+                self.send(POINTER_BUTTON, -1, self.seq, self.wid, button, False, pos, props)
+                self.seq += 1
 
 
 class ClientWindow(QMainWindow):
@@ -129,13 +128,10 @@ class ClientWindow(QMainWindow):
 
     def eventFilter(self, obj, event) -> bool:
         etype = event.type()
-        wc = self.client.get_subsystem("window")
         if etype == QEvent.Type.WindowDeactivate:
-            if wc:
-                wc.update_focus(0)
+            self.client.update_focus(0)
         elif etype == QEvent.Type.WindowActivate:
-            if wc:
-                wc.update_focus(self.wid)
+            self.client.update_focus(self.wid)
         elif etype == QEvent.Type.Show:
             x = self.pos().x() + self.label.pos().x()
             y = self.pos().y() + self.label.pos().y()
