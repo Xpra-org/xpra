@@ -5,7 +5,7 @@ Subject: [PATCH] Use CTest switches for testing
 Signed-off-by: Zephyr Lykos <git@mochaa.ws>
 
 diff --git a/CMakeLists.txt b/CMakeLists.txt
-index 75c0d3a3..6a30c363 100644
+index 1e10a10..0218c21 100644
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1,10 +1,9 @@
@@ -17,11 +17,11 @@ index 75c0d3a3..6a30c363 100644
  cmake_minimum_required( VERSION 3.16 )
  project ( YUV C CXX )	# "C" is required even for C++ projects
 -option( UNIT_TEST "Built unit tests" OFF )
+ option( LIBYUV_DISABLE_JPEG "Disable JPEG support" OFF )
 
  include(CheckCSourceCompiles)
-
-@@ -204,7 +203,9 @@ if (JPEG_FOUND)
-   add_definitions( -DHAVE_JPEG )
+@@ -264,7 +263,9 @@ if (NOT LIBYUV_DISABLE_JPEG)
+   endif()
  endif()
 
 -if(UNIT_TEST)
@@ -31,7 +31,7 @@ index 75c0d3a3..6a30c363 100644
    find_library(GTEST_LIBRARY gtest)
    if(GTEST_LIBRARY STREQUAL "GTEST_LIBRARY-NOTFOUND")
      set(GTEST_SRC_DIR_DEFAULT /usr/src/gtest)
-@@ -220,11 +221,12 @@ if(UNIT_TEST)
+@@ -280,11 +281,12 @@ if(UNIT_TEST)
        include_directories(${GTEST_SRC_DIR}/include)
        set(GTEST_LIBRARY gtest)
      else()
@@ -43,5 +43,5 @@ index 75c0d3a3..6a30c363 100644
    add_executable(libyuv_unittest ${ly_unittest_sources})
 +  add_test(NAME libyuv_test COMMAND libyuv_unittest)
    target_link_libraries(libyuv_unittest ${ly_lib_shared} ${GTEST_LIBRARY})
-   find_library(PTHREAD_LIBRARY pthread)
-   if(NOT PTHREAD_LIBRARY STREQUAL "PTHREAD_LIBRARY-NOTFOUND")
+   if(NOT MSVC)
+     target_link_libraries(libyuv_unittest m)
