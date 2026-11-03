@@ -76,6 +76,9 @@ class FakeClient(GLibScheduler):
     def get_subsystem(self, name: str):
         return self.subsystems.get(name)
 
+    def legacy_server(self) -> bool:
+        return False
+
     def get_window_frame_sizes(self, *_args) -> dict[str, Any]:
         return {}
 
