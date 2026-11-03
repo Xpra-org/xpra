@@ -8,7 +8,7 @@ import os
 import tempfile
 
 from xpra.util.env import envbool
-from xpra.os_util import WIN32, OSX, POSIX
+from xpra.os_util import WIN32, OSX, POSIX, get_hex_uuid
 from xpra.util.io import pollwait, which
 from xpra.exit_codes import exit_str
 from unit.test_util import get_free_tcp_port
@@ -152,12 +152,10 @@ class ServerMixinsOptionTestUtil(ServerTestUtil):
                     "--clipboard=no",  # could create loops
                     "--notification=no",  # may get sent to the desktop session running the tests!
                 ] + connect_args
-                gui_client = self.run_xpra(xpra_args, **client_kwargs)
-                r = pollwait(gui_client, 10)
-                if r is not None:
-                    self.show_proc_error(gui_client,
-                                         "gui client terminated early and returned %i : '%s' for server with args=%s" % (
-                                             r, exit_str(r), args))
+                gui_env = dict(client_kwargs.get("env", self.get_run_env()))
+                client_uuid = gui_env["XPRA_USER_UUID"] = get_hex_uuid()
+                gui_client = self.run_xpra(xpra_args, env=gui_env)
+                self.wait_for_client_connection(gui_client, client_uuid, *connect_args)
 
             if self.display:
                 self.stop_server(server, "exit", *connect_args)
