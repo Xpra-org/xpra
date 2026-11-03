@@ -113,13 +113,13 @@ class FakeWindowHost(GLibScheduler):
         return self.readonly
 
     def make_window(self, window_class: type, wid: int, geometry: tuple[int, int, int, int], metadata: dict,
-                    border=None, max_window_size=(0, 0), pixel_depth=0, headerbar="no"):
+                    border=None, max_window_size=(0, 0), pixel_depth=0, headerbar="no", get_xpra_menu=None):
         """ create a window which is not a transient for any other, and register it with the window subsystem """
         from xpra.client.gui.window_border import WindowBorder
         window = window_class(self.get_subsystem, self.is_readonly, None, wid,
                               geometry, geometry[2:4],
                               typedict(metadata), False, typedict(),
-                              border or WindowBorder(False), max_window_size, pixel_depth, headerbar)
+                              border or WindowBorder(False), max_window_size, pixel_depth, headerbar, get_xpra_menu)
         if wid:
             self.subsystems["window"]._id_to_window[wid] = window
         return window
