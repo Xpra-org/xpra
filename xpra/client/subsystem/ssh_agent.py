@@ -4,10 +4,11 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
-import os.path
+import os
 from typing import Any
 
 from xpra.client.base.stub import StubClientSubsystem
+from xpra.net.common import BACKWARDS_COMPATIBLE
 
 
 class SSHAgentClient(StubClientSubsystem):
@@ -19,14 +20,21 @@ class SSHAgentClient(StubClientSubsystem):
 
     def get_caps(self) -> dict[str, Any]:
         ssh_auth_sock = os.environ.get("SSH_AUTH_SOCK", "")
-        caps: dict[str, Any] = {}
-        if ssh_auth_sock and os.path.isabs(ssh_auth_sock):
-            # ensure agent forwarding is actually requested?
-            # (checking the socket type is not enough:
-            # one could still bind mount the path and connect via tcp! why though?)
-            # meh: if the transport doesn't have agent forwarding enabled,
-            # then it won't create a server-side socket
-            # and nothing will happen,
-            # exposing this client-side path is no big deal
+        if not ssh_auth_sock or not os.path.isabs(ssh_auth_sock):
+            return {}
+        agent_caps: dict[str, Any] = {"socket": ssh_auth_sock}
+        try:
+            sockstat = os.stat(ssh_auth_sock)
+        except (OSError, ValueError):
+            pass
+        else:
+            device = getattr(sockstat, "st_dev", None)
+            inode = getattr(sockstat, "st_ino", None)
+            if isinstance(device, int) and device >= 0 and isinstance(inode, int) and inode > 0:
+                # Allows the server to reject accidental matches to another
+                # machine's socket at the same path. This is not authentication.
+                agent_caps.update({"device": device, "inode": inode})
+        caps: dict[str, Any] = {SSHAgentClient.PREFIX: agent_caps}
+        if BACKWARDS_COMPATIBLE:
             caps["ssh-auth-sock"] = ssh_auth_sock
         return caps

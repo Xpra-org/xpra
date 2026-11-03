@@ -11,6 +11,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from xpra.client.subsystem.ssh_agent import SSHAgentClient
 from xpra.net.ssh.agent import get_ssh_agent_path, setup_ssh_auth_sock
 from xpra.server.source.ssh_agent import SSHAgentConnection
 from xpra.server.subsystem.ssh_agent import SshAgent
@@ -57,7 +58,7 @@ class SSHAgentTest(unittest.TestCase):
         if advertise:
             ss = SSHAgentConnection()
             ss.init_state()
-            ss.parse_client_caps(typedict({"ssh-auth-sock": os.path.join(self.session_dir, f"client-{name}")}))
+            ss.parse_client_caps(typedict({"ssh-agent": {"socket": os.path.join(self.session_dir, f"client-{name}")}}))
             ss.uuid = uuid
         else:
             # Windows clients can forward an agent without advertising SSH_AUTH_SOCK.
@@ -70,6 +71,70 @@ class SSHAgentTest(unittest.TestCase):
     def run_pending(self):
         while self.pending:
             self.pending.pop(0)()
+
+    def advertise_local_agent(self, source, path):
+        with patch.dict(os.environ, {"SSH_AUTH_SOCK": path}):
+            caps = SSHAgentClient(self.server).get_caps()
+        source.parse_client_caps(typedict(caps))
+
+    def test_matching_local_agent_is_registered(self):
+        source = self.add_source("a")
+        path = self.make_socket("local-agent")
+        self.advertise_local_agent(source, path)
+        self.agent.add_new_client(source, typedict())
+        self.assertTrue(os.path.samefile(self.active, path))
+        self.assertEqual(self.agent.get_agent_uuid(), source.uuid)
+
+    def test_mismatched_or_missing_identity_does_not_reuse_path(self):
+        source = self.add_source("a")
+        path = self.make_socket("local-agent")
+        sockstat = os.stat(path)
+        for identity in ((), (sockstat.st_dev+1, sockstat.st_ino), (sockstat.st_dev, sockstat.st_ino+1)):
+            with self.subTest(identity=identity):
+                agent_caps = {"socket": path}
+                if identity:
+                    agent_caps.update(zip(("device", "inode"), identity))
+                source.parse_client_caps(typedict({"ssh-agent": agent_caps}))
+                self.agent.add_new_client(source, typedict())
+                self.assertFalse(os.path.lexists(get_ssh_agent_path(source.uuid)))
+                self.assertTrue(os.path.samefile(self.active, self.default))
+
+    def test_socket_owner_must_match_server_effective_uid(self):
+        source = self.add_source("a")
+        path = self.make_socket("local-agent")
+        self.advertise_local_agent(source, path)
+        with patch("xpra.net.ssh.agent.os.geteuid", return_value=os.geteuid()+1):
+            self.agent.add_new_client(source, typedict())
+        self.assertFalse(os.path.lexists(get_ssh_agent_path(source.uuid)))
+        self.assertTrue(os.path.samefile(self.active, self.default))
+
+    def test_identity_follows_socket_symlinks(self):
+        source = self.add_source("a")
+        path = self.make_socket("local-agent")
+        symlink = os.path.join(self.session_dir, "client-agent")
+        os.symlink(path, symlink)
+        self.advertise_local_agent(source, symlink)
+        sockstat = os.stat(path)
+        self.assertEqual(source.ssh_auth_sock_stat, (sockstat.st_dev, sockstat.st_ino))
+        self.agent.add_new_client(source, typedict())
+        self.assertTrue(os.path.samefile(self.active, path))
+
+    def test_matching_regular_file_is_rejected(self):
+        source = self.add_source("a")
+        path = os.path.join(self.session_dir, "regular-file")
+        with open(path, "w", encoding="utf8"):
+            pass
+        self.advertise_local_agent(source, path)
+        self.agent.add_new_client(source, typedict())
+        self.assertFalse(os.path.lexists(get_ssh_agent_path(source.uuid)))
+        self.assertTrue(os.path.samefile(self.active, self.default))
+
+    def test_existing_forwarded_socket_does_not_require_matching_identity(self):
+        source = self.add_source("a", forwarded=True)
+        self.advertise_local_agent(source, self.default)
+        source.ssh_auth_sock_stat = (source.ssh_auth_sock_stat[0], source.ssh_auth_sock_stat[1]+1)
+        self.agent.add_new_client(source, typedict())
+        self.assertTrue(os.path.samefile(self.active, get_ssh_agent_path(source.uuid)))
 
     def test_unusable_ui_driver_does_not_mask_forwarded_agent(self):
         forwarded = self.add_source("a", forwarded=True)
@@ -137,6 +202,50 @@ class SSHAgentTest(unittest.TestCase):
         os.unlink(get_ssh_agent_path(forwarded.uuid))
         self.run_pending()
         self.assertTrue(os.path.samefile(self.active, self.default))
+
+
+class SSHAgentCapsTest(unittest.TestCase):
+
+    def setUp(self):
+        self.source = SSHAgentConnection()
+        self.source.init_state()
+
+    def test_socket_identity_is_parsed_and_reported(self):
+        caps = typedict({"ssh-agent": {"socket": "/agent", "device": 0, "inode": 2**64-1}})
+        for compatible in (True, False):
+            with self.subTest(compatible=compatible), patch("xpra.server.source.ssh_agent.BACKWARDS_COMPATIBLE", compatible):
+                self.assertTrue(SSHAgentConnection.is_needed(caps))
+                self.source.parse_client_caps(caps)
+                self.assertEqual(self.source.ssh_auth_sock, "/agent")
+                self.assertEqual(self.source.ssh_auth_sock_stat, (0, 2**64-1))
+                self.assertEqual(self.source.get_info(), caps)
+
+    def test_legacy_path_requires_compatibility_mode(self):
+        # The temporary top-level metadata format is never read, even in compatibility mode.
+        caps = typedict({"ssh-auth-sock": "/legacy-agent", "ssh-auth-sock-stat": (1, 2)})
+        for compatible in (True, False):
+            with self.subTest(compatible=compatible), patch("xpra.server.source.ssh_agent.BACKWARDS_COMPATIBLE", compatible):
+                self.assertEqual(SSHAgentConnection.is_needed(caps), compatible)
+                self.source.parse_client_caps(caps)
+                self.assertEqual(self.source.ssh_auth_sock, "/legacy-agent" if compatible else "")
+                self.assertEqual(self.source.ssh_auth_sock_stat, ())
+
+    def test_modern_dictionary_takes_precedence(self):
+        for agent_caps in ({"socket": "/modern-agent", "device": 1, "inode": 2}, {}):
+            with self.subTest(agent_caps=agent_caps), patch("xpra.server.source.ssh_agent.BACKWARDS_COMPATIBLE", True):
+                caps = typedict({"ssh-agent": agent_caps, "ssh-auth-sock": "/legacy-agent"})
+                self.assertEqual(SSHAgentConnection.is_needed(caps), bool(agent_caps))
+                self.source.parse_client_caps(caps)
+                self.assertEqual(self.source.ssh_auth_sock, agent_caps.get("socket", ""))
+                self.assertEqual(self.source.ssh_auth_sock_stat, (1, 2) if agent_caps else ())
+
+    def test_malformed_identity_is_ignored(self):
+        for device, inode in ((None, None), (None, 2), (1, None), ("1", "2"), (1, float("inf")), (-1, 2), (1, 0)):
+            with self.subTest(device=device, inode=inode):
+                # Invalid or absent metadata must also clear any previous value.
+                self.source.ssh_auth_sock_stat = (1, 2)
+                self.source.parse_client_caps(typedict({"ssh-agent": {"socket": "/agent", "device": device, "inode": inode}}))
+                self.assertEqual(self.source.ssh_auth_sock_stat, ())
 
 
 if __name__ == "__main__":
