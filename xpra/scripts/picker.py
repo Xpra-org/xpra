@@ -300,5 +300,6 @@ def get_sockpath(display_desc: dict[str, Any], timeout=CONNECT_TIMEOUT) -> str:
                     break
                 wait = 0.1 if state == SocketState.UNKNOWN else 1
                 time.sleep(wait)
-            dir_servers = socket_details()
+        # The socket may already have become LIVE between the two probes.
+        dir_servers = socket_details()
     return single_display_match(dir_servers, nomatch=f"cannot find live server for display {display}")[-1]
