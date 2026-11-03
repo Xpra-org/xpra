@@ -53,6 +53,7 @@ The packet type MUST be a Unicode string. Packet arguments use these types:
 | `bool` | Boolean, distinct from an integer in packet schemas |
 | `u8`, `u16`, `u32`, `u64` | Non-negative integer fitting that width |
 | `i8`, `i16`, `i32`, `i64` | Signed integer fitting that width |
+| `coord` | Integer from -65535 to 65535 |
 | `str` | Unicode string |
 | `bytes` | Arbitrary byte string |
 | `list<T>` | Ordered sequence of `T`; a tuple is encoded as a list |
@@ -482,10 +483,10 @@ parameters. Values outside advertised ranges MUST be rejected or clamped.
 | C -> S | `keyboard-event` | `wid:u64`, `keyname:str`, `pressed:bool`, `properties:map` |
 | C -> S | `keyboard-config` | `configuration:map` |
 | C -> S | `keyboard-sync` | `enabled:bool` |
-| either | `pointer-motion` | `device:i64`, `sequence:u64`, `wid:u64`, `pointer:list<u16>`, `properties:map` |
-| either | `pointer-button` | `device:i64`, `sequence:u64`, `wid:u64`, `button:u8`, `pressed:bool`, `pointer:list<u16>`, `properties:map` |
-| C -> S | `pointer-wheel` | `wid:u64`, `axis:u8`, `delta:i64`, `pointer:list<u16>`, `modifiers:list<str>`, `buttons:list<u8>`, `properties:map` |
-| S -> C | `pointer-wheel` | `wid:u64`, `axis:u8`, `delta:i64`, `pointer:list<u16>`, `modifiers:list<str>` |
+| either | `pointer-motion` | `device:i64`, `sequence:u64`, `wid:u64`, `pointer:list<coord>`, `properties:map` |
+| either | `pointer-button` | `device:i64`, `sequence:u64`, `wid:u64`, `button:u8`, `pressed:bool`, `pointer:list<coord>`, `properties:map` |
+| C -> S | `pointer-wheel` | `wid:u64`, `axis:u8`, `delta:i64`, `pointer:list<coord>`, `modifiers:list<str>`, `buttons:list<u8>`, `properties:map` |
+| S -> C | `pointer-wheel` | `wid:u64`, `axis:u8`, `delta:i64`, `pointer:list<coord>`, `modifiers:list<str>` |
 | S -> C | `pointer-position` | `wid:u64`, `x:i32`, `y:i32`, `relative_x:i32`, `relative_y:i32` |
 
 Keyboard event properties include modifier names, key value, text, hardware
