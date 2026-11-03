@@ -281,6 +281,16 @@ class TestGetSockpath(unittest.TestCase):
             result = get_sockpath(desc, timeout=0)
         self.assertEqual(result, "/tmp/xpra/:10")
 
+    def test_socket_becomes_live_between_probes(self):
+        dir_servers = {"/tmp": [(SocketState.LIVE, ":10", "/tmp/xpra/:10")]}
+        dotxpra = self._mock_dotxpra(display_state=SocketState.LIVE)
+        dotxpra.socket_details.side_effect = [{}, dir_servers]
+        desc = {"display": ":10", "socket_dir": "/tmp", "socket_dirs": []}
+        with patch("xpra.scripts.picker._DotXpra", return_value=dotxpra), \
+             patch("xpra.scripts.picker.get_username_for_uid", return_value="user"):
+            result = get_sockpath(desc, timeout=1)
+        self.assertEqual(result, "/tmp/xpra/:10")
+
     def test_dead_socket_no_timeout_raises(self):
         dotxpra = self._mock_dotxpra({}, SocketState.DEAD)
         desc = {"display": ":10", "socket_dir": "/tmp", "socket_dirs": []}
