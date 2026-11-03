@@ -449,6 +449,18 @@ def is_request_allowed(proto, request="info", default=True) -> bool:
     return r
 
 
+def parse_thread_getloadavg() -> bool:
+    """
+    Whether the ping handlers can call `getloadavg()`, they run on the network parse thread.
+    Call this before that thread is started, ie: at startup from the main thread.
+    """
+    try:
+        from xpra.seccomp.parse import blocks_getloadavg
+    except ImportError:
+        return True
+    return not blocks_getloadavg()
+
+
 def init() -> None:
     # no locking needed here,
     # this can be executed more than once in parallel without causing problems

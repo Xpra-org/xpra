@@ -36,6 +36,20 @@ def is_glibc() -> bool:
     return platform.libc_ver()[0] == "glibc"
 
 
+def get_version() -> tuple[int, ...]:
+    # ask the C library we are actually running with, ie: "glibc 2.34" - no file access:
+    try:
+        name, version = (os.confstr("CS_GNU_LIBC_VERSION") or "").split(" ", 1)
+    except (ValueError, OSError):
+        return ()
+    if name != "glibc":
+        return ()
+    try:
+        return tuple(int(x) for x in version.split("."))
+    except ValueError:
+        return ()
+
+
 def prepare() -> None:
     # only runs once per process, on the first thread installing a filter (still unfiltered):
     global prepared

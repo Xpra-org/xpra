@@ -29,7 +29,7 @@ ENABLED = envbool("XPRA_SECCOMP_PARSE", envbool("XPRA_SECCOMP", False))
 # * `getsockname` / `getsockopt` / `getpeername` - read-only socket introspection used when
 #   gathering connection info (peer credentials, unix socket path, ...)
 # * `sysinfo` - read-only system statistics, used by `os.getloadavg()` in the
-#   server-side ping handler (which stays on the parse thread):
+#   ping handlers (which stay on the parse thread), see `blocks_getloadavg`:
 SOCKET_SYSCALLS: tuple[str, ...] = (
     "recvfrom",
     "sendto",
@@ -63,6 +63,25 @@ def install_thread() -> bool:
     log("installing parse thread seccomp policy with action=%s", action)
     install_filter(PARSE_SYSCALLS, action)
     return True
+
+
+# glibc 2.35 and later implement `getloadavg()` with the `sysinfo` syscall,
+# older versions read `/proc/loadavg` instead - and the parse filter does not allow `openat`:
+GETLOADAVG_SYSINFO_GLIBC: tuple[int, int] = (2, 35)
+
+
+def blocks_getloadavg() -> bool:
+    """
+    Whether calling `getloadavg()` from the parse thread would trip the filter.
+    Call this before the filter is installed, ie: from the main thread at startup.
+    """
+    if not is_enabled():
+        return False
+    from xpra.seccomp.glibc import get_version
+    version = get_version()
+    blocked = bool(version) and version < GETLOADAVG_SYSINFO_GLIBC
+    log("blocks_getloadavg() glibc version=%s, blocked=%s", version, blocked)
+    return blocked
 
 
 def get_action() -> str:
