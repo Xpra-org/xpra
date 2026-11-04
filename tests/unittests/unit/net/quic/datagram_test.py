@@ -314,14 +314,20 @@ class QuicDatagramTest(unittest.TestCase):
         pair, sender = self.make_pair()
         big = self.make_payload("d", 0, 4000)
         small = self.make_payload("d", 1, 10)
-        sender.stream_write(big, DATAGRAM_TYPE)
-        sender.stream_write(small, DATAGRAM_TYPE)
+        with patch("xpra.net.quic.connection.log") as log:
+            sender.stream_write(big, DATAGRAM_TYPE)
+            sender.stream_write(small, DATAGRAM_TYPE)
+            sender.stream_write(big, DATAGRAM_TYPE)
         pair.drain_link()
         assert not pair.cquic._datagrams_pending, "datagram stuck in the aioquic send queue"
         stream, datagrams = self.received(pair)
-        # the big one is sent reliably on the stream instead:
-        assert stream == big
+        # the big ones are sent reliably on the stream instead:
+        assert stream == big + big
         assert datagrams == [small]
+        # counted, with a warning for the first one only:
+        assert sender.datagram_fallbacks == 2
+        assert sender.get_info()["quic"]["datagram-fallbacks"] == 2
+        assert log.warn.call_count == 2, log.warn.call_args_list
 
 
 @unittest.skipUnless(HAVE_AIOQUIC, "aioquic not available")

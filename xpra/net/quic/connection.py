@@ -59,6 +59,8 @@ class XpraQuicConnection(Connection):
         # datagrams are independent records, they must never be mixed with the stream data,
         # until something handles them (see `datagram_received`), they are dropped:
         self.datagrams_dropped: int = 0
+        # datagram packets too big to be sent as datagrams, sent on the stream instead:
+        self.datagram_fallbacks: int = 0
         self.stream_id: int = stream_id
         self.transmit: Callable[[], None] = transmit
         self.accepted: bool = False
@@ -72,6 +74,7 @@ class XpraQuicConnection(Connection):
         qinfo = {
             "read-queue": self.read_queue.qsize(),
             "datagrams-dropped": self.datagrams_dropped,
+            "datagram-fallbacks": self.datagram_fallbacks,
             "stream-id": self.stream_id,
             "datagram-packet-types": self.datagram_packet_types,
             "accepted": self.accepted,
@@ -143,7 +146,16 @@ class XpraQuicConnection(Connection):
         data = memoryview_to_bytes(buf)
         if not packet_type:
             log.warn(f"Warning: missing packet type for {data}")
-        datagram = packet_type in self.datagram_packet_types and len(data) <= self.get_max_datagram_size()
+        datagram = False
+        if packet_type in self.datagram_packet_types:
+            max_size = self.get_max_datagram_size()
+            datagram = len(data) <= max_size
+            if not datagram:
+                self.datagram_fallbacks += 1
+                log("%r packet too big for a datagram: %i bytes, maximum is %i", packet_type, len(data), max_size)
+                if self.datagram_fallbacks == 1:
+                    log.warn(f"Warning: {packet_type!r} packet is too big to be sent as a datagram")
+                    log.warn(f" {len(data)} bytes, the maximum is {max_size}, using the stream instead")
         stream_id = self.stream_id if datagram else self.get_packet_stream_id(packet_type)
         log("quic.stream_write(%s, %s) using %s %s", Ellipsizer(buf), packet_type,
             "datagram for stream id" if datagram else "stream id", stream_id)
