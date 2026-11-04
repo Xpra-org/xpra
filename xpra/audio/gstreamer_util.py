@@ -250,6 +250,13 @@ RTP_PACKET_LOSS = max(0, min(100, envint("XPRA_AUDIO_RTP_PACKET_LOSS", 5)))
 # because `opus` and `opus+rtp` share the same `opusenc` and `opusdec` elements:
 CODEC_ENCODER_OPTIONS: dict[str, dict[str, Any]] = {
     OPUS_RTP: {
+        # Keep RTP packets below 1000 bytes, leaving room for Xpra framing in QUIC datagrams.
+        # CBR and 20ms frames keep the existing 64kbps rate well below the payload limit:
+        # opusenc can fail on stereo VBR if max-payload-size is exceeded.
+        "bitrate": 64000,
+        "bitrate-type": 0,      # cbr
+        "frame-size": 20,
+        "max-payload-size": 980,  # plus the 12-byte RTP header = 992 bytes
         "inband-fec": True,
         "packet-loss-percentage": RTP_PACKET_LOSS,
     },

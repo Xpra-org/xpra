@@ -15,7 +15,7 @@ import unittest
 from collections.abc import Callable
 from unittest.mock import patch, Mock
 
-from xpra.audio.common import OPUS, OPUS_RTP, FLAC
+from xpra.audio.common import OPUS, OPUS_OGG, OPUS_MKA, OPUS_RTP, FLAC
 from xpra.gstreamer.common import import_gst, has_plugins
 
 GST_PLUGINS = (
@@ -40,13 +40,14 @@ def get_gst():
     return gst
 
 
-def encode_packets(gst, count: int) -> list[bytes]:
+def encode_packets(gst, count: int, channels=0, wave="sine") -> list[bytes]:
     """ run the real capture pipeline elements, with a test source, and collect the RTP packets """
     from xpra.audio import src as audio_src
     from xpra.audio.gstreamer_util import get_encoder_elements
     encoder, fmt, _ = get_encoder_elements(OPUS_RTP)
-    src_options = {"num-buffers": count, "samplesperbuffer": 48000 * PACKET_DURATION // 1000}
-    with patch.object(audio_src, "CUTTER_THRESHOLD", 0):
+    src_options = {"num-buffers": count, "samplesperbuffer": 48000 * PACKET_DURATION // 1000, "wave": wave}
+    with patch.object(audio_src, "CUTTER_THRESHOLD", 0), \
+            patch.object(audio_src, "_get_source_channels", return_value=channels):
         els = audio_src.get_source_pipeline_elements("audiotestsrc", src_options, encoder, fmt, {}, codec=OPUS_RTP)
     # the source queue is `leaky=downstream` with a 50ms limit, which is fine for a live
     # source but throws most of the stream away when a test source runs flat out:
@@ -141,6 +142,29 @@ class TestRTPPipelineElements(unittest.TestCase):
         plain = get_encoder_default_options("opusenc", OPUS)
         assert "inband-fec" not in plain
         assert get_encoder_default_options("opusenc") == plain
+
+    def test_other_opus_encoders_unchanged(self):
+        from xpra.audio.gstreamer_util import get_encoder_default_options
+        plain = get_encoder_default_options("opusenc")
+        assert plain["bitrate-type"] == 1, "non-RTP Opus must keep VBR"
+        assert "bitrate" not in plain, "non-RTP Opus must keep the GStreamer bitrate default"
+        assert "frame-size" not in plain, "non-RTP Opus must keep the GStreamer frame duration default"
+        assert "max-payload-size" not in plain, "the datagram limit must only apply to RTP"
+        for codec in (OPUS, OPUS_OGG, OPUS_MKA):
+            with self.subTest(codec=codec):
+                assert get_encoder_default_options("opusenc", codec) == plain
+
+
+class TestRTPPacketSizes(unittest.TestCase):
+
+    def test_packets_fit_datagrams(self):
+        gst = get_gst()
+        for channels in (1, 2):
+            for wave in ("sine", "white-noise", "silence"):
+                with self.subTest(channels=channels, wave=wave):
+                    packets = encode_packets(gst, 100, channels, wave)
+                    largest = max(map(len, packets))
+                    assert largest < 1000, f"RTP packet too large for a datagram: {largest} bytes"
 
 
 class TestRTPLossPipeline(unittest.TestCase):
