@@ -51,6 +51,7 @@ class TestSSLSocketConnection(unittest.TestCase):
         conn.nodelay = None
         conn.nodelay_value = None
         conn.cork = None
+        conn.datagram = False
         return conn
 
     # can_retry ---
