@@ -51,9 +51,23 @@ AUDIO_CONTROL_PACKET = "sound-control" if BACKWARDS_COMPATIBLE else "audio-contr
 AUDIO_KEEPALIVE_PACKET = "audio-keepalive"
 AUDIO_LEVEL_PACKET = "audio-level"
 AUDIO_SIGNAL_PACKET = "audio-signal"
+# newer peers mark the start and end of a stream with this packet (we advertise `stream-packet`),
+# we handle it like the `start-of-stream` / `end-of-stream` metadata of empty `audio-data` packets:
+AUDIO_STREAM_PACKET = "audio-stream"
+
 AUDIO_KEEPALIVE_INTERVAL = envint("XPRA_AUDIO_KEEPALIVE_INTERVAL", 5)
 AUDIO_KEEPALIVE_TIMEOUT = envint("XPRA_AUDIO_KEEPALIVE_TIMEOUT", 10)
 SILENCE_FLOOR_DB = -120
+
+
+def audio_stream_metadata(event: str, codec: str, sequence: int) -> dict | None:
+    """ converts an `audio-stream` event into the equivalent `audio-data` metadata """
+    if event == "start":
+        return {"start-of-stream": True, "codec": codec, "sequence": sequence}
+    if event == "end":
+        return {"end-of-stream": True, "sequence": sequence}
+    return None
+
 
 # PulseAudio receives the server's terminal signal directly (ie: Ctrl-C) and may exit
 # before our audio subprocesses process their cleanup request:

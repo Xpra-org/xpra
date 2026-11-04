@@ -9,7 +9,7 @@ from threading import Event
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.audio.common import AUDIO_KEEPALIVE_PACKET, SILENCE_FLOOR_DB
+from xpra.audio.common import AUDIO_KEEPALIVE_PACKET, AUDIO_STREAM_PACKET, SILENCE_FLOOR_DB, audio_stream_metadata
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
 from xpra.util.env import first_time, envbool, envint
@@ -407,6 +407,15 @@ class AudioServer(StubSubsystem):
         if ss := self.get_server_source(proto):
             ss.audio_data(*packet[1:])
 
+    def _process_stream(self, proto, packet: Packet) -> None:
+        codec = packet.get_str(2)
+        metadata = audio_stream_metadata(packet.get_str(1), codec, packet.get_i64(3))
+        if metadata is None:
+            log.warn(f"Warning: unknown audio stream event {packet.get_str(1)!r}")
+            return
+        if ss := self.get_server_source(proto):
+            ss.audio_data(codec, b"", metadata)
+
     def _process_capabilities(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
             ss.client_audio_capabilities(packet.get_dict(1))
@@ -418,7 +427,8 @@ class AudioServer(StubSubsystem):
     def init_packet_handlers(self) -> None:
         if self.supports_speaker or self.supports_microphone:
             self.add_packets(f"{AudioServer.PREFIX}-control", main_thread=True)
-            self.add_packets(f"{AudioServer.PREFIX}-data")
+            # `audio-stream` must not be re-ordered with the `audio-data` packets:
+            self.add_packets(f"{AudioServer.PREFIX}-data", AUDIO_STREAM_PACKET)
             self.add_packets(f"{AudioServer.PREFIX}-capabilities", main_thread=True)
             self.add_packets(AUDIO_KEEPALIVE_PACKET)
             self.add_legacy_alias("sound-control", f"{AudioServer.PREFIX}-control")

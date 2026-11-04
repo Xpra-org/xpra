@@ -11,6 +11,7 @@ from collections.abc import Callable, Sequence, Iterable
 from xpra.audio.common import (
     AUDIO_DATA_PACKET, AUDIO_CONTROL_PACKET, AUDIO_KEEPALIVE_PACKET,
     AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET,
+    AUDIO_STREAM_PACKET, audio_stream_metadata,
 )
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.platform.paths import get_icon_filename
@@ -289,6 +290,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             "receive": self.speaker_allowed,
             "level": True,
             "signal": True,
+            "stream-packet": True,
         }
         caps.update(self.get_audio_keepalive_caps())
         # make mypy happy about the type: convert typedict to dict with string keys
@@ -755,6 +757,14 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         self.auto_start()
         self.emit("audio-initialized")
 
+    def _process_stream(self, packet: Packet) -> None:
+        codec = packet.get_str(2)
+        metadata = audio_stream_metadata(packet.get_str(1), codec, packet.get_i64(3))
+        if metadata is None:
+            log.warn(f"Warning: unknown audio stream event {packet.get_str(1)!r}")
+            return
+        self._process_data(Packet(AUDIO_DATA_PACKET, codec, b"", metadata))
+
     def _process_data(self, packet: Packet) -> None:
         codec = packet.get_str(1)
         data = packet.get_buffer(2)
@@ -831,8 +841,10 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
 
     def init_authenticated_packet_handlers(self) -> None:
         log("init_authenticated_packet_handlers()")
-        # this handler can run directly from the network thread:
+        # these handlers can run directly from the network thread,
+        # `audio-stream` must not be re-ordered with the `audio-data` packets:
         self.add_packets(f"{AudioClient.PREFIX}-data")
+        self.add_packets(AUDIO_STREAM_PACKET)
         self.add_packets(f"{AudioClient.PREFIX}-capabilities", main_thread=True)
         self.add_packets(AUDIO_KEEPALIVE_PACKET)
         self.add_packets(AUDIO_LEVEL_PACKET)

@@ -219,6 +219,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
             "send": self.supports_speaker and len(self.speaker_codecs) > 0,
             "receive": self.supports_microphone and len(self.microphone_codecs) > 0,
             "async": True,
+            "stream-packet": True,
         })
         audio_caps.update(self.get_audio_keepalive_caps())
         log("get_audio_caps()=%s", audio_caps)
