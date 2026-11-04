@@ -92,12 +92,14 @@ class Fragments(Draw):
         self.drawn.append(packet)
 
 
-def make_fragments(data: bytes, nals, datagram=100, frame_type="", stream_sequence=6):
+def make_fragments(data: bytes, nals, datagram=100, frame_type="", stream_sequence=6, last_frame_loss=0):
     from xpra.server.window.compress import WindowSource
     source = object.__new__(WindowSource)
     source.wid = 1
     source.datagram = datagram
     source.last_stream_sequence = stream_sequence
+    source.last_frame_loss = last_frame_loss
+    source.parity_fragments = 0
     options = {"frame": 5, "nals": list(nals)}
     if frame_type:
         options["type"] = frame_type
@@ -190,6 +192,33 @@ class WindowDrawFragmentTest(unittest.TestCase):
         # fragments for frame 7 are now too late:
         client._process_draw_fragment(fragments[1])
         self.assertEqual(len(client.drawn), 2)
+
+    def test_parity_after_losses(self):
+        from time import monotonic
+        # no parity until the client reports a loss:
+        fragments = make_fragments(self.DATA, self.NALS)
+        self.assertEqual(max(f[11] for f in fragments), len(fragments) - 1)
+        with_parity = make_fragments(self.DATA, self.NALS, last_frame_loss=monotonic())
+        count = with_parity[0][12]
+        self.assertEqual(count, len(fragments))
+        parity = [f for f in with_parity if f[11] >= count]
+        self.assertEqual(len(parity), 1)
+        # it can be used to recover any one of the fragments:
+        client = Fragments()
+        client._process_draw(self.stream_packet(6))
+        client.drawn = []
+        for fragment in with_parity[1:]:
+            client._process_draw_fragment(fragment)
+        self.assertEqual(len(client.drawn), 1)
+        self.assertEqual(client.drawn[0][7], self.DATA)
+        self.assertNotIn("missing-fragments", client.drawn[0][10])
+        self.assertEqual(client.get_info()["fragments"]["recovered"], 1)
+
+    def test_fixed_parity(self):
+        with patch("xpra.server.window.compress.DRAW_FRAGMENT_FEC", 50):
+            fragments = make_fragments(self.DATA, self.NALS)
+        count = fragments[0][12]
+        self.assertEqual(len(fragments), count + (count + 1) // 2)
 
     def test_lost_frame_is_acked(self):
         client = Fragments()

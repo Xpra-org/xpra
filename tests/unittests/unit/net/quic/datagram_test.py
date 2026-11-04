@@ -549,6 +549,8 @@ class QuicDatagramProtocolTest(unittest.TestCase):
             source.wid = 0x7fffffff
             source.datagram = datagram
             source.last_stream_sequence = 2 ** 48 - 1
+            source.last_frame_loss = 0
+            source.parity_fragments = 0
             # a frame made of NALs of varying sizes, some larger than a datagram:
             sizes = [datagram // 3, datagram, datagram * 2 + 7, 17, datagram - 1] * 4
             data = bytes(i & 0xff for i in range(sum(sizes)))

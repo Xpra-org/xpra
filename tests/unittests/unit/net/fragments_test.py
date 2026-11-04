@@ -7,7 +7,7 @@
 import unittest
 from random import Random
 
-from xpra.net.fragments import fragment_frame, FrameAssembler, FrameStatus
+from xpra.net.fragments import fragment_frame, make_parity, recover_fragment, FrameAssembler, FrameStatus
 
 
 def make_frame(sizes) -> tuple[bytes, list[int]]:
@@ -74,6 +74,35 @@ class FragmentFrameTest(unittest.TestCase):
                 fragment_frame(data, bad, 100)
         with self.assertRaises(ValueError):
             fragment_frame(data, boundaries, 0)
+
+
+class ParityTest(unittest.TestCase):
+
+    def test_recover_any_fragment(self):
+        rng = Random(2)
+        for _ in range(50):
+            sizes = [rng.randint(1, 3000) for _ in range(rng.randint(1, 20))]
+            data, boundaries = make_frame(sizes)
+            fragments = fragment_frame(data, boundaries, rng.randint(64, 1200))
+            parity_count = rng.randint(1, len(fragments))
+            parity = make_parity(fragments, parity_count)
+            self.assertLessEqual(len(parity), parity_count)
+            # the blocks cover all the fragments, once:
+            covered = [i for _, start, size in parity for i in range(start, start + size)]
+            self.assertEqual(covered, list(range(len(fragments))))
+            for parity_data, start, size in parity:
+                for lost in range(start, start + size):
+                    others = [fragments[i] for i in range(start, start + size) if i != lost]
+                    self.assertEqual(recover_fragment(parity_data, others), fragments[lost])
+
+    def test_no_parity(self):
+        self.assertEqual(make_parity([], 2), [])
+        self.assertEqual(make_parity([(b"x", 0, 1)], 0), [])
+
+    def test_invalid_recovery(self):
+        with self.assertRaises(ValueError):
+            # the size in the header is larger than the payload:
+            recover_fragment(b"\xff\xff\0\0\0\x01", [])
 
 
 class FrameAssemblerTest(unittest.TestCase):
@@ -221,6 +250,57 @@ class FrameAssemblerTest(unittest.TestCase):
         self.send(2, fragments, (0, ))
         self.assertEqual(self.assembler.stats["late"], 1)
         self.assertEqual(tuple(self.assembler.pending), (3, ))
+
+    def send_parity(self, sequence: int, fragments, parity, indexes=None, now=0.0):
+        count = len(fragments)
+        for p in (range(len(parity)) if indexes is None else indexes):
+            data, block_start, block_size = parity[p]
+            self.assembler.add(sequence, count + p, count, block_start, block_size, data, ("meta", sequence), now)
+
+    def test_parity_recovers_lost_fragments(self):
+        data, boundaries = make_frame([50, 1000, 50, 300, 300])
+        fragments = fragment_frame(data, boundaries, 300)
+        parity = make_parity(fragments, 2)
+        # lose one fragment from each block, the parity arrives before the other fragments:
+        self.send_parity(1, fragments, parity)
+        self.send(1, fragments, [i for i in range(len(fragments)) if i not in (0, len(fragments) - 1)])
+        self.assertEqual(len(self.delivered), 1, "frame not recovered")
+        frame = self.delivered[0]
+        self.assertEqual(frame.status, FrameStatus.COMPLETE)
+        self.assertEqual(frame.data, data)
+        self.assertEqual(self.assembler.stats["recovered"], 2)
+        self.assertEqual(self.assembler.stats["parity"], 2)
+
+    def test_parity_cannot_recover_two_losses(self):
+        data, boundaries = make_frame([100] * 6)
+        fragments = fragment_frame(data, boundaries, 100)
+        parity = make_parity(fragments, 1)
+        self.send(1, fragments, (0, 1, 2, 3))
+        self.send_parity(1, fragments, parity)
+        self.assertFalse(self.delivered)
+        self.assembler.expire(1)
+        frame = self.delivered[0]
+        self.assertEqual(frame.status, FrameStatus.PARTIAL)
+        self.assertEqual(frame.missing, (4, 5))
+        self.assertEqual(self.assembler.stats["recovered"], 0)
+
+    def test_parity_only(self):
+        data, boundaries = make_frame([100] * 2)
+        fragments = fragment_frame(data, boundaries, 100)
+        parity = make_parity(fragments, 2)
+        # each parity fragment covers a single fragment, so it is a copy:
+        self.send_parity(1, fragments, parity)
+        self.assertEqual(self.delivered[0].data, data)
+
+    def test_invalid_parity(self):
+        for index, count, block_start, block_size in (
+            (4, 4, 0, 5),       # block too big
+            (4, 4, 4, 1),       # block out of range
+            (4, 4, 0, 0),       # empty block
+            (8, 4, 0, 1),       # too many parity fragments
+        ):
+            self.assembler.add(1, index, count, block_start, block_size, b"x", (), 0)
+        self.assertEqual(self.assembler.stats["invalid"], 4)
 
     def test_duplicates_and_invalid(self):
         data, boundaries = make_frame([100] * 4)

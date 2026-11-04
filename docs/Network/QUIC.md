@@ -62,6 +62,8 @@ then decodes the slices it did receive, or skips the frame if there are none
 * the decoder conceals the missing slices (`openh264` decoder only, `XPRA_OPENH264_ERROR_CONCEALMENT`)
 * the client tells the server which frames were damaged or lost (`window-ack` packets),
 so that the encoder stops referencing them: `x264` invalidates the damaged reference frames, `openh264` sends a keyframe
+* once the client has reported some losses, parity fragments are added to the frames:
+each one covers a block of fragments, and can be used to rebuild any one fragment missing from that block
 
 Environment variables:
 * `XPRA_QUIC_DATAGRAM_PACKET_TYPES`: the packet types to send as datagrams, if the peer accepts them (default: `audio-data`),
@@ -73,6 +75,9 @@ add `window-draw-fragment` to send video frames as datagrams
 * `XPRA_DRAW_FRAGMENT_OVERHEAD`: the space reserved for the `window-draw-fragment` packet headers (default: `192` bytes)
 * `XPRA_MAX_DRAW_FRAGMENTS`: frames that need more fragments than this are sent on the stream (default: `64`)
 * `XPRA_DRAW_FRAGMENT_TIMEOUT`: how long the client waits for the missing fragments of a frame (default: `50` ms)
+* `XPRA_DRAW_FRAGMENT_FEC`: the number of parity fragments to add, as a percentage of the fragments, `-1` for automatic (default)
+* `XPRA_DRAW_FRAGMENT_FEC_AUTO`: the percentage of parity fragments used in automatic mode (default: `10`)
+* `XPRA_DRAW_FRAGMENT_FEC_DURATION`: how long to keep adding parity fragments after a loss, in automatic mode (default: `10` seconds)
 
 <div class="docs-section-heading" markdown="1">
 

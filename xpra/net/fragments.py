@@ -13,8 +13,12 @@ The frames are split on the boundaries of the units the decoder can use on their
 Each fragment holds one or more consecutive units,
 a unit that is too big to fit in a single fragment is split into a `group` of fragments,
 which is only usable if all the fragments of the group are received.
+
+Parity fragments can also be added to a frame, each one covering a block of consecutive fragments,
+any single fragment missing from a block can be rebuilt from the others and the block's parity fragment.
 """
 
+from struct import pack, unpack_from
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from enum import Enum
@@ -67,6 +71,51 @@ def fragment_frame(data, boundaries: Sequence[int], max_size: int) -> list[tuple
     return fragments
 
 
+# each fragment is covered by its parity fragment along with its size and group,
+# so that all of these can be recovered:
+PARITY_HEADER = ">HHH"
+PARITY_HEADER_SIZE = 6
+
+
+def xor_bytes(buffers: Sequence[bytes]) -> bytes:
+    """ XOR all the buffers, the shorter ones are padded with zeroes """
+    size = max(len(buf) for buf in buffers)
+    value = 0
+    for buf in buffers:
+        value ^= int.from_bytes(buf.ljust(size, b"\0"), "big")
+    return value.to_bytes(size, "big")
+
+
+def parity_payload(fragment: tuple[bytes, int, int]) -> bytes:
+    data, group_start, group_size = fragment
+    return pack(PARITY_HEADER, len(data), group_start, group_size) + data
+
+
+def make_parity(fragments: Sequence[tuple[bytes, int, int]], parity_count: int) -> list[tuple[bytes, int, int]]:
+    """
+    Returns `parity_count` parity fragments as `(parity_data, block_start, block_size)`,
+    each one covering a block of consecutive fragments.
+    """
+    count = len(fragments)
+    if count == 0 or parity_count <= 0:
+        return []
+    block_size = (count + parity_count - 1) // parity_count
+    parity: list[tuple[bytes, int, int]] = []
+    for start in range(0, count, block_size):
+        block = fragments[start:start + block_size]
+        parity.append((xor_bytes([parity_payload(fragment) for fragment in block]), start, len(block)))
+    return parity
+
+
+def recover_fragment(parity_data: bytes, others: Sequence[tuple[bytes, int, int]]) -> tuple[bytes, int, int]:
+    """ rebuild the single fragment missing from a block """
+    payload = xor_bytes([parity_data] + [parity_payload(fragment) for fragment in others])
+    size, group_start, group_size = unpack_from(PARITY_HEADER, payload)
+    if PARITY_HEADER_SIZE + size > len(payload):
+        raise ValueError(f"invalid recovered fragment size {size}")
+    return payload[PARITY_HEADER_SIZE:PARITY_HEADER_SIZE + size], group_start, group_size
+
+
 class FrameStatus(Enum):
     COMPLETE = "complete"
     PARTIAL = "partial"
@@ -86,6 +135,8 @@ class PendingFrame:
     metadata: tuple
     # index -> (data, group_start, group_size)
     fragments: dict[int, tuple[bytes, int, int]] = field(default_factory=dict)
+    # block_start -> (parity_data, block_size)
+    parity: dict[int, tuple[bytes, int]] = field(default_factory=dict)
 
     def is_complete(self) -> bool:
         return len(self.fragments) == self.count
@@ -156,12 +207,22 @@ class FrameAssembler:
             "late": 0,
             "invalid": 0,
             "duplicate": 0,
+            "parity": 0,
+            "recovered": 0,
         } | {status.value: 0 for status in FrameStatus}
 
     def add(self, sequence: int, index: int, count: int, group_start: int, group_size: int,
             data: bytes, metadata: tuple, now: float, stream_sequence: int = 0) -> None:
-        if (count <= 0 or not 0 <= index < count or not 0 <= group_start <= index < group_start + group_size <= count
-                or not 0 <= stream_sequence < sequence):
+        """
+        Fragments with an `index` greater or equal to `count` are parity fragments,
+        for those, `group_start` and `group_size` are the block of fragments covered.
+        """
+        is_parity = index >= count
+        if is_parity:
+            valid = 0 <= group_start < group_start + group_size <= count and index < count * 2
+        else:
+            valid = 0 <= index and 0 <= group_start <= index < group_start + group_size <= count
+        if not valid or count <= 0 or not 0 <= stream_sequence < sequence:
             self.stats["invalid"] += 1
             return
         if sequence <= self.last_sequence:
@@ -174,12 +235,43 @@ class FrameAssembler:
         elif frame.count != count or frame.stream_sequence != stream_sequence:
             self.stats["invalid"] += 1
             return
-        if index in frame.fragments:
-            self.stats["duplicate"] += 1
-            return
-        self.stats["fragments"] += 1
-        frame.fragments[index] = (data, group_start, group_size)
+        if is_parity:
+            if group_start in frame.parity:
+                self.stats["duplicate"] += 1
+                return
+            self.stats["parity"] += 1
+            frame.parity[group_start] = (data, group_size)
+        else:
+            if index in frame.fragments:
+                self.stats["duplicate"] += 1
+                return
+            self.stats["fragments"] += 1
+            frame.fragments[index] = (data, group_start, group_size)
+        if frame.parity and not frame.is_complete():
+            self.recover(frame)
         self.deliver_ready(now)
+
+    def recover(self, frame: PendingFrame) -> None:
+        """ rebuild the fragments we can using the parity fragments """
+        for block_start, (parity_data, block_size) in tuple(frame.parity.items()):
+            indexes = range(block_start, block_start + block_size)
+            missing = [i for i in indexes if i not in frame.fragments]
+            if len(missing) != 1:
+                continue
+            others = [frame.fragments[i] for i in indexes if i != missing[0]]
+            try:
+                fragment = recover_fragment(parity_data, others)
+            except ValueError:
+                self.stats["invalid"] += 1
+            else:
+                _data, group_start, group_size = fragment
+                index = missing[0]
+                if 0 <= group_start <= index < group_start + group_size <= frame.count:
+                    frame.fragments[index] = fragment
+                    self.stats["recovered"] += 1
+                else:
+                    self.stats["invalid"] += 1
+            del frame.parity[block_start]
 
     def get_wakeup(self, frame: PendingFrame, now: float) -> float:
         """ returns 0 if the frame can be delivered now, otherwise when to check again """

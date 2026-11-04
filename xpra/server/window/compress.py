@@ -22,7 +22,7 @@ from xpra.util.env import envint, envbool, first_time
 from xpra.util.thread import check_main_thread, is_main_thread
 from xpra.net.common import Packet, MmapPointerError
 from xpra.net.packet_type import WINDOW_DRAW, WINDOW_DRAW_FRAGMENT
-from xpra.net.fragments import fragment_frame
+from xpra.net.fragments import fragment_frame, make_parity
 from xpra.constants import (
     MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND, WINDOW_DECODE_LOST,
 )
@@ -100,6 +100,11 @@ STRICT_MODE = envbool("XPRA_ENCODING_STRICT_MODE", False)
 # frames that need more fragments than this are sent whole, on the stream:
 MAX_DRAW_FRAGMENTS = envint("XPRA_MAX_DRAW_FRAGMENTS", 64)
 KEYFRAME_TYPES = ("IDR", "I", "KEYFRAME")
+# the number of parity fragments to add to fragmented frames, as a percentage of the fragments,
+# -1 for automatic: only for a while after the client has reported some losses
+DRAW_FRAGMENT_FEC = envint("XPRA_DRAW_FRAGMENT_FEC", -1)
+DRAW_FRAGMENT_FEC_AUTO = envint("XPRA_DRAW_FRAGMENT_FEC_AUTO", 10)
+DRAW_FRAGMENT_FEC_DURATION = envint("XPRA_DRAW_FRAGMENT_FEC_DURATION", 10)
 MAX_QUALITY = envint("XPRA_ENCODING_MAX_QUALITY", 100)
 MAX_SPEED = envint("XPRA_ENCODING_MAX_SPEED", 100)
 assert MAX_QUALITY > 0 and MAX_SPEED > 0
@@ -369,6 +374,8 @@ class WindowSource(WindowIconSource):
         self.last_stream_sequence = 0
         # frames sent as fragments that the client lost entirely, or only received in part:
         self.frame_losses: dict[str, int] = {"lost": 0, "partial": 0}
+        self.last_frame_loss: float = 0
+        self.parity_fragments: int = 0
 
         self.pixel_format = None                            # ie: BGRX
         self.image_depth: int = window.get_property("depth")
@@ -662,6 +669,7 @@ class WindowSource(WindowIconSource):
             },
             "send-timetamps"        : self.send_timetamps,
             "frame-losses"          : dict(self.frame_losses),
+            "parity-fragments"      : self.parity_fragments,
             "rgb_formats"           : self.rgb_formats,
             "bit-depth"             : {
                 "source"                : self.image_depth,
@@ -2459,11 +2467,24 @@ class WindowSource(WindowIconSource):
             return []
         head = list(packet[1:7])
         tail = list(packet[8:11])
+        # parity fragments use the indexes after the data fragments,
+        # and their group is the block of data fragments they cover:
+        parity = make_parity(fragments, self.get_parity_count(count))
+        self.parity_fragments += len(parity)
         return [
             Packet(WINDOW_DRAW_FRAGMENT, *head, fragment_data, *tail, index, count, group_start, group_size,
                    self.last_stream_sequence)
-            for index, (fragment_data, group_start, group_size) in enumerate(fragments)
+            for index, (fragment_data, group_start, group_size) in enumerate(fragments + parity)
         ]
+
+    def get_parity_count(self, count: int) -> int:
+        pct = DRAW_FRAGMENT_FEC
+        if pct < 0:
+            recent_loss = self.last_frame_loss > 0 and monotonic() - self.last_frame_loss < DRAW_FRAGMENT_FEC_DURATION
+            pct = DRAW_FRAGMENT_FEC_AUTO if recent_loss else 0
+        if pct <= 0:
+            return 0
+        return min(count, ceil(count * pct / 100))
 
     def save_update(self, packet: Packet, damage_time: float) -> None:
         import json
@@ -2621,6 +2642,7 @@ class WindowSource(WindowIconSource):
         lost = decode_time == WINDOW_DECODE_LOST
         if lost or (extra and extra.get("missing")):
             self.frame_losses["lost" if lost else "partial"] += 1
+            self.last_frame_loss = monotonic()
             self.video_frame_lost(damage_packet_sequence, pending[4] if pending else {})
         if pending is None:
             log("cannot find sent time for sequence %s", damage_packet_sequence)
