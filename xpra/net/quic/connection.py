@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from random import random
 from queue import SimpleQueue
 from typing import Any
 from collections.abc import Callable, Sequence
@@ -42,6 +43,9 @@ DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
 # and an `opus+rtp` audio packet is about 1105 bytes (see `CODEC_ENCODER_OPTIONS`).
 DATAGRAM_OVERHEAD = 64
 
+# for testing loss tolerance: the percentage of outgoing datagrams to discard
+DATAGRAM_DROP_PCT = float(os.environ.get("XPRA_QUIC_DATAGRAM_DROP_PCT", "0"))
+
 if envbool("XPRA_QUIC_LOGGER", True):
     override_aioquic_logger()
 
@@ -66,6 +70,8 @@ class XpraQuicConnection(Connection):
         self.datagrams_dropped: int = 0
         # datagram packets too big to be sent as datagrams, sent on the stream instead:
         self.datagram_fallbacks: int = 0
+        # outgoing datagrams we have discarded on purpose (see `DATAGRAM_DROP_PCT`):
+        self.datagrams_discarded: int = 0
         self.stream_id: int = stream_id
         self.transmit: Callable[[], None] = transmit
         self.accepted: bool = False
@@ -80,6 +86,7 @@ class XpraQuicConnection(Connection):
             "read-queue": self.read_queue.qsize(),
             "datagrams-dropped": self.datagrams_dropped,
             "datagram-fallbacks": self.datagram_fallbacks,
+            "datagrams-discarded": self.datagrams_discarded,
             "stream-id": self.stream_id,
             "datagram-packet-types": self.datagram_packet_types,
             "accepted": self.accepted,
@@ -197,6 +204,10 @@ class XpraQuicConnection(Connection):
             remote_types, DATAGRAM_PACKET_TYPES, self.datagram_packet_types)
 
     def do_write_datagram(self, data: bytes) -> None:
+        if DATAGRAM_DROP_PCT > 0 and random() * 100 < DATAGRAM_DROP_PCT:
+            self.datagrams_discarded += 1
+            log("datagram discarded: %i bytes", len(data))
+            return
         self.connection.send_datagram(self.stream_id, data=data)
         self.output_bytecount += len(data)
         self.output_writecount += 1

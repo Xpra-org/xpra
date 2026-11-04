@@ -44,6 +44,9 @@ ROI_CHANGED_DELTA: float = float(os.environ.get("XPRA_X264_ROI_CHANGED_DELTA", "
 ROI_BACKGROUND_DELTA: float = float(os.environ.get("XPRA_X264_ROI_BACKGROUND_DELTA", "4"))
 # UMH can search beyond HEX's 16-pixel radius without the cost of exhaustive search.
 SCROLL_ME_RANGE = envint("XPRA_X264_SCROLL_ME_RANGE", 64)
+# when slices may be lost (`datagram` mode), keep extra reference frames around
+# so `x264_encoder_invalidate_reference` has older frames to fall back on:
+DATAGRAM_DPB_SIZE = envint("XPRA_X264_DATAGRAM_DPB_SIZE", 4)
 
 
 DEF X264_MBINFO_CONSTANT = 1
@@ -225,6 +228,7 @@ cdef extern from "x264.h":
         int i_keyint_min        #Scenecuts closer together than this are coded as I, not IDR.
         int i_scenecut_threshold#how aggressively to insert extra I frames
         int b_intra_refresh     #Whether or not to use periodic intra refresh instead of IDR frames.
+        int i_slice_max_size    #Max size per slice in bytes; includes estimated NAL overhead.
 
         int i_bframe            #how many b-frame between 2 references pictures
         int i_bframe_adaptive
@@ -306,6 +310,7 @@ cdef extern from "x264.h":
     int x264_encoder_encode(x264_t *context, x264_nal_t **pp_nal, int *pi_nal, x264_picture_t *pic_in, x264_picture_t *pic_out) nogil
     int x264_encoder_delayed_frames(x264_t *)
     int x264_encoder_maximum_delayed_frames(x264_t *h)
+    int x264_encoder_invalidate_reference(x264_t *h, int64_t pts)
 
 
 cdef void set_f_rf(x264_param_t *param, float q):
@@ -552,6 +557,9 @@ cdef class Encoder:
     cdef int max_delayed
     cdef int delayed_frames
     cdef int export_nals
+    cdef int datagram
+    cdef object pending_recovery
+    cdef object recovery_counts
     cdef int full_range
     cdef unsigned long bandwidth_limit
     cdef unsigned long long bytes_in
@@ -590,7 +598,12 @@ cdef class Encoder:
         self.full_range = options.boolget("full-range", True)
         #self.opencl = USE_OPENCL and width>=32 and height>=32
         self.content_types = options.strtupleget("content-types", ())      #ie: ("video", )
-        self.b_frames = 0 if MB_INFO else options.intget("b-frames", 0)
+        # the maximum slice size, when the slices may be sent as datagrams and lost:
+        self.datagram = max(0, options.intget("datagram", 0))
+        self.pending_recovery = deque()
+        self.recovery_counts = {}
+        # b-frames cannot be used with `x264_encoder_invalidate_reference`:
+        self.b_frames = 0 if (MB_INFO or self.datagram) else options.intget("b-frames", 0)
         self.fast_decode = options.boolget("h264.fast-decode", False)
         self.max_delayed = options.intget("max-delayed", MAX_DELAYED_FRAMES) * int(not self.fast_decode) * int(self.b_frames)
         self.preset = get_x264_preset(self.speed)
@@ -612,7 +625,8 @@ cdef class Encoder:
             # constrained-baseline variant requested by Xpra.
             self.profile = PROFILE_BASELINE
         self.level = get_level(options, encoding=encoding, csc_mode=self.src_format)
-        self.export_nals = options.intget("h264.export-nals", 0)
+        # the slice boundaries are needed to split the frame into datagrams:
+        self.export_nals = options.intget("h264.export-nals", 0) or int(self.datagram > 0)
         profile_options = cs_info[2]
         if self.profile and self.profile not in profile_options:
             log.warn("Warning: '%s' is not a valid profile for %s", self.profile, src_format)
@@ -702,7 +716,12 @@ cdef class Encoder:
 
     cdef void tune_param(self, x264_param_t *param, options: typedict) noexcept:
         param.i_lookahead_threads = 0
-        if MIN_SLICED_THREADS_SPEED>0 and self.speed>=MIN_SLICED_THREADS_SPEED and not self.fast_decode:
+        if self.datagram:
+            # each slice must fit in a datagram, so losing one only damages the rows it covers:
+            param.i_slice_max_size = self.datagram
+            param.i_dpb_size = max(param.i_frame_reference, DATAGRAM_DPB_SIZE)
+        # (sliced threads would impose their own slice boundaries)
+        if MIN_SLICED_THREADS_SPEED>0 and self.speed>=MIN_SLICED_THREADS_SPEED and not self.fast_decode and not self.datagram:
             param.b_sliced_threads = 1
             param.i_threads = THREADS
         else:
@@ -846,6 +865,9 @@ cdef class Encoder:
             "delayed"       : self.delayed_frames,
             "bandwidth-limit" : int(self.bandwidth_limit),
         }
+        if self.datagram:
+            info["datagram"] = self.datagram
+            info["recovery"] = dict(self.recovery_counts)
         cdef x264_param_t param
         x264_encoder_parameters(self.context, &param)
         info["params"] = self.get_param_info(&param)
@@ -895,6 +917,8 @@ cdef class Encoder:
             "constrained_intra" : bool(param.b_constrained_intra),
             "threads"           : {0 : "auto"}.get(param.i_threads, param.i_threads),
             "sliced-threads"    : bool(param.b_sliced_threads),
+            "slice-max-size"    : param.i_slice_max_size,
+            "dpb-size"          : param.i_dpb_size,
         }
 
     cdef dict get_vui_info(self, x264_param_t *param):
@@ -983,7 +1007,7 @@ cdef class Encoder:
 
         options = typedict(options or {})
         content_types = options.strtupleget("content-types", ()) or self.content_types
-        b_frames = options.intget("b-frames", 0)
+        b_frames = 0 if self.datagram else options.intget("b-frames", 0)
         if content_types!=self.content_types or self.b_frames!=b_frames:
             #some options have changed:
             log("compress_image: reconfig b-frames=%s, content_types=%s (from %s, %s)", b_frames, content_types, self.b_frames, self.content_types)
@@ -1098,11 +1122,42 @@ cdef class Encoder:
                 pic_in.img.i_plane = 3
             pic_in.img.i_csp = self.colorspace
             pic_in.i_pts = image.get_timestamp()-self.first_frame_timestamp
+            self.apply_recovery(&pic_in)
             return self.do_compress_image(&pic_in, quality, speed, range_changed)
         finally:
             for i in range(3):
                 if py_buf[i].buf:
                     PyBuffer_Release(&py_buf[i])
+
+    def request_recovery(self, int64_t pts) -> None:
+        """
+        The client could not decode the frame with this `pts` (ie: some of its slices were lost),
+        so the frames that follow must not reference it.
+        This can be called from any thread: the encoder must not be modified whilst it is encoding,
+        so the recovery is only applied before encoding the next frame.
+        """
+        self.pending_recovery.append(pts)
+
+    cdef void apply_recovery(self, x264_picture_t *pic_in):
+        cdef int64_t pts = -1
+        while self.pending_recovery:
+            v = self.pending_recovery.popleft()
+            if pts < 0 or v < pts:
+                pts = v
+        if pts < 0:
+            return
+        # forget the damaged frame and all the frames that reference it,
+        # x264 will produce a keyframe by itself if there are no frames left to reference.
+        # (this is not compatible with b-frames)
+        cdef int r = -1
+        if not self.b_frames:
+            r = x264_encoder_invalidate_reference(self.context, pts)
+        method = "invalidated"
+        if r < 0:
+            pic_in.i_type = X264_TYPE_IDR
+            method = "keyframe"
+        log("x264 recovery from frame with pts=%i: %s", pts, method)
+        self.recovery_counts[method] = self.recovery_counts.get(method, 0) + 1
 
     cdef object do_compress_image(self, x264_picture_t *pic_in, int quality=-1, int speed=-1, int range_changed=0):
         cdef x264_nal_t *nals = NULL

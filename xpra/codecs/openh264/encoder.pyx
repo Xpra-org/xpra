@@ -367,6 +367,7 @@ cdef extern from "wels/codec_api.h":
         int GetDefaultParams(SEncParamExt* pParam) nogil
         int SetOption(ENCODER_OPTION eOptionId, void* pOption)
         int EncodeFrame(const SSourcePicture* kpSrcPic, SFrameBSInfo* pBsInfo) nogil
+        int ForceIntraFrame(bool_t bIDR, int iLayerId)
 
     void WelsGetCodecVersionEx(OpenH264Version* pVersion)
     int WelsCreateSVCEncoder(ISVCEncoder** ppDecoder) nogil
@@ -559,6 +560,10 @@ cdef class Encoder:
     cdef int quality
     cdef int speed
     cdef int screen_content
+    cdef int datagram
+    cdef int export_nals
+    cdef uint8_t pending_recovery
+    cdef object recovery_counts
     cdef object content_types
     cdef SEncParamExt param
     cdef object file
@@ -584,6 +589,12 @@ cdef class Encoder:
         self.speed = options.intget("speed", 50)
         self.content_types = options.strtupleget("content-types", ())
         self.screen_content = int(not use_video_usage_type(self.content_types))
+        # the maximum slice size, when the slices may be sent as datagrams and lost:
+        self.datagram = max(0, options.intget("datagram", 0))
+        # the slice boundaries are needed to split the frame into datagrams:
+        self.export_nals = options.intget("h264.export-nals", 0) or int(self.datagram > 0)
+        self.pending_recovery = 0
+        self.recovery_counts = {}
         self.frames = 0
         self.init_encoder()
         gen = generation.increase()
@@ -637,10 +648,13 @@ cdef class Encoder:
         # sliced multi-threading above the speed threshold (mirrors the x264 encoder).
         # openh264 caps the thread count at the slice count, so request one fixed slice
         # per thread; keep load balancing off so the slicing (and output) is deterministic:
-        cdef int threads = THREADS if (MIN_SLICED_THREADS_SPEED > 0 and self.speed >= MIN_SLICED_THREADS_SPEED) else 1
+        # (size limited slices do not support multi-threading)
+        cdef int threads = THREADS if (MIN_SLICED_THREADS_SPEED > 0 and self.speed >= MIN_SLICED_THREADS_SPEED and not self.datagram) else 1
         self.param.iMultipleThreadIdc = threads
         if threads > 1:
             self.param.bUseLoadBalancing = False
+        if self.datagram:
+            self.param.uiMaxNalSize = self.datagram
         # rate control is off, so the quantizer is fixed per spatial layer:
         # derive it from the requested quality (lower QP = higher quality):
         cdef int qp = quality_to_qp(self.quality)
@@ -658,7 +672,11 @@ cdef class Encoder:
             self.param.sSpatialLayers[i].uiProfileIdc = profile_id
             self.param.sSpatialLayers[i].uiLevelIdc = level_id
             self.param.sSpatialLayers[i].iDLayerQp = qp
-            if threads > 1:
+            if self.datagram:
+                # each slice must fit in a datagram, so losing one only damages the rows it covers:
+                self.param.sSpatialLayers[i].sSliceArgument.uiSliceMode = SM_SIZELIMITED_SLICE
+                self.param.sSpatialLayers[i].sSliceArgument.uiSliceSizeConstraint = self.datagram
+            elif threads > 1:
                 self.param.sSpatialLayers[i].sSliceArgument.uiSliceMode = SM_FIXEDSLCNUM_SLICE
                 self.param.sSpatialLayers[i].sSliceArgument.uiSliceNum = threads
             else:
@@ -676,9 +694,9 @@ cdef class Encoder:
         #a void (*)(void* context, int level, const char* message) function which receives log messages
         trace_level = WELS_LOG_WARNING
         self.context.SetOption(ENCODER_OPTION_TRACE_LEVEL, &trace_level)
-        log("openh264 init_encoder: profile=%s level=%s quality=%i qp=%i speed=%i complexity=%s threads=%i full-range=%s usage=%s",
+        log("openh264 init_encoder: profile=%s level=%s quality=%i qp=%i speed=%i complexity=%s threads=%i full-range=%s usage=%s datagram=%i",
             self.profile, self.level, self.quality, qp, self.speed, COMPLEXITY_NAMES.get(self.param.iComplexityMode), threads,
-            bool(self.full_range), USAGE_TYPE_NAMES.get(self.param.iUsageType))
+            bool(self.full_range), USAGE_TYPE_NAMES.get(self.param.iUsageType), self.datagram)
         for i in range(nlayers):
             log("spatial layer %i bFullRange=%s iDLayerQp=%i", i, self.param.sSpatialLayers[i].bFullRange, self.param.sSpatialLayers[i].iDLayerQp)
 
@@ -763,6 +781,9 @@ cdef class Encoder:
             "content-types" : self.content_types,
             "usage-type"    : USAGE_TYPE_NAMES.get(self.param.iUsageType, ""),
         }
+        if self.datagram:
+            info["datagram"] = self.datagram
+            info["recovery"] = dict(self.recovery_counts)
         return info
 
     def __repr__(self):
@@ -790,6 +811,27 @@ cdef class Encoder:
 
     def get_src_format(self) -> str:
         return self.src_format
+
+    def request_recovery(self, pts: int) -> None:
+        """
+        The client could not decode a frame (ie: some of its slices were lost),
+        so the frames that follow must not reference it.
+        This can be called from any thread, the recovery is applied before encoding the next frame.
+        """
+        self.pending_recovery = 1
+
+    cdef void apply_recovery(self):
+        if not self.pending_recovery:
+            return
+        self.pending_recovery = 0
+        # openh264's LTR recovery needs marking feedback from the decoder, so just use a keyframe:
+        cdef int r = self.context.ForceIntraFrame(True, -1)
+        method = "keyframe"
+        if r:
+            log.warn("Warning: openh264 failed to force an intra frame, error %i", r)
+            method = "error"
+        log("openh264 recovery: %s", method)
+        self.recovery_counts[method] = self.recovery_counts.get(method, 0) + 1
 
     def compress_image(self, image: ImageWrapper, options: typedict) -> tuple[bytes, dict]:
         cdef int i
@@ -857,6 +899,7 @@ cdef class Encoder:
                     raise ValueError("buffer for plane %s is too small: %i bytes, %i needed" % (
                         "YUV"[i], py_buf[i].len, plane_len))
                 pic.pData[i] = <uint8_t*> py_buf[i].buf
+            self.apply_recovery()
             with nogil:
                 r = self.context.EncodeFrame(&pic, &frame_info)
         finally:
@@ -896,6 +939,9 @@ cdef class Encoder:
             client_options["skip"] = True
             return b"", client_options
         data = []
+        # the end offset of each nal in the output buffer:
+        nal_indexes = []
+        cdef int index = 0
         cdef SLayerBSInfo* layer_info
         for layer in range(frame_info.iLayerNum):
             layer_info = &frame_info.sLayerInfo[layer]
@@ -904,12 +950,16 @@ cdef class Encoder:
                 continue
             log(f"layer {layer}: {layer_info.iNalCount} nals")
             layer_size = 0
-            for nal in range(layer_info.iNalCount-1, -1, -1):
+            for nal in range(layer_info.iNalCount):
                 size = layer_info.pNalLengthInByte[nal]
                 log(f" nal {nal}: {size:6} bytes")
                 layer_size += size
+                index += size
+                nal_indexes.append(index)
             if layer_size:
                 data.append(layer_info.pBsBuf[:layer_size])
+        if self.export_nals:
+            client_options["nals"] = nal_indexes
         if len(data)==1:
             bdata = data[0]
         else:

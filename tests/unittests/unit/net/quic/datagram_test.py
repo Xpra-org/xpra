@@ -329,6 +329,23 @@ class QuicDatagramTest(unittest.TestCase):
         assert sender.get_info()["quic"]["datagram-fallbacks"] == 2
         assert log.warn.call_count == 2, log.warn.call_args_list
 
+    def test_discard_datagrams(self):
+        # `XPRA_QUIC_DATAGRAM_DROP_PCT` simulates datagram loss, the stream is not affected:
+        pair, sender = self.make_pair()
+        sent = [self.make_payload("d", i, 100) for i in range(200)]
+        with patch("xpra.net.quic.connection.DATAGRAM_DROP_PCT", 50):
+            for buf in sent:
+                sender.stream_write(buf, DATAGRAM_TYPE)
+            sender.stream_write(b"reliable", STREAM_TYPE)
+        pair.drain_link()
+        stream, datagrams = self.received(pair)
+        assert stream == b"reliable"
+        assert 0 < sender.datagrams_discarded < len(sent)
+        assert len(datagrams) == len(sent) - sender.datagrams_discarded
+        assert sender.get_info()["quic"]["datagrams-discarded"] == sender.datagrams_discarded
+        # whatever does arrive is intact and in order:
+        assert datagrams == [buf for buf in sent if buf in datagrams]
+
 
 @unittest.skipUnless(HAVE_AIOQUIC, "aioquic not available")
 class QuicListenerDatagramTest(unittest.TestCase):

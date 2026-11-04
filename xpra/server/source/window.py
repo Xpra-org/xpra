@@ -41,8 +41,15 @@ HIDDEN_METADATA: Sequence[str] = ("iconic", "skip-taskbar", "skip-pager")
 CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
 CONGESTION_REPEAT_DELAY = envint("XPRA_CONGESTION_REPEAT_DELAY", 60)
 MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5 * 1024 * 1024)
+# the maximum slice size for video encoders on quic connections,
+# so that each slice can be sent in its own datagram (0 to disable):
+VIDEO_DATAGRAM_SIZE = envint("XPRA_VIDEO_DATAGRAM_SIZE", 0)
 
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
+
+
+def get_video_datagram_size(socktype: str) -> int:
+    return VIDEO_DATAGRAM_SIZE if socktype == "quic" else 0
 
 
 def noid(_window) -> int:
@@ -693,7 +700,7 @@ class WindowsConnection(StubClientConnection):
         conn = getattr(self.protocol, "_conn", None)
         socktype = getattr(conn, "socktype_wrapped", "")
         jitter = getattr(conn, "jitter", 0)
-        datagram = 1350 if socktype == "quic" else 0
+        datagram = get_video_datagram_size(socktype)
         log(f"datagram({socktype=})={datagram}")
         # pylint: disable=import-outside-toplevel
         from xpra.server.window.video_compress import WindowVideoSource
@@ -739,7 +746,7 @@ class WindowsConnection(StubClientConnection):
         conn = getattr(self.protocol, "_conn", None)
         socktype = getattr(conn, "socktype_wrapped", "")
         jitter = getattr(conn, "jitter", 0)
-        datagram = 1350 if socktype == "quic" else 0
+        datagram = get_video_datagram_size(socktype)
         # pylint: disable=import-outside-toplevel
         from xpra.server.window.subsurface_source import SubsurfaceWindowSource
         ws = SubsurfaceWindowSource(

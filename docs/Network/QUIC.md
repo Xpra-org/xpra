@@ -56,6 +56,8 @@ which works best with the loss-tolerant `opus+rtp` audio codec.
 Environment variables:
 * `XPRA_QUIC_DATAGRAM_PACKET_TYPES`: the packet types to send as datagrams, if the peer accepts them (default: `audio-data`)
 * `XPRA_DATAGRAM_ACCEPT_PACKET_TYPES`: the packet types we accept as datagrams (default: `audio-data`)
+* `XPRA_QUIC_DATAGRAM_DROP_PCT`: discard this percentage of the outgoing datagrams, to test loss tolerance (default: `0`)
+* `XPRA_VIDEO_DATAGRAM_SIZE`: limit the size of video slices to this many bytes, so each slice fits in a datagram (default: `0`, disabled)
 
 <div class="docs-section-heading" markdown="1">
 
