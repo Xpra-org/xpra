@@ -557,12 +557,17 @@ negotiated selection, target and size limits before exposing clipboard data.
 | either | `audio-capabilities` | `capabilities:map` |
 | either | `audio-control` | `command:str`, `arguments:any...` |
 | either | `audio-data` | `codec:str`, `data:bytes`, `metadata:map`, `extra_data:bytes...` |
+| either | `audio-stream` | `event:str` (`start` or `end`), `codec:str`, `sequence:i64` |
 | either | `audio-keepalive` | `sequence:u64` |
 | S -> C | `audio-level` | `sample:map` |
 | S -> C | `audio-signal` | `present:bool` |
 
-`audio-data` metadata marks stream start/end, sequence, timestamp and codec
-properties. Codec and direction MUST have been negotiated. Implementations MAY
+`audio-stream` marks the start and end of a stream, it is only sent to peers
+that advertise `stream-packet` in their audio capabilities. Older peers mark the
+start and end of a stream using `audio-data` packets without data, with
+`start-of-stream` / `end-of-stream` metadata flags.
+`audio-data` metadata carries the sequence, timestamp and codec properties.
+Codec and direction MUST have been negotiated. Implementations MAY
 exchange audio level/signal packets advertised in `packet-types`; their payload
 is codec-backend metadata and is optional.
 

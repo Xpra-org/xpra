@@ -4,8 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from typing import Any
 from collections.abc import Iterable, Sequence
 from xpra.util.env import envint
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.util.str_fn import csv
 from xpra.log import Logger
 
@@ -62,12 +64,31 @@ def get_matching_codecs(local_codecs: Sequence[str], remote_codecs: Sequence[str
 
 AUDIO_DATA_PACKET = "audio-data"
 AUDIO_CONTROL_PACKET = "audio-control"
+# marks the start and end of an audio stream, in either direction:
+AUDIO_STREAM_PACKET = "audio-stream"
+AUDIO_STREAM_START = "start"
+AUDIO_STREAM_END = "end"
 AUDIO_KEEPALIVE_PACKET = "audio-keepalive"
 AUDIO_LEVEL_PACKET = "audio-level"
 AUDIO_SIGNAL_PACKET = "audio-signal"
 AUDIO_KEEPALIVE_INTERVAL = envint("XPRA_AUDIO_KEEPALIVE_INTERVAL", 5)
 AUDIO_KEEPALIVE_TIMEOUT = envint("XPRA_AUDIO_KEEPALIVE_TIMEOUT", 10)
 SILENCE_FLOOR_DB = -120
+
+
+def audio_stream_packet(remote_stream_packet: bool, event: str, codec: str, sequence: int) -> tuple[Any, ...]:
+    """
+    The packet to send to mark the start or end of an audio stream.
+    Peers that do not advertise `stream-packet` in their audio capabilities
+    expect an `audio-data` packet without any data, using metadata flags instead.
+    """
+    if remote_stream_packet or not BACKWARDS_COMPATIBLE:
+        return AUDIO_STREAM_PACKET, event, codec, sequence
+    metadata: dict[str, Any] = {f"{event}-of-stream": True, "sequence": sequence}
+    if event == AUDIO_STREAM_START:
+        metadata["codec"] = codec
+    return AUDIO_DATA_PACKET, codec, (), metadata
+
 
 # PulseAudio receives the server's terminal signal directly (ie: Ctrl-C) and may exit
 # before our audio subprocesses process their cleanup request:

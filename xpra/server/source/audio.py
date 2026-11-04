@@ -11,13 +11,14 @@ from collections.abc import Sequence, Callable
 
 from xpra.audio.common import (
     AUDIO_DATA_PACKET, AUDIO_KEEPALIVE_PACKET, AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET, PULSEAUDIO_DISCONNECTED,
-    get_matching_codecs,
+    AUDIO_STREAM_START, AUDIO_STREAM_END,
+    get_matching_codecs, audio_stream_packet,
 )
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.net.compression import Compressed
 from xpra.server.source.stub import StubClientConnection
 from xpra.common import SizedBuffer, may_notify_client
-from xpra.net.common import FULL_INFO
+from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.constants import NotificationID
 from xpra.os_util import get_machine_id, get_user_uuid, gi_import
 from xpra.util.objects import typedict
@@ -101,6 +102,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         self.audio_send = False
         self.audio_level = False
         self.audio_signal = False
+        self.audio_stream_packet = False
         self.hello_sent = 0.0
         self.init_audio_keepalive_state()
         self.audio_fade_timer = 0
@@ -182,6 +184,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         self.audio_send = audio.boolget("send")
         self.audio_level = audio.boolget("level")
         self.audio_signal = audio.boolget("signal")
+        self.audio_stream_packet = audio.boolget("stream-packet")
         self.parse_audio_keepalive_caps(audio)
         log("pulseaudio id=%s, cookie-hash=%s, server=%s",
             self.pulseaudio_id, self.pulseaudio_cookie_hash, self.pulseaudio_server)
@@ -211,6 +214,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
             "send": self.supports_speaker and len(self.speaker_codecs) > 0,
             "receive": self.supports_microphone and len(self.microphone_codecs) > 0,
             "async": True,
+            "stream-packet": True,
         })
         audio_caps.update(self.get_audio_keepalive_caps())
         log("get_audio_caps()=%s", audio_caps)
@@ -378,10 +382,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
     def send_eos(self, codec: str, sequence: int = 0) -> None:
         log("send_eos(%s, %s)", codec, sequence)
         # tell the client this is the end:
-        self.send_more(AUDIO_DATA_PACKET, codec, (), {
-            "end-of-stream": True,
-            "sequence": sequence,
-        })
+        self.send_more(*audio_stream_packet(self.audio_stream_packet, AUDIO_STREAM_END, codec, sequence))
 
     def new_stream_sound(self) -> None:
         if not NEW_STREAM_SOUND:
@@ -432,11 +433,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         codec = codec or audio_source.codec
         audio_source.codec = codec
         # tell the client this is the start:
-        self.send(AUDIO_DATA_PACKET, codec, (), {
-            "start-of-stream": True,
-            "codec": codec,
-            "sequence": audio_source.sequence,
-        })
+        self.send(*audio_stream_packet(self.audio_stream_packet, AUDIO_STREAM_START, codec, audio_source.sequence))
         self.call_update_av_sync_delay()
         # run it again after 10 seconds,
         # by that point the source info will actually be populated:
@@ -603,20 +600,44 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         if self.is_closed():
             return
         self.update_latest_received_audio_timestamp(typedict(metadata))
+        if BACKWARDS_COMPATIBLE:
+            # older clients mark the start and end of the stream using `audio-data` metadata:
+            if metadata.get("start-of-stream"):
+                self.audio_stream(AUDIO_STREAM_START, codec)
+                return
+            if metadata.get("end-of-stream"):
+                self.audio_stream(AUDIO_STREAM_END, codec)
+                return
+        if not data and not packet_metadata:
+            log("audio_data(..) no data")
+            return
+        if self.ensure_audio_sink(codec):
+            self.audio_sink.add_data(data, metadata, packet_metadata)
+
+    def audio_stream(self, event: str, codec: str, _sequence: int = -1) -> None:
+        log("audio_stream(%s, %s, %s)", event, codec, _sequence)
+        if self.is_closed():
+            return
+        if event == AUDIO_STREAM_START:
+            self.ensure_audio_sink(codec)
+        elif event == AUDIO_STREAM_END:
+            log("client sent end-of-stream, closing audio pipeline")
+            self.stop_receiving_audio()
+        else:
+            log.warn(f"Warning: unknown audio stream event {event!r}")
+
+    def ensure_audio_sink(self, codec: str) -> bool:
+        """ returns True if we have a sink that can accept data for this codec """
         if self.audio_sink is not None and codec != self.audio_sink.codec:
             log.info("audio codec changed from %s to %s", self.audio_sink.codec, codec)
             self.audio_sink.cleanup()
             self.audio_sink = None
-        if metadata.get("end-of-stream"):
-            log("client sent end-of-stream, closing audio pipeline")
-            self.stop_receiving_audio()
-            return
         if not self.audio_sink:
             if not self.audio_loop_check("microphone"):
                 # make a fake object,
                 # so we don't fire the audio loop check warning repeatedly
                 self.audio_sink = FakeSink(codec)
-                return
+                return False
             try:
                 def audio_sink_error(*args) -> None:
                     log("audio_sink_error%s", args)
@@ -626,16 +647,16 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
                 from xpra.audio.wrapper import start_receiving_audio  # pylint: disable=import-outside-toplevel
                 ss = start_receiving_audio(codec)
                 if not ss:
-                    return
+                    return False
                 self.audio_sink = ss
-                log("audio_data(..) created audio sink: %s", self.audio_sink)
+                log("ensure_audio_sink(%s) created audio sink: %s", codec, self.audio_sink)
                 ss.connect("error", audio_sink_error)
                 ss.start()
-                log("audio_data(..) audio sink started")
+                log("ensure_audio_sink(%s) audio sink started", codec)
             except Exception:
                 log.error("Error: failed to start receiving %r", codec, exc_info=True)
-                return
-        self.audio_sink.add_data(data, metadata, packet_metadata)
+                return False
+        return True
 
     def get_audio_source_latency(self) -> int:
         encoder_latency = 0

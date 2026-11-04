@@ -9,7 +9,7 @@ from threading import Event
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.audio.common import AUDIO_KEEPALIVE_PACKET, SILENCE_FLOOR_DB
+from xpra.audio.common import AUDIO_KEEPALIVE_PACKET, AUDIO_STREAM_PACKET, SILENCE_FLOOR_DB
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
 from xpra.util.env import first_time, envbool, envint
@@ -398,6 +398,10 @@ class AudioServer(StubSubsystem):
         if ss := self.get_server_source(proto):
             ss.audio_data(*packet[1:])
 
+    def _process_stream(self, proto, packet: Packet) -> None:
+        if ss := self.get_server_source(proto):
+            ss.audio_stream(packet.get_str(1), packet.get_str(2), packet.get_i64(3))
+
     def _process_capabilities(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
             ss.client_audio_capabilities(packet.get_dict(1))
@@ -409,7 +413,8 @@ class AudioServer(StubSubsystem):
     def init_packet_handlers(self) -> None:
         if self.supports_speaker or self.supports_microphone:
             self.add_packets(f"{AudioServer.PREFIX}-control", main_thread=True)
-            self.add_packets(f"{AudioServer.PREFIX}-data")
+            # `audio-stream` must not be re-ordered with the `audio-data` packets:
+            self.add_packets(f"{AudioServer.PREFIX}-data", AUDIO_STREAM_PACKET)
             self.add_packets(f"{AudioServer.PREFIX}-capabilities", main_thread=True)
             self.add_packets(AUDIO_KEEPALIVE_PACKET)
 

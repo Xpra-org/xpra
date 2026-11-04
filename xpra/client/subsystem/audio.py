@@ -11,12 +11,13 @@ from collections.abc import Callable, Sequence, Iterable
 from xpra.audio.common import (
     AUDIO_DATA_PACKET, AUDIO_CONTROL_PACKET, AUDIO_KEEPALIVE_PACKET,
     AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET,
-    get_matching_codecs,
+    AUDIO_STREAM_PACKET, AUDIO_STREAM_START, AUDIO_STREAM_END,
+    get_matching_codecs, audio_stream_packet,
 )
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
-from xpra.net.common import Packet, FULL_INFO
+from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net.compression import Compressed
 from xpra.net.packet_type import CONNECTION_LOST
 from xpra.common import noop, SizedBuffer, may_notify_client
@@ -99,7 +100,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         "latest_sent_audio_timestamp", "microphone_allowed", "microphone_codecs", "microphone_device",
         "microphone_enabled", "on_sink_ready", "out_bytecount", "properties", "queue_used_sent",
         "resume_restart", "server_av_sync", "server_decoders", "server_encoders", "server_eos_sequence",
-        "server_pulseaudio_id", "server_pulseaudio_server", "server_receive", "server_send", "sink",
+        "server_pulseaudio_id", "server_pulseaudio_server", "server_receive", "server_send", "server_stream_packet", "sink",
         "sink_sequence", "source", "source_plugin", "source_sequence", "speaker_allowed", "speaker_codecs",
         "speaker_enabled", "wants_capabilities",
     )
@@ -141,6 +142,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         self.server_encoders: Sequence[str] = ()
         self.server_receive: bool = False
         self.server_send: bool = False
+        self.server_stream_packet: bool = False
         self.init_audio_keepalive_state()
         self.queue_used_sent: int = 0
         self.wants_capabilities = False            # flag indicating that the server wants 'audio-capabilities'
@@ -283,6 +285,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             "receive": self.speaker_allowed,
             "level": True,
             "signal": True,
+            "stream-packet": True,
         }
         caps.update(self.get_audio_keepalive_caps())
         # make mypy happy about the type: convert typedict to dict with string keys
@@ -341,6 +344,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         self.server_encoders = audio.strtupleget("encoders")
         self.server_receive = audio.boolget("receive")
         self.server_send = audio.boolget("send")
+        self.server_stream_packet = audio.boolget("stream-packet")
         self.parse_audio_keepalive_caps(audio)
         log("pulseaudio id=%s, server=%s", self.server_pulseaudio_id, self.server_pulseaudio_server)
         log("audio decoders=%s, audio encoders=%s, receive=%s, send=%s",
@@ -478,10 +482,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         codec = codec or source.codec
         source.codec = codec
         # tell the server this is the start:
-        self.send(AUDIO_DATA_PACKET, codec, (), {
-            "start-of-stream": True,
-            "codec": codec,
-        })
+        self.send(*audio_stream_packet(self.server_stream_packet, AUDIO_STREAM_START, codec, source.sequence))
 
     def stop_sending_audio(self) -> None:
         """ stop the audio source and emit client signal """
@@ -495,10 +496,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             log.warn("Warning: cannot stop audio capture which has not been started")
             return
         # tell the server to stop:
-        self.send(AUDIO_DATA_PACKET, ss.codec or "", (), {
-            "end-of-stream": True,
-            "sequence": ss.sequence,
-        })
+        self.send(*audio_stream_packet(self.server_stream_packet, AUDIO_STREAM_END, ss.codec or "", ss.sequence))
         self.source_sequence += 1
         ss.cleanup()
         if not self.sink:
@@ -762,37 +760,22 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             self.in_bytecount += len(data)
         # verify sequence number if present:
         seq = metadata.intget("sequence", -1)
-        if self.sink_sequence > 0 and 0 <= seq < self.sink_sequence:
-            log("ignoring audio data with old sequence number %s (now on %s)", seq, self.sink_sequence)
+        if self.old_sink_sequence(seq):
             return
-
-        if not self.speaker_enabled:
+        if BACKWARDS_COMPATIBLE:
+            # older servers mark the start and end of the stream using `audio-data` metadata:
             if metadata.boolget("start-of-stream"):
-                # server is asking us to start playing audio
-                if not self.speaker_allowed:
-                    # no can do!
-                    log.warn("Warning: cannot honour the request to start the speaker")
-                    log.warn(" speaker forwarding is disabled")
-                    self.stop_receiving_audio(True)
-                    return
-                self.speaker_enabled = True
-                # this packet handler runs in the network thread,
-                # so emit the signal from the UI thread (crashes on macOS otherwise):
-                self.idle_add(self.emit, "speaker-changed")
-                self.on_sink_ready = noop
-                codec = metadata.strget("codec")
-                log("starting speaker on server request using codec %s", codec)
-                self.start_sink(codec)
-            else:
-                log("speaker is now disabled - dropping packet")
+                self.audio_stream_start(metadata.strget("codec"))
                 return
+            if metadata.boolget("end-of-stream"):
+                self.audio_stream_end(seq)
+                return
+        if not self.speaker_enabled:
+            log("speaker is now disabled - dropping packet")
+            return
         ss = self.sink
         if ss is None:
             log("no audio sink to process audio data, dropping it")
-            return
-        if metadata.boolget("end-of-stream"):
-            log("server sent end-of-stream for sequence %s, closing audio pipeline", seq)
-            self.stop_receiving_audio(False)
             return
         if codec != ss.codec:
             log.error("Error: audio codec change is not supported!")
@@ -803,7 +786,6 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             log("audio data received, audio sink is stopped - telling server to stop")
             self.stop_receiving_audio()
             return
-        # (some packets (ie: sos, eos) only contain metadata)
         if data or packet_metadata:
             ss.add_data(data, dict(metadata), packet_metadata)
         if self.av_sync and self.server_av_sync:
@@ -823,10 +805,57 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
                     avsynclog(" adjusted value=%i with sync delta=%i", v, self.av_sync_delta)
                 self.send_audio_sync(v)
 
+    def old_sink_sequence(self, seq: int) -> bool:
+        if self.sink_sequence > 0 and 0 <= seq < self.sink_sequence:
+            log("ignoring audio packet with old sequence number %s (now on %s)", seq, self.sink_sequence)
+            return True
+        return False
+
+    def _process_stream(self, packet: Packet) -> None:
+        event = packet.get_str(1)
+        codec = packet.get_str(2)
+        seq = packet.get_i64(3)
+        if self.old_sink_sequence(seq):
+            return
+        if event == AUDIO_STREAM_START:
+            self.audio_stream_start(codec)
+        elif event == AUDIO_STREAM_END:
+            self.audio_stream_end(seq)
+        else:
+            log.warn(f"Warning: unknown audio stream event {event!r}")
+
+    def audio_stream_start(self, codec: str) -> None:
+        if self.speaker_enabled:
+            log("audio stream start: speaker is already enabled")
+            return
+        # server is asking us to start playing audio
+        if not self.speaker_allowed:
+            # no can do!
+            log.warn("Warning: cannot honour the request to start the speaker")
+            log.warn(" speaker forwarding is disabled")
+            self.stop_receiving_audio(True)
+            return
+        self.speaker_enabled = True
+        # this packet handler runs in the network thread,
+        # so emit the signal from the UI thread (crashes on macOS otherwise):
+        self.idle_add(self.emit, "speaker-changed")
+        self.on_sink_ready = noop
+        log("starting speaker on server request using codec %s", codec)
+        self.start_sink(codec)
+
+    def audio_stream_end(self, seq: int) -> None:
+        if not self.speaker_enabled or self.sink is None:
+            log("audio stream end: no audio sink")
+            return
+        log("server sent end-of-stream for sequence %s, closing audio pipeline", seq)
+        self.stop_receiving_audio(False)
+
     def init_authenticated_packet_handlers(self) -> None:
         log("init_authenticated_packet_handlers()")
-        # this handler can run directly from the network thread:
+        # these handlers can run directly from the network thread,
+        # `audio-stream` must not be re-ordered with the `audio-data` packets:
         self.add_packets(f"{AudioClient.PREFIX}-data")
+        self.add_packets(AUDIO_STREAM_PACKET)
         self.add_packets(f"{AudioClient.PREFIX}-capabilities", main_thread=True)
         self.add_packets(AUDIO_KEEPALIVE_PACKET)
         self.add_packets(AUDIO_LEVEL_PACKET)

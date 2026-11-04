@@ -15,6 +15,12 @@ from xpra.net.common import Packet
 from xpra.util.objects import typedict, AdHocStruct
 
 
+def legacy(fn):
+    """ these tests use the legacy `audio-data` start and end of stream markers """
+    fn = patch("xpra.audio.common.BACKWARDS_COMPATIBLE", True)(fn)
+    return patch("xpra.client.subsystem.audio.BACKWARDS_COMPATIBLE", True)(fn)
+
+
 def _make_client(*, speaker_enabled=False, microphone_enabled=False,
                  av_sync=False, server_av_sync=False):
     """Return a bare AudioClient wired with minimal stubs."""
@@ -272,6 +278,7 @@ class TestStopAllAudio(unittest.TestCase):
 
 class TestStopSendingAudio(unittest.TestCase):
 
+    @legacy
     def test_sends_end_of_stream(self):
         x = _make_client()
         _make_source(x)
@@ -390,6 +397,7 @@ class TestStartSink(unittest.TestCase):
 
 class TestNewStream(unittest.TestCase):
 
+    @legacy
     def test_sends_start_of_stream(self):
         x = _make_client()
         source = _make_source(x)
@@ -577,6 +585,7 @@ class TestProcessAudioData(unittest.TestCase):
         x._process_data(pkt)
         # just ensure no crash
 
+    @legacy
     def test_start_of_stream_starts_sink(self):
         x = _make_client()
         x.speaker_allowed = True
@@ -585,6 +594,7 @@ class TestProcessAudioData(unittest.TestCase):
             x._process_data(pkt)
             m.assert_called_once_with("opus")
 
+    @legacy
     def test_end_of_stream_stops_receiving(self):
         x = _make_client(speaker_enabled=True)
         _make_sink(x)
