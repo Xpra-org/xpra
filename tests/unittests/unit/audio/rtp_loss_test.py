@@ -280,18 +280,28 @@ class TestRTPLossAudioSink(unittest.TestCase):
                 while output.setdefault("pushed", 0) < due:
                     i = next(index, None)
                     if i is None:
-                        GLib.timeout_add(500, finish)
+                        GLib.timeout_add(200, end_of_stream)
                         return False
                     output["pushed"] += 1
                     if i not in lost:
                         sink.add_data(packets[i], {})
                 return True
 
-            def finish() -> bool:
+            def end_of_stream() -> bool:
+                # all the losses have been detected by now (there are none in the last packets),
+                # but the sink's queue may still hold some audio:
+                # after an underrun, the sink raises the queue's minimum level,
+                # which holds back the tail of the stream until more data arrives - or the end of the stream
                 info.update(sink.get_info())
-                info["state"] = sink.state
-                loop.quit()
+                sink.src.emit("end-of-stream")
                 return False
+
+            def state_changed(_sink, state) -> None:
+                if state in ("stopped", "error"):
+                    info["state"] = state
+                    loop.quit()
+
+            sink.connect("state-changed", state_changed)
 
             def timeout() -> bool:
                 loop.quit()
@@ -306,7 +316,7 @@ class TestRTPLossAudioSink(unittest.TestCase):
                 sink.stop()
                 sink.cleanup()
 
-        assert info, "timed out"
+        assert info.get("state"), f"timed out: {info}"
         assert not errors, f"the sink pipeline failed: {errors}"
         assert info["state"] != "error", f"the sink pipeline failed: {info}"
         jb = info.get("jitterbuffer", {})
