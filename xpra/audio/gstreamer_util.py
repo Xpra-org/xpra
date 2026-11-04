@@ -10,7 +10,7 @@ from typing import Any
 from collections.abc import Callable, Sequence, Iterable
 
 from xpra.gstreamer.common import (
-    has_plugins, get_all_plugin_names,
+    has_plugins, get_all_plugin_names, get_element_str,
     import_gst, get_gst_version,
 )
 from xpra.audio.common import (
@@ -239,6 +239,41 @@ RTP_SINK_CAPS: dict[str, str] = {
     OPUS_RTP: "application/x-rtp,media=audio,encoding-name=OPUS,clock-rate=48000,payload=96",
 }
 
+# RTP is meant for lossy transports (ie: QUIC datagrams), packets can go missing:
+# how long the receiving `rtpjitterbuffer` waits for late or reordered packets
+# before declaring them lost and letting the decoder conceal the gap:
+RTP_JITTERBUFFER_LATENCY = max(0, envint("XPRA_AUDIO_RTP_LATENCY", 60))
+# the packet loss rate the encoder plans its in-band forward error correction for:
+RTP_PACKET_LOSS = max(0, min(100, envint("XPRA_AUDIO_RTP_PACKET_LOSS", 5)))
+
+# options that depend on the codec rather than the element,
+# because `opus` and `opus+rtp` share the same `opusenc` and `opusdec` elements:
+CODEC_ENCODER_OPTIONS: dict[str, dict[str, Any]] = {
+    OPUS_RTP: {
+        "inband-fec": True,
+        "packet-loss-percentage": RTP_PACKET_LOSS,
+    },
+}
+CODEC_DECODER_OPTIONS: dict[str, dict[str, Any]] = {
+    # conceal the packets reported lost by the jitterbuffer,
+    # or recover them from the FEC data in the next packet:
+    OPUS_RTP: {
+        "plc": True,
+        "use-inband-fec": True,
+    },
+}
+
+
+def get_rtp_jitterbuffer_str() -> str:
+    # `do-lost` sends a packet-lost event downstream for each gap in the sequence numbers,
+    # which the depayloader turns into a gap event that the decoder can conceal:
+    return get_element_str("rtpjitterbuffer", {
+        "name": "jitterbuffer",
+        "latency": RTP_JITTERBUFFER_LATENCY,
+        "do-lost": True,
+    })
+
+
 # based on the encoder options above:
 RECORD_PIPELINE_LATENCY = 25
 ENCODER_LATENCY: dict[str, int] = {
@@ -267,11 +302,12 @@ CODEC_ORDER = (
 )
 
 
-def get_encoder_default_options(encoder: str) -> dict[str, Any]:
+def get_encoder_default_options(encoder: str, codec: str = "") -> dict[str, Any]:
     # strip the muxer:
     enc = encoder.split("+")[0]
     options = ENCODER_DEFAULT_OPTIONS_COMMON.get(enc, {}).copy()
     options.update(ENCODER_DEFAULT_OPTIONS.get(enc, {}))
+    options.update(CODEC_ENCODER_OPTIONS.get(codec, {}))
     return options
 
 

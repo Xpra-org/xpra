@@ -68,7 +68,8 @@ def _get_source_channels(src_type: str, src_options: dict) -> int:
 
 
 def get_source_pipeline_elements(src_type: str, src_options: dict,
-                                 encoder: str, fmt: str, codec_options: dict, volume=1.0) -> list[str]:
+                                 encoder: str, fmt: str, codec_options: dict, volume=1.0,
+                                 codec: str = "") -> list[str]:
     """Build the list of GStreamer elements for the capture pipeline."""
     src_options["name"] = "src"
     source_str = plugin_str(src_type, src_options)
@@ -108,7 +109,7 @@ def get_source_pipeline_elements(src_type: str, src_options: dict,
         pipeline_els += ["audioconvert", "audioresample"]
     pipeline_els.append(get_element_str("volume", {"name": "volume", "volume": volume}))
     if encoder:
-        encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder))
+        encoder_str = plugin_str(encoder, codec_options or get_encoder_default_options(encoder, codec))
         pipeline_els.append(encoder_str)
     if fmt:
         fmt_str = plugin_str(fmt, MUXER_DEFAULT_OPTIONS.get(fmt, {}))
@@ -171,7 +172,7 @@ class AudioSource(AudioPipeline):
         self.jitter_queue = None
         self.container_format = (fmt or "").replace("mux", "").replace("pay", "")
         self.stream_compressor = stream_compressor
-        pipeline_els = get_source_pipeline_elements(src_type, src_options, encoder, fmt, codec_options, volume)
+        pipeline_els = get_source_pipeline_elements(src_type, src_options, encoder, fmt, codec_options, volume, codec)
         if not self.setup_pipeline_and_bus(pipeline_els):
             return
         self.timestamp = self.pipeline.get_by_name("timestamp")

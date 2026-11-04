@@ -25,6 +25,7 @@ from xpra.audio.gstreamer_util import (
     AUDIO_SINK_LABELS,
     MP3, CODEC_ORDER, QUEUE_LEAK,
     GST_QUEUE_NO_LEAK, MS_TO_NS, DEFAULT_SINK_PLUGIN_OPTIONS, RTP_SINK_CAPS,
+    CODEC_DECODER_OPTIONS, get_rtp_jitterbuffer_str,
 )
 from xpra.util.gobject import one_arg_signal
 from xpra.net.compression import decompress_by_name
@@ -85,6 +86,47 @@ def uncompress_data(data: bytes, metadata: dict) -> SizedBuffer:
     return v
 
 
+def get_sink_pipeline_elements(codec: str, decoder: str, parser: str, codec_options: dict, sink_str: str) -> list[str]:
+    """Build the list of GStreamer elements for the playback pipeline."""
+    appsrc_attributes = get_default_appsrc_attributes()
+    rtp = codec in RTP_SINK_CAPS
+    if rtp:
+        # the jitterbuffer needs arrival timestamps to detect late and lost packets,
+        # and `do_add_data` deliberately does not set any:
+        appsrc_attributes |= {
+            "is-live": True,
+            "do-timestamp": True,
+            "format": "time",
+        }
+    pipeline_els = [get_element_str("appsrc", appsrc_attributes)]
+    if rtp:
+        pipeline_els.append(get_rtp_jitterbuffer_str())
+    if parser:
+        pipeline_els.append(parser)
+    if decoder:
+        decoder_options = CODEC_DECODER_OPTIONS.get(codec, {}) | (codec_options or {})
+        pipeline_els.append(plugin_str(decoder, decoder_options))
+    pipeline_els.append("audioconvert")
+    pipeline_els.append("audioresample")
+    if QUEUE_TIME > 0:
+        pipeline_els.append(get_element_str("queue", {
+            "name": "queue",
+            "min-threshold-time": 0,
+            "max-size-buffers": 0,
+            "max-size-bytes": 0,
+            "max-size-time": QUEUE_TIME,
+            "leaky": QUEUE_LEAK,
+        }))
+    pipeline_els.append(get_element_str("volume", {"name": "volume", "volume": 0}))
+    if CLOCK_SYNC:
+        if not has_plugins("clocksync"):
+            log.warn("Warning: cannot enable clocksync, element not found")
+        else:
+            pipeline_els.append("clocksync")
+    pipeline_els.append(sink_str)
+    return pipeline_els
+
+
 class AudioSink(AudioPipeline):
     __gsignals__ = AudioPipeline.__generic_signals__.copy()
     __gsignals__ |= {
@@ -119,6 +161,7 @@ class AudioSink(AudioPipeline):
         self.src = None
         self.sink = None
         self.queue = None
+        self.jitterbuffer = None
         self.normal_volume = volume
         self.target_volume = volume
         self.volume_timer = 0
@@ -134,29 +177,6 @@ class AudioSink(AudioPipeline):
         self.last_max_update = monotonic()
         self.last_min_update = monotonic()
         self.level_lock = Lock()
-        pipeline_els = [get_element_str("appsrc", get_default_appsrc_attributes())]
-        if parser:
-            pipeline_els.append(parser)
-        if decoder:
-            decoder_str = plugin_str(decoder, codec_options)
-            pipeline_els.append(decoder_str)
-        pipeline_els.append("audioconvert")
-        pipeline_els.append("audioresample")
-        if QUEUE_TIME > 0:
-            pipeline_els.append(get_element_str("queue", {
-                "name": "queue",
-                "min-threshold-time": 0,
-                "max-size-buffers": 0,
-                "max-size-bytes": 0,
-                "max-size-time": QUEUE_TIME,
-                "leaky": QUEUE_LEAK,
-            }))
-        pipeline_els.append(get_element_str("volume", {"name": "volume", "volume": 0}))
-        if CLOCK_SYNC:
-            if not has_plugins("clocksync"):
-                log.warn("Warning: cannot enable clocksync, element not found")
-            else:
-                pipeline_els.append("clocksync")
         sink_attributes = SINK_SHARED_DEFAULT_ATTRIBUTES.copy()
         # anything older than this may cause problems (ie: centos 6.x)
         # because the attributes may not exist
@@ -176,9 +196,10 @@ class AudioSink(AudioPipeline):
         if sink_type != "autoaudiosink":
             sink_attributes.update(NON_AUTO_SINK_ATTRIBUTES)
         sink_str = plugin_str(sink_type, sink_attributes)
-        pipeline_els.append(sink_str)
+        pipeline_els = get_sink_pipeline_elements(codec, decoder, parser, codec_options, sink_str)
         if not self.setup_pipeline_and_bus(pipeline_els):
             return
+        self.jitterbuffer = self.pipeline.get_by_name("jitterbuffer")
         self.volume = self.pipeline.get_by_name("volume")
         self.src = self.pipeline.get_by_name("src")
         self.sink = self.pipeline.get_by_name("sink")
@@ -208,6 +229,7 @@ class AudioSink(AudioPipeline):
         self.cancel_volume_timer()
         self.sink_type = ""
         self.src = None
+        self.jitterbuffer = None
 
     def start(self) -> bool:
         if not super().start():
@@ -410,6 +432,13 @@ class AudioSink(AudioPipeline):
                 "overruns": self.overruns,
                 "underruns": self.underruns,
                 "state": self.queue_state,
+            }
+        if self.jitterbuffer:
+            stats = self.jitterbuffer.get_property("stats")
+            info["jitterbuffer"] = {
+                key.replace("num-", ""): stats.get_value(key)
+                for key in ("num-pushed", "num-lost", "num-late", "num-duplicates")
+                if stats.has_field(key)
             }
         info["sink"] = self.get_element_properties(
             self.sink,
