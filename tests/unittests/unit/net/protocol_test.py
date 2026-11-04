@@ -332,6 +332,13 @@ class ProtocolTest(unittest.TestCase):
                 sender = self.make_compression_protocol(level=level)
                 self.assertEqual(sender.encode(Packet(INFO_RESPONSE, {"text": text}))[0][2], 0)
 
+    def test_packet_compression_skipped(self) -> None:
+        # the audio is already compressed by its codec, even large compressible metadata is not re-compressed:
+        sender = self.make_compression_protocol()
+        metadata = {"text": "compressible metadata " * 100}
+        self.assertEqual(sender.encode(Packet("audio-data", "opus", b"", metadata))[0][2], 0)
+        self.assertNotEqual(sender.encode(Packet("test", metadata))[0][2], 0)
+
     def test_packet_compression_does_not_expand_data(self) -> None:
         if not compression.use("brotli"):
             self.skipTest("Brotli is not available")

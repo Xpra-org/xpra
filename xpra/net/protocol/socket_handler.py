@@ -70,6 +70,12 @@ PACKET_COMPRESSORS: dict[str, str] = {
     "info-response": "brotli",
     "encoding-set": "brotli",
 }
+# Packets whose payload is already compressed by their own codec (ie: audio),
+# compressing them again only wastes CPU, and `audio-data` may be sent as a datagram:
+NO_COMPRESS_PACKET_TYPES: tuple[str, ...] = tuple(x.strip() for x in os.environ.get(
+    "XPRA_NO_COMPRESS_PACKET_TYPES",
+    "audio-data",
+).split(",") if x.strip())
 # inline compressed data in packet if smaller than:
 INLINE_SIZE = envint("XPRA_INLINE_SIZE", 32768)
 FAKE_JITTER = envint("XPRA_FAKE_JITTER", 0)
@@ -521,6 +527,7 @@ class SocketProtocol:
             "large-packet-size": LARGE_PACKET_SIZE,
             "inline-size": INLINE_SIZE,
             "min-compress-size": MIN_COMPRESS_SIZE,
+            "no-compress": NO_COMPRESS_PACKET_TYPES,
             "packetcount": self.output_packetcount,
             "raw_packetcount": self.output_raw_packetcount,
             "count": self.output_stats,
@@ -851,7 +858,7 @@ class SocketProtocol:
             log.warn(f" packet: {repr_ellipsized(packet, limit=4096)}")
         # compress, but don't bother for small packets:
         level = 0
-        if self.compression_level > 0 and size > MIN_COMPRESS_SIZE + inlined_size:
+        if self.compression_level > 0 and size > MIN_COMPRESS_SIZE + inlined_size and packet_type not in NO_COMPRESS_PACKET_TYPES:
             try:
                 compress = self._compress
                 preferred = PACKET_COMPRESSORS.get(packet_type)
