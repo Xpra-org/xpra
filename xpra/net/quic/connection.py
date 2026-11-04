@@ -34,7 +34,12 @@ DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
 ).split(",") if x.strip())
 
 # a datagram must fit in a single QUIC packet, along with the packet header,
-# the AEAD tag, the DATAGRAM frame header and the HTTP/3 quarter stream id:
+# the AEAD tag, the DATAGRAM frame header and the HTTP/3 quarter stream id.
+# Note: this value is conservative, the actual overhead is closer to 35 bytes:
+# short header (1) + connection id (8 with aioquic) + packet number (up to 4) + AEAD tag (16)
+# + DATAGRAM frame type and length (3) + quarter stream id (1).
+# With the default 1200 bytes QUIC packets, this leaves 1136 bytes for the xpra packet,
+# and an `opus+rtp` audio packet is about 1105 bytes (see `CODEC_ENCODER_OPTIONS`).
 DATAGRAM_OVERHEAD = 64
 
 if envbool("XPRA_QUIC_LOGGER", True):
