@@ -211,9 +211,9 @@ class TestServerSource(unittest.TestCase):
     def test_receive_legacy(self):
         c = FakeConnection()
         with patch.object(c, "ensure_audio_sink") as ensure, patch.object(c, "stop_receiving_audio") as stop:
-            c.audio_data("opus", (), {"start-of-stream": True, "codec": "opus"})
+            c.audio_data("opus", b"", {"start-of-stream": True, "codec": "opus"})
             ensure.assert_called_once_with("opus")
-            c.audio_data("opus", (), {"end-of-stream": True, "sequence": 0})
+            c.audio_data("opus", b"", {"end-of-stream": True, "sequence": 0})
             stop.assert_called_once()
 
     def test_no_data(self):
@@ -221,7 +221,7 @@ class TestServerSource(unittest.TestCase):
         sink = MagicMock()
         sink.codec = "opus"
         c.audio_sink = sink
-        c.audio_data("opus", (), {"sequence": 0})
+        c.audio_data("opus", b"", {"sequence": 0})
         sink.add_data.assert_not_called()
 
     def test_data_forwarded_to_sink(self):
