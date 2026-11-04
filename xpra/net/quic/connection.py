@@ -30,7 +30,7 @@ HttpConnection = H0Connection | H3Connection
 # the packet types we want to send as datagrams, if the peer accepts them:
 DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
     "XPRA_QUIC_DATAGRAM_PACKET_TYPES",
-    ""
+    "audio-data",
 ).split(",") if x.strip())
 
 # a datagram must fit in a single QUIC packet, along with the packet header,

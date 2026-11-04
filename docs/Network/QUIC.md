@@ -39,6 +39,26 @@ configuration options as [SSL](SSL.md).
 
 <div class="docs-section-heading" markdown="1">
 
+## Datagrams
+
+</div>
+QUIC can also carry unreliable datagrams, which are never retransmitted:
+a lost datagram does not delay the packets that follow it.
+Xpra uses them for packets that are self-contained and tolerate loss, by default only `audio-data`,
+which works best with the loss-tolerant `opus+rtp` audio codec.
+* each side advertises the packet types it accepts as datagrams, only for connections that can receive them (not WebTransport)
+* datagrams are only accepted once the peer's `hello` has been processed
+* each datagram must contain a complete packet, larger packets are sent on the regular stream instead
+* invalid datagrams are dropped, they do not close the connection
+* the start and end of audio streams are always sent on the regular stream (see `audio-stream` packets)
+* xpra's own [encryption](Encryption.md) cannot be used with QUIC, which is already encrypted
+
+Environment variables:
+* `XPRA_QUIC_DATAGRAM_PACKET_TYPES`: the packet types to send as datagrams, if the peer accepts them (default: `audio-data`)
+* `XPRA_DATAGRAM_ACCEPT_PACKET_TYPES`: the packet types we accept as datagrams (default: `audio-data`)
+
+<div class="docs-section-heading" markdown="1">
+
 ## Notes
 
 </div>
