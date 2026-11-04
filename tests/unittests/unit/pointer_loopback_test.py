@@ -49,9 +49,8 @@ class PointerLoopbackTest(LoopbackTest):
 
     def test_mouse_position_reaches_source(self):
         client, server, source = self._connect()
-        # the real implementations drive the input device / drag heuristics:
+        # the real implementation drives the input device:
         server.process_mouse_common = lambda *a, **kw: False
-        server._maybe_record_drag_scroll = lambda *a, **kw: None
         # the ui_driver gate is checked against the source uuid:
         server.server.ui_driver = None
         source.uuid = "test-client"

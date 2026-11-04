@@ -5,12 +5,12 @@
 # later version. See the file COPYING for details.
 # pylint: disable-msg=E1101
 
-from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
+from xpra.server.drag_scroll import DragScrollTracker
 from xpra.server.source.pointer import PointerConnection
-from xpra.util.env import envbool, envint
+from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.net.common import Packet, PacketElement
 from xpra.server.subsystem.stub import StubSubsystem
@@ -20,37 +20,6 @@ log = Logger("pointer")
 
 INPUT_SEQ_NO = envbool("XPRA_INPUT_SEQ_NO", False)
 ALWAYS_NOTIFY_MOTION = envbool("XPRA_ALWAYS_NOTIFY_MOTION", False)
-
-# Drag-as-scroll heuristic: when button-1 is held on a window and the pointer
-# moves vertically, treat the motion as a scroll event for downstream consumers
-# (chiefly image filters that want temporal stability across scrolls, beyond
-# wheel events).  Two complementary signals are used to separate scrollbar-thumb drags
-# from text-selection and other button-1 drags:
-#   (a) press-X close to the right edge of the window (scrollbar zone), and
-#   (b) the drag motion remains near-vertical (low |dx|:|dy| ratio).
-# (a) is the strong signal when window geometry is available.  (b) is the
-# fallback when geometry can't be resolved.  Either signal classifying the
-# drag as 'not a scrollbar drag' suppresses emits for the rest of that drag.
-#
-#   XPRA_DRAG_SCROLL_ENABLED                  master switch
-#   XPRA_DRAG_SCROLL_MIN_DY_PX                cumulative |dy| (px) before emit
-#   XPRA_DRAG_SCROLL_EMIT_INTERVAL_MS         minimum gap between emits per drag
-#   XPRA_DRAG_SCROLLBAR_ZONE_PX               width (px) of the right-edge zone
-#                                             treated as the scrollbar (~chromium
-#                                             default scrollbar width + margin)
-#   XPRA_DRAG_SCROLL_SELECTION_PROBE_DY_PX    accumulated |dy| at which the dx/dy
-#                                             ratio is first evaluated; below this
-#                                             motion is considered too short to
-#                                             classify reliably
-#   XPRA_DRAG_SCROLL_SELECTION_DX_PCT         % of |dy| that |dx| may reach before
-#                                             the drag is latched as selection-like
-#                                             (only consulted when zone is unknown)
-DRAG_SCROLL_ENABLED = envbool("XPRA_DRAG_SCROLL_ENABLED", False)
-DRAG_SCROLL_MIN_DY_PX = envint("XPRA_DRAG_SCROLL_MIN_DY_PX", 4)
-DRAG_SCROLL_EMIT_INTERVAL_MS = envint("XPRA_DRAG_SCROLL_EMIT_INTERVAL_MS", 50)
-DRAG_SCROLLBAR_ZONE_PX = envint("XPRA_DRAG_SCROLLBAR_ZONE_PX", 20)
-DRAG_SCROLL_SELECTION_PROBE_DY_PX = envint("XPRA_DRAG_SCROLL_SELECTION_PROBE_DY_PX", 6)
-DRAG_SCROLL_SELECTION_DX_PCT = envint("XPRA_DRAG_SCROLL_SELECTION_DX_PCT", 40)
 
 
 class PointerManager(StubSubsystem):
@@ -73,7 +42,7 @@ class PointerManager(StubSubsystem):
     never call back into the pipeline.
     """
     __slots__ = (
-        "_button1_drag", "buttons_pressed", "double_click_distance", "double_click_time", "input_devices",
+        "_drag_scroll", "buttons_pressed", "double_click_distance", "double_click_time", "input_devices",
         "input_devices_data", "last_mouse_user", "pointer_device", "pointer_device_map",
         "pointer_sequence", "touchpad_device",
     )
@@ -94,17 +63,7 @@ class PointerManager(StubSubsystem):
         self.buttons_pressed: dict[int, set[int]] = {}
         self.double_click_time = -1
         self.double_click_distance = -1, -1
-        # Per-window state for the drag-as-scroll heuristic.
-        # Keyed by wid (not device_id) because legacy v4 protocol paths use
-        # different device_id defaults for press (0) vs motion (-1), which
-        # would otherwise miss every drag.  Each entry:
-        #   {"last_x": int, "last_y": int,
-        #    "accum_dx_abs": int, "accum_dy_abs": int,
-        #    "in_scrollbar_zone": bool|None,    # None = window geom unknown
-        #    "looks_like_selection": bool,      # latched once True
-        #    "last_emit_t_ms": float}
-        # Populated on button-1 press, consumed on motion, cleared on release.
-        self._button1_drag: dict[int, dict] = {}
+        self._drag_scroll = DragScrollTracker(self.server.subsystems.get("window") if self.server else None, self.get_pointer_window_position)
 
     def init(self, opts) -> None:
         self.input_devices = opts.input_devices
@@ -363,11 +322,7 @@ class PointerManager(StubSubsystem):
         """
         if "modifiers" in props:
             self._update_modifiers(proto, wid, props.get("modifiers", ()))
-        if DRAG_SCROLL_ENABLED and button == 1 and wid:
-            if pressed:
-                self._button1_drag[wid] = self._make_button1_drag_state(wid, pointer, props)
-            else:
-                self._button1_drag.pop(wid, None)
+        self._drag_scroll.record_button(wid, button, pressed, pointer, props)
         pointer_props = {
             key: props[key] for key in ("window-position", "monitor") if key in props
         }
@@ -390,112 +345,6 @@ class PointerManager(StubSubsystem):
                                           exclude=self.get_server_source(proto))
             self.button_action(device_id, wid, button, pressed, props)
 
-    def _make_button1_drag_state(self, wid: int, pointer, props=None) -> dict:
-        """Snapshot the button-1 press for the drag-as-scroll heuristic.
-
-        Computes whether the press landed inside the window's right-edge
-        scrollbar zone, using the window-relative position property and the
-        window's geometry width when reachable. Stores press coordinates so
-        the motion handler can accumulate dx/dy.
-        """
-        try:
-            press_x = int(pointer[0]) if pointer and len(pointer) >= 1 else 0
-            press_y = int(pointer[1]) if pointer and len(pointer) >= 2 else 0
-        except (TypeError, ValueError):
-            press_x, press_y = 0, 0
-        in_zone: bool | None = None
-        rel_x: int | None = None
-        if relative := self.get_pointer_window_position(pointer, props):
-            rel_x = relative[0]
-        window_width = self._lookup_window_width(wid)
-        if rel_x is not None and window_width:
-            in_zone = (window_width - rel_x) <= DRAG_SCROLLBAR_ZONE_PX
-        return {
-            "last_x": press_x,
-            "last_y": press_y,
-            "accum_dx_abs": 0,
-            "accum_dy_abs": 0,
-            "in_scrollbar_zone": in_zone,
-            "looks_like_selection": False,
-            "last_emit_t_ms": 0.0,
-        }
-
-    def _lookup_window_width(self, wid: int) -> int | None:
-        """Return the width of the window with id ``wid``, or ``None``.
-
-        Mirrors the geometry lookup in :meth:`_get_pointer_abs_coordinates`:
-        only works when this mixin is composed with :class:`WindowServer`
-        (i.e. on the X11 server) and the window model is reachable.
-        """
-        if not (ws := self.get_subsystem("window")):
-            return None
-        if not (model := ws.get_window(wid)):
-            return None
-        geom = model.get_geometry()
-        if not geom or len(geom) < 4:
-            return None
-        return int(geom[2])
-
-    def _maybe_record_drag_scroll(self, wid: int, pdata: Sequence[int]) -> None:
-        """Treat sustained button-1 + near-vertical motion as a scroll event.
-
-        Distinguishes scrollbar-thumb drags from text-selection drags using
-        two complementary signals: (a) press inside the window's right-edge
-        scrollbar zone (strong, used when window geometry is reachable) and
-        (b) accumulated |dx| vs |dy| ratio (fallback, used when geometry is
-        unknown or as additional confidence).  A drag classified as anything
-        other than a scrollbar drag has emits suppressed for its remaining
-        lifetime.
-
-        Keyed on ``wid`` (not ``device_id``) because the legacy v4 protocol
-        paths used by the bundled HTML5 client deliver press with
-        ``device_id=0`` and motion with ``device_id=-1``; keying on wid
-        sidesteps that mismatch.  Otherwise rate-limited per drag via
-        ``DRAG_SCROLL_MIN_DY_PX`` and ``DRAG_SCROLL_EMIT_INTERVAL_MS``.
-        """
-        if not DRAG_SCROLL_ENABLED or not wid:
-            return
-        drag = self._button1_drag.get(wid)
-        if not drag or len(pdata) < 2:
-            return
-        try:
-            cur_x = int(pdata[0])
-            cur_y = int(pdata[1])
-        except (TypeError, ValueError):
-            return
-        drag["accum_dx_abs"] += abs(cur_x - drag["last_x"])
-        drag["accum_dy_abs"] += abs(cur_y - drag["last_y"])
-        drag["last_x"] = cur_x
-        drag["last_y"] = cur_y
-        # Strong reject: press was clearly not on the scrollbar.
-        if drag["in_scrollbar_zone"] is False:
-            return
-        # Fallback signal (only when zone is unknown): motion-direction.
-        # Once the ratio crosses the threshold we latch the drag as
-        # selection-like so a later returns-to-vertical micro-movement
-        # doesn't reopen the emit gate.
-        if drag["in_scrollbar_zone"] is None and not drag["looks_like_selection"]:
-            if drag["accum_dy_abs"] >= DRAG_SCROLL_SELECTION_PROBE_DY_PX and drag["accum_dx_abs"] * 100 >= DRAG_SCROLL_SELECTION_DX_PCT * drag["accum_dy_abs"]:
-                drag["looks_like_selection"] = True
-                log("drag-as-scroll: wid=%i classified as selection-like (unknown zone, dx=%i dy=%i)",
-                    wid, drag["accum_dx_abs"], drag["accum_dy_abs"])
-        if drag["looks_like_selection"]:
-            return
-        # Pixel threshold + rate limit.
-        if drag["accum_dy_abs"] < DRAG_SCROLL_MIN_DY_PX:
-            return
-        now_ms = monotonic() * 1000.0
-        if (now_ms - drag["last_emit_t_ms"]) < DRAG_SCROLL_EMIT_INTERVAL_MS:
-            return
-        drag["last_emit_t_ms"] = now_ms
-        drag["accum_dx_abs"] = 0
-        drag["accum_dy_abs"] = 0
-        log("drag-as-scroll: wid=%i y=%i zone=%s",
-            wid, cur_y, drag["in_scrollbar_zone"])
-        if window_sub := self.get_subsystem("window"):
-            for ss in window_sub.window_sources():
-                ss.record_scroll_event(wid)
-
     def button_action(self, device_id: int, wid: int, button: int, pressed: bool, props: dict) -> None:
         device = self.get_pointer_device(device_id)
         assert device, "pointer device %s not found" % device_id
@@ -516,7 +365,7 @@ class PointerManager(StubSubsystem):
     def unpress_all_buttons(self, *_args) -> None:
         buttons_pressed = self.buttons_pressed
         self.buttons_pressed = {}
-        self._button1_drag.clear()
+        self._drag_scroll.clear()
         for device_id, buttons in buttons_pressed.items():
             for button in buttons:
                 with log.trap_error("Error releasing pointer button %i on device %i", button, device_id):
@@ -553,7 +402,7 @@ class PointerManager(StubSubsystem):
             modifiers = props.get("modifiers")
             if modifiers is not None:
                 self._update_modifiers(proto, wid, modifiers)
-        self._maybe_record_drag_scroll(wid, pdata)
+        self._drag_scroll.maybe_record_drag_scroll(wid, pdata)
 
     def _process_wheel(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):

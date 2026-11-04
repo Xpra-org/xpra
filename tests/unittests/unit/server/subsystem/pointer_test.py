@@ -246,33 +246,44 @@ class PointerPipelineTest(unittest.TestCase):
 
     def test_drag_scroll_is_recorded_by_the_window_sources(self):
         from unittest.mock import Mock, create_autospec, patch
-        from xpra.server.subsystem import pointer
+        from xpra.net.common import Packet
+        from xpra.server import drag_scroll
         from xpra.server.subsystem.window import WindowServer
-        server = make_server()
-        window_source = Mock()
-        window = create_autospec(WindowServer, instance=True)
-        window.window_sources.return_value = [window_source]
-        server.subsystems["window"] = window
-        m = RecordingPointerManager(server)
-        # button 1 was pressed on the scrollbar:
-        m._button1_drag[1] = {
-            "last_x": 100,
-            "last_y": 100,
-            "accum_dx_abs": 0,
-            "accum_dy_abs": 0,
-            "in_scrollbar_zone": True,
-            "looks_like_selection": False,
-            "last_emit_t_ms": 0.0,
-        }
-        with patch.object(pointer, "DRAG_SCROLL_ENABLED", True):
-            m._maybe_record_drag_scroll(1, (100, 150))
-        window_source.record_scroll_event.assert_called_once_with(1)
+        for pointer, props in (
+            ((395, 300, 295, 100), {}),
+            ((395, 300), {"window-position": (295, 100)}),
+        ):
+            with self.subTest(pointer=pointer, props=props):
+                server = make_server()
+                source = Mock(uuid="driver")
+                server.get_server_source = lambda _proto: source
+                server.set_ui_driver = lambda _ss: None
+                window_source = Mock()
+                window = create_autospec(WindowServer, instance=True)
+                window.get_window.return_value.get_geometry.return_value = (100, 200, 300, 400)
+                window.window_sources.return_value = [window_source]
+                server.subsystems["window"] = window
+                m = RecordingPointerManager(server)
+                with patch.object(drag_scroll, "DRAG_SCROLL_ENABLED", True), \
+                        patch.object(drag_scroll, "monotonic", return_value=1.0) as now:
+                    # Legacy clients use different device IDs for press and motion.
+                    m._process_button(None, Packet("pointer-button", 0, 1, 1, 1, True, pointer, props))
+                    m._process_motion(None, Packet("pointer-motion", -1, 2, 1, (395, 350), {}))
+                    window_source.record_scroll_event.assert_called_once_with(1)
+                    m._process_button(None, Packet("pointer-button", 0, 3, 1, 1, False, (395, 350), {}))
+                    now.return_value = 2.0
+                    m._process_motion(None, Packet("pointer-motion", -1, 4, 1, (395, 400), {}))
+                    window_source.record_scroll_event.assert_called_once_with(1)
 
     def test_disconnect_clears_drag_state(self):
+        from unittest.mock import patch
+        from xpra.server import drag_scroll
         m = self.make_manager()
-        m._button1_drag[1] = {}
-        m.unpress_all_buttons()
-        self.assertEqual(m._button1_drag, {})
+        with patch.object(drag_scroll, "DRAG_SCROLL_ENABLED", True):
+            m.process_pointer_button(None, 0, 1, 1, True, (10, 20), {})
+            self.assertTrue(m._drag_scroll._button1_drag)
+            m.unpress_all_buttons()
+            self.assertEqual(m._drag_scroll._button1_drag, {})
 
     def test_failed_button_action_is_not_tracked(self):
         m = self.make_manager()
