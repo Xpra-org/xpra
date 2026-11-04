@@ -141,11 +141,9 @@ def main(argv: list[str]) -> int:
     from xpra.util.str_fn import csv
     with program_context("Printing", "Printing"):
         enable_color()
-        try:
-            init_printing()
-        except Exception as e:
-            print("Error: initializing the printing tool")
-            print(f" {e}")
+        # This command only takes synchronous snapshots or submits a job.
+        # Printer-change monitoring belongs to the long-lived client, not this
+        # one-shot CLI: the CUPS fallback starts a non-daemon polling timer.
         if len(argv) <= 1:
             dump_printers(get_printers())
             print("")
