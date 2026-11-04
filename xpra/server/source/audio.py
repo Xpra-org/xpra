@@ -12,7 +12,7 @@ from collections.abc import Sequence, Callable
 from xpra.audio.common import (
     AUDIO_DATA_PACKET, AUDIO_KEEPALIVE_PACKET, AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET, PULSEAUDIO_DISCONNECTED,
     AUDIO_STREAM_START, AUDIO_STREAM_END,
-    get_matching_codecs, audio_stream_packet,
+    PendingAudio, get_matching_codecs, audio_stream_packet,
 )
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.net.compression import Compressed
@@ -103,6 +103,8 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         self.audio_level = False
         self.audio_signal = False
         self.audio_stream_packet = False
+        # `audio-data` received before the `audio-stream` start packet:
+        self.pending_audio = PendingAudio()
         self.hello_sent = 0.0
         self.init_audio_keepalive_state()
         self.audio_fade_timer = 0
@@ -488,6 +490,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
     def stop_receiving_audio(self) -> None:
         ss = self.audio_sink
         log("stop_receiving_audio() audio_sink=%s", ss)
+        self.pending_audio.stop()
         if ss:
             self.audio_sink = None
             ss.cleanup()
@@ -617,6 +620,12 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
             # so it must not start (or stop) the sink subprocess - only feed it:
             sink = self.audio_sink
             if sink is None:
+                # the data can overtake the `audio-stream` start packet:
+                if self.pending_audio.add((codec, data, metadata, packet_metadata)):
+                    log("audio_data(..) received before the stream has started, holding on to it")
+                    return
+                sink = self.audio_sink
+            if sink is None:
                 log("audio_data(..) no audio sink, dropping %s packet", codec)
                 return
             if codec != sink.codec:
@@ -633,7 +642,10 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         if self.is_closed():
             return
         if event == AUDIO_STREAM_START:
-            self.ensure_audio_sink(codec)
+            if self.ensure_audio_sink(codec):
+                # replay the data that arrived before this packet:
+                for item in self.pending_audio.start():
+                    self.audio_data(*item)
         elif event == AUDIO_STREAM_END:
             log("client sent end-of-stream, closing audio pipeline")
             self.stop_receiving_audio()
@@ -716,6 +728,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
 
         info = {
             "datagram": self.audio_datagram,
+            "pending": self.pending_audio.get_info(),
             "speaker": audio_info(self.supports_speaker, self.audio_source, self.audio_decoders),
             "microphone": audio_info(self.supports_microphone, self.audio_sink, self.audio_encoders),
         }

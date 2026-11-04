@@ -12,7 +12,7 @@ from xpra.audio.common import (
     AUDIO_DATA_PACKET, AUDIO_CONTROL_PACKET, AUDIO_KEEPALIVE_PACKET,
     AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET,
     AUDIO_STREAM_PACKET, AUDIO_STREAM_START, AUDIO_STREAM_END,
-    get_matching_codecs, audio_stream_packet,
+    PendingAudio, get_matching_codecs, audio_stream_packet,
 )
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.platform.paths import get_icon_filename
@@ -98,7 +98,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         "audio_keepalive_stale_warning", "audio_keepalive_timer", "audio_remote_keepalive", "av_sync",
         "av_sync_delta", "datagram", "device_restart_delay", "device_restart_timer", "in_bytecount", "latest_audio_timestamp", "latest_echoed_audio_timestamp",
         "latest_sent_audio_timestamp", "microphone_allowed", "microphone_codecs", "microphone_device",
-        "microphone_enabled", "on_sink_ready", "out_bytecount", "properties", "queue_used_sent",
+        "microphone_enabled", "on_sink_ready", "out_bytecount", "pending_audio", "properties", "queue_used_sent",
         "resume_restart", "server_av_sync", "server_decoders", "server_encoders", "server_eos_sequence",
         "server_pulseaudio_id", "server_pulseaudio_server", "server_receive", "server_send", "server_stream_packet", "sink",
         "sink_sequence", "source", "source_plugin", "source_sequence", "speaker_allowed", "speaker_codecs",
@@ -126,6 +126,8 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         self.on_sink_ready: Callable[[], None] = noop
         self.sink = None
         self.sink_sequence: int = 0
+        # `audio-data` received before the `audio-stream` start packet:
+        self.pending_audio = PendingAudio()
         self.audio_sink = "auto"
         self.source = None
         self.source_sequence: int = 0
@@ -257,6 +259,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             "microphone": self.microphone_enabled,
             "properties": dict(self.properties),
             "datagram": self.datagram,
+            "pending": self.pending_audio.get_info(),
         }
         if ss := self.source:
             info["src"] = ss.get_info()
@@ -546,6 +549,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         """
         ss = self.sink
         log("stop_receiving_audio(%s) audio sink=%s", tell_server, ss)
+        self.pending_audio.stop()
         self.cancel_device_restart_timer()
         if self.speaker_enabled:
             self.speaker_enabled = False
@@ -771,8 +775,13 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
                 self.audio_stream_end(seq)
                 return
         if not self.speaker_enabled:
-            log("speaker is now disabled - dropping packet")
-            return
+            # with datagrams, the data can overtake the `audio-stream` start packet:
+            if self.server_stream_packet and self.pending_audio.add(packet):
+                log("audio data received before the stream has started, holding on to it")
+                return
+            if not self.speaker_enabled:
+                log("speaker is now disabled - dropping packet")
+                return
         ss = self.sink
         if ss is None:
             log("no audio sink to process audio data, dropping it")
@@ -841,7 +850,10 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         self.idle_add(self.emit, "speaker-changed")
         self.on_sink_ready = noop
         log("starting speaker on server request using codec %s", codec)
-        self.start_sink(codec)
+        if self.start_sink(codec):
+            # replay the data that arrived before this packet:
+            for packet in self.pending_audio.start():
+                self._process_data(packet)
 
     def audio_stream_end(self, seq: int) -> None:
         if not self.speaker_enabled or self.sink is None:

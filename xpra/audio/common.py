@@ -4,6 +4,9 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+from time import monotonic
+from threading import Lock
+from collections import deque
 from typing import Any
 from collections.abc import Iterable, Sequence
 from xpra.util.env import envint
@@ -74,6 +77,9 @@ AUDIO_SIGNAL_PACKET = "audio-signal"
 AUDIO_KEEPALIVE_INTERVAL = envint("XPRA_AUDIO_KEEPALIVE_INTERVAL", 5)
 AUDIO_KEEPALIVE_TIMEOUT = envint("XPRA_AUDIO_KEEPALIVE_TIMEOUT", 10)
 SILENCE_FLOOR_DB = -120
+# how long to hold on to `audio-data` packets that arrive before the stream has started:
+PENDING_AUDIO_DELAY = envint("XPRA_AUDIO_PENDING_DELAY", 200)
+PENDING_AUDIO_MAX = envint("XPRA_AUDIO_PENDING_MAX", 50)
 
 
 def audio_stream_packet(remote_stream_packet: bool, event: str, codec: str, sequence: int) -> tuple[Any, ...]:
@@ -88,6 +94,64 @@ def audio_stream_packet(remote_stream_packet: bool, event: str, codec: str, sequ
     if event == AUDIO_STREAM_START:
         metadata["codec"] = codec
     return AUDIO_DATA_PACKET, codec, (), metadata
+
+
+class PendingAudio:
+    """
+    `audio-data` packets sent as datagrams may overtake the `audio-stream` start packet,
+    which is sent on the regular stream:
+    hold on to them for a short while, and replay them once the stream has started.
+    Packets can be added from one thread (ie: the asyncio loop receiving datagrams)
+    while the stream is started from another (ie: the network parse thread).
+    """
+
+    def __init__(self, delay: int = PENDING_AUDIO_DELAY, max_items: int = PENDING_AUDIO_MAX):
+        self.delay = delay / 1000
+        self.max_items = max_items
+        self.lock = Lock()
+        self.items: deque[tuple[float, Any]] = deque()
+        self.active = False
+        self.dropped = 0
+
+    def _expire(self, now: float) -> None:
+        while self.items and now - self.items[0][0] > self.delay:
+            self.items.popleft()
+            self.dropped += 1
+
+    def add(self, item: Any) -> bool:
+        """ returns False if the stream has already started, the item must be processed instead """
+        now = monotonic()
+        with self.lock:
+            if self.active:
+                return False
+            self._expire(now)
+            if len(self.items) >= self.max_items:
+                self.items.popleft()
+                self.dropped += 1
+            self.items.append((now, item))
+        return True
+
+    def start(self) -> list[Any]:
+        """ the stream has started: returns the items still pending, in the order they were received """
+        with self.lock:
+            self.active = True
+            self._expire(monotonic())
+            items = [item for _, item in self.items]
+            self.items.clear()
+        return items
+
+    def stop(self) -> None:
+        with self.lock:
+            self.active = False
+            self.dropped += len(self.items)
+            self.items.clear()
+
+    def get_info(self) -> dict[str, Any]:
+        return {
+            "active": self.active,
+            "pending": len(self.items),
+            "dropped": self.dropped,
+        }
 
 
 # PulseAudio receives the server's terminal signal directly (ie: Ctrl-C) and may exit

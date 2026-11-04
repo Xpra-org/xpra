@@ -246,6 +246,8 @@ class TestServerSinkCreation(unittest.TestCase):
             c.audio_data("opus", b"data", {"sequence": 0})
         ensure.assert_not_called()
         assert c.audio_sink is None
+        # held until the stream starts:
+        assert len(c.pending_audio.items) == 1
 
     def test_data_fed_to_existing_sink(self):
         c = FakeConnection()
@@ -283,6 +285,111 @@ class TestServerSinkCreation(unittest.TestCase):
         with patch.object(c, "ensure_audio_sink", return_value=False) as ensure:
             c.audio_data("opus", b"data", {"sequence": 0})
         ensure.assert_called_once_with("opus")
+
+
+class TestPendingAudio(unittest.TestCase):
+
+    def test_held_until_start(self):
+        from xpra.audio.common import PendingAudio
+        pending = PendingAudio(200, 10)
+        assert pending.add(1) and pending.add(2)
+        assert pending.start() == [1, 2]
+        # once started, the items must be processed straight away:
+        assert not pending.add(3)
+        assert pending.start() == []
+        pending.stop()
+        assert pending.add(4)
+
+    def test_expired(self):
+        from xpra.audio import common
+        pending = common.PendingAudio(200, 10)
+        with patch.object(common, "monotonic", return_value=10.0):
+            pending.add("old")
+        with patch.object(common, "monotonic", return_value=10.15):
+            pending.add("recent")
+        with patch.object(common, "monotonic", return_value=10.3):
+            assert pending.start() == ["recent"]
+        assert pending.dropped == 1
+
+    def test_max_items(self):
+        from xpra.audio.common import PendingAudio
+        pending = PendingAudio(200, 3)
+        for i in range(5):
+            pending.add(i)
+        assert pending.start() == [2, 3, 4]
+        assert pending.dropped == 2
+
+    def test_stop_drops(self):
+        from xpra.audio.common import PendingAudio
+        pending = PendingAudio(200, 10)
+        pending.add(1)
+        pending.stop()
+        assert pending.start() == []
+        assert pending.dropped == 1
+
+
+class TestEarlyData(unittest.TestCase):
+    """ `audio-data` received as datagrams can overtake the `audio-stream` start packet """
+
+    def test_client_replays_early_data(self):
+        x = _make_client()
+        x.speaker_allowed = True
+        x.server_stream_packet = True
+        early = [Packet(AUDIO_DATA_PACKET, "opus", b"data%i" % i, {"sequence": 0}) for i in range(3)]
+        for packet in early:
+            x._process_data(packet)
+        sink = MagicMock()
+        sink.codec = "opus"
+        sink.get_state.return_value = "running"
+
+        def start_sink(_codec) -> bool:
+            x.sink = sink
+            return True
+
+        with patch.object(x, "start_sink", side_effect=start_sink):
+            x._process_stream(Packet(AUDIO_STREAM_PACKET, AUDIO_STREAM_START, "opus", 0))
+        assert [c.args[0] for c in sink.add_data.call_args_list] == [b"data0", b"data1", b"data2"]
+        # later packets go straight to the sink:
+        x._process_data(Packet(AUDIO_DATA_PACKET, "opus", b"later", {"sequence": 0}))
+        assert sink.add_data.call_args_list[-1].args[0] == b"later"
+
+    def test_client_without_stream_packet(self):
+        # older servers send the legacy start of stream, never overtaken by datagrams
+        x = _make_client()
+        x._process_data(Packet(AUDIO_DATA_PACKET, "opus", b"data", {"sequence": 0}))
+        assert not x.pending_audio.items
+
+    def test_client_stop_drops_early_data(self):
+        x = _make_client()
+        x.server_stream_packet = True
+        x._process_data(Packet(AUDIO_DATA_PACKET, "opus", b"data", {"sequence": 0}))
+        x.stop_receiving_audio(False)
+        assert not x.pending_audio.items
+
+    def test_server_replays_early_data(self):
+        c = FakeConnection()
+        c.audio_stream_packet = True
+        for i in range(3):
+            c.audio_data("opus", b"data%i" % i, {"sequence": 0})
+        sink = MagicMock()
+        sink.codec = "opus"
+
+        def ensure(_codec) -> bool:
+            c.audio_sink = sink
+            return True
+
+        with patch.object(c, "ensure_audio_sink", side_effect=ensure):
+            c.audio_stream(AUDIO_STREAM_START, "opus", 0)
+        assert [call.args[0] for call in sink.add_data.call_args_list] == [b"data0", b"data1", b"data2"]
+        c.audio_data("opus", b"later", {"sequence": 0})
+        assert sink.add_data.call_args_list[-1].args[0] == b"later"
+
+    def test_server_stop_drops_early_data(self):
+        c = FakeConnection()
+        c.audio_stream_packet = True
+        c.audio_data("opus", b"data", {"sequence": 0})
+        c.audio_stream(AUDIO_STREAM_END, "opus", 0)
+        assert not c.pending_audio.items
 
 
 class TestServerSubsystem(unittest.TestCase):
