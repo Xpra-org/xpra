@@ -371,6 +371,126 @@ class QuicDatagramWriteTest(unittest.TestCase):
         assert conn.write.call_count == 2
 
 
+@unittest.skipUnless(HAVE_AIOQUIC, "aioquic not available")
+class QuicDatagramProtocolTest(unittest.TestCase):
+    """ the protocol layer: one-shot parsing of datagram records """
+
+    @classmethod
+    def setUpClass(cls):
+        from xpra.net import packet_encoding, compression
+        packet_encoding.init_all()
+        compression.init_all()
+        cls.cert, cls.key = make_certificate()
+
+    def setUp(self):
+        self.loop = SyncLoop()
+        patcher = patch("xpra.net.quic.connection.get_threaded_loop", return_value=self.loop)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def make_protocol(self, conn, received: list | None = None):
+        from unittest.mock import MagicMock
+        from xpra.net.websockets.protocol import WebSocketProtocol
+        callback = (lambda _proto, packet: received.append(packet)) if received is not None else MagicMock()
+        protocol = WebSocketProtocol(conn, callback)
+        protocol.enable_encoder("rencodeplus")
+        protocol.enable_compressor("lz4")
+        protocol.datagram_packet_types = (DATAGRAM_TYPE, )
+        return protocol
+
+    def encode(self, protocol, packet, level: int = 0) -> list:
+        """ returns the items the protocol would write for this packet """
+        protocol.set_compression_level(level)
+        items = []
+        with patch.object(protocol, "raw_write", lambda buf_data, *_args, **_kwargs: items.extend(buf_data)):
+            protocol._add_chunks_to_queue(packet[0], protocol.encode(packet))
+        return items
+
+    @staticmethod
+    def audio_packet(size: int = 992, sequence: int = 0) -> tuple:
+        from xpra.net.compression import Compressed
+        metadata = {"timestamp": 123456789012345, "duration": 20000000, "sequence": sequence}
+        return DATAGRAM_TYPE, "opus+rtp", Compressed("opus+rtp", bytes(i & 0xff for i in range(size))), metadata
+
+    def receiver(self):
+        from unittest.mock import MagicMock
+        from xpra.net.quic.connection import XpraQuicConnection
+        conn = XpraQuicConnection(MagicMock(), 0, MagicMock(), "localhost", ADDR[1])
+        received: list = []
+        return self.make_protocol(conn, received), received
+
+    def test_parse(self):
+        protocol, received = self.receiver()
+        for level in (0, 1):
+            items = self.encode(protocol, self.audio_packet(), level)
+            assert len(items) == 1
+            protocol._conn.datagram_received(items[0])
+        assert len(received) == 2
+        for packet in received:
+            assert packet.get_type() == DATAGRAM_TYPE
+            assert packet.get_str(1) == "opus+rtp"
+            assert bytes(packet.get_buffer(2)) == bytes(i & 0xff for i in range(992))
+            assert packet.get_dict(3)["sequence"] == 0
+        assert protocol.datagram_stats["received"] == 2
+
+    def test_invalid_records_are_dropped(self):
+        protocol, received = self.receiver()
+        record = bytes(self.encode(protocol, self.audio_packet())[0])
+        invalid = (
+            b"",
+            record[:1],
+            record[:-1],                            # truncated
+            record + b"x",                          # trailing data
+            record[:2] + b"\0" + record[3:],        # websocket header corrupted
+            bytes([0x01]) + record[1:],             # websocket text frame, no fin
+        )
+        for data in invalid:
+            protocol.process_datagram(data)
+        assert not received
+        assert protocol.datagram_stats["invalid"] == len(invalid)
+        assert not protocol.is_closed()
+
+    def test_unwanted_packet_type_dropped(self):
+        protocol, received = self.receiver()
+        protocol.datagram_packet_types = ()
+        protocol.process_datagram(self.encode(protocol, self.audio_packet())[0])
+        assert not received
+        assert protocol.datagram_stats["dropped"] == 1
+
+    def test_closed(self):
+        protocol, received = self.receiver()
+        record = self.encode(protocol, self.audio_packet())[0]
+        protocol.close()
+        protocol.process_datagram(record)
+        assert not received
+
+    def test_end_to_end(self):
+        # sender protocol -> quic connection -> aioquic -> quic connection -> receiver protocol,
+        # interleaved with large stream writes
+        from xpra.net.quic.connection import XpraQuicConnection
+        pair = QuicPair(self.cert, self.key, budget=3)
+        with patch.object(XpraQuicConnection, "datagram_packet_types", (DATAGRAM_TYPE, )):
+            sender_conn = XpraQuicConnection(pair.chttp, pair.stream_id, pair.transmit, "localhost", ADDR[1])
+            receiver_conn = XpraQuicConnection(pair.shttp, pair.stream_id, pair.transmit, "localhost", ADDR[1])
+            pair.receiver = receiver_conn
+            sender = self.make_protocol(sender_conn)
+            received: list = []
+            receiver = self.make_protocol(receiver_conn, received)
+            stream_bytes = 0
+            for i in range(20):
+                big = b"%i" % i * (64 * 1024)
+                stream_bytes += len(big)
+                sender_conn.stream_write(big, STREAM_TYPE)
+                for j in range(5):
+                    items = self.encode(sender, self.audio_packet(sequence=i * 5 + j))
+                    sender.write_buffers(items, DATAGRAM_TYPE, True)
+            pair.drain_link()
+        assert "sds" in "".join(pair.event_order)
+        assert [packet.get_dict(3)["sequence"] for packet in received] == list(range(100))
+        assert receiver.datagram_stats == {"received": 100, "invalid": 0, "dropped": 0}
+        assert len(b"".join(drain(receiver_conn.read_queue))) == stream_bytes
+
+
 def main():
     unittest.main()
 

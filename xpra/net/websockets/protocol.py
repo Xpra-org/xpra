@@ -11,6 +11,7 @@ from xpra.common import SizedBuffer
 from xpra.net.websockets.mask import hybi_mask
 from xpra.net.websockets.header import encode_hybi_header, decode_hybi, close_packet
 from xpra.net.websockets.common import OPCODE, OPCODE_STR
+from xpra.net.common import Packet
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.util.env import envbool, first_time
 from xpra.util.str_fn import hexstr, memoryview_to_bytes, Ellipsizer
@@ -63,6 +64,18 @@ class WebSocketProtocol(SocketProtocol):
         if n < len(data):
             self.ws_xpra_data.insert(0, data[n:])
         return n
+
+    def parse_datagram(self, record: SizedBuffer) -> Packet:
+        # datagrams contain exactly one complete websocket binary frame:
+        parsed = decode_hybi(record)
+        if parsed is None:
+            raise ValueError("incomplete websocket frame")
+        opcode, payload, processed, fin = parsed
+        if opcode != OPCODE.BINARY or not fin:
+            raise ValueError(f"invalid websocket frame: {OPCODE_STR.get(opcode, opcode)}, fin={fin}")
+        if processed != len(record):
+            raise ValueError(f"websocket frame is {processed} bytes, datagram is {len(record)} bytes")
+        return super().parse_datagram(payload)
 
     def send_ws_close(self, code: int = 1000, reason: str = "closing") -> None:
         data = close_packet(code, reason)

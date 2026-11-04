@@ -256,6 +256,13 @@ class SocketProtocol:
         self._write_format_thread: Thread | None = None  # started when needed
         self._source_has_more = Event()
         self.receive_pending = False
+        # packet types we accept as datagrams,
+        # empty until they have been negotiated with the peer:
+        self.datagram_packet_types: Sequence[str] = ()
+        self.datagram_stats: dict[str, int] = {"received": 0, "invalid": 0, "dropped": 0}
+        if hasattr(conn, "datagram_received"):
+            # each datagram is a self-contained record, parsed and dispatched straight away:
+            conn.datagram_received = self.process_datagram
         # ssh channels and wsl processes may output garbage initially,
         # tell the protocol to wait for a valid header:
         self.wait_for_header = envbool("XPRA_WAIT_FOR_HEADER", conn.socktype in ("ssh", "wsl"))
@@ -478,6 +485,7 @@ class SocketProtocol:
             "packetcount": self.input_packetcount,
             "raw_packetcount": self.input_raw_packetcount,
             "count": self.input_stats,
+            "datagram": dict(self.datagram_stats),
             "cipher": {
                 "": self.cipher_in_name,
                 "padding": self.cipher_in_padding,
@@ -1086,6 +1094,56 @@ class SocketProtocol:
                 return
             if not self.process_payload(state, info, payload):
                 return
+
+    def process_datagram(self, record: SizedBuffer) -> None:
+        """
+        Datagrams may be lost or re-ordered, so each one must be a complete packet.
+        Invalid or unwanted datagrams are dropped without closing the connection.
+        This is called from the thread that receives the datagrams (ie: the asyncio loop thread).
+        """
+        if self._closed:
+            return
+        try:
+            packet = self.parse_datagram(record)
+        except Exception as e:
+            self.datagram_stats["invalid"] += 1
+            log("parse_datagram(%s)", Ellipsizer(record), exc_info=True)
+            if first_time(f"invalid-datagram-{self._conn}"):
+                log.warn(f"Warning: invalid datagram dropped: {e}")
+            return
+        packet_type = packet.get_type()
+        if packet_type not in self.datagram_packet_types:
+            self.datagram_stats["dropped"] += 1
+            log("datagram %r dropped, accepted packet types: %s", packet_type, self.datagram_packet_types)
+            return
+        self.datagram_stats["received"] += 1
+        self.input_stats[packet_type] = self.input_stats.get(packet_type, 0) + 1
+        self.input_packetcount += 1
+        self._process_packet_cb(self, packet)
+
+    def parse_datagram(self, record: SizedBuffer) -> Packet:
+        """
+        One-shot parsing of a datagram record:
+        a single xpra chunk (no raw chunks), not encrypted, optionally compressed.
+        Raises an exception if the record is not valid.
+        """
+        if len(record) < HEADER_SIZE:
+            raise ValueError(f"datagram too small: {len(record)} bytes")
+        if record[0] != PACKET_HEADER_CHAR:
+            raise ValueError(f"invalid packet header byte {hex(record[0])}")
+        _, protocol_flags, compression_level, packet_index, data_size = unpack_header(record)
+        if error := validate_packet_header(protocol_flags, compression_level, packet_index, modern=True):
+            raise ValueError(f"invalid packet header: {error}")
+        if packet_index:
+            raise ValueError(f"datagrams cannot contain raw chunks (index {packet_index})")
+        if protocol_flags & FLAGS_CIPHER:
+            raise ValueError("datagrams cannot be encrypted")
+        if data_size != len(record) - HEADER_SIZE:
+            raise ValueError(f"datagram size mismatch: header says {data_size} bytes, found {len(record) - HEADER_SIZE}")
+        data = memoryview(record)[HEADER_SIZE:]
+        if compression_level:
+            data = decompress(data, compression_level)
+        return Packet(*decode(data, protocol_flags))
 
     def parse_packet_header(self, header: bytes) -> PacketReadInfo | None:
         # format: struct.pack(b'cBBBL', ...) - HEADER_SIZE bytes
