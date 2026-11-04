@@ -40,6 +40,7 @@ from libc.string cimport memset
 
 SAVE_TO_FILE = os.environ.get("XPRA_SAVE_TO_FILE", "")
 SUPPORT_ROI: bool = envbool("XPRA_VPX_ROI", False)
+SCROLL_CPUUSED_DELTA = envint("XPRA_VPX_SCROLL_CPUUSED_DELTA", 2)
 
 cdef int default_nthreads = max(1, int(math.sqrt(os.cpu_count()+1)))
 cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", default_nthreads)
@@ -350,6 +351,8 @@ cdef class Encoder:
     cdef double level
     cdef object src_format
     cdef int speed
+    cdef int scrolling
+    cdef int cpu_used
     cdef int quality
     cdef int lossless
     cdef int screen_content
@@ -381,6 +384,8 @@ cdef class Encoder:
         self.height = height
         self.quality = options.intget("quality", 50)
         self.speed = options.intget("speed", 50)
+        self.scrolling = 0
+        self.cpu_used = -1
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
         self.lossless = 0
         self.content_types = options.strtupleget("content-types", ())
@@ -528,6 +533,7 @@ cdef class Encoder:
             "width"     : self.width,
             "height"    : self.height,
             "speed"     : self.speed,
+            "cpu-used"  : self.cpu_used,
             "quality"   : self.quality,
             "lossless"  : bool(self.lossless),
             "level"     : get_level_tuple(self.level),
@@ -639,6 +645,12 @@ cdef class Encoder:
             self.bandwidth_limit = bandwidth_limit
             self.update_cfg()
 
+        cdef int scroll_age = options.intget("scroll-age-ms", -1)
+        # VP8 showed no compression benefit from changing CPUUSED on scrolling streams.
+        cdef int scrolling = self.encoding == "vp9" and 0 <= scroll_age < 1000
+        if scrolling != self.scrolling:
+            self.scrolling = scrolling
+            self.do_set_encoding_speed(self.speed)
         cdef int speed = options.intget("speed", 50)
         if speed>=0:
             self.set_encoding_speed(speed)
@@ -837,6 +849,12 @@ cdef class Encoder:
         #note: we don't use the full range since the percentages are mapped to -20% to +120%
         cdef int value = (speed-20)*3*vrange//200
         value = minv + MIN(vrange, MAX(0, value))
+        if self.scrolling and value > 6:
+            # Lower values caused latency spikes, especially with multiple threads.
+            value = MAX(6, value - SCROLL_CPUUSED_DELTA)
+        if value == self.cpu_used:
+            return
+        self.cpu_used = value
         self.codec_control("cpu speed", VP8E_SET_CPUUSED, value)
 
     def set_encoding_quality(self, int pct) -> None:

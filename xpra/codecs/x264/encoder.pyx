@@ -42,6 +42,8 @@ BLANK_VIDEO = envbool("XPRA_X264_BLANK_VIDEO")
 SUPPORT_ROI: bool = envbool("XPRA_X264_ROI", False)
 ROI_CHANGED_DELTA: float = float(os.environ.get("XPRA_X264_ROI_CHANGED_DELTA", "-4"))
 ROI_BACKGROUND_DELTA: float = float(os.environ.get("XPRA_X264_ROI_BACKGROUND_DELTA", "4"))
+# UMH can search beyond HEX's 16-pixel radius without the cost of exhaustive search.
+SCROLL_ME_RANGE = envint("XPRA_X264_SCROLL_ME_RANGE", 64)
 
 
 DEF X264_MBINFO_CONSTANT = 1
@@ -561,6 +563,9 @@ cdef class Encoder:
     cdef uint64_t first_frame_timestamp
     cdef uint8_t ready
     cdef uint8_t need_reconfig
+    cdef int scrolling
+    cdef int base_me_method
+    cdef int base_me_range
 
     cdef object __weakref__
 
@@ -597,6 +602,7 @@ cdef class Encoder:
         self.last_frame_times = deque(maxlen=200)
         self.time = 0
         self.need_reconfig = 0
+        self.scrolling = 0
         self.first_frame_timestamp = 0
         self.bandwidth_limit = options.intget("bandwidth-limit", 0)
         default_profile = PROFILE_MAIN if src_format == "YUV420P" else cs_info[1]
@@ -673,6 +679,8 @@ cdef class Encoder:
         x264_param_default_preset(&param, preset, self.tune)
         profile = b(self.profile)
         x264_param_apply_profile(&param, profile)
+        self.base_me_method = param.analyse.i_me_method
+        self.base_me_range = param.analyse.i_me_range
         self.tune_param(&param, options)
 
         self.context = x264_encoder_open(&param)
@@ -733,6 +741,8 @@ cdef class Encoder:
             #don't use TRELLIS, which uses too many delayed frames:
             if param.i_bframe_adaptive==X264_B_ADAPT_TRELLIS:
                 param.i_bframe_adaptive = X264_B_ADAPT_FAST
+        param.analyse.i_me_method = self.base_me_method
+        param.analyse.i_me_range = self.base_me_range
         if self.content_types and "video" not in self.content_types:
             #specifically told this is not video:
             if set(self.content_types) & {"desktop", "browser"}:
@@ -742,6 +752,10 @@ cdef class Encoder:
             else:
                 #use a simple motion search:
                 param.analyse.i_me_method = X264_ME_DIA
+        if self.scrolling and SCROLL_ME_RANGE > 0:
+            # Only spend the extra search effort while scroll input is recent.
+            param.analyse.i_me_method = X264_ME_UMH
+            param.analyse.i_me_range = SCROLL_ME_RANGE
         set_f_rf(param, get_x264_quality(self.quality, self.profile))
         #client can tune these options:
         param.b_open_gop = options.boolget("h264.open-gop", param.b_open_gop)
@@ -988,6 +1002,12 @@ cdef class Encoder:
         else:
             quality = self.quality
 
+        cdef int scroll_age = options.intget("scroll-age-ms", -1)
+        cdef int scrolling = 0 <= scroll_age < 1000
+        if scrolling != self.scrolling:
+            self.scrolling = scrolling
+            self.need_reconfig = 1
+
         if BLANK_VIDEO:
             if image.get_planes()==3:
                 pixels = (self.blank_buffer, self.blank_buffer, self.blank_buffer)
@@ -1089,6 +1109,9 @@ cdef class Encoder:
         cdef int i_nals = 0
         cdef x264_picture_t pic_out
         assert self.context!=NULL
+        # Apply the hint to this frame, including the first frame after scrolling starts.
+        if self.need_reconfig:
+            self.reconfig_tune()
         cdef double start = monotonic()
 
         cdef int frame_size
@@ -1125,13 +1148,6 @@ cdef class Encoder:
         # x264 guarantees that the payloads of all the NALs are sequential in memory:
         cdata = (<char *> nals[0].p_payload)[:frame_size]
         self.bytes_out += frame_size
-        #restore speed and quality if we temporarily modified them:
-        if speed>=0:
-            self.set_encoding_speed(self.speed)
-        if quality>=0:
-            self.set_encoding_quality(self.quality)
-        if self.need_reconfig:
-            self.reconfig_tune()
         #info for client:
         client_options = {
             "frame"     : int(self.frames),
@@ -1188,6 +1204,8 @@ cdef class Encoder:
         #apply new preset:
         self.tune = self.get_tune()
         x264_param_default_preset(&param, get_preset_names()[new_preset], self.tune)
+        self.base_me_method = param.analyse.i_me_method
+        self.base_me_range = param.analyse.i_me_range
         self.need_reconfig = 1
 
     def set_encoding_quality(self, int pct) -> None:

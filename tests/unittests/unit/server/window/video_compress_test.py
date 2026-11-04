@@ -208,6 +208,26 @@ class VideoEncodeTest(unittest.TestCase):
             self.assertEqual(g, r)
 
 
+class VideoEncoderOptionsTest(unittest.TestCase):
+
+    def test_scroll_hint_expires_after_one_second(self) -> None:
+        source = WindowVideoSource.__new__(WindowVideoSource)
+        source.last_scroll_time = 0
+        source.cuda_device_context = None
+        source._fixed_quality = source._fixed_speed = 50
+        source.content_types = ("browser",)
+        for event, now, expected in ((10, 10, 0), (10, 10.25, 250), (10, 10.9999, 999),
+                                     (10, 11, None), (10, 12, None), (10, 9, None), (0, 0.5, None)):
+            with self.subTest(event=event, now=now):
+                source.last_scroll_event = event
+                with patch("xpra.server.window.video_compress.monotonic", return_value=now):
+                    options = source.get_video_encoder_options("h264", 640, 480)
+                if expected is None:
+                    self.assertNotIn("scroll-age-ms", options)
+                else:
+                    self.assertEqual(options["scroll-age-ms"], expected)
+
+
 class NonVideoEncodingsTest(unittest.TestCase):
 
     def test_client_properties_exclude_unregistered_encodings(

@@ -8,6 +8,7 @@
   * [GPU security and containers](https://github.com/Xpra-org/xpra/issues/5088): [GPU accelerated secure pods](https://github.com/Xpra-org/xpra/blob/master/packaging/containers/podman/GPU.md), [landlock `+gpu`](https://github.com/Xpra-org/xpra/issues/5086), [SELinux domain for the encoder server](https://github.com/Xpra-org/xpra/issues/5087)
 * 🌈 Encodings:
 * ✨ Features:
+  * [tune x264 and VP9 motion search after scroll input](https://github.com/Xpra-org/xpra/issues/5118)
   * [remove backwards compatibility](https://github.com/Xpra-org/xpra/issues/4496)
   * [faster default window icon lookups](https://github.com/Xpra-org/xpra/issues/5112), [start menu entries with the same name](https://github.com/Xpra-org/xpra/commit/3487ccba2f88b853e9a2759c147e5b3e934ef8e1)
 

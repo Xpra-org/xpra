@@ -1777,8 +1777,12 @@ class WindowVideoSource(WindowSource):
 
     def get_video_encoder_options(self, encoding, width, height) -> dict[str, Any]:
         # tweaks for "real" video:
-        recentscroll = (monotonic() - self.last_scroll_time) < 5
+        now = monotonic()
+        recentscroll = (now - self.last_scroll_time) < 5
         opts = {}
+        scroll_age = now - self.last_scroll_event
+        if self.last_scroll_event > 0 and 0 <= scroll_age < 1:
+            opts["scroll-age-ms"] = int(scroll_age * 1000)
         if self.cuda_device_context:
             opts["cuda-device-context"] = self.cuda_device_context
         if not self._fixed_quality and not self._fixed_speed and self._fixed_min_quality < 50:
