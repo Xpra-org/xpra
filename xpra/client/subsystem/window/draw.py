@@ -12,7 +12,7 @@ from typing import Any
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
 from xpra.net.fragments import FrameAssembler, AssembledFrame, FrameStatus
 from xpra.net.packet_type import WINDOW_ACK, WINDOW_DRAW
-from xpra.constants import WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
+from xpra.constants import WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND, WINDOW_DECODE_LOST
 from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized
 from xpra.util.env import envint, envbool
@@ -113,13 +113,18 @@ class WindowDraw(StubClientSubsystem):
         width, height = metadata[3], metadata[4]
         log("draw_assembled_frame(%#x, %s) %i bytes from %i fragments, missing=%s",
             wid, frame.status, len(frame.data), frame.count, frame.missing)
+        for sequence in frame.lost_sequences:
+            # we have not received anything for these frames:
+            self.send_draw_ack(wid, 0, 0, sequence, WINDOW_DECODE_LOST, "lost")
         if frame.status == FrameStatus.LOST:
-            self.send_draw_ack(wid, width, height, frame.sequence, WINDOW_DECODE_SKIPPED, "lost")
+            self.send_draw_ack(wid, width, height, frame.sequence, WINDOW_DECODE_LOST, "lost",
+                               {"missing": frame.missing, "fragments": frame.count})
             return
         options = dict(metadata[8])
+        # tells the decoders this frame may be damaged (see `record_decode_time`):
+        options["fragments"] = frame.count
         if frame.missing:
             options["missing-fragments"] = frame.missing
-            options["fragments"] = frame.count
         packet = Packet(WINDOW_DRAW, *metadata[:6], frame.data, *metadata[6:8], options)
         self.queue_draw(packet)
 
@@ -147,8 +152,10 @@ class WindowDraw(StubClientSubsystem):
             self.source_remove(ft)
 
     def send_draw_ack(self, wid: int, width: int, height: int, packet_sequence: int,
-                      decode_time: int, message="") -> None:
-        args = (WINDOW_ACK, wid, width, height, packet_sequence, decode_time, message)
+                      decode_time: int, message="", extra: dict | None = None) -> None:
+        args: tuple = (WINDOW_ACK, wid, width, height, packet_sequence, decode_time, message)
+        if extra:
+            args += (extra, )
         log("sending ack: %s", args)
         self.send_now(*args)
 
@@ -193,7 +200,12 @@ class WindowDraw(StubClientSubsystem):
                     mmap.free_packet_chunks(data, options)
             record_draw_error(code, message)
 
+        # frames re-assembled from datagram fragments may be damaged:
+        fragments = options.intget("fragments", 0)
+        missing = options.tupleget("missing-fragments", ())
+
         def record_decode_time(success: bool | int, message="") -> None:
+            extra = {"missing": missing, "fragments": fragments} if missing else None
             if success > 0:
                 end = monotonic()
                 decode_time = round(end * 1000 * 1000 - start * 1000 * 1000)
@@ -201,6 +213,12 @@ class WindowDraw(StubClientSubsystem):
                 dms = "%sms" % (int(decode_time / 100) / 10.0)
                 paintlog("record_decode_time(%s, %s) wid=%#x, %s: %sx%s, %s",
                          success, message, wid, coding, width, height, dms)
+            elif success == 0 and fragments:
+                # most likely caused by a lost fragment, the server should recover from it:
+                decode_time = WINDOW_DECODE_LOST
+                extra = {"missing": missing, "fragments": fragments}
+                paintlog("record_decode_time(%s, %s) decoding error on wid=%#x, %s: %sx%s from %i fragments, missing %s",
+                         success, message, wid, coding, width, height, fragments, missing)
             elif success == 0:
                 decode_time = WINDOW_DECODE_ERROR
                 paintlog("record_decode_time(%s, %s) decoding error on wid=%#x, %s: %sx%s",
@@ -210,7 +228,7 @@ class WindowDraw(StubClientSubsystem):
                 decode_time = WINDOW_DECODE_SKIPPED
                 paintlog("record_decode_time(%s, %s) decoding or painting skipped on wid=%#x, %s: %sx%s",
                          success, message, wid, coding, width, height)
-            self.send_draw_ack(wid, width, height, packet_sequence, decode_time, repr_ellipsized(message, 512))
+            self.send_draw_ack(wid, width, height, packet_sequence, decode_time, repr_ellipsized(message, 512), extra)
 
         if not window:
             # window is gone

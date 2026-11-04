@@ -12,6 +12,8 @@ from collections.abc import Sequence
 from xpra.codecs.constants import VideoSpec, ColorRange, check_image_size, MAX_IMAGE_DIMENSION
 from xpra.codecs.h264_util import get_video_full_range
 from xpra.util.objects import typedict
+from xpra.util.str_fn import memoryview_to_bytes
+from xpra.util.env import envbool
 from xpra.common import SizedBuffer
 from xpra.codecs.image import ImageWrapper
 from xpra.log import Logger
@@ -101,6 +103,11 @@ cdef extern from "wels/codec_api.h":
                                 unsigned char** ppDst, SBufferInfo* pDstInfo) nogil
         long FlushFrame(unsigned char** ppDst, SBufferInfo* pDstInfo) nogil
 
+ERROR_CONCEALMENT = envbool("XPRA_OPENH264_ERROR_CONCEALMENT", True)
+# the decoding states we can expect when frames are missing slices or references:
+CONCEALED_ERRORS = dsDataErrorConcealed | dsRefLost | dsBitstreamError
+ACCESS_UNIT_DELIMITER = b"\0\0\0\x01\x09\xf0"
+
 ERROR_STR: dict[int, str] = {
     dsErrorFree: "no error",
     dsFramePending: "need more throughput to generate a frame output",
@@ -168,6 +175,9 @@ cdef class Decoder:
     cdef object colorspace
     cdef bint full_range
     cdef bint delayed
+    # set once we have received frames re-assembled from datagram fragments,
+    # from then on any frame can reference a damaged one:
+    cdef bint lossy
 
     cdef object __weakref__
 
@@ -181,6 +191,7 @@ cdef class Decoder:
         self.colorspace = colorspace
         self.full_range = True
         self.delayed = False
+        self.lossy = False
         self.frames = 0
         cdef long r = WelsCreateDecoder(&self.context)
         if r:
@@ -188,6 +199,8 @@ cdef class Decoder:
         cdef SDecodingParam dec_param
         memset(&dec_param, 0, sizeof(SDecodingParam))
         #dec_param.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_AVC;
+        # frames sent as datagram fragments may be missing some slices:
+        dec_param.eEcActiveIdc = ERROR_CON_SLICE_MV_COPY_CROSS_IDR if ERROR_CONCEALMENT else ERROR_CON_DISABLE
         #for Parsing only, the assignment is mandatory
         #dec_param.bParseOnly = 0
         self.context.Initialize(&dec_param)
@@ -246,6 +259,14 @@ cdef class Decoder:
         if options.intget("delayed", 0) > 0:
             self.delayed = True
         cdef bint delayed = self.delayed
+        # frames re-assembled from datagram fragments may be damaged:
+        cdef bint fragmented = options.intget("fragments", 0) > 0
+        if fragmented:
+            self.lossy = True
+        if fragmented and options.tupleget("missing-fragments"):
+            # some slices are missing, so the decoder cannot tell that the picture is complete:
+            # end the access unit so that it is concealed now
+            data = memoryview_to_bytes(data) + ACCESS_UNIT_DELIMITER
         assert self.context!=NULL, "decoder is closed"
         start = monotonic()
         with buffer_context(data) as bc:
@@ -254,15 +275,20 @@ cdef class Decoder:
             with nogil:
                 r = self.context.DecodeFrameNoDelay(<const unsigned char*> src, <const int> src_len,
                                                     yuv, &buf_info)
-                if not delayed and r == 0 and buf_info.iBufferStatus != 1:
+                if not delayed and (r == 0 or fragmented) and buf_info.iBufferStatus != 1:
                     # Despite its name, DecodeFrameNoDelay still uses a display-order
                     # buffer for Main and High streams. With no encoder-side delay there
                     # can be no B-frames to reorder, so drain the current frame now.
+                    # (a frame missing some slices also needs this to be completed)
                     memset(&buf_info, 0, sizeof(SBufferInfo))
-                    r = self.context.FlushFrame(yuv, &buf_info)
+                    r |= self.context.FlushFrame(yuv, &buf_info)
         if r:
-            msg = ERROR_STR.get(r, "unknown")
-            raise RuntimeError(f"openh264 frame decoding error {msg!r}")
+            # frames re-assembled from datagram fragments may be missing some slices,
+            # or reference a frame that was lost: show what the decoder could conceal
+            if not (self.lossy and not (r & ~CONCEALED_ERRORS)):
+                msg = ERROR_STR.get(r, "unknown")
+                raise RuntimeError(f"openh264 frame decoding error {msg!r} ({r:#x})")
+            log("openh264 concealed decoding errors %#x", r)
         end = monotonic()
         if buf_info.iBufferStatus != 1:
             log("openh264 decoded %8i bytes without producing a frame in %3ims",

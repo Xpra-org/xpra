@@ -14,6 +14,71 @@ from xpra.server.window.video_compress import WindowVideoSource
 from xpra.util.objects import typedict
 
 
+class VideoFrameLostTest(unittest.TestCase):
+    """ the client lost some or all of the fragments of a frame sent as datagrams """
+
+    @staticmethod
+    def make_source(encoder) -> WindowVideoSource:
+        from xpra.server.window.perfstats import WindowPerformanceStatistics
+        source = WindowVideoSource.__new__(WindowVideoSource)
+        source.wid = 1
+        source._video_encoder = encoder
+        source.statistics = WindowPerformanceStatistics()
+        source.global_statistics = Mock(min_client_latency=0.01)
+        source.jitter = 0
+        source.bandwidth_limit = 0
+        source.networksend_congestion_event = Mock()
+        source.frame_losses = {"lost": 0, "partial": 0}
+        source._damage_delayed = None
+        source.decode_error_refresh_timer = 0
+        source.video_context_clean = Mock()
+        source.client_decode_error = Mock()
+        return source
+
+    @staticmethod
+    def send(source, sequence: int, pts: int) -> None:
+        # pending = (now, coding, pixcount, bytecount, client_options, damage_time)
+        source.statistics.damage_ack_pending[sequence] = (0, "h264", 100, 100, {"frame": sequence, "pts": pts}, 0)
+
+    def test_lost_frame_requests_recovery(self) -> None:
+        from xpra.constants import WINDOW_DECODE_LOST
+        encoder = Mock()
+        source = self.make_source(encoder)
+        self.send(source, 5, 200)
+        source.damage_packet_acked(5, 64, 32, WINDOW_DECODE_LOST, "lost", {"missing": (0, 1), "fragments": 2})
+        encoder.request_recovery.assert_called_once_with(200)
+        self.assertEqual(source.frame_losses, {"lost": 1, "partial": 0})
+        self.assertNotIn(5, source.statistics.damage_ack_pending)
+        # this is not a decoding error, the video context is kept:
+        source.client_decode_error.assert_not_called()
+        source.video_context_clean.assert_not_called()
+
+    def test_partial_frame_requests_recovery(self) -> None:
+        encoder = Mock()
+        source = self.make_source(encoder)
+        self.send(source, 6, 240)
+        source.damage_packet_acked(6, 64, 32, 1500, "", {"missing": (3, ), "fragments": 8})
+        encoder.request_recovery.assert_called_once_with(240)
+        self.assertEqual(source.frame_losses, {"lost": 0, "partial": 1})
+
+    def test_complete_frame(self) -> None:
+        encoder = Mock()
+        source = self.make_source(encoder)
+        self.send(source, 7, 280)
+        source.damage_packet_acked(7, 64, 32, 1500, "", {})
+        encoder.request_recovery.assert_not_called()
+        self.assertEqual(source.frame_losses, {"lost": 0, "partial": 0})
+
+    def test_encoder_without_recovery(self) -> None:
+        from xpra.constants import WINDOW_DECODE_LOST
+        encoder = Mock(spec=["get_type"])
+        source = self.make_source(encoder)
+        self.send(source, 8, 320)
+        source.damage_packet_acked(8, 64, 32, WINDOW_DECODE_LOST, "lost")
+        # the only way to recover is a new stream:
+        source.video_context_clean.assert_called_once_with()
+
+
 class VideoContextCleanTest(unittest.TestCase):
 
     @staticmethod

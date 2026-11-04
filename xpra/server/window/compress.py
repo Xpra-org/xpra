@@ -23,7 +23,9 @@ from xpra.util.thread import check_main_thread, is_main_thread
 from xpra.net.common import Packet, MmapPointerError
 from xpra.net.packet_type import WINDOW_DRAW, WINDOW_DRAW_FRAGMENT
 from xpra.net.fragments import fragment_frame
-from xpra.constants import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
+from xpra.constants import (
+    MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND, WINDOW_DECODE_LOST,
+)
 from xpra.common import is_covered_by_opaque_region
 from xpra.server.window.windowicon import WindowIconSource
 from xpra.server.window.encoding_policy import (
@@ -365,6 +367,8 @@ class WindowSource(WindowIconSource):
         self.datagram = datagram
         # the sequence of the last draw packet sent whole, on the stream:
         self.last_stream_sequence = 0
+        # frames sent as fragments that the client lost entirely, or only received in part:
+        self.frame_losses: dict[str, int] = {"lost": 0, "partial": 0}
 
         self.pixel_format = None                            # ie: BGRX
         self.image_depth: int = window.get_property("depth")
@@ -657,6 +661,7 @@ class WindowSource(WindowIconSource):
                 "max"            : self.max_soft_expired,
             },
             "send-timetamps"        : self.send_timetamps,
+            "frame-losses"          : dict(self.frame_losses),
             "rgb_formats"           : self.rgb_formats,
             "bit-depth"             : {
                 "source"                : self.image_depth,
@@ -2591,7 +2596,7 @@ class WindowSource(WindowIconSource):
         return int(10*logp(bytecount/1024.0))
 
     def damage_packet_acked(self, damage_packet_sequence: int, width: int, height: int,
-                            decode_time: float | int, message: str = "") -> None:
+                            decode_time: float | int, message: str = "", extra: dict | None = None) -> None:
         """
             The client is acknowledging a damage packet,
             we record the 'client decode time' (provided by the client itself)
@@ -2612,6 +2617,11 @@ class WindowSource(WindowIconSource):
         elif decode_time == WINDOW_DECODE_ERROR:
             self.client_decode_error(decode_time, message)
         pending = self.statistics.damage_ack_pending.pop(damage_packet_sequence, None)
+        # frames sent as datagram fragments can be lost, or only received in part:
+        lost = decode_time == WINDOW_DECODE_LOST
+        if lost or (extra and extra.get("missing")):
+            self.frame_losses["lost" if lost else "partial"] += 1
+            self.video_frame_lost(damage_packet_sequence, pending[4] if pending else {})
         if pending is None:
             log("cannot find sent time for sequence %s", damage_packet_sequence)
             return
@@ -2630,7 +2640,7 @@ class WindowSource(WindowIconSource):
         # when flushing a screen update as multiple packets (network layer aggregation),
         # we could ignore all but the last one (flush=0):
         # flush = client_options.get("flush", 0)
-        if frame_no != 0:
+        if frame_no != 0 and not lost:
             netlatency = int(1000 * gs.min_client_latency * (100 + ACK_JITTER) // 100)
             sendlatency = min(200, self.estimate_send_delay(bytecount))
             # decode = pixels//100000         # 0.1MPixel/s: 2160p -> 8MPixels, 80ms budget
@@ -2666,6 +2676,15 @@ class WindowSource(WindowIconSource):
             # call via idle_add to prevent race conditions:
             log("ack with expired delayed region: %s", damage_delayed)
             GLib.idle_add(call_may_send_delayed)
+
+    def video_frame_lost(self, sequence: int, client_options: dict) -> None:
+        """
+            The client lost some or all of the fragments of this video frame,
+            (or could not decode it because of an earlier loss)
+            the video source must ensure that the frames that follow do not reference it.
+            (this runs from the network parse thread)
+        """
+        log("video_frame_lost(%i, %s) ignored", sequence, client_options)
 
     def client_decode_error(self, error: float | int, message: str) -> None:
         """

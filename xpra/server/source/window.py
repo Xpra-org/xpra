@@ -815,7 +815,7 @@ class WindowsConnection(StubClientConnection):
         ws.damage(x, y, w, h, damage_options)
 
     def client_ack_damage(self, damage_packet_sequence: int, wid: int,
-                          width: int, height: int, decode_time: int, message: str) -> None:
+                          width: int, height: int, decode_time: int, message: str, extra: dict | None = None) -> None:
         """
             The client is acknowledging a damage packet,
             we record the 'client decode time' (which is provided by the client)
@@ -828,7 +828,7 @@ class WindowsConnection(StubClientConnection):
         if decode_time > 0:
             self.statistics.client_decode_time.append((wid, monotonic(), width * height, decode_time))
         if ws := self.window_sources.get(wid):
-            ws.damage_packet_acked(damage_packet_sequence, width, height, decode_time, message)
+            ws.damage_packet_acked(damage_packet_sequence, width, height, decode_time, message, extra)
             self.may_recalculate(wid, width * height)
 
     #

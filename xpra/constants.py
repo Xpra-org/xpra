@@ -130,6 +130,8 @@ WORKSPACE_NAMES: dict[int, str] = {
 WINDOW_DECODE_SKIPPED: Final[int] = 0
 WINDOW_DECODE_ERROR: Final[int] = -1
 WINDOW_NOT_FOUND: Final[int] = -2
+# some or all of the fragments of the frame were lost, or it could not be decoded because of an earlier loss:
+WINDOW_DECODE_LOST: Final[int] = -3
 
 # clients should provide the `metadata.supported` capability instead
 DEFAULT_METADATA_SUPPORTED = (

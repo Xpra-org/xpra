@@ -59,6 +59,9 @@ Video frames can also be sent as datagrams, using `window-draw-fragment` packets
 * keyframes and frames that would need too many fragments are sent whole, on the regular stream
 * the client re-assembles the fragments, it waits up to `XPRA_DRAW_FRAGMENT_TIMEOUT` for the missing ones,
 then decodes the slices it did receive, or skips the frame if there are none
+* the decoder conceals the missing slices (`openh264` decoder only, `XPRA_OPENH264_ERROR_CONCEALMENT`)
+* the client tells the server which frames were damaged or lost (`window-ack` packets),
+so that the encoder stops referencing them: `x264` invalidates the damaged reference frames, `openh264` sends a keyframe
 
 Environment variables:
 * `XPRA_QUIC_DATAGRAM_PACKET_TYPES`: the packet types to send as datagrams, if the peer accepts them (default: `audio-data`),

@@ -118,6 +118,64 @@ class VideoDatagramTest(unittest.TestCase):
         self.check_recovery("openh264", "keyframe")
 
 
+class VideoDatagramDecodeTest(unittest.TestCase):
+    """
+    The decoder conceals the slices that are missing from frames re-assembled from fragments:
+    a damaged frame may not produce an image, but it must not break the frames that follow.
+    """
+
+    def test_openh264_conceals_missing_slices(self):
+        encoder_module = load_encoder("openh264")
+        try:
+            decoder_module = import_module("xpra.codecs.openh264.decoder")
+        except ImportError:
+            decoder_module = None
+        if not encoder_module or not decoder_module:
+            self.skipTest("openh264 is not available")
+        encoder = encoder_module.Encoder()
+        encoder.init_context("h264", WIDTH, HEIGHT, "YUV420P", typedict({"datagram": DATAGRAM, "quality": 50}))
+        self.addCleanup(encoder.clean)
+        decoder = decoder_module.Decoder()
+        decoder.init_context("h264", WIDTH, HEIGHT, "YUV420P", typedict())
+        self.addCleanup(decoder.clean)
+        rng = Random(4)
+        base = noisy_image(rng, 0)
+        planes = [bytearray(base.get_plane(i)) for i in range(3)]
+        concealed = 0
+        for i in range(8):
+            # move a small block so the P-frames have several slices:
+            planes[0][i * 1000:i * 1000 + 3000] = rng.randbytes(3000)
+            image = make_test_image("YUV420P", WIDTH, HEIGHT)
+            image.set_pixels(tuple(bytes(p) for p in planes))
+            image.set_timestamp(i * 40)
+            data, client_options = encoder.compress_image(image, typedict())
+            nals = client_options["nals"]
+            options = typedict({"fragments": len(nals)})
+            if i >= 2 and len(nals) > 2:
+                # drop one slice from the middle of this frame:
+                start, end = nals[len(nals) // 2 - 1], nals[len(nals) // 2]
+                data = data[:start] + data[end:]
+                options["missing-fragments"] = (len(nals) // 2, )
+                concealed += 1
+            damaged = "missing-fragments" in options
+            image = decoder.decompress_image(data, options)
+            if not damaged:
+                self.assertIsNotNone(image, f"frame {i} was not decoded")
+        self.assertGreater(concealed, 0, "no frame had enough slices to drop one")
+
+    def test_openh264_damage_is_an_error_without_fragments(self):
+        try:
+            decoder_module = import_module("xpra.codecs.openh264.decoder")
+        except ImportError:
+            self.skipTest("openh264 decoder is not available")
+        decoder = decoder_module.Decoder()
+        decoder.init_context("h264", WIDTH, HEIGHT, "YUV420P", typedict())
+        self.addCleanup(decoder.clean)
+        # a P-slice without any reference frame:
+        with self.assertRaises(RuntimeError):
+            decoder.decompress_image(b"\0\0\0\x01\x41\x9a\x00\x10" * 4, typedict())
+
+
 def main():
     unittest.main()
 

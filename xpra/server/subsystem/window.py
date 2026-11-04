@@ -456,12 +456,14 @@ class WindowServer(StubSubsystem):
         packet_sequence = packet.get_u64(4)
         decode_time = packet.get_i32(5)
         message = packet.get_str(6)
-        self.do_process_window_ack(proto, wid, width, height, packet_sequence, decode_time, message)
+        # ie: the fragments missing from a frame sent as datagrams:
+        extra = packet.get_dict(7) if len(packet) > 7 else {}
+        self.do_process_window_ack(proto, wid, width, height, packet_sequence, decode_time, message, extra)
 
     def do_process_window_ack(self, proto, wid: int, width: int, height: int,
-                              packet_sequence: int, decode_time: int, message: str) -> None:
+                              packet_sequence: int, decode_time: int, message: str, extra: dict | None = None) -> None:
         if ss := self.get_server_source(proto):
-            ss.client_ack_damage(packet_sequence, wid, width, height, decode_time, message)
+            ss.client_ack_damage(packet_sequence, wid, width, height, decode_time, message, extra)
 
     def refresh_window(self, window) -> None:
         ww, wh = window.get_dimensions()

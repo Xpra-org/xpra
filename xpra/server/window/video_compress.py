@@ -726,6 +726,17 @@ class WindowVideoSource(WindowSource):
         self.video_context_clean()
         super().client_decode_error(error, message)
 
+    def video_frame_lost(self, sequence: int, client_options: dict) -> None:
+        # tell the encoder to stop referencing the damaged frame,
+        # this is much cheaper than starting a new stream:
+        ve = self._video_encoder
+        request_recovery = getattr(ve, "request_recovery", None)
+        videolog("video_frame_lost(%i, %s) encoder=%s", sequence, client_options, ve)
+        if request_recovery:
+            request_recovery(client_options.get("pts", 0))
+        elif ve:
+            self.video_context_clean()
+
     def get_refresh_exclude(self) -> rectangle | None:
         # exclude video region (if any) from lossless refresh:
         return self.video_subregion.rectangle

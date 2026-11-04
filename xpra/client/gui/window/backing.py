@@ -962,6 +962,12 @@ class WindowBackingBase:
                     # there are further frames queued up,
                     # and this frame references those, so assume all is well:
                     fire_paint_callbacks(callbacks)
+                elif options.intget("fragments", 0) > 0:
+                    # this frame was re-assembled from datagram fragments and some were lost,
+                    # the decoder has concealed what it could but there is nothing to show:
+                    videolog("%s: damaged frame not painted, missing fragments: %s",
+                             vd.get_type(), options.tupleget("missing-fragments"))
+                    fire_paint_callbacks(callbacks, False, "damaged frame")
                 else:
                     fire_paint_callbacks(callbacks, False,
                                          "video decoder %s failed to decode %i bytes of %s data" % (
