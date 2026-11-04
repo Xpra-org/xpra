@@ -183,7 +183,7 @@ class QuicDatagramTest(unittest.TestCase):
         patcher = patch("xpra.net.quic.connection.get_threaded_loop", return_value=self.loop)
         patcher.start()
         self.addCleanup(patcher.stop)
-        patcher = patch("xpra.net.quic.connection.DATAGRAM_PACKET_TYPES", (DATAGRAM_TYPE, ))
+        patcher = patch("xpra.net.quic.connection.XpraQuicConnection.datagram_packet_types", (DATAGRAM_TYPE, ))
         patcher.start()
         self.addCleanup(patcher.stop)
 
@@ -347,6 +347,28 @@ class QuicListenerDatagramTest(unittest.TestCase):
         event = DatagramReceived(data=b"foo", stream_id=0)
         client.http_event_received(event)
         websocket.http_event_received.assert_called_once_with(event)
+
+
+@unittest.skipUnless(HAVE_AIOQUIC, "aioquic not available")
+class QuicDatagramWriteTest(unittest.TestCase):
+
+    def test_write_joins_items(self):
+        # a datagram packet type split into multiple items must be written in one go,
+        # otherwise the connection could send some items as datagrams and others on the stream
+        from unittest.mock import MagicMock
+        from xpra.net import packet_encoding, compression
+        from xpra.net.protocol.socket_handler import SocketProtocol
+        packet_encoding.init_all()
+        compression.init_all()
+        conn = MagicMock()
+        conn.datagram_packet_types = (DATAGRAM_TYPE, )
+        conn.write = MagicMock(side_effect=lambda buf, _packet_type: len(buf))
+        protocol = SocketProtocol(conn, MagicMock())
+        protocol.write_buffers([b"header", b"payload"], DATAGRAM_TYPE, True)
+        conn.write.assert_called_once_with(b"headerpayload", DATAGRAM_TYPE)
+        conn.write.reset_mock()
+        protocol.write_buffers([b"header", b"payload"], STREAM_TYPE, True)
+        assert conn.write.call_count == 2
 
 
 def main():

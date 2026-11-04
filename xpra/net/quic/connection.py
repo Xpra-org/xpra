@@ -44,6 +44,9 @@ aioquic_version_info = parse_version(aioquic_version)
 
 
 class XpraQuicConnection(Connection):
+    # packets of these types are sent as datagrams, if they fit:
+    datagram_packet_types = DATAGRAM_PACKET_TYPES
+
     def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
                  host: str, port: int, socktype="wss", info=None, options=None):
         Connection.__init__(self, (host, port), socktype, info=info, options=options)
@@ -137,7 +140,7 @@ class XpraQuicConnection(Connection):
         data = memoryview_to_bytes(buf)
         if not packet_type:
             log.warn(f"Warning: missing packet type for {data}")
-        datagram = packet_type in DATAGRAM_PACKET_TYPES and len(data) <= self.get_max_datagram_size()
+        datagram = packet_type in self.datagram_packet_types and len(data) <= self.get_max_datagram_size()
         stream_id = self.stream_id if datagram else self.get_packet_stream_id(packet_type)
         log("quic.stream_write(%s, %s) using %s %s", Ellipsizer(buf), packet_type,
             "datagram for stream id" if datagram else "stream id", stream_id)

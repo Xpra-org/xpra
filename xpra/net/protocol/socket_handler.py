@@ -918,6 +918,10 @@ class SocketProtocol:
         con = self._conn
         if not con:
             return
+        if len(buf_data) > 1 and packet_type in getattr(con, "datagram_packet_types", ()):
+            # the connection decides whether to send a datagram or use the stream for each write,
+            # so all the items of the packet must be written in one go:
+            buf_data = (b"".join(memoryview_to_bytes(buf) for buf in buf_data), )
         for buf in buf_data:
             while buf and not self._closed:
                 written = con.write(buf, packet_type)
