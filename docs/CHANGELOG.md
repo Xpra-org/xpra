@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.7] 2026-11-01
+## [5.1.7] 2026-11-04
 * 🔧 Platforms, build and packaging:
   * [honour `--root ROOT` when installing](https://github.com/Xpra-org/xpra/commit/17226720ee22ad7f8cade2f1284557459b3d4b02)
   * [better install prefix detection](https://github.com/Xpra-org/xpra/commit/9a08d5bbdd2c671fc99b0296a717340b4c2d2863)
@@ -25,10 +25,11 @@
   * [ignore cython generated shared objects in source tree](https://github.com/Xpra-org/xpra/commit/7409e2fa76db17b236e15d6f566998e5fcffb302)
   * [recognize `OpenBSD` platform names](https://github.com/Xpra-org/xpra/commit/cca7583e7520ee228fcf93a2e5684f98ad0baeeb)
   * [`OpenBSD` build paths](https://github.com/Xpra-org/xpra/commit/763144b289bb7d0eef1d74194eea1a960cf7a3e7)
-  * [`is_arm` should match all 64-bit arm`](https://github.com/Xpra-org/xpra/commit/c18c34f4c52e4a2e9f2537d85b5de45eb159255d)
+  * [`is_arm` should match all 64-bit `arm`](https://github.com/Xpra-org/xpra/commit/c18c34f4c52e4a2e9f2537d85b5de45eb159255d)
   * [enable speaker forwarding on `arm`](https://github.com/Xpra-org/xpra/commit/7e3686f3420d5a6f52be1609c7d65afd8768553c)
   * [oudated `raspbian` workaround](https://github.com/Xpra-org/xpra/commit/aac1590c63db9320323a5c9b7116ab6ea13961a2)
   * [don't start Xorg if its config file is missing](https://github.com/Xpra-org/xpra/commit/7954e7496e1d40da17b4e39a64bd6cfa2d79735d)
+  * [failure to build due to missing `libfakeXinerama` dependency in some RPM builds](https://github.com/Xpra-org/xpra/commit/d81b7a87ef3cb1ece77b26cad074daf3d6d66ebb)
 * 📦 RPM:
   * [RPM dependency fixes](https://github.com/Xpra-org/xpra/commit/79cde9dd26fde94c88671dc9281dfea19f5b5dd3)
   * [prevent version conflicts](https://github.com/Xpra-org/xpra/commit/9c05a16fcf8f1efe9aa3126cda2836a24e5f9853)
@@ -41,7 +42,7 @@
   * [`pyu2f 0.1.5`](https://github.com/Xpra-org/xpra/commit/63ee7f73d663fa8c38e5a4fb22363156e897900c)
   * [`uinput 1.0.1`](https://github.com/Xpra-org/xpra/commit/b7d85fd97ab0c8da8fcd7e4be0e4e7d226aac469)
   * [`wheel 0.41.3`](https://github.com/Xpra-org/xpra/commit/72becd77debb437e85aef73694be3a698a5aecf0)
-  * [`openh264 2.7.0](https://github.com/Xpra-org/xpra/commit/c42940e7e2c2bc5ad76ee89bdd4ffd1fca838c31)
+  * [`openh264` 2.7.0](https://github.com/Xpra-org/xpra/commit/c42940e7e2c2bc5ad76ee89bdd4ffd1fca838c31)
   * [`pycuda` missing package dependencies](https://github.com/Xpra-org/xpra/commit/caf012fe23faaeb5fade55575e2530b363aacb9f)
 * ⚠️ Major:
   * [mistimed early packets could cause clients to disconnect](https://github.com/Xpra-org/xpra/commit/b92a35c3bcfab20d3c6dd390060861588c4a43a8)
@@ -68,6 +69,7 @@
   * [paint issues when pointer overlay and border are used together](https://github.com/Xpra-org/xpra/commit/bfe1f50a8c8ae14f051aeb4fd404910f8e6806fa)
   * [misplaced transient windows with desktop scaling](https://github.com/Xpra-org/xpra/commit/7ad5794b0d8da751c4a5bed106a0d272d8b27542)
   * [child reaper detects the wrong exit code](https://github.com/Xpra-org/xpra/commit/f9abe994c194af3f5ed42c7a8ad1ac0118256673)
+  * [X11 configure requests mishandled when only one axis is modified](https://github.com/Xpra-org/xpra/commit/dc90de974b4e57306f1dc2446d9f954e4f47a3ce)
 * ⊞ MS Windows:
   * [SBOM generation failed when Python was installed outside `Python312`](https://github.com/Xpra-org/xpra/commit/b02833ffac97a4a3e88ddb32db553b0b2ec425b9)
   * [SBOM: skip empty licenses](https://github.com/Xpra-org/xpra/commit/72f213405ccee2d13df69cc4e7b3f862b0879206)
@@ -131,6 +133,7 @@
   * [socket fast read timeout handling on older Python](https://github.com/Xpra-org/xpra/commit/b1983adde9f3960beebe7d0e177b5abae062f487)
   * [paramiko: try ssh keys in the same order as openssh](https://github.com/Xpra-org/xpra/commit/e8676a54869a79cadf539162886f80ad20f5a220)
   * [expose the real hostname via mDNS](https://github.com/Xpra-org/xpra/commit/28c9e919cb51d62d72876c69e21adc7670dd1daf)
+  * [socket lookup race during server startup](https://github.com/Xpra-org/xpra/commit/0a80334a55955f8a316f9bd2e62e99443b6acbd5)
 * SSL:
   * [ssl upgrade must override defaults](https://github.com/Xpra-org/xpra/commit/d9d0bd47ab5ba6d9249a786dcf765733a639e9a8)
   * [clients could remain stuck after an SSL upgrade failed](https://github.com/Xpra-org/xpra/commit/357e80d99a241e2447f2aa209ec3687f035ccc68) [or the server closed the connection during the upgrade](https://github.com/Xpra-org/xpra/commit/fef346766767091186836ead62cfc546a52e74e6)
@@ -163,6 +166,8 @@
   * [raw atoms cause connection to drop](https://github.com/Xpra-org/xpra/commit/87b6b68166283fd583b2edea29a9900dfe27e23f)
   * [blinking for every pending transfer is excessive](https://github.com/Xpra-org/xpra/commit/fc3fa9099ba82168bee3afa5275a746ee1285fe8)
   * [don't ask the server for progress updates](https://github.com/Xpra-org/xpra/commit/8a6a81a91f44cd73c8b926c1be5d58c1277465d6)
+  * [send empty replies to pending requests on cleanup](https://github.com/Xpra-org/xpra/commit/eaa39510dc2dcf0e3f0f2d470d63a2d24f6f6168)
+  * [remove unused root events](https://github.com/Xpra-org/xpra/commit/ac4888e390068a4496ebbde0dbdba6ce3beb8f4c)
 * Mmap:
   * [confine client-named files to the server mmap directory and reject symlinks](https://github.com/Xpra-org/xpra/commit/1b7083ae4790882cbcab7ce0f0799e42b877c5f3)
   * [use the actual mmap area size](https://github.com/Xpra-org/xpra/commit/24dc52eaf80dd446c86af8600929a8aaefd8bf2f)

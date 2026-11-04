@@ -843,7 +843,7 @@ fi
 
 
 %changelog
-* Sun Nov 01 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
+* Wed Nov 04 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
 - 🔧 Platforms, build and packaging:
    honour `--root ROOT` when installing
    better install prefix detection
@@ -868,10 +868,11 @@ fi
    ignore cython generated shared objects in source tree
    recognize `OpenBSD` platform names
    `OpenBSD` build paths
-   `is_arm` should match all 64-bit arm`
+   `is_arm` should match all 64-bit `arm`
    enable speaker forwarding on `arm`
    oudated `raspbian` workaround
    don't start Xorg if its config file is missing
+   failure to build due to missing `libfakeXinerama` dependency in some RPM builds
 - 📦 RPM:
    RPM dependency fixes
    prevent version conflicts
@@ -884,7 +885,7 @@ fi
    `pyu2f 0.1.5`
    `uinput 1.0.1`
    `wheel 0.41.3`
-   `openh264 2.7.0
+   `openh264` 2.7.0
    `pycuda` missing package dependencies
 - ⚠️ Major:
    mistimed early packets could cause clients to disconnect
@@ -911,6 +912,7 @@ fi
    paint issues when pointer overlay and border are used together
    misplaced transient windows with desktop scaling
    child reaper detects the wrong exit code
+   X11 configure requests mishandled when only one axis is modified
 - ⊞ MS Windows:
    SBOM generation failed when Python was installed outside `Python312`
    SBOM: skip empty licenses
@@ -974,6 +976,7 @@ fi
    socket fast read timeout handling on older Python
    paramiko: try ssh keys in the same order as openssh
    expose the real hostname via mDNS
+   socket lookup race during server startup
 - SSL:
    ssl upgrade must override defaults
    clients could remain stuck after an SSL upgrade failed or the server closed the connection during the upgrade
@@ -1006,6 +1009,8 @@ fi
    raw atoms cause connection to drop
    blinking for every pending transfer is excessive
    don't ask the server for progress updates
+   send empty replies to pending requests on cleanup
+   remove unused root events
 - Mmap:
    confine client-named files to the server mmap directory and reject symlinks
    use the actual mmap area size
