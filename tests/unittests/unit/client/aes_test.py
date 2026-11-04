@@ -96,6 +96,18 @@ class AESTest(unittest.TestCase):
         rfb.setup_connection(rfb.client._protocol._conn)
         rfb.client._protocol.set_cipher_out.assert_not_called()
 
+    def test_setup_connection_quic(self):
+        from xpra.exit_codes import ExitCode
+        value = client({"encryption": "AES-GCM"})
+        conn = value.client._protocol._conn
+        conn.socktype_wrapped = "quic"
+        with self.assertRaises(InitExit) as cm:
+            value.setup_connection(conn)
+        self.assertEqual(cm.exception.status, ExitCode.ENCRYPTION)
+        value.client._protocol.set_cipher_out.assert_not_called()
+        # no encryption requested:
+        client().setup_connection(conn)
+
     def test_parse_server_capabilities(self):
         value = client()
         value.get_encryption = Mock(return_value="AES-GCM")

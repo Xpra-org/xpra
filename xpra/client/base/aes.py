@@ -20,6 +20,7 @@ from xpra.net.crypto import (
     DEFAULT_MODE, DEFAULT_KEYSIZE, DEFAULT_KEY_HASH, DEFAULT_KEY_STRETCH, DEFAULT_ALWAYS_PAD,
 )
 from xpra.util.objects import typedict
+from xpra.net.common import is_quic, QUIC_ENCRYPTION_ERROR
 from xpra.log import Logger
 
 log = Logger("crypto")
@@ -96,6 +97,8 @@ class AES(StubClientSubsystem):
         if self.client._protocol.TYPE == "rfb":
             return
         encryption = self.get_encryption()
+        if encryption and is_quic(conn):
+            raise InitExit(ExitCode.ENCRYPTION, QUIC_ENCRYPTION_ERROR)
         if encryption and ENCRYPT_FIRST_PACKET:
             key = self.get_encryption_key()
             self.client._protocol.set_cipher_out(encryption, strtobytes(DEFAULT_IV),

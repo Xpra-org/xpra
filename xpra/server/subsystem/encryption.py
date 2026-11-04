@@ -6,7 +6,7 @@
 import os
 from typing import Any, NoReturn
 
-from xpra.net.common import FULL_INFO
+from xpra.net.common import FULL_INFO, QUIC_ENCRYPTION_ERROR, is_quic
 from xpra.util.io import filedata_nocrlf
 from xpra.util.str_fn import strtobytes, csv, repr_ellipsized
 from xpra.util.objects import typedict
@@ -56,6 +56,8 @@ def setup_encryption(proto: SocketProtocol, c: typedict) -> dict[str, Any] | Non
     c = typedict(c.dictget("encryption"))
     cipher = c.strget("cipher").upper()
     log(f"setup_encryption(..) for cipher={cipher!r} : {c}")
+    if cipher and is_quic(getattr(proto, "_conn", None)):
+        return fail(QUIC_ENCRYPTION_ERROR)
     if not cipher:
         if proto.encryption:
             log(f"client does not provide encryption tokens: encryption={c}")
@@ -139,6 +141,10 @@ def parse_encryption(protocol, socket_options: dict[str, Any], tcp_encryption: s
         protocol.keyfile = protocol.keyfile or tcp_encryption_keyfile
     enc = (protocol.encryption or "").lower()
     if enc and not enc.startswith("aes") and not str_to_bool(enc, False):
+        protocol.encryption = None
+    if protocol.encryption and is_quic(conn):
+        log.warn(f"Warning: {QUIC_ENCRYPTION_ERROR}")
+        log.warn(f" ignoring {protocol.encryption!r} for {socktype!r}")
         protocol.encryption = None
     log("%s: encryption=%s, keyfile=%s", socktype, protocol.encryption, protocol.keyfile)
     if protocol.encryption:

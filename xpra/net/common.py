@@ -38,13 +38,19 @@ DEFAULT_PROTOCOL_VERSION: tuple[int, ...] = (7, 0)
 # so they cannot talk to v7 peers, even when we are `BACKWARDS_COMPATIBLE`:
 REMOTE_CODEC_PROTOCOL_VERSION: tuple[int, ...] = (8, 0)
 FULL_INFO: int = envint("XPRA_FULL_INFO", 1)
+assert FULL_INFO >= 0
 # the packet types we accept as datagrams (advertised as `datagram-packet-types`),
 # these must be self-contained and tolerate loss and re-ordering:
 DATAGRAM_ACCEPT_PACKET_TYPES: tuple[str, ...] = tuple(x.strip() for x in os.environ.get(
     "XPRA_DATAGRAM_ACCEPT_PACKET_TYPES",
     "audio-data",
 ).split(",") if x.strip())
-assert FULL_INFO >= 0
+# QUIC is always encrypted using TLS, and xpra's own encryption is not compatible with datagrams:
+QUIC_ENCRYPTION_ERROR = "encryption cannot be used with quic connections, which are already encrypted"
+
+
+def is_quic(conn) -> bool:
+    return getattr(conn, "socktype_wrapped", "") == "quic"
 
 
 logger = None
