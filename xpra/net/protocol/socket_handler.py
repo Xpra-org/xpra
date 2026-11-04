@@ -35,7 +35,7 @@ from xpra.net.protocol.header import (
 )
 from xpra.net.common import (
     ConnectionClosedException, may_log_packet, no_packet,
-    Packet, NetPacketType, PacketElement, BACKWARDS_COMPATIBLE,
+    Packet, NetPacketType, PacketElement, BACKWARDS_COMPATIBLE, DATAGRAM_ACCEPT_PACKET_TYPES,
 )
 from xpra.net.constants import MAX_PACKET_SIZE, SOCKET_TYPES
 from xpra.net.bytestreams import ABORT
@@ -257,7 +257,7 @@ class SocketProtocol:
         self._source_has_more = Event()
         self.receive_pending = False
         # packet types we accept as datagrams,
-        # empty until they have been negotiated with the peer:
+        # empty until we have parsed the peer's `hello` (see `parse_datagram_caps`):
         self.datagram_packet_types: Sequence[str] = ()
         self.datagram_stats: dict[str, int] = {"received": 0, "invalid": 0, "dropped": 0}
         if hasattr(conn, "datagram_received"):
@@ -456,9 +456,34 @@ class SocketProtocol:
             self._write_format_thread,
         ) if x is not None)
 
-    def parse_remote_caps(self, _caps: typedict) -> None:
+    def can_receive_datagrams(self) -> bool:
+        conn = self._conn
+        return bool(getattr(conn, "datagram", False)) and hasattr(conn, "datagram_received")
+
+    def get_datagram_caps(self) -> dict[str, Any]:
+        """ the packet types we accept as datagrams, only for connections that can deliver them """
+        if not self.can_receive_datagrams():
+            return {}
+        return {"datagram-packet-types": DATAGRAM_ACCEPT_PACKET_TYPES}
+
+    def parse_remote_caps(self, caps: typedict) -> None:
         self.max_packet_size = max(self.max_packet_size, MAX_PACKET_SIZE)
         set_socket_timeout(self._conn, SOCKET_TIMEOUT)
+        self.parse_datagram_caps(caps)
+
+    def parse_datagram_caps(self, caps: typedict) -> None:
+        """
+        Called once the peer's `hello` has been processed (and authenticated),
+        only then do we accept datagrams, and only if the connection can deliver them.
+        """
+        if not self.can_receive_datagrams():
+            return
+        conn = self._conn
+        self.datagram_packet_types = DATAGRAM_ACCEPT_PACKET_TYPES
+        remote_types = caps.strtupleget("datagram-packet-types")
+        if set_remote := getattr(conn, "set_remote_datagram_packet_types", None):
+            set_remote(remote_types)
+        log("datagram packet types: accepted=%s, remote=%s", self.datagram_packet_types, remote_types)
 
     def get_info(self) -> dict[str, Any]:
         shm = self._source_has_more

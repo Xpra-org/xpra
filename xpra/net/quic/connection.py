@@ -6,7 +6,7 @@
 import os
 from queue import SimpleQueue
 from typing import Any
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from aioquic import __version__ as aioquic_version
 from aioquic.h0.connection import H0Connection
@@ -27,6 +27,7 @@ log = Logger("quic")
 
 HttpConnection = H0Connection | H3Connection
 
+# the packet types we want to send as datagrams, if the peer accepts them:
 DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
     "XPRA_QUIC_DATAGRAM_PACKET_TYPES",
     ""
@@ -44,8 +45,9 @@ aioquic_version_info = parse_version(aioquic_version)
 
 
 class XpraQuicConnection(Connection):
-    # packets of these types are sent as datagrams, if they fit:
-    datagram_packet_types = DATAGRAM_PACKET_TYPES
+    # packets of these types are sent as datagrams, if they fit,
+    # empty until negotiated with the peer (see `set_remote_datagram_packet_types`):
+    datagram_packet_types: tuple[str, ...] = ()
 
     def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
                  host: str, port: int, socktype="wss", info=None, options=None):
@@ -71,6 +73,7 @@ class XpraQuicConnection(Connection):
             "read-queue": self.read_queue.qsize(),
             "datagrams-dropped": self.datagrams_dropped,
             "stream-id": self.stream_id,
+            "datagram-packet-types": self.datagram_packet_types,
             "accepted": self.accepted,
             "closed": self.closed,
             "aioquic": vtrim(aioquic_version_info),
@@ -169,6 +172,12 @@ class XpraQuicConnection(Connection):
         self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
         self.output_bytecount += len(data)
         self.output_writecount += 1
+
+    def set_remote_datagram_packet_types(self, remote_types: Sequence[str]) -> None:
+        """ only send the packet types the peer accepts as datagrams """
+        self.datagram_packet_types = tuple(x for x in DATAGRAM_PACKET_TYPES if x in remote_types)
+        log("set_remote_datagram_packet_types(%s) local=%s, using %s",
+            remote_types, DATAGRAM_PACKET_TYPES, self.datagram_packet_types)
 
     def do_write_datagram(self, data: bytes) -> None:
         self.connection.send_datagram(self.stream_id, data=data)

@@ -464,18 +464,29 @@ class QuicDatagramProtocolTest(unittest.TestCase):
         protocol.process_datagram(record)
         assert not received
 
+    def negotiate(self, *protocols) -> None:
+        """ each protocol parses the network capabilities the other one would send in its hello """
+        from xpra.util.objects import typedict
+        a, b = protocols
+        for protocol, peer in ((a, b), (b, a)):
+            protocol.datagram_packet_types = ()
+            protocol.parse_remote_caps(typedict(peer.get_datagram_caps()))
+
     def test_end_to_end(self):
         # sender protocol -> quic connection -> aioquic -> quic connection -> receiver protocol,
         # interleaved with large stream writes
         from xpra.net.quic.connection import XpraQuicConnection
         pair = QuicPair(self.cert, self.key, budget=3)
-        with patch.object(XpraQuicConnection, "datagram_packet_types", (DATAGRAM_TYPE, )):
+        with patch("xpra.net.quic.connection.DATAGRAM_PACKET_TYPES", (DATAGRAM_TYPE, )):
             sender_conn = XpraQuicConnection(pair.chttp, pair.stream_id, pair.transmit, "localhost", ADDR[1])
             receiver_conn = XpraQuicConnection(pair.shttp, pair.stream_id, pair.transmit, "localhost", ADDR[1])
             pair.receiver = receiver_conn
             sender = self.make_protocol(sender_conn)
             received: list = []
             receiver = self.make_protocol(receiver_conn, received)
+            self.negotiate(sender, receiver)
+            assert sender_conn.datagram_packet_types == (DATAGRAM_TYPE, )
+            assert receiver.datagram_packet_types == (DATAGRAM_TYPE, )
             stream_bytes = 0
             for i in range(20):
                 big = b"%i" % i * (64 * 1024)
@@ -489,6 +500,90 @@ class QuicDatagramProtocolTest(unittest.TestCase):
         assert [packet.get_dict(3)["sequence"] for packet in received] == list(range(100))
         assert receiver.datagram_stats == {"received": 100, "invalid": 0, "dropped": 0}
         assert len(b"".join(drain(receiver_conn.read_queue))) == stream_bytes
+
+
+@unittest.skipUnless(HAVE_AIOQUIC, "aioquic not available")
+class QuicDatagramNegotiationTest(unittest.TestCase):
+
+    def setUp(self):
+        from xpra.net import packet_encoding, compression
+        packet_encoding.init_all()
+        compression.init_all()
+
+    def make(self, conn):
+        from unittest.mock import MagicMock
+        from xpra.net.protocol.socket_handler import SocketProtocol
+        return SocketProtocol(conn, MagicMock())
+
+    @staticmethod
+    def quic_conn():
+        from unittest.mock import MagicMock
+        from xpra.net.quic.connection import XpraQuicConnection
+        return XpraQuicConnection(MagicMock(), 0, MagicMock(), "localhost", ADDR[1])
+
+    @staticmethod
+    def caps(**kwargs):
+        from xpra.util.objects import typedict
+        return typedict(kwargs)
+
+    def test_advertised(self):
+        from xpra.net.common import DATAGRAM_ACCEPT_PACKET_TYPES
+        assert "audio-data" in DATAGRAM_ACCEPT_PACKET_TYPES
+        protocol = self.make(self.quic_conn())
+        assert protocol.get_datagram_caps() == {"datagram-packet-types": DATAGRAM_ACCEPT_PACKET_TYPES}
+
+    def test_not_advertised(self):
+        # only advertise on connections that can deliver datagrams to us
+        from unittest.mock import MagicMock
+        from xpra.net.net_util import get_network_caps
+        from xpra.net.quic.client import ClientWebTransportConnection
+        from xpra.net.quic.webtransport import ServerWebTransportConnection
+        assert "datagram-packet-types" not in get_network_caps()
+        conns = (
+            ClientWebTransportConnection(MagicMock(), 0, MagicMock(), "localhost", ADDR[1]),
+            ServerWebTransportConnection(MagicMock(), {}, 0, MagicMock()),
+        )
+        for conn in conns:
+            with self.subTest(conn=type(conn).__name__):
+                assert not conn.datagram
+                protocol = self.make(conn)
+                assert protocol.get_datagram_caps() == {}
+                protocol.parse_remote_caps(self.caps(**{"datagram-packet-types": ("audio-data", )}))
+                assert not protocol.datagram_packet_types
+                assert not conn.datagram_packet_types
+
+    def test_nothing_before_hello(self):
+        conn = self.quic_conn()
+        protocol = self.make(conn)
+        assert not protocol.datagram_packet_types
+        assert not conn.datagram_packet_types
+
+    def test_negotiated(self):
+        conn = self.quic_conn()
+        protocol = self.make(conn)
+        with patch("xpra.net.quic.connection.DATAGRAM_PACKET_TYPES", ("audio-data", "other")), \
+                patch("xpra.net.protocol.socket_handler.DATAGRAM_ACCEPT_PACKET_TYPES", ("audio-data", )):
+            protocol.parse_remote_caps(self.caps(**{"datagram-packet-types": ("audio-data", "third")}))
+        assert protocol.datagram_packet_types == ("audio-data", )
+        # we only send what we want to send and the peer accepts:
+        assert conn.datagram_packet_types == ("audio-data", )
+
+    def test_peer_does_not_accept_datagrams(self):
+        # ie: an older peer
+        conn = self.quic_conn()
+        protocol = self.make(conn)
+        with patch("xpra.net.quic.connection.DATAGRAM_PACKET_TYPES", ("audio-data", )):
+            protocol.parse_remote_caps(self.caps())
+        assert not conn.datagram_packet_types
+
+    def test_connection_without_datagrams(self):
+        from unittest.mock import MagicMock
+        conn = MagicMock()
+        conn.datagram = False
+        protocol = self.make(conn)
+        protocol.parse_remote_caps(self.caps(**{"datagram-packet-types": ("audio-data", )}))
+        assert not protocol.datagram_packet_types
+        conn.set_remote_datagram_packet_types.assert_not_called()
 
 
 def main():

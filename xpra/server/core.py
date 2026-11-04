@@ -541,6 +541,8 @@ class ServerCore(GLibServer):
     def make_hello(self, source) -> dict[str, Any]:
         now = time()
         capabilities = get_network_caps(FULL_INFO)
+        if get_datagram_caps := getattr(getattr(source, "protocol", None), "get_datagram_caps", None):
+            capabilities |= get_datagram_caps()
         capabilities |= self.get_caps(source)
         capabilities |= get_digest_caps()
         capabilities |= {

@@ -41,6 +41,8 @@ class Network(StubClientSubsystem):
         # the minimum version we are willing to talk to:
         caps["protocol-version"] = MIN_PROTOCOL_VERSION
         caps["compression_level"] = self.compression_level
+        if get_datagram_caps := getattr(self.client._protocol, "get_datagram_caps", None):
+            caps |= get_datagram_caps()
         return caps
 
     def parse_server_capabilities(self, caps: typedict) -> bool:

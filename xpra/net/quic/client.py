@@ -120,6 +120,8 @@ class ClientWebTransportConnection(XpraQuicConnection):
     def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
                  host: str, port: int, info=None, options=None):
         super().__init__(connection, stream_id, transmit, host, port, "webtransport", info, options)
+        # like the server side (see `ServerWebTransportConnection`), datagrams are not used:
+        self.datagram = False
         self.write_buffer: SimpleQueue | None = SimpleQueue()
 
     def flush_writes(self) -> None:
