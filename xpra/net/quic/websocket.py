@@ -99,7 +99,7 @@ class ServerWebSocketConnection(XpraQuicConnection):
             return self.stream_id
         if not any(packet_type.startswith(x) for x in SUBSTREAM_PACKET_TYPES):
             return self.stream_id
-        # ie: "sound-data" -> "sound"
+        # ie: "audio-data" -> "audio"
         stream_type = packet_type.split("-", 1)[0]
         stream_id = self._packet_type_streams.get(stream_type)
         if stream_id is not None:

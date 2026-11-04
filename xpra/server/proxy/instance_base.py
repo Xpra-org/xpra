@@ -473,7 +473,7 @@ class ProxyInstance:
                 packet = self.compressed_marker(packet, 7, "pixel-data")
         elif packet_type == AUDIO_DATA_PACKET:
             if packet[2]:
-                # best if we use raw packets for the actual sound-data chunk:
+                # best if we use raw packets for the actual audio-data chunk:
                 packet = self.compressed_marker(packet, 2, AUDIO_DATA_PACKET)
         elif packet_type == CURSOR_DATA:
             packet = self._packet_recompress(packet, 7, "cursor")

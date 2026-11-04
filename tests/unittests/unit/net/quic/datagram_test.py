@@ -35,7 +35,7 @@ try:
 except ImportError:
     HAVE_AIOQUIC = False
 
-DATAGRAM_TYPE = "sound-data"
+DATAGRAM_TYPE = "audio-data"
 STREAM_TYPE = "draw"
 ADDR = ("127.0.0.1", 10000)
 
