@@ -32,6 +32,10 @@ DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
     ""
 ).split(",") if x.strip())
 
+# a datagram must fit in a single QUIC packet, along with the packet header,
+# the AEAD tag, the DATAGRAM frame header and the HTTP/3 quarter stream id:
+DATAGRAM_OVERHEAD = 64
+
 if envbool("XPRA_QUIC_LOGGER", True):
     override_aioquic_logger()
 
@@ -47,6 +51,8 @@ class XpraQuicConnection(Connection):
         self.datagram = True
         self.connection: HttpConnection = connection
         self.read_queue: SimpleQueue[bytes] = SimpleQueue()
+        # datagrams are independent records, they must never be mixed with the stream data:
+        self.datagram_queue: SimpleQueue[bytes] = SimpleQueue()
         self.stream_id: int = stream_id
         self.transmit: Callable[[], None] = transmit
         self.accepted: bool = False
@@ -59,6 +65,7 @@ class XpraQuicConnection(Connection):
         info = super().get_info()
         qinfo = {
             "read-queue": self.read_queue.qsize(),
+            "datagram-queue": self.datagram_queue.qsize(),
             "stream-id": self.stream_id,
             "accepted": self.accepted,
             "closed": self.closed,
@@ -81,8 +88,10 @@ class XpraQuicConnection(Connection):
         log("quic:http_event_received(%s)", Ellipsizer(event))
         if self.closed:
             return
-        if isinstance(event, (DataReceived, DatagramReceived)):
+        if isinstance(event, DataReceived):
             self.read_queue.put(event.data)
+        elif isinstance(event, DatagramReceived):
+            self.datagram_queue.put(event.data)
         else:
             log.warn(f"Warning: unhandled websocket http event {event}")
 
@@ -122,19 +131,21 @@ class XpraQuicConnection(Connection):
         data = memoryview_to_bytes(buf)
         if not packet_type:
             log.warn(f"Warning: missing packet type for {data}")
-        if packet_type in DATAGRAM_PACKET_TYPES:
-            self.connection.send_datagram(self.stream_id, data=data)
-            log(f"sending {packet_type!r} using datagram")
-            return len(buf)
-        stream_id = self.get_packet_stream_id(packet_type)
-        log("quic.stream_write(%s, %s) using stream id %s", Ellipsizer(buf), packet_type, stream_id)
+        datagram = packet_type in DATAGRAM_PACKET_TYPES and len(data) <= self.get_max_datagram_size()
+        stream_id = self.stream_id if datagram else self.get_packet_stream_id(packet_type)
+        log("quic.stream_write(%s, %s) using %s %s", Ellipsizer(buf), packet_type,
+            "datagram for stream id" if datagram else "stream id", stream_id)
 
         def do_write() -> None:
+            # aioquic is not thread safe, this runs in the asyncio loop thread
             if self.closed:
                 log(f"connection is already closed, packet {packet_type} dropped")
                 return
             try:
-                self.do_write(stream_id, data)
+                if datagram:
+                    self.do_write_datagram(data)
+                else:
+                    self.do_write(stream_id, data)
                 self.transmit()
             except AssertionError:
                 if self.closed:
@@ -149,6 +160,25 @@ class XpraQuicConnection(Connection):
         self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
         self.output_bytecount += len(data)
         self.output_writecount += 1
+
+    def do_write_datagram(self, data: bytes) -> None:
+        self.connection.send_datagram(self.stream_id, data=data)
+        self.output_bytecount += len(data)
+        self.output_writecount += 1
+
+    def get_max_datagram_size(self) -> int:
+        """
+        The largest payload we can send as a single datagram, 0 if datagrams cannot be used.
+        aioquic does not fragment datagrams: one that does not fit in a packet
+        stays at the head of its send queue forever, blocking all the datagrams queued after it.
+        """
+        quic = getattr(self.connection, "_quic", None)
+        if not quic or not hasattr(self.connection, "send_datagram"):
+            return 0
+        remote_max = quic._remote_max_datagram_frame_size
+        if not remote_max:
+            return 0
+        return max(0, min(remote_max, quic._max_datagram_size) - DATAGRAM_OVERHEAD)
 
     def get_packet_stream_id(self, packet_type: str) -> int:
         return self.stream_id

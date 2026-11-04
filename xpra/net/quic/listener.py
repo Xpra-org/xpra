@@ -13,7 +13,6 @@ from aioquic.quic.logger import QuicLogger
 from aioquic.h0.connection import H0_ALPN, H0Connection
 from aioquic.h3.connection import H3_ALPN, H3Connection
 from aioquic.h3.events import (
-    DatagramReceived,
     H3Event,
     HeadersReceived,
     WebTransportStreamDataReceived,
@@ -67,14 +66,12 @@ class HttpServerProtocol(QuicConnectionProtocol):
                 self.http_event_received(http_event)
 
     def http_event_received(self, event: H3Event) -> None:
-        hid = event.flow_id if isinstance(event, DatagramReceived) else event.stream_id
+        hid = event.stream_id
         handler = self._handlers.get(hid)
         log(f"hsp:http_event_received(%s) handler {hid}: {handler}", Ellipsizer(event))
         if isinstance(event, HeadersReceived) and not handler:
             handler = self.new_http_handler(event)
             self._handlers[event.stream_id] = handler
-        elif isinstance(event, DatagramReceived):
-            handler = self._handlers[event.flow_id]
         elif isinstance(event, WebTransportStreamDataReceived):
             handler = self._handlers[event.session_id]
         log(f"handler for {event} = {handler}")
