@@ -136,6 +136,9 @@ class Connection:
         # when set, blocking io calls are no longer retried past this `monotonic()` time:
         self.deadline = 0.0
         self.connection_delay = CONNECTION_DELAYS.get(socktype, CONNECTION_DELAY)
+        # set by transports that can send lossy datagrams (ie: QUIC),
+        # so that subsystems can prefer encodings which tolerate packet loss:
+        self.datagram = False
         # transports can set this when a connection-fatal error is detected
         # so the connection's owner can report the right exit code:
         self.error: ExitCode = ExitCode.OK
@@ -233,6 +236,7 @@ class Connection:
             "endpoint": self.endpoint or (),
             "active": self.active,
             "local": self.is_local(),
+            "datagram": self.datagram,
             "input": {
                 "bytecount": self.input_bytecount,
                 "readcount": self.input_readcount,

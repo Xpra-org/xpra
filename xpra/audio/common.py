@@ -43,6 +43,23 @@ MP3_MPEG4 = MP3 + "+" + MPEG4
 MP3_ID3V2 = MP3 + "+" + ID3V2
 
 
+# codecs whose pipelines keep playing through packet loss (see `xpra.audio.sink`):
+LOSS_TOLERANT_CODECS: Sequence[str] = (OPUS_RTP, )
+
+
+def get_matching_codecs(local_codecs: Sequence[str], remote_codecs: Sequence[str], lossy=False) -> Sequence[str]:
+    """
+    The codecs found in both lists, in the order of `local_codecs`.
+    When the connection can lose packets, the loss-tolerant codecs are moved to the front.
+    """
+    matching_codecs = tuple(x for x in local_codecs if x in remote_codecs)
+    if lossy:
+        # stable sort, so the preference order is preserved otherwise:
+        matching_codecs = tuple(sorted(matching_codecs, key=lambda codec: codec not in LOSS_TOLERANT_CODECS))
+    log("get_matching_codecs(%s, %s, %s)=%s", local_codecs, remote_codecs, lossy, matching_codecs)
+    return matching_codecs
+
+
 AUDIO_DATA_PACKET = "audio-data"
 AUDIO_CONTROL_PACKET = "audio-control"
 AUDIO_KEEPALIVE_PACKET = "audio-keepalive"

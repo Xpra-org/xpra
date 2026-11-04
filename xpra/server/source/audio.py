@@ -11,6 +11,7 @@ from collections.abc import Sequence, Callable
 
 from xpra.audio.common import (
     AUDIO_DATA_PACKET, AUDIO_KEEPALIVE_PACKET, AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET, PULSEAUDIO_DISCONNECTED,
+    get_matching_codecs,
 )
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.net.compression import Compressed
@@ -82,6 +83,8 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         self.microphone_codecs = []
         self.restart_speaker_args = ()
         self.audio_suspended = False
+        # can the connection lose packets?
+        self.audio_datagram = False
         self.connect("suspend", self.suspend_audio_source)
         self.connect("resume", self.resume_audio_source)
 
@@ -105,7 +108,9 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         self.new_stream_timers: dict[Popen, int] = {}
         self.wants_audio_capabilities = False            # flag indicating that the client wants 'audio-capabilities'
 
-    def init_from(self, _protocol, server) -> None:
+    def init_from(self, protocol, server) -> None:
+        conn = getattr(protocol, "_conn", None)
+        self.audio_datagram = bool(getattr(conn, "datagram", False))
         # AudioServer is the standalone subsystem instance:
         audio = server.subsystems["audio"]
         self.init_audio_from(audio)
@@ -285,7 +290,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
             log.error("Error sending audio: support is not enabled on the client")
             return None
         if not codec:
-            codecs = [x for x in self.audio_decoders if x in self.speaker_codecs]
+            codecs = get_matching_codecs(self.audio_decoders, self.speaker_codecs, self.audio_datagram)
             if not codecs:
                 log.error("Error sending audio: no codecs in common")
                 return None
@@ -675,6 +680,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
             return i
 
         info = {
+            "datagram": self.audio_datagram,
             "speaker": audio_info(self.supports_speaker, self.audio_source, self.audio_decoders),
             "microphone": audio_info(self.supports_microphone, self.audio_sink, self.audio_encoders),
         }

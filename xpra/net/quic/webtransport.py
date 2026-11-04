@@ -28,6 +28,8 @@ class ServerWebTransportConnection(XpraQuicConnection):
         super().__init__(connection, stream_id, transmit, "", 0, "webtransport")
         self.http_event_queue: SimpleQueue[DataReceived] = SimpleQueue()
         # self.read_datagram_queue = SimpleQueue()
+        # incoming datagrams are ignored (see `http_event_received`):
+        self.datagram = False
         self.scope = scope
 
     def __repr__(self):

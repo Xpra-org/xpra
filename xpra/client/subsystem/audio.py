@@ -11,6 +11,7 @@ from collections.abc import Callable, Sequence, Iterable
 from xpra.audio.common import (
     AUDIO_DATA_PACKET, AUDIO_CONTROL_PACKET, AUDIO_KEEPALIVE_PACKET,
     AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET,
+    get_matching_codecs,
 )
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.platform.paths import get_icon_filename
@@ -67,12 +68,6 @@ def init_audio_tagging(icon: str) -> None:
             log.warn(" %s", e)
 
 
-def get_matching_codecs(local_codecs, server_codecs) -> Sequence[str]:
-    matching_codecs = tuple(x for x in local_codecs if x in server_codecs)
-    log("get_matching_codecs(%s, %s)=%s", local_codecs, server_codecs, matching_codecs)
-    return matching_codecs
-
-
 def nooptions(*_args) -> Sequence[str]:
     return ()
 
@@ -100,7 +95,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
     __slots__ = (
         "_remote_machine_id", "audio_echo_timeout_start", "audio_keepalive_check_timer", "audio_sink",
         "audio_keepalive_stale_warning", "audio_keepalive_timer", "audio_remote_keepalive", "av_sync",
-        "av_sync_delta", "device_restart_delay", "device_restart_timer", "in_bytecount", "latest_audio_timestamp", "latest_echoed_audio_timestamp",
+        "av_sync_delta", "datagram", "device_restart_delay", "device_restart_timer", "in_bytecount", "latest_audio_timestamp", "latest_echoed_audio_timestamp",
         "latest_sent_audio_timestamp", "microphone_allowed", "microphone_codecs", "microphone_device",
         "microphone_enabled", "on_sink_ready", "out_bytecount", "properties", "queue_used_sent",
         "resume_restart", "server_av_sync", "server_decoders", "server_encoders", "server_eos_sequence",
@@ -116,13 +111,15 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         self.source_plugin = ""
         self.speaker_allowed: bool = False
         self.speaker_enabled: bool = False
-        self.speaker_codecs = []
+        self.speaker_codecs: Sequence[str] = []
         self.microphone_allowed: bool = False
         self.microphone_enabled: bool = False
-        self.microphone_codecs = []
+        self.microphone_codecs: Sequence[str] = []
         self.microphone_device = ""
         self.av_sync: bool = False
         self.av_sync_delta: int = AV_SYNC_DELTA
+        # can the connection lose packets?
+        self.datagram: bool = False
         self.properties: typedict = typedict()
         # audio state:
         self.on_sink_ready: Callable[[], None] = noop
@@ -257,12 +254,17 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             "speaker": self.speaker_enabled,
             "microphone": self.microphone_enabled,
             "properties": dict(self.properties),
+            "datagram": self.datagram,
         }
         if ss := self.source:
             info["src"] = ss.get_info()
         if ss := self.sink:
             info["sink"] = ss.get_info()
         return {AudioClient.PREFIX: info}
+
+    def setup_connection(self, conn) -> None:
+        self.datagram = bool(getattr(conn, "datagram", False))
+        log("setup_connection(%s) datagram=%s", conn, self.datagram)
 
     def get_caps(self) -> dict[str, Any]:
         caps: dict[str, Any] = {
@@ -441,7 +443,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             self.emit("microphone-changed")
 
         # find the matching codecs:
-        matching_codecs = get_matching_codecs(self.microphone_codecs, self.server_decoders)
+        matching_codecs = get_matching_codecs(self.microphone_codecs, self.server_decoders, self.datagram)
         log("start_source(%s) matching codecs: %s", device, csv(matching_codecs))
         if not matching_codecs:
             self.no_matching_codec_error("microphone", self.server_decoders, self.microphone_codecs)
@@ -518,7 +520,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             if not self.loop_check("speaker"):
                 return
             # choose a codec:
-            matching_codecs = get_matching_codecs(self.speaker_codecs, self.server_encoders)
+            matching_codecs = get_matching_codecs(self.speaker_codecs, self.server_encoders, self.datagram)
             log("start_receiving_audio() matching codecs: %s", csv(matching_codecs))
             if not matching_codecs:
                 self.no_matching_codec_error("speaker", self.server_encoders, self.speaker_codecs)

@@ -44,6 +44,7 @@ class XpraQuicConnection(Connection):
                  host: str, port: int, socktype="wss", info=None, options=None):
         Connection.__init__(self, (host, port), socktype, info=info, options=options)
         self.socktype_wrapped = "quic"
+        self.datagram = True
         self.connection: HttpConnection = connection
         self.read_queue: SimpleQueue[bytes] = SimpleQueue()
         self.stream_id: int = stream_id
