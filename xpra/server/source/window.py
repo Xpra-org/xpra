@@ -12,6 +12,7 @@ from collections.abc import Callable, Sequence
 from xpra.net.packet_type import (
     WINDOW_RESTACK, WINDOW_RAISE, WINDOW_INITIATE_MOVERESIZE, WINDOW_DESTROY, WINDOW_RESIZED,
     WINDOW_MOVE_RESIZE, WINDOW_METADATA, WINDOW_BELL, WINDOW_GRAB, WINDOW_UNGRAB, WINDOW_STACKING,
+    WINDOW_DRAW_FRAGMENT,
 )
 from xpra.os_util import gi_import
 from xpra.server.common import may_update_bandwidth_limits, wants_windows
@@ -41,15 +42,31 @@ HIDDEN_METADATA: Sequence[str] = ("iconic", "skip-taskbar", "skip-pager")
 CONGESTION_WARNING_EVENT_COUNT = envint("XPRA_CONGESTION_WARNING_EVENT_COUNT", 10)
 CONGESTION_REPEAT_DELAY = envint("XPRA_CONGESTION_REPEAT_DELAY", 60)
 MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5 * 1024 * 1024)
-# the maximum slice size for video encoders on quic connections,
-# so that each slice can be sent in its own datagram (0 to disable):
-VIDEO_DATAGRAM_SIZE = envint("XPRA_VIDEO_DATAGRAM_SIZE", 0)
+# the maximum size of video slices and fragments, so that each one can be sent in its own datagram:
+# -1 for automatic (only when the connection sends `window-draw-fragment` packets as datagrams), 0 to disable
+VIDEO_DATAGRAM_SIZE = envint("XPRA_VIDEO_DATAGRAM_SIZE", -1)
+# the space used by the `window-draw-fragment` packet header and metadata:
+DRAW_FRAGMENT_OVERHEAD = envint("XPRA_DRAW_FRAGMENT_OVERHEAD", 192)
+# don't bother with fragments smaller than this:
+MIN_DRAW_FRAGMENT_SIZE = 256
 
 PROPERTIES_DEBUG = [x.strip() for x in os.environ.get("XPRA_WINDOW_PROPERTIES_DEBUG", "").split(",")]
 
 
-def get_video_datagram_size(socktype: str) -> int:
-    return VIDEO_DATAGRAM_SIZE if socktype == "quic" else 0
+def get_video_datagram_size(conn) -> int:
+    """
+    The maximum size of the video fragments we can send as datagrams,
+    which is also the maximum size of the slices the video encoders should produce.
+    """
+    if VIDEO_DATAGRAM_SIZE == 0 or WINDOW_DRAW_FRAGMENT not in getattr(conn, "datagram_packet_types", ()):
+        return 0
+    get_max_datagram_size = getattr(conn, "get_max_datagram_size", None)
+    if not get_max_datagram_size:
+        return 0
+    size = get_max_datagram_size() - DRAW_FRAGMENT_OVERHEAD
+    if VIDEO_DATAGRAM_SIZE > 0:
+        size = min(size, VIDEO_DATAGRAM_SIZE)
+    return size if size >= MIN_DRAW_FRAGMENT_SIZE else 0
 
 
 def noid(_window) -> int:
@@ -698,10 +715,9 @@ class WindowsConnection(StubClientConnection):
         av_sync = getattr(self, "av_sync", False)
         av_sync_delay = getattr(self, "av_sync_delay", 0)
         conn = getattr(self.protocol, "_conn", None)
-        socktype = getattr(conn, "socktype_wrapped", "")
         jitter = getattr(conn, "jitter", 0)
-        datagram = get_video_datagram_size(socktype)
-        log(f"datagram({socktype=})={datagram}")
+        datagram = get_video_datagram_size(conn)
+        log(f"datagram({conn})={datagram}")
         # pylint: disable=import-outside-toplevel
         from xpra.server.window.video_compress import WindowVideoSource
         ws = WindowVideoSource(
@@ -744,9 +760,8 @@ class WindowsConnection(StubClientConnection):
         av_sync = getattr(self, "av_sync", False)
         av_sync_delay = getattr(self, "av_sync_delay", 0)
         conn = getattr(self.protocol, "_conn", None)
-        socktype = getattr(conn, "socktype_wrapped", "")
         jitter = getattr(conn, "jitter", 0)
-        datagram = get_video_datagram_size(socktype)
+        datagram = get_video_datagram_size(conn)
         # pylint: disable=import-outside-toplevel
         from xpra.server.window.subsurface_source import SubsurfaceWindowSource
         ws = SubsurfaceWindowSource(

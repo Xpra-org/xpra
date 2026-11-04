@@ -10,7 +10,8 @@ from time import monotonic
 from typing import Any
 
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import WINDOW_ACK
+from xpra.net.fragments import FrameAssembler, AssembledFrame, FrameStatus
+from xpra.net.packet_type import WINDOW_ACK, WINDOW_DRAW
 from xpra.constants import WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized
@@ -24,6 +25,8 @@ paintlog = Logger("window", "paint")
 PAINT_FAULT_RATE: int = envint("XPRA_PAINT_FAULT_INJECTION_RATE")
 PAINT_FAULT_TELL: bool = envbool("XPRA_PAINT_FAULT_INJECTION_TELL", True)
 PAINT_DELAY: int = envint("XPRA_PAINT_DELAY", -1)
+# how long to wait for the missing fragments of a video frame:
+DRAW_FRAGMENT_TIMEOUT: int = envint("XPRA_DRAW_FRAGMENT_TIMEOUT", 50)
 
 DRAW_LOG_FMT = "process_draw: %7i %8s for window %3i, sequence %8i, %4ix%-4i at %4i,%-4i" \
                " using %6s encoding with options=%s"
@@ -37,16 +40,30 @@ class WindowDraw(StubClientSubsystem):
     # which is the subsystem registered as `window`: declaring the prefix here
     # too keeps each mixin usable (and testable) on its own
     PREFIX = "window"
-    SLOT_NAMES = ("_draw_counter", "pixel_counter")
+    SLOT_NAMES = ("_draw_counter", "pixel_counter", "frame_assemblers", "fragment_timer")
 
     def __init__(self):
         self._draw_counter: int = 0
         self.pixel_counter: deque = deque(maxlen=1000)
+        # one for each window receiving `window-draw-fragment` packets:
+        self.frame_assemblers: dict[int, FrameAssembler] = {}
+        self.fragment_timer: int = 0
+
+    def cleanup(self) -> None:
+        self.cancel_fragment_timer()
+        self.frame_assemblers = {}
 
     def get_info(self) -> dict[str, Any]:
-        return {
+        info: dict[str, Any] = {
             "draw-counter": self._draw_counter,
         }
+        fragments: dict[str, int] = {}
+        for assembler in self.frame_assemblers.values():
+            for k, v in assembler.stats.items():
+                fragments[k] = fragments.get(k, 0) + v
+        if fragments.get("fragments"):
+            info["fragments"] = fragments
+        return info
 
     ######################################################################
     # painting windows:
@@ -54,6 +71,20 @@ class WindowDraw(StubClientSubsystem):
     # (`main_thread=True`): that hop is what orders them after the `new-window`
     # that creates the window they refer to - do not "optimize" it away.
     def _process_draw(self, packet: Packet) -> None:
+        # the frames we are still assembling must be painted before this one,
+        # and the ones sent after it must wait for it:
+        assembler = self.get_frame_assembler(packet.get_wid())
+        assembler.flush(packet.get_u64(8), lambda: self.queue_draw(packet))
+
+    def get_frame_assembler(self, wid: int) -> FrameAssembler:
+        assembler = self.frame_assemblers.get(wid)
+        if assembler is None:
+            def deliver(frame: AssembledFrame) -> None:
+                self.draw_assembled_frame(wid, frame)
+            assembler = self.frame_assemblers[wid] = FrameAssembler(deliver, DRAW_FRAGMENT_TIMEOUT / 1000)
+        return assembler
+
+    def queue_draw(self, packet: Packet) -> None:
         if PAINT_DELAY >= 0:
             self.timeout_add(PAINT_DELAY, self.add_decode_work, self._do_draw, packet)
         else:
@@ -61,6 +92,59 @@ class WindowDraw(StubClientSubsystem):
 
     def _process_eos(self, packet: Packet) -> None:
         self.add_decode_work(self._do_draw, packet)
+
+    def _process_draw_fragment(self, packet: Packet) -> None:
+        """
+        A part of a `window-draw` packet, with the same fields,
+        followed by the fragment's index, the number of fragments, the group it belongs to,
+        and the sequence of the last `window-draw` packet sent on the stream before this frame.
+        These may be received as datagrams, so they can be lost or re-ordered.
+        """
+        assembler = self.get_frame_assembler(packet.get_wid())
+        metadata = tuple(packet[1:7]) + tuple(packet[8:11])
+        assembler.add(packet.get_u64(8), packet.get_u16(11), packet.get_u16(12),
+                      packet.get_u16(13), packet.get_u16(14), packet.get_buffer(7), metadata, monotonic(),
+                      packet.get_u64(15))
+        self.schedule_fragment_timer()
+
+    def draw_assembled_frame(self, wid: int, frame: AssembledFrame) -> None:
+        # metadata = (wid, x, y, width, height, coding, sequence, rowstride, options)
+        metadata = frame.metadata
+        width, height = metadata[3], metadata[4]
+        log("draw_assembled_frame(%#x, %s) %i bytes from %i fragments, missing=%s",
+            wid, frame.status, len(frame.data), frame.count, frame.missing)
+        if frame.status == FrameStatus.LOST:
+            self.send_draw_ack(wid, width, height, frame.sequence, WINDOW_DECODE_SKIPPED, "lost")
+            return
+        options = dict(metadata[8])
+        if frame.missing:
+            options["missing-fragments"] = frame.missing
+            options["fragments"] = frame.count
+        packet = Packet(WINDOW_DRAW, *metadata[:6], frame.data, *metadata[6:8], options)
+        self.queue_draw(packet)
+
+    def schedule_fragment_timer(self) -> None:
+        if self.fragment_timer:
+            return
+        now = monotonic()
+        deadlines = tuple(d for d in (a.next_deadline(now) for a in self.frame_assemblers.values()) if d > 0)
+        if not deadlines:
+            return
+        delay = max(0, round((min(deadlines) - now) * 1000))
+        self.fragment_timer = self.timeout_add(delay, self.fragment_timeout)
+
+    def fragment_timeout(self) -> bool:
+        self.fragment_timer = 0
+        now = monotonic()
+        for assembler in tuple(self.frame_assemblers.values()):
+            assembler.expire(now)
+        self.schedule_fragment_timer()
+        return False
+
+    def cancel_fragment_timer(self) -> None:
+        if ft := self.fragment_timer:
+            self.fragment_timer = 0
+            self.source_remove(ft)
 
     def send_draw_ack(self, wid: int, width: int, height: int, packet_sequence: int,
                       decode_time: int, message="") -> None:
@@ -164,4 +248,4 @@ class WindowDraw(StubClientSubsystem):
     def init_authenticated_packet_handlers(self) -> None:
         # `main_thread=True` is required for ordering, not for the (trivial) handlers:
         # see `_process_draw` above
-        self.add_packets("window-draw", "window-eos", main_thread=True)
+        self.add_packets("window-draw", "window-eos", "window-draw-fragment", main_thread=True)

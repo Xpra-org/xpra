@@ -509,7 +509,7 @@ class QuicDatagramProtocolTest(unittest.TestCase):
             receiver = self.make_protocol(receiver_conn, received)
             self.negotiate(sender, receiver)
             assert sender_conn.datagram_packet_types == (DATAGRAM_TYPE, )
-            assert receiver.datagram_packet_types == (DATAGRAM_TYPE, )
+            assert DATAGRAM_TYPE in receiver.datagram_packet_types
             stream_bytes = 0
             for i in range(20):
                 big = b"%i" % i * (64 * 1024)
@@ -523,6 +523,57 @@ class QuicDatagramProtocolTest(unittest.TestCase):
         assert [packet.get_dict(3)["sequence"] for packet in received] == list(range(100))
         assert receiver.datagram_stats == {"received": 100, "invalid": 0, "dropped": 0}
         assert len(b"".join(drain(receiver_conn.read_queue))) == stream_bytes
+
+    def test_draw_fragments(self):
+        # video frames split by the window source into fragments sized for the connection:
+        # every one of them must fit in a datagram, even with large metadata values
+        from xpra.net.common import Packet
+        from xpra.net.quic.connection import XpraQuicConnection
+        from xpra.server.source.window import get_video_datagram_size
+        from xpra.server.window.compress import WindowSource
+        fragment_type = "window-draw-fragment"
+        pair = QuicPair(self.cert, self.key)
+        with patch("xpra.net.quic.connection.DATAGRAM_PACKET_TYPES", (fragment_type, )):
+            sender_conn = XpraQuicConnection(pair.chttp, pair.stream_id, pair.transmit, "localhost", ADDR[1])
+            receiver_conn = XpraQuicConnection(pair.shttp, pair.stream_id, pair.transmit, "localhost", ADDR[1])
+            pair.receiver = receiver_conn
+            sender = self.make_protocol(sender_conn)
+            received: list = []
+            receiver = self.make_protocol(receiver_conn, received)
+            assert get_video_datagram_size(sender_conn) == 0, "not negotiated yet"
+            with patch("xpra.net.protocol.socket_handler.DATAGRAM_ACCEPT_PACKET_TYPES", (fragment_type, )):
+                self.negotiate(sender, receiver)
+            datagram = get_video_datagram_size(sender_conn)
+            assert datagram > 256
+            source = object.__new__(WindowSource)
+            source.wid = 0x7fffffff
+            source.datagram = datagram
+            source.last_stream_sequence = 2 ** 48 - 1
+            # a frame made of NALs of varying sizes, some larger than a datagram:
+            sizes = [datagram // 3, datagram, datagram * 2 + 7, 17, datagram - 1] * 4
+            data = bytes(i & 0xff for i in range(sum(sizes)))
+            nals = [sum(sizes[:i + 1]) for i in range(len(sizes))]
+            options = {
+                "frame": 2 ** 31, "pts": 2 ** 40, "csc": "YUV420P", "quality": 100, "speed": 100,
+                "flush": 1, "window-size": (16384, 16384), "nals": nals,
+            }
+            packet = Packet("window-draw", source.wid, -32768, -32768, 16384, 16384, "h264", data, 2 ** 48, 0, options)
+            fragments = source.make_draw_fragments(packet)
+            assert len(fragments) > len(sizes)
+            for fragment in fragments:
+                for level in (0, 1):
+                    items = self.encode(sender, fragment, level)
+                    assert len(items) == 1, "fragment does not fit in a single record"
+                    sender.write_buffers(items, fragment_type, True)
+            pair.drain_link()
+        assert sender_conn.datagram_fallbacks == 0
+        assert not drain(receiver_conn.read_queue)
+        assert len(received) == len(fragments) * 2
+        assert receiver.datagram_stats["received"] == len(fragments) * 2
+        for fragment, packet in zip(fragments, received[::2]):
+            assert packet.get_type() == fragment_type
+            assert tuple(packet[11:16]) == tuple(fragment[11:16])
+            assert bytes(packet.get_buffer(7)) == fragment[7]
 
 
 @unittest.skipUnless(HAVE_AIOQUIC, "aioquic not available")

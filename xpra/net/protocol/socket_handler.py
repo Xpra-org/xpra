@@ -70,11 +70,11 @@ PACKET_COMPRESSORS: dict[str, str] = {
     "info-response": "brotli",
     "encoding-set": "brotli",
 }
-# Packets whose payload is already compressed by their own codec (ie: audio),
-# compressing them again only wastes CPU, and `audio-data` may be sent as a datagram:
+# Packets whose payload is already compressed by their own codec (ie: audio, video),
+# compressing them again only wastes CPU, and these packets may be sent as datagrams:
 NO_COMPRESS_PACKET_TYPES: tuple[str, ...] = tuple(x.strip() for x in os.environ.get(
     "XPRA_NO_COMPRESS_PACKET_TYPES",
-    "audio-data",
+    "audio-data,window-draw-fragment",
 ).split(",") if x.strip())
 # inline compressed data in packet if smaller than:
 INLINE_SIZE = envint("XPRA_INLINE_SIZE", 32768)

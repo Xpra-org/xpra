@@ -69,6 +69,138 @@ class WindowDrawTest(unittest.TestCase):
             window.draw_region.assert_called_once()
 
 
+class Fragments(Draw):
+    """ captures the draw work and the timers instead of running them """
+
+    def __init__(self):
+        super().__init__(Mock())
+        self.frame_assemblers = {}
+        self.fragment_timer = 0
+        self.timers = []
+        self.drawn = []
+
+    def timeout_add(self, delay, fn, *args):
+        self.timers.append((delay, fn, args))
+        return len(self.timers)
+
+    def source_remove(self, _timer):
+        pass
+
+    def add_decode_work(self, _fn, packet):
+        self.drawn.append(packet)
+
+
+def make_fragments(data: bytes, nals, datagram=100, frame_type="", stream_sequence=6):
+    from xpra.server.window.compress import WindowSource
+    source = object.__new__(WindowSource)
+    source.wid = 1
+    source.datagram = datagram
+    source.last_stream_sequence = stream_sequence
+    options = {"frame": 5, "nals": list(nals)}
+    if frame_type:
+        options["type"] = frame_type
+    packet = Packet("window-draw", 1, 10, 20, 64, 32, "h264", data, 7, 0, options)
+    return source.make_draw_fragments(packet)
+
+
+class WindowDrawFragmentTest(unittest.TestCase):
+
+    DATA = bytes(range(250)) * 2
+    NALS = (50, 120, 300, 310, 500)
+
+    def test_server_fragments(self):
+        fragments = make_fragments(self.DATA, self.NALS)
+        self.assertTrue(fragments)
+        for index, fragment in enumerate(fragments):
+            self.assertEqual(fragment.get_type(), "window-draw-fragment")
+            self.assertEqual(tuple(fragment[1:7]), (1, 10, 20, 64, 32, "h264"))
+            self.assertLessEqual(len(fragment[7]), 100)
+            self.assertEqual(tuple(fragment[8:10]), (7, 0))
+            # the boundaries are only used for splitting, they are not sent:
+            self.assertEqual(fragment[10], {"frame": 5})
+            self.assertEqual(fragment[11], index)
+            self.assertEqual(fragment[12], len(fragments))
+            self.assertEqual(fragment[15], 6)
+        self.assertEqual(b"".join(f[7] for f in fragments), self.DATA)
+
+    def test_server_does_not_fragment(self):
+        # keyframes, frames without boundaries and frames needing too many fragments:
+        self.assertEqual(make_fragments(self.DATA, self.NALS, frame_type="IDR"), [])
+        self.assertEqual(make_fragments(self.DATA, ()), [])
+        self.assertEqual(make_fragments(self.DATA, (10, 20)), [])
+        with patch("xpra.server.window.compress.MAX_DRAW_FRAGMENTS", 3):
+            self.assertEqual(make_fragments(self.DATA, self.NALS), [])
+
+    def stream_packet(self, sequence: int) -> Packet:
+        return Packet("window-draw", 1, 0, 0, 64, 32, "h264", b"key", sequence, 0, {"type": "IDR"})
+
+    def test_reassembled(self):
+        client = Fragments()
+        client._process_draw(self.stream_packet(6))
+        client.drawn = []
+        for fragment in reversed(make_fragments(self.DATA, self.NALS)):
+            client._process_draw_fragment(fragment)
+        self.assertEqual(len(client.drawn), 1)
+        packet = client.drawn[0]
+        self.assertEqual(packet.get_type(), "window-draw")
+        self.assertEqual(tuple(packet[1:7]), (1, 10, 20, 64, 32, "h264"))
+        self.assertEqual(packet[7], self.DATA)
+        self.assertEqual(tuple(packet[8:]), (7, 0, {"frame": 5}))
+        self.assertEqual(client.get_info()["fragments"]["complete"], 1)
+
+    def test_waits_for_stream_packet(self):
+        client = Fragments()
+        for fragment in make_fragments(self.DATA, self.NALS):
+            client._process_draw_fragment(fragment)
+        self.assertFalse(client.drawn)
+        client._process_draw(self.stream_packet(6))
+        self.assertEqual([p.get_u64(8) for p in client.drawn], [6, 7])
+
+    def test_partial_after_timeout(self):
+        client = Fragments()
+        client._process_draw(self.stream_packet(6))
+        client.drawn = []
+        fragments = make_fragments(self.DATA, self.NALS)
+        for fragment in fragments[1:]:
+            client._process_draw_fragment(fragment)
+        self.assertFalse(client.drawn)
+        # the timer fires once the deadline has passed:
+        self.assertEqual(len(client.timers), 1)
+        with patch("xpra.client.subsystem.window.draw.monotonic", return_value=10**6):
+            _delay, fn, args = client.timers[0]
+            fn(*args)
+        packet = client.drawn[0]
+        self.assertEqual(packet[7], b"".join(f[7] for f in fragments[1:]))
+        self.assertEqual(packet[10]["missing-fragments"], (0, ))
+        self.assertEqual(packet[10]["fragments"], len(fragments))
+
+    def test_stream_packet_flushes(self):
+        client = Fragments()
+        client._process_draw(self.stream_packet(6))
+        client.drawn = []
+        fragments = make_fragments(self.DATA, self.NALS)
+        client._process_draw_fragment(fragments[0])
+        # the next frame is sent on the stream (ie: a keyframe), the partial one must be painted first:
+        client._process_draw(self.stream_packet(8))
+        self.assertEqual([p.get_u64(8) for p in client.drawn], [7, 8])
+        # fragments for frame 7 are now too late:
+        client._process_draw_fragment(fragments[1])
+        self.assertEqual(len(client.drawn), 2)
+
+    def test_lost_frame_is_acked(self):
+        client = Fragments()
+        client._process_draw(self.stream_packet(6))
+        client.drawn = []
+        client.acks = []
+        fragments = make_fragments(self.DATA, (500, ))
+        # only one piece of the single unit:
+        client._process_draw_fragment(fragments[1])
+        client.frame_assemblers[1].expire(10**6)
+        self.assertFalse(client.drawn)
+        self.assertEqual(len(client.acks), 1)
+        self.assertEqual(client.acks[0][4], 7)
+
+
 def main():
     unittest.main()
 

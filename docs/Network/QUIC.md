@@ -53,11 +53,23 @@ which works best with the loss-tolerant `opus+rtp` audio codec.
 * the start and end of audio streams are always sent on the regular stream (see `audio-stream` packets)
 * xpra's own [encryption](Encryption.md) cannot be used with QUIC, which is already encrypted
 
+Video frames can also be sent as datagrams, using `window-draw-fragment` packets (experimental, not enabled by default):
+* the `h264` encoders (`x264` and `openh264`) limit the size of their slices so that each one fits in a datagram
+* the frames are split into fragments on the slice boundaries, large slices are split into a group of fragments
+* keyframes and frames that would need too many fragments are sent whole, on the regular stream
+* the client re-assembles the fragments, it waits up to `XPRA_DRAW_FRAGMENT_TIMEOUT` for the missing ones,
+then decodes the slices it did receive, or skips the frame if there are none
+
 Environment variables:
-* `XPRA_QUIC_DATAGRAM_PACKET_TYPES`: the packet types to send as datagrams, if the peer accepts them (default: `audio-data`)
-* `XPRA_DATAGRAM_ACCEPT_PACKET_TYPES`: the packet types we accept as datagrams (default: `audio-data`)
+* `XPRA_QUIC_DATAGRAM_PACKET_TYPES`: the packet types to send as datagrams, if the peer accepts them (default: `audio-data`),
+add `window-draw-fragment` to send video frames as datagrams
+* `XPRA_DATAGRAM_ACCEPT_PACKET_TYPES`: the packet types we accept as datagrams (default: `audio-data,window-draw-fragment`)
 * `XPRA_QUIC_DATAGRAM_DROP_PCT`: discard this percentage of the outgoing datagrams, to test loss tolerance (default: `0`)
-* `XPRA_VIDEO_DATAGRAM_SIZE`: limit the size of video slices to this many bytes, so each slice fits in a datagram (default: `0`, disabled)
+* `XPRA_VIDEO_DATAGRAM_SIZE`: the maximum size of the video slices and fragments,
+`-1` to use the largest that fits in a datagram (default), `0` to disable video datagrams
+* `XPRA_DRAW_FRAGMENT_OVERHEAD`: the space reserved for the `window-draw-fragment` packet headers (default: `192` bytes)
+* `XPRA_MAX_DRAW_FRAGMENTS`: frames that need more fragments than this are sent on the stream (default: `64`)
+* `XPRA_DRAW_FRAGMENT_TIMEOUT`: how long the client waits for the missing fragments of a frame (default: `50` ms)
 
 <div class="docs-section-heading" markdown="1">
 

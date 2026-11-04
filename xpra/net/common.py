@@ -43,7 +43,7 @@ assert FULL_INFO >= 0
 # these must be self-contained and tolerate loss and re-ordering:
 DATAGRAM_ACCEPT_PACKET_TYPES: tuple[str, ...] = tuple(x.strip() for x in os.environ.get(
     "XPRA_DATAGRAM_ACCEPT_PACKET_TYPES",
-    "audio-data",
+    "audio-data,window-draw-fragment",
 ).split(",") if x.strip())
 # QUIC is always encrypted using TLS, and xpra's own encryption is not compatible with datagrams:
 QUIC_ENCRYPTION_ERROR = "encryption cannot be used with quic connections, which are already encrypted"

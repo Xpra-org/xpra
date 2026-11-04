@@ -21,7 +21,8 @@ from xpra.util.str_fn import csv, repr_ellipsized, decode_str
 from xpra.util.env import envint, envbool, first_time
 from xpra.util.thread import check_main_thread, is_main_thread
 from xpra.net.common import Packet, MmapPointerError
-from xpra.net.packet_type import WINDOW_DRAW
+from xpra.net.packet_type import WINDOW_DRAW, WINDOW_DRAW_FRAGMENT
+from xpra.net.fragments import fragment_frame
 from xpra.constants import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.common import is_covered_by_opaque_region
 from xpra.server.window.windowicon import WindowIconSource
@@ -94,6 +95,9 @@ DAMAGE_HEIGHT_PADDING_PCT = envint("XPRA_DAMAGE_WIDTH_PADDING_PCT", 0)
 HAS_ALPHA = envbool("XPRA_ALPHA", True)
 BROWSER_ALPHA_FIX = envbool("XPRA_BROWSER_ALPHA_FIX", True)
 STRICT_MODE = envbool("XPRA_ENCODING_STRICT_MODE", False)
+# frames that need more fragments than this are sent whole, on the stream:
+MAX_DRAW_FRAGMENTS = envint("XPRA_MAX_DRAW_FRAGMENTS", 64)
+KEYFRAME_TYPES = ("IDR", "I", "KEYFRAME")
 MAX_QUALITY = envint("XPRA_ENCODING_MAX_QUALITY", 100)
 MAX_SPEED = envint("XPRA_ENCODING_MAX_SPEED", 100)
 assert MAX_QUALITY > 0 and MAX_SPEED > 0
@@ -359,6 +363,8 @@ class WindowSource(WindowIconSource):
         self.bandwidth_limit = bandwidth_limit
         self.jitter = jitter
         self.datagram = datagram
+        # the sequence of the last draw packet sent whole, on the stream:
+        self.last_stream_sequence = 0
 
         self.pixel_format = None                            # ie: BGRX
         self.image_depth: int = window.get_property("depth")
@@ -2412,7 +2418,47 @@ class WindowSource(WindowIconSource):
         # whilst the packet is still ours: lossy updates schedule a refresh,
         # lossless ones clear the regions they have covered
         self.schedule_auto_refresh(packet, options)
-        self.queue_packet(packet, self.wid, pixcount, client_options.get("flush", 0) > 0)
+        flush = client_options.get("flush", 0) > 0
+        if self.datagram and (fragments := self.make_draw_fragments(packet)):
+            for i, fragment in enumerate(fragments):
+                last = i == len(fragments) - 1
+                self.queue_packet(fragment, self.wid, pixcount if last else 0, flush or not last)
+            return
+        self.last_stream_sequence = damage_packet_sequence
+        self.queue_packet(packet, self.wid, pixcount, flush)
+
+    def make_draw_fragments(self, packet: Packet) -> list[Packet]:
+        """
+        Split video frames into `window-draw-fragment` packets that can be sent as datagrams,
+        on the boundaries the encoder gives us (`nals`), so that losing one only damages part of the frame.
+        Keyframes are not split: their loss would affect all the frames that follow,
+        and so are the frames that would need too many fragments.
+        The fragments also carry the sequence of the last packet sent on the stream,
+        so the client can paint them in order.
+        """
+        client_options = packet[10]
+        nals = client_options.pop("nals", None)
+        if not nals or client_options.get("type", "P") in KEYFRAME_TYPES:
+            return []
+        data = packet[7]
+        data = getattr(data, "data", data)
+        try:
+            fragments = fragment_frame(data, nals, self.datagram)
+        except ValueError as e:
+            log("make_draw_fragments(..)", exc_info=True)
+            if first_time(f"draw-fragments-{self.wid}"):
+                log.warn(f"Warning: cannot split {packet[6]!r} frame into fragments: {e}")
+            return []
+        count = len(fragments)
+        if count > MAX_DRAW_FRAGMENTS:
+            return []
+        head = list(packet[1:7])
+        tail = list(packet[8:11])
+        return [
+            Packet(WINDOW_DRAW_FRAGMENT, *head, fragment_data, *tail, index, count, group_start, group_size,
+                   self.last_stream_sequence)
+            for index, (fragment_data, group_start, group_size) in enumerate(fragments)
+        ]
 
     def save_update(self, packet: Packet, damage_time: float) -> None:
         import json

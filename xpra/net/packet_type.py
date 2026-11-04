@@ -17,6 +17,8 @@ WINDOW_METADATA: Final[str] = "window-metadata"
 WINDOW_DESTROY: Final[str] = "window-destroy"
 WINDOW_ICON: Final[str] = "window-icon"
 WINDOW_DRAW: Final[str] = "window-draw"
+# a part of a `window-draw` packet, small enough to be sent as a datagram:
+WINDOW_DRAW_FRAGMENT: Final[str] = "window-draw-fragment"
 WINDOW_EOS: Final[str] = "window-eos"
 # a grab belongs to the window holding it: the packets carry a `wid`,
 # the server sends them from its `window` source and the client tracks
