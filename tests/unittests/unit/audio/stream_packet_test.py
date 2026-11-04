@@ -233,6 +233,58 @@ class TestServerSource(unittest.TestCase):
         sink.add_data.assert_called_once_with(b"data", {"sequence": 0}, ())
 
 
+class TestServerSinkCreation(unittest.TestCase):
+    """
+    With clients that send `audio-stream` packets, only those create the sink:
+    `audio-data` may arrive as a datagram, in the asyncio loop thread, which must not start a subprocess.
+    """
+
+    def test_data_does_not_create_sink(self):
+        c = FakeConnection()
+        c.audio_stream_packet = True
+        with patch.object(c, "ensure_audio_sink") as ensure:
+            c.audio_data("opus", b"data", {"sequence": 0})
+        ensure.assert_not_called()
+        assert c.audio_sink is None
+
+    def test_data_fed_to_existing_sink(self):
+        c = FakeConnection()
+        c.audio_stream_packet = True
+        sink = MagicMock()
+        sink.codec = "opus"
+        c.audio_sink = sink
+        with patch.object(c, "ensure_audio_sink") as ensure:
+            c.audio_data("opus", b"data", {"sequence": 0})
+        ensure.assert_not_called()
+        sink.add_data.assert_called_once_with(b"data", {"sequence": 0}, ())
+
+    def test_codec_mismatch_dropped(self):
+        c = FakeConnection()
+        c.audio_stream_packet = True
+        sink = MagicMock()
+        sink.codec = "opus"
+        c.audio_sink = sink
+        with patch.object(c, "ensure_audio_sink") as ensure:
+            c.audio_data("vorbis", b"data", {"sequence": 0})
+        ensure.assert_not_called()
+        sink.add_data.assert_not_called()
+        sink.cleanup.assert_not_called()
+        assert c.audio_sink is sink
+
+    def test_stream_start_creates_sink(self):
+        c = FakeConnection()
+        c.audio_stream_packet = True
+        with patch.object(c, "ensure_audio_sink") as ensure:
+            c.audio_stream(AUDIO_STREAM_START, "opus", 0)
+        ensure.assert_called_once_with("opus")
+
+    def test_legacy_client_creates_sink_from_data(self):
+        c = FakeConnection()
+        with patch.object(c, "ensure_audio_sink", return_value=False) as ensure:
+            c.audio_data("opus", b"data", {"sequence": 0})
+        ensure.assert_called_once_with("opus")
+
+
 class TestServerSubsystem(unittest.TestCase):
 
     def test_process_stream(self):

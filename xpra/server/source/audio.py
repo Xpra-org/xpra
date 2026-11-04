@@ -611,6 +611,20 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         if not data and not packet_metadata:
             log("audio_data(..) no data")
             return
+        if self.audio_stream_packet:
+            # the sink is created by the `audio-stream` packet, received from the network parse thread,
+            # `audio-data` may be received as a datagram, from the asyncio loop thread,
+            # so it must not start (or stop) the sink subprocess - only feed it:
+            sink = self.audio_sink
+            if sink is None:
+                log("audio_data(..) no audio sink, dropping %s packet", codec)
+                return
+            if codec != sink.codec:
+                log("audio_data(..) %s packet does not match the %s sink, dropping it", codec, sink.codec)
+                return
+            sink.add_data(data, metadata, packet_metadata)
+            return
+        # older clients start sending data without `audio-stream`:
         if self.ensure_audio_sink(codec):
             self.audio_sink.add_data(data, metadata, packet_metadata)
 
