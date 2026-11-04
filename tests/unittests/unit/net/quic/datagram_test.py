@@ -191,7 +191,11 @@ class QuicDatagramTest(unittest.TestCase):
         from xpra.net.quic.connection import XpraQuicConnection
         pair = QuicPair(self.cert, self.key, **kwargs)
         sender = XpraQuicConnection(pair.chttp, pair.stream_id, pair.transmit, "localhost", ADDR[1])
-        pair.receiver = XpraQuicConnection(pair.shttp, pair.stream_id, pair.transmit, "localhost", ADDR[1])
+        receiver = XpraQuicConnection(pair.shttp, pair.stream_id, pair.transmit, "localhost", ADDR[1])
+        # capture the datagram records instead of dropping them:
+        receiver.datagram_records = []
+        receiver.datagram_received = receiver.datagram_records.append
+        pair.receiver = receiver
         return pair, sender
 
     @staticmethod
@@ -203,7 +207,7 @@ class QuicDatagramTest(unittest.TestCase):
 
     def received(self, pair) -> tuple[bytes, list[bytes]]:
         stream = b"".join(drain(pair.receiver.read_queue))
-        datagrams = drain(pair.receiver.datagram_queue)
+        datagrams = pair.receiver.datagram_records
         return stream, datagrams
 
     def check_stream(self, stream: bytes, sent: list[bytes]) -> None:
@@ -243,7 +247,7 @@ class QuicDatagramTest(unittest.TestCase):
         sender.stream_write(b"hello", DATAGRAM_TYPE)
         assert self.loop.calls == calls + 1
         assert not pair.cquic._datagrams_pending, "datagram was queued but not transmitted"
-        assert drain(pair.receiver.datagram_queue) == [b"hello"]
+        assert pair.receiver.datagram_records == [b"hello"]
 
     def test_interleaved_bursts(self):
         # large stream writes, each followed by a burst of datagrams while the stream data is still in flight
@@ -294,6 +298,16 @@ class QuicDatagramTest(unittest.TestCase):
         for dgram in datagrams:
             assert dgram in expected, f"received a corrupted datagram record: {dgram[:64]!r}"
 
+    def test_datagrams_dropped_by_default(self):
+        from xpra.net.quic.connection import XpraQuicConnection
+        pair, sender = self.make_pair()
+        pair.receiver = XpraQuicConnection(pair.shttp, pair.stream_id, pair.transmit, "localhost", ADDR[1])
+        for i in range(10):
+            sender.stream_write(self.make_payload("d", i, 100), DATAGRAM_TYPE)
+        pair.drain_link()
+        assert pair.receiver.datagrams_dropped == 10
+        assert not drain(pair.receiver.read_queue)
+
     def test_oversized_datagram(self):
         # a datagram must fit in a single QUIC packet,
         # one that does not must not get stuck and block all the datagrams queued after it
@@ -323,6 +337,16 @@ class QuicListenerDatagramTest(unittest.TestCase):
         event = DatagramReceived(data=b"foo", stream_id=0)
         protocol.http_event_received(event)
         handler.http_event_received.assert_called_once_with(event)
+
+    def test_client_datagram_routed_to_session(self):
+        from unittest.mock import MagicMock
+        from xpra.net.quic.client import WebSocketClient
+        client = WebSocketClient.__new__(WebSocketClient)
+        websocket = MagicMock()
+        client._websockets = {0: websocket}
+        event = DatagramReceived(data=b"foo", stream_id=0)
+        client.http_event_received(event)
+        websocket.http_event_received.assert_called_once_with(event)
 
 
 def main():

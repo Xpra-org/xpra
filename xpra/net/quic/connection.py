@@ -51,8 +51,9 @@ class XpraQuicConnection(Connection):
         self.datagram = True
         self.connection: HttpConnection = connection
         self.read_queue: SimpleQueue[bytes] = SimpleQueue()
-        # datagrams are independent records, they must never be mixed with the stream data:
-        self.datagram_queue: SimpleQueue[bytes] = SimpleQueue()
+        # datagrams are independent records, they must never be mixed with the stream data,
+        # until something handles them (see `datagram_received`), they are dropped:
+        self.datagrams_dropped: int = 0
         self.stream_id: int = stream_id
         self.transmit: Callable[[], None] = transmit
         self.accepted: bool = False
@@ -65,7 +66,7 @@ class XpraQuicConnection(Connection):
         info = super().get_info()
         qinfo = {
             "read-queue": self.read_queue.qsize(),
-            "datagram-queue": self.datagram_queue.qsize(),
+            "datagrams-dropped": self.datagrams_dropped,
             "stream-id": self.stream_id,
             "accepted": self.accepted,
             "closed": self.closed,
@@ -91,9 +92,14 @@ class XpraQuicConnection(Connection):
         if isinstance(event, DataReceived):
             self.read_queue.put(event.data)
         elif isinstance(event, DatagramReceived):
-            self.datagram_queue.put(event.data)
+            self.datagram_received(event.data)
         else:
             log.warn(f"Warning: unhandled websocket http event {event}")
+
+    def datagram_received(self, data: bytes) -> None:
+        # called from the asyncio loop thread
+        self.datagrams_dropped += 1
+        log("datagram_received(%i bytes) dropped", len(data))
 
     def close(self, code=QuicErrorCode.NO_ERROR, reason="closing") -> None:
         log(f"quic.close({code}, {reason})")
