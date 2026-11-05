@@ -10,6 +10,7 @@ from types import ModuleType
 from unittest.mock import Mock, patch
 
 from xpra.util.objects import typedict
+from xpra.net.common import Packet
 # `load_window_server_class` restores `sys.modules` wholesale, which drops every
 # module imported inside it - including `gi.repository.GObject`, which cannot be
 # imported a second time. So anything needing it has to be imported before that:
@@ -515,6 +516,35 @@ class WaylandWindowServerConfigureTest(unittest.TestCase):
                     surface.resize.assert_not_called()
                     surface.frame_done.assert_not_called()
                 server.server.compositor.flush.assert_not_called()
+
+
+class WaylandWindowServerMapTest(unittest.TestCase):
+
+    def test_map_refreshes_only_a_live_window(self):
+        for destroyed in (False, True):
+            with self.subTest(destroyed=destroyed):
+                connection = Mock()
+                server = Mock()
+                server.get_server_source.return_value = connection
+                manager = WaylandWindowServer(server)
+                surface = Mock()
+                window = window_model.Window({"surface": surface, "geometry": (0, 0, 160, 120)})
+                window.setup()
+                self.addCleanup(window.unmanage)
+                if destroyed:
+                    # flushing dispatches the pending Wayland events,
+                    # which may destroy the window being mapped:
+                    server.compositor.flush.side_effect = lambda: manager.destroy(7)
+                with patch.object(WaylandWindowServer, "window_sources", return_value=(connection,)):
+                    manager.do_add_new_window_common(7, window)
+                    manager._process_map(Mock(), Packet("window-map", 7, 0, 0, 160, 120))
+                surface.resize.assert_called_once_with(160, 120)
+                server.compositor.flush.assert_called_once_with()
+                if destroyed:
+                    self.assertIsNone(manager.get_window(7))
+                    connection.damage.assert_not_called()
+                else:
+                    connection.damage.assert_called_once_with(7, window, 0, 0, 160, 120, None)
 
 
 def main():
