@@ -1,7 +1,26 @@
 #!/bin/sh
 
+# xpra only knows the pid of this script, so it must take weston and Xwayland down with it:
+WESTON_PID=""
+XWAYLAND_PID=""
+cleanup() {
+	trap - EXIT HUP INT TERM
+	[ -n "$XWAYLAND_PID" ] && kill "$XWAYLAND_PID" 2>/dev/null
+	[ -n "$WESTON_PID" ] && kill "$WESTON_PID" 2>/dev/null
+}
+trap cleanup EXIT
+trap 'cleanup; exit 129' HUP
+trap 'cleanup; exit 130' INT
+trap 'cleanup; exit 143' TERM
+
 unset DISPLAY
 export WAYLAND_DISPLAY=headless-$$
-weston --backend=headless-backend.so --socket=$WAYLAND_DISPLAY &
-xpra wait-for-wayland $WAYLAND_DISPLAY >& /dev/null
-Xwayland -noreset $@
+weston --backend=headless-backend.so --socket="$WAYLAND_DISPLAY" &
+WESTON_PID=$!
+xpra wait-for-wayland "$WAYLAND_DISPLAY" >/dev/null 2>&1
+Xwayland -noreset "$@" &
+XWAYLAND_PID=$!
+wait "$XWAYLAND_PID"
+RET=$?
+XWAYLAND_PID=""
+exit $RET
