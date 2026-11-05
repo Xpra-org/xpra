@@ -3,6 +3,7 @@
 ## [8.0] 2026-10-16
 * 🔧 Platforms, build and packaging:
 * 🖧 Network:
+  * [use QUIC datagrams](https://github.com/Xpra-org/xpra/issues/3854) [for audio packets](https://github.com/Xpra-org/xpra/issues/4745)
 * 🛡️ Security:
   * [authentication errors leave clients waiting until they time out](https://github.com/Xpra-org/xpra/commit/b74e8b7943376736812563144c04a5a62f813e85)
   * [GPU security and containers](https://github.com/Xpra-org/xpra/issues/5088): [GPU accelerated secure pods](https://github.com/Xpra-org/xpra/blob/master/packaging/containers/podman/GPU.md), [landlock `+gpu`](https://github.com/Xpra-org/xpra/issues/5086), [SELinux domain for the encoder server](https://github.com/Xpra-org/xpra/issues/5087)
