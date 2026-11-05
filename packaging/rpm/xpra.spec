@@ -33,7 +33,7 @@
 %global debug_package %{nil}
 %endif
 %if 0%{?el10}
-%define DEFAULT_BUILD_ARGS --with-Xdummy --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild --without-docs
+%define DEFAULT_BUILD_ARGS --without-Xdummy_wrapper --without-csc_cython --without-evdi --without-cuda_rebuild --without-docs
 %endif
 
 
