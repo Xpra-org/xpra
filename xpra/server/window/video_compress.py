@@ -496,8 +496,6 @@ class WindowVideoSource(WindowSource):
         self.supports_scrolling = "scroll" in self.common_encodings
         self.scroll_min_percent = properties.intget("scrolling.min-percent", self.scroll_min_percent)
         self.scroll_preference = properties.intget("scrolling.preference", self.scroll_preference)
-        if VIDEO_SUBREGION:
-            self.video_subregion.supported = properties.boolget("encoding.video_subregion", True)
         if properties.get("scaling.control") is not None:
             self.scaling_control = max(0, min(100, properties.intget("scaling.control", 0)))
         super().do_set_client_properties(properties)

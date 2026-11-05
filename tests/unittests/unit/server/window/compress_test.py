@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 from xpra.server.window import compress
 from xpra.server.window.compress import WindowSource
 from xpra.server.window.refresh import RefreshController
+from xpra.util.objects import typedict
 
 
 class CompressTest(unittest.TestCase):
@@ -348,6 +349,32 @@ class CompressTest(unittest.TestCase):
         size = (1024, 1024)
         self.assertEqual(source.get_transparent_encoding(*size, {"quality": 100}, "auto"), "webp")
         self.assertEqual(source.get_transparent_encoding(*size, {"quality": 80}, "auto"), "jpega")
+
+    def test_client_properties_preserve_render_size(self) -> None:
+        # the client only sends the properties that have changed:
+        source = self.make_source()
+        source.update_encoding_selection = Mock()
+        for k, v in {
+            "client_refresh_encodings": (), "full_frames_only": False,
+            "encodings": ("rgb24", ), "core_encodings": ("rgb24", ), "rgb_formats": ("BGRX", ),
+            "decoder_speed": typedict(), "full_csc_modes": typedict(), "_all_encoders": {}, "_encoders": {},
+        }.items():
+            setattr(source, k, v)
+        source.do_set_client_properties(typedict({"encoding.render-size": (640, 480)}))
+        self.assertEqual(source.client_render_size, (640, 480))
+        source.do_set_client_properties(typedict({"encoding.transparency": False}))
+        self.assertEqual(source.client_render_size, (640, 480))
+        source.do_set_client_properties(typedict({"encoding.render-size": (800, 600)}))
+        self.assertEqual(source.client_render_size, (800, 600))
+
+    def test_maximized_follows_window(self) -> None:
+        source = self.make_source()
+        source.maximized = False
+        source.window = SimpleNamespace(get_property=lambda name: {"maximized": True}[name])
+        source.reconfigure = Mock()
+        source._maximized_changed(source.window)
+        self.assertTrue(source.maximized)
+        source.reconfigure.assert_called_once_with(True)
 
 
 class EncodingPolicyWrapperTest(unittest.TestCase):
