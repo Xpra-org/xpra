@@ -8,6 +8,7 @@ from unittest.mock import Mock, patch
 
 from xpra.server.window import compress
 from xpra.server.window.compress import WindowSource
+from xpra.util.objects import typedict
 
 
 class CompressTest(unittest.TestCase):
@@ -68,6 +69,37 @@ class CompressTest(unittest.TestCase):
 
                 window.acknowledge_changes.assert_called_once_with()
                 self.assertEqual(ack_threads, [current_thread()])
+
+    def test_client_properties_preserve_render_size(self) -> None:
+        # the client only sends the properties that have changed:
+        source = object.__new__(WindowSource)
+        source.client_render_size = (0, 0)
+        source.client_bit_depth = 24
+        source.supports_transparency = True
+        source.is_tray = False
+        source.encoding = "auto"
+        source.update_encoding_selection = Mock()
+        for k, v in {
+            "client_refresh_encodings": (), "full_frames_only": False,
+            "encodings": ("rgb24", ), "core_encodings": ("rgb24", ), "rgb_formats": ("BGRX", ),
+            "decoder_speed": typedict(), "full_csc_modes": typedict(), "_all_encoders": {}, "_encoders": {},
+        }.items():
+            setattr(source, k, v)
+        source.do_set_client_properties(typedict({"encoding.render-size": (640, 480)}))
+        self.assertEqual(source.client_render_size, (640, 480))
+        source.do_set_client_properties(typedict({"encoding.transparency": False}))
+        self.assertEqual(source.client_render_size, (640, 480))
+        source.do_set_client_properties(typedict({"encoding.render-size": (800, 600)}))
+        self.assertEqual(source.client_render_size, (800, 600))
+
+    def test_maximized_follows_window(self) -> None:
+        source = object.__new__(WindowSource)
+        source.maximized = False
+        source.window = SimpleNamespace(get_property=lambda name: {"maximized": True}[name])
+        source.reconfigure = Mock()
+        source._maximized_changed(source.window)
+        self.assertTrue(source.maximized)
+        source.reconfigure.assert_called_once_with(True)
 
 
 if __name__ == "__main__":
