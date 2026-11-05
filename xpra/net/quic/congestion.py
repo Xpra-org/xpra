@@ -5,7 +5,7 @@
 
 from collections.abc import Iterable
 from time import monotonic
-from typing import Any
+from typing import Any, NamedTuple
 
 from aioquic.quic.congestion.base import register_congestion_control
 from aioquic.quic.congestion.reno import RenoCongestionControl
@@ -16,6 +16,62 @@ from xpra.log import Logger
 log = Logger("quic")
 
 CONGESTION_CONTROL_ALGORITHM = "xpra-reno"
+SAMPLE_WINDOW = 1.0
+SAMPLE_INTERVAL = 0.1
+MIN_SAMPLE_DURATION = 0.25
+
+
+class CongestionSample(NamedTuple):
+    start: float
+    end: float
+    packets_acked: int = 0
+    bytes_acked: int = 0
+    packets_lost: int = 0
+    bytes_lost: int = 0
+    rtt_samples: int = 0
+    rtt_total: float = 0.0
+
+
+def get_recent_info(samples: tuple[CongestionSample, ...], started: float | None,
+                    now: float, bytes_in_flight: int) -> dict[str, Any]:
+    # Buckets crossing the window boundary are retained, so the window has
+    # SAMPLE_INTERVAL precision. Reading never mutates the published samples.
+    samples = tuple(s for s in samples if s.end > now - SAMPLE_WINDOW)
+    duration = min(SAMPLE_WINDOW, max(0.0, now - started)) if samples and started is not None else 0.0
+    acked = sum(s.packets_acked for s in samples)
+    lost = sum(s.packets_lost for s in samples)
+    acked_bytes = sum(s.bytes_acked for s in samples)
+    info: dict[str, Any] = {
+        "window-ms": int(SAMPLE_WINDOW * 1000),
+        "duration-ms": int(duration * 1000),
+        "status": "idle" if not samples and bytes_in_flight == 0 else "insufficient",
+        "packets-acked": acked,
+        "bytes-acked": acked_bytes,
+        "packets-lost": lost,
+        "bytes-lost": sum(s.bytes_lost for s in samples),
+        "rtt-samples": sum(s.rtt_samples for s in samples),
+    }
+    if duration >= MIN_SAMPLE_DURATION and acked + lost >= 2:
+        info["status"] = "active"
+        # This is observed QUIC throughput, including retransmissions, and
+        # does not estimate link capacity when the application sends little data.
+        info["acked-bitrate"] = int(8 * acked_bytes / duration)
+        # Use resolved packets as the denominator: packets still in flight and
+        # expired packets have not been reported as either acknowledged or lost.
+        info["loss-fraction"] = lost / (acked + lost)
+    if duration >= MIN_SAMPLE_DURATION:
+        # Compare average RTT in the newer half of the window with the older
+        # half. A positive delta means RTT is increasing; units are milliseconds.
+        midpoint = now - duration / 2
+        older = tuple(s for s in samples if (s.start + s.end) / 2 < midpoint)
+        newer = tuple(s for s in samples if (s.start + s.end) / 2 >= midpoint)
+        older_count = sum(s.rtt_samples for s in older)
+        newer_count = sum(s.rtt_samples for s in newer)
+        if older_count and newer_count:
+            info["rtt-trend-ms"] = 1000 * (
+                sum(s.rtt_total for s in newer) / newer_count - sum(s.rtt_total for s in older) / older_count
+            )
+    return info
 
 
 class XpraRenoCongestionControl(RenoCongestionControl):
@@ -29,6 +85,9 @@ class XpraRenoCongestionControl(RenoCongestionControl):
     def __init__(self, *, max_datagram_size: int) -> None:
         super().__init__(max_datagram_size=max_datagram_size)
         self._last_log_time = 0.0
+        self._samples: tuple[CongestionSample, ...] = ()
+        self._sample_start: float | None = None
+        self._last_loss: float | None = None
         self._statistics: dict[str, Any] = {
             "algorithm": CONGESTION_CONTROL_ALGORITHM,
             "packets-sent": 0,
@@ -49,7 +108,36 @@ class XpraRenoCongestionControl(RenoCongestionControl):
         self._update_statistics({})
 
     def get_info(self) -> dict[str, Any]:
-        return self._statistics.copy()
+        stats, samples, started, last_loss = self._snapshot
+        now = monotonic()
+        info = stats.copy()
+        info["recent"] = get_recent_info(samples, started, now, stats["bytes-in-flight"])
+        if last_loss is not None:
+            info["last-loss-age-ms"] = max(0, int((now - last_loss) * 1000))
+        return info
+
+    def _record_sample(self, *, packets_acked=0, bytes_acked=0, packets_lost=0, bytes_lost=0, rtt: float | None = None) -> None:
+        # Use one local clock for all sampling and reads: aioquic callback times
+        # belong to its event loop and may use a different clock origin.
+        now = monotonic()
+        samples = tuple(s for s in self._samples if s.end > now - SAMPLE_WINDOW)
+        if not samples:
+            self._sample_start = now
+        if samples and now - samples[-1].start < SAMPLE_INTERVAL:
+            previous = samples[-1]
+            sample = CongestionSample(
+                previous.start, now,
+                previous.packets_acked + packets_acked, previous.bytes_acked + bytes_acked,
+                previous.packets_lost + packets_lost, previous.bytes_lost + bytes_lost,
+                previous.rtt_samples + int(rtt is not None), previous.rtt_total + (rtt or 0.0),
+            )
+            samples = samples[:-1]
+        else:
+            sample = CongestionSample(now, now, packets_acked, bytes_acked, packets_lost, bytes_lost,
+                                      int(rtt is not None), rtt or 0.0)
+        self._samples = samples + (sample,)
+        if packets_lost:
+            self._last_loss = now
 
     def _update_statistics(self, updates: dict[str, Any]) -> None:
         # Callbacks run on the asyncio thread. Publish a new, flat snapshot so
@@ -61,6 +149,9 @@ class XpraRenoCongestionControl(RenoCongestionControl):
         if self.ssthresh is not None:
             stats["slow-start-threshold"] = self.ssthresh
         self._statistics = stats
+        # Publish counters, immutable buckets and timestamps together. Readers
+        # can age the window during idle periods without touching asyncio state.
+        self._snapshot = stats, self._samples, self._sample_start, self._last_loss
 
     def _log_statistics(self, event: str, *, force=False) -> None:
         if not log.is_debug_enabled():
@@ -68,10 +159,11 @@ class XpraRenoCongestionControl(RenoCongestionControl):
         now = monotonic()
         if force or now - self._last_log_time >= 1:
             self._last_log_time = now
-            log("QUIC congestion %s %s: %s", self, event, self._statistics)
+            log("QUIC congestion %s %s: %s", self, event, self.get_info())
 
     def on_packet_sent(self, *, packet: QuicSentPacket) -> None:
         super().on_packet_sent(packet=packet)
+        self._record_sample()
         self._update_statistics({
             "packets-sent": self._statistics["packets-sent"] + 1,
             "bytes-sent": self._statistics["bytes-sent"] + packet.sent_bytes,
@@ -80,6 +172,7 @@ class XpraRenoCongestionControl(RenoCongestionControl):
 
     def on_packet_acked(self, *, now: float, packet: QuicSentPacket) -> None:
         super().on_packet_acked(now=now, packet=packet)
+        self._record_sample(packets_acked=1, bytes_acked=packet.sent_bytes)
         self._update_statistics({
             "packets-acked": self._statistics["packets-acked"] + 1,
             "bytes-acked": self._statistics["bytes-acked"] + packet.sent_bytes,
@@ -98,9 +191,12 @@ class XpraRenoCongestionControl(RenoCongestionControl):
     def on_packets_lost(self, *, now: float, packets: Iterable[QuicSentPacket]) -> None:
         packets = tuple(packets)
         super().on_packets_lost(now=now, packets=packets)
+        lost_bytes = sum(p.sent_bytes for p in packets)
+        if packets:
+            self._record_sample(packets_lost=len(packets), bytes_lost=lost_bytes)
         self._update_statistics({
             "packets-lost": self._statistics["packets-lost"] + len(packets),
-            "bytes-lost": self._statistics["bytes-lost"] + sum(p.sent_bytes for p in packets),
+            "bytes-lost": self._statistics["bytes-lost"] + lost_bytes,
             "loss-events": self._statistics["loss-events"] + int(bool(packets)),
         })
         self._log_statistics("lost", force=True)
@@ -114,6 +210,7 @@ class XpraRenoCongestionControl(RenoCongestionControl):
 
     def on_rtt_measurement(self, *, now: float, rtt: float) -> None:
         super().on_rtt_measurement(now=now, rtt=rtt)
+        self._record_sample(rtt=rtt)
         # These are the RTT samples passed to the controller, without ACK-delay
         # correction. Keep our own EWMA rather than advancing Reno's HyStart monitor.
         samples = self._statistics["rtt-samples"]
