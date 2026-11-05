@@ -24,6 +24,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, shellsub, osexpand, get_exec_env, get_saved_env_var
 from xpra.os_util import getuid, getgid, POSIX, OSX, LINUX
 from xpra.util.daemon import setuidgid
+from xpra.util.system import is_own_child
 from xpra.util.io import is_writable, pollwait, osclose, get_status_output
 from xpra.platform.displayfd import read_displayfd, parse_displayfd
 from xpra.scripts.display import X11_SOCKET_DIR, find_free_x11_display
@@ -492,7 +493,13 @@ def kill_xvfb(xvfb_pid: int) -> None:
     log = get_vfb_logger()
     log.info("killing xvfb with pid %s", xvfb_pid)
     try:
-        os.kill(xvfb_pid, signal.SIGTERM)
+        if POSIX and is_own_child(xvfb_pid) and os.getpgid(xvfb_pid) == xvfb_pid != os.getpgrp():
+            # the vfb leads its own process group (`-displayfd` mode uses `setpgrp`),
+            # so this also stops any processes started by a wrapper script:
+            log("killing process group %i", xvfb_pid)
+            os.killpg(xvfb_pid, signal.SIGTERM)
+        else:
+            os.kill(xvfb_pid, signal.SIGTERM)
     except OSError as e:
         log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
         log.info(" %s", e)

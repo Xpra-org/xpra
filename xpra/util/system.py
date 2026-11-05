@@ -65,6 +65,25 @@ def is_child_alive(proc: "Popen | None") -> bool:
     return proc is not None and proc.poll() is None
 
 
+def is_own_child(pid: int) -> bool:
+    """
+    A child that we have not reaped yet cannot have had its pid recycled,
+    so this tells us that `pid` still refers to the process we started.
+    Only implemented using `/proc`, returns False on other platforms.
+    """
+    try:
+        with open(f"/proc/{pid}/stat", "rb") as f:
+            stat = f.read()
+    except OSError:
+        return False
+    # the command name may contain spaces or parentheses, the ppid is the 2nd field after it:
+    fields = stat[stat.rfind(b")") + 2:].split()
+    try:
+        return int(fields[1]) == os.getpid()
+    except (IndexError, ValueError):
+        return False
+
+
 def no_idle(fn, *args, **kwargs) -> None:
     fn(*args, **kwargs)
 
