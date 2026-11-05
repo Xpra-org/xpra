@@ -273,6 +273,15 @@ class SecureWebsocketUpgradeTest(WebsocketUpgradeTest):
         # the server accepts the connection but never starts the TLS handshake:
         self.check_fails("no-tls", InitExit, "timed out", timeout=1)
 
+    @unittest.skipUnless(getattr(ssl, "HAS_ALPN", False), "ALPN is not supported")
+    def test_alpn(self) -> None:
+        context = self.get_server_ssl_context()
+        context.set_alpn_protocols(["http/1.1"])
+        with patch.object(self, "get_server_ssl_context", return_value=context):
+            conn = self.connect("upgrade")
+        self.assertEqual(conn._socket.selected_alpn_protocol(), "http/1.1")
+        self.assertEqual(self.servers[-1].sock.selected_alpn_protocol(), "http/1.1")
+
     # the other tests use the default connection timeout (20 seconds),
     # so `test_silent` and `test_partial` also verify that the SSL connection
     # does not wait past the upgrade deadline

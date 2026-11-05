@@ -10,9 +10,13 @@
   * [NVENC cleanup can abort the server when a client disconnects](https://github.com/Xpra-org/xpra/commit/f377755c7bfc42106b713dd6d6638a0c4fbb37fb)
   * [launcher connections and dialogs can stall with the GLib idle workaround](https://github.com/Xpra-org/xpra/commit/0b6433dc3ab8d50163dd2886bb7ed7fb13e9acce)
   * [grayscale video encoding fails to load the libyuv converter](https://github.com/Xpra-org/xpra/commit/312949fba936c2b3cc1d9d93b1a7a31a8a9dd0f7)
+  * [existing windows miss video codecs advertised after the client handshake](https://github.com/Xpra-org/xpra/commit/96fad69c73c98a2190c5f2a93a93774025c9f6b6)
+  * [cleaning can remove session files for a live X11 server using only an abstract socket](https://github.com/Xpra-org/xpra/commit/82075104eaae0f0db46dd45efe66bd5476a2cb6e)
+  * [desktop and monitor capabilities are read from the wrong namespace](https://github.com/Xpra-org/xpra/commit/2653fbceda1f8fba14bb9c74373bf558df6b66e8), [including RandR support](https://github.com/Xpra-org/xpra/commit/901068dc26ab4987aecc933a96b7d3c80e0c01a5)
 * 🖧 Network:
   * [SSH agent authentication fails when the server offers public-key authentication](https://github.com/Xpra-org/xpra/commit/1d387fc21e49a9f2a440f62e8f447075cf053158)
   * [connecting can miss a server socket that becomes ready during discovery](https://github.com/Xpra-org/xpra/commit/94876a45af59374eb11309d9d9626d7483774b4f)
+  * [WSS connections can be mistaken for native Xpra traffic on multi-protocol TLS sockets](https://github.com/Xpra-org/xpra/commit/dc58bad936b7fc79f46c4a27a72e71d06855c208)
 * 📋 Clipboard:
   * [pending clipboard requests are left waiting during cleanup](https://github.com/Xpra-org/xpra/commit/687fa8039c361931d0b76147a365c6c9e414a780)
   * [local and remote clipboard selection options are ignored until changed from the tray menu](https://github.com/Xpra-org/xpra/commit/417b160375efa39308f47a9105b6362ed97798fc)
@@ -24,6 +28,10 @@
   * [MS Windows GDI screenshots can fail with invalid image data](https://github.com/Xpra-org/xpra/commit/2e2a8d4b03efb0e68d808c1b3e12086603b8a5fe)
   * [read-only clients can resize windows because their fixed size constraints are malformed](https://github.com/Xpra-org/xpra/commit/f6a60cfced46b370f20ed0b7622f80e7e9e2c74a)
   * [audio forwarding is attempted after the audio subsystem query fails](https://github.com/Xpra-org/xpra/commit/3c9b596797342f022ca42659827d4f3e3a8a0092)
+  * [waiting for a Wayland display can consume a full CPU core](https://github.com/Xpra-org/xpra/commit/21ab4a32130bbc29aee7fbf4004111ae462bea52)
+  * [XI2 window event handlers fail to import](https://github.com/Xpra-org/xpra/commit/1b1729489e923e718c47989468810a1c67a46b63)
+  * [failed server startup can spin until the displayfd timeout](https://github.com/Xpra-org/xpra/commit/3bdc02c61505e331bfc4a8e10d7f0c5e94008990)
+  * [the launcher does not detect an installed server](https://github.com/Xpra-org/xpra/commit/aa9749be66af99c6fd53fab1f8fd0029b6576b47)
 
 ## [6.5.5] 2026-10-11
 * 🔧 Platforms, build and packaging:
