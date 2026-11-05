@@ -38,6 +38,7 @@ from xpra.net.tls.parsing import parse_ssl_verify_mode
 from xpra.net.aio.thread import get_threaded_loop
 from xpra.net.quic.connection import XpraQuicConnection, aioquic_version_info
 from xpra.net.quic.common import USER_AGENT, MAX_DATAGRAM_FRAME_SIZE, binary_headers
+from xpra.net.quic.congestion import CONGESTION_CONTROL_ALGORITHM
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envbool
 from xpra.log import Logger
@@ -304,6 +305,7 @@ def _make_quic_configuration(ssl_cert: str, ssl_key: str, ssl_key_password: str,
     configuration = QuicConfiguration(
         alpn_protocols=H3_ALPN,
         is_client=True,
+        congestion_control_algorithm=CONGESTION_CONTROL_ALGORITHM,
         max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,
     )
     configuration.verify_mode = parse_ssl_verify_mode(ssl_server_verify_mode)

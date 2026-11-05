@@ -19,6 +19,7 @@ from xpra.exit_codes import ExitCode
 from xpra.net.aio.thread import get_threaded_loop
 from xpra.net.bytestreams import Connection
 from xpra.net.quic.common import binary_headers, override_aioquic_logger
+from xpra.net.quic.congestion import get_congestion_control
 from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes
 from xpra.util.version import parse_version, vtrim
 from xpra.util.env import envbool
@@ -64,6 +65,8 @@ class XpraQuicConnection(Connection):
         self.socktype_wrapped = "quic"
         self.datagram = True
         self.connection: HttpConnection = connection
+        # HTTP streams on the same QUIC connection share this controller and its statistics.
+        self.congestion_control = get_congestion_control(getattr(connection, "_quic", None))
         self.read_queue: SimpleQueue[bytes] = SimpleQueue()
         # datagrams are independent records, they must never be mixed with the stream data,
         # until something handles them (see `datagram_received`), they are dropped:
@@ -76,6 +79,7 @@ class XpraQuicConnection(Connection):
         self.transmit: Callable[[], None] = transmit
         self.accepted: bool = False
         self.closed: bool = False
+        log("QUIC congestion controller for %s: %s", self, self.congestion_control)
 
     def __repr__(self):
         return f"XpraQuicConnection<{self.socktype}:{self.stream_id}>"
@@ -103,6 +107,8 @@ class XpraQuicConnection(Connection):
                 "max-stream-data": config.max_stream_data,
                 "server-name": config.server_name or "",
             }
+        if self.congestion_control:
+            qinfo["congestion"] = self.congestion_control.get_info()
         info["quic"] = qinfo
         return info
 

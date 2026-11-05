@@ -21,6 +21,7 @@ from aioquic.quic.events import DatagramFrameReceived, ProtocolNegotiated, QuicE
 
 from xpra.net.http.common import check_origin
 from xpra.net.quic.common import MAX_DATAGRAM_FRAME_SIZE
+from xpra.net.quic.congestion import CONGESTION_CONTROL_ALGORITHM
 from xpra.net.quic.http import HttpRequestHandler
 from xpra.net.quic.websocket import ServerWebSocketConnection
 from xpra.net.quic.webtransport import ServerWebTransportConnection
@@ -191,6 +192,7 @@ async def do_listen(sock, xpra_server, cert: str, key: str | None, retry: bool):
     configuration = QuicConfiguration(
         alpn_protocols=H3_ALPN + H0_ALPN + ["siduck"],
         is_client=False,
+        congestion_control_algorithm=CONGESTION_CONTROL_ALGORITHM,
         max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,
         quic_logger=quic_logger,
     )
