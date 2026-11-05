@@ -28,6 +28,7 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     oudated `raspbian` workaround
     don't start Xorg if its config file is missing
     failure to build due to missing `libfakeXinerama` dependency in some RPM builds
+    RHEL 10 and clones must use weston+Xwayland as vfb command
   * 📦 RPM:
     RPM dependency fixes
     prevent version conflicts
@@ -243,7 +244,7 @@ xpra (5.1.7-1) UNRELEASED; urgency=low
     accept SVG files starting with a doctype
     missing session icon for default desktop sessions
 
- -- Antoine Martin <antoine@xpra.org>  Wed, 04 Nov 2026 23:34:35 +0700
+ -- Antoine Martin <antoine@xpra.org>  Thu, 05 Nov 2026 13:13:22 +0700
 
 xpra (5.1.6-1) UNRELEASED; urgency=low
   * Platforms, build and packaging:

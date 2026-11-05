@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.7] 2026-11-04
+## [5.1.7] 2026-11-05
 * 🔧 Platforms, build and packaging:
   * [honour `--root ROOT` when installing](https://github.com/Xpra-org/xpra/commit/17226720ee22ad7f8cade2f1284557459b3d4b02)
   * [better install prefix detection](https://github.com/Xpra-org/xpra/commit/9a08d5bbdd2c671fc99b0296a717340b4c2d2863)
@@ -30,6 +30,7 @@
   * [oudated `raspbian` workaround](https://github.com/Xpra-org/xpra/commit/aac1590c63db9320323a5c9b7116ab6ea13961a2)
   * [don't start Xorg if its config file is missing](https://github.com/Xpra-org/xpra/commit/7954e7496e1d40da17b4e39a64bd6cfa2d79735d)
   * [failure to build due to missing `libfakeXinerama` dependency in some RPM builds](https://github.com/Xpra-org/xpra/commit/d81b7a87ef3cb1ece77b26cad074daf3d6d66ebb)
+  * [RHEL 10 and clones must use weston+Xwayland as vfb command](https://github.com/Xpra-org/xpra/commit/a9942da4edff7a87ad98f4ff4aac231a2449fa12)
 * 📦 RPM:
   * [RPM dependency fixes](https://github.com/Xpra-org/xpra/commit/79cde9dd26fde94c88671dc9281dfea19f5b5dd3)
   * [prevent version conflicts](https://github.com/Xpra-org/xpra/commit/9c05a16fcf8f1efe9aa3126cda2836a24e5f9853)

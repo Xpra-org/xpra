@@ -843,7 +843,7 @@ fi
 
 
 %changelog
-* Wed Nov 04 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
+* Thu Nov 05 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
 - 🔧 Platforms, build and packaging:
    honour `--root ROOT` when installing
    better install prefix detection
@@ -873,6 +873,7 @@ fi
    oudated `raspbian` workaround
    don't start Xorg if its config file is missing
    failure to build due to missing `libfakeXinerama` dependency in some RPM builds
+   RHEL 10 and clones must use weston+Xwayland as vfb command
 - 📦 RPM:
    RPM dependency fixes
    prevent version conflicts
