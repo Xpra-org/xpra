@@ -1,11 +1,15 @@
 # Changelog
 
-## [6.5.6] 2026-10-20
+## [6.5.6] 2026-11-05
+* 🔧 Platforms, build and packaging:
+  * [RPM updates: `libyuv 0.0.1974`, `nasm 3.02`, `xpra-openh264 2.7.0`, `pygobject 3.44.2` (RHEL 8 only), `aioquic 1.7.0`, `pycairo 1.29.2`, `Cython 3.3.1`, `dbus-python 1.5.0`, `python3-gobject 3.58.1`, `packaging 26.3`, `pillow 13.0.0`, `pip 26.2.1` , `pybind11 3.1.0`, `pylsqpack 1.0.0`, `pynvml 13.615.71`, `setuptools 84.0.0`, `pytorch vision 0.29.1`, `pytorch-cuda 2.14.1`, `wheel 0.48.0`](https://github.com/Xpra-org/xpra/commit/190235b2fdf2240f8e16b7a0749af181584c52b3)
+  * [MS Windows printing helper commands crash when choosing a printer automatically](https://github.com/Xpra-org/xpra/commit/ee6fbef1a9681b7490e1403dea6b46f241259445)
 * Major:
   * [programmatic X11 window moves can use incorrect coordinates](https://github.com/Xpra-org/xpra/commit/fe087ac89233ee09b6d6f88de2d660977ce0eda4)
   * [recording a session can alter its keyboard layout and repeat settings](https://github.com/Xpra-org/xpra/commit/fa159ae16dd8979553bcecc05ca939d259dede2f)
   * [NVENC cleanup can abort the server when a client disconnects](https://github.com/Xpra-org/xpra/commit/f377755c7bfc42106b713dd6d6638a0c4fbb37fb)
   * [launcher connections and dialogs can stall with the GLib idle workaround](https://github.com/Xpra-org/xpra/commit/0b6433dc3ab8d50163dd2886bb7ed7fb13e9acce)
+  * [grayscale video encoding fails to load the libyuv converter](https://github.com/Xpra-org/xpra/commit/312949fba936c2b3cc1d9d93b1a7a31a8a9dd0f7)
 * 🖧 Network:
   * [SSH agent authentication fails when the server offers public-key authentication](https://github.com/Xpra-org/xpra/commit/1d387fc21e49a9f2a440f62e8f447075cf053158)
   * [connecting can miss a server socket that becomes ready during discovery](https://github.com/Xpra-org/xpra/commit/94876a45af59374eb11309d9d9626d7483774b4f)
@@ -19,9 +23,7 @@
   * [default PulseAudio monitor selection crashes on Python 3](https://github.com/Xpra-org/xpra/commit/cd6190f46449279d927ab184f9166e17300e11e2)
   * [MS Windows GDI screenshots can fail with invalid image data](https://github.com/Xpra-org/xpra/commit/2e2a8d4b03efb0e68d808c1b3e12086603b8a5fe)
   * [read-only clients can resize windows because their fixed size constraints are malformed](https://github.com/Xpra-org/xpra/commit/f6a60cfced46b370f20ed0b7622f80e7e9e2c74a)
-  * [grayscale video encoding fails to load the libyuv converter](https://github.com/Xpra-org/xpra/commit/312949fba936c2b3cc1d9d93b1a7a31a8a9dd0f7)
   * [audio forwarding is attempted after the audio subsystem query fails](https://github.com/Xpra-org/xpra/commit/3c9b596797342f022ca42659827d4f3e3a8a0092)
-  * [MS Windows printing helper commands crash when choosing a printer automatically](https://github.com/Xpra-org/xpra/commit/ee6fbef1a9681b7490e1403dea6b46f241259445)
 
 ## [6.5.5] 2026-10-11
 * 🔧 Platforms, build and packaging:
