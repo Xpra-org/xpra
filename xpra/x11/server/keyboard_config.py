@@ -551,7 +551,7 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def update_keyval_mappings(self) -> None:
         self.keyval_mappings = get_keyval_mappings()
-        self.groups = len(set(group for group_mapping in self.keyval_mappings.values() for group in group_mapping)) or 1
+        self.groups = len({group for group_mapping in self.keyval_mappings.values() for group in group_mapping}) or 1
 
     def keys_changed(self) -> None:
         """
@@ -749,6 +749,8 @@ class KeyboardConfig(KeyboardConfigBase):
                     # and must not switch layout group
                     keysyms = self.keycode_mappings.get(keycode, ())
                     if keysyms and len(set(filter(None, keysyms))) <= 1:
+                        kml("keyval %#x is the only keysym of keycode %i, keeping group %i and the modifiers",
+                            kv, keycode, group)
                         return keycode, group
                     apply_level(sublevel)
                     return keycode, rgroup
