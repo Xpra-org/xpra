@@ -22,14 +22,14 @@ def wait_for_wayland_display(display_name: str = "", int timeout = 10) -> None:
     if display_name:
         bstr = display_name.encode("latin1")
         name = bstr
-    t = 100
+    # start polling quickly, then back off to at most 100ms between attempts:
+    cdef int t = 5
     cdef double start = monotonic()
     while (monotonic() - start) < timeout:
         d = wl_display_connect(name)
         if d is not NULL:
             wl_display_disconnect(d)
             return
-        if t>0:
-            sleep(t/1000)
-            t = t//2
+        sleep(t/1000)
+        t = min(100, t*2)
     raise RuntimeError(f"could not connect to wayland display {display_name!r} after {timeout} seconds")
