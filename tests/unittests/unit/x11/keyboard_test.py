@@ -159,6 +159,78 @@ class TestX11Keyboard(ServerTestUtil):
             produced = keysym_produced(keysym, client_keycode, group)
             assert produced == keysym, f"expected {keysym!r} but the server would produce {produced!r}"
 
+    def test_second_group_keysyms(self):
+        # see #4511: the keysyms of a keycode list its groups one after the other, each one as wide as its key type,
+        # so with two groups a letter has `c C Cyrillic_es Cyrillic_ES` where `de` has `q Q at Greek_OMEGA`,
+        # and the keysyms of the second group were sent as `AltGr` combinations of the first group
+        from xpra.x11.xkbhelper import do_set_keymap, get_keyval_mappings, canonical_keysym
+        from xpra.x11.server.keyboard_config import KeyboardConfig
+        from xpra.x11.bindings.keyboard import X11KeyboardBindings
+        X11Keyboard = X11KeyboardBindings()
+        for layout, keysyms in (
+            ("us,ru", (("c", 0), ("C", 0), ("Cyrillic_es", 1), ("Cyrillic_ES", 1), ("period", 1), ("comma", 1),
+                       # the client may not tell us which group it is using:
+                       ("Cyrillic_yu", 0))),
+            ("ru,us", (("Cyrillic_es", 0), ("c", 1), ("C", 1), ("at", 1))),
+            ("us,ua", (("Cyrillic_sha", 1), ("Cyrillic_SHCHA", 1), ("Ukrainian_i", 1))),
+            # `AltGr` in the second group, and `U1E9E` which is also found on a `Caps_Lock` level:
+            ("us,de", (("at", 1), ("braceleft", 1), ("questiondown", 1), ("U1E9E", 1))),
+        ):
+            do_set_keymap(layout, "", "", {})
+            keyval_mappings = get_keyval_mappings()
+            config = KeyboardConfig()
+            config.update_keycode_mappings()
+            config.update_keyval_mappings()
+            # so that `mod5` can be toggled to reach the `AltGr` levels:
+            config.compute_modifiers()
+            for keysym, group in keysyms:
+                keyval = X11Keyboard.parse_keysym(keysym)
+                if keyval not in keyval_mappings:
+                    raise unittest.SkipTest(f"no {keysym!r} in the {layout!r} keymap")
+                modifiers: list[str] = []
+                config.pressed_translation = {}
+                keycode, rgroup = config.get_keycode(0, keysym, True, modifiers, keyval, "", group)
+                mode = any(set(config.keynames_for_mod.get(mod, ())) & {"ISO_Level3_Shift", "Mode_switch"}
+                           for mod in modifiers)
+                level = int("shift" in modifiers) + 2 * int(mode)
+                log("%s: %r in group %i: keycode=%i, group=%i, modifiers=%s, level=%i",
+                    layout, keysym, group, keycode, rgroup, modifiers, level)
+                entries = keyval_mappings[keyval].get(rgroup, ())
+                assert (keycode, level) in entries, \
+                    f"{layout}: {keysym!r} sent as keycode {keycode} in group {rgroup} with {modifiers}, " \
+                    f"but only {keyval_mappings[keyval]} produce it"
+
+            # keys which only have one keysym must keep the modifiers held and the client's group,
+            # ie: `Shift+Left` selects text, and `Page_Up` does not switch layout:
+            for keysym, group, held in (
+                ("Left", 0, ["shift"]), ("Left", 1, ["shift", "control"]),
+                ("Page_Up", 1, ["shift"]), ("Control_L", 1, ["shift", "control"]),
+            ):
+                modifiers = list(held)
+                config.pressed_translation = {}
+                keyval = X11Keyboard.parse_keysym(keysym)
+                keycode, rgroup = config.get_keycode(0, keysym, True, modifiers, keyval, "", group)
+                assert canonical_keysym(keysym) in config.keycode_mappings.get(keycode, ()), \
+                    f"{layout}: {keysym!r} sent as keycode {keycode}"
+                assert sorted(modifiers) == sorted(held), f"{layout}: {held} changed to {modifiers} for {keysym!r}"
+                assert rgroup == group, f"{layout}: {keysym!r} switched from group {group} to {rgroup}"
+
+        # the keypad keys only have one group, so they must be found as with a single group layout,
+        # ie: `Shift+NumLock` + `KP_Decimal` must not become `KP_Delete`:
+        held = ["shift", "mod2"]
+        found = {}
+        for layout in ("us", "us,ru"):
+            do_set_keymap(layout, "", "", {})
+            config = KeyboardConfig()
+            config.update_keycode_mappings()
+            config.update_keyval_mappings()
+            config.compute_modifiers()
+            modifiers = list(held)
+            config.pressed_translation = {}
+            keyval = X11Keyboard.parse_keysym("KP_Decimal")
+            found[layout] = config.get_keycode(0, "KP_Decimal", True, modifiers, keyval, "", 0), sorted(modifiers)
+        assert found["us,ru"] == found["us"], f"keypad lookup differs with two groups: {found}"
+
     def test_keyval_group(self):
         # the last resort keyval lookup should honour the group the client sent,
         # and set the modifiers needed to reach the level the keysym is at

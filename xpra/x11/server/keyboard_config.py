@@ -104,6 +104,7 @@ class KeyboardConfig(KeyboardConfigBase):
         self.modifier_client_keycodes: dict[str, list] = {}
         self.keycode_mappings: dict[int, list[str]] = {}
         self.keyval_mappings = {}
+        self.groups = 1
         # keycodes mapped by `allocate_keycode`, least recently used first:
         self.dynamic_keycodes: dict[int, str] = {}
 
@@ -550,6 +551,7 @@ class KeyboardConfig(KeyboardConfigBase):
 
     def update_keyval_mappings(self) -> None:
         self.keyval_mappings = get_keyval_mappings()
+        self.groups = len(set(group for group_mapping in self.keyval_mappings.values() for group in group_mapping)) or 1
 
     def keys_changed(self) -> None:
         """
@@ -715,6 +717,54 @@ class KeyboardConfig(KeyboardConfigBase):
             # `mode` is harder to toggle than `shift` - see `get_levels`
             return int(bool(sublevel & 1) != shift) + 2 * int(bool(sublevel & 2) != mode)
 
+        def find_keyval_keycode(kv: int) -> tuple[int, int]:
+            rgroup = group
+            # `apply_level` can only reach the first four levels of a group, using `shift` and `mode`:
+            group_mapping = {
+                kgroup: [entry for entry in entries if entry[1] < 4]
+                for kgroup, entries in self.keyval_mappings.get(kv, {}).items()
+            }
+            if any(group_mapping.values()):
+                # this keyval was found!
+                # try to preserve the group:
+                entries = group_mapping.get(group, ())
+                if not entries:
+                    # this keysym is not available in the client's group,
+                    # use the lowest group that does have it:
+                    # (the keycode is usually the same in every group,
+                    # so what we are really choosing here is the group to switch to)
+                    for kgroup in sorted(group_mapping):
+                        if group_mapping[kgroup]:
+                            entries = group_mapping[kgroup]
+                            rgroup = kgroup
+                            break
+                if entries:
+                    # of the keys which can produce this keysym in this group,
+                    # use the one needing the fewest modifier changes:
+                    keycode, sublevel = min(entries, key=lambda entry: level_cost(entry[1]))
+                    kml("keyval %#x found at level %i of keycode %i in group %i",
+                        kv, sublevel, keycode, rgroup)
+                    # like the core keymap lookup below, leave the modifiers and the group alone
+                    # for keys with only one keysym, ie: `Shift+Page_Up` must keep `Shift`,
+                    # and must not switch layout group
+                    keysyms = self.keycode_mappings.get(keycode, ())
+                    if keysyms and len(set(filter(None, keysyms))) <= 1:
+                        return keycode, group
+                    apply_level(sublevel)
+                    return keycode, rgroup
+            return -1, rgroup
+
+        if self.groups > 1 and not keyname.startswith("KP_"):
+            # the keysyms of each keycode list the groups one after the other, each one as wide as the key type,
+            # ie: `c C Cyrillic_es Cyrillic_ES` with `us,ru` but `q Q at Greek_OMEGA` with `de`,
+            # so with more than one group, the indexes recorded in `keycode_translation`
+            # do not match the `group * 4 + mode * 2 + shift` levels from `get_levels`,
+            # use the group and level from the XKB keymap instead
+            # (but not for the keypad: its `NumLock` levels are only handled by the lookup below)
+            keycode, rgroup = find_keyval_keycode(X11Keyboard.parse_keysym(keyname))
+            if keycode >= 0:
+                return keycode, rgroup
+
         levels = get_levels(bool(mode), shift, bool(group))
         level0 = levels[0]
         kml("will try levels: %s", levels)
@@ -756,27 +806,7 @@ class KeyboardConfig(KeyboardConfigBase):
         # noinspection PyChainedComparisons
         if keycode < 0 and keyval > 0:
             # last resort, find using the keyval:
-            if group_mapping := self.keyval_mappings.get(keyval, {}):
-                # this keyval was found!
-                # try to preserve the group:
-                entries = group_mapping.get(group, ())
-                if not entries:
-                    # this keysym is not available in the client's group,
-                    # use the lowest group that does have it:
-                    # (the keycode is usually the same in every group,
-                    # so what we are really choosing here is the group to switch to)
-                    for kgroup in sorted(group_mapping):
-                        if group_mapping[kgroup]:
-                            entries = group_mapping[kgroup]
-                            rgroup = kgroup
-                            break
-                if entries:
-                    # of the keys which can produce this keysym in this group,
-                    # use the one needing the fewest modifier changes:
-                    keycode, sublevel = min(entries, key=lambda entry: level_cost(entry[1]))
-                    kml("keyval %#x found at level %i of keycode %i in group %i",
-                        keyval, sublevel, keycode, rgroup)
-                    apply_level(sublevel)
+            keycode, rgroup = find_keyval_keycode(keyval)
         return keycode, rgroup
 
     def get_current_mask(self) -> list[str]:
