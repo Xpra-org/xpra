@@ -781,7 +781,8 @@ def set_modifiers(modifiers: dict[str, Iterable[str]]) -> None:
             return
         log("set_modifiers %s failed, retrying one more at a time", instructions)
         count = len(instructions)
-        for i in range(1, count):
+        # include the full list, so the last instruction can also be found to be the problematic one:
+        for i in range(1, count + 1):
             subset = instructions[:i]
             log("set_modifiers testing with [:%s]=%s", i, subset)
             err = apply_xmodmap(subset)

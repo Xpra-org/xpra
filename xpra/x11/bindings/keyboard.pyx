@@ -836,6 +836,16 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
         for i in range(0, keymap.max_keypermod):
             keycode[modifier*keymap.max_keypermod+i] = 0
 
+    cdef int keycode_modifier(self, XModifierKeymap* keymap, KeyCode keycode) noexcept:
+        # the modifier this keycode is already assigned to, or -1
+        if keymap==NULL:
+            return -1
+        cdef int i
+        for i in range(8 * keymap.max_keypermod):
+            if keymap.modifiermap[i]==keycode:
+                return i // keymap.max_keypermod
+        return -1
+
     cdef int xmodmap_addmodifier(self, int modifier, keysyms: Iterable[str]):
         self.context_check("xmodmap_addmodifier")
         cdef KeyCode keycode
@@ -855,6 +865,15 @@ cdef class X11KeyboardBindingsInstance(X11CoreBindingsInstance):
                 for k in keycodes:
                     if k!=0:
                         keycode = k
+                        # `KeysymToKeycodes` searches every group, so with `us,de` keycode 108
+                        # is found for both `Alt_R` and `ISO_Level3_Shift`,
+                        # but X11 rejects the whole modifier map if a keycode is in more than one modifier:
+                        # keep the first assignment, as XKB does - see #5125
+                        other = self.keycode_modifier(keymap, keycode)
+                        if other>=0 and other!=modifier:
+                            log("add modifier: keycode=%s for keysym=%s is already used by modifier %s, not adding it to %s",
+                                k, keysym_str, other, modifier)
+                            continue
                         keymap = XInsertModifiermapEntry(keymap, keycode, modifier)
                         if keymap!=NULL:
                             self.set_work_keymap(keymap)
