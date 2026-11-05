@@ -250,7 +250,7 @@ class WindowSource(WindowIconSource):
             #ClientConnection sets defaults with the client's scaling.control value
             self.scaling_control = default_encoding_options.intget("scaling.control", 1)
         self.scaling = None
-        self.maximized : bool = False          #set by the client!
+        self.maximized : bool = not self.is_tray and bool(window.get("maximized"))
         self.iconic : bool = False
         self.window_signal_handlers = []
         #watch for changes to properties that are used to derive the content-type:
@@ -264,6 +264,9 @@ class WindowSource(WindowIconSource):
             self.window_signal_handlers.append(sid)
         if "fullscreen" in window.get_dynamic_property_names():
             sid = window.connect("notify::fullscreen", self._fullscreen_changed)
+            self.window_signal_handlers.append(sid)
+        if "maximized" in window.get_dynamic_property_names():
+            sid = window.connect("notify::maximized", self._maximized_changed)
             self.window_signal_handlers.append(sid)
         if "children" in window.get_internal_property_names():
             #we just copy the value to an attribute of window-source,
@@ -723,6 +726,12 @@ class WindowSource(WindowIconSource):
         self.reconfigure(True)
         return True
 
+    def _maximized_changed(self, _window, *_args) -> bool:
+        self.maximized = bool(self.window.get_property("maximized"))
+        log("window maximized state changed: %s", self.maximized)
+        self.reconfigure(True)
+        return True
+
     def _iconic_changed(self, _window, *_args) -> bool:
         self.iconic = self.window.get_property("iconic")
         if self.iconic:
@@ -783,8 +792,7 @@ class WindowSource(WindowIconSource):
             self.do_set_client_properties(properties)
 
     def do_set_client_properties(self, properties : typedict) -> None:
-        self.maximized = properties.boolget("maximized", False)
-        self.client_render_size = properties.intpair("encoding.render-size")
+        self.client_render_size = properties.intpair("encoding.render-size", self.client_render_size)
         self.client_bit_depth = properties.intget("bit-depth", self.client_bit_depth)
         self.client_refresh_encodings = properties.strtupleget("encoding.auto_refresh_encodings", self.client_refresh_encodings)
         self.full_frames_only = self.is_tray or properties.boolget("encoding.full_frames_only", self.full_frames_only)
