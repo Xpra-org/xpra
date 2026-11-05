@@ -39,6 +39,7 @@ from xpra.net.aio.thread import get_threaded_loop
 from xpra.net.quic.connection import XpraQuicConnection, aioquic_version_info
 from xpra.net.quic.common import USER_AGENT, MAX_DATAGRAM_FRAME_SIZE, binary_headers
 from xpra.net.quic.congestion import CONGESTION_CONTROL_ALGORITHM
+from xpra.net.quic.protocol import XpraQuicConnectionProtocol
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envbool
 from xpra.log import Logger
@@ -155,7 +156,7 @@ class ClientWebTransportConnection(XpraQuicConnection):
         super().http_event_received(event)
 
 
-class WebTransportClient(QuicConnectionProtocol):
+class WebTransportClient(XpraQuicConnectionProtocol):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # WebTransport requires H3 with enable_webtransport=True
@@ -190,7 +191,7 @@ class WebTransportClient(QuicConnectionProtocol):
             log("WebTransportClient: no session for %s", event)
 
 
-class WebSocketClient(QuicConnectionProtocol):
+class WebSocketClient(XpraQuicConnectionProtocol):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._http: HttpConnection | None = None

@@ -6,7 +6,6 @@
 import asyncio
 from collections.abc import Callable
 
-from aioquic.asyncio import QuicConnectionProtocol
 from aioquic.asyncio.server import QuicServer
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.logger import QuicLogger
@@ -22,6 +21,7 @@ from aioquic.quic.events import DatagramFrameReceived, ProtocolNegotiated, QuicE
 from xpra.net.http.common import check_origin
 from xpra.net.quic.common import MAX_DATAGRAM_FRAME_SIZE
 from xpra.net.quic.congestion import CONGESTION_CONTROL_ALGORITHM
+from xpra.net.quic.protocol import XpraQuicConnectionProtocol
 from xpra.net.quic.http import HttpRequestHandler
 from xpra.net.quic.websocket import ServerWebSocketConnection
 from xpra.net.quic.webtransport import ServerWebTransportConnection
@@ -42,7 +42,7 @@ HttpConnection = H0Connection | H3Connection
 Handler = HttpRequestHandler | ServerWebSocketConnection | ServerWebTransportConnection
 
 
-class HttpServerProtocol(QuicConnectionProtocol):
+class HttpServerProtocol(XpraQuicConnectionProtocol):
     def __init__(self, *args, **kwargs):
         self._xpra_server = kwargs.pop("xpra_server", None)
         log(f"HttpServerProtocol({args}, {kwargs}) xpra-server={self._xpra_server}")

@@ -4,9 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import asyncio
 import unittest
 from types import SimpleNamespace
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 try:
     import aioquic
@@ -125,6 +126,156 @@ class QuicCongestionTest(unittest.TestCase):
         info["recent"]["status"] = "changed"
         self.assertEqual(first.get_info()["quic"]["congestion"]["bytes-in-flight"], 1200)
         self.assertEqual(first.get_info()["quic"]["congestion"]["recent"]["status"], "insufficient")
+
+    def test_pending_stream_ranges(self):
+        from aioquic.quic.packet_builder import QuicDeliveryState
+        from aioquic.quic.stream import QuicStream
+        from xpra.net.quic.congestion import get_pending_stream_info
+        quic = self.make_quic()
+        stream = QuicStream(stream_id=0)
+        quic._streams[0] = stream
+        sender = stream.sender
+
+        def check(new_bytes, retransmit_bytes):
+            self.assertEqual(get_pending_stream_info(quic), {
+                "pending-new-bytes": new_bytes,
+                "pending-retransmit-bytes": retransmit_bytes,
+                "pending-bytes": new_bytes + retransmit_bytes,
+            })
+
+        check(0, 0)
+        sender.write(bytes(1000))
+        check(1000, 0)
+        sender.get_frame(400)
+        check(600, 0)  # Bytes already in flight are excluded.
+        sender.on_data_delivery(QuicDeliveryState.LOST, 0, 400, False)
+        check(600, 400)  # aioquic merges these into one range crossing highest_offset.
+        sender.get_frame(250)
+        check(600, 150)
+        sender.get_frame(300)  # Retransmission and first transmission in the same frame.
+        check(450, 0)
+        sender.on_data_delivery(QuicDeliveryState.LOST, 250, 550, False)
+        sender.on_data_delivery(QuicDeliveryState.LOST, 250, 550, False)
+        check(450, 300)  # Repeated loss notifications do not count a byte twice.
+        sender.get_frame(750)
+        check(0, 0)
+        sender.on_data_delivery(QuicDeliveryState.ACKED, 0, 1000, False)
+        check(0, 0)
+
+    def test_pending_stream_scope(self):
+        from aioquic.quic.connection import QuicConnectionState
+        from aioquic.quic.packet_builder import QuicDeliveryState
+        from aioquic.quic.stream import QuicStream
+        from xpra.net.quic.congestion import get_pending_stream_info
+        quic = self.make_quic()
+        for stream_id, size in ((0, 1000), (4, 500), (8, 200)):
+            stream = QuicStream(stream_id=stream_id)
+            stream.sender.write(bytes(size))
+            quic._streams[stream_id] = stream
+        sender = quic._streams[4].sender
+        sender.get_frame(100)
+        sender.on_data_delivery(QuicDeliveryState.LOST, 0, 100, False)
+        quic._streams[8].sender.reset(0)  # Reset senders retain their pending ranges.
+        quic.send_datagram_frame(bytes(300))  # Unreliable datagrams are not stream backlog.
+        expected = {"pending-new-bytes": 1400, "pending-retransmit-bytes": 100, "pending-bytes": 1500}
+        self.assertEqual(get_pending_stream_info(quic), expected)
+        quic.close()
+        self.assertEqual(get_pending_stream_info(quic)["pending-bytes"], 0)
+        quic._close_pending = False
+        for state in (QuicConnectionState.CLOSING, QuicConnectionState.DRAINING, QuicConnectionState.TERMINATED):
+            with self.subTest(state=state):
+                quic._state = state
+                self.assertEqual(get_pending_stream_info(quic)["pending-bytes"], 0)
+
+    def test_pending_connection_snapshots(self):
+        from aioquic.quic.stream import QuicStream
+        from xpra.net.quic.connection import XpraQuicConnection
+        quic = self.make_quic()
+        http = SimpleNamespace(_quic=quic)
+        first = XpraQuicConnection(http, 0, lambda: None, "localhost", 443)
+        shared = XpraQuicConnection(http, 4, lambda: None, "localhost", 443)
+        other = XpraQuicConnection(SimpleNamespace(_quic=self.make_quic()), 0, lambda: None, "localhost", 443)
+        before = first.get_info()["quic"]["congestion"]
+        stream = QuicStream(stream_id=0)
+        quic._streams[0] = stream
+        stream.sender.write(bytes(1000))
+        first.congestion_control.update_pending_streams(quic)
+        stream.sender.get_frame(400)
+        # get_info() must not inspect live asyncio state, even after it changes.
+        self.assertEqual(shared.get_info()["quic"]["congestion"]["pending-new-bytes"], 1000)
+        self.assertEqual(before["pending-bytes"], 0)
+        info = shared.get_info()["quic"]["congestion"]
+        info["pending-bytes"] = -1
+        self.assertEqual(first.get_info()["quic"]["congestion"]["pending-bytes"], 1000)
+        self.assertEqual(other.get_info()["quic"]["congestion"]["pending-bytes"], 0)
+        first.congestion_control.update_pending_streams(quic)
+        self.assertEqual(shared.get_info()["quic"]["congestion"]["pending-bytes"], 600)
+
+    def test_protocol_pending_updates(self):
+        from aioquic.quic.packet_builder import QuicDeliveryState
+        from xpra.net.quic.client import WebSocketClient, WebTransportClient
+        from xpra.net.quic.congestion import get_congestion_control
+        from xpra.net.quic.listener import HttpServerProtocol
+
+        async def check_protocols():
+            for protocol_class in (WebSocketClient, WebTransportClient, HttpServerProtocol):
+                with self.subTest(protocol=protocol_class.__name__):
+                    quic = self.make_quic()
+                    quic.configuration.alpn_protocols = ["h3"]
+                    quic.connect(("127.0.0.1", 443), now=asyncio.get_running_loop().time())
+                    protocol = protocol_class(quic)
+                    protocol.connection_made(MagicMock())
+                    control = get_congestion_control(quic)
+                    try:
+                        protocol.transmit()
+                        baseline = control.get_info()["pending-new-bytes"]
+                        stream_id = quic.get_next_available_stream_id()
+                        quic.send_stream_data(stream_id, bytes(1000))
+                        protocol.transmit()
+                        self.assertEqual(control.get_info()["pending-new-bytes"], baseline + 1000)
+                        # No handshake response yet: stream bytes stay queued.
+                        sender = quic._streams[stream_id].sender
+                        sender.get_frame(400)
+                        sender.on_data_delivery(QuicDeliveryState.LOST, 0, 400, False)
+                        protocol.transmit()  # No new application write is needed.
+                        info = control.get_info()
+                        self.assertEqual(info["pending-new-bytes"], baseline + 600)
+                        self.assertEqual(info["pending-retransmit-bytes"], 400)
+                        quic.close()
+                        protocol.transmit()
+                        self.assertEqual(control.get_info()["pending-bytes"], 0)
+                    finally:
+                        if protocol._timer:
+                            protocol._timer.cancel()
+
+        asyncio.run(check_protocols())
+
+    def test_pending_debug_logging(self):
+        from aioquic.quic.stream import QuicStream
+        from xpra.net.quic.congestion import get_congestion_control
+        quic = self.make_quic()
+        control = get_congestion_control(quic)
+        stream = QuicStream(stream_id=0)
+        quic._streams[0] = stream
+        stream.sender.write(bytes(1000))
+        with patch("xpra.net.quic.congestion.log") as log, patch("xpra.net.quic.congestion.monotonic", return_value=10) as clock:
+            log.is_debug_enabled.return_value = False
+            control.update_pending_streams(quic)
+            log.assert_not_called()
+            log.is_debug_enabled.return_value = True
+            control.update_pending_streams(quic)
+            self.assertEqual(log.call_count, 1)
+            self.assertEqual(log.call_args.args[-1], {
+                "pending-new-bytes": 1000, "pending-retransmit-bytes": 0, "pending-bytes": 1000,
+            })
+            stream.sender.get_frame(1000)
+            clock.return_value = 10.5
+            control.update_pending_streams(quic)
+            self.assertEqual(log.call_count, 1)
+            clock.return_value = 11
+            control.update_pending_streams(quic)
+            self.assertEqual(log.call_count, 2)
+            self.assertEqual(log.call_args.args[-1]["pending-bytes"], 0)
 
     def test_recent_rates_and_idle(self):
         from xpra.net.quic.congestion import XpraRenoCongestionControl

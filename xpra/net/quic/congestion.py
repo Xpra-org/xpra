@@ -9,6 +9,7 @@ from typing import Any, NamedTuple
 
 from aioquic.quic.congestion.base import register_congestion_control
 from aioquic.quic.congestion.reno import RenoCongestionControl
+from aioquic.quic.connection import END_STATES, QuicConnection
 from aioquic.quic.packet_builder import QuicSentPacket
 
 from xpra.log import Logger
@@ -30,6 +31,31 @@ class CongestionSample(NamedTuple):
     bytes_lost: int = 0
     rtt_samples: int = 0
     rtt_total: float = 0.0
+
+
+def get_pending_stream_info(quic: QuicConnection) -> dict[str, int]:
+    """Count queued stream bytes on the asyncio thread, excluding data in flight.
+
+    aioquic merges new data and retransmissions into the same pending ranges.
+    Split each range at the highest offset previously emitted into STREAM frames.
+    These are current stream-byte counts, not cumulative QUIC packet counters.
+    """
+    new_bytes = retransmit_bytes = 0
+    if quic._state not in END_STATES and not quic._close_pending:
+        for stream in quic._streams.values():
+            sender = stream.sender
+            # Reset senders retain their buffers but will never send them again.
+            if sender.is_finished or sender._reset_error_code is not None:
+                continue
+            boundary = sender.highest_offset
+            for r in sender._pending:
+                retransmit_bytes += max(0, min(r.stop, boundary) - r.start)
+                new_bytes += max(0, r.stop - max(r.start, boundary))
+    return {
+        "pending-new-bytes": new_bytes,
+        "pending-retransmit-bytes": retransmit_bytes,
+        "pending-bytes": new_bytes + retransmit_bytes,
+    }
 
 
 def get_recent_info(samples: tuple[CongestionSample, ...], started: float | None,
@@ -85,6 +111,7 @@ class XpraRenoCongestionControl(RenoCongestionControl):
     def __init__(self, *, max_datagram_size: int) -> None:
         super().__init__(max_datagram_size=max_datagram_size)
         self._last_log_time = 0.0
+        self._last_pending_log_time = 0.0
         self._samples: tuple[CongestionSample, ...] = ()
         self._sample_start: float | None = None
         self._last_loss: float | None = None
@@ -98,6 +125,9 @@ class XpraRenoCongestionControl(RenoCongestionControl):
             "bytes-lost": 0,
             "packets-expired": 0,
             "bytes-expired": 0,
+            "pending-new-bytes": 0,
+            "pending-retransmit-bytes": 0,
+            "pending-bytes": 0,
             "loss-events": 0,
             "persistent-congestion-events": 0,
             "rtt-samples": 0,
@@ -115,6 +145,19 @@ class XpraRenoCongestionControl(RenoCongestionControl):
         if last_loss is not None:
             info["last-loss-age-ms"] = max(0, int((now - last_loss) * 1000))
         return info
+
+    def update_pending_streams(self, quic: QuicConnection) -> None:
+        # Called after transmit(), including ACK and recovery timer processing.
+        # Readers on other threads only see the published snapshot.
+        pending = get_pending_stream_info(quic)
+        self._update_statistics(pending)
+        if log.is_debug_enabled():
+            now = monotonic()
+            if now - self._last_pending_log_time >= 1:
+                self._last_pending_log_time = now
+                # Recovery logs before its stream delivery callbacks run. Log
+                # the resulting queue separately, after packet construction.
+                log("QUIC pending stream data %s: %s", self, pending)
 
     def _record_sample(self, *, packets_acked=0, bytes_acked=0, packets_lost=0, bytes_lost=0, rtt: float | None = None) -> None:
         # Use one local clock for all sampling and reads: aioquic callback times
