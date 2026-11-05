@@ -17,6 +17,25 @@ unset DISPLAY
 export WAYLAND_DISPLAY=headless-$$
 weston --backend=headless-backend.so --socket="$WAYLAND_DISPLAY" &
 WESTON_PID=$!
+
+# Xwayland exits immediately if weston is not listening yet,
+# so wait for the socket to appear, for at most 10 seconds:
+SOCKET="${XDG_RUNTIME_DIR}/${WAYLAND_DISPLAY}"
+i=0
+while [ ! -S "$SOCKET" ]; do
+	if ! kill -0 "$WESTON_PID" 2>/dev/null; then
+		WESTON_PID=""
+		echo "$0: weston failed to start" >&2
+		exit 1
+	fi
+	i=$((i+1))
+	if [ "$i" -gt 200 ]; then
+		echo "$0: timed out waiting for weston socket '$SOCKET'" >&2
+		exit 1
+	fi
+	sleep 0.05
+done
+
 Xwayland -noreset "$@" &
 XWAYLAND_PID=$!
 wait "$XWAYLAND_PID"
