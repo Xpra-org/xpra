@@ -1,15 +1,20 @@
 # Changelog
 
-## [8.0] 2026-10-16
+## [8.0] 2026-11-06
 * 🔧 Platforms, build and packaging:
+  * [require Python 3.12+](https://github.com/Xpra-org/xpra/commit/0cea33dc1636b131b298a91dd54cbf1ee2be7645)
 * 🖧 Network:
-  * [use QUIC datagrams](https://github.com/Xpra-org/xpra/issues/3854) [for audio packets](https://github.com/Xpra-org/xpra/issues/4745)
+  * [use QUIC datagrams](https://github.com/Xpra-org/xpra/issues/3854):
+    * [for audio](https://github.com/Xpra-org/xpra/issues/4745)
+    * [for video](https://github.com/Xpra-org/xpra/issues/5122)
+  * [QUIC congestion control](https://github.com/Xpra-org/xpra/issues/4202)
 * 🛡️ Security:
   * [authentication errors leave clients waiting until they time out](https://github.com/Xpra-org/xpra/commit/b74e8b7943376736812563144c04a5a62f813e85)
   * [GPU security and containers](https://github.com/Xpra-org/xpra/issues/5088): [GPU accelerated secure pods](https://github.com/Xpra-org/xpra/blob/master/packaging/containers/podman/GPU.md), [landlock `+gpu`](https://github.com/Xpra-org/xpra/issues/5086), [SELinux domain for the encoder server](https://github.com/Xpra-org/xpra/issues/5087)
 * 🌈 Encodings:
-* ✨ Features:
   * [tune x264 and VP9 motion search after scroll input](https://github.com/Xpra-org/xpra/issues/5118)
+* ✨ Features:
+  * [kill process group](https://github.com/Xpra-org/xpra/issues/5128)
   * [remove backwards compatibility](https://github.com/Xpra-org/xpra/issues/4496)
   * [faster default window icon lookups](https://github.com/Xpra-org/xpra/issues/5112), [start menu entries with the same name](https://github.com/Xpra-org/xpra/commit/3487ccba2f88b853e9a2759c147e5b3e934ef8e1)
 
