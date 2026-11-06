@@ -30,6 +30,9 @@ class ProxyInstanceThread(ProxyInstance):
         #all threads will use just use the same settings anyway,
         #so don't re-initialize the video helper:
         self.video_helper = getVideoHelper()
+        if self.video_helper._initialized:
+            log("video_helper_init() already initialized")
+            return
         #only use video encoders (no CSC supported in proxy)
         try:
             self.video_helper.set_modules(video_encoders=self.video_encoder_modules)
