@@ -510,7 +510,9 @@ class WaylandWindowServer(WindowServer):
         self._set_client_properties(proto, wid, window, cp)
         surface.resize(w, h)
         self.server.compositor.flush()
-        self.refresh_window(window)
+        # Flushing dispatches Wayland events, including this window's destruction.
+        if self.get_window(wid) is window:
+            self.refresh_window(window)
 
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
         window = self.get_window(wid)
