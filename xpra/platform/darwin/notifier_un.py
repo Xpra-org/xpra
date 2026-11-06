@@ -13,6 +13,8 @@ from UserNotifications import (
     UNAuthorizationOptionAlert,
     UNAuthorizationOptionSound,
     UNAuthorizationOptionBadge,
+    UNErrorDomain,
+    UNErrorCodeNotificationsNotAllowed,
 )
 
 from xpra.common import noop
@@ -48,7 +50,16 @@ class UN_Notifier(NotifierBase):
 
     def _authorization_handler(self, granted: bool, error) -> None:
         if error:
-            log.warn("Warning: UNUserNotificationCenter authorization error: %s", error)
+            domain = str(error.domain())
+            code = int(error.code())
+            message = str(error.localizedDescription())
+            log("authorization error: domain=%r, code=%i, userInfo=%s", domain, code, error.userInfo())
+            if domain == UNErrorDomain and code == UNErrorCodeNotificationsNotAllowed:
+                log.info("notifications are disabled for this application")
+                log.info(" they can be enabled in System Settings > Notifications")
+            else:
+                log.warn("Warning: UNUserNotificationCenter authorization error")
+                log.warn(" %s (%s code %i)", message, domain, code)
         elif not granted:
             log.warn("Warning: UNUserNotificationCenter authorization was denied")
         else:
