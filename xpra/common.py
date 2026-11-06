@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Sequence
 
 from xpra.util import envint, envbool, csv
 
@@ -111,6 +111,19 @@ DEFAULT_XDG_DATA_DIRS : str = ":".join(
 
 def noop(*_args) -> None:
     """ do nothing """
+
+
+def is_covered_by_opaque_region(opaque_region: Sequence[tuple], w: int, h: int) -> bool:
+    """Check if any opaque-region rectangle fully covers a window of size w x h.
+
+    Windows with 32-bit depth (ARGB) may declare themselves effectively opaque
+    via _NET_WM_OPAQUE_REGION. Each entry is (ox, oy, ow, oh); if any single
+    rectangle encloses the entire window area (0, 0, w, h), the window is opaque.
+    """
+    return any(
+        ox <= 0 and oy <= 0 and ox + ow >= w and oy + oh >= h
+        for ox, oy, ow, oh in opaque_region
+    )
 
 
 WINDOW_DECODE_SKIPPED : int = 0

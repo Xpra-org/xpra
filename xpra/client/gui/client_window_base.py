@@ -13,7 +13,7 @@ from xpra.client.gui.client_widget_base import ClientWidgetBase
 from xpra.client.gui.window_backing_base import fire_paint_callbacks
 from xpra.scaling_parser import scaleup_value, scaledown_value
 from xpra.os_util import bytestostr, OSX, WIN32, is_Wayland
-from xpra.common import GravityStr
+from xpra.common import GravityStr, is_covered_by_opaque_region
 from xpra.util import net_utf8, typedict, envbool, envint, std, WORKSPACE_UNSET, WORKSPACE_NAMES
 from xpra.log import Logger
 
@@ -55,7 +55,18 @@ class ClientWindowBase(ClientWidgetBase):
              metadata, override_redirect, client_properties,
              border, max_window_size, default_cursor_data, pixel_depth,
              headerbar))
-        super().__init__(client, watcher_pid, wid, metadata.boolget("has-alpha"))
+        has_alpha = metadata.boolget("has-alpha")
+        # gdk-quartz makes the `NSWindow` of an RGBA visual non-opaque with a clear background,
+        # and on macOS 27 that makes the native title bar transparent:
+        # don't use alpha for windows which declare themselves fully opaque via `_NET_WM_OPAQUE_REGION` (ie: chromium)
+        # (the opaque region is in server coordinates, like the backing size)
+        opaque = OSX and has_alpha and is_covered_by_opaque_region(metadata.tupleget("opaque-region"), bw, bh)
+        if opaque:
+            alphalog("window %#x is covered by its opaque region, not using alpha", wid)
+            has_alpha = False
+        super().__init__(client, watcher_pid, wid, has_alpha)
+        # Applying the initial metadata must not turn alpha back on:
+        self._opaque_alpha_dropped = opaque
         self._override_redirect = override_redirect
         self.group_leader = group_leader
         self._pos = (wx, wy)
@@ -443,7 +454,9 @@ class ClientWindowBase(ClientWidgetBase):
 
         if "has-alpha" in metadata:
             new_alpha = metadata.boolget("has-alpha")
-            if new_alpha!=self._has_alpha:
+            if new_alpha and self._opaque_alpha_dropped:
+                alphalog("window %#x: ignoring has-alpha, the window is covered by its opaque region", self.wid)
+            elif new_alpha!=self._has_alpha:
                 l = alphalog
                 if not WIN32:
                     #win32 without opengl can't do transparency,
