@@ -874,6 +874,7 @@ fi
    don't start Xorg if its config file is missing
    failure to build due to missing `libfakeXinerama` dependency in some RPM builds
    RHEL 10 and clones must use weston+Xwayland as vfb command
+   macOS 27 window transparency issue
 - 📦 RPM:
    RPM dependency fixes
    prevent version conflicts
