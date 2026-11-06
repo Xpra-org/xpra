@@ -1120,19 +1120,29 @@ fi
 
 
 %changelog
-* Thu Nov 05 2026 Antoine Martin <antoine@xpra.org> 6.5.6-10
+* Fri Nov 06 2026 Antoine Martin <antoine@xpra.org> 6.5.6-10
 - 🔧 Platforms, build and packaging:
    RPM updates: `libyuv 0.0.1974`, `nasm 3.02`, `xpra-openh264 2.7.0`, `pygobject 3.44.2` (RHEL 8 only), `aioquic 1.7.0`, `pycairo 1.29.2`, `Cython 3.3.1`, `dbus-python 1.5.0`, `python3-gobject 3.58.1`, `packaging 26.3`, `pillow 13.0.0`, `pip 26.2.1` , `pybind11 3.1.0`, `pylsqpack 1.0.0`, `pynvml 13.615.71`, `setuptools 84.0.0`, `pytorch vision 0.29.1`, `pytorch-cuda 2.14.1`, `wheel 0.48.0`
    MS Windows printing helper commands crash when choosing a printer automatically
+   macOS: use the bundled GIO module directory
+   macOS 27: window title bar ends up transparent
 - Major:
    programmatic X11 window moves can use incorrect coordinates
    recording a session can alter its keyboard layout and repeat settings
    NVENC cleanup can abort the server when a client disconnects
    launcher connections and dialogs can stall with the GLib idle workaround
    grayscale video encoding fails to load the libyuv converter
+   existing windows miss video codecs advertised after the client handshake
+   cleaning can remove session files for a live X11 server using only an abstract socket
+   desktop and monitor capabilities are read from the wrong namespace, including RandR support
+   some client properties are wrongly reset, ie: render-size
+   mf decoder: terminate HEVC
+   decoder selftest must decode at least one frame
+   CUDA context device lock never released
 - 🖧 Network:
    SSH agent authentication fails when the server offers public-key authentication
    connecting can miss a server socket that becomes ready during discovery
+   WSS connections can be mistaken for native Xpra traffic on multi-protocol TLS sockets
 - 📋 Clipboard:
    pending clipboard requests are left waiting during cleanup
    local and remote clipboard selection options are ignored until changed from the tray menu
@@ -1144,6 +1154,14 @@ fi
    MS Windows GDI screenshots can fail with invalid image data
    read-only clients can resize windows because their fixed size constraints are malformed
    audio forwarding is attempted after the audio subsystem query fails
+   waiting for a Wayland display can consume a full CPU core
+   XI2 window event handlers fail to import
+   failed server startup can spin until the displayfd timeout
+   the launcher does not detect an installed server
+   socket activation invalid warning call
+   system tray errors when mmap is missing
+   only list the addresses of the families a wildcard socket listens on
+
 * Sun Oct 11 2026 Antoine Martin <antoine@xpra.org> 6.5.5-10
 - 🔧 Platforms, build and packaging:
    Debian dropped clang-19

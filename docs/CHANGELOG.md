@@ -1,9 +1,11 @@
 # Changelog
 
-## [6.5.6] 2026-11-05
+## [6.5.6] 2026-11-06
 * 🔧 Platforms, build and packaging:
   * [RPM updates: `libyuv 0.0.1974`, `nasm 3.02`, `xpra-openh264 2.7.0`, `pygobject 3.44.2` (RHEL 8 only), `aioquic 1.7.0`, `pycairo 1.29.2`, `Cython 3.3.1`, `dbus-python 1.5.0`, `python3-gobject 3.58.1`, `packaging 26.3`, `pillow 13.0.0`, `pip 26.2.1` , `pybind11 3.1.0`, `pylsqpack 1.0.0`, `pynvml 13.615.71`, `setuptools 84.0.0`, `pytorch vision 0.29.1`, `pytorch-cuda 2.14.1`, `wheel 0.48.0`](https://github.com/Xpra-org/xpra/commit/190235b2fdf2240f8e16b7a0749af181584c52b3)
   * [MS Windows printing helper commands crash when choosing a printer automatically](https://github.com/Xpra-org/xpra/commit/ee6fbef1a9681b7490e1403dea6b46f241259445)
+  * [macOS: use the bundled GIO module directory](https://github.com/Xpra-org/xpra/commit/5172680c0e48cce8bce6e9030398738ec7294a0c)
+  * [macOS 27: window title bar ends up transparent](https://github.com/Xpra-org/xpra/commit/6b3659b1bb31fd548812ad759627f953be7d5183)
 * Major:
   * [programmatic X11 window moves can use incorrect coordinates](https://github.com/Xpra-org/xpra/commit/fe087ac89233ee09b6d6f88de2d660977ce0eda4)
   * [recording a session can alter its keyboard layout and repeat settings](https://github.com/Xpra-org/xpra/commit/fa159ae16dd8979553bcecc05ca939d259dede2f)
@@ -13,6 +15,10 @@
   * [existing windows miss video codecs advertised after the client handshake](https://github.com/Xpra-org/xpra/commit/96fad69c73c98a2190c5f2a93a93774025c9f6b6)
   * [cleaning can remove session files for a live X11 server using only an abstract socket](https://github.com/Xpra-org/xpra/commit/82075104eaae0f0db46dd45efe66bd5476a2cb6e)
   * [desktop and monitor capabilities are read from the wrong namespace](https://github.com/Xpra-org/xpra/commit/2653fbceda1f8fba14bb9c74373bf558df6b66e8), [including RandR support](https://github.com/Xpra-org/xpra/commit/901068dc26ab4987aecc933a96b7d3c80e0c01a5)
+  * [some client properties are wrongly reset, ie: render-size](https://github.com/Xpra-org/xpra/commit/179633bfb5db3333b895cfa38a054fec2dede44f)
+  * [mf decoder: terminate HEVC](https://github.com/Xpra-org/xpra/commit/3b64567b7b132ac90ca8f580e63a0966724c7550)
+  * [decoder selftest must decode at least one frame](https://github.com/Xpra-org/xpra/commit/10350a61963e87bc2b2c55c186915b967851fae2)
+  * [CUDA context device lock never released](https://github.com/Xpra-org/xpra/commit/0e67b345f225de16417ab492632297ea2b86248f)
 * 🖧 Network:
   * [SSH agent authentication fails when the server offers public-key authentication](https://github.com/Xpra-org/xpra/commit/1d387fc21e49a9f2a440f62e8f447075cf053158)
   * [connecting can miss a server socket that becomes ready during discovery](https://github.com/Xpra-org/xpra/commit/94876a45af59374eb11309d9d9626d7483774b4f)
@@ -32,6 +38,9 @@
   * [XI2 window event handlers fail to import](https://github.com/Xpra-org/xpra/commit/1b1729489e923e718c47989468810a1c67a46b63)
   * [failed server startup can spin until the displayfd timeout](https://github.com/Xpra-org/xpra/commit/3bdc02c61505e331bfc4a8e10d7f0c5e94008990)
   * [the launcher does not detect an installed server](https://github.com/Xpra-org/xpra/commit/aa9749be66af99c6fd53fab1f8fd0029b6576b47)
+  * [socket activation invalid warning call](https://github.com/Xpra-org/xpra/commit/d298e6927e3b6a1f51e406b081d718ae1cd49be4)
+  * [system tray errors when mmap is missing](https://github.com/Xpra-org/xpra/commit/f2481f83e45c21bc33ccd0f5e158129a8ed6e1df)
+  * [only list the addresses of the families a wildcard socket listens on](https://github.com/Xpra-org/xpra/commit/c8eacfe495a964f0452b7b5283d902fb64c6b674)
 
 ## [6.5.5] 2026-10-11
 * 🔧 Platforms, build and packaging:
