@@ -111,6 +111,27 @@ def force_close_connection(conn) -> None:
         netlog("close_connection()", exc_info=True)
 
 
+def get_listen_families(sock, host: str) -> Sequence[int]:
+    """
+    the address families a wildcard listener accepts connections from:
+    `0.0.0.0` is IPv4 only, `::` also accepts IPv4 unless the socket is IPv6 only
+    """
+    if host == "0.0.0.0":
+        return (socket.AF_INET, )
+    if host in ("::", "::/0"):
+        if isinstance(sock, socket.socket) and sock.family == socket.AF_INET6:
+            try:
+                if sock.getsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY):
+                    return (socket.AF_INET6, )
+            except OSError:
+                pass
+            else:
+                return (socket.AF_INET, socket.AF_INET6)
+        if not socket.has_dualstack_ipv6():
+            return (socket.AF_INET6, )
+    return (socket.AF_INET, socket.AF_INET6)
+
+
 def get_instance_subsystem_classes() -> tuple[type, ...]:
     """
     Subsystem classes for ServerCore. Each is instantiated and stored in
@@ -739,7 +760,7 @@ class ServerCore(GLibServer):
                 log.info("listening on %s at %s:%s", socktype, host or "*", port)
                 if host in ("", "*", "0.0.0.0", "::", "::/0"):
                     # wildcard address: show every interface address it resolved to
-                    for ip in get_all_ips():
+                    for ip in get_all_ips(get_listen_families(listener.socket, host)):
                         log.info("  %s://%s:%s", socktype, ip, port)
             if socktype == "vsock" and isinstance(address, (tuple, list)) and len(address) >= 2:
                 cid, port = self.get_vsock_endpoint(address)
