@@ -104,6 +104,10 @@ int main(int argc, char **argv) {
     setenv("XPRA_BUNDLE_CONTENTS", contents, 1);
     snprintf(buf, sizeof(buf), "%s/Resources", contents);
     setenv("PYTHONHOME", buf, 1);
+    /* Override libgio's compiled-in jhbuild module directory before Python
+     * imports GIO. Host modules can fail hardened runtime library validation. */
+    snprintf(buf, sizeof(buf), "%s/Resources/lib/gio/modules", contents);
+    setenv("GIO_MODULE_DIR", buf, 1);
     setenv("PYTHONDONTWRITEBYTECODE", "1", 1);
     /* Block user site-packages: a stray PYTHONUSERBASE in the user's shell
      * (e.g. jhbuild) would otherwise add a site-packages dir whose modules
