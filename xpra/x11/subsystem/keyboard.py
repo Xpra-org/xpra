@@ -97,10 +97,15 @@ def get_ibus_dirs() -> tuple[str, str]:
 def ibus_has_process_group(pid: int) -> bool:
     if not POSIX or not KILL_CHILD_PROCESS_GROUP or pid <= 1:
         return False
+    if pid == os.getpgrp():
+        return False
     try:
-        return os.getpgid(pid) == pid != os.getpgrp()
+        # OpenBSD rejects getpgid() for processes in another session.
+        # Probe the group itself without sending a signal.
+        os.killpg(pid, 0)
     except OSError:
         return False
+    return True
 
 
 def may_start_ibus(env: dict[str, str], scheduler: Scheduler) -> ProcInfo | None:

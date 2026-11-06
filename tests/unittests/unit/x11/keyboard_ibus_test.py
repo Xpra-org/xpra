@@ -61,7 +61,7 @@ class TestIBusStart(unittest.TestCase):
                 patch.object(keyboard, "find_libexec_command", return_value="/daemonizer"), \
                 patch.object(keyboard, "KILL_CHILD_PROCESS_GROUP", True), \
                 patch.object(keyboard, "Popen", return_value=launcher), \
-                patch.object(keyboard.os, "getpgid", return_value=12345), \
+                patch.object(keyboard.os, "killpg"), \
                 patch.object(keyboard.os, "getpgrp", return_value=1), \
                 patch.object(keyboard, "get_child_reaper") as reaper:
             reaper.return_value.add_pid.return_value.dead = False
@@ -74,6 +74,22 @@ class TestIBusStart(unittest.TestCase):
             self.assertFalse(poll_daemonizer())
             self.assertTrue(reaper.return_value.add_pid.call_args.kwargs["kill_process_group"])
             self.assertEqual(scheduler.timeout_add.call_args.args[0], 1000)
+
+    @unittest.skipUnless(POSIX, "requires POSIX process groups")
+    def test_process_group_detection(self):
+        from xpra.x11.subsystem import keyboard
+        with patch.object(keyboard, "KILL_CHILD_PROCESS_GROUP", True):
+            for pid in (-1, 0, 1, os.getpgrp()):
+                with self.subTest(pid=pid):
+                    self.assertFalse(keyboard.ibus_has_process_group(pid))
+            command = [sys.executable, "-c", "import sys; sys.stdin.buffer.read(1)"]
+            with subprocess.Popen(command, stdin=subprocess.PIPE, start_new_session=True) as proc:
+                # OpenBSD forbids querying the group of this separate session.
+                with patch.object(keyboard.os, "getpgid", side_effect=PermissionError):
+                    self.assertTrue(keyboard.ibus_has_process_group(proc.pid))
+                with patch.object(keyboard, "KILL_CHILD_PROCESS_GROUP", False):
+                    self.assertFalse(keyboard.ibus_has_process_group(proc.pid))
+            self.assertFalse(keyboard.ibus_has_process_group(proc.pid))
 
     @staticmethod
     def make_manager(input_method="ibus"):
@@ -120,7 +136,10 @@ class TestIBusProcessGroup(unittest.TestCase):
                     os.write(1, b'terminated\\n')
                     os._exit(0)
                 signal.signal(signal.SIGTERM, terminated)
-                print(leader, os.getpid(), os.getpgrp(), os.getsid(0), flush=True)
+                pgid = os.getpgrp()
+                # OpenBSD cannot report the SID after the daemonizer's session leader exits.
+                sid = os.getsid(0) if pgid == leader else 0
+                print(leader, os.getpid(), pgid, sid, flush=True)
                 while True:
                     signal.pause()
             sys.stdin.buffer.read(1)
