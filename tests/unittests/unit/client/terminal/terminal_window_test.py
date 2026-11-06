@@ -199,6 +199,25 @@ class TerminalWindowTest(unittest.TestCase):
         self.assertFalse(window.is_tray())
         self.assertIn("64", repr(window) + str(window.get_info()))
 
+    def test_opaque_region_drops_alpha(self):
+        # #5120: on macOS, a window fully covered by its opaque region must not use alpha
+        from unittest.mock import patch
+        from xpra.client.gui import window_base
+        full = {"opaque-region": ((0, 0, 64, 32), )}
+        with patch.object(window_base, "OSX", True):
+            client, window = self.make_window(metadata=full)
+            self.assertFalse(window._has_alpha)
+            # the metadata can't turn it back on:
+            window.set_has_alpha(True)
+            self.assertFalse(window._has_alpha)
+            # partial coverage keeps it:
+            client, window = self.make_window(metadata={"opaque-region": ((0, 0, 64, 16), )})
+            self.assertTrue(window._has_alpha)
+        # other platforms are unaffected:
+        with patch.object(window_base, "OSX", False):
+            client, window = self.make_window(metadata=full)
+            self.assertTrue(window._has_alpha)
+
     def test_client_properties_include_rgb_formats(self):
         client, window = self.make_window()
         props = window._client_properties

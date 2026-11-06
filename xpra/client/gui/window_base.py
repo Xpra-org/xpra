@@ -14,7 +14,7 @@ from xpra.client.gui.widget_base import ClientWidgetBase
 from xpra.client.gui.window.backing import fire_paint_callbacks, get_backing_client_properties
 from xpra.client.gui.window_border import WindowBorder
 from xpra.net.common import PacketElement, BACKWARDS_COMPATIBLE
-from xpra.common import gravity_str, force_size_constraint
+from xpra.common import gravity_str, force_size_constraint, is_covered_by_opaque_region
 from xpra.util.colourspace import Colourspace, SRGB
 from xpra.util.parsing import scaleup_value, scaledown_value
 from xpra.util.system import is_Wayland
@@ -67,9 +67,20 @@ class ClientWindowBase(ClientWidgetBase):
         self.idle_add: Callable = client.idle_add
         self.timeout_add: Callable = client.timeout_add
         self.source_remove: Callable = client.source_remove
-        super().__init__(client, wid, metadata.boolget("has-alpha"))
         wx, wy, ww, wh = geom
         bw, bh = backing_size
+        has_alpha = metadata.boolget("has-alpha")
+        # gdk-quartz makes the `NSWindow` of an RGBA visual non-opaque with a clear background,
+        # and on macOS 27 that makes the native title bar transparent:
+        # don't use alpha for windows which declare themselves fully opaque via `_NET_WM_OPAQUE_REGION` (ie: chromium)
+        # (the opaque region is in server coordinates, like the backing size)
+        opaque = OSX and has_alpha and is_covered_by_opaque_region(metadata.tupleget("opaque-region"), bw, bh)
+        if opaque:
+            alphalog("window %#x is covered by its opaque region, not using alpha", wid)
+            has_alpha = False
+        super().__init__(client, wid, has_alpha)
+        # `set_has_alpha` must not turn it back on when the initial metadata is applied:
+        self._opaque_alpha_dropped = opaque
         self._override_redirect = override_redirect
         self.group_leader = group_leader
         self._pos = (wx, wy)
@@ -482,6 +493,9 @@ class ClientWindowBase(ClientWidgetBase):
         """ see gtk3 window for implementation """
 
     def set_has_alpha(self, alpha: bool) -> None:
+        if alpha and self._opaque_alpha_dropped:
+            alphalog("window %#x: ignoring has-alpha, the window is covered by its opaque region", self.wid)
+            return
         if alpha == self._has_alpha:
             return
         # losing the alpha channel is safe: the window keeps the visual and the backing
