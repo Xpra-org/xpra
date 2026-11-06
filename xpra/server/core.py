@@ -103,6 +103,27 @@ def force_close_connection(conn) -> None:
         netlog("close_connection()", exc_info=True)
 
 
+def get_listen_families(sock, host: str) -> Sequence[int]:
+    """
+    the address families a wildcard listener accepts connections from:
+    `0.0.0.0` is IPv4 only, `::` also accepts IPv4 unless the socket is IPv6 only
+    """
+    if host == "0.0.0.0":
+        return (socket.AF_INET, )
+    if host in ("::", "::/0"):
+        if isinstance(sock, socket.socket) and sock.family == socket.AF_INET6:
+            try:
+                if sock.getsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY):
+                    return (socket.AF_INET6, )
+            except OSError:
+                pass
+            else:
+                return (socket.AF_INET, socket.AF_INET6)
+        if not socket.has_dualstack_ipv6():
+            return (socket.AF_INET6, )
+    return (socket.AF_INET, socket.AF_INET6)
+
+
 def get_server_base_classes() -> tuple[type, ...]:
     from xpra.server.glib_server import GLibServer
     from xpra.server.auth import AuthenticatedServer
@@ -1634,7 +1655,7 @@ class ServerCore(ServerBaseClass):
                     netlog.warn("Warning: netifaces is missing")
                     netlog.warn(" socket addresses cannot be queried")
             else:
-                for ip in get_all_ips():
+                for ip in get_all_ips(get_listen_families(sock.socket, host)):
                     add_address(socktype, ip, port)
 
         for socktype, auth_classes in self.auth_classes.items():

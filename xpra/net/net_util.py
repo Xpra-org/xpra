@@ -79,7 +79,7 @@ def get_interface(address) -> str:
     return ""
 
 
-def get_all_ips() -> Sequence[str]:
+def get_all_ips(families: Sequence[int] = (socket.AF_INET, socket.AF_INET6)) -> Sequence[str]:
     ips: list[str] = []
     for inet in get_interfaces_addresses().values():
         # ie: inet = {
@@ -88,7 +88,7 @@ def get_all_ips() -> Sequence[str]:
         #    30: [{'peer': '::1', 'netmask': 'ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff', 'addr': '::1'},
         #         {'peer': '', 'netmask': 'ffff:ffff:ffff:ffff::', 'addr': 'fe80::1%lo0'}]
         #    }
-        for v in (socket.AF_INET, socket.AF_INET6):
+        for v in families:
             addresses = inet.get(v, ())
             for addr in addresses:
                 # ie: addr = {'peer': '127.0.0.1', 'netmask': '255.0.0.0', 'addr': '127.0.0.1'}]
