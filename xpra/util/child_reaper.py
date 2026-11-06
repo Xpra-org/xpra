@@ -101,7 +101,7 @@ class ProcInfo:
         "pid", "pidfile", "pidinode",
         "name", "command", "ignore",
         "forget", "dead", "returncode",
-        "callback", "process",
+        "callback", "process", "kill_process_group",
         "sequence", "lock",
     )
     sequence: int
@@ -115,6 +115,7 @@ class ProcInfo:
     dead: bool
     returncode: int | None
     callback: Callable | None
+    kill_process_group: bool
     process: Any
     lock: Lock
 
@@ -196,7 +197,8 @@ class ChildReaper:
         process = PidPopen(pid)
         return self.add_process(process, name, command, ignore=ignore, forget=forget, callback=callback)
 
-    def add_process(self, process, name: str, command: str | Sequence[str], ignore=False, forget=False, callback=None) -> ProcInfo:
+    def add_process(self, process, name: str, command: str | Sequence[str], ignore=False, forget=False, callback=None,
+                    kill_process_group: bool = False) -> ProcInfo:
         pid = process.pid
         if pid <= 0:
             raise RuntimeError(f"process {process} has no pid!")
@@ -210,11 +212,12 @@ class ChildReaper:
         procinfo.ignore = ignore
         procinfo.forget = forget
         procinfo.callback = callback
+        procinfo.kill_process_group = kill_process_group
         procinfo.process = process
         procinfo.returncode = None
         procinfo.dead = False
         procinfo.lock = Lock()
-        log("add_process%s pid=%s", (process, name, command, ignore, forget, callback), pid)
+        log("add_process%s pid=%s", (process, name, command, ignore, forget, callback, kill_process_group), pid)
         with self._proc_lock:
             self._proc_info.append(procinfo)
         # could have died already:
@@ -304,6 +307,17 @@ class ChildReaper:
             if procinfo.returncode is None:
                 return False
             procinfo.dead = True
+            if POSIX and procinfo.kill_process_group and procinfo.pid > 0 and procinfo.pid != os.getpgrp():
+                # The command was started with setsid, so its pid is also its pgid.
+                # The leader may already be gone; do not try to look up its group.
+                # Signal here: queued callbacks may not run during server shutdown.
+                try:
+                    log("terminating process group %s", procinfo.pid)
+                    os.killpg(procinfo.pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                except OSError as e:
+                    log.warn("Warning: failed to terminate process group %s: %s", procinfo.pid, e)
             # clear the reference to the process to free up resources:
             procinfo.process = None
             cb, procinfo.callback = procinfo.callback, None

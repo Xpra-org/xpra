@@ -5,13 +5,15 @@
 # later version. See the file COPYING for details.
 
 import os
+import signal
 import sys
 import time
 import logging
 import threading
 import unittest
 import subprocess
-from unittest.mock import Mock, patch
+from itertools import product
+from unittest.mock import Mock, call, patch
 
 from xpra.util.env import OSEnvContext
 from xpra.util import child_reaper
@@ -21,36 +23,73 @@ from xpra.util.child_reaper import get_child_reaper, reaper_cleanup, log
 class TestChildReaper(unittest.TestCase):
 
     def test_exit_callbacks(self):
-        for already_exited in (False, True):
-            for ignore in (False, True):
-                for forget in (False, True):
-                    with self.subTest(already_exited=already_exited, ignore=ignore, forget=forget):
-                        cr = self.new_reaper()
-                        quit_callback = Mock()
-                        cr._quit = quit_callback
-                        proc = Mock(pid=12345)
-                        proc.poll.return_value = 7 if already_exited else None
-                        callback = Mock()
-                        with patch.object(child_reaper.GLib, "idle_add") as idle_add:
-                            info = cr.add_process(proc, "test", ["test"], ignore, forget, callback)
-                            if not already_exited:
-                                self.assertFalse(info.dead)
-                                idle_add.assert_not_called()
-                                proc.poll.return_value = 7
-                                cr.poll()
-                            self.assertTrue(info.dead)
-                            self.assertEqual(info.returncode, 7)
-                            self.assertIsNone(info.process)
-                            self.assertIsNone(info.callback)
-                            self.assertEqual(info in cr._proc_info, not forget)
-                            idle_add.assert_called_once_with(callback, proc)
-                            cr.poll()
-                            cr.add_dead_pid(proc.pid)
-                            cr.add_dead_process(info)
-                            idle_add.assert_called_once_with(callback, proc)
-                            idle_add.call_args.args[0](proc)
-                            callback.assert_called_once_with(proc)
-                            self.assertEqual(quit_callback.call_count, int(not ignore and not forget))
+        for already_exited, ignore, forget, kill_group, returncode in product(
+                (False, True), (False, True), (False, True), (False, True), (0, 7, -signal.SIGTERM)):
+            with self.subTest(already_exited=already_exited, ignore=ignore, forget=forget, kill_group=kill_group, returncode=returncode):
+                cr = self.new_reaper()
+                events = Mock()
+                cr._quit = events.quit
+                proc = Mock(pid=12345)
+                proc.poll.return_value = returncode if already_exited else None
+                callback = Mock()
+                with patch.object(child_reaper.GLib, "idle_add", events.idle_add), \
+                        patch.object(child_reaper.os, "killpg", events.killpg, create=True), \
+                        patch.object(child_reaper.os, "getpgrp", return_value=1, create=True):
+                    info = cr.add_process(proc, "test", ["test"], ignore, forget, callback, kill_process_group=kill_group)
+                    if not already_exited:
+                        self.assertFalse(info.dead)
+                        self.assertFalse(events.mock_calls)
+                        proc.poll.return_value = returncode
+                        cr.poll()
+                    self.assertTrue(info.dead)
+                    self.assertEqual(info.returncode, returncode)
+                    self.assertIsNone(info.process)
+                    self.assertIsNone(info.callback)
+                    self.assertEqual(info in cr._proc_info, not forget)
+                    events.idle_add.assert_called_once_with(callback, proc)
+                    if child_reaper.POSIX and kill_group:
+                        events.killpg.assert_called_once_with(proc.pid, signal.SIGTERM)
+                        self.assertEqual(events.mock_calls[0], call.killpg(proc.pid, signal.SIGTERM))
+                    else:
+                        events.killpg.assert_not_called()
+                    cr.poll()
+                    cr.add_dead_pid(proc.pid)
+                    cr.add_dead_process(info)
+                    self.assertEqual(events.killpg.call_count, int(child_reaper.POSIX and kill_group))
+                    events.idle_add.assert_called_once_with(callback, proc)
+                    events.idle_add.call_args.args[0](proc)
+                    callback.assert_called_once_with(proc)
+                    self.assertEqual(events.quit.call_count, int(not ignore and not forget))
+
+    @unittest.skipUnless(child_reaper.POSIX, "requires POSIX process groups")
+    def test_process_group_cleanup_errors(self):
+        for error in (ProcessLookupError(), PermissionError()):
+            with self.subTest(error=error):
+                cr = self.new_reaper()
+                proc = Mock(pid=12345)
+                proc.poll.return_value = 0
+                callback = Mock()
+                with patch.object(child_reaper.os, "getpgrp", return_value=1), \
+                        patch.object(child_reaper.os, "killpg", side_effect=error) as killpg, \
+                        patch.object(child_reaper.GLib, "idle_add") as idle_add, patch.object(child_reaper, "log"):
+                    info = cr.add_process(proc, "test", ["test"], callback=callback, kill_process_group=True)
+                self.assertTrue(info.dead)
+                self.assertEqual(info.returncode, 0)
+                killpg.assert_called_once_with(proc.pid, signal.SIGTERM)
+                idle_add.assert_called_once_with(callback, proc)
+
+    def test_process_group_cleanup_guards(self):
+        for posix, own_group in ((True, 12345), (False, 1)):
+            with self.subTest(posix=posix, own_group=own_group):
+                cr = self.new_reaper()
+                proc = Mock(pid=12345)
+                proc.poll.return_value = 0
+                with patch.object(child_reaper, "POSIX", posix), \
+                        patch.object(child_reaper.os, "getpgrp", return_value=own_group, create=True), \
+                        patch.object(child_reaper.os, "killpg", create=True) as killpg:
+                    info = cr.add_process(proc, "test", ["test"], kill_process_group=True)
+                self.assertTrue(info.dead)
+                killpg.assert_not_called()
 
     def new_reaper(self):
         with patch.object(child_reaper.GLib, "timeout_add"):
@@ -144,7 +183,7 @@ class TestChildReaper(unittest.TestCase):
         proc = Mock(pid=23456)
         proc.poll.return_value = None
         callback = Mock()
-        info = cr.add_process(proc, "test", "test", callback=callback)
+        info = cr.add_process(proc, "test", "test", callback=callback, kill_process_group=True)
         entered, release = threading.Event(), threading.Event()
 
         def slow_poll():
@@ -154,7 +193,9 @@ class TestChildReaper(unittest.TestCase):
 
         proc.poll.reset_mock()
         proc.poll.side_effect = slow_poll
-        with patch.object(child_reaper.GLib, "idle_add") as idle_add:
+        with patch.object(child_reaper.GLib, "idle_add") as idle_add, \
+                patch.object(child_reaper.os, "getpgrp", return_value=1, create=True), \
+                patch.object(child_reaper.os, "killpg", create=True) as killpg:
             thread = threading.Thread(target=cr.poll, daemon=True)
             thread.start()
             self.assertTrue(entered.wait(timeout=5))
@@ -166,6 +207,7 @@ class TestChildReaper(unittest.TestCase):
         self.assertTrue(info.dead)
         self.assertEqual(proc.poll.call_count, 1)
         idle_add.assert_called_once_with(callback, proc)
+        self.assertEqual(killpg.call_count, int(child_reaper.POSIX))
 
     def test_first_fast_child_quits(self):
         from xpra.server.subsystem import command
@@ -179,6 +221,7 @@ class TestChildReaper(unittest.TestCase):
         proc = Mock(pid=23457)
         proc.poll.return_value = 0
         with patch.object(child_reaper, "singleton", cr), patch.object(command, "Popen", return_value=proc), \
+                patch.object(child_reaper.os, "killpg", create=True), \
                 patch.dict(os.environ, {"XPRA_SESSION_DIR": ""}):
             ccs.start_command("test", ["test"])
         ccs.idle_add.assert_called_once_with(server.clean_quit)

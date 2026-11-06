@@ -15,7 +15,7 @@ from collections.abc import Callable, Sequence
 
 from xpra.util.child_reaper import get_child_reaper, ProcInfo
 from xpra.common import noop
-from xpra.os_util import OSX, WIN32
+from xpra.os_util import OSX, WIN32, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, source_env
@@ -31,6 +31,7 @@ from xpra.log import Logger
 log = Logger("exec")
 
 TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000) / 1000.0
+KILL_CHILD_PROCESS_GROUP = envbool("XPRA_KILL_CHILD_PROCESS_GROUP", True)
 
 COMMAND_SIGNALS = ("SIGINT", "SIGTERM", "SIGHUP", "SIGKILL", "SIGUSR1", "SIGUSR2")
 
@@ -379,12 +380,16 @@ class ChildCommandServer(StubSubsystem):
             real_cmd = expand_vars(real_cmd, attrs)
             log("full child command(%s, %s)=%s", child_cmd, use_wrapper, real_cmd)
             cmd_str = " ".join(real_cmd)
+            kill_process_group = POSIX and KILL_CHILD_PROCESS_GROUP
+            if kill_process_group:
+                kwargs["start_new_session"] = True
             # pylint: disable=consider-using-with
             proc = Popen(real_cmd, env=env, shell=shell, cwd=self.exec_cwd, **kwargs)
             if not ignore:
                 # count it first, `add_process` may fire the exit-with-children callback:
                 self.children_count += 1
-            procinfo = get_child_reaper().add_process(proc, name, real_cmd, ignore=ignore, callback=callback)
+            procinfo = get_child_reaper().add_process(
+                proc, name, real_cmd, ignore=ignore, callback=callback, kill_process_group=kill_process_group)
             is_ibus_daemon = real_cmd[0].endswith("daemonizer") and "ibus-daemon" in real_cmd
             cmd_info = "ibus-daemon" if is_ibus_daemon else cmd_str
             log.info(f"started command `{cmd_info}` with pid {proc.pid}")

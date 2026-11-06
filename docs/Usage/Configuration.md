@@ -50,6 +50,19 @@ man xpra
 ```
 
 Some less common features are configured through environment variables.
+
+On POSIX systems, commands launched by the server run in separate sessions. When
+a command exits, Xpra sends `SIGTERM` to the remaining members of its process
+group. This applies to all `--start*` options, commands launched by clients or
+`xpra control`, and run/exec requests. Descendants that create their own session
+or process group are outside this cleanup.
+
+`XPRA_KILL_CHILD_PROCESS_GROUP` enables this behavior by default. To disable it,
+set the variable in the server's environment before starting Xpra:
+
+```shell
+XPRA_KILL_CHILD_PROCESS_GROUP=0 xpra seamless :100 --start=xterm
+```
 </details>
 
 <details markdown="1">
