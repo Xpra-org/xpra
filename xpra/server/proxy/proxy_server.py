@@ -426,7 +426,12 @@ class ProxyServer(ServerCore):
                 nosession("failed to start a new session")
                 return
         if display is None:
-            display = c.strget("display")
+            # modern clients send the display name in the `session` namespace,
+            # and use the top level `display` key for a dictionary of display attributes,
+            # legacy clients send the display name as a top level string:
+            display = typedict(c.dictget("session") or {}).strget("display")
+            if not display and isinstance(c.get("display"), (str, bytes)):
+                display = c.strget("display")
             authlog("proxy_session: proxy-virtual-display=%s (ignored), user specified display=%s, found displays=%s",
                     proxy_virtual_display, display, displays)
             if display==proxy_virtual_display:
