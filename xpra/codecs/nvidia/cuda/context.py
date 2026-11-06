@@ -532,9 +532,14 @@ class cuda_device_context:
     def __enter__(self):
         if not self.lock.acquire(False):
             raise TransientCodecException("failed to acquire cuda device lock")
-        if not self.context:
-            self.make_context()
-        return self.push_context()
+        try:
+            if not self.context:
+                self.make_context()
+            return self.push_context()
+        except BaseException:
+            # __exit__ is not called when __enter__ fails.
+            self.lock.release()
+            raise
 
     def make_context(self) -> None:
         start = monotonic()
@@ -553,8 +558,10 @@ class cuda_device_context:
         return self.context
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        self.pop_context()
-        self.lock.release()
+        try:
+            self.pop_context()
+        finally:
+            self.lock.release()
 
     def pop_context(self) -> None:
         if c := self.context:
