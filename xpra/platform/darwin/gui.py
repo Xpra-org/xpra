@@ -9,9 +9,10 @@ from weakref import WeakValueDictionary
 from typing import Any
 from collections.abc import Callable, Sequence
 
+import objc
 import Quartz
 import Quartz.CoreGraphics as CG
-from AppKit import NSScreen, NSBeep, NSApp
+from AppKit import NSScreen, NSBeep, NSApp, NSColor
 
 from xpra.os_util import gi_import
 from xpra.common import roundup
@@ -545,9 +546,39 @@ def add_window_hooks(window) -> None:
 
 
 def remove_window_hooks(window) -> None:
-    if WHEEL:
-        if nsview := get_nsview(window):
-            VIEW_TO_WINDOW.pop(nsview, None)
+    nsview = get_nsview(window)
+    if WHEEL and nsview:
+        VIEW_TO_WINDOW.pop(nsview, None)
+    OPAQUE_VIEWS.discard(nsview)
+
+
+# the `NSView` pointers of the alpha windows which are fully covered by their opaque region:
+OPAQUE_VIEWS: set[int] = set()
+
+
+def set_window_opaque(window, opaque: bool) -> None:
+    """
+    gdk-quartz makes the `NSWindow` of an RGBA visual non-opaque with a clear background,
+    and since macOS 27 that also makes its native title bar transparent (#5120).
+    So we make the `NSWindow` opaque again when the window declares itself fully opaque,
+    and restore the transparency if it no longer does.
+    """
+    nsview = get_nsview(window)
+    if not nsview or opaque == (nsview in OPAQUE_VIEWS):
+        return
+    nsview_obj = objc.objc_object(c_void_p=ctypes.c_void_p(nsview))
+    nswindow = nsview_obj.window()
+    log("set_window_opaque(%s, %s) nswindow=%s", window, opaque, nswindow)
+    if not nswindow:
+        return
+    if opaque:
+        OPAQUE_VIEWS.add(nsview)
+        nswindow.setBackgroundColor_(NSColor.windowBackgroundColor())
+        nswindow.setOpaque_(True)
+    else:
+        OPAQUE_VIEWS.discard(nsview)
+        nswindow.setBackgroundColor_(NSColor.clearColor())
+        nswindow.setOpaque_(False)
 
 
 def get_CG_imagewrapper(rect=None):

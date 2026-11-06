@@ -255,6 +255,13 @@ def remove_window_hooks(_window) -> None:
     """
 
 
+def set_window_opaque(_window, _opaque: bool) -> None:
+    """
+    Called for windows with an alpha channel whenever their opaque region changes,
+    `opaque` is True when the region covers the whole window.
+    """
+
+
 def show_desktop(_show) -> None:
     """ If possible, show the desktop """
 
@@ -392,6 +399,7 @@ platform_import(globals(), "gui", False,
                 "get_default_cursor_size", "get_max_cursor_size",
                 "get_window_frame_sizes",
                 "add_window_hooks", "remove_window_hooks",
+                "set_window_opaque",
                 "system_bell",
                 "get_display_name",
                 "get_display_size",

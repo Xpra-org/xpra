@@ -26,7 +26,7 @@ from xpra.gtk.window import set_visual
 from xpra.gtk.cursors import new_cursor, make_cursor, get_default_cursor
 from xpra.gtk.pixbuf import get_pixbuf_from_data
 from xpra.common import (
-    force_size_constraint, noop,
+    force_size_constraint, noop, is_covered_by_opaque_region,
 )
 from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING
 from xpra.net.common import PacketElement
@@ -38,7 +38,7 @@ from xpra.client.gtk3.window.common import (
 )
 from xpra.platform.gui import (
     set_fullscreen_monitors, set_shaded,
-    add_window_hooks, remove_window_hooks,
+    add_window_hooks, remove_window_hooks, set_window_opaque,
 )
 from xpra.log import Logger
 
@@ -1085,12 +1085,14 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # gtk can only set a single region!
         # noinspection PyArgumentList
         r = Region()
+        scaled = []
         for rect in rectangles:
             # "opaque-region", aka "_NET_WM_OPAQUE_REGION" is meant to use unsigned values
             # but some applications use 0xffffffff, so we have to validate it:
             rvalues = tuple((int(v) if v < 2**32 else -1) for v in rect)
-            rectint = RectangleInt(*self.srect(*rvalues))
-            r.union(Region(rectint))
+            srect = self.srect(*rvalues)
+            scaled.append(srect)
+            r.union(Region(RectangleInt(*srect)))
 
         def do_set_region() -> None:
             log("set_opaque_region(%s)", r)
@@ -1101,6 +1103,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                     log.warn("Warning: cannot set opaque region %r", r)
                     log.warn(" a package may be missing")
                     log.warn(f" {e}")
+            if self._has_alpha:
+                set_window_opaque(self, is_covered_by_opaque_region(scaled, *self._size))
 
         self.when_realized("set-opaque-region", do_set_region)
 

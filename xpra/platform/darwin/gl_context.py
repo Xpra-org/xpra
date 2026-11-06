@@ -187,7 +187,9 @@ class AGLContext:
             log("get_paint_context(%#x) nsview=%s", nsview_ptr, nsview)
             if self.alpha:
                 self.gl_context.setValues_forParameter_([0], NSOpenGLCPSurfaceOpacity)
-                set_nsview_transparent(nsview)
+                from xpra.platform.darwin.gui import OPAQUE_VIEWS
+                if nsview_ptr not in OPAQUE_VIEWS:
+                    set_nsview_transparent(nsview)
             self.window_context = AGLWindowContext(self.gl_context, nsview)
         return self.window_context
 
