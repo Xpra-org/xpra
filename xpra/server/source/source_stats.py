@@ -7,7 +7,7 @@
 
 from math import sqrt
 from time import monotonic
-from typing import Any
+from typing import Any, NamedTuple
 from collections import deque
 from collections.abc import Sequence
 
@@ -21,8 +21,15 @@ from xpra.log import Logger
 log = Logger("network", "stats")
 
 NRECS = 500
-TCP_NOTSENT_MIN_TARGET = 0.010
-TCP_NOTSENT_MAX_TARGET = 0.250
+TRANSPORT_QUEUE_MIN_TARGET = 0.010
+TRANSPORT_QUEUE_MAX_TARGET = 0.250
+TRANSPORT_QUEUE_MAX_AGE = 5.0
+
+
+class TransportQueueSample(NamedTuple):
+    event_time: float
+    queued_bytes: int
+    queued_time: float | None
 
 
 def safeint(v, default: int = 0) -> int:
@@ -73,8 +80,7 @@ class GlobalPerformanceStatistics:
         # last NRECS: (event_time, lateness_pct, duration)
         self.bytes_sent = d(NRECS // 4)  # how much bandwidth we are using
         # last NRECS: (sample_time, bytes)
-        self.tcp_notsent = d(NRECS // 4)  # kernel-side TCP write queue delay
-        # last NRECS: (sample_time, notsent_bytes, queued_time)
+        self.transport_queue: deque[TransportQueueSample] = d(NRECS // 4)  # data awaiting transport transmission
         self.quality = d()  # quality used for sending updates:
         # (event_time, no of pixels, quality)
         self.speed = d()  # speed used for sending updates:
@@ -114,17 +120,37 @@ class GlobalPerformanceStatistics:
                 return int(sent / elapsed)
         return 0
 
+    def record_transport_queue(self, event_time: float, queued_bytes: int, bytes_per_second: float) -> None:
+        """Record queued bytes and their approximate drain time in seconds."""
+        queued_bytes = max(0, queued_bytes)
+        queued_time = None
+        if queued_bytes == 0:
+            queued_time = 0.0
+        elif bytes_per_second > 0:
+            queued_time = queued_bytes / bytes_per_second
+        self.transport_queue.append(TransportQueueSample(event_time, queued_bytes, queued_time))
+
+    def get_transport_queue_samples(self) -> tuple[TransportQueueSample, ...]:
+        cutoff = monotonic() - TRANSPORT_QUEUE_MAX_AGE
+        return tuple(sample for sample in tuple(self.transport_queue) if sample.event_time > cutoff)
+
     def record_tcp_info(self, event_time: float, info: dict[str, Any]) -> None:
-        notsent = safeint(info.get("notsent_bytes", 0))
-        if notsent <= 0:
-            self.tcp_notsent.append((event_time, 0, 0.0))
+        if "notsent_bytes" not in info:
             return
+        notsent = safeint(info["notsent_bytes"])
         delivery_rate = safeint(info.get("delivery_rate", 0))
         if delivery_rate <= 0:
             delivery_rate = self.get_recent_output_rate()
-        if delivery_rate <= 0:
+        self.record_transport_queue(event_time, notsent, delivery_rate)
+
+    def record_quic_info(self, event_time: float, info: dict[str, Any]) -> None:
+        if "pending-bytes" not in info:
             return
-        self.tcp_notsent.append((event_time, notsent, notsent / delivery_rate))
+        recent = info.get("recent", {})
+        # QUIC output counters measure data submitted to aioquic, not drained
+        # from its queue. Only use a usable recent ACK rate, in bytes/second.
+        delivery_rate = safeint(recent.get("acked-bitrate", 0)) / 8 if recent.get("status") == "active" else 0
+        self.record_transport_queue(event_time, safeint(info["pending-bytes"]), delivery_rate)
 
     def record_latency(self, wid: int, damage_packet_sequence: int, decode_time: int,
                        queued_at: float, pixels: int, bytecount: int, latency: int) -> None:
@@ -234,15 +260,17 @@ class GlobalPerformanceStatistics:
             mayaddfac("mmap-area", {"full-pct": int(100 * full)}, logp(3 * full), (3 * full) ** 2)
         if self.congestion_value > 0:
             mayaddfac("congestion", {}, 1 + self.congestion_value, self.congestion_value * 10)
-        if self.tcp_notsent:
-            tcp_notsent_values = tuple((event_time, queued_time)
-                                       for event_time, _, queued_time in tuple(self.tcp_notsent))
-            avg, recent = calculate_time_weighted_average(tcp_notsent_values)
+        # A missing rate does not mean the queue drained. Keep recent known
+        # estimates until they expire, without refreshing them from unknowns.
+        queue_values = tuple((sample.event_time, sample.queued_time) for sample in self.get_transport_queue_samples()
+                             if sample.queued_time is not None)
+        if queue_values:
+            avg, recent = calculate_time_weighted_average(queue_values)
             if max(avg, recent) > 0:
-                target = max(TCP_NOTSENT_MIN_TARGET,
-                             min(TCP_NOTSENT_MAX_TARGET, self.avg_client_latency or self.DEFAULT_LATENCY))
+                target = max(TRANSPORT_QUEUE_MIN_TARGET,
+                             min(TRANSPORT_QUEUE_MAX_TARGET, self.avg_client_latency or self.DEFAULT_LATENCY))
                 weight_multiplier = sqrt(max(avg, recent) / target)
-                metric = "tcp-notsent"
+                metric = "transport-queue"
                 mayaddfac(*calculate_for_target(metric, target, avg, recent,
                                                 aim=0.25, slope=0.005, smoothing=sqrt,
                                                 weight_multiplier=weight_multiplier))
@@ -265,12 +293,15 @@ class GlobalPerformanceStatistics:
                 "elapsed-time": int(now - self.last_congestion_time),
             },
         }
-        if self.tcp_notsent:
-            notsent = tuple(int(x[1]) for x in tuple(self.tcp_notsent))
-            queued = tuple(int(1000 * x[2]) for x in tuple(self.tcp_notsent))
-            info["tcp-notsent"] = {
-                "bytes": get_list_stats(notsent),
+        if queue_samples := self.get_transport_queue_samples():
+            latest_sample = queue_samples[-1]
+            queued_bytes = tuple(sample.queued_bytes for sample in queue_samples)
+            queued = tuple(int(1000 * sample.queued_time) for sample in queue_samples if sample.queued_time is not None)
+            info["transport-queue"] = {
+                "bytes": get_list_stats(queued_bytes),
                 "queue-time": get_list_stats(queued),
+                # Availability is for the latest sample; statistics include older known samples.
+                "queue-time-known": latest_sample.queued_time is not None,
             }
         if self.min_client_latency is not None:
             info["latency"] = {"absmin": int(self.min_client_latency * 1000)}

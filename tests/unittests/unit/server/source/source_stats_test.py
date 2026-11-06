@@ -6,8 +6,11 @@
 
 import unittest
 from time import monotonic
+from unittest.mock import patch
 
-from xpra.server.source.source_stats import GlobalPerformanceStatistics, safeint
+from xpra.server.source.source_stats import GlobalPerformanceStatistics, TransportQueueSample, TRANSPORT_QUEUE_MAX_AGE, safeint
+from xpra.server.window.batch_config import DamageBatchConfig
+from xpra.server.window.batch_delay_calculator import update_batch_delay
 
 
 class TestSafeint(unittest.TestCase):
@@ -43,9 +46,11 @@ class TestGlobalPerformanceStatistics(unittest.TestCase):
         now = monotonic()
         s.client_latency.append((1, now, 100, 0.05))
         s.client_ping_latency.append((now, 0.03))
+        s.record_transport_queue(now, 10000, 100000)
         s.reset()
         self.assertEqual(len(s.client_latency), 0)
         self.assertEqual(len(s.client_ping_latency), 0)
+        self.assertEqual(len(s.transport_queue), 0)
 
     def test_record_latency(self):
         s = self.stats
@@ -117,10 +122,10 @@ class TestGlobalPerformanceStatistics(unittest.TestCase):
         s = self.stats
         now = monotonic()
         s.record_tcp_info(now, {"notsent_bytes": 20000, "delivery_rate": 100000})
-        self.assertEqual(len(s.tcp_notsent), 1)
-        _event_time, notsent, queued_time = s.tcp_notsent[-1]
-        self.assertEqual(notsent, 20000)
-        self.assertAlmostEqual(queued_time, 0.2)
+        self.assertEqual(len(s.transport_queue), 1)
+        sample = s.transport_queue[-1]
+        self.assertEqual(sample.queued_bytes, 20000)
+        self.assertAlmostEqual(sample.queued_time, 0.2)
 
     def test_record_tcp_info_uses_output_rate_fallback(self):
         s = self.stats
@@ -128,10 +133,104 @@ class TestGlobalPerformanceStatistics(unittest.TestCase):
         s.bytes_sent.append((now - 2, 0))
         s.bytes_sent.append((now, 200000))
         s.record_tcp_info(now, {"notsent_bytes": 50000})
-        self.assertEqual(len(s.tcp_notsent), 1)
-        _event_time, notsent, queued_time = s.tcp_notsent[-1]
-        self.assertEqual(notsent, 50000)
-        self.assertAlmostEqual(queued_time, 0.5)
+        self.assertEqual(len(s.transport_queue), 1)
+        sample = s.transport_queue[-1]
+        self.assertEqual(sample.queued_bytes, 50000)
+        self.assertAlmostEqual(sample.queued_time, 0.5)
+
+    def test_record_quic_info_uses_total_pending_and_ack_rate(self):
+        now = monotonic()
+        self.stats.record_quic_info(now, {
+            "pending-new-bytes": 30000, "pending-retransmit-bytes": 20000, "pending-bytes": 50000,
+            "recent": {"status": "active", "acked-bitrate": 800000},
+        })
+        self.assertEqual(self.stats.transport_queue[-1], TransportQueueSample(now, 50000, 0.5))
+
+    def test_unknown_rate_preserves_bytes_without_assuming_zero_delay(self):
+        s = self.stats
+        now = monotonic()
+        # A high application submission rate must not be used as QUIC drainage.
+        s.bytes_sent.extend(((now - 1, 0), (now, 10000000)))
+        for recent in ({}, {"status": "insufficient"}, {"status": "idle", "acked-bitrate": 800000},
+                       {"status": "active", "acked-bitrate": 0}):
+            with self.subTest(recent=recent):
+                s.record_quic_info(now, {"pending-bytes": 50000, "recent": recent})
+                self.assertEqual(s.transport_queue[-1], TransportQueueSample(now, 50000, None))
+        queue = s.get_connection_info()["transport-queue"]
+        self.assertEqual(queue["bytes"]["max"], 50000)
+        self.assertFalse(queue["queue-time-known"])
+        self.assertEqual(queue["queue-time"], {})
+        self.assertNotIn("transport-queue", [f[0] for f in s.get_factors(1000)])
+
+    def test_tcp_unknown_rate_and_missing_transport_metrics(self):
+        s = self.stats
+        now = monotonic()
+        s.record_tcp_info(now, {})
+        s.record_quic_info(now, {})
+        self.assertFalse(s.transport_queue)
+        s.record_tcp_info(now, {"notsent_bytes": 50000})
+        self.assertEqual(s.transport_queue[-1], TransportQueueSample(now, 50000, None))
+
+    def test_empty_queue_records_zero_without_a_rate(self):
+        s = self.stats
+        now = monotonic()
+        for record, info in ((s.record_tcp_info, {"notsent_bytes": 0}),
+                             (s.record_quic_info, {"pending-bytes": 0})):
+            with self.subTest(record=record):
+                record(now, info)
+                self.assertEqual(s.transport_queue[-1], TransportQueueSample(now, 0, 0.0))
+                queue = s.get_connection_info()["transport-queue"]
+                self.assertTrue(queue["queue-time-known"])
+                self.assertEqual(queue["queue-time"]["max"], 0)
+        self.assertNotIn("transport-queue", [f[0] for f in s.get_factors(1000)])
+
+    def test_queue_time_availability_uses_latest_sample(self):
+        s = self.stats
+        now = monotonic()
+        s.record_transport_queue(now - 1, 50000, 100000)
+        s.record_transport_queue(now, 100000, 0)
+        queue = s.get_connection_info()["transport-queue"]
+        self.assertFalse(queue["queue-time-known"])
+        self.assertEqual(queue["queue-time"]["max"], 500)
+        s.record_transport_queue(now, 0, 0)
+        self.assertTrue(s.get_connection_info()["transport-queue"]["queue-time-known"])
+
+    def test_transport_queue_samples_expire_after_idle(self):
+        s = self.stats
+        now = monotonic()
+        s.record_transport_queue(now, 50000, 100000)
+        with patch("xpra.server.source.source_stats.monotonic", return_value=now + TRANSPORT_QUEUE_MAX_AGE + 0.1):
+            self.assertFalse(s.get_transport_queue_samples())
+            self.assertNotIn("transport-queue", [f[0] for f in s.get_factors(1000)])
+            self.assertNotIn("transport-queue", s.get_connection_info())
+
+    def test_unknown_rate_does_not_refresh_old_delay_estimates(self):
+        s = self.stats
+        now = monotonic()
+        s.record_transport_queue(now - TRANSPORT_QUEUE_MAX_AGE - 1, 50000, 100000)
+        s.record_quic_info(now, {"pending-bytes": 100000})
+        self.assertEqual(s.get_transport_queue_samples(), (TransportQueueSample(now, 100000, None),))
+        self.assertNotIn("transport-queue", [f[0] for f in s.get_factors(1000)])
+        s.record_quic_info(now, {"pending-bytes": 0})
+        self.assertEqual(s.get_connection_info()["transport-queue"]["queue-time"]["max"], 0)
+
+    def test_tcp_and_quic_share_the_batch_delay_factor(self):
+        now = monotonic()
+        tcp, quic = GlobalPerformanceStatistics(), GlobalPerformanceStatistics()
+        tcp.record_tcp_info(now, {"notsent_bytes": 50000, "delivery_rate": 100000})
+        quic.record_quic_info(now, {"pending-bytes": 50000,
+                                    "recent": {"status": "active", "acked-bitrate": 800000}})
+        tcp_factor, = tcp.get_factors(1000)
+        quic_factor, = quic.get_factors(1000)
+        self.assertEqual(tcp_factor[0], "transport-queue")
+        self.assertEqual(quic_factor[0], "transport-queue")
+        self.assertAlmostEqual(tcp_factor[2], quic_factor[2])
+        self.assertAlmostEqual(tcp_factor[3], quic_factor[3])
+        for factor in (tcp_factor, quic_factor):
+            batch = DamageBatchConfig()
+            initial = batch.delay
+            update_batch_delay(batch, [factor])
+            self.assertGreater(batch.delay, initial)
 
     def test_get_factors_empty(self):
         factors = self.stats.get_factors(1000)
@@ -167,14 +266,14 @@ class TestGlobalPerformanceStatistics(unittest.TestCase):
         metrics = [f[0] for f in factors]
         self.assertIn("congestion", metrics)
 
-    def test_get_factors_tcp_notsent(self):
+    def test_get_factors_transport_queue(self):
         s = self.stats
         now = monotonic()
         s.record_tcp_info(now - 1, {"notsent_bytes": 10000, "delivery_rate": 100000})
         s.record_tcp_info(now, {"notsent_bytes": 30000, "delivery_rate": 100000})
         factors = s.get_factors(1000)
         metrics = [f[0] for f in factors]
-        self.assertIn("tcp-notsent", metrics)
+        self.assertIn("transport-queue", metrics)
 
     def test_get_connection_info_structure(self):
         info = self.stats.get_connection_info()

@@ -186,6 +186,10 @@ class EncodingsConnection(StubClientConnection):
         # we can't assume that 'self' is a full ClientConnection object:
         if stats := getattr(self, "statistics", None):
             stats.bytes_sent.append((now, conn.output_bytecount))
+            if control := getattr(conn, "congestion_control", None):
+                # QUIC publishes snapshots on the asyncio thread. Reading one
+                # here never inspects its live streams or recovery state.
+                stats.record_quic_info(now, control.get_info())
             if getattr(conn, "socktype_wrapped", "") in TCP_SOCKTYPES:
                 try:
                     from xpra.platform.netdev_query import get_socket_tcp_info
