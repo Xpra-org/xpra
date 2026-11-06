@@ -64,17 +64,36 @@ TEST_COMPRESSED_DATA: dict[str, dict[str, dict[tuple[int, int], TEST_DATA]]] = {
             (32, 32): (
                 unhex("0000000140010c01ffff0408000003009fa800000300003fba0240000000014201010408000003009fa800000300003fa04208596eae4cafff000100016a0c0c0c080000030008000003000840000000014401c173c0890000000140010c01ffff0408000003009fa800000300003fba0240000000014201010408000003009fa800000300003fa04208596eae4cafff000100016a0c0c0c080000030008000003000840000000014401c173c089000000012801af06b8922974f5ff87eb5c"),
             ),
+            # some decoders can't handle 32x32 (ie: mf), so also test an IDR followed by a P frame:
+            # gst-launch-1.0 videotestsrc num-buffers=2 pattern=black !
+            #   video/x-raw,width=128,height=128,format=I420,framerate=1/1 !
+            #   x265enc key-int-max=30 tune=zerolatency log-level=none option-string=info=0 !
+            #   h265parse config-interval=-1 !
+            #   video/x-h265,stream-format=byte-stream,alignment=au !
+            #   multifilesink location=frame%d.h265
+            (128, 128): (
+                unhex("000000014601500000000140010c01ffff01600000030090000003000003003f9280900000000142010101600000030090000003000003003fa01020205964a924cafff000100016a0c0c0c08000000300800000030084000000014401c172b42240000000012801af06b864358933ff8984de1634db48caeab4c2d60e6ade10000115"),
+                unhex("00000001460150000000010201d0097e10c60d707145fc89"),
+            ),
         },
-        # same pipeline, with format=Y42B
+        # same pipelines, with format=Y42B
         "YUV422P": {
             (32, 32): (
                 unhex("0000000140010c01ffff0408000003009d2800000300003fba0240000000014201010408000003009d2800000300003fb04208596eae4cafff000100016a0c0c0c080000030008000003000840000000014401c173c0890000000140010c01ffff0408000003009d2800000300003fba0240000000014201010408000003009d2800000300003fb04208596eae4cafff000100016a0c0c0c080000030008000003000840000000014401c173c089000000012801af06b89229f9b49ffab249e0"),
             ),
+            (128, 128): (
+                unhex("000000014601500000000140010c01ffff0408000003009d0800000300003f928090000000014201010408000003009d0800000300003fb01020205964a924cafff000100016a0c0c0c08000000300800000030084000000014401c172b42240000000012801af06b86435fad7affc3f57f0b9f04387433f41ca67eea8a5600009c8"),
+                unhex("00000001460150000000010201d0097e10c60d707145fc89"),
+            ),
         },
-        # same pipeline, with format=Y444
+        # same pipelines, with format=Y444
         "YUV444P": {
             (32, 32): (
                 unhex("0000000140010c01ffff0408000003009e2800000300003fba0240000000014201010408000003009e2800000300003f9008410b2dd5c995ffe00020002d418181810000030001000003000108000000014401c173c0890000000140010c01ffff0408000003009e2800000300003fba0240000000014201010408000003009e2800000300003f9008410b2dd5c995ffe00020002d418181810000030001000003000108000000014401c173c089000000012801af06b8922974f5ff87eb5c"),
+            ),
+            (128, 128): (
+                unhex("000000014601500000000140010c01ffff0408000003009e0800000300003f928090000000014201010408000003009e0800000300003f900204040b2c9524995ffe00020002d4181818100000030010000003001080000000014401c172860c4224000000012801af06b864358933ff8984de1634db48caeab4c2d60e6ade10000115"),
+                unhex("00000001460150000000010201d0097e10c60d707145fc89"),
             ),
         },
     },
@@ -409,10 +428,12 @@ def testdecoding(decoder_module, encoding: str, cs: str, full: bool) -> None:
     min_w, min_h = decoder_module.get_min_size(encoding)
     test_data: dict[tuple[int, int], TEST_DATA] = {}
     if test_data_set:
-        test_data = test_data_set.get(cs, {})
+        test_data = dict(test_data_set.get(cs, {}))
     elif encoding in TEST_PICTURES:
         # maybe this is a picture format:
-        test_data = TEST_PICTURES[encoding]
+        test_data = dict(TEST_PICTURES[encoding])
+    has_samples = any(test_data.values())
+    decoded = 0
     # add a context init test, without any data to decode:
     test_data.setdefault((256, 128), ())
     log("will test sizes: %s", csv(test_data.keys()))
@@ -447,6 +468,7 @@ def testdecoding(decoder_module, encoding: str, cs: str, full: bool) -> None:
                                 raise RuntimeError(f"expected image of height {h} but got {image.get_height()}")
                             log(f" test passed for {w}x{h} {encoding} - {cs}")
                             image.free()
+                            decoded += 1
                         except Exception:
                             log.error(f"Error on {encoding} {w}x{h} test {cs} frame {i}")
                             raise
@@ -462,6 +484,10 @@ def testdecoding(decoder_module, encoding: str, cs: str, full: bool) -> None:
                         raise RuntimeError(f"decoding junk with {decoder_module.get_type()} should have failed, got {image} instead")
             finally:
                 decoder.clean()
+    if has_samples and not decoded:
+        # creating a context proves nothing, we must decode at least one frame:
+        raise RuntimeError(f"none of the {encoding} {cs} test samples can be used with {decoder_module.get_type()}"
+                           f" (min size is {min_w}x{min_h})")
 
 
 def testencoder(encoder_module, full: bool, options: typedict) -> Sequence[str]:
