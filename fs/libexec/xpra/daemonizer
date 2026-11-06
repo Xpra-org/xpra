@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os.path
+import signal
 import sys
 
 
@@ -29,12 +30,15 @@ def main(argv: list[str]) -> int:
 
     from xpra.util.io import livefds
     from xpra.util.daemon import daemonize
+    from xpra.util.env import envbool
+    kill_process_group = envbool("XPRA_KILL_CHILD_PROCESS_GROUP", True)
     daemonize()
 
     from subprocess import Popen
     command = sys.argv[3:]
+    proc = None
     try:
-        proc = Popen(command, close_fds=True)
+        proc = Popen(command, close_fds=True, start_new_session=kill_process_group)
         pid = proc.pid
 
         with open(pidfile, "wb") as f:
@@ -52,6 +56,13 @@ def main(argv: list[str]) -> int:
     except Exception:
         return 1
     finally:
+        if proc and kill_process_group:
+            # The command is no longer Xpra's child after the double fork,
+            # so clean up its group here without depending on Xpra's reaper.
+            try:
+                os.killpg(proc.pid, signal.SIGTERM)
+            except OSError:
+                pass
         try:
             os.unlink(pidfile)
         except Exception:

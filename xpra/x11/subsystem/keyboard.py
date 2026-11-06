@@ -11,8 +11,10 @@ from time import monotonic
 from subprocess import Popen
 
 from xpra.common import noop
+from xpra.os_util import POSIX
 from xpra.server.source.keyboard import KeyboardConnection
-from xpra.util.pid import load_pid, kill_pid
+from xpra.util.pid import load_pid, write_pid
+from xpra.util.child_reaper import KILL_CHILD_PROCESS_GROUP, ProcInfo, get_child_reaper, pid_exists, stop_child_process
 from xpra.util.env import envbool
 from xpra.util.io import find_libexec_command, which
 from xpra.util.objects import typedict, Scheduler
@@ -92,20 +94,42 @@ def get_ibus_dirs() -> tuple[str, str]:
     return dirs
 
 
-def may_start_ibus(env: dict[str, str], scheduler: Scheduler):
+def ibus_has_process_group(pid: int) -> bool:
+    if not POSIX or not KILL_CHILD_PROCESS_GROUP or pid <= 1:
+        return False
+    try:
+        return os.getpgid(pid) == pid != os.getpgrp()
+    except OSError:
+        return False
+
+
+def may_start_ibus(env: dict[str, str], scheduler: Scheduler) -> ProcInfo | None:
     # maybe we are inheriting one from a dead session?
     daemonizer = find_libexec_command("daemonizer")
     pidfile = ibus_pid_file()
     ibus_daemon_pid = load_pid(pidfile)
     ibuslog(f"may_start_ibus({env}) {ibus_daemon_pid=}, {pidfile=!r}, {daemonizer=!r}")
+
+    def register_pid(pid: int, command) -> ProcInfo:
+        reaper = get_child_reaper()
+        procinfo = reaper.add_pid(pid, "ibus-daemon", command=command, ignore=True, forget=False,
+                                  kill_process_group=ibus_has_process_group(pid))
+        procinfo.pidfile = pidfile
+
+        def poll_ibus() -> bool:
+            # A detached daemon does not deliver SIGCHLD to this server.
+            reaper.poll()
+            return not procinfo.dead
+
+        if not procinfo.dead:
+            scheduler.timeout_add(1000, poll_ibus)
+        return procinfo
+
     pidfile_exists = os.path.exists(pidfile)
-    pid_exists = os.path.exists(f"/proc/{ibus_daemon_pid}")
-    if ibus_daemon_pid and pid_exists:
-        pid = load_pid(pidfile)
-        if pid > 0:
-            ibuslog(f"ibus-daemon is already running with pid {pid!r}")
-            return
-    if pidfile_exists and os.path.exists("/proc"):
+    if POSIX and ibus_daemon_pid > 1 and pid_exists(ibus_daemon_pid):
+        ibuslog(f"ibus-daemon is already running with pid {ibus_daemon_pid!r}")
+        return register_pid(ibus_daemon_pid, shlex.split(IBUS_DAEMON_COMMAND))
+    if pidfile_exists:
         try:
             os.unlink(pidfile)
         except OSError as e:
@@ -114,52 +138,63 @@ def may_start_ibus(env: dict[str, str], scheduler: Scheduler):
             # don't trust the pidfile value from now on:
             pidfile = ""
 
-    def start():
+    def start() -> ProcInfo | None:
         command = shlex.split(IBUS_DAEMON_COMMAND)
+        child_env = env
         ibuslog(f"starting ibus: {IBUS_DAEMON_COMMAND!r}")
         if daemonizer:
             from xpra.platform.paths import get_python_execfile_command
             command = get_python_execfile_command() + [daemonizer, pidfile, "--"] + command
             ibuslog(" using daemonizer: %r", command)
-        proc = Popen(command, env=env)
+            # Keep the daemonizer's isolation policy consistent with its registration.
+            child_env = dict(env)
+            child_env["XPRA_KILL_CHILD_PROCESS_GROUP"] = "1" if KILL_CHILD_PROCESS_GROUP else "0"
+        proc = Popen(command, env=child_env, start_new_session=POSIX and KILL_CHILD_PROCESS_GROUP and not daemonizer)
         ibuslog("ibus-daemon proc=%s", proc)
         start = monotonic()
-        from xpra.util.child_reaper import get_child_reaper
 
-        def rec_new_pid() -> None:
+        def rec_new_pid() -> bool:
             if pidfile and os.path.exists(pidfile):
                 new_pid = load_pid(pidfile)
                 ibuslog(f"{new_pid=}")
                 if new_pid:
                     ibuslog.info(f"ibus-daemon is running with pid {new_pid!r}")
-                    procinfo = get_child_reaper().add_pid(new_pid, "ibus-daemon", command=command,
-                                                          ignore=True, forget=False)
-                    procinfo.pidfile = pidfile
+                    register_pid(new_pid, command)
+                    return True
+            return False
 
         def poll_daemonizer() -> bool:
             poll = proc.poll()
             ibuslog(f"poll_daemonizer() {poll=}")
-            if poll is not None:
-                rec_new_pid()
+            if poll is not None and rec_new_pid():
                 return False
             elapsed = monotonic() - start
             if elapsed < 5:
                 return True
-            ibuslog.warn("Warning: the daemonizer has failed to exit")
-            stop_proc(proc, "daemonizer")
+            if poll is None:
+                ibuslog.warn("Warning: the daemonizer has failed to exit")
+                stop_proc(proc, "daemonizer")
+            else:
+                ibuslog.warn("Warning: the ibus daemon PID file was not written")
             return False
 
         if daemonizer:
             scheduler.timeout_add(50, poll_daemonizer)
+            return None
         else:
-            get_child_reaper().add_process(proc, "ibus-daemon", command,
-                                           ignore=True, forget=False)
+            procinfo = get_child_reaper().add_process(proc, "ibus-daemon", command, ignore=True, forget=False,
+                                                      kill_process_group=POSIX and KILL_CHILD_PROCESS_GROUP)
+            with procinfo.lock:
+                if pidfile and not procinfo.dead:
+                    procinfo.pidfile = pidfile
+                    procinfo.pidinode = write_pid(pidfile, proc.pid)
+            return procinfo
 
-    start()
+    return start()
 
 
 class X11KeyboardManager(KeyboardManager):
-    __slots__ = ("current_keyboard_group", "ibus_layouts", "input_method", "xkb")
+    __slots__ = ("current_keyboard_group", "ibus_layouts", "ibus_procinfo", "input_method", "xkb")
     BACKEND = "x11"
 
     def __init__(self, server=None):
@@ -167,6 +202,7 @@ class X11KeyboardManager(KeyboardManager):
         self.xkb = False
         self.input_method = "keep"
         self.ibus_layouts: dict[str, Any] = {}
+        self.ibus_procinfo: ProcInfo | None = None
         # the layout group we last set, or -1 when unknown:
         self.current_keyboard_group = -1
 
@@ -229,7 +265,7 @@ class X11KeyboardManager(KeyboardManager):
         if self.input_method == "ibus":
             if IBUS:
                 env = self.server.get_child_env()
-                may_start_ibus(env, self)
+                self.ibus_procinfo = may_start_ibus(env, self)
             else:
                 log.warn("Warning: ibus is disabled, but input-method uses it")
                 log.warn(" either use another input method or start the daemon manually")
@@ -275,9 +311,16 @@ class X11KeyboardManager(KeyboardManager):
     def late_cleanup(self, stop=True) -> None:
         if not stop or not IBUS:
             return
-        pidfile = ibus_pid_file()
-        if pid := load_pid(pidfile):
-            kill_pid(pid, "ibus-daemon")
+        procinfo = self.ibus_procinfo
+        if procinfo is None and (pid := load_pid(ibus_pid_file())):
+            reaper = get_child_reaper()
+            procinfo = reaper.get_proc_info(pid)
+            if procinfo is None:
+                # Startup registration may still be pending, or this is an older daemon.
+                procinfo = reaper.add_pid(pid, "ibus-daemon", shlex.split(IBUS_DAEMON_COMMAND), ignore=True,
+                                          kill_process_group=ibus_has_process_group(pid))
+        if procinfo:
+            stop_child_process(procinfo.process, "ibus-daemon")
 
     def send_initial_data(self, ss) -> None:
         self.send_ibus_layouts(ss)

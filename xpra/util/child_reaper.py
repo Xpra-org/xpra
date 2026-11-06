@@ -85,6 +85,10 @@ class PidPopen:
         # same name as in `Popen`, so `is_pending()` can see that it is being reaped:
         self._waitpid_lock = Lock()
 
+    def terminate(self) -> None:
+        if self.pid > 1 and self.pid != os.getpid():
+            os.kill(self.pid, signal.SIGTERM)
+
     def poll(self) -> int | None:
         if self.returncode is not None or not POSIX:
             return self.returncode
@@ -206,10 +210,12 @@ class ChildReaper:
             self._proc_info = []
         self._quit = None
 
-    def add_pid(self, pid: int, name: str, command: str | Sequence[str], ignore=False, forget=False, callback=None) -> ProcInfo:
+    def add_pid(self, pid: int, name: str, command: str | Sequence[str], ignore=False, forget=False, callback=None,
+                kill_process_group: bool = False) -> ProcInfo:
         # this method is used when we have a pid but not a Popen object
         process = PidPopen(pid)
-        return self.add_process(process, name, command, ignore=ignore, forget=forget, callback=callback)
+        return self.add_process(process, name, command, ignore=ignore, forget=forget, callback=callback,
+                                kill_process_group=kill_process_group)
 
     def add_process(self, process, name: str, command: str | Sequence[str], ignore=False, forget=False, callback=None,
                     kill_process_group: bool = False) -> ProcInfo:

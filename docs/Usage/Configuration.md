@@ -54,9 +54,9 @@ Some less common features are configured through environment variables.
 On POSIX systems, commands launched by the server run in separate sessions. When
 a command exits, Xpra sends `SIGTERM` to the remaining members of its process
 group. This applies to all `--start*` options, commands launched by clients or
-`xpra control`, and run/exec requests. PulseAudio servers started by Xpra, audio
-source/sink/meter helpers, and webcam clients also receive this cleanup, including
-when Xpra explicitly stops them. Descendants that create their own session or
+`xpra control`, and run/exec requests. PulseAudio and ibus daemons started by Xpra,
+audio source/sink/meter helpers, and webcam clients also receive this cleanup,
+including when Xpra explicitly stops them. Descendants that create their own session or
 process group are outside this cleanup.
 
 `XPRA_KILL_CHILD_PROCESS_GROUP` enables this behavior by default. To disable it,

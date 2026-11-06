@@ -140,6 +140,12 @@ class TestChildReaper(unittest.TestCase):
             killpg.assert_not_called()
             proc.terminate.assert_not_called()
 
+    def test_pid_terminate_guards(self):
+        with patch.object(child_reaper.os, "kill") as kill:
+            for pid in (0, 1, os.getpid()):
+                child_reaper.PidPopen(pid).terminate()
+            kill.assert_not_called()
+
     def new_reaper(self):
         with patch.object(child_reaper.GLib, "timeout_add"):
             return child_reaper.ChildReaper()
