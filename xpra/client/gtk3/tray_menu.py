@@ -160,7 +160,8 @@ class GTKTrayMenu(GTKMenuHelper):
         )
 
     def is_mmap_enabled(self) -> bool:
-        mra = self.client.mmap_read_area
+        # the mmap subsystem may not be present (ie: win32 clients):
+        mra = getattr(self.client, "mmap_read_area", None)
         return bool(mra and mra.enabled and mra.size > 0)
 
     def make_titlemenuitem(self) -> Gtk.MenuItem:
