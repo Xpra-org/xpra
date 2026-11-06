@@ -91,6 +91,55 @@ class TestChildReaper(unittest.TestCase):
                 self.assertTrue(info.dead)
                 killpg.assert_not_called()
 
+    def test_stop_child_process(self):
+        for kill_group, posix, exited, own_group in product((False, True), repeat=4):
+            with self.subTest(kill_group=kill_group, posix=posix, exited=exited, own_group=own_group):
+                cr = self.new_reaper()
+                proc = Mock(pid=12345)
+                proc.poll.return_value = None
+                cr.add_process(proc, "test", ["test"], ignore=True, kill_process_group=kill_group)
+                proc.poll.return_value = 7 if exited else None
+                with patch.object(child_reaper, "singleton", cr), patch.object(child_reaper, "POSIX", posix), \
+                        patch.object(child_reaper.os, "getpgrp", return_value=proc.pid if own_group else 1, create=True), \
+                        patch.object(child_reaper.os, "killpg", create=True) as killpg:
+                    child_reaper.stop_child_process(proc, "test")
+                if kill_group and posix and not own_group:
+                    killpg.assert_called_once_with(proc.pid, signal.SIGTERM)
+                    proc.terminate.assert_not_called()
+                else:
+                    killpg.assert_not_called()
+                    self.assertEqual(proc.terminate.call_count, int(not exited))
+
+    def test_stop_unregistered_process(self):
+        cr = self.new_reaper()
+        proc = Mock(pid=12345)
+        proc.poll.return_value = None
+        cr.add_process(proc, "test", ["test"], ignore=True, kill_process_group=True)
+        # A different process object with the same PID must not inherit group cleanup.
+        other_proc = Mock(pid=proc.pid)
+        other_proc.poll.return_value = None
+        for reaper in (None, cr):
+            with self.subTest(reaper=reaper), patch.object(child_reaper, "singleton", reaper), \
+                    patch.object(child_reaper.os, "killpg", create=True) as killpg:
+                other_proc.reset_mock()
+                child_reaper.stop_child_process(other_proc, "test")
+                other_proc.terminate.assert_called_once()
+                killpg.assert_not_called()
+                child_reaper.stop_child_process(None)
+
+    def test_stop_reaped_process(self):
+        cr = self.new_reaper()
+        proc = Mock(pid=12345)
+        proc.poll.return_value = 7
+        with patch.object(child_reaper, "singleton", cr), \
+                patch.object(child_reaper.os, "killpg", create=True) as killpg:
+            cr.add_process(proc, "test", ["test"], ignore=True, kill_process_group=True)
+            killpg.reset_mock()
+            child_reaper.stop_child_process(proc, "test")
+            # The group was already cleaned up; its ID may since have been reused.
+            killpg.assert_not_called()
+            proc.terminate.assert_not_called()
+
     def new_reaper(self):
         with patch.object(child_reaper.GLib, "timeout_add"):
             return child_reaper.ChildReaper()

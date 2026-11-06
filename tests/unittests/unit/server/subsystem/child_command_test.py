@@ -112,6 +112,9 @@ class ChildCommandMixinTest(ServerMixinTest):
 class ChildCommandProcessGroupTest(unittest.TestCase):
 
     def setUp(self):
+        if POSIX:
+            previous = signal.signal(signal.SIGCHLD, signal.SIG_DFL)
+            self.addCleanup(signal.signal, signal.SIGCHLD, previous)
         from xpra.server.subsystem import command
         server = Mock()
         server.get_child_env.return_value = os.environ.copy()

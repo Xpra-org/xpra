@@ -19,10 +19,10 @@ from xpra.net.common import ConnectionClosedException, Packet, PacketElement
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH
 from xpra.common import noop
-from xpra.os_util import gi_import, WIN32
+from xpra.os_util import gi_import, WIN32, POSIX
 from xpra.util.io import setbinarymode
-from xpra.util.system import SIGNAMES, stop_proc
-from xpra.util.child_reaper import get_child_reaper
+from xpra.util.system import SIGNAMES
+from xpra.util.child_reaper import KILL_CHILD_PROCESS_GROUP, get_child_reaper, stop_child_process
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -361,7 +361,8 @@ class SubprocessCaller(SignalEmitter):
         log("exec_subprocess() command=%s, env=%s, kwargs=%s", self.command, env, kwargs)
         proc = subprocess.Popen(self.command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                                 env=env, start_new_session=True, **kwargs)
-        get_child_reaper().add_process(proc, self.description, self.command, True, True, callback=self.subprocess_exit)
+        get_child_reaper().add_process(proc, self.description, self.command, True, True, callback=self.subprocess_exit,
+                                       kill_process_group=POSIX and KILL_CHILD_PROCESS_GROUP)
         return proc
 
     def get_env(self) -> dict[str, str]:
@@ -381,7 +382,7 @@ class SubprocessCaller(SignalEmitter):
 
     def stop_process(self) -> None:
         log("%s.stop_process() sending stop request to %s", self, self.description)
-        stop_proc(self.process, self.description)
+        stop_child_process(self.process, self.description)
         self.process = None
 
     def stop_protocol(self) -> None:

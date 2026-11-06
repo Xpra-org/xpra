@@ -13,6 +13,7 @@ from collections.abc import Sequence
 from xpra.os_util import OSX, POSIX
 from xpra.server.source.webcam import WebcamConnection
 from xpra.util.objects import typedict
+from xpra.util.child_reaper import KILL_CHILD_PROCESS_GROUP, get_child_reaper, stop_child_process
 from xpra.net.common import Packet
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubSubsystem
@@ -91,6 +92,10 @@ class WebcamServer(StubSubsystem):
 
     def setup(self) -> None:
         self.init_webcam()
+
+    def cleanup(self) -> None:
+        for device_id in tuple(self.client_processes):
+            self._cleanup_webcam_client(device_id, "shutdown")
 
     def get_server_features(self, _source) -> dict[str, Any]:
         return {
@@ -228,8 +233,9 @@ class WebcamServer(StubSubsystem):
         log("spawning webcam-client: %s", cmd)
         log(" with env=%s", env)
         log(" for webcam size %ix%i", w, h)
+        kill_process_group = POSIX and KILL_CHILD_PROCESS_GROUP
         try:
-            proc = Popen(cmd, env=env, close_fds=True)
+            proc = Popen(cmd, env=env, close_fds=True, start_new_session=kill_process_group)
             self.client_processes[device_id] = proc
             log("webcam-client process spawned: pid=%i", proc.pid)
 
@@ -238,9 +244,9 @@ class WebcamServer(StubSubsystem):
                 self._cleanup_webcam_client(device_id, "exit")
                 ss.send_webcam_stop(device_id, "webcam-client exited")
 
-            from xpra.util.child_reaper import get_child_reaper
             get_child_reaper().add_process(proc, f"webcam-client-{device_id}", cmd,
-                                           ignore=False, forget=True, callback=on_webcam_client_exit)
+                                           ignore=False, forget=True, callback=on_webcam_client_exit,
+                                           kill_process_group=kill_process_group)
         except Exception as e:
             log.error("Error: failed to spawn webcam-client process: %s", e)
             ss.send_webcam_stop(device_id, f"spawn failed: {e}")
@@ -263,10 +269,7 @@ class WebcamServer(StubSubsystem):
         if proto := self.client_connections.pop(device_id, None):
             proto.close(reason)
         if proc := self.client_processes.pop(device_id, None):
-            try:
-                proc.terminate()
-            except OSError:
-                pass
+            stop_child_process(proc, "webcam-client")
 
     def _process_frame(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):

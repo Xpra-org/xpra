@@ -14,7 +14,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import OSX, WIN32, POSIX, is_container, getuid, getgid
 from xpra.platform.paths import get_system_conf_dirs
-from xpra.util.child_reaper import get_child_reaper
+from xpra.util.child_reaper import KILL_CHILD_PROCESS_GROUP, get_child_reaper, terminate_child_process_group
 from xpra.util.io import pollwait, is_writable, which
 from xpra.util.env import envbool, osexpand
 from xpra.util.pid import load_pid, kill_pid
@@ -355,18 +355,20 @@ class PulseaudioServer(StubSubsystem):
                 return
             cmd[0] = pa_cmd
         self.started_at = monotonic()
+        kill_process_group = POSIX and KILL_CHILD_PROCESS_GROUP
 
         try:
             log("pulseaudio cmd=%s", shlex.join(cmd))
             log("pulseaudio env=%s", env)
-            self.proc = Popen(cmd, env=env)
+            self.proc = Popen(cmd, env=env, start_new_session=kill_process_group)
         except OSError as e:
             log("Popen(%s)", cmd, exc_info=True)
             log.error("Error: failed to start pulseaudio:")
             log.estr(e)
             self.clean_pulseaudio_private_dir()
             return
-        get_child_reaper().add_process(self.proc, "pulseaudio", cmd, ignore=True, callback=self.pulseaudio_ended)
+        get_child_reaper().add_process(self.proc, "pulseaudio", cmd, ignore=True, callback=self.pulseaudio_ended,
+                                       kill_process_group=kill_process_group)
         if self.proc:
             if sf := self.get_subsystem("session-files"):
                 sf.write_session_file("pulseaudio.pid", "%s" % self.proc.pid)
@@ -430,6 +432,7 @@ class PulseaudioServer(StubSubsystem):
             return
         log("exit_pulseaudio() process.poll()=%s, pid=%s", proc.poll(), proc.pid)
         if not is_child_alive(proc):
+            terminate_child_process_group(proc)
             return
         self.proc = None
         log.info("stopping pulseaudio with pid %s", proc.pid)
@@ -449,6 +452,8 @@ class PulseaudioServer(StubSubsystem):
             # only log the full stacktrace if the process failed to terminate:
             if is_child_alive(proc):
                 log.error("Error: stopping pulseaudio: %s", e, exc_info=True)
+        finally:
+            terminate_child_process_group(proc)
 
     def clean_pulseaudio_private_dir(self) -> None:
         if self.private_dir:

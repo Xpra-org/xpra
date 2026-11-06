@@ -13,7 +13,7 @@ from subprocess import Popen, PIPE
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.util.child_reaper import get_child_reaper, ProcInfo
+from xpra.util.child_reaper import KILL_CHILD_PROCESS_GROUP, get_child_reaper, ProcInfo
 from xpra.common import noop
 from xpra.os_util import OSX, WIN32, POSIX
 from xpra.util.objects import typedict
@@ -31,7 +31,6 @@ from xpra.log import Logger
 log = Logger("exec")
 
 TERMINATE_DELAY = envint("XPRA_TERMINATE_DELAY", 1000) / 1000.0
-KILL_CHILD_PROCESS_GROUP = envbool("XPRA_KILL_CHILD_PROCESS_GROUP", True)
 
 COMMAND_SIGNALS = ("SIGINT", "SIGTERM", "SIGHUP", "SIGKILL", "SIGUSR1", "SIGUSR2")
 

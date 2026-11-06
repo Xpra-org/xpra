@@ -31,8 +31,22 @@ sequence = AtomicInteger()
 # for its owner to collect its exit status:
 UNKNOWN_CHILD_DELAY = envint("XPRA_UNKNOWN_CHILD_DELAY", 5)
 REAP_RETRY_DELAY = envint("XPRA_REAP_RETRY_DELAY", 1)
+KILL_CHILD_PROCESS_GROUP = envbool("XPRA_KILL_CHILD_PROCESS_GROUP", True)
 # ie: macos with python < 3.13 does not have `waitid`
 HAS_WAITID = hasattr(os, "waitid")
+
+
+def _terminate_process_group(pid: int) -> bool:
+    if not POSIX or pid <= 0 or pid == os.getpgrp():
+        return False
+    try:
+        log("terminating process group %s", pid)
+        os.killpg(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        pass
+    except OSError as e:
+        log.warn("Warning: failed to terminate process group %s: %s", pid, e)
+    return True
 
 
 def pid_exists(pid: int) -> bool:
@@ -307,17 +321,11 @@ class ChildReaper:
             if procinfo.returncode is None:
                 return False
             procinfo.dead = True
-            if POSIX and procinfo.kill_process_group and procinfo.pid > 0 and procinfo.pid != os.getpgrp():
+            if procinfo.kill_process_group:
                 # The command was started with setsid, so its pid is also its pgid.
                 # The leader may already be gone; do not try to look up its group.
                 # Signal here: queued callbacks may not run during server shutdown.
-                try:
-                    log("terminating process group %s", procinfo.pid)
-                    os.killpg(procinfo.pid, signal.SIGTERM)
-                except ProcessLookupError:
-                    pass
-                except OSError as e:
-                    log.warn("Warning: failed to terminate process group %s: %s", procinfo.pid, e)
+                _terminate_process_group(procinfo.pid)
             # clear the reference to the process to free up resources:
             procinfo.process = None
             cb, procinfo.callback = procinfo.callback, None
@@ -425,6 +433,26 @@ def get_child_reaper() -> ChildReaper:
         singleton = ChildReaper()
     assert singleton
     return singleton
+
+
+def terminate_child_process_group(process) -> bool:
+    """Signal an isolated group registered for this process, even if its leader has exited."""
+    if process is None or singleton is None:
+        return False
+    for procinfo in tuple(singleton._proc_info):
+        if procinfo.process is process and procinfo.kill_process_group:
+            with procinfo.lock:
+                if procinfo.dead:
+                    # Another thread has already cleaned up this group.
+                    return True
+                return _terminate_process_group(procinfo.pid)
+    return False
+
+
+def stop_child_process(process, what="subprocess") -> None:
+    if not terminate_child_process_group(process):
+        from xpra.util.system import stop_proc
+        stop_proc(process, what)
 
 
 def reaper_cleanup() -> None:
