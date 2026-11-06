@@ -857,6 +857,9 @@ void mf_decoder_destroy(MFDecoder *dec) {
     free(dec);
 }
 
+/* HEVC access unit delimiter NAL: type 35, temporal id 0, pic_type 2 (I, P or B) */
+static const uint8_t HEVC_AUD[] = {0x00, 0x00, 0x01, 0x46, 0x01, 0x50};
+
 MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
                                   const uint8_t *data, int data_len,
                                   MFDecodedFrame *frame, int wait_ms) {
@@ -874,9 +877,15 @@ MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
     if (check_bitstream(dec, data, data_len) != MF_DEC_OK)
         return MF_DEC_ERROR;
 
+    /* The HEVC MFT ('HEVCVideoExtension') only knows that an access unit is complete
+       when it sees the start of the next one, so it would hold every frame until
+       the next one arrives. Terminating each one with an access unit delimiter
+       makes it output the frame straight away. */
+    int suffix_len = dec->codec == MF_CODEC_HEVC ? (int) sizeof(HEVC_AUD) : 0;
+
     /* wrap input data in an MF sample */
     t_start = usec_now();
-    hr = MFCreateMemoryBuffer((DWORD)data_len, &buf);
+    hr = MFCreateMemoryBuffer((DWORD)(data_len + suffix_len), &buf);
     if (FAILED(hr))
         return set_error(dec, hr, "MFCreateMemoryBuffer(input)");
 
@@ -886,8 +895,10 @@ MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
         return set_error(dec, hr, "IMFMediaBuffer_Lock(input)");
     }
     memcpy(buf_data, data, data_len);
+    if (suffix_len)
+        memcpy(buf_data + data_len, HEVC_AUD, suffix_len);
     IMFMediaBuffer_Unlock(buf);
-    IMFMediaBuffer_SetCurrentLength(buf, (DWORD)data_len);
+    IMFMediaBuffer_SetCurrentLength(buf, (DWORD)(data_len + suffix_len));
 
     hr = MFCreateSample(&sample);
     if (FAILED(hr)) {
@@ -914,12 +925,11 @@ MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
                 return set_error(dec, hr, "ProcessInput(retry after drain)");
             return MF_DEC_OK;
         }
-        /* drain produced no frame; retry input now that MFT should have room */
+        /* drain produced no frame (ie: a previous drain has now completed),
+           retry input now that MFT should have room,
+           then pull its output the same way as when it is accepted first time */
         hr = IMFTransform_ProcessInput(dec->transform, 0, sample, 0);
-        IMFSample_Release(sample);
-        if (FAILED(hr))
-            return set_error(dec, hr, "ProcessInput(retry)");
-        return try_get_output(dec, frame);
+        t_input_done = usec_now();
     }
 
     IMFSample_Release(sample);
