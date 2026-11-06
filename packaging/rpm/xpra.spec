@@ -875,6 +875,7 @@ fi
    failure to build due to missing `libfakeXinerama` dependency in some RPM builds
    RHEL 10 and clones must use weston+Xwayland as vfb command
    macOS 27 window transparency issue
+   macOS: use the bundled GIO module directory
 - 📦 RPM:
    RPM dependency fixes
    prevent version conflicts
@@ -936,6 +937,7 @@ fi
    auto-refresh is delayed too long
    load the `libcuda` runtime soname
    `cuda` context free race crash
+   `cuda` context stays locked on errors
    validate `jpeg` and `vpx` dimensions and strides decoded from untrusted systems
    unreliable GStreamer video decoders were enabled by default
    nvenc: set hevc level
@@ -1073,6 +1075,7 @@ fi
    error picking a default printer
    convert all buffer types to bytes
    client properties wrongly reset
+   proxy server warnings
 - 💄 Cosmetic:
    incorrect library versions reported
    skip video warnings for clients without video support

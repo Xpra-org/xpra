@@ -32,6 +32,7 @@
   * [failure to build due to missing `libfakeXinerama` dependency in some RPM builds](https://github.com/Xpra-org/xpra/commit/d81b7a87ef3cb1ece77b26cad074daf3d6d66ebb)
   * [RHEL 10 and clones must use weston+Xwayland as vfb command](https://github.com/Xpra-org/xpra/commit/a9942da4edff7a87ad98f4ff4aac231a2449fa12)
   * [macOS 27 window transparency issue](https://github.com/Xpra-org/xpra/commit/408a58c6cd98c32f9a6448af63c99d7481430120)
+  * [macOS: use the bundled GIO module directory](https://github.com/Xpra-org/xpra/commit/b68eea3752b46b4e2527baad950d3d3cc60a0c0e)
 * 📦 RPM:
   * [RPM dependency fixes](https://github.com/Xpra-org/xpra/commit/79cde9dd26fde94c88671dc9281dfea19f5b5dd3)
   * [prevent version conflicts](https://github.com/Xpra-org/xpra/commit/9c05a16fcf8f1efe9aa3126cda2836a24e5f9853)
@@ -93,6 +94,7 @@
   * [auto-refresh is delayed too long](https://github.com/Xpra-org/xpra/commit/8d2a6fc31594bc524a0f4546f6c84a5f60ac8229)
   * [load the `libcuda` runtime soname](https://github.com/Xpra-org/xpra/commit/aa4e9fba91cca8a3c4229016faf2de6b7986faed)
   * [`cuda` context free race crash](https://github.com/Xpra-org/xpra/commit/ebcead00d3c7ae830b907f54c98fe120ed257bc3)
+  * [`cuda` context stays locked on errors](https://github.com/Xpra-org/xpra/commit/8ab766a42857fc8ea72a3edc150364a0c4b5ddb9)
   * [validate `jpeg` and `vpx` dimensions and strides decoded from untrusted systems](https://github.com/Xpra-org/xpra/commit/c9555d622c5eba46802ac39b02c8ac75135ac64f)
   * [unreliable GStreamer video decoders were enabled by default](https://github.com/Xpra-org/xpra/commit/57f2b5b43ccd360316535c910b1e479b15d4749b)
   * [nvenc: set hevc level](https://github.com/Xpra-org/xpra/commit/2f14b20e7c950f071c63ae6def7cb025ef20a823)
@@ -230,6 +232,7 @@
   * [error picking a default printer](https://github.com/Xpra-org/xpra/commit/7cf357d703432b18f710a8d686e1135052414185)
   * [convert all buffer types to bytes](https://github.com/Xpra-org/xpra/commit/c62c94a527ae5136ad2c609959d84c46a8989003)
   * [client properties wrongly reset](https://github.com/Xpra-org/xpra/commit/7c03150cc93caabf33f43c8bd7b6214735220beb)
+  * [proxy server warnings](https://github.com/Xpra-org/xpra/commit/22d2c7b299a6b695f82ef3f68342bdcb59da1b2e)
 * 💄 Cosmetic:
   * [incorrect library versions reported](https://github.com/Xpra-org/xpra/commit/bea62f73e74f525b20c030ff63a5376dfa553fdb)
   * [skip video warnings for clients without video support](https://github.com/Xpra-org/xpra/commit/645791eb6e80862ff96ee4bc7d1c6d38d55e4c79)
