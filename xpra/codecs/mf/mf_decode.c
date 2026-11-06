@@ -38,6 +38,7 @@ struct MFDecoder {
     ID3D11Device    *d3d_device;      /* D3D11 device for DXVA hardware decode */
     IMFDXGIDeviceManager *dxgi_manager; /* DXGI device manager passed to the MFT */
     UINT             dxgi_reset_token; /* token from MFCreateDXGIDeviceManager */
+    int              codec;
     int              width;
     int              height;
     int              is_hw;
@@ -491,6 +492,7 @@ MFDecodeStatus mf_decoder_create(MFDecoder **out, int codec, int width, int heig
     if (!dec)
         return MF_DEC_ERROR;
 
+    dec->codec  = codec;
     dec->width  = width;
     dec->height = height;
 
@@ -731,6 +733,9 @@ void mf_decoder_destroy(MFDecoder *dec) {
     free(dec);
 }
 
+/* HEVC access unit delimiter NAL: type 35, temporal id 0, pic_type 2 (I, P or B) */
+static const uint8_t HEVC_AUD[] = {0x00, 0x00, 0x01, 0x46, 0x01, 0x50};
+
 MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
                                   const uint8_t *data, int data_len,
                                   MFDecodedFrame *frame) {
@@ -743,9 +748,15 @@ MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
     clear_locked(dec);
     zero_frame(frame);
 
+    /* The HEVC MFT ('HEVCVideoExtension') only knows that an access unit is complete
+       when it sees the start of the next one, so it would hold every frame until
+       the next one arrives. Terminating each one with an access unit delimiter
+       makes it output the frame straight away. */
+    int suffix_len = dec->codec == MF_CODEC_HEVC ? (int) sizeof(HEVC_AUD) : 0;
+
     /* wrap input data in an MF sample */
     t_start = usec_now();
-    hr = MFCreateMemoryBuffer((DWORD)data_len, &buf);
+    hr = MFCreateMemoryBuffer((DWORD)(data_len + suffix_len), &buf);
     if (FAILED(hr))
         return set_error(dec, hr, "MFCreateMemoryBuffer(input)");
 
@@ -755,8 +766,10 @@ MFDecodeStatus mf_decoder_decode(MFDecoder *dec,
         return set_error(dec, hr, "IMFMediaBuffer_Lock(input)");
     }
     memcpy(buf_data, data, data_len);
+    if (suffix_len)
+        memcpy(buf_data + data_len, HEVC_AUD, suffix_len);
     IMFMediaBuffer_Unlock(buf);
-    IMFMediaBuffer_SetCurrentLength(buf, (DWORD)data_len);
+    IMFMediaBuffer_SetCurrentLength(buf, (DWORD)(data_len + suffix_len));
 
     hr = MFCreateSample(&sample);
     if (FAILED(hr)) {
