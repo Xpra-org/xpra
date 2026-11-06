@@ -14,7 +14,7 @@ license=("custom")
 makedepends=("${MINGW_PACKAGE_PREFIX}-cc"
              "${MINGW_PACKAGE_PREFIX}-cmake"
              "${MINGW_PACKAGE_PREFIX}-ninja")
-depends=("${MINGW_PACKAGE_PREFIX}-gcc-libs")
+depends=("${MINGW_PACKAGE_PREFIX}-cc-libs")
 source=(https://github.com/bblanchon/pdfium-binaries/releases/download/chromium%2F8125/${_realname}-win-x64.tgz)
 sha256sums=('9a964261760cff52570aabf038ab346d3a5034dd8b30d0d5fe8861235d356b8b')
 
