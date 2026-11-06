@@ -18,7 +18,7 @@ DOC = """# Vulnerabilities
 
 | CVE | Package | Severity | Issue | Upstream fix | Live | First xpra version | Fixed in xpra | Ticket | Notes |
 |---|---|---|---|---|---|---|---|---|---|
-| CVE-2026-100 | python | High | Known issue | | 🔴 on | 1.0 | | | Keep this note |
+| [CVE-2026-100](https://www.cve.org/CVERecord?id=CVE-2026-100) | python | High | Known issue | | 🔴 on | 1.0 | | | Keep this note |
 | CVE-2026-101 | lib-off | Medium | Unused library | | off | 1.0 | | | Unreachable |
 
 ## Ignored packages
@@ -27,6 +27,10 @@ DOC = """# Vulnerabilities
 |---|---|
 | ignored-lib | Not shipped |
 """
+
+
+def link(cve):
+    return f"[{cve}](https://www.cve.org/CVERecord?id={cve})"
 
 
 def match(vuln_id, package="python", related_cve=""):
@@ -73,21 +77,21 @@ class SBOMVulnerabilitiesTest(unittest.TestCase):
         self.assertIn("3 vulnerabilities: 3 high", first)
         self.assertIn("1 new, 1 live and 1 switched off", first)
         self.assertIn("1 more in ignored packages", first)
-        self.assertIn("| CVE-2026-200 | full-library, python |", first)
+        self.assertIn(f"| {link('CVE-2026-200')} | full-library, python |", first)
         self.assertIn("| 1.0, 1.1 |", first)
-        self.assertIn("| CVE-2026-100 | python, full-python |", first)
+        self.assertIn(f"| {link('CVE-2026-100')} | python, full-python |", first)
         self.assertIn("Keep this note", first)
         self.assertNotIn("GHSA-shared", output)
-        self.assertNotIn("| CVE-2026-101 |", output)
+        self.assertNotIn(f"| {link('CVE-2026-101')} |", output)
         self.assertIn("1 new, 0 live and 0 switched off", second)
         self.assertIn("0 more in ignored packages", second)
-        self.assertIn("| CVE-2026-201 |", second)
+        self.assertIn(f"| {link('CVE-2026-201')} |", second)
         self.assertNotIn("CVE-2026-100", second)
         self.assertNotIn("CVE-2026-200", second)
         self.assertEqual(github_output, "new=2\n")
         updated_doc = self.doc.read_text()
-        self.assertEqual(updated_doc.count("| CVE-2026-200 |"), 1)
-        self.assertIn("| CVE-2026-200 | full-library, python |", updated_doc)
+        self.assertEqual(updated_doc.count(f"| {link('CVE-2026-200')} |"), 1)
+        self.assertIn(f"| {link('CVE-2026-200')} | full-library, python |", updated_doc)
         self.assertIn("| 1.0, 1.1 |", updated_doc)
         _, github_output = self.run_report(*args)
         self.assertEqual(github_output, "new=0\n")
@@ -99,8 +103,8 @@ class SBOMVulnerabilitiesTest(unittest.TestCase):
         )
         _, second = output.split("## Xpra 1.0 (additional vulnerabilities)")
         self.assertIn("0 vulnerabilities", second)
-        self.assertNotIn("| CVE-", second)
-        self.assertEqual(output.count("| CVE-2026-200 |"), 1)
+        self.assertNotIn("CVE-", second)
+        self.assertEqual(output.count(f"| {link('CVE-2026-200')} |"), 1)
         self.assertEqual(github_output, "new=1\n")
 
     def test_ignored_light_match_does_not_hide_full_match(self):
@@ -112,7 +116,7 @@ class SBOMVulnerabilitiesTest(unittest.TestCase):
         first, second = output.split("## Xpra 1.0 (additional vulnerabilities)")
         self.assertIn("0 vulnerabilities", first)
         self.assertIn("0 more in ignored packages", first)
-        self.assertIn("| CVE-2026-200 | python |", second)
+        self.assertIn(f"| {link('CVE-2026-200')} | python |", second)
         self.assertIn("1 more in ignored packages", second)
         self.assertEqual(github_output, "new=1\n")
 
@@ -133,8 +137,8 @@ class SBOMVulnerabilitiesTest(unittest.TestCase):
         output, github_output = self.run_report("--scan", "1.0", light, "--scan", "1.1", full)
         self.assertTrue(output.startswith("2 vulnerabilities: 2 high\n"))
         self.assertIn("## New vulnerabilities\n", output)
-        self.assertIn("| CVE-2026-200 | full-library, python |", output)
-        self.assertEqual(output.count("| CVE-2026-200 |"), 1)
+        self.assertIn(f"| {link('CVE-2026-200')} | full-library, python |", output)
+        self.assertEqual(output.count(f"| {link('CVE-2026-200')} |"), 1)
         self.assertEqual(github_output, "new=2\n")
 
 

@@ -23,6 +23,8 @@ CVE_DOC = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "
 
 CVE_DOC_URL = "https://xpra-org.github.io/xpra/Build/CVE.html"
 
+CVE_RECORD_URL = "https://www.cve.org/CVERecord?id="
+
 SEVERITIES = ("Critical", "High", "Medium", "Low", "Negligible", "Unknown")
 
 # "on" stands out in the rendered table, "off" is the exception:
@@ -79,6 +81,21 @@ def cve_key(cve: str) -> tuple:
     return 1, 0, 0, cve
 
 
+def cve_link(cve: str) -> str:
+    return f"[{cve}]({CVE_RECORD_URL}{cve})"
+
+
+def link_cves(text: str) -> str:
+    # link the CVE ids which are not already part of a link:
+    return re.sub(r"(?<![\[=])\bCVE-\d{4}-\d+\b(?!\])", lambda m: cve_link(m.group(0)), text)
+
+
+def unlink(cell: str) -> str:
+    # "[CVE-2026-1584](https://...)" -> "CVE-2026-1584"
+    m = re.fullmatch(r"\[([^\]]+)\]\([^)]*\)", cell)
+    return m.group(1) if m else cell
+
+
 def escape(text: str) -> str:
     return text.replace("|", "\\|").replace("\n", " ").strip()
 
@@ -93,7 +110,7 @@ def summarize(description: str, limit: int = 160) -> str:
             break
     if len(text) > limit:
         text = text[:limit - 3].rsplit(" ", 1)[0] + "..."
-    return escape(text)
+    return link_cves(escape(text))
 
 
 def split_row(line: str) -> list[str]:
@@ -115,6 +132,7 @@ def load_doc(filename: str) -> tuple[list[str], list[str], dict[str, dict[str, s
     while end < len(lines) and lines[end].startswith("|"):
         cells = split_row(lines[end])
         row = dict(zip(columns, cells))
+        row["CVE"] = unlink(row["CVE"])
         rows[row["CVE"]] = row
         end += 1
     return lines[:header], lines[end:], rows
@@ -139,7 +157,10 @@ def load_ignored(lines: list[str]) -> set[str]:
 
 
 def format_row(row: dict[str, str]) -> str:
-    return "| " + " | ".join(row.get(column, "") for column in COLUMNS) + " |"
+    cells = [row.get(column, "") for column in COLUMNS]
+    if re.fullmatch(r"CVE-\d{4}-\d+", cells[0]):
+        cells[0] = cve_link(cells[0])
+    return "| " + " | ".join(cells) + " |"
 
 
 def save_doc(filename: str, before: list[str], after: list[str], rows: dict[str, dict[str, str]]) -> None:
