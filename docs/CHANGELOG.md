@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.7] 2026-11-05
+## [5.1.7] 2026-11-06
 * 🔧 Platforms, build and packaging:
   * [honour `--root ROOT` when installing](https://github.com/Xpra-org/xpra/commit/17226720ee22ad7f8cade2f1284557459b3d4b02)
   * [better install prefix detection](https://github.com/Xpra-org/xpra/commit/9a08d5bbdd2c671fc99b0296a717340b4c2d2863)
@@ -71,6 +71,8 @@
   * [misplaced transient windows with desktop scaling](https://github.com/Xpra-org/xpra/commit/7ad5794b0d8da751c4a5bed106a0d272d8b27542)
   * [child reaper detects the wrong exit code](https://github.com/Xpra-org/xpra/commit/f9abe994c194af3f5ed42c7a8ad1ac0118256673)
   * [X11 configure requests mishandled when only one axis is modified](https://github.com/Xpra-org/xpra/commit/dc90de974b4e57306f1dc2446d9f954e4f47a3ce)
+  * [weston+Xwayland vfb option left processes behind](https://github.com/Xpra-org/xpra/commit/5441089b2f697ee17195f691c89e33c393a183a5) [and was racy](https://github.com/Xpra-org/xpra/commit/8562b9f84e4d8bd46f429a2baaa0c173d1edcee8)
+  * [proxy server compatibility with newer display forms](https://github.com/Xpra-org/xpra/commit/ddb50efae51c846771fbf800ef6ade4f482c615a)
 * ⊞ MS Windows:
   * [SBOM generation failed when Python was installed outside `Python312`](https://github.com/Xpra-org/xpra/commit/b02833ffac97a4a3e88ddb32db553b0b2ec425b9)
   * [SBOM: skip empty licenses](https://github.com/Xpra-org/xpra/commit/72f213405ccee2d13df69cc4e7b3f862b0879206)
@@ -135,6 +137,7 @@
   * [paramiko: try ssh keys in the same order as openssh](https://github.com/Xpra-org/xpra/commit/e8676a54869a79cadf539162886f80ad20f5a220)
   * [expose the real hostname via mDNS](https://github.com/Xpra-org/xpra/commit/28c9e919cb51d62d72876c69e21adc7670dd1daf)
   * [socket lookup race during server startup](https://github.com/Xpra-org/xpra/commit/0a80334a55955f8a316f9bd2e62e99443b6acbd5)
+  * [socket activation error handler bug](https://github.com/Xpra-org/xpra/commit/3a531f60742ee232b0b265a9246b0a6af99fa318)
 * SSL:
   * [ssl upgrade must override defaults](https://github.com/Xpra-org/xpra/commit/d9d0bd47ab5ba6d9249a786dcf765733a639e9a8)
   * [clients could remain stuck after an SSL upgrade failed](https://github.com/Xpra-org/xpra/commit/357e80d99a241e2447f2aa209ec3687f035ccc68) [or the server closed the connection during the upgrade](https://github.com/Xpra-org/xpra/commit/fef346766767091186836ead62cfc546a52e74e6)
@@ -225,6 +228,7 @@
   * [error picking an audio monitor device](https://github.com/Xpra-org/xpra/commit/dcbfd83cbd7e5ceed0925b40f1b8b0c96c38e074)
   * [error picking a default printer](https://github.com/Xpra-org/xpra/commit/7cf357d703432b18f710a8d686e1135052414185)
   * [convert all buffer types to bytes](https://github.com/Xpra-org/xpra/commit/c62c94a527ae5136ad2c609959d84c46a8989003)
+  * [client properties wrongly reset](https://github.com/Xpra-org/xpra/commit/7c03150cc93caabf33f43c8bd7b6214735220beb)
 * 💄 Cosmetic:
   * [incorrect library versions reported](https://github.com/Xpra-org/xpra/commit/bea62f73e74f525b20c030ff63a5376dfa553fdb)
   * [skip video warnings for clients without video support](https://github.com/Xpra-org/xpra/commit/645791eb6e80862ff96ee4bc7d1c6d38d55e4c79)

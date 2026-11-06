@@ -843,7 +843,7 @@ fi
 
 
 %changelog
-* Thu Nov 05 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
+* Fri Nov 06 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
 - 🔧 Platforms, build and packaging:
    honour `--root ROOT` when installing
    better install prefix detection
@@ -914,6 +914,8 @@ fi
    misplaced transient windows with desktop scaling
    child reaper detects the wrong exit code
    X11 configure requests mishandled when only one axis is modified
+   weston+Xwayland vfb option left processes behind and was racy
+   proxy server compatibility with newer display forms
 - ⊞ MS Windows:
    SBOM generation failed when Python was installed outside `Python312`
    SBOM: skip empty licenses
@@ -978,6 +980,7 @@ fi
    paramiko: try ssh keys in the same order as openssh
    expose the real hostname via mDNS
    socket lookup race during server startup
+   socket activation error handler bug
 - SSL:
    ssl upgrade must override defaults
    clients could remain stuck after an SSL upgrade failed or the server closed the connection during the upgrade
@@ -1068,6 +1071,7 @@ fi
    error picking an audio monitor device
    error picking a default printer
    convert all buffer types to bytes
+   client properties wrongly reset
 - 💄 Cosmetic:
    incorrect library versions reported
    skip video warnings for clients without video support
