@@ -32,6 +32,8 @@ WAIT_STR = {
 INFINITE = 65535
 INVALID_HANDLE_VALUE = HANDLE(-1).value
 
+INVALID_HANDLE = HANDLE(INVALID_HANDLE_VALUE)
+
 
 class _inner_struct(Structure):
     _fields_ = [
