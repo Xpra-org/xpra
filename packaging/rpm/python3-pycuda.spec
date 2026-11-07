@@ -21,18 +21,20 @@ Autoreq: 0
 Name:           python3-pycuda
 %if 0%{?el8}
 Version:        2022.1
+Release:        3
 %define systemboost 0
 %else
 Version:        2026.1
+Release:        2
 %define systemboost 1
 %endif
-Release:        2
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
 Group:          Development/Libraries/Python
 Source0:        https://files.pythonhosted.org/packages/source/p/pycuda/pycuda-%{version}.tar.gz
 Patch0:         pycuda-oldcompute.patch
+Patch1:         pycuda-cuda13.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
 Provides:       python3-pycuda
 
@@ -67,6 +69,7 @@ fi
 %setup -q -n pycuda-%{version}
 %if 0%{?el8}
 %patch -p1 -P 0
+%patch -p1 -P 1
 %endif
 
 %build
@@ -140,6 +143,9 @@ rm -rf %{buildroot}
 - new upstream release
 - remove context cleanup failures patch (merged)
 %else
+* Sat Nov 07 2026 Antoine Martin <antoine@xpra.org> - 2022.1-3
+- add patch for building against CUDA 13
+
 * Wed Oct 21 2026 Antoine Martin <antoine@xpra.org> - 2022.1-2
 - the package dependencies were part of the description
 
