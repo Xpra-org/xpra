@@ -843,7 +843,7 @@ fi
 
 
 %changelog
-* Fri Nov 06 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
+* Sat Nov 07 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
 - 🔧 Platforms, build and packaging:
    honour `--root ROOT` when installing
    better install prefix detection
@@ -1004,6 +1004,7 @@ fi
    keyboard layout group could be wrong after a keymap or keyboard state reset
    unicode keysyms parsing
    comma-separated keyboard layouts were parsed as individual characters
+   cython compilation warning
 - 📋 Clipboard:
    fail the requests waiting on an incremental transfer which times out
    give incremental transfers longer than `CONVERT_TIMEOUT` to complete
@@ -1076,6 +1077,7 @@ fi
    convert all buffer types to bytes
    client properties wrongly reset
    proxy server warnings
+   win32 build test
 - 💄 Cosmetic:
    incorrect library versions reported
    skip video warnings for clients without video support

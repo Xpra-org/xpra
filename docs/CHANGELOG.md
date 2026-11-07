@@ -1,6 +1,6 @@
 # Changelog
 
-## [5.1.7] 2026-11-06
+## [5.1.7] 2026-11-07
 * 🔧 Platforms, build and packaging:
   * [honour `--root ROOT` when installing](https://github.com/Xpra-org/xpra/commit/17226720ee22ad7f8cade2f1284557459b3d4b02)
   * [better install prefix detection](https://github.com/Xpra-org/xpra/commit/9a08d5bbdd2c671fc99b0296a717340b4c2d2863)
@@ -161,6 +161,7 @@
   * [keyboard layout group could be wrong after a keymap or keyboard state reset](https://github.com/Xpra-org/xpra/commit/a85da624603ce72a6d9adec935cd845fc29f5268)
   * [unicode keysyms parsing](https://github.com/Xpra-org/xpra/commit/8411e1191e64857426b8345c9f1bd6a9948b99e0)
   * [comma-separated keyboard layouts were parsed as individual characters](https://github.com/Xpra-org/xpra/commit/27163f510760c67945fafd80a800d6ef473af9e9)
+  * [cython compilation warning](https://github.com/Xpra-org/xpra/commits/v5.1.x/)
 * 📋 Clipboard:
   * [fail the requests waiting on an incremental transfer which times out](https://github.com/Xpra-org/xpra/commit/f2b1cf44557e2a1501a3877af3c93c4deeafa766)
   * [give incremental transfers longer than `CONVERT_TIMEOUT` to complete](https://github.com/Xpra-org/xpra/commit/02b6c10a73fc48603cec146e99a8843b12182b50)
@@ -233,6 +234,7 @@
   * [convert all buffer types to bytes](https://github.com/Xpra-org/xpra/commit/c62c94a527ae5136ad2c609959d84c46a8989003)
   * [client properties wrongly reset](https://github.com/Xpra-org/xpra/commit/7c03150cc93caabf33f43c8bd7b6214735220beb)
   * [proxy server warnings](https://github.com/Xpra-org/xpra/commit/22d2c7b299a6b695f82ef3f68342bdcb59da1b2e)
+  * [win32 build test](https://github.com/Xpra-org/xpra/commit/17f68d7d6d45b44d13d9165bf7c811a5afc6da98)
 * 💄 Cosmetic:
   * [incorrect library versions reported](https://github.com/Xpra-org/xpra/commit/bea62f73e74f525b20c030ff63a5376dfa553fdb)
   * [skip video warnings for clients without video support](https://github.com/Xpra-org/xpra/commit/645791eb6e80862ff96ee4bc7d1c6d38d55e4c79)
@@ -309,7 +311,7 @@
     * [reject more unexpected / tricky SSH agent socket paths](https://github.com/Xpra-org/xpra/commit/b4e2e22bcaa24c81d61ab3a523cb12db9ad833a5)
     * [allow more time for SSH connections to reach the connected state](https://github.com/Xpra-org/xpra/commit/546b62bb1d864960b62772f93626ce0cfed37ff3)
     * [honour the timeout provided](https://github.com/Xpra-org/xpra/commit/805be6a59c533ba589a9cdf212e0d257a4df9faf)
-    * [named-pipe fixes and thorough tests](https://github.com/Xpra-org/xpra/commit/2f707d66595c2be3f828a92abfcd0eb2934caa4d) + [fixup](https://github.com/Xpra-org/xpra/commit/c9975f7c4c587b3cde467d8142719cbb127dce67)
+    * [named-pipe fixes and thorough tests](https://github.com/Xpra-org/xpra/commit/2f707d66595c2be3f828a92abfcd0eb2934caa4d) + [fixup](https://github.com/Xpra-org/xpra/commit/c9975f7c4c587b3cde467d8142719cbb127dce67) + [fixup](https://github.com/Xpra-org/xpra/commit/413f19080fd397cc7f94640cd074261e78b8552e)
 * SSL:
     * [SSL session ticket caused connection errors](https://github.com/Xpra-org/xpra/commit/d55b97edb9e577d38653ec6f8d2016ea9bf8604f) + [fixup](https://github.com/Xpra-org/xpra/commit/c487aa1c1c199b2cf0aa592f08a1700938f68fbf)
     * [make test more resilient](https://github.com/Xpra-org/xpra/commit/529ba0da4bcec5b4cc74492219511922867b9657)
