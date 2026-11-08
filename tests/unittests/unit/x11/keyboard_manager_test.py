@@ -17,7 +17,9 @@ class X11KeyboardManagerTest(unittest.TestCase):
 
     def test_group_switch_action(self):
         from xpra.x11.subsystem import keyboard
-        from xpra.x11.server.keyboard_config import KeyboardConfig
+        # keyboard_config instantiates X11 bindings at import time, which needs a display.
+        with patch("xpra.x11.bindings.test.XTestBindings"), patch("xpra.x11.bindings.keyboard.X11KeyboardBindings"):
+            from xpra.x11.server.keyboard_config import KeyboardConfig
         # Only the group policy is under test; do not query or modify a real keymap.
         config = KeyboardConfig.__new__(KeyboardConfig)
         config.layout = "us,cz"
