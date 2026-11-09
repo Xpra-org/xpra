@@ -7,6 +7,7 @@ from typing import Any
 
 from xpra.util.objects import typedict
 from xpra.util.env import envint
+from xpra.net.common import BACKWARDS_COMPATIBLE
 from xpra.server.common import wants_windows
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
@@ -23,7 +24,7 @@ class AVSyncConnection(StubClientConnection):
     @classmethod
     def is_needed(cls, caps: typedict) -> bool:
         audio = caps.get("audio")
-        if not isinstance(audio, dict) or not typedict(audio).boolget("async"):
+        if not isinstance(audio, dict) or not (typedict(audio).boolget("async") or not BACKWARDS_COMPATIBLE):
             return False
         return caps.boolget("av-sync") and wants_windows(caps)
 

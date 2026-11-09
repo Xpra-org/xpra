@@ -802,6 +802,18 @@ class SourceMixinsTest(unittest.TestCase):
                 "async": True,
             },
         })
+        from xpra.server.source import avsync
+        window = {"window": {"enabled": True}}
+        assert AVSyncConnection.is_needed(typedict({"av-sync": True, "audio": {"async": True}, **window}))
+        assert not AVSyncConnection.is_needed(typedict({"av-sync": False, "audio": {"async": True}, **window}))
+        assert not AVSyncConnection.is_needed(typedict({"av-sync": True, "audio": {"async": True}}))
+        assert not AVSyncConnection.is_needed(typedict({"av-sync": True, **window}))
+        # older clients may send an `audio` dict without the `async` flag:
+        with patch.object(avsync, "BACKWARDS_COMPATIBLE", True):
+            assert not AVSyncConnection.is_needed(typedict({"av-sync": True, "audio": {}, **window}))
+        # newer servers can assume all clients use async init:
+        with patch.object(avsync, "BACKWARDS_COMPATIBLE", False):
+            assert AVSyncConnection.is_needed(typedict({"av-sync": True, "audio": {}, **window}))
         # test disabled:
         # what the client sets doesn't matter:
         for e in (True, False):
