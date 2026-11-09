@@ -639,10 +639,12 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
             no_contents()
             return
         wire_data = self._may_compress(dtype, dformat, wire_data)
-        if wire_data is not None:
-            packet = ["clipboard-contents", request_id, selection,
-                      dtype, dformat, wire_encoding, wire_data, truncated]
-            self.send(*packet)
+        if wire_data is None:
+            no_contents()
+            return
+        packet = ["clipboard-contents", request_id, selection,
+                  dtype, dformat, wire_encoding, wire_data, truncated]
+        self.send(*packet)
 
     def _may_compress(self, dtype: str, dformat: int, wire_data):
         if len(wire_data) > self.max_clipboard_packet_size:
