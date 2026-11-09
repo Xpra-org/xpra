@@ -49,6 +49,8 @@ Build-Depends: debhelper (>= 8)
 #trixie:              ,clang [!riscv64]
 #forky:              ,clang [!riscv64]
 #sid:              ,clang [!riscv64]
+#resolute:              ,clang
+#stonking:              ,clang
               ,libavcodec-dev [!i386]
               ,libavformat-dev [!i386]
               ,libavutil-dev [!i386]
