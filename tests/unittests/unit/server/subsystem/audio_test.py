@@ -80,13 +80,15 @@ class AudioMixinTest(ServerMixinTest):
                 patch.object(wrapper, "query_audio", return_value=audio_properties), \
                 patch.object(wrapper, "start_sending_audio", return_value=audio_source) as start_audio:
             self._test_mixin_class(audio.AudioServer, opts, {
-                "audio": {
-                    "receive": True,
-                    "decoders": ("opus",),
-                },
+                "audio": {"async": True},
             }, AudioConnection)
             self.assertEqual(self.mixin.speaker_codecs, ("opus",))
             self.assertEqual(self.source.audio_properties, audio_properties)
+            # clients send their audio capabilities asynchronously:
+            self.handle_packet(("audio-capabilities", {
+                "receive": True,
+                "decoders": ("opus",),
+            }))
             self.handle_packet(("audio-control", "start", "opus"))
             start_audio.assert_called_once_with(
                 ("audiotestsrc",), "test", "", "opus", 1.0, True, ["opus"], "", "",

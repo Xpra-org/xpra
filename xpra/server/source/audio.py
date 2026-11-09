@@ -70,7 +70,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         audio = caps.get(AudioConnection.PREFIX)
         log("is_needed(..) audio=%s", audio)
         # all clients use async init, sending their capabilities in an `audio-capabilities` packet:
-        return isinstance(audio, dict) and typedict(audio).boolget("async")
+        return isinstance(audio, dict) and (typedict(audio).boolget("async") or not BACKWARDS_COMPATIBLE)
 
     def __init__(self):
         super().__init__()

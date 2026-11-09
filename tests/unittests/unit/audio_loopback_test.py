@@ -93,7 +93,17 @@ class AudioLoopbackTest(LoopbackTest):
     def test_audio_telemetry_server_to_client(self):
         from xpra.audio.common import AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET
         from xpra.server.source.audio import AudioConnection
-        self.assertTrue(AudioConnection.is_needed(typedict({"audio": {"level": True}})))
+        from xpra.server.source import audio
+        # telemetry capabilities are only sent asynchronously, in `audio-capabilities`:
+        self.assertTrue(AudioConnection.is_needed(typedict({"audio": {"async": True}})))
+        self.assertFalse(AudioConnection.is_needed(typedict({"audio": "not-a-dict"})))
+        # older clients may send an `audio` dict without the `async` flag:
+        with patch.object(audio, "BACKWARDS_COMPATIBLE", True):
+            self.assertFalse(AudioConnection.is_needed(typedict({"audio": {"level": True}})))
+        # newer servers can assume all clients use async init:
+        with patch.object(audio, "BACKWARDS_COMPATIBLE", False):
+            self.assertTrue(AudioConnection.is_needed(typedict({"audio": {"level": True}})))
+            self.assertFalse(AudioConnection.is_needed(typedict({})))
         client, _server, source = self._connect()
         level = {"unit": "dBFS", "peak": [-3.0], "rms": [-20.0]}
         source.send_audio_level(level)
