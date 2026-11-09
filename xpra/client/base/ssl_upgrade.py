@@ -21,6 +21,9 @@ class SSLUpgrade(StubClientSubsystem):
     __slots__ = ()
     PREFIX = "ssl-upgrade"
 
+    def get_caps(self) -> dict[str, bool]:
+        return {"ssl-upgrade": True}
+
     def parse_server_capabilities(self, c: typedict) -> bool:  # pylint: disable=unused-argument
         self.remove_packet_handlers("ssl-upgrade")
         return True

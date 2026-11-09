@@ -13,6 +13,20 @@ from xpra.net.common import BACKWARDS_COMPATIBLE
 
 class HelloTest(unittest.TestCase):
 
+    def test_ssl_upgrade_capability(self):
+        from xpra.client.base.client import XpraClientBase
+        from xpra.client.base.ssl_upgrade import SSLUpgrade
+        for compatible in (False, True):
+            with self.subTest(compatible=compatible):
+                with (
+                    patch("xpra.client.base.client.BASE_SUBSYSTEMS", (SSLUpgrade,)),
+                    patch("xpra.client.base.client.BACKWARDS_COMPATIBLE", compatible),
+                ):
+                    client = XpraClientBase()
+                    self.assertIs(client.make_hello_base().get("ssl-upgrade"), True)
+                    self.assertIs(client.make_hello().get("ssl-upgrade"), True)
+                    self.assertIn("ssl-upgrade", client.get_packet_types())
+
     def test_display_caps_namespace(self):
         # `display` is both the name of a display subsystem capabilities namespace
         # and the legacy attribute used to carry the display name,

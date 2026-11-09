@@ -1652,10 +1652,11 @@ class ServerCore(GLibServer):
             return
 
         # try to auto upgrade to ssl:
-        packet_types = c.strtupleget("packet-types", ())
+        # Older clients only advertise support in their packet-types list.
+        ssl_upgrade = c.boolget("ssl-upgrade", BACKWARDS_COMPATIBLE and "ssl-upgrade" in c.strtupleget("packet-types"))
         encryption_caps = c.dictget("encryption")
         conn = getattr(proto, "_conn", None)
-        if self.ssl_upgrade and not encryption_caps and "ssl-upgrade" in packet_types and conn and conn.socktype in ("tcp",):
+        if self.ssl_upgrade and ssl_upgrade and not encryption_caps and conn and conn.socktype in ("tcp",):
             options = conn.options
             if options.get("ssl-upgrade", "yes").lower() in TRUE_OPTIONS:
                 ssl_options = self.get_ssl_socket_options(options)

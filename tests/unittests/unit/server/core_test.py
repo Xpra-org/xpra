@@ -116,6 +116,78 @@ class TestServerCore(unittest.TestCase):
         log.info.assert_any_call("  %s://%s:%s", "vsock", 7, 10000)
         self.assertEqual(mdns.extra_info["vsock"], "7:10000")
 
+    def check_ssl_upgrade(self, caps, expected, *, socktype="tcp", options=None, enabled=True, cert="cert.pem"):
+        server = ServerCore.__new__(ServerCore)
+        server.compression_level = 0
+        server.ssl_upgrade = enabled
+        server._ssl_attributes = {"cert": cert}
+        conn = SimpleNamespace(socktype=socktype, options=options or {}, disable_peek=Mock())
+        proto = Mock(_conn=conn)
+        proto.enable_encoder_from_caps.return_value = True
+        capabilities = {"version": "7.0", "protocol-version": (7, 0)}
+        capabilities.update(caps)
+        hello = Packet("hello", capabilities)
+        with (
+            patch("xpra.server.core.GLib.idle_add") as idle_add,
+            patch("xpra.server.core.load_binary_file", return_value=b"certificate") as load_cert,
+            patch("xpra.server.core.start_thread") as start_thread,
+        ):
+            server._process_hello(proto, hello)
+            idle_add.assert_called_once()
+            proto.send_now.assert_not_called()
+            load_cert.assert_not_called()
+            start_thread.assert_not_called()
+            callback = idle_add.call_args.args[0]
+            self.assertFalse(callback())
+            if expected:
+                load_cert.assert_called_once_with(cert)
+                proto.send_now.assert_called_once()
+                self.assertEqual(tuple(proto.send_now.call_args.args[0]), ("ssl-upgrade", {"cert-data": b"certificate"}))
+                start_thread.assert_not_called()
+                conn.disable_peek.assert_not_called()
+            else:
+                load_cert.assert_not_called()
+                proto.send_now.assert_not_called()
+                start_thread.assert_called_once_with(
+                    server.verify_auth, "authenticate connection", daemon=True, args=(proto, hello, capabilities),
+                )
+                conn.disable_peek.assert_called_once_with()
+        proto.close.assert_not_called()
+
+    def test_ssl_upgrade_capabilities(self):
+        cases = (
+            ({"ssl-upgrade": True}, True),
+            ({"ssl-upgrade": True, "packet-types": ()}, True),
+            ({"packet-types": ("ssl-upgrade",)}, None),
+            ({"packet-types": ("hello",)}, False),
+            ({}, False),
+            ({"ssl-upgrade": False}, False),
+            ({"ssl-upgrade": False, "packet-types": ("ssl-upgrade",)}, False),
+            ({"ssl-upgrade": True, "packet-types": ("ssl-upgrade",)}, True),
+        )
+        for compatible in (False, True):
+            for caps, expected in cases:
+                with self.subTest(compatible=compatible, caps=caps):
+                    with patch("xpra.server.core.BACKWARDS_COMPATIBLE", compatible):
+                        self.check_ssl_upgrade(caps, compatible if expected is None else expected)
+
+    def test_ssl_upgrade_restrictions(self):
+        for compatible in (False, True):
+            for caps in ({"ssl-upgrade": True}, {"packet-types": ("ssl-upgrade",)}):
+                for kwargs in (
+                    {"enabled": False},
+                    {"socktype": "ssl"},
+                    {"socktype": "ws"},
+                    {"options": {"ssl-upgrade": "no"}},
+                    {"cert": ""},
+                ):
+                    with self.subTest(compatible=compatible, caps=caps, kwargs=kwargs):
+                        with patch("xpra.server.core.BACKWARDS_COMPATIBLE", compatible):
+                            self.check_ssl_upgrade(caps, False, **kwargs)
+                with self.subTest(compatible=compatible, caps=caps, encryption=True):
+                    with patch("xpra.server.core.BACKWARDS_COMPATIBLE", compatible):
+                        self.check_ssl_upgrade(dict(caps, encryption={"cipher": "AES"}), False)
+
 
 def main():
     unittest.main()
