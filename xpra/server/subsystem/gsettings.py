@@ -84,6 +84,9 @@ class GSettingsServer(StubSubsystem):
         self.add_packets("gsettings-update", main_thread=True)
 
     def _process_update(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            log("ignoring gsettings update from readonly client %s", proto)
+            return
         ss = self.get_server_source(proto)
         if not ss:
             return
