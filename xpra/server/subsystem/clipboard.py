@@ -304,8 +304,8 @@ class ClipboardManager(StubSubsystem):
         if direction not in DIRECTIONS:
             raise ValueError(f"invalid direction {direction!r}, must be one of " + csv(DIRECTIONS))
         self.direction = direction
-        can_send = direction in ("to-server", "both")
-        can_receive = direction in ("to-client", "both")
+        can_receive = direction in ("to-server", "both")
+        can_send = direction in ("to-client", "both")
         ch.set_direction(can_send, can_receive)
         msg = f"clipboard direction set to {direction!r}"
         log(msg)
