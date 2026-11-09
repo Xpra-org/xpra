@@ -14,7 +14,7 @@ from xpra.os_util import gi_import
 from xpra.net.common import FULL_INFO
 from xpra.net.constants import TCP_SOCKTYPES
 from xpra.net.packet_type import ENCODING_SET
-from xpra.server.common import may_update_bandwidth_limits, wants_windows
+from xpra.server.common import may_update_bandwidth_limits, wants_windows, validate_rgb_formats
 from xpra.server.source.stub import StubClientConnection
 from xpra.server.window import batch_config
 from xpra.server.core import ClientException
@@ -336,7 +336,7 @@ class EncodingsConnection(StubClientConnection):
 
         self.window_icon_encodings = eopts.strtupleget("window-icon")
         log("window_icon_encodings=%s", self.window_icon_encodings)
-        self.rgb_formats = eopts.strtupleget("rgb_formats")
+        self.rgb_formats = validate_rgb_formats(eopts.strtupleget("rgb_formats"), self.core_encodings)
 
         self.set_encoding(eopts.strget("setting") or eopts.strget(""), None)
         self.icons_encoding_options.update(self.encoding_options.pop("icons", None) or {})
