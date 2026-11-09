@@ -783,7 +783,7 @@ class WindowManagerClient(StubClientSubsystem):
 
     def refresh_slowly(self) -> None:
         # tell the server to slow down refresh for all the windows:
-        self.control_refresh(-1, True, False)
+        self.control_refresh(0, True, False)
 
     def unpause_windows(self, *args) -> None:
         log("unpause_windows%s", args)
@@ -826,7 +826,7 @@ class WindowManagerClient(StubClientSubsystem):
 
     def send_refresh_all(self) -> None:
         log("Automatic refresh for all windows ")
-        self.send_refresh(-1)
+        self.send_refresh(0)
 
     ######################################################################
     # screen scaling:
