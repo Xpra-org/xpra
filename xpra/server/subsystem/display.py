@@ -208,7 +208,7 @@ class DisplayManager(StubSubsystem):
                     dpi = tdpi.intget("", 0)
                     xdpi = tdpi.intget("x", self.xdpi)
                     ydpi = tdpi.intget("y", self.ydpi)
-                antialias = c.dictget("antialias")
+                antialias = display_caps.dictget("antialias")
         self.dpi = dpi
         self.xdpi = xdpi
         self.ydpi = ydpi
