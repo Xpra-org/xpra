@@ -60,7 +60,8 @@ class BandwidthConnection(StubClientConnection):
         ccd = typedict(self.client_connection_data)
         self.adapter_type = ccd.strget("adapter-type")
         self.jitter = ccd.intget("jitter", 0)
-        bandwidth_limit = c.intget("bandwidth-limit", 0)
+        bandwidth_limit = c.intget("bandwidth-limit", 0) if BACKWARDS_COMPATIBLE else 0
+        bandwidth_limit = c.intget("bandwidth.limit", bandwidth_limit)
         mmap_write_area = getattr(self, "mmap_write_area", None)
         if mmap_write_area and mmap_write_area.enabled:
             log("mmap enabled, ignoring bandwidth-limit")
@@ -71,7 +72,8 @@ class BandwidthConnection(StubClientConnection):
             limit = self.bandwidth_server_limit or get_socket_bandwidth_limit(self.protocol)
             self.bandwidth_limit = min(limit, bandwidth_limit)
             if self.bandwidth_detection:
-                self.bandwidth_detection = c.boolget("bandwidth-detection", False)
+                bandwidth_detection = c.boolget("bandwidth-detection", False) if BACKWARDS_COMPATIBLE else False
+                self.bandwidth_detection = c.boolget("bandwidth.detection", bandwidth_detection)
         log("server bandwidth-limit=%s, client bandwidth-limit=%s, value=%s, detection=%s",
             self.bandwidth_server_limit, bandwidth_limit, self.bandwidth_limit, self.bandwidth_detection)
 
