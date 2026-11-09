@@ -1081,6 +1081,8 @@ class SeamlessWindowServer(WindowServer):
             X11WindowBindings().Unmap(window.get_property("xid"))
 
     def _process_close(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         wid = packet.get_wid()
         window = self.get_window(wid)
         windowlog("client closed window %s - %s", wid, window)
@@ -1091,6 +1093,8 @@ class SeamlessWindowServer(WindowServer):
         self.repaint_root_overlay()
 
     def _process_signal(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         wid = packet.get_wid()
         sig = packet.get_str(2)
         if sig not in WINDOW_SIGNALS:

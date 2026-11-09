@@ -414,6 +414,12 @@ class ServerCore(GLibServer):
             return client_session.get_server_source(proto)
         return None
 
+    def is_readonly(self, proto=None) -> bool:
+        if self.readonly:
+            return True
+        ss = self.get_server_source(proto) if proto else None
+        return bool(ss and getattr(ss, "effective_readonly", lambda: False)())
+
     def get_sources_by_type(self, atype=object, exclude=None) -> Sequence:
         if client_session := self.get_subsystem("client-session"):
             return client_session.get_sources_by_type(atype, exclude)

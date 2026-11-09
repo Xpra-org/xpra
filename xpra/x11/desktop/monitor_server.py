@@ -360,7 +360,9 @@ class XpraMonitorServer(DesktopServerBase):
         for ss in window_sources:
             self.send_new_desktop_model(model, ss)
 
-    def _process_display_monitor_configure(self, _proto, packet: Packet) -> None:
+    def _process_display_monitor_configure(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         action = packet.get_str(1)
         if action == "remove":
             identifier = packet.get_str(2)

@@ -215,6 +215,47 @@ class X11WindowTest(ServerTestUtil):
                     SeamlessWindowServer._process_dismiss(server, object(), Packet("window-dismiss", 1))
                     bindings.assert_not_called()
 
+    def test_readonly_close_and_signal(self):
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+
+        for readonly in (True, False):
+            with self.subTest(readonly=readonly):
+                window = Mock()
+                window.get_property.return_value = 12345
+                server = AdHocStruct()
+                server.is_readonly = lambda _proto: readonly
+                server.get_window = lambda _wid: window
+                server.repaint_root_overlay = Mock()
+                SeamlessWindowServer._process_close(server, object(), Packet("window-close", 1))
+                self.assertEqual(window.request_close.called, not readonly)
+                with patch("xpra.x11.subsystem.window.os.kill") as kill:
+                    SeamlessWindowServer._process_signal(server, object(), Packet("window-signal", 1, "SIGTERM"))
+                    self.assertEqual(kill.called, not readonly)
+
+    def test_readonly_display_ungrab(self):
+        from xpra.x11.subsystem.display import X11DisplayManager
+
+        for readonly in (True, False):
+            with self.subTest(readonly=readonly):
+                server = AdHocStruct()
+                server.is_readonly = lambda _proto: readonly
+                with patch("xpra.x11.subsystem.display.x11_ungrab") as ungrab:
+                    X11DisplayManager._process_ungrab(server, object(), Packet("display-ungrab", 1))
+                    self.assertEqual(ungrab.called, not readonly)
+
+    def test_readonly_monitor_configure(self):
+        from xpra.x11.desktop.monitor_server import XpraMonitorServer
+
+        for readonly in (True, False):
+            with self.subTest(readonly=readonly):
+                server = AdHocStruct()
+                server.is_readonly = lambda _proto: readonly
+                server.remove_monitor = Mock()
+                server.refresh_all_windows = Mock()
+                packet = Packet("display-monitor-configure", "remove", "wid", 2)
+                XpraMonitorServer._process_display_monitor_configure(server, object(), packet)
+                self.assertEqual(server.remove_monitor.called, not readonly)
+
     def test_window_stacking(self):
         from xpra.x11.wm import Wm
 
