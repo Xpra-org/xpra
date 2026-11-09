@@ -44,7 +44,7 @@ PSEUDO_LOSSLESS_ENCODINGS: Sequence[str] = ("rgb", "png", "png/P", "png/L", "web
 TRUE_LOSSLESS_ENCODINGS: Sequence[str] = ("rgb", "png", "png/P", "png/L", "webp", "avif", "jph")
 
 PREFERRED_REFRESH_ENCODING_ORDER: Sequence[str] = (
-    "webp", "avif", "jph", "png", "png/P", "png/L", "rgb", "rgb24", "rbg32", "jpeg", "jpega",
+    "webp", "avif", "jph", "png", "png/P", "png/L", "rgb", "rgb24", "rgb32", "jpeg", "jpega",
 )
 STREAM_ENCODINGS: Sequence[str] = (
     "h265", "av1", "h264", "vp9", "vp8", "mpeg4",
