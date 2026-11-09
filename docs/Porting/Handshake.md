@@ -216,8 +216,10 @@ activity (`idle timeout`).
 To disconnect, send `["connection-close", "client exit"]`, then close the transport.
 A client that wants the server to keep running shuts down that way: the session
 continues and the client can reconnect later. To stop the session instead (which
-terminates its applications), send `["shutdown-server", false]`; the server's
-`client-shutdown` option decides whether clients may do this.
+terminates its applications), send `["shutdown-server", false]`, or
+`["shutdown-server", true, reason]` to make the server process exit. The server's
+`client-shutdown` option decides whether clients may do either, and the server ignores
+both from readonly clients.
 
 When the server closes the connection, its `connection-close` reason tells the client
 whether this is an error (see [reasons](../Network/Protocol.md#53-authentication-and-upgrade-packets)).
