@@ -202,13 +202,12 @@ class DisplayManager(StubSubsystem):
         else:
             display_caps = c.get("display")
             if isinstance(display_caps, dict):
-                dpi_caps = display_caps.get("dpi")
-                if isinstance(dpi_caps, dict):
-                    tdpi = typedict(dpi_caps)
-                    dpi = tdpi.intget("", 0)
-                    xdpi = tdpi.intget("x", self.xdpi)
-                    ydpi = tdpi.intget("y", self.ydpi)
-                antialias = display_caps.dictget("antialias")
+                dcaps = typedict(display_caps)
+                dpi_caps = typedict(dcaps.dictget("dpi"))
+                dpi = dpi_caps.intget("", 0)
+                xdpi = dpi_caps.intget("x", self.xdpi)
+                ydpi = dpi_caps.intget("y", self.ydpi)
+                antialias = dcaps.dictget("antialias")
         self.dpi = dpi
         self.xdpi = xdpi
         self.ydpi = ydpi
