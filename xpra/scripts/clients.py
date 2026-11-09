@@ -716,7 +716,7 @@ def get_start_new_session_dict(opts, mode: str, extra_args) -> dict[str, Any]:
         fn = x.replace("-", "_")
         v = getattr(opts, fn)
         dv = getattr(defaults, fn, None)
-        if v and v != dv:
+        if v is not None and v != dv:
             sns[x] = v
     # make sure the server will start in the same path we were called from:
     # (despite being started by a root owned process from a different directory)
