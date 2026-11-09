@@ -821,7 +821,25 @@ input packets plus these wrappers:
 
 The keyboard event map contains `press`, `name`, `keyval`, `keycode`,
 `modifiers`, `is-modifier` and `sync`. The clipboard wrapper preserves the
-original modern clipboard packet after the direction field.
+original modern clipboard packet after the direction field: `direction` is
+`server` for a packet the server received from the client that owns the
+clipboard, and `client` for a packet the server sent to it.
+
+This profile is used by xpra's session recording client and replay tool, see
+[#4812](https://github.com/Xpra-org/xpra/issues/4812) for the design, the
+recording format and the replay tool. A recording client is a normal client,
+usually readonly, which sets `record: true` in the capability maps of the
+subsystems it wants to capture: `window`, `display`, `keyboard`, `clipboard` and
+`pointer` (the latter makes the server forward the other clients' pointer packets,
+see [pointer synchronization](../Subsystems/Pointer.md#pointer-synchronization)).
+`window.record` also enables `window.sync-position`, `window.sync-focus` and
+`window.sync-stacking`, so the recording follows the other clients' window
+management. Each request is only granted when the server's `record` socket option
+allows that subsystem (`record=yes`, `all`, or a list of `windows`, `display`,
+`keyboard` and `clipboard`; the default is `no`): when it does not, the server
+sends the client a notification instead, and the client receives nothing for that
+subsystem. `pointer.record` is governed by the `sync` socket option instead,
+which is enabled by default.
 
 Optional platform-specific packets MUST be negotiated through subsystem
 capabilities and MUST use a subsystem prefix. A peer that does not advertise

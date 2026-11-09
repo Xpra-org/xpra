@@ -30,6 +30,7 @@ each feature involves and where it is specified.
 | Commands and start menu | `command` | `command-*` | [command](../Subsystems/Command.md) |
 | Remote logging | | `logging-*` | [logging](../Subsystems/Logging.md) |
 | Session information | | `info-request`, `info-response` | [info](../Subsystems/Info.md) |
+| Session recording | `record` in each subsystem map | `keyboard-record`, `clipboard-record` | [protocol](../Network/Protocol.md#813-recording-profile), [#4812](https://github.com/Xpra-org/xpra/issues/4812) |
 | Session sharing | `share`, `steal`, `lock` | `sharing-*` | [handshake](Handshake.md#sharing-a-session) |
 
 The one-shot requests (`info`, `version`, `id`, `screenshot`, `command`, `run`, `exec`,
@@ -47,6 +48,4 @@ implemented from the documentation alone:
 
 * the optional AES encryption layer, see [AES](../Network/AES.md): use TLS, SSH or QUIC instead;
 * the exact contents of `info-response`, which are diagnostic and change between
-  versions (the structure is outlined in [info](../Subsystems/Info.md));
-* the recording profile (`keyboard-record`, `clipboard-record`), only used by xpra's
-  own recording client, see the [protocol](../Network/Protocol.md#813-recording-profile).
+  versions (the structure is outlined in [info](../Subsystems/Info.md)).
