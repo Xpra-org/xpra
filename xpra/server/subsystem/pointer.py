@@ -148,8 +148,9 @@ class PointerManager(StubSubsystem):
             self.double_click_time = -1
             self.double_click_distance = -1, -1
         else:
-            self.double_click_time = c.intget("double_click.time", -1)
-            self.double_click_distance = c.intpair("double_click.distance", (-1, -1))
+            pointer = c.dictget("pointer")
+            self.double_click_time = pointer.intget("double_click.time", -1)
+            self.double_click_distance = pointer.intpair("double_click.distance", (-1, -1))
         log("double-click time=%s, distance=%s", self.double_click_time, self.double_click_distance)
 
     def init_virtual_devices(self, devices: dict[str, Any]) -> None:
