@@ -61,7 +61,9 @@ but xpra servers usually serve WebSockets on their TCP port.
 * The request MUST include `Sec-WebSocket-Protocol: binary`. The server rejects the
   upgrade otherwise, and its `101 Switching Protocols` response selects `binary`.
 * After the upgrade, the record stream is carried in the payload of binary frames
-  (opcode `2`), masked as required for client frames. The frame boundaries carry no
+  (opcode `2`). RFC 6455 requires clients to mask their frames: xpra servers accept
+  both masked and unmasked frames, and the reference client does not mask
+  (`XPRA_WEBSOCKET_MASK`). Browser based clients always mask. The frame boundaries carry no
   meaning: a frame can contain part of a record, or several records, and receivers MUST
   reassemble the byte stream. Servers also accept text frames, and treat them the same way.
 * Ping, pong and close frames follow RFC 6455.
@@ -118,10 +120,87 @@ Local connections can also use [shared memory](../Subsystems/MMAP.md) to transfe
 
 </div>
 
-URL scheme `quic://`, default port `14500` over UDP. QUIC connections use HTTP/3
-and are configured like TLS connections, see [QUIC](../Network/QUIC.md). The way the
-record stream and the datagrams are mapped onto HTTP/3 is not specified yet: new
-implementations should start with TCP, TLS or WebSocket.
+QUIC connections use HTTP/3 over UDP, default port `14500`. TLS is part of QUIC: the
+server needs a certificate, configured like [TLS](../Network/SSL.md), and clients verify
+it as usual. The ALPN protocol is `h3`. See [QUIC](../Network/QUIC.md) for the server
+configuration.
+
+Xpra uses one of two HTTP/3 mappings, both of which start with an extended `CONNECT`
+request (RFC 9220) on a new bidirectional stream. The URL path is passed as `:path`,
+and `:authority` is the server's host name.
+
+### WebSocket over HTTP/3 (`quic://`)
+
+This is what `quic://host:port/` uses. The client sends these request headers:
+
+| Header | Value |
+|---|---|
+| `:method` | `CONNECT` |
+| `:protocol` | `websocket` |
+| `:scheme` | `https` |
+| `:authority`, `:path` | the server host, the URL path (`/` by default) |
+| `sec-websocket-version` | `13` |
+| `sec-websocket-protocol` | `xpra` |
+
+Note that the WebSocket sub-protocol is `xpra` here, not `binary` as for WebSockets
+over TCP: the server rejects the request otherwise. The server may also check the
+`origin` header against its `http-origin` option, and answers `403` when it does not match.
+
+The server accepts with `:status 200` and `sec-websocket-protocol: xpra`. From then on,
+the DATA frames of that HTTP/3 stream carry a WebSocket byte stream, exactly as over TCP
+(see [WebSocket](#websocket) above): binary WebSocket frames containing the xpra record
+stream, with arbitrary boundaries. Closing uses a WebSocket close frame, then the end
+of the HTTP/3 stream.
+
+**Datagrams.** On these connections, some packets can also be sent as unreliable QUIC
+datagrams, which are never retransmitted:
+
+* both sides list the packet types they accept as datagrams in their `hello`, in
+  `datagram-packet-types` (a list of strings, ie: `["audio-data", "window-draw-fragment"]`),
+  and only send a packet type as a datagram if the peer accepts it. Datagrams are only
+  accepted once the peer's `hello` has been processed;
+* each datagram is an HTTP/3 datagram (RFC 9297) associated with the WebSocket's
+  `CONNECT` stream: its payload starts with the quarter stream id of that stream,
+  followed by exactly **one complete WebSocket binary frame** (`FIN` set), whose payload
+  is exactly **one complete xpra record**: the 8-byte header and the main packet,
+  optionally compressed, without raw chunks;
+* a packet that does not fit in a datagram is sent on the stream instead. The usable
+  size is the QUIC datagram frame size negotiated by the peers minus the packet overhead
+  (about 1100 bytes with the default 1200-byte QUIC packets);
+* invalid datagrams, or datagrams of a packet type that was not accepted, are dropped
+  without closing the connection;
+* the order of datagrams relative to each other and to the stream is not preserved:
+  only packet types designed to tolerate loss and re-ordering can be sent this way,
+  currently `audio-data` and `window-draw-fragment`. The start and end of audio streams
+  are always sent on the stream (`audio-stream` packets).
+
+**Substreams.** Servers can be configured (`XPRA_QUIC_SUBSTREAM_PACKET_TYPES`,
+disabled by default) to move some packet types to separate HTTP/3 streams, so that
+a large packet on one does not delay the others. The server announces each new
+stream with an HTTP/3 `PUSH_PROMISE`, then sends response headers on it containing
+`substream` (the id of the main stream) and `stream-type` (ie: `audio`). Its data
+is a WebSocket byte stream like the main one. Clients that do not implement push
+should keep push disabled: the server then uses the main stream only.
+
+### WebTransport (`wt://`)
+
+`wt://host:port/path` uses WebTransport (draft 02) instead:
+
+| Header | Value |
+|---|---|
+| `:method` | `CONNECT` |
+| `:protocol` | `webtransport` |
+| `:scheme` | `https` |
+| `:authority`, `:path` | the server host, the URL path |
+
+The client MUST enable the HTTP/3 WebTransport settings, and the `CONNECT` request
+MUST be the first request of the connection (stream `0`). The server accepts with
+`:status 200` and `sec-webtransport-http3-draft: draft02`. The xpra record stream is
+then carried **without any WebSocket framing**. The reference implementations send it
+as HTTP/3 DATA frames on the `CONNECT` stream itself; the server also accepts it on a
+WebTransport bidirectional stream opened by the client, and then replies on the stream
+it last received data on. A client MUST NOT send anything before the server's `200`. WebTransport datagrams are not used: `datagram-packet-types` is not
+advertised on these connections.
 
 <div class="docs-section-heading" markdown="1">
 

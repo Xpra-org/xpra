@@ -11,6 +11,8 @@ See also [network](README.md)
 </div>
 
 QUIC is a new low-latency encrypted transport protocol, built on top of UDP.
+The way xpra maps its records and datagrams onto HTTP/3 is specified in
+[transports](../Porting/Transports.md#quic).
 
 <div class="docs-section-heading" markdown="1">
 

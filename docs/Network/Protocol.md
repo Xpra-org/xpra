@@ -32,7 +32,9 @@ This specification covers:
 It begins after the selected transport has delivered an ordered byte stream.
 TCP, Unix-domain sockets, TLS, SSH, WebSocket and QUIC can provide that stream.
 Transport handshakes, HTTP/WebSocket framing, SSH, QUIC, RFB and HTTP services
-are outside this specification.
+are outside this specification: the mapping of the record stream onto each
+transport, including QUIC datagrams, is described in
+[transports](../Porting/Transports.md).
 
 Xpra's AES packet extension is also outside this specification. A peer MAY
 recognize protocol flag `0x02` as an extension marker, but a conforming
@@ -309,6 +311,7 @@ govern what the other endpoint may send.
 | `digest` | `list<str>` | challenge digest algorithms accepted by the client |
 | `salt-digest` | `list<str>` | salt combination digests accepted by the client |
 | `challenge` | `bool` | the client already holds credentials and expects a `challenge` |
+| `datagram-packet-types` | `list<str>` | packet types the sender accepts as unreliable datagrams; only on transports that carry datagrams, see [transports](../Porting/Transports.md#quic) |
 | `uuid` | `str` | client instance identifier; when present MUST be a valid UUID string |
 | `session-id` | `str` | identifies a client session across reconnections; when present MUST be a valid UUID string |
 | `hostname`, `machine_id` | `str` | endpoint identity/advisory metadata |
@@ -799,6 +802,12 @@ formats and codec options MUST be supported by the encoder capabilities.
 | Direction | Packet | Arguments |
 |---|---|---|
 | C -> S | `gsettings-update` | `settings:map` |
+| C -> S | `pointer-devices` | `format:str`, `devices:map` |
+
+These packets are only sent when the server advertised the corresponding
+capability: `gsettings` for `gsettings-update` (see
+[gsettings](../Subsystems/GSettings.md)), and an `input-devices` value of `xi`
+or `uinput` for `pointer-devices` (see [pointer](../Subsystems/Pointer.md#input-devices)).
 
 ### 8.13 Recording Profile
 

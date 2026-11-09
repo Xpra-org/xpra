@@ -17,7 +17,7 @@ smaller ones (`go-xpra`, `rust-xpra`) show how little is needed for a working cl
 
 | Step | Page | What it covers |
 |---:|---|---|
-| 1 | [Transports](Transports.md) | Getting a byte stream to the server: TCP, WebSocket, TLS, SSH |
+| 1 | [Transports](Transports.md) | Getting a byte stream to the server: TCP, WebSocket, TLS, SSH, QUIC |
 | 2 | [Protocol](../Network/Protocol.md) | The normative specification: record header, packet encoding, compression, the packet registry |
 | 3 | [Handshake](Handshake.md) | The `hello` exchange, the minimal client capabilities, what keeps a connection alive |
 | 4 | [Authentication](Authentication.md) | The `challenge` packet and how to compute the response, with test vectors |

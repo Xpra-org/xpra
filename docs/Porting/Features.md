@@ -11,6 +11,8 @@ each feature involves and where it is specified.
 | Display configuration | `display` | `display-*` | [display](../Subsystems/Display.md) |
 | Keyboard | `keyboard`, `keymap`, `modifiers`, `key_repeat` | `keyboard-*` | [keyboard](../Subsystems/Keyboard.md) |
 | Pointer | `pointer` | `pointer-*` | [pointer](../Subsystems/Pointer.md) |
+| XInput2 devices | | `pointer-devices` | [pointer](../Subsystems/Pointer.md#input-devices) |
+| Desktop settings | `gsettings` | `gsettings-update` | [gsettings](../Subsystems/GSettings.md) |
 | Cursors | `cursor` | `cursor-*` | [cursor](../Subsystems/Cursor.md) |
 | Window focus | | `window-focus`, `window-raise`, `window-restack` | [window focus](../Subsystems/Window-Focus.md) |
 | Bell | `bell` | `window-bell` | [window](../Subsystems/Window.md#constants) |
@@ -43,9 +45,7 @@ see [connection profiles](../Network/Protocol.md#54-connection-profiles).
 These exist in the reference implementation but are not specified well enough to be
 implemented from the documentation alone:
 
-* the QUIC transport mapping, see [transports](Transports.md#quic);
-* the optional AES encryption layer, see [AES](../Network/AES.md);
-* the `stream` pseudo encoding and the container video encodings (`h264+mp4`, ...);
+* the optional AES encryption layer, see [AES](../Network/AES.md): use TLS, SSH or QUIC instead;
 * the contents of `info-response`, which are diagnostic and change between versions;
-* the platform specific packets (`gsettings-update`, `pointer-devices`), and the
-  recording profile.
+* the recording profile (`keyboard-record`, `clipboard-record`), only used by xpra's
+  own recording client, see the [protocol](../Network/Protocol.md#813-recording-profile).

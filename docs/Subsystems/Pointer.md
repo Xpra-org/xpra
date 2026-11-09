@@ -180,3 +180,43 @@ buttons, which is how the axes can be inverted (`invert-x`, `invert-y`,
 `invert-z`, `invert-all`), and into a `wheel_smooth` flag - `coarse` disables
 the smooth scrolling events at the toolkit level, so only the discrete
 button events are generated.
+
+
+<div class="docs-section-heading" markdown="1">
+
+## Input devices
+
+</div>
+
+The server's `input-devices` capability names the device it uses to inject pointer
+events: `xtest` (the X11 default), `uinput` (a virtual kernel device, which supports
+precise wheel motion) or `xi`. With `touchpad-device`, the server also has a virtual
+touchpad, used for absolute pointer devices such as pens and touchscreens.
+
+X11 clients using XInput2 can describe their own input devices, so that the server can
+map them, when the server's `input-devices` is `xi` or `uinput`:
+
+```text
+["pointer-devices", "xi", {device_id: device_info, ...}]
+```
+
+The only format defined is `xi`. Each `device_info` map contains:
+
+| Key | Type | Information |
+|---|---|---|
+| `name` | string | The device name |
+| `use` | string | `master pointer`, `master keyboard`, `slave pointer`, `slave keyboard` or `floating slave` |
+| `attachment` | integer | The master device of a slave device |
+| `enabled` | boolean | |
+| `classes` | map | Class index to class info: `type` (ie: `valuator`, `button`, `scroll`, `touch`), and for valuators: `number`, `label`, `min`, `max`, `value`, `resolution`, `mode` (`0` relative, `1` absolute) |
+| `properties` | map | XInput device properties, informational |
+
+The server routes the events of slave pointer devices that have two absolute valuators
+covering `0` to `2^24 - 1` to its touchpad device. The client sends this packet after
+the handshake, and again whenever its devices change. The `device_id` keys are the
+ones the client then uses in the `device` argument of its pointer packets.
+
+Such clients also add XInput2 details to the properties of their pointer packets:
+`device`, `x`, `y`, `x_root`, `y_root`, `valuators` and `raw-valuators`, all as
+fixed point `(value * 1000000, 1000000)` pairs. These are informational: servers do not
+need them to process the event.

@@ -171,10 +171,26 @@ Other keys, such as `speed`, `subsampling`, `profile`, `encoder`, `pts`, `ts`,
 | `mmap` | Empty, the pixels are in the shared memory area |
 
 `rgb24` and `rgb32` are both advertised as `rgb` in `options`: the server uses
-`rgb32` for windows with an alpha channel, `rgb24` for the others. `grayscale` is a pseudo encoding which asks the server
-to drop the colour information. The container stream encodings such as `h264+mp4`
-or `vp8+webm` (pseudo encoding `stream`) are not specified here and SHOULD NOT be
-advertised by other implementations.
+`rgb32` for windows with an alpha channel, `rgb24` for the others.
+
+The other pseudo encodings select how the server picks the actual encoding of each
+draw packet. They are only valid in `options` and as `setting` (or in `encoding-set`),
+never as the `encoding` of a `window-draw`:
+
+* `auto` (the default): the server picks the best encoding for each update, among
+  the client's `core` encodings.
+* `grayscale`: like `auto`, but the colour information is dropped.
+* `stream`: every update of a window is sent through its video encoder, as complete
+  frames: no sub-regions, no picture encodings for small areas, no lossless refresh
+  after lossy frames. The draw packets themselves use the normal video encodings
+  (`h264`, `vp8`, ...), so a client which can decode those needs nothing else.
+  Clients advertise `stream` when they support at least one video encoding. The
+  server also switches `auto` windows whose `content-types` include `desktop` or
+  `video` to `stream` when it has a hardware accelerated encoder for them.
+
+The container names found in some encoding lists (`h264+mp4`, `mpeg4+mp4`,
+`vp8+webm`, `vp9+webm`) are not produced by current servers: clients MUST NOT
+advertise them.
 
 When a draw packet cannot be decoded, the client MUST still acknowledge it with
 the decode error code (see below) so the server can send a replacement.
