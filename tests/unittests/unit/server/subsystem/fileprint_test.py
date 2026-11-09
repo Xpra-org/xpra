@@ -135,6 +135,19 @@ class FileServerBehaviorTest(unittest.TestCase):
         self.assertTrue(features["file"]["enabled"])
         self.assertTrue(features["file"]["request-file"])
 
+    def test_request_file_readonly(self):
+        for server_readonly, client_readonly in ((True, False), (False, True), (True, True)):
+            with self.subTest(server_readonly=server_readonly, client_readonly=client_readonly):
+                self.owner.readonly = server_readonly
+                source = self.make_source(
+                    effective_readonly=lambda: client_readonly,
+                    schedule_file_io=MagicMock(),
+                )
+                self.owner.source = source
+                self.server._process_request(object(), Packet("file-request", "~/.ssh/id_ed25519", False, "request-id"))
+                source.schedule_file_io.assert_not_called()
+                source.send_file.assert_not_called()
+
     def test_request_file_success(self):
         source = self.make_source()
         self.owner.source = source
