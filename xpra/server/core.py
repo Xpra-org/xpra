@@ -435,10 +435,9 @@ class ServerCore(GLibServer):
             return
 
         # try to auto upgrade to ssl:
-        packet_types = c.strtupleget("packet-types", ())
         encryption_caps = c.dictget("encryption")
         conn = getattr(proto, "_conn", None)
-        if self.network.ssl_upgrade and not encryption_caps and "ssl-upgrade" in packet_types and conn and conn.socktype in ("tcp",):
+        if self.network.ssl_upgrade and c.boolget("ssl-upgrade") and not encryption_caps and conn and conn.socktype in ("tcp",):
             options = conn.options
             if options.get("ssl-upgrade", "yes").lower() in TRUE_OPTIONS:
                 ssl_options = self.network.get_ssl_socket_options(options)
