@@ -388,7 +388,7 @@ def build_defaults(context: DefaultsContext) -> dict[str, Any]:
         "terminate-children": False,
         "exit-with-children": False,
         "exit-with-client"  : False,
-        "client-shutdown"   : True,
+        "client-shutdown"   : None,
         "exit-with-windows" : False,
         "commands"          : True,
         "control"           : None,

@@ -50,6 +50,43 @@ class ProxyControlTest(unittest.TestCase):
                     self.assertEqual(control.commands["stop"].run(":100"), "stopped proxy instance for display :100")
                     server.stop_proxy.assert_called_once_with(instance)
 
+    def test_stop_request_client_shutdown(self):
+        from xpra.server.proxy import server as proxy_server
+        from xpra.server.proxy.server import ProxyServer
+
+        def stop_allowed(client_shutdown, can_stop: bool, socktype="tcp", authenticators=(), options=None) -> bool:
+            server = ProxyServer.__new__(ProxyServer)
+            server.client_shutdown = client_shutdown
+            server._requests = set()
+            server.subsystems = {"network": Mock()}
+            server.make_hello = Mock(return_value={})
+            server.timeout_add = Mock()
+            proto = Mock(authenticators=authenticators)
+            proto._conn.options = options or {}
+            with patch.object(proxy_server, "CAN_STOP_PROXY", can_stop), \
+                 patch.object(proxy_server, "get_socktype", return_value=socktype):
+                server.handle_stop_request(proto)
+            allowed = proto in server._requests
+            # a refused request is disconnected, an accepted one gets a hello back:
+            self.assertEqual(server.network.send_disconnect.called, not allowed)
+            self.assertEqual(proto.send_now.called, allowed)
+            return allowed
+
+        # "auto" uses the default policy:
+        self.assertTrue(stop_allowed(None, True))
+        self.assertFalse(stop_allowed(None, False))
+        self.assertTrue(stop_allowed(None, False, socktype="named-pipe"))
+        self.assertFalse(stop_allowed(None, False, socktype="socket"))
+        self.assertTrue(stop_allowed(None, False, socktype="socket", authenticators=(Mock(), )))
+        # the option overrides the default policy:
+        for can_stop in (False, True):
+            for socktype in ("tcp", "named-pipe", "socket"):
+                self.assertTrue(stop_allowed(True, can_stop, socktype=socktype))
+                self.assertFalse(stop_allowed(False, can_stop, socktype=socktype, authenticators=(Mock(), )))
+        # the socket option still has the last word:
+        self.assertFalse(stop_allowed(True, True, options={"stop": "no"}))
+        self.assertTrue(stop_allowed(False, False, options={"stop": "yes"}))
+
 
 class ProxyServerTest(ServerTestUtil):
 

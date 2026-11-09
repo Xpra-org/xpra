@@ -68,12 +68,13 @@ class ShutdownTest(unittest.TestCase):
 
     def test_init_option(self) -> None:
         from xpra.util.objects import AdHocStruct
-        for value in (False, True):
+        # "auto" (None) allows it:
+        for value, expected in ((False, False), (True, True), (None, True)):
             opts = AdHocStruct()
             opts.client_shutdown = value
             self.shutdown.init(opts)
-            self.assertEqual(self.shutdown.client_shutdown, value)
-            self.assertEqual(self.shutdown.get_server_features(), {"client-shutdown": value})
+            self.assertIs(self.shutdown.client_shutdown, expected)
+            self.assertEqual(self.shutdown.get_server_features(), {"client-shutdown": expected})
 
     def assert_ignored(self) -> None:
         self.assertEqual(self.server.cleanup_reasons, [])

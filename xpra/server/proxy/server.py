@@ -199,9 +199,12 @@ class ProxyServer(ServerCore):
         self.network._socket_timeout = PROXY_SOCKET_TIMEOUT
         self.network._ws_timeout = PROXY_WS_TIMEOUT
         self.session_registry_name = "auth"
+        # `None` uses the default policy, see `handle_stop_request`:
+        self.client_shutdown: bool | None = None
 
     def init(self, opts) -> None:
         log("ProxyServer.init(%s)", opts)
+        self.client_shutdown = opts.client_shutdown
         self.pings = int(opts.pings)
         self._start_sessions = opts.proxy_start_sessions
         self.socket_dirs = tuple(opts.socket_dirs)
@@ -409,10 +412,13 @@ class ProxyServer(ServerCore):
                 authlog.estr(e)
 
     def handle_stop_request(self, proto) -> None:
-        socktype = get_socktype(proto)
-        default_can_stop = CAN_STOP_PROXY
-        default_can_stop |= socktype in STOP_PROXY_SOCKET_TYPES
-        default_can_stop |= (socktype in STOP_PROXY_AUTH_SOCKET_TYPES) and proto.authenticators
+        if self.client_shutdown is None:
+            socktype = get_socktype(proto)
+            default_can_stop = CAN_STOP_PROXY
+            default_can_stop |= socktype in STOP_PROXY_SOCKET_TYPES
+            default_can_stop |= (socktype in STOP_PROXY_AUTH_SOCKET_TYPES) and bool(proto.authenticators)
+        else:
+            default_can_stop = self.client_shutdown
         if not is_request_allowed(proto, "stop", default_can_stop):
             msg = "`stop` requests are not enabled for this proxy server connection"
             log.warn(f"Warning: {msg}")

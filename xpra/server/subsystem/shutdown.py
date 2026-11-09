@@ -33,7 +33,8 @@ class ShutdownServer(StubSubsystem):
         })
 
     def init(self, opts) -> None:
-        self.client_shutdown = opts.client_shutdown
+        # "auto" (None) allows it:
+        self.client_shutdown = opts.client_shutdown is not False
 
     def get_server_features(self, _source=None) -> dict[str, Any]:
         return {

@@ -82,9 +82,11 @@ dbus-control = %(dbus_control)s
 #start-new-commands = no
 start-new-commands = yes
 
-# Allows clients to shutdown or exit the server:
+# Allows clients to shutdown or exit the server,
+# 'auto' allows it for servers, proxy servers use their default policy:
 #client-shutdown = no
-client-shutdown = yes
+#client-shutdown = yes
+client-shutdown = auto
 
 # Start a pulseaudio server with each session:
 pulseaudio = %(pulseaudio)s
