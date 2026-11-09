@@ -41,21 +41,27 @@ class ShutdownServer(StubSubsystem):
         }
 
     def _handle_hello_request_exit(self, _proto, _caps: typedict) -> bool:
-        self._request_exit()
-        return True
+        return self._request_exit()
 
-    def _request_exit(self, reason: ConnectionMessage | str = "") -> None:
+    def _request_exit(self, reason: ConnectionMessage | str = "") -> bool:
+        if not self.client_shutdown:
+            log.warn("Warning: ignoring exit request, client shutdown is disabled")
+            return False
         message = "Exiting in response to client request"
         if reason:
             message += f": {reason}"
         log.info(message)
         self.network.cleanup_all_protocols(reason=reason)
         self.timeout_add(500, self.server.clean_quit, ServerExitMode.EXIT)
+        return True
 
-    def _process_server(self, _proto, packet: Packet = Packet(SHUTDOWN_SERVER)) -> None:
+    def _process_server(self, proto, packet: Packet = Packet(SHUTDOWN_SERVER)) -> None:
         # an optional boolean argument requests a full server exit rather than a shutdown,
         # the exit mode defaults to `False` (shutdown) and the reason to the empty string:
         exit_server = packet.get_bool(1) if len(packet) > 1 else False
+        if self.is_readonly(proto):
+            log.warn("Warning: %s request denied by readonly mode", "exit" if exit_server else "shutdown")
+            return
         if exit_server:
             reason = packet.get_str(2) if len(packet) > 2 else ""
             self._request_exit(reason)
@@ -67,7 +73,7 @@ class ShutdownServer(StubSubsystem):
 
     def _request_stop(self) -> bool:
         if not self.client_shutdown:
-            log.warn("Warning: ignoring shutdown request")
+            log.warn("Warning: ignoring shutdown request, client shutdown is disabled")
             return False
         log.info("Shutting down in response to client request")
         self.network.cleanup_all_protocols(reason=ConnectionMessage.SERVER_SHUTDOWN)
