@@ -1061,6 +1061,11 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="exit_with_client", default=defaults.exit_with_client,
                      help="Terminate the server when the last client disconnects."
                           " Default: %s" % enabled_str(defaults.exit_with_client))
+    legacy_bool_parse("client-shutdown")
+    group.add_option("--client-shutdown", action="store", metavar="yes|no",
+                     dest="client_shutdown", default=defaults.client_shutdown,
+                     help="Allows clients to shutdown or exit the server."
+                          " Default: %s" % enabled_str(defaults.client_shutdown))
     group.add_option("--idle-timeout", action="store",
                      dest="idle_timeout", type="int", default=defaults.idle_timeout,
                      help="Disconnects the client when idle (0 to disable)."

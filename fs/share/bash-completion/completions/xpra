@@ -34,7 +34,7 @@ _xpra() {
         --av-sync --backend --bandwidth-detection --bandwidth-limit --bell
         --bind --bind-quic --bind-rdp --bind-rfb --bind-ssh --bind-ssl
         --bind-tcp --bind-vsock --bind-ws --bind-wss --border --bwlimit
-        --challenge-handlers --chdir --client-socket-dirs --clipboard
+        --challenge-handlers --chdir --client-shutdown --client-socket-dirs --clipboard
         --clipboard-direction --clipboard-filter-file --commands --compress
         --compression-level --compressors --control --csc-modules --cursors
         --daemon --dbus --dbus-control --dbus-launch --debug --delay-tray
@@ -105,7 +105,7 @@ _xpra() {
         --resize-display|--keyboard-sync|--xsettings|--gsettings-sync|--swap-keys|\
         --headerbar|--modal-windows|--desktop-fullscreen|--ssl|--ssh-upgrade|\
         --ssl-upgrade|--rfb-upgrade|--rdp-upgrade|--websocket-upgrade|\
-        --exit-with-client|--exit-with-children|--exit-with-windows|\
+        --exit-with-client|--client-shutdown|--exit-with-children|--exit-with-windows|\
         --start-new-commands|--proxy-start-sessions|--bandwidth-detection|\
         --av-sync|--reconnect|--use-display|--enable-pings|--enable-sharing|\
         --commands|--control|--shell|--register|--terminate-children|\

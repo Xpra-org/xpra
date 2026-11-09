@@ -66,6 +66,15 @@ class ShutdownTest(unittest.TestCase):
         self.assertEqual(set(self.shutdown.get_packet_types()), expected)
         self.assertEqual(self.shutdown.get_server_features(), {"client-shutdown": self.shutdown.client_shutdown})
 
+    def test_init_option(self) -> None:
+        from xpra.util.objects import AdHocStruct
+        for value in (False, True):
+            opts = AdHocStruct()
+            opts.client_shutdown = value
+            self.shutdown.init(opts)
+            self.assertEqual(self.shutdown.client_shutdown, value)
+            self.assertEqual(self.shutdown.get_server_features(), {"client-shutdown": value})
+
     def assert_ignored(self) -> None:
         self.assertEqual(self.server.cleanup_reasons, [])
         self.assertEqual(self.server.quit_modes, [])

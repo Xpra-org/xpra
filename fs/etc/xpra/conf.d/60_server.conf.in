@@ -82,6 +82,10 @@ dbus-control = %(dbus_control)s
 #start-new-commands = no
 start-new-commands = yes
 
+# Allows clients to shutdown or exit the server:
+#client-shutdown = no
+client-shutdown = yes
+
 # Start a pulseaudio server with each session:
 pulseaudio = %(pulseaudio)s
 

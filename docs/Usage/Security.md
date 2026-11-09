@@ -139,6 +139,7 @@ Some specific options have a direct impact on the security of the system:
 * `terminate-children` should be used to prevent child commands from lingering - most commands are killed when their connection to the display is terminated, but some may survive
 * `exit-with-children` to terminate servers when applications are closed
 * `exit-with-client` to terminate when clients exit
+* `client-shutdown` should be disabled if clients must not be able to stop the server and all its applications
 * `idle-timeout` to prevent unused client sessions from consuming server resources
 * `server-idle-timeout` to prevent unused servers from consuming resources
 * `start-via-proxy` causes the sessions to be registered with the system's login service, which usually has the effect of moving them to their own session control group

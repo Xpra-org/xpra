@@ -594,6 +594,12 @@ Sets the maximum size for all windows.
 \fB\-\-readonly\fP=\fIyes\fP|\fIno\fP
 Read only mode ignores all keyboard and mouse activity.
 .TP
+\fB\-\-client\-shutdown\fP=\fIyes\fP|\fIno\fP
+Allows clients to shutdown or exit the server,
+either from their connection (ie: the tray menu)
+or using a \fBstop\fP or \fBexit\fP request.
+Readonly clients can never do this.
+.TP
 
 \fB\-\-clipboard\fP=\fIauto\fP|\fIyes\fP|\fIno\fP|\fIall\fP|\fIclipboard-type\fP
 Enable or disable clipboard synchronization.

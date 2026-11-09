@@ -10,13 +10,10 @@ from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import SHUTDOWN_SERVER
 from xpra.server import ServerExitMode
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.util.env import envbool
 from xpra.util.objects import typedict
 from xpra.log import Logger
 
 log = Logger("server")
-
-CLIENT_CAN_SHUTDOWN = envbool("XPRA_CLIENT_CAN_SHUTDOWN", True)
 
 
 class ShutdownServer(StubSubsystem):
@@ -29,11 +26,14 @@ class ShutdownServer(StubSubsystem):
 
     def __init__(self, server=None):
         super().__init__(server)
-        self.client_shutdown: bool = CLIENT_CAN_SHUTDOWN
+        self.client_shutdown: bool = True
         self.server.hello_request_handlers.update({
             "exit": self._handle_hello_request_exit,
             "stop": self._handle_hello_request_stop,
         })
+
+    def init(self, opts) -> None:
+        self.client_shutdown = opts.client_shutdown
 
     def get_server_features(self, _source=None) -> dict[str, Any]:
         return {

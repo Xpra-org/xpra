@@ -170,6 +170,7 @@ OPTION_TYPES: dict[str, Any] = {
     "terminate-children": bool,
     "exit-with-children": bool,
     "exit-with-client"  : bool,
+    "client-shutdown"   : bool,
     "exit-with-windows" : bool,
     "exit-ssh"          : bool,
     "dbus-control"      : bool,
