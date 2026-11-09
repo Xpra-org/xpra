@@ -76,6 +76,25 @@ class ClipboardCoreTest(unittest.TestCase):
         helper.init_packet_handlers()
         return helper, proxy, packets
 
+    def test_clipboard_reply_size_limit(self):
+        limit = 16
+        for size in (0, limit - 1, limit, limit + 1):
+            with self.subTest(size=size):
+                helper, proxy, packets = self.make_helper()
+                helper.max_clipboard_packet_size = limit
+                helper._remote_to_local["PRIMARY"] = "CLIPBOARD"
+                payload = b"x" * size
+
+                def get_contents(_target, callback):
+                    callback("STRING", 8, payload)
+
+                with patch.object(proxy, "get_contents", side_effect=get_contents):
+                    helper.process_clipboard_packet(Packet("clipboard-request", 42, "PRIMARY", "UTF8_STRING"))
+                if size > limit:
+                    self.assertEqual(packets, [("clipboard-contents-none", 42, "PRIMARY")])
+                else:
+                    self.assertEqual(packets, [("clipboard-contents", 42, "PRIMARY", "STRING", 8, "bytes", payload, 0)])
+
     def test_modern_clipboard_data_packet(self):
         helper, proxy, packets = self.make_helper()
         helper.local_greedy = ("CLIPBOARD",)
