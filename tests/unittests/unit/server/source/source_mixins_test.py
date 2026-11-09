@@ -794,14 +794,12 @@ class SourceMixinsTest(unittest.TestCase):
         server_props.update(self._get_window_mixin_server_attributes())
         self._test_mixin_classes((WindowsConnection, AudioConnection, AVSyncConnection), server_props, {
             "audio": {
-                "send": True,
-                "receive": True,
+                "async": True,
             },
         })
         self._test_mixin_classes((WindowsConnection, AudioConnection, AVSyncConnection), server_props, {
             "audio": {
-                "send": True,
-                "receive": True,
+                "async": True,
             },
         })
         # test disabled:

@@ -69,10 +69,8 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
     def is_needed(cls, caps: typedict) -> bool:
         audio = caps.get(AudioConnection.PREFIX)
         log("is_needed(..) audio=%s", audio)
-        if isinstance(audio, dict):
-            audio = typedict(audio)
-            return any(audio.boolget(key) for key in ("send", "receive", "async", "level", "signal"))
-        return False
+        # all clients use async init, sending their capabilities in an `audio-capabilities` packet:
+        return isinstance(audio, dict) and typedict(audio).boolget("async")
 
     def __init__(self):
         super().__init__()
@@ -170,11 +168,6 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         caps = self.get_audio_caps()
         log("send_audio_capabilities: %s", caps)
         self.send_async("audio-capabilities", caps)
-
-    def parse_client_caps(self, c: typedict) -> None:
-        """ if available in the hello packet, parse audio capabilities straight away """
-        audio = typedict(c.dictget(AudioConnection.PREFIX))
-        self.parse_audio_caps(audio)
 
     def parse_audio_caps(self, audio: typedict) -> None:
         self.pulseaudio_id = audio.strget("pulseaudio.id")
