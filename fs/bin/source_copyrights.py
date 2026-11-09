@@ -126,7 +126,7 @@ def build_report(
 
 
 def markdown_link(path: str) -> str:
-    return f"[{path}]({path})"
+    return f"[{path}](https://github.com/Xpra-org/xpra/blob/master/{path})"
 
 
 def holder_rows(report: dict[str, Any]) -> list[tuple[Any, ...]]:

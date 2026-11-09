@@ -112,7 +112,7 @@ notifications, and windows.
 
 These examples apply to the [current versions](https://github.com/Xpra-org/xpra/wiki/Versions).
 Use `man xpra` for the manual matching your installed version. On Microsoft
-Windows, see the [Windows command line](Client.md#command-line).
+Windows, see the [Windows command line](Client.md#connect-from-a-terminal).
 
 </div>
 
@@ -202,7 +202,7 @@ host=YOURSERVER
 speaker=off
 ```
 
-See [session files](Client.md#session-files) for more information.
+See [session files](Client.md#reuse-a-saved-connection) for more information.
 </details>
 
 </section>

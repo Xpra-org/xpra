@@ -6,7 +6,7 @@ Please ensure that you are using a [supported version](https://github.com/Xpra-o
 
 Distribution packages are usually [outdated and full of vulnerabilities](https://github.com/Xpra-org/xpra/wiki/Distribution-Packages).
 
-For a general overview, please first read [security considerations](./docs/Usage/Security.md) as it pervades the architecture of the software.
+For a general overview, please first read [security considerations](Usage/Security.md) as it pervades the architecture of the software.
 
 To isolate applications which may be hostile, see the [secure pod](https://github.com/Xpra-org/xpra/tree/master/packaging/containers/podman/secure):
 the application runs in its own container, which only shares the X11 display with the X server and the xpra server.
@@ -62,7 +62,7 @@ Some vulnerabilities are reported, sometimes automatically,
 but cannot be exploited because the code is not actually used:
 * [`braces` v3.0.2 / `micromatch` v4.0.5 vulnerabilities](https://github.com/Xpra-org/xpra-html5/issues/306)
 * [xpra 4.0 wrongly detected as `Trojan:Win32/Sprisky.D!cl`](https://github.com/Xpra-org/xpra/issues/2781)
-* [_bitdefender endpoint security tools_ malware false positive]([https://github.com/Xpra-org/xpra/issues/2088](https://github.com/Xpra-org/xpra/issues/2088#issuecomment-765511350))
+* [_bitdefender endpoint security tools_ malware false positive](https://github.com/Xpra-org/xpra/issues/2088#issuecomment-765511350)
 * [norton antivirus wrongly detected as `Suspicious.Cloud.7.F`](https://github.com/Xpra-org/xpra/issues/527)
 
 

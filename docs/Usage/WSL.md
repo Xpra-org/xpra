@@ -77,7 +77,7 @@ For manual repository setup, see [Download Xpra](https://xpra-org.github.io/xpra
 
 Install the native Windows Xpra client as well. The packaged `EXE` or `MSI`
 installer is required for Windows integration; see the [client
-documentation](Client.md#platform-quirks).
+documentation](Client.md#connect-save-or-find-a-session).
 
 ## Start and connect to a session
 

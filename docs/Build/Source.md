@@ -161,26 +161,26 @@ evolution report. Regenerate comparable values with the commands above.
 
 | Holder | File Count | Files |
 | --- | ---: | --- |
-| Andrew Resch <andrewresch@gmail.com> | 1 | [xpra/net/rencodeplus/rencodeplus.pyx](xpra/net/rencodeplus/rencodeplus.pyx) |
+| Andrew Resch <andrewresch@gmail.com> | 1 | [xpra/net/rencodeplus/rencodeplus.pyx](https://github.com/Xpra-org/xpra/blob/master/xpra/net/rencodeplus/rencodeplus.pyx) |
 | Antoine Martin <antoine@xpra.org> | 1,012 |  |
-| Arthur Huillet | 2 | [xpra/codecs/csc_cython/converter.pyx](xpra/codecs/csc_cython/converter.pyx), [xpra/codecs/libyuv/converter.pyx](xpra/codecs/libyuv/converter.pyx) |
-| Chris Marchetti <adamnew123456@gmail.com> | 1 | [xpra/platform/posix/proc.py](xpra/platform/posix/proc.py) |
-| Daniel Woodhouse | 1 | [xpra/gtk/notifier.py](xpra/gtk/notifier.py) |
-| eryksun | 1 | [xpra/platform/win32/printer_notify.py](xpra/platform/win32/printer_notify.py) |
-| Jeremy Lainé | 1 | [xpra/net/quic/session_ticket_store.py](xpra/net/quic/session_ticket_store.py) |
-| Joel Martin | 1 | [xpra/net/websockets/header.py](xpra/net/websockets/header.py) |
-| Markus Pointner | 1 | [xpra/util/colorstreamhandler.py](xpra/util/colorstreamhandler.py) |
-| Microsoft Corporation. All rights reserved | 1 | [xpra/platform/win32/setappid.cpp](xpra/platform/win32/setappid.cpp) |
-| mjharkin | 2 | [xpra/net/websockets/headers/browser_cookie.py](xpra/net/websockets/headers/browser_cookie.py), [xpra/net/websockets/headers/env_cookie.py](xpra/net/websockets/headers/env_cookie.py) |
-| Nathalie Casati <nat@yuka.ch> | 1 | [xpra/auth/keycloak.py](xpra/auth/keycloak.py) |
-| Nathaniel McCallum <nathaniel@natemccallum.com> | 1 | [xpra/net/libproxy.py](xpra/net/libproxy.py) |
+| Arthur Huillet | 2 | [xpra/codecs/csc_cython/converter.pyx](https://github.com/Xpra-org/xpra/blob/master/xpra/codecs/csc_cython/converter.pyx), [xpra/codecs/libyuv/converter.pyx](https://github.com/Xpra-org/xpra/blob/master/xpra/codecs/libyuv/converter.pyx) |
+| Chris Marchetti <adamnew123456@gmail.com> | 1 | [xpra/platform/posix/proc.py](https://github.com/Xpra-org/xpra/blob/master/xpra/platform/posix/proc.py) |
+| Daniel Woodhouse | 1 | [xpra/gtk/notifier.py](https://github.com/Xpra-org/xpra/blob/master/xpra/gtk/notifier.py) |
+| eryksun | 1 | [xpra/platform/win32/printer_notify.py](https://github.com/Xpra-org/xpra/blob/master/xpra/platform/win32/printer_notify.py) |
+| Jeremy Lainé | 1 | [xpra/net/quic/session_ticket_store.py](https://github.com/Xpra-org/xpra/blob/master/xpra/net/quic/session_ticket_store.py) |
+| Joel Martin | 1 | [xpra/net/websockets/header.py](https://github.com/Xpra-org/xpra/blob/master/xpra/net/websockets/header.py) |
+| Markus Pointner | 1 | [xpra/util/colorstreamhandler.py](https://github.com/Xpra-org/xpra/blob/master/xpra/util/colorstreamhandler.py) |
+| Microsoft Corporation. All rights reserved | 1 | [xpra/platform/win32/setappid.cpp](https://github.com/Xpra-org/xpra/blob/master/xpra/platform/win32/setappid.cpp) |
+| mjharkin | 2 | [xpra/net/websockets/headers/browser_cookie.py](https://github.com/Xpra-org/xpra/blob/master/xpra/net/websockets/headers/browser_cookie.py), [xpra/net/websockets/headers/env_cookie.py](https://github.com/Xpra-org/xpra/blob/master/xpra/net/websockets/headers/env_cookie.py) |
+| Nathalie Casati <nat@yuka.ch> | 1 | [xpra/auth/keycloak.py](https://github.com/Xpra-org/xpra/blob/master/xpra/auth/keycloak.py) |
+| Nathaniel McCallum <nathaniel@natemccallum.com> | 1 | [xpra/net/libproxy.py](https://github.com/Xpra-org/xpra/blob/master/xpra/net/libproxy.py) |
 | Nathaniel Smith <njs@pobox.com> | 157 |  |
 | Netflix, Inc | 29 |  |
-| Pierre Ossman | 1 | [xpra/net/websockets/header.py](xpra/net/websockets/header.py) |
-| Richard Outerbridge | 1 | [xpra/net/rfb/d3des.py](xpra/net/rfb/d3des.py) |
+| Pierre Ossman | 1 | [xpra/net/websockets/header.py](https://github.com/Xpra-org/xpra/blob/master/xpra/net/websockets/header.py) |
+| Richard Outerbridge | 1 | [xpra/net/rfb/d3des.py](https://github.com/Xpra-org/xpra/blob/master/xpra/net/rfb/d3des.py) |
 | Serviware (Arthur Huillet, <ahuillet@serviware.com>) | 35 |  |
-| Yann Collet | 1 | [xpra/buffers/xxh3.h](xpra/buffers/xxh3.h) |
-| Yusuke Shinyama | 1 | [xpra/net/rfb/d3des.py](xpra/net/rfb/d3des.py) |
+| Yann Collet | 1 | [xpra/buffers/xxh3.h](https://github.com/Xpra-org/xpra/blob/master/xpra/buffers/xxh3.h) |
+| Yusuke Shinyama | 1 | [xpra/net/rfb/d3des.py](https://github.com/Xpra-org/xpra/blob/master/xpra/net/rfb/d3des.py) |
 
 
 ---

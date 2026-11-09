@@ -1,7 +1,7 @@
 # Xdummy
 
 `Xdummy` is an X11 server backend for Xpra’s [seamless](Seamless.md),
-[desktop](Desktop.md), and [monitor](Desktop.md#monitor-mode) servers on
+[desktop](Desktop.md), and [monitor](Desktop.md#pick-the-desktop-style) servers on
 [POSIX platforms](https://github.com/Xpra-org/xpra/wiki/Platforms).
 
 It was originally developed by Karl Runge as a
@@ -35,7 +35,7 @@ affect application geometry and font rendering.
 ### Dynamic monitors
 
 Xdummy can add or remove virtual monitors at runtime. This is required by
-[monitor mode](Desktop.md#monitor-mode), the multi-monitor version of desktop
+[monitor mode](Desktop.md#pick-the-desktop-style), the multi-monitor version of desktop
 mode.
 
 </section>
