@@ -113,6 +113,7 @@ Choose a connection method and secure access to Xpra sessions.
 
 Details for developers, integrators, and anyone investigating Xpra internals.
 
+- [Porting: implementing the protocol](Porting/README.md)
 - [Network protocol](Network/Protocol.md)
 - [Subsystems](Subsystems/README.md)
 - [Security guidance](Usage/Security.md)

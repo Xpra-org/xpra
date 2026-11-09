@@ -29,9 +29,11 @@ The prefix for all packets and capabilities is `cursor`.
 | Capability     | Type             | Purpose                                                |
 |----------------|------------------|--------------------------------------------------------|
 | `encodings`    | array of strings | The types of cursor packets that the client can handle |
+| `default`      | pair of integers | The client's default cursor size, in server pixels     |
+| `max`          | pair of integers | The largest cursor size the client can show            |
 
 The supported encodings are:
-* `raw`: plain uncompressed `BGRA` pixel data
+* `raw`: uncompressed `RGBA` pixels (4 bytes per pixel, rows of `width * 4` bytes, straight alpha)
 * `png`: pixel data compressed using lossless full color `PNG`
 * `default`: the client can update the default cursor
 
@@ -41,12 +43,12 @@ The supported encodings are:
 
 </div>
 
+The server's `cursor` map contains:
+
 | Capability     | Type               | Purpose                                   |
 |----------------|--------------------|-------------------------------------------|
-| `default`      | cursor packet data | The default cursor to use                 |
-| `default_size` | integer            | The default size of cursors on the server |
-| `max_size`     | pair of integers   | The maximum size of the server cursors    |
-
+| `sizes`        | map                | `default` (pair of integers): the default cursor size on the server; `max` (pair of integers): the largest cursor size |
+| `default`      | list               | Only for clients that do not list the `default` encoding: the server's default cursor image, as `x`, `y`, `width`, `height`, `xhot`, `yhot`, `serial`, `pixels` (raw RGBA) and `name` |
 
 ### Example capabilities
 
@@ -62,8 +64,10 @@ The supported encodings are:
 ```json lines
 {
   'cursor': {
-    'default_size': 45,
-    'max_size': [64, 64],
+    'sizes': {
+      'default': [45, 45],
+      'max': [64, 64],
+    },
   }
 }
 ```
@@ -86,5 +90,11 @@ The supported encodings are:
 `cursor-data` contains, in order: encoding, width, height, hotspot X, hotspot Y,
 serial number, encoded bytes and cursor name. `raw` bytes are RGBA pixels
 with straight (not premultiplied) alpha; `png` bytes contain a PNG image. The hotspot must lie within the cursor image.
+An empty encoding string means that the server has no cursor encoding in common
+with the client: the client should then use its default cursor.
+The `serial` changes whenever the cursor image changes, and the `name` is the
+cursor theme name when known (ie: `left_ptr`), which a client may use to show its
+own native cursor instead.
+`cursor-default` asks the client to restore its default cursor.
 X11 and Wayland servers older than 7.0 send `png` cursors with the red and blue
 channels swapped, and clients older than 7.0 swap them back.

@@ -1,6 +1,7 @@
 # Xpra Clients
 
-Any application that speaks the [xpra network protocol](../Network/Protocol.md) can be used as an xpra client.\
+Any application that speaks the [xpra network protocol](../Network/Protocol.md) can be used as an xpra client,
+see the [porting guide](../Porting/README.md) to write one.\
 The reference implementation is the [xpra client](./Client.md) shipped with the xpra server itself, but a number of
 alternative clients exist, with varying degrees of completeness.
 
@@ -273,6 +274,7 @@ Minimal client, usable on three window systems: Linux X11, Linux Wayland and MS 
 * [Xpra client](./Client.md) - the default client: launcher, session files, URL mapping and command line
 * [Client OpenGL](./Client-OpenGL.md) - accelerated window rendering in the default client
 * [xpra-html5 configuration](https://github.com/Xpra-org/xpra-html5/blob/master/docs/Configuration.md) - options and URL parameters for the html5 client
+* [Porting guide](../Porting/README.md) - how to implement a new client
 * [Network protocol](../Network/Protocol.md) - what a client implementation has to support
 * [Subsystems](../Subsystems/README.md) - the feature modules found on both ends of the connection
 

@@ -535,7 +535,8 @@ The steps below assume that the client and server have been configured to use au
 * if the server is not configured for authentication, the client connection should be accepted and a warning will be printed
 * if the client is not configured for authentication, a password dialog may show up, and the connection will fail with an authentication error if the correct value is not supplied
 * if multiple authentication modules are specified, the client may bring up multiple authentication dialogs
-* how the client handles the challenges sent by the server can be configured using the `challenge-handlers` option, by default the client will try the following handlers in the specified order: `uri` (whatever password may have been specified in the connection string), `file` (if the `password-file` option was used), `env` (if the environment variable is present), `scram`, `kerberos`, `gss`, `keycloak`, `u2f` and finally `prompt`
+* how the client handles the challenges sent by the server can be configured using the `challenge-handlers` option, by default the client will try the following handlers in the specified order: `uri` (whatever password may have been specified in the connection string), `file` (if the `password-file` option was used), `env` (if the environment variable is present), `scram`, `kerberos`, `gss`, `fido2`, `u2f` and finally `prompt` (four times, for chained authentication modules).
+  The wire format of the challenge and of the responses is specified in the [porting authentication guide](../Porting/Authentication.md)
 </details>
 <details markdown="1">
   <summary>module and platform specific notes</summary>

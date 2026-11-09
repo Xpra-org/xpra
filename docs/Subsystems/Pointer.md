@@ -61,7 +61,7 @@ They carry alternative coordinate spaces in the properties dictionary:
 
 Alternatively, the client can just supply the value `True` instead of the dictionary and the server will use default values.
 
-The server exposes these `hello` capabilities:
+The server exposes these top-level `hello` capabilities (flat keys), to clients that set `server-features`:
 
 | Capability       | Value   | Information                                                                     |
 |------------------|---------|----------------------------------------------------------------------------------|
@@ -82,12 +82,31 @@ The server exposes these `hello` capabilities:
 |------------------|------------------|---------------------------------------------------------------------------------|
 | `pointer-motion` | client to server | `device_id`, `sequence`, `wid`, pointer, properties                            |
 | `pointer-button` | client to server | `device_id`, `sequence`, `wid`, `button`, `pressed`, pointer, properties       |
-| `pointer-wheel`  | client to server | `wid`, `button`, `distance`, pointer, modifiers, buttons, properties (`scaled-distance`) |
+| `pointer-wheel`  | client to server | `wid`, `button`, `distance` (x1000), pointer, modifiers, buttons, properties (`scaled-distance`) |
 | `pointer-motion` | server to client | `device_id`, `sequence`, `wid`, pointer, properties                            |
 | `pointer-button` | server to client | `device_id`, `sequence`, `wid`, `button`, `pressed`, pointer, properties       |
 | `pointer-wheel`  | server to client | `wid`, `button`, `distance`, pointer, modifiers                                |
 | `pointer-position` | server to client | `wid`, `x`, `y`, `relative-x`, `relative-y`                                  |
+| `pointer-devices` | client to server | format, devices dictionary                                                    |
 
+
+Packet details:
+
+* `device_id` identifies the input device, `-1` when unknown or unspecified.
+* `sequence` is a per-device counter, incremented by the client for each event
+  (`0` when the device is `-1`).
+* `wid` is the window under the pointer. When the server does not know that window, it uses
+  the absolute position.
+* `button` numbers follow X11: `1` left, `2` middle, `3` right, `4` / `5` wheel up / down,
+  `6` / `7` wheel left / right; higher numbers are extra buttons.
+* the properties dictionary may contain `modifiers` (the modifiers currently pressed,
+  see [keyboard](Keyboard.md)), `buttons` (the buttons currently pressed),
+  `raw-button` / `raw-buttons` (the same values before the client's button mapping),
+  `raw-position`, `window-position` and `monitor` (described above), and for
+  `pointer-wheel`, `scaled-distance`.
+* `pointer-position`: the server moved the pointer to `x`, `y`, which is at
+  `relative_x`, `relative_y` within window `wid`. Clients usually only show it as an
+  overlay rather than moving the real pointer.
 
 <div class="docs-section-heading" markdown="1">
 

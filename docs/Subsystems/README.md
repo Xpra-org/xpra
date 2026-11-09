@@ -3,6 +3,10 @@
 This documentation refers to individual [protocol](../Network/Protocol.md) features,
 it links to the implementation and technical documentation for each subsystem.
 
+If you are implementing a client or a server, start with the
+[porting guide](../Porting/README.md), which says which of these subsystems
+are needed and in which order.
+
 Each subsystem should be using its own prefix for capabilities and packet types. (most already do)
 
 Most modules are optional, see [security considerations](../Usage/Security.md).
@@ -203,7 +207,7 @@ These subsystems involve communication between client and server.
 | [Display](Display.md)           | [display](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/display.py)           | [display](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/display.py)           | [display](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/display.py)       | Automatically configured                              |
 | [Encoding](Encoding.md)         | [encoding](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/encoding.py)         | [encoding](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/encoding.py)         | [encoding](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/encoding.py)     | Automatically configured                              |
 | [Encryption](n/a)               | n/a                                                                                                 | [encryption](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/encryption.py)     | n/a                                                                                          | [encryption](../Network/Encryption.md)                |
-| [File](n/a)                     | n/a                                                                                                 | [file](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/file.py)                 | [file](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/file.py)             | [file transfers](../Features/File-Transfers.md)       |
+| [File](File.md)                 | [file](https://github.com/Xpra-org/xpra/blob/master/xpra/client/base/file.py)                                                                                                 | [file](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/file.py)                 | [file](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/file.py)             | [file transfers](../Features/File-Transfers.md)       |
 | [Info](Info.md)                 | [server_info](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/server_info.py)   | [info](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/info.py)                 | n/a                                                                                          |                                                       |
 | [Keyboard](Keyboard.md)         | [keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/keyboard.py)         | [keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/keyboard.py)         | [keyboard](https://github.com/Xpra-org/xpra/blob/master/xpra/server/source/keyboard.py)     | [keyboard feature](../Features/Keyboard.md)           |
 | [Logging](Logging.md)           | [logging](https://github.com/Xpra-org/xpra/blob/master/xpra/client/subsystem/logging.py)           | [logging](https://github.com/Xpra-org/xpra/blob/master/xpra/server/subsystem/logging.py)           | none                                                                                         | [logging usage](../Usage/Logging.md)                  |

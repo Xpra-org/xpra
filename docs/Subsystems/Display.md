@@ -26,14 +26,57 @@ This can be used to reduce the amount of pixels needed to cover a monitor.
 
 </div>
 
-| Capability              | Value                       | Information                             |
-|-------------------------|-----------------------------|-----------------------------------------|
-| `desktop_size`          | `width`: int, `height`: int | The display size, covering all monitors |
-| `screen_sizes`          | list of screens             | Geometry of all screens, scaled         |
-| `screen_sizes.unscaled` | list of screens             | Unscaled geometry of all screens        |
-| `monitors`              | list of monitors            | Geometry of all monitors                |
-| `monitor-relative`      | boolean                     | The client attaches `monitor` descriptors to its window and pointer packets |
-| `dpi`                   | dictionary                  | DPI configuration                       |
+The client MUST send a `display` map in its `hello`: the server does not create
+any display state for a client without one (and the reference client also expects
+one in the server's `hello`). All its keys are optional:
+
+| Key | Type | Information |
+|---|---|---|
+| `desktop_size` | pair of integers | Size of the whole client display, covering all monitors (after client-side scaling). Each value must be in `1..32767` |
+| `desktop_size.unscaled` | pair of integers | The same size before scaling, only when the client scales |
+| `monitors` | map | Monitor index (integer) to monitor definition, see below. At most 16 monitors |
+| `monitor-relative` | boolean | The client attaches `monitor` descriptors to its window and pointer packets, default `True` |
+| `refresh-rate` | integer | Display refresh rate in Hz, `-1` unknown |
+| `vrefresh` | integer | Same as `refresh-rate` |
+| `dpi` | map | `x` and `y` (integers), and `""` for the average |
+| `screen-scaling` | map | `enabled` (boolean) and `values`: the client's horizontal and vertical scaling factors multiplied by 1000. Informational |
+| `antialias` | map | Font antialiasing settings: `enabled`, `hinting`, `hintstyle`, `orientation`, `contrast` |
+| `desktops` | integer | Number of virtual desktops (workspaces) |
+| `desktop.names` | list of strings | Their names |
+| `resize-events` | boolean | The client handles `display-resized`, default `True` |
+| `show-desktop` | boolean | The client handles `display-show-desktop` |
+| `desktop-fullscreen` | boolean | The client shows the remote desktop fullscreen (desktop mode) |
+| `icc`, `display-icc` | map | Colour profile information |
+| `opengl` | map | The client's OpenGL properties, informational |
+
+Each monitor definition contains any of:
+
+| Key | Type | Information |
+|---|---|---|
+| `geometry` | 4 integers | `x`, `y`, `width`, `height`, in the same coordinate space as `desktop_size` |
+| `workarea` | 4 integers | The part of the monitor not used by panels and docks |
+| `primary` | boolean | |
+| `name`, `manufacturer`, `model` | string | At most 64 characters |
+| `width-mm`, `height-mm` | integer | Physical size |
+| `refresh-rate` | integer | In mHz (ie: `60000`); values below `1000` are taken as Hz |
+| `scale-factor` | integer | The platform's integer scale factor (`1`, `2`) |
+| `subpixel-layout` | string | |
+| `depth` | integer | Bit depth |
+| `hdr` | boolean | |
+| `colorspace` | string | Free-form platform information |
+| `colourspace` | map | Preferred colourspace |
+
+The server answers with its own `display` map:
+
+| Key | Type | Information |
+|---|---|---|
+| `desktop_size` | pair of integers | The display size given to this client: the size it requested when the server could match it, or the closest size available |
+| `actual_desktop_size`, `root_window_size` | pair of integers | The server's real display size |
+| `max_desktop_size` | pair of integers | The largest display size the server can configure |
+| `name`, `address` | string | Display name and address (ie: `:10`) |
+
+A client that scales converts every position and size it exchanges with the server:
+positions in the server's packets are in server pixels.
 
 The server advertises its display mode in the top-level `mode` capability:
 `shadow`, `desktop`, `monitor`, or `seamless`. Clients prefer this value to the
@@ -100,8 +143,17 @@ requires the application itself to move it, or a window manager request.
 |------------------------------|------------------|---------------------------------------------------------|------------------------------------------------------------------------------------------|
 | `display-show-desktop`       | server to client | `show` : boolean                                        | The server is requesting the client to show or hide the desktop                          |
 | `display-resized`            | server to client | `width`: int, `height`: int, `max_w`: int, `max_h`: int | The server has updated its display, the client may need to adjust its scaling properties |
-| `display-configure`          | client to server | monitor configuration dictionary                        | The client sends its updated monitor layout to the server                                |
+| `display-configure`          | client to server | configuration dictionary, see below                     | The client sends its updated monitor layout to the server                                |
 | `display-request-screenshot` | client to server |                                                         | The client requests a screenshot from the server                                         |
 | `display-screenshot`         | server to client | `w`, `h`, `encoding`, `rowstride`, `data`                | The server sends a screenshot in response to `display-request-screenshot`                |
 | `display-request-icon`       | client to server |                                                         | The client requests the session icon                                                     |
 | `display-icon`               | server to client | `w`, `h`, `encoding`, `rowstride`, `data`                | The server sends the session icon                                                        |
+
+The `display-configure` map is sent whenever the client's monitor layout, DPI or
+desktops change. Its keys are hyphenated, unlike the `hello` keys:
+`desktop-size` and `desktop-size-unscaled` (pairs), `monitors` (same format as above),
+`dpi` (`x`, `y`), `icc` (`global`, `display`), `desktops`, `desktop-names` and
+`vrefresh` (Hz, `0..240`).
+
+`display-resized` tells the client the server's new display size and maximum size,
+ie: after another client changed it.

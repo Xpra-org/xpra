@@ -44,8 +44,11 @@ independently.
 
 </div>
 
-The client and server should expose the following capabilities in their `hello` packet
-with the `audio` prefix:
+Discovering the audio codecs available can take a while, so the capabilities are
+exchanged asynchronously. The client's `hello` only contains `audio: {"async": true}`.
+Once its audio codecs are known, the client sends an `audio-capabilities` packet,
+and the server answers with its own `audio-capabilities` packet once its audio
+subsystem is ready. Both contain:
 
 | Capability | Type            | Purpose                                            |
 |------------|-----------------|----------------------------------------------------|
@@ -53,8 +56,35 @@ with the `audio` prefix:
 | `encoders` | List of strings | The audio formats that can be encoded and sent     |
 | `send`     | boolean         | If sending audio is enabled                        |
 | `receive`  | boolean         | If receiving audio is enabled                      |
+| `level`, `signal` | boolean  | The peer accepts `audio-level` / `audio-signal` packets |
+| `stream-packet` | boolean    | The peer accepts `audio-stream` packets            |
+| `keepalive` | boolean        | The peer will echo `audio-keepalive` packets, see below |
+| `keepalive.interval`, `keepalive.timeout` | integer | In seconds, `5` and `10` by default |
 
-The lists of `decoders` and `encoders` contain strings such as: `mp3`, `opus+ogg`, `vorbis`... \
+Codec names are a codec optionally followed by `+` and a container:
+`opus+ogg`, `opus+mka`, `opus+rtp`, `vorbis+ogg`, `vorbis+mka`, `flac+ogg`,
+`aac+mpeg4`, `mp3`, `mp3+mpeg4`, `mp3+id3v2`, `wav`, `wav+lz4`, `wavpack`.
+The `data` of `audio-data` packets is the stream exactly as produced by the
+corresponding GStreamer muxer: a receiver feeds the packets, in order, to a demuxer
+and decoder for that format. `opus+ogg` is the usual choice.
+
+**Starting and stopping:** speaker forwarding is started by the client: it sends
+`audio-control "start" <codec>` when it is ready to play the stream. It stops it with
+`audio-control "stop" <sequence>`, followed by `audio-control "new-sequence" <sequence+1>`.
+Each stream has a sequence number, sent in the `audio-data` metadata (`sequence`):
+packets with an older sequence number belong to a stream that has been stopped
+and MUST be discarded. The other `audio-control` commands are `fadein [codec, ms]`
+and `fadeout [ms]`, plus `sync` and `av-sync-delta` when audio-video synchronization
+is enabled.
+
+The `audio-data` metadata also contains `time`: the sender's monotonic clock, in
+milliseconds, when the data was captured.
+
+**Keepalive:** a peer that advertised `keepalive` MUST, while it receives a stream,
+send `audio-keepalive <time>` every `keepalive.interval` seconds, echoing the latest
+`time` value it received. A sender whose stream is not echoed within
+`keepalive.timeout` seconds stops it, or drops data until the echoes resume.
+
 You can run [xpra.audio.gstreamer_util](https://github.com/Xpra-org/xpra/blob/master/xpra/audio/gstreamer_util.py) to see which
 encoders and decoders are available on the system.
 
@@ -75,6 +105,6 @@ uses the same packets as audio coming from the client to the server (aka "_micro
 | `audio-data`    | `codec` : string <br/>`data` : bytes<br/>`attributes` : dictionary                           | Audio stream data          | Older peers send initial and final packets without `data`, using the `start-of-stream` / `end-of-stream` attributes instead of `audio-stream` |
 | `audio-control` | `subcommand` : string<br/>(ie: `start`, `stop`, `sync`, `new-sequence`)<br/>`argument` : Any | Send a request to the peer | |
 | `audio-capabilities` | capabilities dictionary | Update audio formats and directions | Sent when asynchronous audio capability discovery completes |
-| `audio-keepalive` | monotonic timestamp | Keep an active stream alive | Either direction |
+| `audio-keepalive` | `time` of the latest `audio-data` received | Keep an active stream alive | Either direction |
 | `audio-level` | sample dictionary | Publish meter values | Server to client when requested |
 | `audio-signal` | boolean | Publish whether a non-silent signal is present | Server to client when requested |

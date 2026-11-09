@@ -496,7 +496,7 @@ filter:
 
 | Handler(s) | What it does | Seccomp impact |
 |---|---|---|
-| `open-url` | may spawn an opener via `subprocess.Popen` | Moved to the UI/main thread (`main_thread=True`) |
+| `file-open-url` | may spawn an opener via `subprocess.Popen` | Moved to the UI/main thread (`main_thread=True`) |
 | `file-send`, `file-send-chunk` | open/write/unlink download files | Moved to the file worker thread (see below) |
 | `file-ack-chunk` | compresses and sends the next outgoing chunk | Moved to the file worker thread |
 | `file-data-response` | ACCEPT: hash/compress and send; OPEN: open a file/URL locally via `subprocess.Popen` | Hash/compress → worker thread; OPEN's `subprocess.Popen` → main thread |
@@ -508,7 +508,7 @@ filter:
 | `shell-exec` (server) | runs arbitrary Python (`exec`) - gated by `--shell` | Off by default; grants RCE when enabled (see below) |
 | `challenge` | starts the auth worker (may fork/exec, read files) | Kept off-thread (`main_thread=True`) |
 | `audio-data` / keepalive | sequencing + delegation to the audio subprocess | Safe on the parse thread |
-| `encoding-set`, `server-event`, `logging-event` | update client state / log | Safe on the parse thread |
+| `encoding-set`, `events`, `logging-event` | update client state / log | Safe on the parse thread |
 | `ping` | immediate `ping_echo` response | Kept on the parse thread deliberately |
 
 Handlers already moved off the parse thread (onto the UI/main thread) include

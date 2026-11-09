@@ -3,8 +3,13 @@
 ## Status of This Document
 
 This document specifies the Xpra application protocol implemented by the
-`master` branch on 16 August 2026 (Xpra 6.6 development series). It is a
+`master` branch in November 2026 (Xpra 8.0 development series). It is a
 normative implementer specification for the modern protocol only.
+
+If you are writing a new client or server, start with the
+[porting guide](../Porting/README.md): it gives the reading order, the
+transports, the authentication algorithm and an annotated session trace,
+and links back to the relevant sections of this document.
 
 Historical packet names, encoders, compressors, capability aliases and packet
 layouts, which version 7 still uses with its own legacy peers when running with
@@ -62,9 +67,29 @@ The packet type MUST be a Unicode string. Packet arguments use these types:
 | `T?` | Optional trailing value of type `T` |
 | `T...` | Zero or more trailing values of type `T` |
 
+Window identifiers are written `wid:u64` but are limited to `0..2^48-1`.
+The reference implementation is lenient when it reads packets: it accepts an
+integer where a `bool` is expected, a UTF-8 byte string where a `str` is
+expected, and converts numeric strings to integers. Senders MUST NOT rely on
+this, and MUST use the declared types.
+
 Receivers MUST validate argument count, type, integer range and identifiers
-before using a packet. Unknown keys in an extensible map MUST be ignored unless
-the map's definition says otherwise. Unknown packet types MUST be rejected or
+before using a packet. Receivers MUST tolerate, and ignore, trailing arguments
+beyond those they know about. Unknown keys in an extensible map MUST be ignored unless
+the map's definition says otherwise.
+
+Capability names in this document use dots to denote a path: `encoding.options`
+is either a literal key `"encoding.options"` or the `options` key of a nested
+`encoding` map. Receivers MUST look up such a name by first checking for the
+literal flat key, then for the nested form, splitting at the first dot and
+recursing. The reference server still sends a few flat keys, such as
+`wheel.precise` or `pointer.relative`. Code that reads a whole sub-map, such
+as `encoding`, does not see flat keys, so senders SHOULD use nested maps.
+
+A map can also carry a value for its own name under the empty-string key: in
+`{"encodings": {"": ["png", "rgb"], "core": ["png", "rgb24"]}}`, `encodings` is
+`["png", "rgb"]` and `encodings.core` is `["png", "rgb24"]`. Receivers looking up a
+scalar or list value that turns out to be a map MUST use its `""` entry. Unknown packet types MUST be rejected or
 cause a clean connection close; they MUST NOT be interpreted as another type.
 
 ## 3. Record Layer
@@ -133,8 +158,14 @@ inside packet arguments.
 ### 3.4 Limits
 
 Before the peer's `hello` is accepted, an implementation MUST impose a maximum
-declared payload length of 4 MiB (`4 * 1024 * 1024`). This limit applies before
-allocation and before reading the payload.
+declared payload length. This limit applies before allocation and before reading
+the payload. Servers running modern-only (`XPRA_BACKWARDS_COMPATIBLE=0`) use
+16 KiB (`16 * 1024`); servers that also accept version 7 peers (the default)
+use 16 MiB, because those peers send larger `hello` packets. A client MUST keep
+its `hello` packets, including the ones carrying a challenge response, below
+16 KiB after compression. Large optional data such as a full keymap can be sent
+after the handshake instead (see `keymap.delay` in the
+[keyboard subsystem](../Subsystems/Keyboard.md)).
 
 After capability processing, the normal per-record limit is 16 MiB. A subsystem
 MAY increase it when a negotiated operation requires a larger record. The
@@ -204,7 +235,27 @@ values use network byte order. Its type codes are:
 
 A longer UTF-8 string is encoded as ASCII decimal byte length, `:`, then that
 many bytes. A byte string is encoded as ASCII decimal byte length, `/`, then
-that many bytes. Lengths count bytes, not Unicode characters.
+that many bytes. Lengths count bytes, not Unicode characters. Byte strings have
+no fixed-length short form: even an empty byte string is encoded as `0/`.
+Decoders MUST accept the long `len:` string form for any length, including
+strings shorter than 64 bytes.
+
+Lists and dictionaries with more than 63 values (respectively 24 pairs) use the
+variable forms terminated by `127`. Decoders MUST accept the variable forms for
+any size. A list is a list whatever its form: there is no separate tuple type.
+
+The reference encoder always uses the smallest representation for an integer:
+a fixed code, then 8, 16, 32 and 64-bit signed forms. Code `61` is only used
+for integers outside the signed 64-bit range: its decimal representation MUST
+be between 18 and 63 characters long, the reference decoder rejects or
+misparses anything shorter. Floats are always encoded as binary64 (code `44`),
+code `66` is decode-only.
+
+Dictionary keys are usually strings, but a decoder MUST accept integer keys:
+they appear in some `info` responses and in a few maps documented as using them.
+
+A decoder parses exactly one top-level value. The reference decoder ignores
+trailing bytes after it, conforming senders MUST NOT send any.
 
 The packet encoder can represent null and floating-point values, but packet
 schemas in this RFC do not use null and SHOULD avoid floats. Senders MUST use a
@@ -244,20 +295,34 @@ govern what the other endpoint may send.
 
 | Key | Type | Semantics |
 |---|---|---|
-| `version` | `str` | Xpra version; REQUIRED in a normal hello |
+| `version` | `str` | dotted Xpra version, REQUIRED in a normal hello, see below |
 | `protocol-version` | `list<int>` | minimum version accepted by the sender of this hello |
-| `encoders` | `list<str>` | accepted packet encoders; includes `rencodeplus` |
-| `compressors` | `list<str>` | accepted record compressors |
-| `compression_level` | `u8` | requested level; zero disables compression |
+| `encoders` | `list<str>` | accepted packet encoders; includes `rencodeplus`; REQUIRED |
+| `compressors` | `list<str>` | accepted record compressors: `lz4`, `brotli`, `zstd`, `none` |
+| `compression_level` | `u8` | requested level, usually `0..9`; zero disables record compression |
 | `chunks` | `bool` | whether raw chunks can be reassembled; default true |
 | `packet-types` | `list<str>` | optional client receive packet list; used by the server to gate TLS upgrades |
 | `request` | `str` | one-shot or special profile, Section 5.4 |
 | `versions` | `bool` | request detailed server component versions; default false |
 | `server-features` | `bool` | request server feature flags; default false |
 | `username` | `str` | authentication identity |
-| `digest` | `list<str>` | challenge digest algorithms accepted by client |
-| `hostname`, `uuid`, `machine_id` | `str` | endpoint identity/advisory metadata |
+| `digest` | `list<str>` | challenge digest algorithms accepted by the client |
+| `salt-digest` | `list<str>` | salt combination digests accepted by the client |
+| `challenge` | `bool` | the client already holds credentials and expects a `challenge` |
+| `uuid` | `str` | client instance identifier; when present MUST be a valid UUID string |
+| `session-id` | `str` | identifies a client session across reconnections; when present MUST be a valid UUID string |
+| `hostname`, `machine_id` | `str` | endpoint identity/advisory metadata |
 | `build`, `platform`, `network` | `map` | extensible diagnostic metadata |
+
+The effective record compression level is the lowest of the two peers' levels.
+
+The `version` value is compared against the receiver's minimum protocol version:
+a peer announcing a version lower than 7.0 is disconnected with `version error`,
+as is any peer below 8.0 when the receiver is running modern-only. A
+third-party implementation of this document SHOULD therefore announce the
+version of the protocol document it implements (`8.0` for this one), not its
+own release number. The version of the implementation itself belongs in
+`build.version` or in an implementation-specific key.
 
 The server only offers an `ssl-upgrade` when the client's `packet-types`
 includes that packet type. The server does not advertise a `packet-types` list;
@@ -281,13 +346,45 @@ of 7.0 or later, which conforming implementations MUST therefore expose.
 |---|---|---|
 | C -> S | `hello` | `capabilities:map` |
 | S -> C | `hello` | `capabilities:map` |
-| S -> C | `challenge` | `salt:bytes`, `auth_caps:map`, `digest:str`, `salt_digest:str`, `prompt:str?` |
+| S -> C | `challenge` | `salt:bytes`, `auth_caps:map`, `digest:str`, `salt_digest:str`, `prompt:str` |
 | C -> S | `hello` | original capabilities plus challenge response fields |
 | S -> C | `ssl-upgrade` | `attributes:map` |
-| either | `connection-close` | `reasons:list<str>` |
+| C -> S | `ssl-upgrade` | `attributes:map` (empty) |
+| either | `connection-close` | `reason:str`, `details:str...` |
 
-Challenge algorithms and transport TLS configuration are specified in the
-[authentication](../Usage/Authentication.md) and [TLS](SSL.md) documents.
+The challenge algorithms, the response fields and test vectors are specified in
+the [porting authentication guide](../Porting/Authentication.md). Each round of
+a challenge is answered with a complete new `hello`, which the server validates
+again from the start (version, encoders, ...). A client that already holds
+credentials MAY set `challenge: true` in its first `hello`: the server then
+always answers with a `challenge`, even when no authentication module needs one,
+so that the client never sends its full capabilities before being challenged.
+
+The server MAY answer a client `hello` with `ssl-upgrade` instead, when the
+connection is plain TCP, the client listed `ssl-upgrade` in its `packet-types`,
+it did not request `encryption`, and the server has a TLS certificate.
+The `attributes` contain `cert-data:bytes`, the contents of the server's
+certificate file (PEM). The client replies with an empty `ssl-upgrade`, stops reading, performs
+a TLS client handshake on the same socket, then sends its `hello` again over
+TLS. Clients that do not list `ssl-upgrade` in `packet-types` never receive it.
+
+`connection-close` arguments are a short reason followed by optional details,
+all plain strings. Receivers keep at most the first 8 and truncate each to 256
+characters. Rejections caused by a configuration or policy MAY use a
+`reason:detail` form within the first string. The standard reasons are:
+
+| Category | Reasons |
+|---|---|
+| timeouts | `client ping timeout`, `login timeout`, `client exit timeout`, `idle timeout` |
+| errors | `protocol error`, `version error`, `control command error`, `authentication failed`, `authentication error`, `permission error`, `server error`, `connection error`, `session not found error` |
+| normal | `done`, `server exit`, `server upgrade`, `server shutdown`, `client request`, `detach request`, `new client`, `session busy` |
+| sent by clients | `client exit` |
+
+A reason containing `error`, or containing `timeout` other than `idle timeout`,
+SHOULD be reported to the user as an error. Unknown reasons MUST be accepted
+and displayed as they are.
+
+Transport TLS configuration is described in the [TLS](SSL.md) document.
 
 ### 5.4 Connection Profiles
 
@@ -354,22 +451,37 @@ Capabilities describe what the sender can receive or what local service it is
 offering. Feature maps are extensible: omitted keys mean unsupported or their
 documented default.
 
-| Namespace/key | Interoperability fields |
-|---|---|
-| `audio` | `send:bool`, `receive:bool`, `encoders:list<str>`, `decoders:list<str>`, codec properties |
-| `bandwidth` | `limit:u64`, `detection:bool` |
-| `clipboard` | `enabled`, `direction`, `selections`, `greedy`, `want_targets`, `preferred-targets`, `notification` |
-| `command` | `start`, `start-child`, accepted signals and commands |
-| `cursors` / `cursor` | enabled state, encodings, size, default and maximum sizes |
-| display keys | `desktop_size`, `screen_sizes`, `monitors`, `dpi`, `screen-scaling`, `vrefresh` |
-| `encoding` | accepted picture encodings, RGB formats, quality/speed/scaling and codec profiles |
-| `file` | `enabled`, `ask`, `size-limit`, `chunks`, `open`, `open-url`, `ask-timeout` |
-| `keyboard` / `keymap` | enabled state, modifiers, repeat timing and keymap definition |
-| `mmap` | read/write area descriptors including file, size and token validation |
-| `notifications` | enabled state and supported actions |
-| `pointer` | synchronization, initial position and double-click parameters |
-| `webcam` | enabled state and accepted image encodings |
-| `window` | metadata supported, restacking, focus and position synchronization |
+Most subsystems are enabled for a connection only when the client's `hello`
+contains their key: an absent or false value disables the subsystem, a map
+enables it with the settings it contains. The `display`, `window` and `encoding`
+maps are REQUIRED for a client that wants to show windows: without a `display`
+map the server creates no display state for the client, an empty `window` map
+means no windows, and a client that wants windows but advertises no picture
+encodings is rejected. See the [porting handshake guide](../Porting/Handshake.md)
+for a minimal client `hello`.
+
+| Key | Type | Interoperability fields | Specified in |
+|---|---|---|---|
+| `audio` | map | `async:bool` in the hello, then `audio-capabilities` packets | [audio](../Subsystems/Audio.md) |
+| `bandwidth` | map | `limit:u64` (bits per second, 0 for none), `detection:bool` | [bandwidth](../Subsystems/Bandwidth.md) |
+| `connection-data` | map | `adapter-type:str`, `jitter:u32`, `speed:u64` | [bandwidth](../Subsystems/Bandwidth.md) |
+| `clipboard` | map | `notifications`, `selections`, `greedy`, `want_targets`, `preferred-targets`; `direction` (server only) | [clipboard](../Subsystems/Clipboard.md) |
+| `command` | map | `menu:bool` | [command](../Subsystems/Command.md) |
+| `cursor` | map | `encodings`, `default`, `max` (client); `sizes`, `default` (server) | [cursor](../Subsystems/Cursor.md) |
+| `display` | map | `desktop_size`, `monitors`, `monitor-relative`, `dpi`, `refresh-rate`, ... | [display](../Subsystems/Display.md) |
+| `encoding` | map | `options`, `core`, `rgb_formats`, `window-icon`, `full_csc_modes`, quality and speed, codec profiles | [encoding](../Subsystems/Encoding.md) |
+| `events` | bool | the client accepts `events` packets | Section 7.1 |
+| `file` | map | `enabled`, `ask`, `size-limit`, `chunks`, `open`, `open-ask`, `open-url`, `open-url-ask`, `request-file`, `ask-timeout` | [file transfers](../Subsystems/File.md) |
+| `printer` | map | `printing`, `printing-ask` | [file transfers](../Subsystems/File.md) |
+| `keyboard`, `modifiers`, `keymap`, `key_repeat`, `ibus` | top-level | enabled state, modifiers, repeat timing and keymap definition | [keyboard](../Subsystems/Keyboard.md) |
+| `metadata.supported` | `list<str>` | the window metadata keys the client wants to receive | [window](../Subsystems/Window.md) |
+| `mmap` | map | `read` and `write` area descriptors | [mmap](../Subsystems/MMAP.md) |
+| `notification` | bool | the client can show notifications | [notification](../Subsystems/Notification.md) |
+| `ping` | bool | the client answers `ping` packets, Section 7.1 | [ping](../Subsystems/Ping.md) |
+| `pointer` | map | `initial-position`, `double_click`, `sync` | [pointer](../Subsystems/Pointer.md) |
+| `bell`, `system_tray` | bool | the client handles `window-bell`, and tray windows | [window](../Subsystems/Window.md) |
+| `webcam` | bool | the client may forward a webcam | [webcam](../Subsystems/Webcam.md) |
+| `window` | map | `enabled`, `restack`, `grabs`, `min-size`, `max-size`, `sync-*` | [window](../Subsystems/Window.md) |
 
 Pixel formats, codec option dictionaries, monitor records, keymaps, clipboard
 targets and memory-map layouts are defined in the matching
@@ -385,11 +497,11 @@ validation limits, not a separate on-wire integer representation.
 
 | Direction | Packet | Arguments |
 |---|---|---|
-| either | `ping` | `monotonic_ms:u64`, `sid:str?` |
+| either | `ping` | `monotonic_ms:u64`, `wallclock_ms:u64`, `sid:str` |
 | either | `ping-echo` | `monotonic_ms:u64`, `load1:u64`, `load5:u64`, `load15:u64`, `latency_ms:i64`, `sid:str?` |
 | S -> C | `startup-complete` | none |
 | either | `setting-change` | `name:str`, `value:any` |
-| S -> C | `server-event` | `name:str`, `values:any...` |
+| S -> C | `events` | `name:str`, `values:any...` |
 | S -> C | `control` | `command:str`, `arguments:any...` |
 | C -> S | `control-request` | `request_id:u64`, `command:str`, `arguments:any...` |
 | S -> C | `info-response` | `information:map` |
@@ -398,9 +510,21 @@ validation limits, not a separate on-wire integer representation.
 | C -> S | `suspend` | `suspended:bool` |
 | C -> S | `bell-set` | `enabled:bool` |
 
-Ping timestamps use the sender's monotonic clock and are correlation values,
-not wall-clock time. Load values are scaled by 1000. A negative latency means
-unknown.
+`monotonic_ms` uses the sender's monotonic clock and is a correlation value;
+`wallclock_ms` is the sender's wall-clock time (milliseconds since the epoch),
+only used for diagnostics. The `ping-echo` MUST copy `monotonic_ms` and `sid`
+from the `ping` it answers: the server ignores echoes whose `sid` does not match
+its own. Load values are scaled by 1000. A negative latency means unknown.
+
+A client that advertises `ping: true` MUST answer every `ping` with a
+`ping-echo`: the server pings it every few seconds and disconnects it with
+`client ping timeout` when no matching echo has been received for 60 seconds.
+A client that does not advertise `ping` is never pinged by the server.
+
+`events` packets are only sent to clients that advertise `events: true`. They
+carry server lifecycle notifications such as `ready`, `suspend`, `resume`,
+`exit`, `handshake-complete`, `startup-complete` and `connection-lost`, and MAY
+be ignored.
 
 `setting-change` is bidirectional, but asymmetric. A server MAY send any
 setting. A server MUST apply an allow-list to the settings a client is permitted
@@ -442,9 +566,16 @@ for the server to apply to its own display.
 | S -> C | `display-icon` | `width:u16`, `height:u16`, `encoding:str`, `rowstride:u32`, `data:bytes` |
 | S -> C | `display-show-desktop` | `show:bool` |
 | S -> C | `display-resized` | `width:u16`, `height:u16`, `max_width:u16`, `max_height:u16` |
+| C -> S | `display-ungrab` | `wid:u64` (ignored) |
+| C -> S | `display-monitor-configure` | `action:str`, `arguments:any...` |
 
 `display-configure` carries the same monitor, desktop, DPI and scaling
-structures advertised in the display capabilities.
+structures advertised in the display capabilities, using the hyphenated key
+names defined in the [display subsystem](../Subsystems/Display.md).
+`display-ungrab` asks the server to release any keyboard or pointer grab held
+by an application. `display-monitor-configure` adds (`"add", [w, h]`) or
+removes (`"remove", "index", n` or `"remove", "wid", wid`) a virtual monitor
+on servers that advertise monitor management.
 
 ### 8.2 Windows and Drawing
 
@@ -465,7 +596,7 @@ structures advertised in the display capabilities.
 | S -> C | `window-grab` | `wid:u64` |
 | S -> C | `window-ungrab` | `wid:u64` |
 | S -> C | `window-stacking` | `wids:list<u64>` |
-| C -> S | `window-map` | `wid:u64`, `x:i32`, `y:i32`, `w:u16`, `h:u16`, `client_properties:map`, `state:map?`, `monitor:i32?` |
+| C -> S | `window-map` | `wid:u64`, `x:i16`, `y:i16`, `w:u16`, `h:u16`, `client_properties:map`, `state:map?`, `monitor:map?` |
 | C -> S | `window-unmap` | `wid:u64`, `iconified:bool?`, `state:map?` |
 | C -> S | `window-configure` | `wid:u64`, `configuration:map` |
 | C -> S | `window-close` | `wid:u64` |
@@ -473,10 +604,26 @@ structures advertised in the display capabilities.
 | C -> S | `window-focus` | `wid:u64`, `modifiers:list<str>?` |
 | C -> S | `window-action` | `wid:u64`, `action:str`, `arguments:any...` |
 | C -> S | `window-stacking` | `wids:list<u64>` |
-| C -> S | `window-refresh` | `wid:u64`, `options:map` |
-| C -> S | `window-ack` | `wid:u64`, `width:u16`, `height:u16`, `sequence:u64`, `decode_time_us:i32`, `message:str` |
+| C -> S | `window-refresh` | `wid:u64`, `unused:u8` (0), `quality:u8`, `options:map`, `client_properties:map` |
+| C -> S | `window-ack` | `wid:u64`, `width:u16`, `height:u16`, `sequence:u64`, `decode_time_us:i32`, `message:str`, `extra:map?` |
+| C -> S | `window-signal` | `wid:u64`, `signal:str` |
+| S -> C | `window-draw-fragment` | `window-draw` fields 1 to 10, then `index:u16`, `count:u16`, `group_start:u16`, `group_size:u16`, `previous_sequence:u64` |
 
-Window IDs are allocated by the server and remain valid until `window-destroy`.
+Window IDs are allocated by the server, are in the range `1..2^48-1`, and remain
+valid until `window-destroy`. On X11 servers they are the X11 window identifiers,
+so they are neither small nor contiguous. In `window-refresh`, `wid` zero means
+every window.
+
+Every `window-draw` MUST be answered with exactly one `window-ack` carrying the
+same `wid` and `sequence`, including draws that could not be decoded or that
+refer to an unknown window. The server uses these acknowledgements for flow
+control, the exact rules and the negative `decode_time_us` error codes are in
+the [encoding subsystem](../Subsystems/Encoding.md#acknowledgements-and-flow-control).
+`window-draw-fragment` is only used on transports that carry datagrams, such as
+[QUIC](QUIC.md): each fragment carries part of the `data` of one `window-draw`.
+
+`window-signal` sends a POSIX signal to the process that owns the window. The
+server advertises the signal names it accepts in `window.signals`.
 `window-dismiss` requires the server's `window.dismiss` capability and only
 unmaps override-redirect popups. Readonly clients cannot dismiss remote windows.
 The encoding and options of `window-draw` MUST have been advertised by the
@@ -507,13 +654,22 @@ parameters. Values outside advertised ranges MUST be rejected or clamped.
 | C -> S | `keyboard-sync` | `enabled:bool` |
 | either | `pointer-motion` | `device:i64`, `sequence:u64`, `wid:u64`, `pointer:list<coord>`, `properties:map` |
 | either | `pointer-button` | `device:i64`, `sequence:u64`, `wid:u64`, `button:u8`, `pressed:bool`, `pointer:list<coord>`, `properties:map` |
-| C -> S | `pointer-wheel` | `wid:u64`, `axis:u8`, `delta:i64`, `pointer:list<coord>`, `modifiers:list<str>`, `buttons:list<u8>`, `properties:map` |
-| S -> C | `pointer-wheel` | `wid:u64`, `axis:u8`, `delta:i64`, `pointer:list<coord>`, `modifiers:list<str>` |
-| S -> C | `pointer-position` | `wid:u64`, `x:i32`, `y:i32`, `relative_x:i32`, `relative_y:i32` |
+| C -> S | `pointer-wheel` | `wid:u64`, `button:u8`, `distance:i64`, `pointer:list<coord>`, `modifiers:list<str>`, `buttons:list<u8>`, `properties:map` |
+| S -> C | `pointer-wheel` | `wid:u64`, `button:u8`, `distance:i64`, `pointer:list<coord>`, `modifiers:list<str>` |
+| S -> C | `pointer-position` | `wid:u64`, `x:i16`, `y:i16`, `relative_x:i16?`, `relative_y:i16?` |
+| C -> S | `pointer-devices` | `format:str`, `devices:map` |
 
 Keyboard event properties include modifier names, key value, text, hardware
 keycode and layout group. Pointer coordinates are `[x, y]`; extra device axes
-may follow only when advertised.
+may follow only when advertised. A `device` value of `-1` means "unspecified".
+
+The `pointer-wheel` `button` is the X11 wheel button the motion corresponds to:
+`4` up, `5` down, `6` left, `7` right. `distance` is the signed scroll distance
+multiplied by 1000, where 1000 is one wheel click. Clients only send
+`pointer-wheel` to servers that advertise `wheel.precise` or
+`wheel.emulation`; otherwise they emulate the wheel with
+`pointer-button` press and release pairs on the same buttons. See the
+[pointer subsystem](../Subsystems/Pointer.md) for the properties.
 
 ### 8.5 Cursor
 
@@ -536,16 +692,20 @@ permits it.
 | `clipboard-enable-selections` | `selections:list<str>` |
 | `clipboard-data` | `selection:str`, `options:map` |
 | `clipboard-request` | `request_id:u64`, `selection:str`, `target:str` |
-| `clipboard-contents` | `request_id:u64`, `selection:str`, `data_type:str`, `data_format:u8`, `wire_encoding:str`, `data:any` |
+| `clipboard-contents` | `request_id:u64`, `selection:str`, `data_type:str`, `data_format:u8`, `wire_encoding:str`, `data:any`, `truncated:u64` |
 | `clipboard-contents-none` | `request_id:u64`, `selection:str?` |
-| `clipboard-pending-requests` | `count:u32` |
+| `clipboard-pending-requests` | `count:u8` |
 
-The `clipboard-data` options are `claim:bool`, `greedy:bool`,
-`targets:list<str>` and `data:map`. Each `data` entry maps a target name to
-`[data_type:str, data_format:u8, wire_encoding:str, wire_data:any]`.
+The `clipboard-data` options are `claim:bool`, `greedy:bool`, `origin:str`,
+`synchronous:bool`, `targets:list<str>` and `data:map`. Each `data` entry maps
+a target name to `[data_type:str, data_format:u8, wire_encoding:str, wire_data:any]`.
 
-Request IDs correlate exactly one contents response. Receivers MUST enforce
-negotiated selection, target and size limits before exposing clipboard data.
+Request IDs correlate exactly one contents response. A `clipboard-contents`
+`truncated` value is the number of bytes dropped from the end of `data` to fit
+the size limit, zero when complete. Receivers MUST enforce negotiated
+selection, target and size limits before exposing clipboard data. The wire
+encodings, the data formats and the request timeouts are specified in the
+[clipboard subsystem](../Subsystems/Clipboard.md).
 
 ### 8.7 Notifications
 
@@ -564,7 +724,7 @@ negotiated selection, target and size limits before exposing clipboard data.
 | either | `audio-control` | `command:str`, `arguments:any...` |
 | either | `audio-data` | `codec:str`, `data:bytes`, `metadata:map`, `extra_data:bytes...` |
 | either | `audio-stream` | `event:str` (`start` or `end`), `codec:str`, `sequence:i64` |
-| either | `audio-keepalive` | `sequence:u64` |
+| either | `audio-keepalive` | `time:u64` |
 | S -> C | `audio-level` | `sample:map` |
 | S -> C | `audio-signal` | `present:bool` |
 
@@ -573,6 +733,11 @@ that advertise `stream-packet` in their audio capabilities. Older peers mark the
 start and end of a stream using `audio-data` packets without data, with
 `start-of-stream` / `end-of-stream` metadata flags.
 `audio-data` metadata carries the sequence, timestamp and codec properties.
+A peer that advertises `keepalive` in its audio capabilities promises to echo,
+while it receives a stream, the `time` metadata of the latest `audio-data` in an
+`audio-keepalive` packet every few seconds. The sender then stops the stream (or
+drops data) when the echoes stop arriving. Peers that do not advertise
+`keepalive` are not subject to this. See the [audio subsystem](../Subsystems/Audio.md).
 Codec and direction MUST have been negotiated. Implementations MAY
 send audio level/signal packets to clients advertising `audio.level` and
 `audio.signal`, respectively; their payload is codec-backend metadata and is
@@ -602,7 +767,7 @@ server. `printer-file` is only accepted on a `print` request connection
 | `file-data-request` | `type:str`, `send_id:str`, `url:str`, `mimetype:str`, `size:u64`, `print:bool`, `open:bool`, `options:map?` |
 | `file-data-response` | `send_id:str`, `accept:bool` |
 | `file-request` | `filename:str`, `open:bool`, `send_id:str` |
-| `open-url` | `url:str` |
+| `file-open-url` | `url:str`, `send_id:str` |
 | `printer-devices` | `printers:map` |
 | `printer-file` | `filename:str`, `data:bytes`, `mimetype:str?`, `source_uuid:str?`, `title:str?`, `printer:str?`, `copies:u16?`, `options:map|str?` |
 
@@ -610,6 +775,8 @@ server. `printer-file` is only accepted on a `print` request connection
 `file-chunk-id`. A receiver MUST validate the declared size, negotiated maximum,
 authorization, basename, chunk order and digest. `file-data-response` authorizes
 only the exact pending `send_id`; it is not blanket permission to send data.
+The chunked transfer protocol, digests and timeouts are specified in the
+[file transfer subsystem](../Subsystems/File.md).
 
 ### 8.11 Encoder Service
 
@@ -619,7 +786,7 @@ only the exact pending `send_id`; it is not blanket permission to send data.
 | C -> S | `context-request` | `id:u64`, `codec_type:str`, `encoding:str`, `width:u16`, `height:u16`, `source_format:str`, `options:map` |
 | C -> S | `context-compress` | `id:u64`, `metadata:map`, `pixels:bytes|list<bytes>`, `options:map`, `send_options:map` |
 | C -> S | `context-close` | `id:u64`, `reason:str` |
-| S -> C | `encodings` | `capabilities:map` |
+| S -> C | `encoding-set` | `properties:map`, with the encoder specifications in `video` |
 | S -> C | `encode-response` | `encoding:str`, `data:bytes`, `options:map`, `width:u16`, `height:u16`, `rowstride:u32`, `bpp:u8`, `metadata:map` |
 | S -> C | `context-response` | `id:u64`, `accepted:bool`, `message:str`, `properties:map` |
 | S -> C | `context-data` | `id:u64`, `data:bytes`, `client_options:map`, `reply_options:map` |
@@ -664,6 +831,14 @@ that feature must not receive them.
   preserve externally visible ordering for each object.
 - `connection-close` SHOULD be sent before an orderly transport close. Transport
   EOF without it is an abnormal disconnect.
+- Servers bound the handshake: a connection that has not completed its `hello`
+  within 21 seconds of being accepted is closed with `login timeout`, and each
+  `challenge` must be answered within 120 seconds. Clients MUST NOT wait for
+  user input before sending their first `hello`.
+- Once established, the obligations that keep a session alive are answering
+  `ping` (Section 7.1), acknowledging every `window-draw` (Section 8.2) and, for
+  peers that advertised audio `keepalive`, echoing `audio-keepalive` (Section 8.8). The
+  server's `idle-timeout` MAY also disconnect a client without user input.
 
 ## 10. Error Handling
 

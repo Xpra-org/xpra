@@ -24,7 +24,10 @@ The prefix for all packets and capabilities is `notification`.
 
 </div>
 
-The server exposes a single `enabled` flag using the `notifications` capability prefix.
+The client sends a top-level `notification` boolean: notifications are only
+forwarded to clients that set it. The server's `hello` contains a `notification`
+key when it can forward notifications.
+The client can enable or disable them later with `notification-status`.
 
 
 <div class="docs-section-heading" markdown="1">
@@ -52,8 +55,8 @@ The server exposes a single `enabled` flag using the `notifications` capability 
 | `application icon`          | `string`                | the name of the icon to show     |
 | `summary`                   | `string`                | the title of the notification    |
 | `body`                      | `string`                | the contents of the notification |
-| `timeout`                   | `integer`               | in milliseconds, zero if unused  |
-| `icon data`                 | `list` (optional)       | the icon data to use, see below  |
+| `timeout`                   | `integer`               | in milliseconds; `0` never expires, `-1` uses the default |
+| `icon data`                 | `list` (optional)       | the icon data to use, see below, empty list for none |
 | `actions`                   | `list`  (optional)      | see below                        |
 | `hints`                     | `dictionary` (optional) | see below                        |
 
@@ -70,3 +73,17 @@ The icon data is a list or tuple with 4 elements:
 
 The only format which is guaranteed to be supported is `png`.
 Other formats should not be used.
+
+### Actions and hints
+
+`actions` is a flat list alternating action keys and their labels, as in the
+freedesktop notification specification: `["default", "Open", "reply", "Reply"]`.
+When the user selects one, the client sends `notification-action` with the key.
+When the notification is dismissed or expires, it sends `notification-close`.
+A `notification-close` from the server asks the client to remove the notification.
+
+`hints` follows the freedesktop notification hints (`urgency`, `category`,
+`transient`, ...). The `image-data` and `app-icon-data` hints use the same 4-element
+icon format as the icon data above. Unknown hints MUST be ignored.
+Clients SHOULD decode and re-encode any icon they show rather than passing the
+received bytes to a third-party component.

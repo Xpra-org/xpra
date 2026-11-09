@@ -31,8 +31,7 @@ The prefix for all packets and capabilities is `mmap`.
 
 </div>
 
-The client and server should expose the following capabilities in their `hello` packet
-using the `clipboard` prefix.
+The client and server expose these capabilities in an `mmap` map in their `hello` packet.
 
 The client creates an `mmap` backing file for each direction it wants to use:
 * `read` for receiving data from the server
@@ -49,6 +48,14 @@ and sends the following attributes:
 | `token`       | random token value generated         |
 | `token_index` | position where the token was written |
 | `token_bytes` | length of the token in bytes         |
+
+Each area is described by its own map: `{"mmap": {"read": {...}, "write": {...}}}`.
+The `token` is a random positive integer, usually 128 bits long (so it is encoded
+as a big integer, code `61` in rencodeplus). It is stored in the area starting at
+`token_index`, as `token_bytes` bytes in little-endian order: byte `token_index`
+holds the least significant 8 bits. `token_bytes` defaults to 128 and MUST NOT
+exceed 512. The token MUST NOT overlap the 8-byte header described below.
+The area size must be at least 64 MiB and less than 4 GiB.
 
 The server should attempt to open the mmap file specified,
 and verify that the token is found.
@@ -71,10 +78,14 @@ that one is chosen by the administrator and can legitimately be a symbolic
 link, a device file, or a file belonging to another user.
 
 To use this mmap file, it must write a new token
-and return this information to the client.
-(using the same format, excluding the `file` and `size` that the client has already specified)
+and return this information to the client, using the same format.
 
-The client then verifies that the mmap file can be used.
+The names in the server's reply are from the server's point of view: the area the
+client called `read` (server to client) is returned as the server's `write`, and
+the client's `write` area as the server's `read`.
+The client then reads the server's token from the area to verify that the server
+really is using the same memory. A token value of zero means that the server is
+not using that area.
 
 
 <div class="docs-section-heading" markdown="1">
@@ -84,6 +95,33 @@ The client then verifies that the mmap file can be used.
 </div>
 
 There are no specific `mmap` packets used, `mmap` is used as an [encoding](../Usage/Encodings.md).
+
+<div class="docs-section-heading" markdown="1">
+
+## Data transfer
+
+</div>
+
+The first 8 bytes of each area are a header holding two unsigned 32-bit integers
+in the native byte order of the host:
+
+| Offset | Name | Written by | Meaning |
+|---:|---|---|---|
+| 0 | `data_start` | reader | Offset up to which the reader has consumed the data |
+| 4 | `data_end` | writer | Offset up to which the writer has written data |
+
+Both are absolute offsets within the area, in the range `8..size`; zero means that
+nothing has been read or written yet. The rest of the area is a ring buffer: the
+writer only writes into the free space between `data_end` and `data_start`,
+wrapping around to offset 8 at the end of the area.
+
+A `window-draw` packet using the `mmap` encoding has empty `data`. Its options
+contain `rgb_format` and `chunks`: a list of one or two `(offset, length)` pairs
+(two when the data wraps around), whose concatenation is the raw pixel data,
+with the packet's `rowstride`. Once it has copied or painted the pixels, the client
+MUST set `data_start` to the end (`offset + length`) of the last chunk, even if
+painting failed: the server cannot reuse that space otherwise. It then sends the
+`window-ack` as usual. Chunks MUST be validated against the area size before use.
 
 
 <div class="docs-section-heading" markdown="1">

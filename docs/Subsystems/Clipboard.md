@@ -53,7 +53,8 @@ using the `clipboard` prefix:
 | `greedy`            | boolean or list of strings  | Include contents for all or the named selections in `clipboard-data`                 |
 | `preferred-targets` | list of strings             | The targets that the peer should prefer                                              |
 | `selections`        | list of strings             | Clipboard selections supported by this endpoint                                      |
-| `direction`         | string                      | One of `disabled`, `to-client`, `to-server` or `both`                                |
+| `direction`         | string                      | Server only: one of `disabled`, `to-client`, `to-server` or `both`                   |
+| `enabled`           | boolean                     | Client only, optional: default `True`                                                |
 
 Notes:
 
@@ -67,11 +68,9 @@ Notes:
 ```json lines
 {
   'clipboard': {
-    'enabled': true,
     'notifications': true,
     'selections': ['CLIPBOARD', 'PRIMARY', 'SECONDARY'],
     'preferred-targets': ['UTF8_STRING', 'TEXT', 'STRING', 'text/plain', 'image/png'],
-    'direction': "both",
   },
 }
 ```
@@ -102,13 +101,20 @@ as either end can send and receive clipboard events.
 | `clipboard-enable-selections` | list of `selection`s                                                                                   | Select the clipboards to synchronize                              |
 | `clipboard-data`              | `selection`, options dictionary                                                                        | Announce ownership and optionally include targets and contents    |
 | `clipboard-request`           | `request-id`, `selection`, `target`                                                                    | Request clipboard contents                                       |
-| `clipboard-contents`          | `request-id`, `selection`, `data-type`, `data-format`, `wire-encoding`, `data`                          | Respond to `clipboard-request`                                    |
+| `clipboard-contents`          | `request-id`, `selection`, `data-type`, `data-format`, `wire-encoding`, `data`, `truncated`             | Respond to `clipboard-request`                                    |
 | `clipboard-contents-none`     | `request-id`, `selection` optional                                                                     | Empty response to `clipboard-request`                             |
 | `clipboard-pending-requests`  | `pending-requests`: integer                                                                            | Number of requests waiting                                       |
 
-The `clipboard-data` options are `claim`, `greedy`, `token`, `synchronous`,
-`targets` and `data`. `data` maps each target to a four-item value containing
-`data-type`, `data-format`, `wire-encoding` and the wire data.
+The `clipboard-data` options are:
+
+| Option | Type | Meaning |
+|---|---|---|
+| `claim` | boolean | The receiver should take ownership of its own selection, on behalf of the sender |
+| `greedy` | boolean | The sender wants the contents to be included whenever possible |
+| `origin` | string | A random identifier (at most 64 characters) of the sender's clipboard owner, used to detect loops: a peer MUST NOT re-announce a change that carries an `origin` it has just received |
+| `synchronous` | boolean | The receiver should set the data immediately rather than on request |
+| `targets` | list of strings | The targets available, at most 100 |
+| `data` | map | Target name to `[data-type, data-format, wire-encoding, wire-data]` |
 
 
 Clipboard data format details:
@@ -121,7 +127,18 @@ Clipboard data format details:
 | `data-type`    | `string`  | The type of the contents, ie: `bytes` or `ATOM`               |
 | `data-format`  | `integer` | The number of bits used by each item                          |
 | `wire-encoding` | `string`  | Encoding used to convert the platform value to the wire form |
-| `data`         | variable  | Typically bytes, atoms or encoded text                        |
+| `data`         | variable  | Depends on `wire-encoding`, see below                         |
+| `truncated`    | `integer` | How much data was dropped to honour the sender's size limit, `0` when complete |
+
+| `wire-encoding` | `data-format` | `data` |
+|---|---|---|
+| `bytes` | `8` | A byte string: text targets carry UTF-8 or Latin-1 text, image targets an encoded image |
+| `integers` | `16` or `32` | A list of integers, one per item |
+| `atoms` | `32` | A list of target names, for the `ATOM`, `ATOM_PAIR` and `TARGETS` data types |
+
+`data-format` MUST be `8`, `16` or `32`. Data of 512 bytes or more may be sent
+compressed, using the record-layer compression of a raw chunk: once decoded, it
+is the same byte string. A packet is limited to 16 MiB of clipboard data.
 
 
 ### Flow
@@ -141,3 +158,14 @@ If not, the peer may try to convert one of the valid `target`s.
 
 If a value is sucessfully retrieved, a `clipboard-contents` packet is sent back,
 otherwise a `clipboard-contents-none` is used.
+
+A peer waits 2.5 seconds for the answer to a `clipboard-request`, after which the
+request fails.
+
+The server only exchanges clipboard data with one client at a time: the first
+client with clipboard support, then whichever client most recently used the
+keyboard or pointer (the "UI driver"). Clipboard packets from other clients are
+ignored. The server also drops the clipboard packets it would send to a client
+beyond 30 per second, to break clipboard loops. `clipboard-pending-requests` is only sent by the server, to clients that
+advertise `notifications`: it is the number of requests still waiting for the
+client's applications, so that the client can show progress.
