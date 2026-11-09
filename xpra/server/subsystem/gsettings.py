@@ -57,7 +57,15 @@ class GSettingsServer(StubSubsystem):
 
     def setup(self) -> None:
         if self.sync_enabled:
+            self.server.connect("setting-changed", self.setting_changed_handler)
             self.update_gsettings()
+
+    def setting_changed_handler(self, _server, setting: str, _value, _ss=None) -> None:
+        # a client which becomes readonly loses its overrides, and gets them back
+        # when it stops being readonly (`setting-change` packets are not processed
+        # in the main thread, and `Gio.Settings` must only be used from there):
+        if setting == "readonly":
+            self.idle_add(self.update_gsettings)
 
     def cleanup(self) -> None:
         # stop applying, then restore everything we touched to its original value:
@@ -122,12 +130,18 @@ class GSettingsServer(StubSubsystem):
     def desired(self) -> dict[tuple[str, str], str]:
         target = dict(self.defaults)
         sources = tuple(self.server._server_sources.values())
-        # only honour client values when exactly one client is connected:
-        if len(sources) == 1:
+        # only honour client values when exactly one client is connected,
+        # and that client is allowed to modify the session:
+        if len(sources) == 1 and not self.source_readonly(sources[0]):
             for sk, value in getattr(sources[0], "gsettings", {}).items():
                 if self.allowed(sk):
                     target[sk] = value
         return target
+
+    def source_readonly(self, ss) -> bool:
+        if getattr(self.server, "readonly", False):
+            return True
+        return bool(getattr(ss, "effective_readonly", lambda: False)())
 
     def update_gsettings(self) -> None:
         if not self.sync_enabled:
