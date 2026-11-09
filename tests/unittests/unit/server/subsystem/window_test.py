@@ -16,6 +16,57 @@ from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 class WebcamMixinTest(ServerMixinTest):
 
+    def test_x11_configure_modifiers(self):
+        from xpra.x11.desktop.window import DesktopWindowServer
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+
+        cases = (
+            ({"modifiers": ["shift"]}, {}, ("shift",)),
+            ({}, {"modifiers": ["control"]}, ("control",)),
+            ({"modifiers": ["shift"]}, {"modifiers": ["control"]}, ("shift",)),
+            ({"modifiers": []}, {"modifiers": ["control"]}, ()),
+            ({"modifiers": []}, {}, ()),
+            ({}, {"modifiers": []}, ()),
+            ({}, {}, None),
+        )
+        for manager_class in (SeamlessWindowServer, DesktopWindowServer):
+            source = Mock(uuid="driver")
+            source.effective_readonly.return_value = False
+            source.is_window_hidden.return_value = False
+            pointer = Mock()
+            pointer.may_move_pointer.return_value = True
+            server = AdHocStruct()
+            server.ui_driver = source.uuid
+            server.get_server_source = lambda _proto: source
+            server.subsystems = {"pointer": pointer}
+            manager = manager_class(server)
+            window = Mock()
+            window.is_OR.return_value = False
+            window.is_tray.return_value = False
+            manager._id_to_window[1] = window
+            for focused, readonly, pointer_moved in (
+                    (True, False, True), (False, False, True), (True, True, True), (True, False, False),
+            ):
+                server.readonly = readonly
+                if manager_class is SeamlessWindowServer:
+                    manager._has_focus = 1 if focused else 2
+                pointer.process_mouse_common.return_value = (10, 20) if pointer_moved else None
+                for config_modifiers, pointer_modifiers, expected in cases:
+                    with self.subTest(manager=manager_class.__name__, config=config_modifiers, pointer=pointer_modifiers,
+                                      focused=focused, readonly=readonly, pointer_moved=pointer_moved):
+                        pointer.reset_mock()
+                        config = {
+                            "pointer": {"wid": 1, "position": (10, 20), **pointer_modifiers},
+                            **config_modifiers,
+                        }
+                        proto = object()
+                        manager._process_configure(proto, Packet("window-configure", 1, config))
+                        if expected is not None and not readonly and pointer_moved \
+                                and (focused or manager_class is DesktopWindowServer):
+                            pointer._update_modifiers.assert_called_once_with(proto, 1, expected)
+                        else:
+                            pointer._update_modifiers.assert_not_called()
+
     def test_window_stacking_packet(self):
         from xpra.server.subsystem.window import WindowServer
 
