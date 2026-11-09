@@ -208,7 +208,7 @@ class WindowDraw(StubClientSubsystem):
             extra = {"missing": missing, "fragments": fragments} if missing else None
             if success > 0:
                 end = monotonic()
-                decode_time = round(end * 1000 * 1000 - start * 1000 * 1000)
+                decode_time = max(1, round((end - start) * 1_000_000))
                 self.pixel_counter.append((start, end, width * height))
                 dms = "%sms" % (int(decode_time / 100) / 10.0)
                 paintlog("record_decode_time(%s, %s) wid=%#x, %s: %sx%s, %s",

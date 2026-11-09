@@ -227,7 +227,7 @@ class Qt6Client:
         if window:
             message = ""
             window.draw(x, y, width, height, coding, data, rowstride)
-            decode_time = int(1000 * (monotonic() - now))
+            decode_time = max(1, round((monotonic() - now) * 1_000_000))
         else:
             message = f"Warning: window {wid:#x} not found"
             log.warn(message)
