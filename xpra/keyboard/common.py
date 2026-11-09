@@ -29,6 +29,14 @@ def valid_keymap_str(key: str, value: str, default: str = "") -> str:
     return value
 
 
+def keymap_str(d: typedict, key: str, default: str = "") -> str:
+    """
+    The xkb layout, variant, options, model or rules received from a client.
+    Invalid values are replaced with the default.
+    """
+    return valid_keymap_str(key, d.strget(key, default), default)
+
+
 def keymap_strtuple(d: typedict, key: str) -> tuple[str, ...]:
     """
     The xkb layouts or variants received from a client.

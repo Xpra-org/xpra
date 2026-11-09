@@ -9,6 +9,7 @@ from typing import Any
 from collections.abc import Iterable, Sequence
 
 from xpra.common import noop
+from xpra.keyboard.common import keymap_str
 from xpra.keyboard.mask import DEFAULT_MODIFIER_MEANINGS, MODIFIER_MAP
 from xpra.util.objects import typedict
 from xpra.util.str_fn import std, csv, bytestostr, Ellipsizer
@@ -102,11 +103,11 @@ def do_set_keymap(layout: str, variant: str, options, query_struct) -> None:
         #    b"options"     : b"grp:shift_caps_toggle",
         #    }
         # parse the data into a dict:
-        rules = query_struct.strget("rules", DEFAULT_RULES)
-        model = query_struct.strget("model", DEFAULT_MODEL)
-        layout = query_struct.strget("layout", DEFAULT_LAYOUT)
-        variant = query_struct.strget("variant", DEFAULT_VARIANT)
-        options = query_struct.strget("options", DEFAULT_OPTIONS)
+        rules = keymap_str(query_struct, "rules", DEFAULT_RULES)
+        model = keymap_str(query_struct, "model", DEFAULT_MODEL)
+        layout = keymap_str(query_struct, "layout", DEFAULT_LAYOUT)
+        variant = keymap_str(query_struct, "variant", DEFAULT_VARIANT)
+        options = keymap_str(query_struct, "options", DEFAULT_OPTIONS)
         if layout:
             log.info("setting keymap: %s",
                      csv(f"{k}={std(v)}" for k, v in {
