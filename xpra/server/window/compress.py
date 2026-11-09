@@ -24,6 +24,7 @@ from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, MmapPointerError
 from xpra.net.packet_type import WINDOW_DRAW
 from xpra.constants import MAX_WINDOW_SIZE, WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND
 from xpra.common import is_covered_by_opaque_region
+from xpra.server.common import validate_rgb_formats
 from xpra.server.window.windowicon import WindowIconSource
 from xpra.server.window.perfstats import WindowPerformanceStatistics
 from xpra.server.window.batch_delay_calculator import calculate_batch_delay, get_target_speed, get_target_quality
@@ -899,7 +900,7 @@ class WindowSource(WindowIconSource):
         if not self.supports_transparency:
             # remove rgb formats with alpha
             rgb_formats = tuple(x for x in rgb_formats if "A" not in x)
-        self.rgb_formats = rgb_formats
+        self.rgb_formats = validate_rgb_formats(rgb_formats, self.core_encodings)
         self.parse_csc_modes(properties.dictget("encoding.full_csc_modes", default=None))
         # select the defaults encoders:
         # (in case pillow was selected previously and the client side scaling changed)

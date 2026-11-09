@@ -30,6 +30,17 @@ def wants_windows(caps: typedict) -> bool:
     return BACKWARDS_COMPATIBLE and caps.boolget("windows")
 
 
+def validate_rgb_formats(rgb_formats: Sequence[str], encodings: Sequence[str]) -> Sequence[str]:
+    if not rgb_formats and any(e.startswith("rgb") for e in encodings):
+        from xpra.log import Logger
+        log = Logger("encoding")
+        log.warn("Warning: client claims RGB encoding support")
+        log.warn(" but no RGB pixel formats are available!")
+        log.warn(" using RGBX as a fallback")
+        return ("RGBX", )
+    return rgb_formats
+
+
 def get_sources_by_type(server, subsystem_type=object, exclude=None) -> Sequence:
     fn = getattr(server, GET_SOURCES_BY_TYPE, noop)
     if fn == noop:
