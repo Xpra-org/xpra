@@ -372,6 +372,7 @@ PROXY_START_OVERRIDABLE_OPTIONS: list[str] = [
     "start-on-disconnect", "start-child-on-disconnect",
     "start-on-last-client-exit", "start-child-on-last-client-exit",
     "sessions-dir",
+    "client-shutdown",
 ]
 tmp: str = os.environ.get("XPRA_PROXY_START_OVERRIDABLE_OPTIONS", "")
 if tmp:
