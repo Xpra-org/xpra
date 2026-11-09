@@ -89,8 +89,10 @@ keyboard and pointer input (shown as JSON, sent as rencodeplus):
 
 Notes:
 
-* `version` MUST be at least `7.0`, and at least `8.0` for servers running modern-only:
-  announce the protocol version you implement, see
+* `protocol-version` is the minimum version you are willing to talk to: use `[8, 0]`,
+  since you only implement the modern packets. The server disconnects clients that
+  require a newer version than its own. `version` is informational: announce the
+  protocol version you implement, see
   [core capabilities](../Network/Protocol.md#52-core-capabilities).
 * `encoders` is required, and MUST contain `rencodeplus`.
 * `server-features: true` asks the server to include its feature flags in its `hello`:
@@ -147,8 +149,8 @@ connection.
 
 The client MUST check:
 
-* `version` and `protocol-version`: disconnect if the server requires a newer protocol
-  version than the one you implement;
+* `protocol-version`: disconnect if the server requires a newer protocol version than
+  the one you implement (a server that omits it requires `7.0`), `version` is informational;
 * `encoders` and `compressors`: from now on, only send with an encoder and a compressor
   that the server listed;
 * `display`: a map with the display size given to this client (`desktop_size`), the

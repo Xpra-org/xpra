@@ -320,13 +320,11 @@ govern what the other endpoint may send.
 
 The effective record compression level is the lowest of the two peers' levels.
 
-The `version` value is compared against the receiver's minimum protocol version:
-a peer announcing a version lower than 7.0 is disconnected with `version error`,
-as is any peer below 8.0 when the receiver is running modern-only. A
-third-party implementation of this document SHOULD therefore announce the
-version of the protocol document it implements (`8.0` for this one), not its
-own release number. The version of the implementation itself belongs in
-`build.version` or in an implementation-specific key.
+The `version` value is informational: compatibility is decided by
+`protocol-version` alone, see below. A third-party implementation of this
+document SHOULD announce the version of the protocol document it implements
+(`8.0` for this one), not its own release number. The version of the
+implementation itself belongs in `build.version` or in an implementation-specific key.
 
 The server only offers an `ssl-upgrade` when the client sets the top-level
 `ssl-upgrade` boolean to true. The legacy `packet-types` capability is ignored;
@@ -337,9 +335,11 @@ The legacy `wants` capability is ignored. Clients request detailed component
 versions and server feature flags using the `versions` and `server-features`
 booleans. Other capability groups are provided by the enabled subsystems.
 
-`protocol-version` lets the peer bail out early: an implementation MUST
-disconnect if its own version is lower than the value received. A peer that
-omits it is treated as requiring version 7.0. A version 7 peer that exposes a
+`protocol-version` is the only version check: an implementation MUST
+disconnect, with `version error` for a server, if its own version is lower than
+the value received, or if the value is not a valid version. A peer that
+omits it is treated as requiring version 7.0. A receiver running modern-only
+exposes 8.0 and relies on its peers to bail out. A version 7 peer that exposes a
 `protocol-version` lower than 7.0 also talks to older peers: it switches to the
 packets and capabilities described here once it receives a `protocol-version`
 of 7.0 or later, which conforming implementations MUST therefore expose.
@@ -452,6 +452,9 @@ send `run` with `run-wait-time=0` instead.
 
 The encoder service is selected by connecting to an encoder server and uses the
 same handshake followed by the `encode` and `context-*` packets in Section 8.11.
+Both ends only use the modern packets, so they expose a `protocol-version` of
+8.0 and reject a peer whose `protocol-version` is missing or lower than 8.0,
+as that peer may also use the legacy packets.
 A listener or proxy may use `register` with `uuid`, session identity, display
 addresses and connection options, and MAY hand the authenticated connection to
 the selected session. Handover is an implementation action; the Xpra record

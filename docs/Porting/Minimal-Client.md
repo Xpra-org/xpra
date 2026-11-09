@@ -57,7 +57,7 @@ The rest of this page only shows packets.
 </div>
 
 ```text
-C->S ["hello", {"version": "8.0", "encoders": ["rencodeplus"], "compressors": ["lz4", "none"],
+C->S ["hello", {"version": "8.0", "protocol-version": [8, 0], "encoders": ["rencodeplus"], "compressors": ["lz4", "none"],
                 "digest": ["hmac+sha256", "hmac+sha512"], "salt-digest": ["hmac+sha256", "hmac+sha512"],
                 "display": {...}, "window": {"enabled": true}, "encoding": {...},
                 "keyboard": true, "pointer": {...}, "ping": true, "server-features": true, ...}]
@@ -100,7 +100,7 @@ S->C ["hello", {"version": "8.0", "mode": "seamless", "encoders": ["rencodeplus"
 S->C ["encoding-set", {"encodings": {"": [...], "core": [...], ...}, "video": {...}}]
 ```
 
-The session is established: the client checks the server's version, encoders and
+The session is established: the client checks the server's `protocol-version`, encoders and
 compressors ([handshake](Handshake.md#the-servers-hello)). The server then sends the
 windows that already exist:
 
