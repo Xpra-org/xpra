@@ -212,7 +212,7 @@ class DisplayManager(StubSubsystem):
                 self.dpi = tdpi.intget("", 0)
                 self.xdpi = tdpi.intget("x", self.xdpi)
                 self.ydpi = tdpi.intget("y", self.ydpi)
-            self.antialias = c.dictget("antialias")
+            self.antialias = c.dictget("display.antialias", c.dictget("antialias"))
         log("dpi=%s, dpi.x=%s, dpi.y=%s, antialias=%s",
             self.dpi, self.xdpi, self.ydpi, self.antialias)
 
