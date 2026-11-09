@@ -145,6 +145,19 @@ def protocol_compat_check(remote_protocol_version) -> str:
     return ""
 
 
+def remote_compat_check(remote_version, remote_protocol_version) -> str:
+    """
+    Peers that expose a "protocol-version" are validated using it,
+    and their version string is then ignored,
+    so that other implementations can use their own version numbers. ie: go-xpra "0.3"
+    Peers that don't expose it are validated using their version string.
+    Returns an error message, or an empty string if we are compatible.
+    """
+    if remote_protocol_version:
+        return protocol_compat_check(remote_protocol_version)
+    return version_compat_check(remote_version) or ""
+
+
 def min_version_check(remote_version: str, min_version: tuple[int, ...]) -> str:
     """
     Verify that the peer's version is at least `min_version`,

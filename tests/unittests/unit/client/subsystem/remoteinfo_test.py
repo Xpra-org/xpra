@@ -40,6 +40,12 @@ class RemoteInfoClientTest(ClientMixinTest):
         version = "0.1"
         caps["build.version"] = version
         assert not x.parse_server_capabilities(caps), "should have failed with version %s" % version
+        # the version string is not validated when the `protocol-version` is accepted, ie: go-xpra:
+        caps["protocol-version"] = (5, 1)
+        assert x.parse_server_capabilities(caps), "should have accepted version %s with protocol-version 5.1" % version
+        # the server requires a newer client:
+        caps["protocol-version"] = (99, 0)
+        assert not x.parse_server_capabilities(caps), "should have failed with protocol-version 99.0"
 
 
 def main():

@@ -18,7 +18,7 @@ from typing import Any, NoReturn, TYPE_CHECKING
 from collections.abc import Callable, Sequence, Iterable
 
 from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_CLOSE, CONNECTION_LOST, GIBBERISH, INVALID
-from xpra.util.version import XPRA_VERSION, version_str, version_compat_check, protocol_compat_check
+from xpra.util.version import XPRA_VERSION, version_str, remote_compat_check
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.server import ServerExitMode
 from xpra.server.glib_server import GLibServer
@@ -1637,18 +1637,11 @@ class ServerCore(GLibServer):
             self.do_handle_hello_request(request, proto, c)
             return
 
-        # verify version:
-        remote_version = c.strget("version")
-        verr = version_compat_check(remote_version)
-        if verr is not None:
+        # verify version, the client may require a more recent server version,
+        # clients that don't expose a `protocol-version` are validated using their version string:
+        verr = remote_compat_check(c.strget("version"), c.inttupleget("protocol-version"))
+        if verr:
             self.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {verr!r}")
-            proto.close()
-            return
-        # the client may require a more recent server version,
-        # this capability is only optional in `BACKWARDS_COMPATIBLE` mode:
-        perr = protocol_compat_check(c.inttupleget("protocol-version"))
-        if perr:
-            self.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {perr!r}")
             proto.close()
             return
 

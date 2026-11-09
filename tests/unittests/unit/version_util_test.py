@@ -9,7 +9,7 @@ import unittest
 from xpra.os_util import POSIX
 from xpra.net.common import FULL_INFO
 from xpra.util.version import (
-    version_compat_check, protocol_compat_check, min_version_check,
+    version_compat_check, protocol_compat_check, min_version_check, remote_compat_check,
     get_host_info, get_version_info, get_platform_info,
 )
 
@@ -42,6 +42,23 @@ class TestVersionUtilModule(unittest.TestCase):
         self.assertTrue(protocol_compat_check(tuple(__version_info__) + (1, )))
         # invalid versions are rejected rather than causing errors:
         self.assertTrue(protocol_compat_check("%i.%ibeta" % __version_info__[:2]))
+
+    def test_remote_compat_check(self):
+        from xpra import __version__, __version_info__
+        from xpra.net.common import MIN_PROTOCOL_VERSION
+        # the version string is ignored when the `protocol-version` is accepted, ie: go-xpra:
+        for version in ("0.3", "", "invalid"):
+            self.assertFalse(remote_compat_check(version, MIN_PROTOCOL_VERSION))
+            self.assertFalse(remote_compat_check(version, (5, 1)))
+        # but the `protocol-version` must still be satisfied:
+        newer = __version_info__[:-1] + (__version_info__[-1] + 1, )
+        self.assertTrue(remote_compat_check(__version__, newer))
+        self.assertTrue(remote_compat_check("0.3", newer))
+        # peers that don't expose a `protocol-version` are validated using their version string:
+        for missing in ("", ()):
+            self.assertFalse(remote_compat_check(__version__, missing))
+            self.assertTrue(remote_compat_check("0.3", missing))
+            self.assertTrue(remote_compat_check("", missing))
 
     def test_min_version_check(self):
         for version in ("8.0", "8.0.1", "8.1", "9", "8"):
