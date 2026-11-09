@@ -367,6 +367,25 @@ class SourceMixinsTest(unittest.TestCase):
             m.update_bandwidth_limits()
         self._test_mixin_class(BandwidthConnection, test_fn=test_update)
 
+    def test_bandwidth_caps(self):
+        from xpra.server.source.bandwidth import BandwidthConnection
+
+        for client_limit in (500, 1500):
+            for server_detection in (False, True):
+                for client_detection in (False, True):
+                    with self.subTest(limit=client_limit, server_detection=server_detection, client_detection=client_detection):
+                        source = self._test_mixin_class(BandwidthConnection, {
+                            "limit": 1000,
+                            "detection": server_detection,
+                        }, {
+                            "bandwidth": {
+                                "limit": client_limit,
+                                "detection": client_detection,
+                            },
+                        })
+                        self.assertEqual(source.bandwidth_limit, min(1000, client_limit))
+                        self.assertEqual(source.bandwidth_detection, server_detection and client_detection)
+
     def test_bandwidth_with_mmap(self):
         from xpra.server.source.bandwidth import BandwidthConnection
 
@@ -376,8 +395,7 @@ class SourceMixinsTest(unittest.TestCase):
             m.mmap_write_area = AdHocStruct()
             m.mmap_write_area.enabled = True
             m.parse_client_caps(typedict({
-                "bandwidth-limit": 500,
-                "bandwidth-detection": True,
+                "bandwidth": {"limit": 500, "detection": True},
                 "connection-data": {"jitter": 20},
             }))
             self.assertEqual(m.bandwidth_limit, 0)
