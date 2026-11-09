@@ -82,7 +82,6 @@ class ClientConnection(StubClientConnection):
         self.ordinary_packets: list[tuple[Packet, bool, bool]] = []
 
         self.suspended = False
-        self.client_packet_types = ()
         self.setting_changed = setting_changed
         self.queue_encode: Callable[[ENCODE_WORK_ITEM], None] = self.start_queue_encode
 
@@ -105,7 +104,7 @@ class ClientConnection(StubClientConnection):
 
     def init_state(self) -> None:
         self.hello_sent = 0.0
-        self.wants = ["encodings", "versions", "features", "display", "packet-types"]
+        self.wants: list[str] = []
         # these statistics are shared by all WindowSource instances:
         self.statistics = GlobalPerformanceStatistics()
 
@@ -271,7 +270,6 @@ class ClientConnection(StubClientConnection):
             "elapsed_time": int(monotonic() - self.connection_time),
             "counter": self.counter,
             "hello-sent": bool(self.hello_sent),
-            "packet-types": self.client_packet_types,
         }
         if p := self.protocol:
             info["connection"] = p.get_info()

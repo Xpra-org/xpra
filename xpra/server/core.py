@@ -555,11 +555,6 @@ class ServerCore(GLibServer):
         }
         if FULL_INFO > 0:
             capabilities["hostname"] = socket.gethostname()
-        if source and "packet-types" in source.wants:
-            packet_types = []
-            packet_types += self.get_packet_types()
-            packet_types += list(self._default_packet_handlers)
-            capabilities["packet-types"] = packet_types
         if self.session_name:
             capabilities["session_name"] = self.session_name
         if self.SESSION_MODE:

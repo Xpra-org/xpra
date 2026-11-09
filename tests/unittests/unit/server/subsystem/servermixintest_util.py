@@ -203,7 +203,7 @@ class ServerMixinTest(unittest.TestCase, SignalEmitter, GLibScheduler):
             self.source = source_mixin_class()
             self.protocol = AdHocStruct()
             self.protocol.TYPE = "xpra"
-            self.source.wants = ("display", "foo")
+            self.source.wants = ()
             self.source.protocol = self.protocol
             self.source.init_from(self.protocol, self)
             self.source.init_state()

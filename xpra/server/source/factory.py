@@ -221,14 +221,11 @@ def get_client_connection_class(caps: typedict):
             return info
 
         def parse_hello(self, c: typedict) -> None:
-            def wants(v: str) -> None:
-                if v not in self.wants:
-                    self.wants.append(v)
             self.wants = []
             if c.boolget("versions"):
-                wants("versions")
+                self.wants.append("versions")
             if c.boolget("server-features"):
-                wants("features")
+                self.wants.append("features")
             for bc in CC_BASES:
                 log("%s.parse_client_caps(..)", bc)
                 bc.parse_client_caps(self, c)

@@ -52,8 +52,6 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
         SKIP = ["ui_client", "windows", "webcam", "keyboard", "pointer"]
         for x in SKIP:
             self.hello_extra[x] = False
-        # for newer versions, it is easier:
-        self.hello_extra["wants"] = []
 
     def init_packet_handlers(self) -> None:
         super().init_packet_handlers()

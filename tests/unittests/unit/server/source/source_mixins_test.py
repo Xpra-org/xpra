@@ -86,7 +86,7 @@ class SourceMixinsTest(unittest.TestCase):
             for k,v in client_caps.items():
                 d[k] = v
         m = mixin_class()
-        m.wants = ["encodings", "versions", "features", "display"]
+        m.wants = ["versions", "features"]
         m.packet_queue = []
         m.protocol = protocol
         m.suspended = False

@@ -250,17 +250,23 @@ govern what the other endpoint may send.
 | `compressors` | `list<str>` | accepted record compressors |
 | `compression_level` | `u8` | requested level; zero disables compression |
 | `chunks` | `bool` | whether raw chunks can be reassembled; default true |
-| `packet-types` | `list<str>` | packet types accepted by the sender of this hello |
+| `packet-types` | `list<str>` | optional client receive packet list; used by the server to gate TLS upgrades |
 | `request` | `str` | one-shot or special profile, Section 5.4 |
-| `wants` | `list<str>` | optional server capability groups requested |
+| `versions` | `bool` | request detailed server component versions; default false |
+| `server-features` | `bool` | request server feature flags; default false |
 | `username` | `str` | authentication identity |
 | `digest` | `list<str>` | challenge digest algorithms accepted by client |
 | `hostname`, `uuid`, `machine_id` | `str` | endpoint identity/advisory metadata |
 | `build`, `platform`, `network` | `map` | extensible diagnostic metadata |
 
-`packet-types` is an allow-list when present. A sender SHOULD NOT send an
-optional packet absent from the peer's list. Mandatory handshake packets remain
-valid even when omitted from that list.
+The server only offers an `ssl-upgrade` when the client's `packet-types`
+includes that packet type. The server does not advertise a `packet-types` list;
+clients MUST use subsystem capabilities to determine which optional packets
+the server supports.
+
+The legacy `wants` capability is ignored. Clients request detailed component
+versions and server feature flags using the `versions` and `server-features`
+booleans. Other capability groups are provided by the enabled subsystems.
 
 `protocol-version` lets the peer bail out early: an implementation MUST
 disconnect if its own version is lower than the value received. A peer that
@@ -568,8 +574,9 @@ start and end of a stream using `audio-data` packets without data, with
 `start-of-stream` / `end-of-stream` metadata flags.
 `audio-data` metadata carries the sequence, timestamp and codec properties.
 Codec and direction MUST have been negotiated. Implementations MAY
-exchange audio level/signal packets advertised in `packet-types`; their payload
-is codec-backend metadata and is optional.
+send audio level/signal packets to clients advertising `audio.level` and
+`audio.signal`, respectively; their payload is codec-backend metadata and is
+optional.
 
 ### 8.9 Webcam
 
@@ -640,9 +647,9 @@ The keyboard event map contains `press`, `name`, `keyval`, `keycode`,
 `modifiers`, `is-modifier` and `sync`. The clipboard wrapper preserves the
 original modern clipboard packet after the direction field.
 
-Optional platform-specific packets MUST be listed in `packet-types` and MUST use
-a subsystem prefix. A peer that does not advertise that feature must not receive
-them.
+Optional platform-specific packets MUST be negotiated through subsystem
+capabilities and MUST use a subsystem prefix. A peer that does not advertise
+that feature must not receive them.
 
 ## 9. Ordering and Lifecycle Rules
 
@@ -676,7 +683,8 @@ be treated as permission to relax record validation.
 ## 11. Extensibility
 
 New optional capabilities belong in a namespaced map. New packets SHOULD use a
-stable subsystem prefix and MUST be advertised in `packet-types` before use.
+stable subsystem prefix and MUST be negotiated through subsystem capabilities
+before use.
 Adding optional trailing fields is permitted only when the receiver can identify
 and ignore them safely. Changing the meaning, order or type of an existing field
 requires a new packet type or an explicitly negotiated capability.

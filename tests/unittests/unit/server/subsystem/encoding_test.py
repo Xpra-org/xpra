@@ -52,8 +52,6 @@ class EncodingMixinTest(ServerMixinTest):
         }, EncodingsConnection)
         # register the source on the mock server so reinit_encodings can find it
         self._server_sources[self.protocol] = self.source
-        # ensure the source wants encoding caps so threaded_init_complete proceeds
-        self.source.wants = ["encodings", "features"]
         # simulate hello already sent so threaded_init_complete proceeds
         self.source.hello_sent = monotonic()
         # capture packets sent to the client
