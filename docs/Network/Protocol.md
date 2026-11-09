@@ -508,7 +508,7 @@ validation limits, not a separate on-wire integer representation.
 | S -> C | `control` | `command:str`, `arguments:any...` |
 | C -> S | `control-request` | `request_id:u64`, `command:str`, `arguments:any...` |
 | S -> C | `info-response` | `information:map` |
-| C -> S | `info-request` | `window_ids:list<u64>`, `categories:list<str>`, `subsystems:list<str>?` |
+| C -> S | `info-request` | `client_uuids:list<str>`, `window_ids:list<u64>`, `categories:list<str>`, `subsystems:list<str>?` |
 | C -> S | `shutdown-server` | `exit:bool`, `reason:str?` |
 | C -> S | `suspend` | `suspended:bool` |
 | C -> S | `bell-set` | `enabled:bool` |

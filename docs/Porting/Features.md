@@ -46,6 +46,7 @@ These exist in the reference implementation but are not specified well enough to
 implemented from the documentation alone:
 
 * the optional AES encryption layer, see [AES](../Network/AES.md): use TLS, SSH or QUIC instead;
-* the contents of `info-response`, which are diagnostic and change between versions;
+* the exact contents of `info-response`, which are diagnostic and change between
+  versions (the structure is outlined in [info](../Subsystems/Info.md));
 * the recording profile (`keyboard-record`, `clipboard-record`), only used by xpra's
   own recording client, see the [protocol](../Network/Protocol.md#813-recording-profile).
