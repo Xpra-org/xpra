@@ -438,6 +438,12 @@ class DisplayManager(StubSubsystem):
             ss.vrefresh = vrefresh
         if "monitors" in attrs:
             ss.set_monitors(attrs.dictget("monitors"))
+        if self.is_readonly(proto):
+            # keep track of this client's own display attributes (used for its own window stream),
+            # but don't let it reconfigure the session: resolution, DPI, desktops, ICC and xsettings
+            log("readonly client %s: not reconfiguring the display", ss)
+            self.apply_refresh_rate(ss)
+            return
         # the DPI must be updated before resizing, since it is used for the display's physical dimensions:
         tdpi = typedict(attrs.dictget("dpi"))
         dpix = tdpi.intget("x")

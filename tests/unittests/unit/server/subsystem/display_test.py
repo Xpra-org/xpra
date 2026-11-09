@@ -135,6 +135,57 @@ class ConfigureDisplayTest(unittest.TestCase):
         dm.apply_refresh_rate.assert_called_once_with(ss)
         xsettings.update_all_server_settings.assert_called_once_with()
 
+    def test_readonly_client(self):
+        # a readonly client updates its own display attributes, but does not reconfigure the session
+        from unittest.mock import Mock
+        from xpra.net.common import Packet
+        from xpra.server.subsystem.display import DisplayManager
+        opts = AdHocStruct()
+        opts.dpi = 96
+        opts.refresh_rate = "auto"
+        opts.sharing = "auto"
+        xsettings = Mock()
+        icc = Mock()
+        server = AdHocStruct()
+        server.hello_request_handlers = {}
+        server.subsystems = {"xsettings": xsettings, "icc": icc}
+        server.calculate_desktops = Mock()
+        server.readonly = False
+        ss = Mock()
+        ss.effective_readonly.return_value = True
+        server.get_server_source = lambda _proto: ss
+        dm = stubbable(DisplayManager)(server)
+        dm.init(opts)
+        dm.apply_refresh_rate = Mock()
+        dm._apply_desktop_size = Mock()
+        dm.apply_dpi = Mock()
+        dpi = dm.xdpi, dm.ydpi
+        packet = Packet("configure-display", {
+            "desktop-size": (1920, 1080),
+            "vrefresh": 50,
+            "monitors": {0: {"geometry": (0, 0, 1920, 1080)}},
+            "dpi": {"x": 120, "y": 144},
+            "desktop-names": ("one", "two"),
+            "icc": {"global": {"data": b"icc"}},
+        })
+        dm._process_configure("proto", packet)
+        self.assertEqual(ss.desktop_size, (1920, 1080))
+        self.assertEqual(ss.vrefresh, 50)
+        ss.set_monitors.assert_called_once()
+        dm.apply_refresh_rate.assert_called_once_with(ss)
+        self.assertEqual((dm.xdpi, dm.ydpi), dpi)
+        for mock in (dm._apply_desktop_size, dm.apply_dpi, ss.set_desktops, server.calculate_desktops,
+                     icc.process_icc, xsettings.update_all_server_settings):
+            mock.assert_not_called()
+        # the same packet reconfigures the session once the client is no longer readonly:
+        ss.effective_readonly.return_value = False
+        dm._process_configure("proto", packet)
+        dm._apply_desktop_size.assert_called_once_with(ss, 1920, 1080)
+        dm.apply_dpi.assert_called_once_with()
+        server.calculate_desktops.assert_called_once_with()
+        icc.process_icc.assert_called_once()
+        xsettings.update_all_server_settings.assert_called_once_with()
+
     def test_dpi_is_applied_before_resizing(self):
         # the new DPI is used for the physical dimensions of the resized display,
         # and must also be applied when the display is not resized
