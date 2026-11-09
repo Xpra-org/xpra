@@ -54,6 +54,22 @@ class GSettingsServerTest(unittest.TestCase):
         server._process_update("proto", packet)
         self.assertEqual(ss.gsettings, {("org.example", "key"): "value"})
 
+    def test_readonly_client_overrides_dropped(self):
+        server = self.make_server("all,org.example:key=server-value")
+        ss = AdHocStruct()
+        ss.gsettings = {("org.example", "key"): "client-value"}
+        ss.effective_readonly = lambda: False
+        server.server.readonly = False
+        server.server._server_sources = {"proto": ss}
+        self.assertEqual(server.desired(), {("org.example", "key"): "client-value"})
+        # readonly client: back to the server baseline
+        ss.effective_readonly = lambda: True
+        self.assertEqual(server.desired(), {("org.example", "key"): "server-value"})
+        # readonly server: same
+        ss.effective_readonly = lambda: False
+        server.server.readonly = True
+        self.assertEqual(server.desired(), {("org.example", "key"): "server-value"})
+
 
 def main():
     unittest.main()
