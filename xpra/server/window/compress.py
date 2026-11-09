@@ -2942,7 +2942,7 @@ class WindowSource(WindowIconSource):
             raise RuntimeError(f"BUG: no encoder found for {coding!r} with options={options}")
         try:
             ret = encoder(coding, image, options)
-        except (TypeError, RuntimeError) as e:
+        except (TypeError, ValueError, RuntimeError) as e:
             log.error(f"Error on {encoder}({coding}, {image}, {options})", exc_info=True)
             return nodata(str(e))
         if not ret:
