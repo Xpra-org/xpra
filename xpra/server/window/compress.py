@@ -245,7 +245,7 @@ class WindowSource(WindowIconSource):
                  av_sync: bool, av_sync_delay: int,
                  video_helper,
                  cuda_device_context,
-                 server_core_encodings: Sequence[str], server_encodings: Sequence[str],
+                 server_core_encodings: Sequence[str],
                  encoding: str, encodings: Sequence[str], core_encodings: Sequence[str],
                  window_icon_encodings: Sequence[str],
                  encoding_options: typedict, icons_encoding_options: typedict,
@@ -282,7 +282,6 @@ class WindowSource(WindowIconSource):
         self.last_scroll_event: float = 0
 
         self.server_core_encodings = server_core_encodings
-        self.server_encodings = server_encodings
         self.encoding = encoding                        # the current encoding
         self.encodings = encodings                      # all the encodings supported by the client
         self.common_encodings: Sequence[str] = ()
@@ -505,7 +504,6 @@ class WindowSource(WindowIconSource):
 
     def init_vars(self) -> None:
         self.server_core_encodings = ()
-        self.server_encodings = ()
         self.encoding = ""
         self.encodings = ()
         self.encoding_last_used = ""

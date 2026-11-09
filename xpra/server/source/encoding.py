@@ -110,7 +110,6 @@ class EncodingsConnection(StubClientConnection):
             # and those which already existed before the client sent its `encoding-config`
             # (ie: shadow windows) would otherwise never get the client's video decoders:
             ws.server_core_encodings = self.server_core_encodings
-            ws.server_encodings = self.server_encodings
             ws.encodings = self.encodings
             ws.core_encodings = self.core_encodings
             ws.rgb_formats = self.rgb_formats
