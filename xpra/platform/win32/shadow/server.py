@@ -509,7 +509,9 @@ class ShadowServer(ShadowServerBase):
         vddlog("discarding capture %s", capture)
         capture.clean()
 
-    def _process_display_monitor_configure(self, _proto, packet: Packet) -> None:
+    def _process_display_monitor_configure(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            return
         if not self._vdd_multimonitor:
             raise RuntimeError("this shadow server does not support monitor configuration")
         action = packet.get_str(1)

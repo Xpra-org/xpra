@@ -505,6 +505,9 @@ class ChildCommandServer(StubSubsystem):
 
     def _process_start(self, proto, packet: Packet) -> None:
         log(f"start new command: {packet}")
+        if self.is_readonly(proto):
+            log.warn("Warning: start-command request denied by readonly mode")
+            return
         if not self.start_new_commands:
             log.warn("Warning: received start-command request,")
             log.warn(" but the feature is currently disabled")
@@ -528,7 +531,10 @@ class ChildCommandServer(StubSubsystem):
                 ss.add_window_filter("window", "pid", "=", proc.pid)
         log(f"process_start_command: proc={proc}")
 
-    def _process_signal(self, _proto, packet: Packet) -> None:
+    def _process_signal(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            log.warn("Warning: command signal request denied by readonly mode")
+            return
         pid = packet.get_u32(1)
         if pid <= 1:
             log.error(f"Error: invalid pid {pid}")

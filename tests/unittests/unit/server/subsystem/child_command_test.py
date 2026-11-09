@@ -120,6 +120,46 @@ class ChildCommandProcessGroupTest(unittest.TestCase):
         server.get_child_env.return_value = os.environ.copy()
         self.command = command.ChildCommandServer(server)
 
+    def test_readonly_start_and_signal(self):
+        from xpra.server.subsystem.command import ChildCommandServer
+        from xpra.net.common import Packet
+
+        for readonly in (True, False):
+            with self.subTest(readonly=readonly):
+                server = AdHocStruct()
+                server.is_readonly = lambda _proto: readonly
+                server.start_new_commands = True
+                server.get_server_source = lambda _proto: None
+                server.start_command = Mock(return_value=None)
+                with patch("xpra.server.subsystem.command.log"):
+                    ChildCommandServer._process_start(server, object(), Packet(COMMAND_START, "test", "true", True))
+                self.assertEqual(server.start_command.called, not readonly)
+                procinfo = AdHocStruct()
+                procinfo.returncode = None
+                with (
+                    patch("xpra.server.subsystem.command.COMMAND_SIGNALS", ("SIGTERM", )),
+                    patch("xpra.server.subsystem.command.get_child_reaper") as reaper,
+                    patch("xpra.server.subsystem.command.send_signame") as send_signame,
+                    patch("xpra.server.subsystem.command.log"),
+                ):
+                    reaper.return_value.get_proc_info.return_value = procinfo
+                    ChildCommandServer._process_signal(server, object(), Packet("command-signal", 1234, "SIGTERM"))
+                    self.assertEqual(send_signame.called, not readonly)
+
+    def test_server_core_is_readonly(self):
+        from xpra.server.core import ServerCore
+        ss = AdHocStruct()
+        ss.effective_readonly = lambda: True
+        server = AdHocStruct()
+        server.readonly = False
+        server.get_server_source = lambda _proto: ss
+        self.assertFalse(ServerCore.is_readonly(server))
+        self.assertTrue(ServerCore.is_readonly(server, "proto"))
+        ss.effective_readonly = lambda: False
+        self.assertFalse(ServerCore.is_readonly(server, "proto"))
+        server.readonly = True
+        self.assertTrue(ServerCore.is_readonly(server, "proto"))
+
     def test_launch_process_group(self):
         from xpra.server.subsystem import command
         callback = Mock()
