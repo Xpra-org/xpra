@@ -1473,6 +1473,17 @@ This option is only applicable to servers started in
 
 \fB\-\-ssl\-upgrade\fP=\fIyes\fP|\fIno\fP
 Upgrade WebSocket and TCP sockets to handle SSL connections.
+On the server, this is enabled when SSL is configured unless explicitly disabled.
+Native Xpra clients connecting over plain TCP must opt in with
+\fB\-\-ssl\-upgrade=yes\fP to allow the server to request a TLS upgrade
+before authentication. The server needs a TLS certificate and must allow
+SSL upgrades on that connection; the client must not request AES encryption.
+After the TLS handshake, the client sends its hello again over TLS.
+The connection stays plain TCP if the server does not offer an upgrade.
+
+Negotiated upgrades do not verify the server certificate or hostname by default.
+Use an \fBssl://\fP URL for verified TLS from the start, configuring
+\fBssl-ca-certs\fP when using a private CA or self-signed certificate.
 .TP
 \fB\-\-websocket\-upgrade\fP=\fIyes\fP|\fIno\fP
 Upgrade TCP and SSL sockets to handle Websocket connections.

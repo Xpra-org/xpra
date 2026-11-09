@@ -278,6 +278,7 @@ The ordinary sequence is:
 ```text
 transport established
   -> client hello
+  -> [ssl-upgrade exchange -> TLS handshake -> client hello]
   -> [server challenge -> client challenge response]*
   -> server hello
   -> established application traffic
@@ -303,7 +304,7 @@ govern what the other endpoint may send.
 | `compressors` | `list<str>` | accepted record compressors: `lz4`, `brotli`, `zstd`, `none` |
 | `compression_level` | `u8` | requested level, usually `0..9`; zero disables record compression |
 | `chunks` | `bool` | whether raw chunks can be reassembled; default true |
-| `packet-types` | `list<str>` | optional client receive packet list; used by the server to gate TLS upgrades |
+| `ssl-upgrade` | `bool` | client can handle a negotiated TLS upgrade on plain TCP; default false |
 | `request` | `str` | one-shot or special profile, Section 5.4 |
 | `versions` | `bool` | request detailed server component versions; default false |
 | `server-features` | `bool` | request server feature flags; default false |
@@ -327,10 +328,10 @@ version of the protocol document it implements (`8.0` for this one), not its
 own release number. The version of the implementation itself belongs in
 `build.version` or in an implementation-specific key.
 
-The server only offers an `ssl-upgrade` when the client's `packet-types`
-includes that packet type. The server does not advertise a `packet-types` list;
-clients MUST use subsystem capabilities to determine which optional packets
-the server supports.
+The server only offers an `ssl-upgrade` when the client sets the top-level
+`ssl-upgrade` boolean to true. The legacy `packet-types` capability is ignored;
+endpoints MUST use feature and subsystem capabilities to determine which
+optional packets the peer supports.
 
 The legacy `wants` capability is ignored. Clients request detailed component
 versions and server feature flags using the `versions` and `server-features`
@@ -363,13 +364,21 @@ credentials MAY set `challenge: true` in its first `hello`: the server then
 always answers with a `challenge`, even when no authentication module needs one,
 so that the client never sends its full capabilities before being challenged.
 
-The server MAY answer a client `hello` with `ssl-upgrade` instead, when the
-connection is plain TCP, the client listed `ssl-upgrade` in its `packet-types`,
-it did not request `encryption`, and the server has a TLS certificate.
+The server MAY answer a client `hello` with `ssl-upgrade` before authentication,
+when the connection is plain TCP, the client set the top-level `ssl-upgrade`
+boolean to true, it did not request `encryption`, and the server has a TLS
+certificate. TLS and upgrades must also be enabled for that server connection.
 The `attributes` contain `cert-data:bytes`, the contents of the server's
-certificate file (PEM). The client replies with an empty `ssl-upgrade`, stops reading, performs
-a TLS client handshake on the same socket, then sends its `hello` again over
-TLS. Clients that do not list `ssl-upgrade` in `packet-types` never receive it.
+certificate file (PEM). The client sends `["ssl-upgrade", {}]`, finishes sending
+that packet and stops packet I/O, performs a TLS client handshake on the same
+socket, then sends its `hello` again over TLS.
+
+A client MUST only advertise `ssl-upgrade: true` if it implements this exchange.
+It should include the capability in its initial `hello`, including a minimal
+`hello` sent to request a password challenge. An absent or false capability
+disables this exchange. The reference Python client opts in with
+`--ssl-upgrade=yes`; its upgrades are opportunistic and do not verify the server
+certificate or hostname by default, see [TLS configuration](SSL.md#negotiated-tls-upgrades).
 
 `connection-close` arguments are a short reason followed by optional details,
 all plain strings. Receivers keep at most the first 8 and truncate each to 256

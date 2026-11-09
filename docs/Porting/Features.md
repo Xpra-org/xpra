@@ -6,6 +6,7 @@ each feature involves and where it is specified.
 
 | Feature | Client capability | Packets | Specification |
 |---|---|---|---|
+| TLS upgrade | `ssl-upgrade: true` | `ssl-upgrade` | [protocol](../Network/Protocol.md#53-authentication-and-upgrade-packets) |
 | Windows | `window`, `metadata.supported` | `window-*` | [window](../Subsystems/Window.md) |
 | Picture encodings | `encoding` | `window-draw`, `window-ack`, `encoding-*` | [encoding](../Subsystems/Encoding.md) |
 | Display configuration | `display` | `display-*` | [display](../Subsystems/Display.md) |

@@ -57,10 +57,36 @@ The same way, any `ws` sockets specified with the `bind-ws` option can then be u
 This allows a single port to be used with multiple protocols (including also [SSH](SSH.md)), which can more easily go through some firewalls and may be required by some network policies. Client certificates can also be used for authentication.
 
 Each type of upgrade can be turned off individually with its own option:
-`ssl-upgrade` is enabled whenever SSL is configured (unless `ssl=no`),
+on the server, `ssl-upgrade` is enabled whenever SSL is configured (unless `ssl=no`),
 `websocket-upgrade` and `ssh-upgrade` are enabled by default,
 `rfb-upgrade` is a delay in seconds (`5` by default, `0` to disable)
 and `rdp-upgrade` is disabled by default.
+
+### Negotiated TLS upgrades
+
+A native Xpra client can also start with a plain TCP connection and allow the
+server to request a TLS upgrade before authentication. Enable this on the Python
+client with:
+
+```shell
+xpra attach tcp://127.0.0.1:10000/ --ssl-upgrade=yes
+```
+
+The client advertises the top-level `ssl-upgrade: true` capability in its `hello`.
+The server can then offer an upgrade if it has a TLS certificate, SSL upgrades
+are enabled for the connection, and the client did not request AES encryption.
+The client acknowledges the offer, performs a TLS handshake on the same socket,
+and sends its `hello` again over TLS. See the
+[protocol](Protocol.md#53-authentication-and-upgrade-packets) for the packet exchange.
+
+The Python client only advertises this capability when SSL upgrade support is
+enabled. Omitting it or setting it to false prevents the server from offering
+this upgrade. `--ssl-upgrade=yes` permits an upgrade; the connection stays plain
+TCP if the server does not offer one.
+
+Negotiated upgrades are opportunistic: the Python client does not verify the
+server's certificate or hostname by default. For verified TLS from the start,
+use an `ssl://` URL and configure certificate trust as described above.
 
 <div class="docs-section-heading" markdown="1">
 

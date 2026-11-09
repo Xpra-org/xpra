@@ -25,6 +25,13 @@ client                                   server
 * The client's first record MUST be a `hello`, encoded with `rencodeplus`, and MAY be
   compressed with LZ4. It MUST be smaller than 16 KiB
   ([limits](../Network/Protocol.md#34-limits)).
+* On plain TCP, a client that implements TLS upgrades MAY set the top-level
+  `ssl-upgrade` boolean to true, including in an initial `hello` requesting a
+  password challenge. The server may then offer an `ssl-upgrade` before
+  authentication: the client acknowledges it, completes the TLS handshake, and
+  sends its `hello` again over TLS. See the
+  [upgrade exchange](../Network/Protocol.md#53-authentication-and-upgrade-packets).
+  An absent or false capability disables this exchange.
 * The server answers with a `challenge` when it needs credentials, see
   [authentication](Authentication.md): the client then sends a complete new `hello`,
   with the same capabilities plus the response.

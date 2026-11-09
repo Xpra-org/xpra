@@ -43,8 +43,14 @@ URL schemes `ssl://` and `wss://`. Default port `443`. A plain TLS client handsh
 then the record stream inside it. Server certificates are verified as usual for TLS:
 see [TLS](../Network/SSL.md) for the options and the use of private CAs.
 
-A server with a certificate can also upgrade a plain TCP connection: see `ssl-upgrade`
-in the [protocol](../Network/Protocol.md#53-authentication-and-upgrade-packets).
+A server with a certificate can also offer a TLS upgrade on a plain TCP connection
+before authentication, if the client sets the top-level `ssl-upgrade` boolean to
+true in its initial `hello`. An absent or false capability disables this exchange.
+The client acknowledges the offer, completes a TLS handshake on the same socket,
+then sends its `hello` again. See the
+[protocol](../Network/Protocol.md#53-authentication-and-upgrade-packets) for the
+exchange and the [TLS guide](../Network/SSL.md#negotiated-tls-upgrades) for the
+Python client's opt-in and certificate verification defaults.
 
 <div class="docs-section-heading" markdown="1">
 

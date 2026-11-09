@@ -104,6 +104,9 @@ A TCP socket can recognize and upgrade WebSocket, secure WebSocket, TLS, SSH,
 RFB, and RDP connections. Including plain TCP, one port can therefore support
 seven protocols automatically.
 
+Native TCP clients can also allow a negotiated TLS upgrade with
+`--ssl-upgrade=yes`; see [SSL upgrades](SSL.md#negotiated-tls-upgrades).
+
 This makes it possible to serve native Xpra clients, compatible remote-desktop
 clients, and the HTML5 client from the same address. See the
 [protocol reference](Protocol.md) for details of Xpra's application-level

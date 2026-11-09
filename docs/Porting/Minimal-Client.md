@@ -65,6 +65,12 @@ C->S ["hello", {"version": "8.0", "encoders": ["rencodeplus"], "compressors": ["
 
 The full capabilities are shown in the [handshake](Handshake.md#minimal-client-hello).
 
+This example omits the optional `ssl-upgrade` capability, so the server proceeds
+without offering a TLS upgrade. A client that implements the
+[upgrade exchange](../Network/Protocol.md#53-authentication-and-upgrade-packets)
+can set the top-level `ssl-upgrade` boolean to true in its first `hello` and
+handle an upgrade before authentication.
+
 ```text
 S->C ["challenge", <64 random bytes>, {}, "hmac+sha512", "hmac+sha512", "password for user 'antoine'"]
 ```
