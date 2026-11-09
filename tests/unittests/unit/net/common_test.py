@@ -9,6 +9,7 @@ import unittest
 
 from xpra.util.env import OSEnvContext
 from xpra.net import common
+from xpra.net.common import Packet, connection_close_info, MAX_DISCONNECT_MESSAGES, MAX_DISCONNECT_MESSAGE
 from xpra.log import set_global_logging_handler
 
 
@@ -68,6 +69,19 @@ class TestLogPackets(unittest.TestCase):
                 mlp(True, pt, (1, 2))
                 mlp(False, pt, (1, 2))
                 self.lm(0)
+
+
+class TestConnectionCloseInfo(unittest.TestCase):
+
+    def test_single_lines(self):
+        # the messages end up in log files, terminals and notifications:
+        info = connection_close_info(Packet("connection-close", "reason\x1b[2J", "line1\nline2\u202e", 1))
+        self.assertEqual(info, ("reason[2J", "line1 line2", "1"))
+
+    def test_limits(self):
+        many = connection_close_info(Packet("connection-close", *(["x" * 10000] * 100)))
+        self.assertEqual(len(many), MAX_DISCONNECT_MESSAGES)
+        self.assertTrue(all(len(x) <= MAX_DISCONNECT_MESSAGE for x in many))
 
 
 def main():

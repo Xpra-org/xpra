@@ -24,7 +24,7 @@ from xpra.server import ServerExitMode
 from xpra.server.glib_server import GLibServer
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS, parse_bool_or
 from xpra.net.common import (
-    is_request_allowed, pretty_socket, has_websocket_handler, HttpResponse, Packet,
+    is_request_allowed, pretty_socket, has_websocket_handler, connection_close_info, HttpResponse, Packet,
     FULL_INFO, LOG_HELLO, BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION,
 )
 from xpra.net.constants import MAX_PACKET_SIZE, HTTP_UNSUPORTED, IP_SOCKTYPES, ConnectionMessage
@@ -1562,9 +1562,10 @@ class ServerCore(GLibServer):
         return source
 
     def _process_connection_close(self, proto: SocketProtocol, packet: Packet) -> None:
-        info = packet.get_str(1)
-        if len(packet) > 2:
-            info += " (%s)" % csv(str(x) for x in packet[2:])
+        reason, *extra = connection_close_info(packet) or ("", )
+        info = reason
+        if extra:
+            info += " (%s)" % csv(extra)
         # only log protocol info if there is more than one client:
         proto_info = self._disconnect_proto_info(proto)
         self._log_disconnect(proto, "client%s has requested disconnection: %s", proto_info, info)
@@ -1584,7 +1585,7 @@ class ServerCore(GLibServer):
         if proto in self._potential_protocols:
             if not proto.is_closed():
                 self._log_disconnect(proto, "Connection lost")
-                for extra in packet[1:]:
+                for extra in connection_close_info(packet):
                     self._log_disconnect(proto, " %s", extra)
             self._potential_protocols.remove(proto)
         self.cleanup_protocol(proto)
