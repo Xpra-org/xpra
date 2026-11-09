@@ -17,8 +17,8 @@ fi
 
 dirname=`echo ${XPRA_TAR_XZ} | sed 's+../pkgs/++g' | sed 's/.tar.xz//'`
 rm -fr "./${dirname}"
-tar -Jxf ${XPRA_TAR_XZ}
-pushd "./${dirname}"
+tar -Jxf ${XPRA_TAR_XZ} || exit 1
+pushd "./${dirname}" || exit 1
 ln -sf packaging/debian/xpra ./debian
 
 #the control file has a few distribution specific entries
