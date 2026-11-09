@@ -9,6 +9,7 @@ import unittest
 from xpra.server.subsystem.gsettings import GSettingsServer
 from xpra.util.gsettings import gsettings_match
 from xpra.util.objects import AdHocStruct
+from xpra.net.common import Packet
 from unit.server.subsystem.servermixintest_util import FakeServerBase
 
 
@@ -35,6 +36,23 @@ class GSettingsServerTest(unittest.TestCase):
         self.assertTrue(gsettings_match(server.allowlist, "any.schema", "any-key"))
         self.assertEqual(server.defaults, {("org.example", "key"): "server-value"})
         self.assertEqual(server.get_caps(None), {"gsettings": True})
+
+    def test_readonly_client_update_ignored(self):
+        server = self.make_server("all")
+        ss = AdHocStruct()
+        ss.gsettings = {}
+        ss.effective_readonly = lambda: True
+        server.server.get_server_source = lambda _proto: ss
+        server.server.readonly = False
+        # don't touch the real desktop settings:
+        server.sync_enabled = False
+        packet = Packet("gsettings-update", {"org.example:key": "value"})
+        server._process_update("proto", packet)
+        self.assertEqual(ss.gsettings, {})
+        # the same update is accepted once the client is no longer readonly:
+        ss.effective_readonly = lambda: False
+        server._process_update("proto", packet)
+        self.assertEqual(ss.gsettings, {("org.example", "key"): "value"})
 
 
 def main():
