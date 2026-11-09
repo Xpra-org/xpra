@@ -99,6 +99,9 @@ class FileServer(StubSubsystem):
         ss._process_data_response(packet)
 
     def _process_request(self, proto, packet: Packet) -> None:
+        if self.is_readonly(proto):
+            log.warn("Warning: file request denied by readonly mode")
+            return
         ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for file-request packet")
