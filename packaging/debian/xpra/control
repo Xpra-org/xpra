@@ -31,15 +31,14 @@ Build-Depends: debhelper (>= 8)
 #noble:              ,libspng-dev
 #questing:              ,libspng-dev
 #resolute:              ,libspng-dev
+#stonking:              ,libspng-dev
 #bookworm:              ,libspng-dev
 #trixie:              ,libspng-dev
 #forky:              ,libspng-dev
 #sid:              ,libspng-dev
               ,libgtk-3-dev
               ,python3-dev
-#trixie:              ,python3-setuptools
-#forky:              ,python3-setuptools
-#sid:              ,python3-setuptools
+              ,python3-setuptools
               ,python3-cairo-dev
               ,python-gi-dev
 # we install a more up to date version using the build script:
@@ -292,6 +291,7 @@ Depends: xpra-common (= ${binary:Version})
 #noble:              ,libspng0
 #questing:              ,libspng0
 #resolute:              ,libspng0
+#stonking:              ,libspng0
 #bookworm:              ,libspng0
 #trixie:              ,libspng0
 #forky:              ,libspng0
