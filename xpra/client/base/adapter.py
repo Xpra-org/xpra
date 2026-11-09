@@ -15,7 +15,7 @@ from xpra.util.io import is_socket, load_binary_file
 from xpra.util.env import envint, osexpand
 from xpra.util.objects import typedict
 from xpra.util.thread import start_thread
-from xpra.util.version import XPRA_VERSION, vparts, min_version_check, protocol_compat_check
+from xpra.util.version import XPRA_VERSION, vparts, protocol_compat_check
 from xpra.net.connect import connect_to
 from xpra.scripts.parsing import parse_display_name
 from xpra.config import InitExit
@@ -30,14 +30,6 @@ SERVER_TIMEOUT = envint("XPRA_REMOTE_SERVER_TIMEOUT", 5)
 SERVER_SOCKET_TIMEOUT = envint("XPRA_REMOTE_SERVER_SOCKET_TIMEOUT", 1)
 RECONNECT_DELAY = envint("XPRA_REMOTE_RECONNECT_DELAY", 2000)
 CONNECT_POLL_DELAY = envint("XPRA_REMOTE_CONNECT_POLL_DELAY", 10000)
-
-
-def check_server_version(version: str, protocol_version) -> str:
-    """
-    Returns an error message if the server's version is not compatible.
-    """
-    # the server may require a more recent client:
-    return protocol_compat_check(protocol_version) or min_version_check(version, REMOTE_CODEC_PROTOCOL_VERSION)
 
 
 try:
@@ -277,7 +269,8 @@ class RemoteServerAdapter(baseclass):
         log("got hello: %s", Ellipsizer(caps))
         tcaps = typedict(caps)
         version = tcaps.strget("version")
-        if err := check_server_version(version, tcaps.inttupleget("protocol-version")):
+        # the encoder server must only use the modern packets, and it may require a more recent client:
+        if err := protocol_compat_check(tcaps.inttupleget("protocol-version"), REMOTE_CODEC_PROTOCOL_VERSION):
             self.log_once(log.error, f"Error: incompatible encoder server version {version!r}", err)
             self.disconnect()
             # don't wait for `startup-complete`:

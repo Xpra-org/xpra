@@ -106,90 +106,40 @@ def make_revision_str(revision, local_modifications, branch, commit) -> str:
     return rstr
 
 
-def protocol_compat_check(remote_protocol_version) -> str:
+def protocol_compat_check(remote_protocol_version, min_protocol_version: tuple[int, ...] = ()) -> str:
     """
     The peer exposes the minimum version it is willing to talk to
-    as its "protocol-version" capability,
-    verify that this version is recent enough to satisfy it.
-    Peers that don't expose it are treated as requiring `DEFAULT_PROTOCOL_VERSION`,
-    which we always satisfy.
+    as its "protocol-version" capability.
+    Peers that don't expose it are treated as requiring `DEFAULT_PROTOCOL_VERSION`.
+    Verify that this version is valid, that we are recent enough to satisfy it,
+    and, if `min_protocol_version` is specified, that the peer is not willing to talk to older versions.
+    ie: v7 peers expose a lower minimum version (5.1 or 6.6), and they may use the legacy packets with those.
     Returns an error message, or an empty string if we are compatible.
     """
     if not CHECK_PROTOCOL_VERSION:
-        log("protocol_compat_check(%s) skipped", remote_protocol_version)
+        log("protocol_compat_check(%s, %s) skipped", remote_protocol_version, min_protocol_version)
         return ""
+    from xpra.net.common import DEFAULT_PROTOCOL_VERSION
     if not remote_protocol_version:
-        log("no minimum protocol version specified by the remote end")
-        return ""
-    try:
-        rv = parse_version(remote_protocol_version)
-    except ValueError:
-        msg = f"failed to parse remote protocol version {remote_protocol_version!r}"
+        log("no minimum protocol version specified by the remote end, using %s", DEFAULT_PROTOCOL_VERSION)
+        remote_protocol_version = DEFAULT_PROTOCOL_VERSION
+    rv = parse_version(remote_protocol_version) if isinstance(remote_protocol_version, (str, tuple, list)) else ()
+    if not rv or not all(isinstance(part, int) and part >= 0 for part in rv):
+        msg = f"invalid remote protocol version {remote_protocol_version!r}"
         log(msg)
         return msg
     rvstr = ".".join(str(part) for part in rv)
-    try:
-        if XPRA_NUMERIC_VERSION < rv:
-            msg = f"remote end requires version {rvstr!r} or later"
-            log(msg)
-            return msg
-    except TypeError as e:
-        msg = f"invalid remote protocol version {rvstr!r}: {e}"
+    if min_protocol_version and rv < min_protocol_version:
+        mstr = ".".join(str(part) for part in min_protocol_version)
+        msg = f"remote protocol version {rvstr!r} is too old, version {mstr!r} or later is required"
+        log(msg)
+        return msg
+    if XPRA_NUMERIC_VERSION < rv:
+        msg = f"remote end requires version {rvstr!r} or later"
         log(msg)
         return msg
     log(f"local version {XPRA_VERSION!r} satisfies the remote protocol version {rvstr!r}")
     return ""
-
-
-def min_version_check(remote_version: str, min_version: tuple[int, ...]) -> str:
-    """
-    Verify that the peer's version is at least `min_version`,
-    the version may be truncated, ie: "8" for "8.0.1".
-    Returns an error message, or an empty string if it is recent enough.
-    """
-    mstr = ".".join(str(part) for part in min_version)
-    rv = parse_version(remote_version)
-    try:
-        if not rv or (rv + (0, ) * len(min_version))[:len(min_version)] < min_version:
-            return f"version {mstr} or later is required, not {remote_version!r}"
-    except TypeError:
-        return f"invalid version {remote_version!r}"
-    return ""
-
-
-def version_compat_check(remote_version) -> str | None:
-    if not remote_version:
-        msg = "remote version is not available"
-        log(msg)
-        return msg
-    try:
-        rv = parse_version(remote_version)
-    except ValueError:
-        warn(f"Warning: failed to parse remote version {remote_version!r}")
-        return None
-    rvstr = ".".join(str(part) for part in rv)
-    if rv == XPRA_NUMERIC_VERSION:
-        log(f"identical remote version: {rvstr!r}")
-        return None
-    if rv[:2] == XPRA_NUMERIC_VERSION[:2]:
-        log(f"identical major.minor in remote version: {rvstr!r}")
-        return None
-    from xpra.net.common import MIN_PROTOCOL_VERSION
-    try:
-        if rv[0:2] < MIN_PROTOCOL_VERSION:
-            # this is the oldest version we support
-            msg = f"remote version {rvstr!r} is too old, sorry"
-            log(msg)
-            return msg
-    except TypeError as e:
-        msg = f"invalid remote version {rvstr!r}: {e}"
-        log(msg)
-        return msg
-    if rv[0] > 0:
-        log(f"newer remote version {rvstr!r} should work, we'll see..")
-        return None
-    log(f"local version {XPRA_VERSION!r} should be compatible with remote version {rvstr!r}")
-    return None
 
 
 def get_host_info(full_info: int = 1) -> dict[str, Any]:

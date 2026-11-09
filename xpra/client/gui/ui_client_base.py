@@ -375,7 +375,7 @@ class UIXpraClient(XpraClientBase):
     ######################################################################
     # connection setup:
     def parse_server_capabilities(self, c: typedict) -> bool:
-        # (servers older than `MIN_PROTOCOL_VERSION` are rejected by `RemoteInfo`,
+        # (servers that require a newer client are rejected by `RemoteInfo`,
         # v7 servers running in backwards compatible mode switch to the modern packets for us)
         if not XpraClientBase.parse_server_capabilities(self, c):
             return False

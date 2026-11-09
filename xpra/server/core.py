@@ -15,7 +15,7 @@ from types import FrameType
 from typing import Any, NoReturn
 from collections.abc import Callable, Sequence
 
-from xpra.util.version import XPRA_VERSION, version_str, version_compat_check, protocol_compat_check
+from xpra.util.version import XPRA_VERSION, version_str, protocol_compat_check
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.server import ServerExitMode
 from xpra.server.glib_server import GLibServer
@@ -141,6 +141,8 @@ class ServerCore(GLibServer):
     __signals__ = SIGNALS
     # Canonical display mode, separate from the descriptive `session_type`.
     SESSION_MODE = ""
+    # the minimum version we are willing to talk to, exposed as "protocol-version":
+    PROTOCOL_VERSION: tuple[int, ...] = MIN_PROTOCOL_VERSION
 
     def __init__(self):
         log("ServerCore.__init__()")
@@ -426,15 +428,7 @@ class ServerCore(GLibServer):
             self.do_handle_hello_request(request, proto, c)
             return
 
-        # verify version:
-        remote_version = c.strget("version")
-        verr = version_compat_check(remote_version)
-        if verr is not None:
-            self.network.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {verr!r}")
-            proto.close()
-            return
-        # the client may require a more recent server version,
-        # (peers that do not expose it are older than v7, the version check above rejects them)
+        # verify that we satisfy the minimum version required by the client:
         if perr := protocol_compat_check(c.inttupleget("protocol-version")):
             self.network.disconnect_client(proto, ConnectionMessage.VERSION_ERROR, f"incompatible version: {perr!r}")
             proto.close()
@@ -556,7 +550,7 @@ class ServerCore(GLibServer):
             "elapsed_time": int(now - self.start_time),
             "server.mode": self.session_type,
             # the minimum version we are willing to talk to:
-            "protocol-version": MIN_PROTOCOL_VERSION,
+            "protocol-version": self.PROTOCOL_VERSION,
         }
         if FULL_INFO > 0:
             capabilities["hostname"] = socket.gethostname()

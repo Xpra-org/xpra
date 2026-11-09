@@ -17,7 +17,7 @@ from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.net.common import Packet, MmapPointerError, REMOTE_CODEC_PROTOCOL_VERSION
-from xpra.util.version import min_version_check
+from xpra.util.version import protocol_compat_check
 from xpra.net.compression import Compressed
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.codecs.image import ImageWrapper, PlanarFormat
@@ -90,6 +90,8 @@ def csc_image(image: ImageWrapper, format_options: Sequence[str]) -> ImageWrappe
 
 
 class EncoderServer(ServerBase):
+    # we only use the modern packet type names:
+    PROTOCOL_VERSION = REMOTE_CODEC_PROTOCOL_VERSION
 
     def __init__(self):
         log("EncoderServer.__init__()")
@@ -138,7 +140,7 @@ class EncoderServer(ServerBase):
         if err := super().parse_hello(ss, c):
             return err
         # v7 clients use the legacy packet type names, which we don't use:
-        if err := min_version_check(c.strget("version"), REMOTE_CODEC_PROTOCOL_VERSION):
+        if err := protocol_compat_check(c.inttupleget("protocol-version"), REMOTE_CODEC_PROTOCOL_VERSION):
             return f"incompatible version: {err}"
         from xpra.server.source.encoding import EncodingsConnection
         if not isinstance(ss, EncodingsConnection):

@@ -16,49 +16,46 @@ from xpra.util import version
 from xpra.os_util import POSIX
 from xpra.net.common import FULL_INFO
 from xpra.util.version import (
-    version_compat_check, protocol_compat_check, min_version_check,
+    protocol_compat_check,
     get_host_info, get_version_info, get_platform_info,
 )
 
 
 class TestVersionUtilModule(unittest.TestCase):
 
-    def test_version_compat_check_invalid(self):
-        from xpra import __version__
-        self.assertIsNone(version_compat_check(__version__))
-        self.assertIsNotNone(version_compat_check("0.1"))
-
-    def test_version_compat_check_minimum(self):
-        from xpra.net.common import BACKWARDS_COMPATIBLE, MIN_PROTOCOL_VERSION
-        self.assertEqual(MIN_PROTOCOL_VERSION, (7, 0) if BACKWARDS_COMPATIBLE else (8, 0))
-        # v6 is too old:
-        self.assertIsNotNone(version_compat_check("6.5.5"))
-        # v7 is only supported in backwards compatible mode:
-        self.assertEqual(version_compat_check("7.0") is None, BACKWARDS_COMPATIBLE)
-
     def test_protocol_compat_check(self):
         from xpra import __version_info__
-        from xpra.net.common import MIN_PROTOCOL_VERSION
+        from xpra.net.common import MIN_PROTOCOL_VERSION, DEFAULT_PROTOCOL_VERSION
         # we are always compatible with ourselves:
         self.assertFalse(protocol_compat_check(__version_info__))
         # we must satisfy the minimum version we expose to our peers:
         self.assertFalse(protocol_compat_check(MIN_PROTOCOL_VERSION))
-        # peers that don't expose a minimum `protocol-version` are older than v7:
+        # peers that don't expose a minimum `protocol-version` are treated as `DEFAULT_PROTOCOL_VERSION`:
         for missing in ("", ()):
             self.assertFalse(protocol_compat_check(missing))
+            self.assertFalse(protocol_compat_check(missing, DEFAULT_PROTOCOL_VERSION))
+            self.assertTrue(protocol_compat_check(missing, (8, 0)))
         # we must honour the minimum version required by the remote end,
         # which is never truncated:
         newer = __version_info__[:-1] + (__version_info__[-1] + 1, )
         self.assertTrue(protocol_compat_check(newer))
         self.assertTrue(protocol_compat_check(tuple(__version_info__) + (1, )))
         # invalid versions are rejected rather than causing errors:
-        self.assertTrue(protocol_compat_check("%i.%ibeta" % __version_info__[:2]))
+        for invalid in ("%i.%ibeta" % __version_info__[:2], "invalid", ("bad", ), (8, -1), 8, {"8": 0}):
+            self.assertTrue(protocol_compat_check(invalid), f"{invalid!r} should be rejected")
 
-    def test_min_version_check(self):
-        for remote_version in ("8.0", "8.0.1", "8.1", "9", "8"):
-            self.assertFalse(min_version_check(remote_version, (8, 0)), f"{remote_version!r} should satisfy 8.0")
-        for remote_version in ("7.0", "7.9.9", "7", "", "invalid", "8.0beta"):
-            self.assertTrue(min_version_check(remote_version, (8, 0)), f"{remote_version!r} should not satisfy 8.0")
+    def test_protocol_compat_check_minimum(self):
+        # the remote end must not be willing to talk to peers older than the minimum we specify:
+        for remote_protocol_version in ((8, 0), "8.0"):
+            self.assertFalse(protocol_compat_check(remote_protocol_version, (8, 0)),
+                             f"{remote_protocol_version!r} should satisfy 8.0")
+        for remote_protocol_version in ((7, 0), (7, 9, 9), (6, 5), (8, ), "7.0"):
+            self.assertTrue(protocol_compat_check(remote_protocol_version, (8, 0)),
+                            f"{remote_protocol_version!r} should not satisfy 8.0")
+        # without a minimum, any valid version we satisfy is accepted,
+        # ie: v7 peers expose 5.1 or 6.6:
+        for remote_protocol_version in ((5, 1), (6, 6), (7, 0)):
+            self.assertFalse(protocol_compat_check(remote_protocol_version))
 
     def test_get_host_info(self):
         attrs = []
@@ -184,8 +181,6 @@ class TestVersionMetadata(unittest.TestCase):
                              {"nested": {"version": (8, 0)}, "name": "test"})
         with patch.object(version, "CHECK_PROTOCOL_VERSION", False):
             self.assertEqual(version.protocol_compat_check("invalid"), "")
-        self.assertIsNotNone(version.version_compat_check(""))
-        self.assertIsNotNone(version.version_compat_check(("bad",)))
 
 
 def main():

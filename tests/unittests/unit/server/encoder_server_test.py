@@ -177,16 +177,23 @@ class EncoderServerHelloTest(unittest.TestCase):
 
     def test_modern_client(self):
         self.assertFalse(self.parse_hello({"version": "8.0", "protocol-version": (8, 0)}))
-        # ie: the `encode` client, which is willing to talk to v7 servers:
-        self.assertFalse(self.parse_hello({"version": "8.0", "protocol-version": (7, 0)}))
-        # truncated version strings:
-        self.assertFalse(self.parse_hello({"version": "8"}))
 
     def test_v7_client(self):
-        # v7 clients use the legacy packet type names:
-        self.assertIn("8.0", self.parse_hello({"version": "7.0"}))
-        self.assertTrue(self.parse_hello({"version": "7.0.1", "protocol-version": (7, 0)}))
+        # clients willing to talk to v7 peers may use the legacy packet type names:
+        self.assertIn("8.0", self.parse_hello({"version": "8.0", "protocol-version": (7, 0)}))
+        # v7 clients expose 5.1 or 6.6:
+        self.assertTrue(self.parse_hello({"version": "7.0.1", "protocol-version": (5, 1)}))
+        self.assertTrue(self.parse_hello({"version": "7.0.1", "protocol-version": (6, 6)}))
+        # peers that don't expose a protocol version are treated as v7:
+        self.assertTrue(self.parse_hello({"version": "8.0"}))
         self.assertTrue(self.parse_hello({}))
+
+    def test_advertised_protocol_version(self):
+        from xpra.server.core import ServerCore
+        from xpra.server.encoder.server import EncoderServer
+        from xpra.net.common import MIN_PROTOCOL_VERSION, REMOTE_CODEC_PROTOCOL_VERSION
+        self.assertEqual(ServerCore.PROTOCOL_VERSION, MIN_PROTOCOL_VERSION)
+        self.assertEqual(EncoderServer.PROTOCOL_VERSION, REMOTE_CODEC_PROTOCOL_VERSION)
 
 
 class FakeEncoder:

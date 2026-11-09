@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from xpra.client.base.command import SendCommandConnectClient
 from xpra.codecs.pillow.decoder import get_encodings, decompress
 from xpra.exit_codes import ExitCode
-from xpra.net.common import Packet, MmapPointerError
+from xpra.net.common import Packet, MmapPointerError, REMOTE_CODEC_PROTOCOL_VERSION
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
 from xpra.log import Logger
@@ -113,6 +113,8 @@ class EncodeClient(SendCommandConnectClient):
         # Encoding uses a normal client session, with `encode` packets sent after the handshake.
         hello = super().make_hello()
         hello["encoding"] = self.encoding_options
+        # the encoder server only uses the modern packet type names:
+        hello["protocol-version"] = REMOTE_CODEC_PROTOCOL_VERSION
         log(f"{hello=}")
         return hello
 
