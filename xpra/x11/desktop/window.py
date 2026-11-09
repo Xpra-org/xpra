@@ -141,8 +141,9 @@ class DesktopWindowServer(WindowServer):
             device_id = pointer_data.intget("device-id")
             props = pointer_data.dictget("properties")
             if pointer.process_mouse_common(proto, device_id, pwid, position, props):
-                if "modifiers" in pointer_data:
-                    modifiers = pointer_data.strtupleget("modifiers")
+                modifiers_data = config if "modifiers" in config else pointer_data
+                if "modifiers" in modifiers_data:
+                    modifiers = modifiers_data.strtupleget("modifiers")
                     pointer._update_modifiers(proto, pwid, modifiers)
 
         if "state" in config:

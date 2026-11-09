@@ -948,8 +948,9 @@ class SeamlessWindowServer(WindowServer):
             if pwid == wid and window.is_OR():
                 pwid = 0
             if pointer.process_mouse_common(proto, device_id, pwid, position, props):
-                if self._has_focus == pwid and "modifiers" in pointer_data:
-                    modifiers = pointer_data.strtupleget("modifiers")
+                modifiers_data = config if "modifiers" in config else pointer_data
+                if self._has_focus == pwid and "modifiers" in modifiers_data:
+                    modifiers = modifiers_data.strtupleget("modifiers")
                     pointer._update_modifiers(proto, pwid, modifiers)
 
         if window.is_tray():
