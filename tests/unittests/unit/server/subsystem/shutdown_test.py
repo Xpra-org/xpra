@@ -28,6 +28,11 @@ class FakeServer(GLibScheduler):
         self.packet_handlers = {}
         self.cleanup_reasons = []
         self.quit_modes = []
+        self.readonly = False
+        self.sources = {}
+
+    def get_server_source(self, proto):
+        return self.sources.get(proto)
 
     def timeout_add(self, _delay: int, fn, *args) -> int:
         fn(*args)
@@ -69,7 +74,12 @@ class ShutdownTest(unittest.TestCase):
         self.assertEqual(registered, expected)
         self.assertEqual(self.shutdown.get_server_features(), {"client-shutdown": self.shutdown.client_shutdown})
 
+    def assert_ignored(self) -> None:
+        self.assertEqual(self.server.cleanup_reasons, [])
+        self.assertEqual(self.server.quit_modes, [])
+
     def test_exit_request(self) -> None:
+        self.shutdown.client_shutdown = True
         if BACKWARDS_COMPATIBLE:
             self.get_handler(EXIT_SERVER)(None, Packet(EXIT_SERVER, "restart"))
         else:
@@ -96,8 +106,56 @@ class ShutdownTest(unittest.TestCase):
         self.shutdown.client_shutdown = False
         handled = self.server.hello_request_handlers["stop"](None, typedict())
         self.assertFalse(handled)
-        self.assertEqual(self.server.cleanup_reasons, [])
-        self.assertEqual(self.server.quit_modes, [])
+        self.assert_ignored()
+
+    def test_disabled_exit_request(self) -> None:
+        self.shutdown.client_shutdown = False
+        # neither the `shutdown-server` exit flag nor the `exit` hello request bypass `client-shutdown`:
+        self.get_handler(SHUTDOWN_SERVER)(None, Packet(SHUTDOWN_SERVER, True, "restart"))
+        self.assert_ignored()
+        handled = self.server.hello_request_handlers["exit"](None, typedict())
+        self.assertFalse(handled)
+        self.assert_ignored()
+
+    def test_disabled_shutdown_request(self) -> None:
+        self.shutdown.client_shutdown = False
+        self.get_handler(SHUTDOWN_SERVER)(None, Packet(SHUTDOWN_SERVER))
+        self.assert_ignored()
+
+    def test_readonly_client(self) -> None:
+        self.shutdown.client_shutdown = True
+
+        class ReadonlySource:
+            @staticmethod
+            def effective_readonly() -> bool:
+                return True
+        proto = object()
+        self.server.sources[proto] = ReadonlySource()
+        handler = self.get_handler(SHUTDOWN_SERVER)
+        handler(proto, Packet(SHUTDOWN_SERVER))
+        handler(proto, Packet(SHUTDOWN_SERVER, True, "restart"))
+        self.assert_ignored()
+        if BACKWARDS_COMPATIBLE:
+            # nor via the legacy `exit-server` packet:
+            self.get_handler(EXIT_SERVER)(proto, Packet(EXIT_SERVER, "restart"))
+            self.assert_ignored()
+        # other clients are not affected:
+        handler(None, Packet(SHUTDOWN_SERVER))
+        self.assertEqual(self.server.quit_modes, [ServerExitMode.NORMAL])
+
+    def test_disabled_legacy_exit_request(self) -> None:
+        if not BACKWARDS_COMPATIBLE:
+            return
+        self.shutdown.client_shutdown = False
+        self.get_handler(EXIT_SERVER)(None, Packet(EXIT_SERVER, "restart"))
+        self.assert_ignored()
+
+    def test_readonly_server(self) -> None:
+        self.shutdown.client_shutdown = True
+        self.server.readonly = True
+        self.get_handler(SHUTDOWN_SERVER)(None, Packet(SHUTDOWN_SERVER, True, "restart"))
+        self.get_handler(SHUTDOWN_SERVER)(None, Packet(SHUTDOWN_SERVER))
+        self.assert_ignored()
 
 
 def main():
