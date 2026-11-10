@@ -431,6 +431,11 @@ class WindowVideoSource(WindowSource):
                 continue
             csc_modes = self.full_csc_modes.strtupleget(x)
             if not csc_modes and not init:
+                if self._encoders.get(x) not in (None, self.video_encode):
+                    # ie: "jpeg" or "webp", the picture encoders don't need any csc modes,
+                    # so we can still use those, just not via the video pipeline:
+                    log("no csc modes for %s, using the picture encoder only", x)
+                    continue
                 exclude.append(x)
                 if first_time(f"nocsc-{x}-{self.wid}"):
                     msg_args = ("Warning: client does not support any csc modes with %s on window %i", x, self.wid)

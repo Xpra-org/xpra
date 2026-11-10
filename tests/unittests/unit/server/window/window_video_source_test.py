@@ -11,8 +11,34 @@ from xpra.codecs.codec_constants import video_spec
 from xpra.codecs.image_wrapper import ImageWrapper
 from xpra.codecs.loader import load_codec
 from xpra.server.window import window_video_source
+from xpra.server.window.window_source import WindowSource
 from xpra.server.window.window_video_source import WindowVideoSource
 from xpra.util import typedict
+
+
+class NonVideoEncodingsTest(unittest.TestCase):
+
+    def test_missing_csc_modes_keeps_picture_encoders(self) -> None:
+        source = WindowVideoSource.__new__(WindowVideoSource)
+        source.wid = 1
+        source.video_encodings = ("h264", "webp")
+        source.core_encodings = ("h264", "webp", "rgb24")
+        source.server_core_encodings = ()
+        source._encoders = {"h264": source.video_encode, "webp": Mock(), "rgb24": Mock()}
+        source.full_csc_modes = typedict()
+        source.supports_transparency = True
+        source._csc_encoder = source._video_encoder = None
+        source.common_encodings = ()
+        excluded = []
+
+        def super_update(_window_source, _encoding, exclude, _init) -> None:
+            excluded.extend(exclude)
+        with patch.object(WindowSource, "update_encoding_selection", super_update):
+            source.update_encoding_selection("webp")
+        # no csc modes: neither one can go through the video pipeline,
+        self.assertFalse(source.common_video_encodings)
+        # but the picture encoder is still usable for "webp":
+        self.assertEqual(excluded, ["h264"])
 
 
 class VideoEncodeTest(unittest.TestCase):
