@@ -147,6 +147,24 @@ Wheel events reach the pointer subsystem as fractional deltas
 (`wheel_event`, which accumulates them per axis), and are sent as
 `pointer-wheel` packets carrying the exact distance multiplied by 1000.
 
+The deltas are in wheel clicks, positive up and right. Toolkits which use
+the opposite convention have to flip them first, ie: GTK's smooth scroll
+`delta_y` is positive downwards, while win32's `WM_MOUSEWHEEL` and
+`WM_MOUSEHWHEEL` are already positive up and right (in multiples of
+`WHEEL_DELTA`, 120). The sign picks the wheel button: `4` up, `5` down, `6` left,
+`7` right, and the packet's `distance` keeps the sign of the delta:
+
+| scroll | button | `distance` |
+|--------|--------|------------|
+| up     | `4`    | positive   |
+| down   | `5`    | negative   |
+| left   | `6`    | negative   |
+| right  | `7`    | positive   |
+
+The `mousewheel` inversion (see below) swaps the button but not the sign,
+so the button is what decides the direction on the server: every pointer
+device only uses the magnitude of the distance.
+
 What the server does with them depends on its pointer device:
 
 * devices which can inject fractional wheel motion (`uinput` and wayland)
@@ -162,7 +180,7 @@ a server side implementation detail rather than a legacy path.
 The emulation used to be done by the clients, which is why the scroll speed
 settings (`XPRA_MOUSE_SCROLL_MULTIPLIER` and `XPRA_MOUSE_SCROLL_SQRT_SCALE`)
 are still applied client side: the client sends the distance those settings
-turn into, as the `scaled-distance` property of the packet, and that is what
+turn into, as the `scaled-distance` property of the packet (with the same sign), and that is what
 the server quantizes.\
 Servers with a precise device ignore it and use the exact `distance`,
 and servers too old to know about it just ignore the extra property.

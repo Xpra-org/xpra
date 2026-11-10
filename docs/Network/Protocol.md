@@ -680,7 +680,14 @@ may follow only when advertised. A `device` value of `-1` means "unspecified".
 
 The `pointer-wheel` `button` is the X11 wheel button the motion corresponds to:
 `4` up, `5` down, `6` left, `7` right. `distance` is the signed scroll distance
-multiplied by 1000, where 1000 is one wheel click. Clients only send
+multiplied by 1000, where 1000 is one wheel click: positive is up or right,
+negative is down or left, so it is positive with buttons `4` and `7` and
+negative with `5` and `6`. Servers take the direction from `button` and only
+use the magnitude of `distance`, which is how a client inverts an axis: it
+swaps the button and leaves the distance alone (see `mousewheel` in the
+[pointer subsystem](../Subsystems/Pointer.md#mouse-wheel)). Clients should
+still send the signed value, as servers before 8.0 with a `uinput` pointer
+device took the direction from the sign. Clients only send
 `pointer-wheel` to servers that advertise `wheel.precise` or
 `wheel.emulation`; otherwise they emulate the wheel with
 `pointer-button` press and release pairs on the same buttons. See the
