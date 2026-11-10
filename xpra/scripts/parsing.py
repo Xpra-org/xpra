@@ -872,31 +872,31 @@ def do_parse_cmdline(cmdline, defaults):
                       +" (may be repeated to run multiple commands)."
                       +" Default: %s." % dcsv(defaults.start_child_late))
     group.add_option("--start-after-connect", action="append",
-                      dest="start_after_connect", default=defaults.start_after_connect,
+                      dest="start_after_connect", default=list(defaults.start_after_connect or []),
                       help="program to spawn in server after the first client has connected (may be repeated)."
                       +" Default: %s." % dcsv(defaults.start_after_connect))
     group.add_option("--start-child-after-connect", action="append",
-                      dest="start_child_after_connect", default=defaults.start_child_after_connect,
+                      dest="start_child_after_connect", default=list(defaults.start_child_after_connect or []),
                       help="program to spawn in server after the first client has connected,"
                       +" taken into account by the exit-with-children option"
                       +" (may be repeated to run multiple commands)."
                       +" Default: %s." % dcsv(defaults.start_child_after_connect))
     group.add_option("--start-on-connect", action="append",
-                      dest="start_on_connect", default=defaults.start_on_connect,
+                      dest="start_on_connect", default=list(defaults.start_on_connect or []),
                       help="program to spawn in server every time a client connects (may be repeated)."
                       +" Default: %s." % dcsv(defaults.start_on_connect))
     group.add_option("--start-child-on-connect", action="append",
-                      dest="start_child_on_connect", default=defaults.start_child_on_connect,
+                      dest="start_child_on_connect", default=list(defaults.start_child_on_connect or []),
                       help="program to spawn in server every time a client connects,"
                       +" taken into account by the exit-with-children option (may be repeated)."
                       +" Default: %s." % dcsv(defaults.start_child_on_connect))
     group.add_option("--start-on-last-client-exit", action="append",
-                      dest="start_on_last_client_exit", default=defaults.start_on_last_client_exit,
+                      dest="start_on_last_client_exit", default=list(defaults.start_on_last_client_exit or []),
                       help="program to spawn in server every time a client disconnects"
                       +" and there are no other clients left (may be repeated)."
                       +" Default: %s." % dcsv(defaults.start_on_last_client_exit))
     group.add_option("--start-child-on-last-client-exit", action="append",
-                      dest="start_child_on_last_client_exit", default=defaults.start_child_on_last_client_exit,
+                      dest="start_child_on_last_client_exit", default=list(defaults.start_child_on_last_client_exit or []),
                       help="program to spawn in server every time a client disconnects"
                       +" and there are no other clients left,"
                       +" taken into account by the exit-with-children option (may be repeated)."

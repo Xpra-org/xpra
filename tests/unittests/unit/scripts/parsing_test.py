@@ -11,10 +11,28 @@ import unittest
 from xpra.os_util import nomodule_context, WIN32, POSIX
 from xpra.scripts.parsing import (
     parse_ssh_option, get_ssh_args, get_ssh_proxy_args, parse_remote_display,
-    normalize_display_name,
+    normalize_display_name, do_parse_cmdline,
     )
+from xpra.scripts.main import strip_defaults_start_child
+from xpra.scripts.config import make_defaults_struct
+
 
 class TestParsing(unittest.TestCase):
+
+    def test_start_options_do_not_share_defaults(self):
+        # the proxy strips the config file defaults from the start options,
+        # which must not also remove the values given on the command line (#5133):
+        for opt in (
+            "start", "start-child", "start-late", "start-child-late",
+            "start-after-connect", "start-child-after-connect",
+            "start-on-connect", "start-child-on-connect",
+            "start-on-last-client-exit", "start-child-on-last-client-exit",
+        ):
+            attr = opt.replace("-", "_")
+            defaults = make_defaults_struct()
+            opts, _ = do_parse_cmdline(["xpra", "_proxy_start", ":100", f"--{opt}=xterm"], defaults)
+            self.assertIsNot(getattr(opts, attr), getattr(defaults, attr), opt)
+            self.assertEqual(strip_defaults_start_child(getattr(opts, attr), getattr(defaults, attr)), ["xterm"], opt)
 
     def test_ssh_parsing(self):
         assert parse_ssh_option("auto")[0] in ("paramiko", "ssh")
