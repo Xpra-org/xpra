@@ -332,7 +332,7 @@ def parse_bool_or(k: str, v: Any, auto: bool | None = None) -> bool | None:
         return True
     if v in FALSE_OPTIONS:
         return False
-    if v in ("auto", None):
+    if v is None or v == "auto":
         # keep default - which may be None!
         return auto
     try:

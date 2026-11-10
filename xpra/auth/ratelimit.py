@@ -169,6 +169,7 @@ class Authenticator(SysAuthenticator):
             # would keep extending the block forever
             return
         now = monotonic()
+        failures = 0
         with self.LOCK:
             self.FAILURES.setdefault(self.ip_key, deque()).append(now)
             self.FAILURES.move_to_end(self.ip_key)

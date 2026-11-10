@@ -394,7 +394,8 @@ class WindowModel(BaseWindowModel):
             # the property may not be initialized yet,
             # if that's the case then calling get_property throws an exception:
             try:
-                if self.get_property(propname) not in (None, ""):
+                current = self.get_property(propname)
+                if current is not None and current != "":
                     return
             except TypeError:
                 pass

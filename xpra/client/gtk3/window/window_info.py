@@ -59,7 +59,7 @@ def get_window_attributes(w) -> str:
     # optional feature:
     info: dict = w.get_info()
     workspace = info.get("workspace")
-    if workspace not in (None, WORKSPACE_UNSET):
+    if workspace is not None and workspace != WORKSPACE_UNSET:
         attr["workspace"] = workspace
     with IgnoreWarningsContext():
         opacity = w.get_opacity()

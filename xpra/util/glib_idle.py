@@ -136,6 +136,7 @@ def install(GLib) -> None:
             return GLib.SOURCE_CONTINUE
 
         def add(self, fn: Callable, args: tuple) -> int:
+            wakeup = False
             with self.lock:
                 self.counter -= 1
                 if self.counter < LAST_ID:

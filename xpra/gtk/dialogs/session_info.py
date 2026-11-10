@@ -250,7 +250,7 @@ def make_os_str(sys_platform, platform_release, platform_platform, platform_linu
     pld = platform_linux_distribution
 
     def remstr(values: Sequence) -> Sequence[str]:
-        return tuple(str(v) for v in values if v not in (None, "", "n/a"))
+        return tuple(str(v) for v in values if v is not None and v not in ("", "n/a"))
 
     if pld and len(pld) == 3 and pld[0]:
         s.append(" ".join(remstr(pld)))

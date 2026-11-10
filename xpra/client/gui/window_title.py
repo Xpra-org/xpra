@@ -19,11 +19,10 @@ UNKNOWN_MACHINE: Final[str] = "<unknown machine>"
 
 
 def validhostname(value):
-    if value in (
+    if value is None or value in (
             "localhost",
             "localhost.localdomain",
             "",
-            None,
     ):
         return None
     return value

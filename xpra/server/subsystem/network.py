@@ -503,7 +503,7 @@ class NetworkServer(StubSubsystem):
                 # the peeked bytes are the encrypted ClientHello, not the http request:
                 peek_data = b""
                 is_ssl = True
-            elif packet_type not in (None, "http"):
+            elif packet_type is not None and packet_type != "http":
                 raise ValueError(f"packet type is {packet_type!r} and not http")
         self.start_http_socket(conn.socktype, conn, socket_options, is_ssl, peek_data)
 

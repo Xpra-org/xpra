@@ -1554,6 +1554,7 @@ class GLWindowBackingBase(WindowBackingBase):
         if dl is None:
             fire_paint_callbacks(callbacks, False, "no lock - retry")
             return
+        fallback = False
         with dl:
             fallback = not self.do_paint_nvdec_video(context, coding, img_data,
                                                      x, y, width, height, options, callbacks)
