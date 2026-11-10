@@ -128,7 +128,7 @@ class ServerBase(ServerCore):
         # the dbus subsystem is optional:
         dbus = self.subsystems.get("dbus")
         if dbus and dbus.service:
-            dbus.service.Event(event_type, [str(x) for x in args[1:]])
+            dbus.service.Event(event_type, [str(x) for x in args])
 
     def init(self, opts) -> None:
         # from now on, use the logger for parsing errors:
