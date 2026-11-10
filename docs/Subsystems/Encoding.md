@@ -42,7 +42,7 @@ needed by a client that wants windows; everything else has a server default.
 | `quality`, `min-quality` | integer `1..100` | server defaults | Requested quality |
 | `speed`, `min-speed` | integer `0..100` | server defaults | Requested speed |
 | `scaling.control` | integer `0..100` | automatic | How eagerly the server may downscale video, `0` never |
-| `full_csc_modes` | map | `{}` | For each encoding decoded through the video pipeline, the pixel formats the decoder can output, ie: `{"h264": ["YUV420P"], "jpeg": ["BGRX", "BGRA", "YUV420P"], "jpega": ["BGRA", "RGBA"]}`. A video encoding without an entry is never used |
+| `full_csc_modes` | map | `{}` | For each encoding, the pixel formats the client can decode it from, ie: `{"h264": ["YUV420P"], "jpeg": ["BGRX", "BGRA", "YUV420P"], "jpega": ["BGRA", "RGBA"], "webp": ["BGRX", "BGRA"]}`. This applies to every encoding the server can encode through its video pipeline: the video codecs (`h264`, `h265`, `vp8`, `vp9`, `av1`) but also `jpeg`, `jpega` and `webp`. A video codec without an entry is never used, a picture encoding without one (`jpeg`, `jpega`, `webp`) is only sent as a plain picture, never through the video pipeline |
 | `video_max_size` | pair of integers | `(8192, 8192)` | Largest video frame the decoders can handle |
 | `video_b_frames` | list of strings | `()` | Video encodings for which the client can handle B-frames (delayed frames) |
 | `batch` | map | server defaults | Damage batching: `always`, `min_delay`, `max_delay`, `max_events`, `max_pixels`, `time_unit`, `delay` |

@@ -321,6 +321,27 @@ class NonVideoEncodingsTest(unittest.TestCase):
 
         self.assertEqual(source.non_video_encodings, ("jpeg",))
 
+    def test_missing_csc_modes_keeps_picture_encoders(self) -> None:
+        source = WindowVideoSource.__new__(WindowVideoSource)
+        source.wid = 1
+        source.video_encodings = ("h264", "webp")
+        source.core_encodings = ("h264", "webp", "rgb24")
+        source._encoders = {"h264": source.video_encode, "webp": Mock(), "rgb24": Mock()}
+        source.full_csc_modes = typedict()
+        source.supports_transparency = True
+        source._csc_encoder = source._video_encoder = None
+        source.common_encodings = ()
+        excluded = []
+
+        def super_update(_window_source, _encoding, exclude, _init) -> None:
+            excluded.extend(exclude)
+        with patch.object(WindowSource, "update_encoding_selection", super_update):
+            source.update_encoding_selection("webp")
+        # no csc modes: neither one can go through the video pipeline,
+        self.assertFalse(source.common_video_encodings)
+        # but the picture encoder is still usable for "webp":
+        self.assertEqual(excluded, ["h264"])
+
 
 class ScalingCacheTest(unittest.TestCase):
 
