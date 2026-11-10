@@ -51,6 +51,11 @@ class Window(WindowModelStub):
             False,
             GObject.ParamFlags.READABLE,
         ),
+        "opaque-region": (
+            GObject.TYPE_PYOBJECT,
+            "Compositor can assume that there is no transparency for this region", "",
+            GObject.ParamFlags.READABLE,
+        ),
         "client-machine": (
             GObject.TYPE_PYOBJECT,
             "Host where client process is running", "",
@@ -146,7 +151,7 @@ class Window(WindowModelStub):
 
     # things that we expose:
     _property_names = [
-        "depth", "has-alpha", "decorations",
+        "depth", "has-alpha", "opaque-region", "decorations",
         "client-machine", "pid",
         "title", "role", "app-id",
         "command",
@@ -156,7 +161,7 @@ class Window(WindowModelStub):
     ]
     # exposed and changing (should be watched for notify signals):
     _dynamic_property_names = [
-        "title", "command",
+        "title", "command", "opaque-region",
         "parent", "transient-for", "relative-position",
         "iconic", "maximized", "fullscreen",
     ]

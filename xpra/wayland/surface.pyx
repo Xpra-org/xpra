@@ -425,6 +425,36 @@ cdef class Surface(WaylandSurface):
     # __dealloc__ inherited from ListenerObject: detach + free the listeners array.
 
 
+cdef tuple get_clipped_opaque_region(pixman_region32_t *region,
+                                     int x, int y, int width, int height):
+    """Translate a surface-local pixman region into a clipped window region."""
+    if width <= 0 or height <= 0:
+        return ()
+    cdef int n_rects = 0
+    cdef pixman_box32_t *rects = pixman_region32_rectangles(region, &n_rects)
+    cdef int x2 = x + width
+    cdef int y2 = y + height
+    cdef int rx1, ry1, rx2, ry2
+    rectangles = []
+    cdef int i
+    for i in range(n_rects):
+        rx1 = rects[i].x1
+        ry1 = rects[i].y1
+        rx2 = rects[i].x2
+        ry2 = rects[i].y2
+        if rx1 < x:
+            rx1 = x
+        if ry1 < y:
+            ry1 = y
+        if rx2 > x2:
+            rx2 = x2
+        if ry2 > y2:
+            ry2 = y2
+        if rx2 > rx1 and ry2 > ry1:
+            rectangles.append((rx1 - x, ry1 - y, rx2 - rx1, ry2 - ry1))
+    return tuple(rectangles)
+
+
 cdef list get_damage_areas(pixman_region32_t *damage):
     cdef int n_rects = 0
     cdef pixman_box32_t *rects = pixman_region32_rectangles(damage, &n_rects)

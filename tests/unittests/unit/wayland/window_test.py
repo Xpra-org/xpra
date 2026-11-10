@@ -10,6 +10,11 @@ from types import ModuleType
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from xpra.common import is_covered_by_opaque_region
+# Import the model before patch.dict restores sys.modules: GObject cannot be
+# imported a second time after being removed from sys.modules.
+from xpra.wayland.models.window import Window
+
 
 def load_window_server_class():
     modules = {}
@@ -24,7 +29,7 @@ def load_window_server_class():
             ("xpra.wayland.subsurface", {"Subsurface": object}),
             ("xpra.wayland.popup", {"Popup": object}),
             ("xpra.wayland.output", {"Output": object}),
-            ("xpra.wayland.models.window", {"Window": object}),
+            ("xpra.wayland.models.window", {"Window": Window}),
             ("xpra.wayland.models.subsurface_window", {"SubsurfaceWindow": object}),
             ("xpra.server.base", {"ServerBase": type("ServerBase", (), {"__signals__": {}})}),
             ("xpra.net.common", {"Packet": object}),
@@ -118,6 +123,36 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
 
         server.get_surface.assert_not_called()
         server.refresh_window_area.assert_not_called()
+
+
+@unittest.skipUnless(WaylandWindowServer, "wayland server is not available")
+class WaylandPopupOpaqueRegionTest(unittest.TestCase):
+
+    def test_popup_publishes_its_opaque_region(self):
+        server = Mock()
+        server.get_window.return_value = None
+        server.pending_popups = {}
+        server._popup_parent_window_wid.return_value = 7
+        server.update_opaque_region.side_effect = WaylandWindowServer.update_opaque_region
+        popup = Mock(wid=9)
+        popup.get_opaque_region.return_value = ()
+        # The window sources check the region of a new popup before it commits.
+        window = WaylandWindowServer._ensure_popup_window(server, 7, popup, (10, 20), (120, 90))
+        self.addCleanup(window.unmanage)
+        self.assertFalse(is_covered_by_opaque_region(window.get("opaque-region", ()), 120, 90))
+        changes = []
+        window.connect("notify::opaque-region", lambda win, _pspec: changes.append(win.get("opaque-region")))
+        # Then an opaque menu commits its opaque region.
+        server.get_window.return_value = window
+        server.get_surface.return_value.get_opaque_region.return_value = ((0, 0, 120, 90),)
+        WaylandWindowServer._popup_commit(server, 9, True, (10, 20), (120, 90), True)
+        self.assertTrue(is_covered_by_opaque_region(window.get("opaque-region", ()), 120, 90))
+        self.assertEqual(changes, [((0, 0, 120, 90),)])
+        # Clearing the region must restore transparency on existing sources.
+        server.get_surface.return_value.get_opaque_region.return_value = ()
+        WaylandWindowServer._popup_commit(server, 9, True, (10, 20), (120, 90), True)
+        self.assertFalse(is_covered_by_opaque_region(window.get("opaque-region", ()), 120, 90))
+        self.assertEqual(changes, [((0, 0, 120, 90),), ()])
 
 
 def main():

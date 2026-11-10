@@ -14,6 +14,11 @@ from xpra.wayland.wlroots cimport (
     wlr_subsurface,
 )
 from xpra.wayland.wayland_surface cimport WaylandSurface
+from xpra.wayland.pixman cimport pixman_region32_t
+
+
+cdef tuple get_clipped_opaque_region(pixman_region32_t *region,
+                                     int x, int y, int width, int height)
 
 
 cdef class Surface(WaylandSurface):

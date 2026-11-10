@@ -305,6 +305,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             "geometry": geom,
             "image": None,
             "depth": 32,
+            "opaque-region": (),
             "decorations": False,
         })
         window.setup()
@@ -354,6 +355,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             "image": None,
             "depth": 32,
             "has-alpha": True,
+            "opaque-region": popup.get_opaque_region(),
             "decorations": False,
         })
         window.setup()
@@ -514,6 +516,11 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
         if (old_geom[2] == old_geom[3] == 0) and size[0] and size[1]:
             self._do_send_new_window_packet(WINDOW_CREATE, window, geom)
 
+    @staticmethod
+    def update_opaque_region(window, surface) -> None:
+        if surface:
+            window._updateprop("opaque-region", surface.get_opaque_region())
+
     def update_geometry(self, window, position: tuple[int, int], size: tuple[int, int]) -> None:
         old_geom = window.get_property("geometry")
         x, y = position
@@ -554,6 +561,7 @@ class WaylandSeamlessServer(GObject.GObject, ServerBase):
             if not window:
                 return
         self.update_geometry(window, position, size)
+        self.update_opaque_region(window, self.get_surface(wid))
         if mapped and has_image:
             w, h = size
             if w > 0 and h > 0:
