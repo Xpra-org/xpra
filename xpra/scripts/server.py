@@ -1061,7 +1061,7 @@ def do_run_server(script_file: str, cmdline: list[str], error_cb: Callable, opts
                             xauth_time = stat_info.st_mtime
             if not valid_xauth(xauthority, uid, gid):
                 # we can choose the path to use:
-                xauthority = get_xauthority_path(display_name)
+                xauthority = get_xauthority_path(display_name, uid, gid, username)
                 xauthority = osexpand(xauthority, actual_username=username, uid=uid, gid=gid)
             assert xauthority
             if not os.path.exists(xauthority):
