@@ -53,7 +53,7 @@ keyboard and pointer input (shown as JSON, sent as rencodeplus):
 
 ```json
 {
-  "version": "8.0",
+  "version": "1.0",
   "protocol-version": [8, 0],
   "encoders": ["rencodeplus"],
   "compressors": ["lz4", "none"],
@@ -89,11 +89,12 @@ keyboard and pointer input (shown as JSON, sent as rencodeplus):
 
 Notes:
 
-* `protocol-version` is the minimum version you are willing to talk to: use `[8, 0]`,
-  since you only implement the modern packets. The server disconnects clients that
-  require a newer version than its own. `version` is informational: announce the
-  protocol version you implement, see
-  [core capabilities](../Network/Protocol.md#52-core-capabilities).
+* `protocol-version` is required: it is the minimum protocol version you are willing
+  to talk to, and it must be at least `[7, 0]`. Use `[8, 0]`, since you only implement
+  the modern packets. The server disconnects clients that require a newer version than
+  its own, see [core capabilities](../Network/Protocol.md#52-core-capabilities).
+* `version` is your client's own version, in any format: it has no requirements and
+  is only informational.
 * `encoders` is required, and MUST contain `rencodeplus`.
 * `server-features: true` asks the server to include its feature flags in its `hello`:
   the `window`, `pointer`, `file`, `printer`, `notification`, `audio`, `webcam` and
@@ -153,7 +154,8 @@ connection.
 The client MUST check:
 
 * `protocol-version`: disconnect if the server requires a newer protocol version than
-  the one you implement (a server that omits it requires `7.0`), `version` is informational;
+  the one you implement (a server that omits it requires `7.0`), `version` is the server's
+  own version and only informational;
 * `encoders` and `compressors`: from now on, only send with an encoder and a compressor
   that the server listed;
 * `display`: a map with the display size given to this client (`desktop_size`), the

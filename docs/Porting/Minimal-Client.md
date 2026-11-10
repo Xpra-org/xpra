@@ -57,7 +57,7 @@ The rest of this page only shows packets.
 </div>
 
 ```text
-C->S ["hello", {"version": "8.0", "protocol-version": [8, 0], "encoders": ["rencodeplus"], "compressors": ["lz4", "none"],
+C->S ["hello", {"version": "1.0", "protocol-version": [8, 0], "encoders": ["rencodeplus"], "compressors": ["lz4", "none"],
                 "digest": ["hmac+sha256", "hmac+sha512"], "salt-digest": ["hmac+sha256", "hmac+sha512"],
                 "display": {...}, "window": {"enabled": true}, "encoding": {...},
                 "keyboard": true, "pointer": {...}, "ping": true, "server-features": true, ...}]

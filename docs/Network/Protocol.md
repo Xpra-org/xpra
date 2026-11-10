@@ -298,8 +298,8 @@ govern what the other endpoint may send.
 
 | Key | Type | Semantics |
 |---|---|---|
-| `version` | `str` | dotted Xpra version, REQUIRED in a normal hello, see below |
-| `protocol-version` | `list<int>` | minimum version accepted by the sender of this hello |
+| `version` | `str` | the sender's own version, informational, see below |
+| `protocol-version` | `list<int>` | minimum protocol version accepted by the sender of this hello; REQUIRED, at least `[7, 0]` |
 | `encoders` | `list<str>` | accepted packet encoders; includes `rencodeplus`; REQUIRED |
 | `compressors` | `list<str>` | accepted record compressors: `lz4`, `brotli`, `zstd`, `none` |
 | `compression_level` | `u8` | requested level, usually `0..9`; zero disables record compression |
@@ -321,11 +321,9 @@ govern what the other endpoint may send.
 
 The effective record compression level is the lowest of the two peers' levels.
 
-The `version` value is informational: compatibility is decided by
-`protocol-version` alone, see below. A third-party implementation of this
-document SHOULD announce the version of the protocol document it implements
-(`8.0` for this one), not its own release number. The version of the
-implementation itself belongs in `build.version` or in an implementation-specific key.
+The `version` value is the sender's own version, ie: its release number, in any
+format: it has no requirements and is only informational. Compatibility is
+decided by `protocol-version` alone, see below.
 
 The server only offers an `ssl-upgrade` when the client sets the top-level
 `ssl-upgrade` boolean to true. The legacy `packet-types` capability is ignored;
@@ -338,8 +336,9 @@ booleans. Other capability groups are provided by the enabled subsystems.
 
 `protocol-version` is the only version check: an implementation MUST
 disconnect, with `version error` for a server, if its own version is lower than
-the value received, or if the value is not a valid version. A peer that
-omits it is treated as requiring version 7.0. A receiver running modern-only
+the value received, or if the value is not a valid version. Every hello MUST
+include it, with a value of 7.0 or later; a receiver treats a peer that
+omits it as requiring version 7.0. A receiver running modern-only
 exposes 8.0 and relies on its peers to bail out. A version 7 peer that exposes a
 `protocol-version` lower than 7.0 also talks to older peers: it switches to the
 packets and capabilities described here once it receives a `protocol-version`

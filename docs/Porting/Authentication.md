@@ -41,7 +41,7 @@ you do not trust: they protect the whole session, and they verify the server.
    or closes the connection with `authentication failed`.
 
 A client that already knows it will authenticate MAY send a reduced first `hello`
-containing only the core capabilities (`version`, `encoders`, `digest`, `salt-digest`,
+containing only the core capabilities (`protocol-version`, `encoders`, `digest`, `salt-digest`,
 `username`, ...) plus `challenge: true`. The server then always answers with a
 `challenge`, and the client sends its full capabilities along with the response.
 
