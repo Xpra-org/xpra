@@ -96,7 +96,6 @@ covers the browsers' `WebTransport`.
 | Packet encoding (rencodeplus/yaml)         | 🟢🟢    | 🟢🔴    | 🟢🔴     | 🔴🟢    | 🟢🔴    | 🟢🔴    |
 | Compression in (lz4/zstd/brotli)           | 🟢🟢🟢   | 🟢🔴🟢   | 🟢🔴🟢    | 🟢🔴🔴   | 🟢🔴🔴   | 🟢🔴🔴   |
 | Compression out (lz4/zstd/brotli)          | 🟢🟢🟢   | 🔴🔴🔴   | 🔴🔴🔴    | 🔴🔴🔴   | 🔴🔴🔴   | 🔴🔴🔴   |
-| Packet types                               | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
 | Out-of-band chunks                         | 🟢     | 🟢     | 🟢      | 🟢     | 🟢     | 🟢     |
 | Forwarded windows                          | 🟢     | 🟢     | 🟢      | 🟢     | 🟢     | 🟢     |
 | Advanced window state                      | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
@@ -133,7 +132,6 @@ The reference implementation and the only complete one: a production client pack
 |-------------------------|----------------------------------------------------------------------------------------------------|
 | Transports              | Also Unix sockets, named pipes and vsock; VNC support                                              |
 | Authentication          | Password, prompt, file, URI, SCRAM, Kerberos, GSS, U2F/FIDO2 and others                            |
-| Packet types            | 6.5+ names                                                                                         |
 | Advanced window state   | Shapes, workspaces, transient relationships, fullscreen, stacking, decorations, constraints, grabs |
 | Picture encodings       | Also `scroll`, and others depending on the codecs installed                                        |
 | Video encodings         | HEVC and others too, depending on decoder availability                                             |
@@ -162,7 +160,6 @@ Production client, widely deployed; runs in any modern browser.
 | Transports              | The `quic` marker is `WebTransport`, still experimental                                        |
 | Transport security      | HTTPS/WSS through the browser's TLS stack; application-level AES (CBC/CTR/CFB)                 |
 | Authentication          | HMAC-SHA256 password; refuses to send passwords over unencrypted remote links                  |
-| Packet types            | Legacy names, both directions                                                                  |
 | Forwarded windows       | Create / destroy / draw / move / resize / raise                                                |
 | Advanced window state   | Fullscreen, maximize/minimize, above/below, modal and opacity, confined to the browser canvas  |
 | Picture encodings       | Also `scroll`; RGB is lz4 compressed, and WebP and AVIF are validated in a decode worker first |
@@ -185,14 +182,14 @@ Production client, widely deployed; runs in any modern browser.
 
 ### vispra
 
-Early stage third party rewrite of the html5 client; runs in any modern browser.
+Early stage third party rewrite of the html5 client; runs in any modern browser, against a server left in its default
+backwards-compatible mode since it only knows the packet names from before xpra 6.5.
 
 | Feature                 | Notes                                                                 |
 |-------------------------|-----------------------------------------------------------------------|
 | Transports              | The `quic` marker is `WebTransport`, still experimental               |
 | Transport security      | HTTPS/WSS through the browser's TLS stack; application-level AES      |
 | Authentication          | HMAC-SHA256 password                                                  |
-| Packet types            | Legacy names, both directions                                         |
 | Forwarded windows       | Create / destroy / draw / move / resize / raise                       |
 | Advanced window state   | A subset of the html5 client's, also confined to the browser canvas   |
 | Picture encodings       | Also `scroll`; RGB is lz4 compressed, AVIF subject to browser support |
@@ -216,15 +213,14 @@ Early stage third party rewrite of the html5 client; runs in any modern browser.
 
 ### Rust client
 
-Runs on MS Windows and on Linux, X11 or Wayland; requires an xpra 6.6 or later server, left in its default
-backwards-compatible mode.
+Runs on MS Windows and on Linux, X11 or Wayland; requires an xpra 7.0 or later server, with or without
+`XPRA_BACKWARDS_COMPATIBLE`.
 
 | Feature                  | Notes                                                                                                                                           |
 |--------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
 | Transports               | `ssh` shells out to the system client                                                                                                           |
 | Transport security       | Certificate and hostname verification against the system trust store, `--ssl-insecure` opts out; no private CA option, no application-level AES |
 | Authentication           | HMAC-SHA256 password via connection dialog, environment, pinentry or built-in dialog                                                            |
-| Packet types             | Sends 6.5+ names, receives legacy: needs a 6.6+ server left in its backwards-compatible mode                                                    |
 | Out-of-band chunks       | Received from the server                                                                                                                        |
 | Forwarded windows        | Create / destroy / draw / move / resize / raise                                                                                                 |
 | Advanced window state    | Fullscreen, maximize/minimize, decorations, above/below, constraints and interactive moves                                                      |
@@ -254,7 +250,6 @@ Minimal client, usable on three window systems: Linux X11, Linux Wayland and MS 
 | Transports               | `ssh` shells out to the system client                                                                                                                                |
 | Transport security       | TLS certificate and hostname verification against the system trust store for `ssl`/`wss`, private CA option; SSH through the system client; no application-level AES |
 | Authentication           | HMAC-SHA256 password via URL, connection dialog, `XPRA_PASSWORD`, pinentry or the Windows credentials dialog; SSH logins left to OpenSSH                             |
-| Packet types             | Sends 6.5+ names; receives legacy unless `XPRA_BACKWARDS_COMPATIBLE=0`                                                                                               |
 | Out-of-band chunks       | Received and spliced back in by index                                                                                                                                |
 | Forwarded windows        | Create / destroy / draw / move / resize / raise / minimize                                                                                                           |
 | Advanced window state    | Title, size constraints, raise and minimize/restore; no positioning or stacking on Wayland                                                                           |
@@ -280,7 +275,6 @@ needs an xpra 8.0 development series server.
 |-------------------------|-------------------------------------------------------------------------------------------------------------------------------|
 | Transports              | Also Unix domain sockets, including local `:N` displays                                                                       |
 | Authentication          | HMAC-SHA256 password via `XPRA_PASSWORD`, a password file or a terminal prompt                                                |
-| Packet types            | 6.5+ names in both directions                                                                                                 |
 | Out-of-band chunks      | Received and substituted back in, up to three per packet                                                                      |
 | Forwarded windows       | Create / destroy / draw / move / resize / raise / close                                                                       |
 | Advanced window state   | Title, transient-for and size constraints only                                                                                |
