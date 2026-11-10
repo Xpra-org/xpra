@@ -638,9 +638,12 @@ class ClientWindow(GObject.GObject):
             if msg in (win32con.WM_MOUSEWHEEL, WM_MOUSEHWHEEL):
                 vertical = msg == win32con.WM_MOUSEWHEEL
                 vkeys = get_vk_mask(wparam & 0xffff)
-                delta = (wparam >> 16) & 0xffff
-                x, y = get_xy_lparam(lparam)
-                self.emit("wheel", x, y, vertical, vkeys, delta)
+                # signed multiples of `WHEEL_DELTA` (120): positive is up, or right
+                delta = to_signed_coordinate((wparam >> 16) & 0xffff)
+                # unlike the button messages, the position is in screen coordinates:
+                pos = POINT(*get_xy_lparam(lparam))
+                ScreenToClient(self.hwnd, byref(pos))
+                self.emit("wheel", pos.x, pos.y, vertical, vkeys, delta)
             # like GTK, leave `Alt`+`F4` (close) and `Alt`+`Space` (system menu) to `DefWindowProc`,
             # but not with other modifiers, which may be shortcuts (ie: `Alt`+`Shift`+`F4`):
             local_syskey = (

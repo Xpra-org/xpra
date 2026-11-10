@@ -33,6 +33,9 @@ netlog = Logger("client", "network")
 keylog = Logger("client", "keyboard")
 cursorlog = Logger("client", "cursor")
 
+# one notch of a standard mouse wheel, in `WM_MOUSEWHEEL` / `WM_MOUSEHWHEEL` units:
+WHEEL_DELTA = 120
+
 GLib = gi_import("GLib")
 GObject = gi_import("GObject")
 
@@ -110,7 +113,6 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         GObjectClientAdapter.__init__(self)
         UIXpraClient.__init__(self)
         self.win32_message_source = 0
-        self.wheel_delta = 0
         self.hcursors = Win32Cursors()
         self.client_type = "win32"
         # connect the win32 window signals + create the native window for each new window:
@@ -338,16 +340,12 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
 
     def window_wheel_event(self, window, x: int, y: int, vertical: bool, vk: Sequence[str], delta: int) -> None:
         log("window_wheel_event(%s, %i, %i, %s, %s, %s)", window, x, y, vertical, vk, delta)
-        if self.is_readonly():
-            return
-        device_id = -1
-        props = {}
-        pos = self._pointer_data(window, x, y)
-        wheel_delta = self.wheel_delta + delta
-        button = 4 if wheel_delta > 0 else 5
-        if not vertical:
-            button += 4
-        self.wheel_delta = self.get_subsystem("pointer").send_wheel_delta(device_id, window.wid, button, abs(wheel_delta), pointer=pos, props=props)
+        if pointer_sub := self.get_subsystem("pointer"):
+            # `delta` is in multiples of `WHEEL_DELTA`, with positive values up or right,
+            # which is the same convention as the pointer subsystem's wheel deltas:
+            clicks = delta / WHEEL_DELTA
+            deltax, deltay = (0, clicks) if vertical else (clicks, 0)
+            pointer_sub.wheel_event(-1, window.wid, deltax, deltay, self._pointer_data(window, x, y))
 
     def window_menu_action(self, window, action: str) -> None:
         # one of xpra's window menu items, which are implemented as shortcut actions:

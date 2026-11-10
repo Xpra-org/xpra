@@ -63,13 +63,14 @@ class UInputDevice:
             if pressed:  # only send one event
                 return
         elif button == 6:
+            # left, like `wheel_motion` below:
             ubutton = REL_HWHEEL
-            val = 1 * mult
+            val = -1 * mult
             if pressed:  # only send one event
                 return
         elif button == 7:
             ubutton = REL_HWHEEL
-            val = -1 * mult
+            val = 1 * mult
             if pressed:  # only send one event
                 return
         else:
@@ -84,11 +85,13 @@ class UInputDevice:
             self.fallback.click(button, pressed, props)
 
     def wheel_motion(self, button: int, distance: float) -> None:
+        # the button owns the direction (including the client's `mousewheel` inversion),
+        # positive `REL_WHEEL` is up and positive `REL_HWHEEL` is right:
         if button in (4, 5):
-            val = distance * MOUSE_WHEEL_CLICK_MULTIPLIER
+            val = abs(distance) * MOUSE_WHEEL_CLICK_MULTIPLIER * (1 if button == 4 else -1)
             ubutton = REL_WHEEL
         elif button in (6, 7):
-            val = distance * MOUSE_WHEEL_CLICK_MULTIPLIER
+            val = abs(distance) * MOUSE_WHEEL_CLICK_MULTIPLIER * (1 if button == 7 else -1)
             ubutton = REL_HWHEEL
         else:
             log.warn("Warning: %s", self)

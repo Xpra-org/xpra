@@ -26,5 +26,40 @@ class TestUInputSetup(unittest.TestCase):
             self.assertEqual(get_udev_data_path("/dev/input/event42"), "/run/udev/data/c13:42")
 
 
+class TestUInputWheel(unittest.TestCase):
+
+    def setUp(self):
+        try:
+            from xpra.uinput.device import UInputDevice, MOUSE_WHEEL_CLICK_MULTIPLIER
+        except ImportError as e:
+            raise unittest.SkipTest(f"no uinput bindings: {e}")
+        from uinput import REL_WHEEL, REL_HWHEEL
+        self.emitted = []
+        device = SimpleNamespace(emit=lambda code, value: self.emitted.append((code, value)))
+        self.device = UInputDevice(device, "/dev/input/event42", None)
+        self.mult = MOUSE_WHEEL_CLICK_MULTIPLIER
+        self.axes = {4: REL_WHEEL, 5: REL_WHEEL, 6: REL_HWHEEL, 7: REL_HWHEEL}
+        # positive `REL_WHEEL` is up and positive `REL_HWHEEL` is right:
+        self.signs = {4: 1, 5: -1, 6: -1, 7: 1}
+
+    def test_button_owns_direction(self):
+        # the client sends the distance signed in the physical direction,
+        # and swaps the button when `mousewheel` inverts that axis:
+        # the direction must follow the button whatever the sign of the distance
+        for button in (4, 5, 6, 7):
+            for distance in (1, -1):
+                self.emitted.clear()
+                self.device.wheel_motion(button, distance)
+                self.assertEqual(self.emitted, [(self.axes[button], self.signs[button] * self.mult)],
+                                 f"button {button} with distance {distance}")
+
+    def test_click_matches_wheel_motion(self):
+        for button in (4, 5, 6, 7):
+            self.emitted.clear()
+            self.device.click(button, True, {})
+            self.device.click(button, False, {})
+            self.assertEqual(self.emitted, [(self.axes[button], self.signs[button] * self.mult)], f"button {button}")
+
+
 if __name__ == "__main__":
     unittest.main()
