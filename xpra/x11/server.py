@@ -553,6 +553,8 @@ class XpraServer(GObject.GObject, X11ServerBase):
         geom = window.get_property("client-geometry")
         geomlog("XpraServer._window_resized_signaled(%s,%s) geometry=%s, desktop manager geometry=%s",
                 window, args, (x, y, nw, nh), geom)
+        # this code probably never matches and was removed in newer versions
+        # only kept here because this LTS branch will soon be abandonned
         if geom==[x, y, nw, nh]:
             geomlog("XpraServer._window_resized_signaled: unchanged")
             #unchanged
