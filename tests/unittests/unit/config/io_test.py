@@ -52,6 +52,9 @@ class ConfigIOTest(unittest.TestCase):
             (root / "conf.d" / "90-last.conf").write_text("title=last\n")
             (root / "conf.d" / "05-first.conf").write_text("title=first\n")
             (root / "conf.d" / "ignored.txt").write_text("title=ignored\n")
+            # `xpra.conf` is applied last, so it overrides the `conf.d` files:
+            self.assertEqual(read_xpra_conf(directory), {"title": "main", "quality": "20"})
+            (root / "xpra.conf").write_text("quality=20\n")
             self.assertEqual(read_xpra_conf(directory), {"title": "last", "quality": "20"})
             self.assertEqual([Path(f).name for f in io.conf_files(directory)], ["05-first.conf", "90-last.conf", "xpra.conf"])
             (root / "xpra.conf").unlink()
