@@ -1618,7 +1618,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="pulseaudio_command", default=defaults.pulseaudio_command,
                      help="The command used to start the pulseaudio server. Default: '%default'.")
     group.add_option("--pulseaudio-configure-commands", action="append",
-                     dest="pulseaudio_configure_commands", default=defaults.pulseaudio_configure_commands,
+                     dest="pulseaudio_configure_commands", default=mlist(defaults.pulseaudio_configure_commands),
                      help="The commands used to configure the pulseaudio server. Default: '%default'.")
     group.add_option("--speaker", action="store", metavar="on|off|disabled",
                      dest="speaker", default=defaults.speaker,
@@ -1854,7 +1854,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      dest="shortcut_modifiers", type="str", default=defaults.shortcut_modifiers,
                      help="Default set of modifiers required by the key shortcuts. Default %default.")
     group.add_option("--key-shortcut", action="append",
-                     dest="key_shortcut", default=defaults.key_shortcut or [],
+                     dest="key_shortcut", default=mlist(defaults.key_shortcut),
                      help="Define key shortcuts that will trigger specific actions."
                           "If no shortcuts are defined, it defaults to: \n%s" % (
                               "\n ".join(defaults.key_shortcut or ())))
@@ -1999,7 +1999,7 @@ def parse_command_line(cmdline: list[str], defaults: XpraConfig):
                      help="Which handlers to use for processing server authentication challenges."
                           " Default: %s." % dcsv(defaults.challenge_handlers))
     group.add_option("--password-file", action="append",
-                     dest="password_file", default=defaults.password_file,
+                     dest="password_file", default=mlist(defaults.password_file),
                      help="The file containing the password required to connect"
                           " (useful to secure TCP mode)."
                           " Default: %s." % dcsv(defaults.password_file))
