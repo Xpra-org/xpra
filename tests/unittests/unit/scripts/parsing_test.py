@@ -39,6 +39,19 @@ class TestParsing(unittest.TestCase):
             self.assertIsNot(getattr(opts, attr), getattr(defaults, attr), opt)
             self.assertEqual(strip_defaults_start_child(getattr(opts, attr), getattr(defaults, attr)), ["xterm"], opt)
 
+    def test_append_options_do_not_modify_defaults(self):
+        for opt, value in (
+            ("pulseaudio-configure-commands", "foo"),
+            ("key-shortcut", "Control+F1:quit"),
+            ("password-file", "/tmp/pw"),
+        ):
+            attr = opt.replace("-", "_")
+            defaults = make_defaults_struct()
+            before = list(getattr(defaults, attr) or [])
+            opts, _ = do_parse_cmdline(["xpra", "attach", f"--{opt}={value}"], defaults)
+            self.assertIn(value, getattr(opts, attr), opt)
+            self.assertEqual(list(getattr(defaults, attr) or []), before, opt)
+
     def test_ssh_parsing(self):
         assert parse_ssh_option("auto")[0] in ("paramiko", "ssh")
         assert parse_ssh_option("ssh") == ["ssh"]
