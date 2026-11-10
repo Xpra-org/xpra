@@ -16,11 +16,11 @@ from xpra.util.env import nomodule_context
 from xpra.scripts.parsing import (
     parse_ssh_option, get_ssh_args, get_ssh_proxy_args,
     audio_option, parse_env, parse_URL, _sep_pos, normalize_display_name,
-    parse_display_name, parse_cmdline, get_usage,
+    parse_display_name, parse_cmdline, do_parse_cmdline, get_usage,
 )
-from xpra.scripts.args import get_start_server_args
+from xpra.scripts.args import get_start_server_args, strip_defaults_start_child
 from xpra.config.fixup import fixup_clipboard
-from xpra.config.defaults import get_defaults
+from xpra.config.defaults import get_defaults, make_defaults_struct
 from xpra.config import InitException
 from xpra.util.objects import AdHocStruct
 from xpra.util.parsing import FALSE_OPTIONS, TRUE_OPTIONS
@@ -136,6 +136,22 @@ class TestParsing(unittest.TestCase):
         self.assertEqual((opts.refresh_rate, opts.desktop_scaling, opts.input_capture), ("10", "0.1", "click"))
         # the client-only input capture option is not passed to the remote shadow server:
         self.assertNotIn("--input-capture=click", get_start_server_args(opts, compat=True))
+
+    def test_start_options_do_not_share_defaults(self):
+        # the proxy strips the config file defaults from the start options,
+        # which must not also remove the values given on the command line (#5133):
+        for opt in (
+            "start", "start-child", "start-late", "start-child-late",
+            "start-after-connect", "start-child-after-connect",
+            "start-on-connect", "start-child-on-connect",
+            "start-on-disconnect", "start-child-on-disconnect",
+            "start-on-last-client-exit", "start-child-on-last-client-exit",
+        ):
+            attr = opt.replace("-", "_")
+            defaults = make_defaults_struct()
+            opts, _ = do_parse_cmdline(["xpra", "_proxy_start", ":100", f"--{opt}=xterm"], defaults)
+            self.assertIsNot(getattr(opts, attr), getattr(defaults, attr), opt)
+            self.assertEqual(strip_defaults_start_child(getattr(opts, attr), getattr(defaults, attr)), ["xterm"], opt)
 
     def test_restricted_encoding_warnings(self):
         def warnings_for(*args: str) -> list[str]:
