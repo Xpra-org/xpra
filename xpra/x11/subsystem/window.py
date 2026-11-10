@@ -363,9 +363,6 @@ class SeamlessWindowServer(WindowServer):
         geom = window.get_property("client-geometry")
         geomlog("XpraServer._window_resized_signaled(%s,%s) geometry=%s, desktop manager geometry=%s",
                 window, args, (x, y, nw, nh), geom)
-        if geom == [x, y, nw, nh]:
-            geomlog("XpraServer._window_resized_signaled: unchanged")
-            return
         window.set_property("client-geometry", (x, y, nw, nh))
         if not window.get_property("shown"):
             self.size_notify_clients(window)
