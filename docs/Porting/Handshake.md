@@ -103,6 +103,9 @@ Notes:
 * `uuid` (and `session-id`, if you send one) MUST be valid UUIDs: a random 32-character
   hexadecimal string is fine. Generate a new `uuid` for each client instance; the server
   uses it to recognize a client that reconnects.
+* `client_type` is optional: a short name for your client (ie: `HTML5`), which the server
+  shows in its connection and disconnection log messages and in its info. Avoid `top`, which
+  the server reserves for monitoring clients that do not receive files or print jobs.
 * `digest` and `salt-digest` are REQUIRED when the server uses authentication: without
   them, the server cannot generate a challenge and the connection fails. List only the
   digests you implement. Add `xor` to `digest` only if you are prepared to send the

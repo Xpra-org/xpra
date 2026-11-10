@@ -316,6 +316,7 @@ govern what the other endpoint may send.
 | `uuid` | `str` | client instance identifier; when present MUST be a valid UUID string |
 | `session-id` | `str` | identifies a client session across reconnections; when present MUST be a valid UUID string |
 | `hostname`, `machine_id` | `str` | endpoint identity/advisory metadata |
+| `client_type` | `str` | short name of the client implementation, ie: `HTML5`; informational, shown in server logs; the value `top` stops the server from forwarding files and print jobs to that client |
 | `build`, `platform`, `network` | `map` | extensible diagnostic metadata |
 
 The effective record compression level is the lowest of the two peers' levels.
