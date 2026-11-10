@@ -82,7 +82,7 @@ keyboard and pointer input (shown as JSON, sent as rencodeplus):
   "keyboard": true,
   "modifiers": [],
   "keymap": {"layout": "us"},
-  "pointer": {"double_click": {"time": 400, "distance": 5}},
+  "pointer": {"double_click": {"time": 400, "distance": [5, 5]}},
   "cursor": {"encodings": ["raw", "png"]}
 }
 ```

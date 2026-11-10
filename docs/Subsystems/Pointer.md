@@ -42,7 +42,7 @@ The client should expose the following `pointer` dictionary in its `hello` packe
 | Capability         | Value                           | Information                                                                   |
 |--------------------|---------------------------------|-------------------------------------------------------------------------------|
 | `initial-position` | `x` and `y` pair of coordinates | Optional                                                                      |
-| `double_click`     | dictionary                      | contains just two integer attributes: `time` (in milliseconds) and `distance` |
+| `double_click`     | dictionary                      | `time`: integer, in milliseconds; `distance`: a pair of integers, the maximum `x` and `y` distance in pixels, ie: `[5, 5]`. On X11, the server sets `Net/DoubleClickTime` and `Net/DoubleClickDistance` (the average of the two distances) from positive values only |
 | `sync`             | boolean                         | Optional, see [pointer synchronization](#pointer-synchronization)             |
 | `record`           | boolean                         | Optional, legacy alias for `sync`                                             |
 | `grabs`            | boolean                         | Legacy only, superseded by the `window` capability of the same name          |
