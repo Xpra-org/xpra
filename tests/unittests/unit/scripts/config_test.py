@@ -29,12 +29,12 @@ class ReadConfTest(unittest.TestCase):
     def test_conf_d_order(self):
         # the numeric prefix decides which value wins,
         # no matter what order the directory happens to be read in:
-        self.write("xpra.conf", "xvfb = Xvfb\nmode = seamless\n")
+        self.write("xpra.conf", "mode = seamless\n")
         for filename in ("55_server_x11.conf", "05_features.conf", "90_configure_tool.conf", "12_network.conf"):
-            self.write(os.path.join("conf.d", filename), f"xvfb = {filename}\n")
+            self.write(os.path.join("conf.d", filename), f"xvfb = {filename}\nmode = {filename}\n")
         conf = read_xpra_conf(self.tmpdir)
         self.assertEqual(conf.get("xvfb"), "90_configure_tool.conf")
-        # `xpra.conf` values are only overriden by the `conf.d` files that set them:
+        # `xpra.conf` is applied last, so it overrides the `conf.d` files:
         self.assertEqual(conf.get("mode"), "seamless")
 
     def test_missing_dir(self):
