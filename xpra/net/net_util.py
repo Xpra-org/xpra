@@ -130,7 +130,7 @@ def do_get_bind_IPs():
         except Exception as e:
             log("do_get_bind_IPs()", exc_info=True)
             log.error("Error parsing network interface '%s':", iface)
-            log.error(" %s", iface, e)
+            log.error(" %s", e)
         iface_ipmasks[iface] = if_ipmasks
     log("do_get_bind_IPs()=%s", ips)
     log("iface_ipmasks=%s", iface_ipmasks)
