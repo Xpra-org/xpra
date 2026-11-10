@@ -122,7 +122,7 @@ def ssl_handshake(ssl_sock, timeout: float = SSL_HANDSHAKE_TIMEOUT) -> None:
 
 def get_ssl_wrap_socket_context(cert="", key="", key_password="", ca_certs="", ca_data="",
                                 protocol: str = "TLS",
-                                client_verify_mode: str = "optional", server_verify_mode: str = "required",
+                                client_verify_mode: str = "none", server_verify_mode: str = "required",
                                 verify_flags: str = "X509_STRICT",
                                 check_hostname: bool = False, server_hostname="",
                                 options: str = "ALL,NO_COMPRESSION", ciphers: str = "DEFAULT",
