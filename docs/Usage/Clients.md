@@ -31,8 +31,8 @@ The two browser based clients, `xpra-html5` and `vispra`, are served over `ws` /
 builtin web server will pick up `xpra-html5` automatically when it is installed.\
 The `rust` and `go` clients are smaller native implementations with a deliberately limited feature set, also used
 for validating the protocol.\
-`c-xpra` is smaller still: a C client that only needs libc and libX11, written clean-room from the protocol
-documentation alone, to show that the documentation is enough to write a client.\
+`c-xpra` is smaller still: a C client that only needs libc and libX11 (libpng, libwebp and libXcursor are used when
+installed), written clean-room from the protocol documentation alone, to show that the documentation is enough to write a client.\
 `kotlin-xpra` is an Android client in Kotlin and Jetpack Compose: it shows one top-level window at a time, fullscreen,
 with touch input, a soft-keyboard bridge and a window switcher.\
 `xpra-client` is a Java / Kotlin Android client, with a Swing frontend also in the repository. It is a fork of
@@ -53,7 +53,7 @@ These are not the same kind of project, and what it costs to build and ship them
 | vispra      | TypeScript, SolidJS, Vite        | 117 files, 24 kloc   | 2.8 MB served to the browser, no packages                | 10 seconds                               |
 | rust-xpra   | Rust, `winit` / `softbuffer`     | 32 files, 9 kloc     | 2.4-2.8 MB package, 2.6 MB executable                    | 90 seconds                               |
 | go-xpra     | Go, no `cgo`, no toolkit         | 83 files, 14 kloc    | 3.9-4.2 MB package, 7.5 MB executable, 4.5 MB `.exe`     | 35 seconds                               |
-| c-xpra      | C99, Xlib                        | 18 files, 3.4 kloc   | 25-40 KB package, 40 KB executable, 21 KB with UPX       | 1 second                                 |
+| c-xpra      | C99, Xlib                        | 22 files, 3.7 kloc   | 25-40 KB package, 44 KB executable, 23 KB with UPX       | 1 second                                 |
 | kotlin-xpra | Kotlin, Jetpack Compose          | 34 files, 4.5 kloc   | 1.5 MB `.apk`                                            | 100 seconds                              |
 | xpra-client | Java, Kotlin, Android / Swing    | 141 files, 16.6 kloc | 2.2 MB `.apk`, 8.3 MB debug `.apk`                       | 100 seconds, 50 for a debug build        |
 
@@ -100,7 +100,7 @@ covers the browsers' `WebTransport`.
 | Forwarded windows                          | 🟢     | 🟢     | 🟢      | 🟢     | 🟢     | 🟢     |
 | Advanced window state                      | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
 | Override-redirect popups                   | 🟢     | 🟢     | 🟢      | 🟠     | 🟢     | 🟢     |
-| Picture encodings (rgb/jpeg/png/webp/avif) | 🟢🟢🟢🟢🟢 | 🟢🟢🟢🟢🟠 | 🟢🟢🟢🟢🟠  | 🔴🟢🟢🟢🔴 | 🟢🟢🟢🟢🔴 | 🟢🔴🔴🔴🔴 |
+| Picture encodings (rgb/jpeg/png/webp/avif) | 🟢🟢🟢🟢🟢 | 🟢🟢🟢🟢🟠 | 🟢🟢🟢🟢🟠  | 🔴🟢🟢🟢🔴 | 🟢🟢🟢🟢🔴 | 🟢🔴🟢🟢🔴 |
 | Video encodings (h264/vp8/vp9/av1)         | 🟢🟢🟢🟢  | 🟢🟢🔴🔴  | 🟢🟢🔴🔴   | 🟠🔴🔴🔴  | 🔴🔴🔴🔴  | 🔴🔴🔴🔴  |
 | Accelerated rendering                      | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
 | Speaker audio (opus/vorbis/mp3/flac/aac)   | 🟢🟢🟢🟢🟢 | 🟢🟢🟢🟢🟢 | 🟢🟢🟢🟢🟢  | 🟠🔴🔴🔴🔴 | 🔴🔴🔴🔴🔴 | 🔴🔴🔴🔴🔴 |
@@ -109,7 +109,7 @@ covers the browsers' `WebTransport`.
 | Keyboard                                   | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
 | Pointer / input                            | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
 | Server cursors                             | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
-| Window icons                               | 🟢     | 🟢     | 🔴      | 🟠     | 🟢     | 🔴     |
+| Window icons                               | 🟢     | 🟢     | 🔴      | 🟠     | 🟢     | 🟢     |
 | Bell forwarding                            | 🟢     | 🟢     | 🟠      | 🟠     | 🟠     | 🟢     |
 | Desktop notifications                      | 🟢     | 🟢     | 🟢      | 🟠     | 🟠     | 🟠     |
 | Client tray / menu                         | 🟢     | 🟢     | 🟠      | 🟠     | 🔴     | 🔴     |
@@ -271,22 +271,23 @@ Minimal client, usable on three window systems: Linux X11, Linux Wayland and MS 
 Minimal Linux X11 client, written clean-room from the protocol documentation; it speaks protocol 8.0 only, so it
 needs an xpra 8.0 development series server.
 
-| Feature                 | Notes                                                                                                                         |
-|-------------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| Transports              | Also Unix domain sockets, including local `:N` displays                                                                       |
-| Authentication          | HMAC-SHA256 password via `XPRA_PASSWORD`, a password file or a terminal prompt                                                |
-| Out-of-band chunks      | Received and substituted back in, up to three per packet                                                                      |
-| Forwarded windows       | Create / destroy / draw / move / resize / raise / close                                                                       |
-| Advanced window state   | Title, transient-for and size constraints only                                                                                |
-| Picture encodings       | `rgb24` and `rgb32` in any channel order, raw or LZ4 compressed                                                               |
-| Accelerated rendering   | `XPutImage` from a client-side image; no `XShm`, no video acceleration                                                        |
-| Keyboard                | X11 keysym names and modifiers; no keymap upload                                                                              |
-| Pointer / input         | Pointer, buttons, wheel and focus                                                                                             |
-| Server cursors          | `raw` RGBA up to 256x256, in colour through libXcursor when installed, black and white otherwise; no cursor names, no scaling |
-| Bell forwarding         | X11 keyboard extension bell, on the window it belongs to                                                                      |
-| Desktop notifications   | Printed on stdout                                                                                                             |
-| DPI / display sync      | Screen size reported as a single monitor; no DPI                                                                              |
-| Remote logging / events | Server events printed on stdout and pings; no client-side remote logging                                                      |
+| Feature                 | Notes                                                                                                                                                              |
+|-------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Transports              | Also Unix domain sockets, including local `:N` displays                                                                                                            |
+| Authentication          | HMAC-SHA256 password via `XPRA_PASSWORD`, a password file or a terminal prompt                                                                                     |
+| Out-of-band chunks      | Received and substituted back in, up to three per packet                                                                                                           |
+| Forwarded windows       | Create / destroy / draw / move / resize / raise / close                                                                                                            |
+| Advanced window state   | Title, transient-for and size constraints only                                                                                                                     |
+| Picture encodings       | `rgb24` and `rgb32` in any channel order, raw or LZ4 compressed; `png` (also palette and grayscale) and `webp` only when libpng / libwebp can be loaded at runtime |
+| Accelerated rendering   | `XPutImage` from a client-side image; no `XShm`, no video acceleration                                                                                             |
+| Keyboard                | X11 keysym names and modifiers; no keymap upload                                                                                                                   |
+| Pointer / input         | Pointer, buttons, wheel and focus                                                                                                                                  |
+| Window icons            | PNG icons up to 256x256 as `_NET_WM_ICON`, only when libpng can be loaded                                                                                          |
+| Server cursors          | `raw` RGBA up to 256x256, in colour through libXcursor when installed, black and white otherwise; no cursor names, no scaling                                      |
+| Bell forwarding         | X11 keyboard extension bell, on the window it belongs to                                                                                                           |
+| Desktop notifications   | Printed on stdout                                                                                                                                                  |
+| DPI / display sync      | Screen size reported as a single monitor; no DPI                                                                                                                   |
+| Remote logging / events | Server events printed on stdout and pings; no client-side remote logging                                                                                           |
 
 <div class="docs-section-heading" markdown="1">
 
