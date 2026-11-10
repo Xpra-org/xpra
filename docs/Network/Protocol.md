@@ -536,10 +536,22 @@ A client that advertises `ping: true` MUST answer every `ping` with a
 `client ping timeout` when no matching echo has been received for 60 seconds.
 A client that does not advertise `ping` is never pinged by the server.
 
-`events` packets are only sent to clients that advertise `events: true`. They
-carry server lifecycle notifications such as `ready`, `suspend`, `resume`,
-`exit`, `handshake-complete`, `startup-complete` and `connection-lost`, and MAY
-be ignored.
+`events` packets are only sent to clients that advertise `events: true`, once
+the server's `hello` has been sent to them. They carry server lifecycle
+notifications and MAY be ignored:
+
+| Event | Values | Meaning |
+|---|---|---|
+| `ready` | none | the server has finished starting up |
+| `suspend` | none | the server host is going to sleep |
+| `resume` | none | the server host has woken up |
+| `exit` | none | the server is shutting down |
+| `handshake-complete` | none | a client's `hello` has been accepted |
+| `startup-complete` | `uuid:str` | a client has received its initial state; `uuid` is that client's `uuid` hello capability (Section 5.2) |
+| `connection-lost` | `uuid:str` | a client has disconnected; `uuid` is that client's `uuid` hello capability |
+
+Events are broadcast to every connected client, so the `uuid` value can name
+another client; it is an empty string when that client sent no `uuid`.
 
 `setting-change` is bidirectional, but asymmetric. A server MAY send any
 setting. A server MUST apply an allow-list to the settings a client is permitted
