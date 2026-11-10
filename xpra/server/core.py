@@ -1150,15 +1150,22 @@ class ServerCore(GLibServer):
 
     def handle_ws_socket(self, conn, socket_options: dict[str, Any], peek_data: bytes) -> None:
         packet_type = self.guess_packet_type(peek_data)
+        is_ssl = False
         if peek_data:
             if packet_type == "ssl" and self.can_upgrade(conn.socktype, "wss", socket_options):
                 ssllog("ws socket receiving ssl, upgrading to wss")
                 conn = self.ssl_wrap(conn, socket_options)
                 if conn is None:
                     return
+                # complete the handshake here, with the ssl handshake timeout,
+                # rather than lazily in the http handler's first `recv()` using the much shorter `_ws_timeout`:
+                self.ssl_handshake(conn)
+                # the peeked bytes are the encrypted ClientHello, not the http request:
+                peek_data = b""
+                is_ssl = True
             elif packet_type not in (None, "http"):
                 raise ValueError(f"packet type is {packet_type!r} and not http")
-        self.start_http_socket(conn.socktype, conn, socket_options, False, peek_data)
+        self.start_http_socket(conn.socktype, conn, socket_options, is_ssl, peek_data)
 
     def handle_ssh_connection(self, conn, socket_options: dict[str, Any]):
         from xpra.server.ssh import make_ssh_server_connection, log as sshlog
