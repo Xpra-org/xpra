@@ -1276,6 +1276,7 @@ class ServerCore:
             return
 
         if socktype=="ws":
+            is_ssl = False
             if peek_data:
                 #honour socket option, fallback to "ssl_mode" attribute:
                 wss = socket_options.get("wss", "").lower()
@@ -1288,10 +1289,16 @@ class ServerCore:
                     conn = ssl_wrap()
                     if conn is None:
                         return
+                    # complete the handshake here, with the ssl handshake timeout,
+                    # rather than lazily in the http handler's first `recv()` using the much shorter `_ws_timeout`:
+                    self.ssl_handshake(conn)
+                    # the peeked bytes are the encrypted ClientHello, not the http request:
+                    peek_data = b""
+                    is_ssl = True
                 elif packet_type not in (None, "http"):
                     self.new_conn_err(conn, sock, socktype, socket_info, packet_type)
                     return
-            self.start_http_socket(socktype, conn, socket_options, False, peek_data)
+            self.start_http_socket(socktype, conn, socket_options, is_ssl, peek_data)
             return
 
         if socktype=="rfb":
