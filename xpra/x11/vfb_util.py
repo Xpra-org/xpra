@@ -159,20 +159,27 @@ def valid_xauth(filename:str, uid:int=getuid(), gid:int=getgid()) -> str:
         return ""
     return filename
 
-def get_xauthority_path(display_name) -> str:
+def get_xauthority_path(display_name: str, uid: int = getuid(), gid: int = getgid(), username: str = "") -> str:
     assert POSIX
     # pylint: disable=import-outside-toplevel
     from xpra.platform.posix.paths import _get_xpra_runtime_dir
-    if PRIVATE_XAUTH:
+    # when running as root with `--uid`, the file must be usable by the target user:
+    expanded_home = os.path.expanduser(f"~{username}")
+    has_home = os.path.exists(expanded_home) and is_writable(expanded_home, uid, gid)
+    if PRIVATE_XAUTH or (not has_home and os.environ.get("XDG_RUNTIME_DIR")):
         d = _get_xpra_runtime_dir()
         if XAUTH_PER_DISPLAY:
             filename = "Xauthority-" + display_name.lstrip(":")
         else:
             filename = "Xauthority"
     else:
-        d = "~/"
+        if has_home:
+            d = expanded_home
+        else:
+            d = os.environ.get("TMPDIR", "/tmp")
         filename = ".Xauthority"
     return os.path.join(d, filename)
+
 
 def check_xorg_config(xvfb_cmd:List[str]) -> None:
     # Without its dummy driver config, Xorg may probe hardware and take over a VT.

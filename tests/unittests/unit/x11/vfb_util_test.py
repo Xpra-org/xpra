@@ -16,6 +16,36 @@ from xpra.x11 import vfb_util
 
 class TestVfbUtil(unittest.TestCase):
 
+    @unittest.skipUnless(POSIX, "Xauthority requires a POSIX platform")
+    def test_xauthority_uses_target_home(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(vfb_util, "PRIVATE_XAUTH", False), \
+                 patch("pwd.getpwnam") as getpwnam:
+                getpwnam.return_value.pw_dir = directory
+                path = vfb_util.get_xauthority_path(":100", os.getuid(), os.getgid(), "xpra-test-user")
+            self.assertEqual(path, os.path.join(directory, ".Xauthority"))
+
+    @unittest.skipUnless(POSIX, "Xauthority requires a POSIX platform")
+    def test_xauthority_home_must_be_writable_by_target(self):
+        with tempfile.TemporaryDirectory() as directory:
+            os.chmod(directory, 0o700)
+            with patch.object(vfb_util, "PRIVATE_XAUTH", False), \
+                 patch.dict(os.environ, {"TMPDIR": directory}, clear=True), \
+                 patch("pwd.getpwnam") as getpwnam:
+                getpwnam.return_value.pw_dir = os.path.join(directory, "home")
+                os.mkdir(getpwnam.return_value.pw_dir, 0o700)
+                path = vfb_util.get_xauthority_path(":100", os.getuid() + 1, os.getgid() + 1, "xpra-test-user")
+            self.assertEqual(path, os.path.join(directory, ".Xauthority"))
+
+    @unittest.skipUnless(POSIX, "Xauthority requires a POSIX platform")
+    def test_xauthority_private_file_names(self):
+        with tempfile.TemporaryDirectory() as directory:
+            with patch.object(vfb_util, "PRIVATE_XAUTH", True), \
+                 patch.dict(os.environ, {"XDG_RUNTIME_DIR": directory}):
+                for per_display, name in ((True, "Xauthority-100"), (False, "Xauthority")):
+                    with patch.object(vfb_util, "XAUTH_PER_DISPLAY", per_display):
+                        self.assertEqual(vfb_util.get_xauthority_path(":100"), os.path.join(directory, "xpra", name))
+
     def test_check_xorg_config(self):
         with tempfile.NamedTemporaryFile(suffix=".conf") as conf:
             for command in (["Xvfb"], ["Xorg", "-config"], ["Xorg", "-config", "xorg.conf"],
