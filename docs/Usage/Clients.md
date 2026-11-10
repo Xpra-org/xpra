@@ -14,14 +14,15 @@ implement are simply not enabled for that connection.
 
 </div>
 
-| Client                                                 | Maintained by                                | License |
-|--------------------------------------------------------|----------------------------------------------|---------|
-| [xpra](./Client.md)                                    | [Xpra-org](https://github.com/Xpra-org/xpra) | GPLv2   |
-| [xpra-html5](https://github.com/Xpra-org/xpra-html5)   | [Xpra-org](https://github.com/Xpra-org)      | MPL-2.0 |
-| [vispra](https://github.com/MajidNajafi/vispra)        | third party                                  | MIT     |
-| [rust-xpra](https://github.com/Xpra-org/rust-xpra)     | [Xpra-org](https://github.com/Xpra-org)      | GPLv3   |
-| [go-xpra](https://github.com/Xpra-org/go-xpra)         | [Xpra-org](https://github.com/Xpra-org)      | GPLv3   |
-| [kotlin-xpra](https://github.com/Xpra-org/kotlin-xpra) | [Xpra-org](https://github.com/Xpra-org)      | GPLv3   |
+| Client                                                     | Maintained by                                   | License |
+|------------------------------------------------------------|-------------------------------------------------|---------|
+| [xpra](./Client.md)                                        | [Xpra-org](https://github.com/Xpra-org/xpra)    | GPLv2   |
+| [xpra-html5](https://github.com/Xpra-org/xpra-html5)       | [Xpra-org](https://github.com/Xpra-org)         | MPL-2.0 |
+| [vispra](https://github.com/MajidNajafi/vispra)            | third party                                     | MIT     |
+| [rust-xpra](https://github.com/Xpra-org/rust-xpra)         | [Xpra-org](https://github.com/Xpra-org)         | GPLv3   |
+| [go-xpra](https://github.com/Xpra-org/go-xpra)             | [Xpra-org](https://github.com/Xpra-org)         | GPLv3   |
+| [c-xpra](https://github.com/Xpra-org/c-xpra)               | [Xpra-org](https://github.com/Xpra-org)         | MIT     |
+| [kotlin-xpra](https://github.com/Xpra-org/kotlin-xpra)     | [Xpra-org](https://github.com/Xpra-org)         | GPLv3   |
 | [xpra-client](https://github.com/lukaszsobala/xpra-client) | [lukaszsobala](https://github.com/lukaszsobala) | GPLv3   |
 
 The [xpra client](./Client.md) is the default client: it is the only one that implements the complete feature set, and
@@ -30,6 +31,8 @@ The two browser based clients, `xpra-html5` and `vispra`, are served over `ws` /
 builtin web server will pick up `xpra-html5` automatically when it is installed.\
 The `rust` and `go` clients are smaller native implementations with a deliberately limited feature set, also used
 for validating the protocol.\
+`c-xpra` is smaller still: a C client that only needs libc and libX11, written clean-room from the protocol
+documentation alone, to show that the documentation is enough to write a client.\
 `kotlin-xpra` is an Android client in Kotlin and Jetpack Compose: it shows one top-level window at a time, fullscreen,
 with touch input, a soft-keyboard bridge and a window switcher.\
 `xpra-client` is a Java / Kotlin Android client, with a Swing frontend also in the repository. It is a fork of
@@ -50,12 +53,15 @@ These are not the same kind of project, and what it costs to build and ship them
 | vispra      | TypeScript, SolidJS, Vite        | 117 files, 24 kloc   | 2.8 MB served to the browser, no packages                | 10 seconds                               |
 | rust-xpra   | Rust, `winit` / `softbuffer`     | 32 files, 9 kloc     | 2.4-2.8 MB package, 2.6 MB executable                    | 90 seconds                               |
 | go-xpra     | Go, no `cgo`, no toolkit         | 83 files, 14 kloc    | 3.9-4.2 MB package, 7.5 MB executable, 4.5 MB `.exe`     | 35 seconds                               |
+| c-xpra      | C99, Xlib                        | 18 files, 3.4 kloc   | 25-40 KB package, 40 KB executable, 21 KB with UPX       | 1 second                                 |
 | kotlin-xpra | Kotlin, Jetpack Compose          | 34 files, 4.5 kloc   | 1.5 MB `.apk`                                            | 100 seconds                              |
 | xpra-client | Java, Kotlin, Android / Swing    | 141 files, 16.6 kloc | 2.2 MB `.apk`, 8.3 MB debug `.apk`                       | 100 seconds, 50 for a debug build        |
 
 Source counts tracked files in each project's own languages, tests included and vendored libraries excluded - the
 `xpra-html5` figure leaves out some 70 kloc of bundled jquery and audio decoders, whereas `vispra` gets the equivalent
 from `npm` and never commits it. Of xpra's 318 kloc, 259 are Python, 49 Cython and 10 C and CUDA.
+`c-xpra` builds its own LZ4 decoder, rencodeplus codec and SHA-256 rather than linking libraries for them, and only
+ships for Linux.\
 The `xpra-client` count includes the Swing frontend and excludes the bundled Grafika library.\
 The package sizes are what the xpra repositories serve, and they only look small because a distribution package leans
 on the distribution's own Python, GTK and codec libraries; the MS Windows installer and the MacOS `.dmg` / `.pkg` carry
@@ -82,40 +88,40 @@ Legend: 🟢 supported · 🟠 partial, platform-limited or degraded · 🔴 abs
 Rows that name their options carry one marker per option, in that order: `ws` also covers `wss`, and `quic` also
 covers the browsers' `WebTransport`.
 
-| Feature                                    | xpra  | html5 | vispra | rust  | go    |
-|--------------------------------------------|:-----:|:-----:|:------:|:-----:|:-----:|
-| Transports (tcp/ssl/ssh/ws/quic)           | 🟢🟢🟢🟢🟢 | 🔴🔴🔴🟢🟠 | 🔴🔴🔴🟢🟠  | 🟢🟢🟢🟢🔴 | 🟢🟢🟢🟢🔴 |
-| Transport security (tls/ssh/aes)           | 🟢🟢🟢   | 🟢🔴🟢   | 🟢🔴🟢    | 🟢🟢🔴   | 🟢🟢🔴   |
-| Authentication                             | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     |
-| Packet encoding (rencodeplus/yaml)         | 🟢🟢    | 🟢🔴    | 🟢🔴     | 🔴🟢    | 🟢🔴    |
-| Compression in (lz4/zstd/brotli)           | 🟢🟢🟢   | 🟢🔴🟢   | 🟢🔴🟢    | 🟢🔴🔴   | 🟢🔴🔴   |
-| Compression out (lz4/zstd/brotli)          | 🟢🟢🟢   | 🔴🔴🔴   | 🔴🔴🔴    | 🔴🔴🔴   | 🔴🔴🔴   |
-| Packet types                               | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     |
-| Out-of-band chunks                         | 🟢     | 🟢     | 🟢      | 🟢     | 🟢     |
-| Forwarded windows                          | 🟢     | 🟢     | 🟢      | 🟢     | 🟢     |
-| Advanced window state                      | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     |
-| Override-redirect popups                   | 🟢     | 🟢     | 🟢      | 🟠     | 🟢     |
-| Picture encodings (rgb/jpeg/png/webp/avif) | 🟢🟢🟢🟢🟢 | 🟢🟢🟢🟢🟠 | 🟢🟢🟢🟢🟠  | 🔴🟢🟢🟢🔴 | 🟢🟢🟢🟢🔴 |
-| Video encodings (h264/vp8/vp9/av1)         | 🟢🟢🟢🟢  | 🟢🟢🔴🔴  | 🟢🟢🔴🔴   | 🟠🔴🔴🔴  | 🔴🔴🔴🔴  |
-| Accelerated rendering                      | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     |
-| Speaker audio (opus/vorbis/mp3/flac/aac)   | 🟢🟢🟢🟢🟢 | 🟢🟢🟢🟢🟢 | 🟢🟢🟢🟢🟢  | 🟠🔴🔴🔴🔴 | 🔴🔴🔴🔴🔴 |
-| Microphone                                 | 🟢     | 🔴     | 🔴      | 🔴     | 🔴     |
-| Clipboard                                  | 🟢     | 🟠     | 🟠      | 🟠     | 🔴     |
-| Keyboard                                   | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     |
-| Pointer / input                            | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     |
-| Server cursors                             | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     |
-| Window icons                               | 🟢     | 🟢     | 🔴      | 🟠     | 🟢     |
-| Bell forwarding                            | 🟢     | 🟢     | 🟠      | 🟠     | 🟠     |
-| Desktop notifications                      | 🟢     | 🟢     | 🟢      | 🟠     | 🟠     |
-| Client tray / menu                         | 🟢     | 🟢     | 🟠      | 🟠     | 🔴     |
-| Remote app system tray                     | 🟢     | 🟢     | 🟠      | 🔴     | 🔴     |
-| File transfer / URLs                       | 🟢     | 🟢     | 🟠      | 🔴     | 🔴     |
-| Printer forwarding                         | 🟢     | 🟢     | 🟠      | 🔴     | 🔴     |
-| Webcam forwarding                          | 🟢     | 🔴     | 🔴      | 🔴     | 🔴     |
-| Shared memory                              | 🟢     | 🔴     | 🔴      | 🟠     | 🔴     |
-| DPI / display sync                         | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     |
-| Remote logging / events                    | 🟢     | 🟢     | 🟠      | 🟠     | 🟠     |
-| Bandwidth adaptation                       | 🟢     | 🟠     | 🟠      | 🔴     | 🔴     |
+| Feature                                    | xpra  | html5 | vispra | rust  | go    | c     |
+|--------------------------------------------|:-----:|:-----:|:------:|:-----:|:-----:|:-----:|
+| Transports (tcp/ssl/ssh/ws/quic)           | 🟢🟢🟢🟢🟢 | 🔴🔴🔴🟢🟠 | 🔴🔴🔴🟢🟠  | 🟢🟢🟢🟢🔴 | 🟢🟢🟢🟢🔴 | 🟢🔴🔴🔴🔴 |
+| Transport security (tls/ssh/aes)           | 🟢🟢🟢   | 🟢🔴🟢   | 🟢🔴🟢    | 🟢🟢🔴   | 🟢🟢🔴   | 🔴🔴🔴   |
+| Authentication                             | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
+| Packet encoding (rencodeplus/yaml)         | 🟢🟢    | 🟢🔴    | 🟢🔴     | 🔴🟢    | 🟢🔴    | 🟢🔴    |
+| Compression in (lz4/zstd/brotli)           | 🟢🟢🟢   | 🟢🔴🟢   | 🟢🔴🟢    | 🟢🔴🔴   | 🟢🔴🔴   | 🟢🔴🔴   |
+| Compression out (lz4/zstd/brotli)          | 🟢🟢🟢   | 🔴🔴🔴   | 🔴🔴🔴    | 🔴🔴🔴   | 🔴🔴🔴   | 🔴🔴🔴   |
+| Packet types                               | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
+| Out-of-band chunks                         | 🟢     | 🟢     | 🟢      | 🟢     | 🟢     | 🟢     |
+| Forwarded windows                          | 🟢     | 🟢     | 🟢      | 🟢     | 🟢     | 🟢     |
+| Advanced window state                      | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
+| Override-redirect popups                   | 🟢     | 🟢     | 🟢      | 🟠     | 🟢     | 🟢     |
+| Picture encodings (rgb/jpeg/png/webp/avif) | 🟢🟢🟢🟢🟢 | 🟢🟢🟢🟢🟠 | 🟢🟢🟢🟢🟠  | 🔴🟢🟢🟢🔴 | 🟢🟢🟢🟢🔴 | 🟢🔴🔴🔴🔴 |
+| Video encodings (h264/vp8/vp9/av1)         | 🟢🟢🟢🟢  | 🟢🟢🔴🔴  | 🟢🟢🔴🔴   | 🟠🔴🔴🔴  | 🔴🔴🔴🔴  | 🔴🔴🔴🔴  |
+| Accelerated rendering                      | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
+| Speaker audio (opus/vorbis/mp3/flac/aac)   | 🟢🟢🟢🟢🟢 | 🟢🟢🟢🟢🟢 | 🟢🟢🟢🟢🟢  | 🟠🔴🔴🔴🔴 | 🔴🔴🔴🔴🔴 | 🔴🔴🔴🔴🔴 |
+| Microphone                                 | 🟢     | 🔴     | 🔴      | 🔴     | 🔴     | 🔴     |
+| Clipboard                                  | 🟢     | 🟠     | 🟠      | 🟠     | 🔴     | 🔴     |
+| Keyboard                                   | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
+| Pointer / input                            | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
+| Server cursors                             | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
+| Window icons                               | 🟢     | 🟢     | 🔴      | 🟠     | 🟢     | 🔴     |
+| Bell forwarding                            | 🟢     | 🟢     | 🟠      | 🟠     | 🟠     | 🟢     |
+| Desktop notifications                      | 🟢     | 🟢     | 🟢      | 🟠     | 🟠     | 🟠     |
+| Client tray / menu                         | 🟢     | 🟢     | 🟠      | 🟠     | 🔴     | 🔴     |
+| Remote app system tray                     | 🟢     | 🟢     | 🟠      | 🔴     | 🔴     | 🔴     |
+| File transfer / URLs                       | 🟢     | 🟢     | 🟠      | 🔴     | 🔴     | 🔴     |
+| Printer forwarding                         | 🟢     | 🟢     | 🟠      | 🔴     | 🔴     | 🔴     |
+| Webcam forwarding                          | 🟢     | 🔴     | 🔴      | 🔴     | 🔴     | 🔴     |
+| Shared memory                              | 🟢     | 🔴     | 🔴      | 🟠     | 🔴     | 🔴     |
+| DPI / display sync                         | 🟢     | 🟠     | 🟠      | 🟠     | 🟠     | 🟠     |
+| Remote logging / events                    | 🟢     | 🟢     | 🟠      | 🟠     | 🟠     | 🟠     |
+| Bandwidth adaptation                       | 🟢     | 🟠     | 🟠      | 🔴     | 🔴     | 🔴     |
 
 The sections below detail what each client actually implements.
 
@@ -264,6 +270,29 @@ Minimal client, usable on three window systems: Linux X11, Linux Wayland and MS 
 | DPI / display sync       | Windows per-monitor DPI awareness; nothing reported to the server                                                                                                    |
 | Remote logging / events  | Server lifecycle events and pings; no client-side remote logging                                                                                                     |
 | Bandwidth adaptation     | Pings only                                                                                                                                                           |
+
+### C client
+
+Minimal Linux X11 client, written clean-room from the protocol documentation; it speaks protocol 8.0 only, so it
+needs an xpra 8.0 development series server.
+
+| Feature                 | Notes                                                                                                                         |
+|-------------------------|-------------------------------------------------------------------------------------------------------------------------------|
+| Transports              | Also Unix domain sockets, including local `:N` displays                                                                       |
+| Authentication          | HMAC-SHA256 password via `XPRA_PASSWORD`, a password file or a terminal prompt                                                |
+| Packet types            | 6.5+ names in both directions                                                                                                 |
+| Out-of-band chunks      | Received and substituted back in, up to three per packet                                                                      |
+| Forwarded windows       | Create / destroy / draw / move / resize / raise / close                                                                       |
+| Advanced window state   | Title, transient-for and size constraints only                                                                                |
+| Picture encodings       | `rgb24` and `rgb32` in any channel order, raw or LZ4 compressed                                                               |
+| Accelerated rendering   | `XPutImage` from a client-side image; no `XShm`, no video acceleration                                                        |
+| Keyboard                | X11 keysym names and modifiers; no keymap upload                                                                              |
+| Pointer / input         | Pointer, buttons, wheel and focus                                                                                             |
+| Server cursors          | `raw` RGBA up to 256x256, in colour through libXcursor when installed, black and white otherwise; no cursor names, no scaling |
+| Bell forwarding         | X11 keyboard extension bell, on the window it belongs to                                                                      |
+| Desktop notifications   | Printed on stdout                                                                                                             |
+| DPI / display sync      | Screen size reported as a single monitor; no DPI                                                                              |
+| Remote logging / events | Server events printed on stdout and pings; no client-side remote logging                                                      |
 
 <div class="docs-section-heading" markdown="1">
 
