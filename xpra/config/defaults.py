@@ -330,7 +330,7 @@ def build_defaults(context: DefaultsContext) -> dict[str, Any]:
         "ssl-ca-certs"      : "default",
         "ssl-ca-data"       : "",
         "ssl-ciphers"       : "DEFAULT",
-        "ssl-client-verify-mode"   : "optional",
+        "ssl-client-verify-mode"   : "none",
         "ssl-server-verify-mode"   : "required",
         "ssl-verify-flags"  : "X509_STRICT",
         "ssl-check-hostname": True,

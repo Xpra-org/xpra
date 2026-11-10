@@ -22,11 +22,13 @@ ssl-cert = %(ssl_cert)s
 #ssl-ca-certs = /path/to/cacertsdir/
 
 # Whether to try to verify the client's certificates
-# and how to behave if verification fails:
+# and how to behave if verification fails.
+# The server does not use client certificates for authentication,
+# and any value other than "none" makes browsers prompt for a certificate:
 #ssl-client-verify-mode = none
 #ssl-client-verify-mode = optional
 #ssl-client-verify-mode = required
-ssl-client-verify-mode = optional
+ssl-client-verify-mode = none
 
 # Whether to try to verify the server's certificates
 # and how to behave if verification fails:
