@@ -34,11 +34,17 @@ The client advertises an `encoding` dictionary. The interoperability fields are:
 | `window-icon` | Encodings accepted for window icons |
 | `setting` | Requested default encoding |
 | `rgb_formats` | Raw RGB pixel formats the backing can paint |
-| `full_csc_modes` | Codec-to-colourspace conversion modes |
+| `full_csc_modes` | Pixel formats the client can decode for each encoding in the video pipeline |
 | `quality`, `min-quality` | Requested quality bounds |
 | `speed`, `min-speed` | Requested speed bounds |
 | `video_max_size` | Maximum video dimensions |
 | `batch` | Damage batching parameters |
+
+The `full_csc_modes` map applies to video codecs (`h264`, `h265`, `vp8`, `vp9`,
+`av1`) and to picture encodings (`jpeg`, `jpega`, `webp`) when used through the
+video pipeline. For example: `{"h264": ["YUV420P"], "jpeg": ["BGRX", "BGRA", "YUV420P"], "jpega": ["BGRA", "RGBA"], "webp": ["BGRX", "BGRA"]}`.
+A video codec without an entry is never used. A picture encoding without an
+entry is only sent as a plain picture, never through the video pipeline.
 
 Codec profile maps such as `h264` extend these fields. Unknown codec diagnostic
 and version fields are advisory.
