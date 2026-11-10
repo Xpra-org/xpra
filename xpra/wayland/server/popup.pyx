@@ -9,6 +9,7 @@ from libc.stdint cimport uintptr_t
 
 from xpra.log import Logger
 from xpra.wayland.server.wayland_surface cimport WaylandSurface, next_wid
+from xpra.wayland.server.surface cimport get_clipped_opaque_region
 from xpra.wayland.server.wlroots cimport (
     wl_listener, wlr_box,
     wlr_xdg_popup,
@@ -55,6 +56,18 @@ cdef class Popup(WaylandSurface):
 
     def get_position(self) -> tuple[int, int]:
         return self.position()
+
+    def get_opaque_region(self) -> tuple:
+        """Return the committed opaque region in Xpra window coordinates.
+
+        As for toplevels, Xpra captures only xdg_surface.geometry.
+        """
+        if self.wlr_xdg_surface == NULL or self.wlr_surface == NULL:
+            return ()
+        cdef wlr_box *geometry = &self.wlr_xdg_surface.geometry
+        return get_clipped_opaque_region(&self.wlr_surface.opaque_region,
+                                         geometry.x, geometry.y,
+                                         geometry.width, geometry.height)
 
     def resize(self, width: int, height: int) -> None:
         log("%s.resize(%i, %i): popup size is controlled by the Wayland client",

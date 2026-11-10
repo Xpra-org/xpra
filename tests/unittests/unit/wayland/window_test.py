@@ -9,6 +9,7 @@ import unittest
 from types import ModuleType
 from unittest.mock import Mock, patch
 
+from xpra.common import is_covered_by_opaque_region
 from xpra.util.objects import typedict
 from xpra.net.common import Packet
 # `load_window_server_class` restores `sys.modules` wholesale, which drops every
@@ -438,6 +439,30 @@ class WaylandWindowServerCommitTest(unittest.TestCase):
             (("title", "New title"),),
             (("app-id", "com.example.Application"),),
         ])
+
+
+class WaylandPopupOpaqueRegionTest(unittest.TestCase):
+
+    def test_popup_publishes_its_opaque_region(self):
+        server = Mock()
+        server.get_window.return_value = None
+        server.pending_popups = {}
+        server._popup_parent_window_wid.return_value = 7
+        server.update_opaque_region.side_effect = WaylandWindowServer.update_opaque_region
+        popup = Mock(wid=9)
+        popup.get_client_pid.return_value = 1234
+        popup.get_colourspace.return_value = ""
+        popup.get_content_types.return_value = ()
+        popup.get_opaque_region.return_value = ()
+        # the window sources check the region of a new popup before it commits:
+        window = WaylandWindowServer._ensure_popup_window(server, 7, popup, (10, 20), (120, 90))
+        self.addCleanup(window.unmanage)
+        self.assertFalse(is_covered_by_opaque_region(window.get("opaque-region", ()), 120, 90))
+        # then an opaque menu commits its opaque region:
+        server.get_window.return_value = window
+        server.get_surface.return_value.get_opaque_region.return_value = ((0, 0, 120, 90),)
+        WaylandWindowServer.popup_commit(server, 9, True, (10, 20), (120, 90), True)
+        self.assertTrue(is_covered_by_opaque_region(window.get("opaque-region", ()), 120, 90))
 
 
 class WaylandWindowServerConfigureTest(unittest.TestCase):
