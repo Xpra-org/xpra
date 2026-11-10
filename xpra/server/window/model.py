@@ -110,12 +110,14 @@ class WindowModelStub(AutoPropGObjectMixin, GObject.GObject):
 
     def get(self, name: str, default_value=None) -> object:
         """ Allows us to avoid defining all the attributes we may ever query,
-            returns the default value if the property does not exist.
+            returns the default value if the property does not exist or is not set.
         """
         logger = self.get_logger(name)
         if name in set(self._property_names + self._dynamic_property_names + self._internal_property_names):
             v = self.get_property(name)
             logger("get(%s, %s) using get_property=%s", name, default_value, v)
+            if v is None:
+                v = default_value
         else:
             v = default_value
             if name not in ("override-redirect", "tray"):
