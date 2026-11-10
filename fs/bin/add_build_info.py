@@ -294,17 +294,18 @@ def get_libs() -> "dict[str, Any]":
 
 def get_python_libs() -> "dict[str, Any]":
     # we could potentially limit this data collection to win32 and macos?
+    # use the metadata of the interpreter running the build,
+    # `pip` may not be installed for it or may belong to a different one:
+    from importlib.metadata import distributions
     python_libs: dict[str, Any] = {}
-    returncode, out, _ = get_status_output(["pip3", "freeze"])
-    if returncode == 0:
-        python_libs: dict[str, Any] = {}
-        for line in out.decode().splitlines():
-            parts = line.split("==")
-            if len(parts) != 2:
-                continue
-            pkg_name, version = parts
-            python_libs[pkg_name] = version
-    return python_libs
+    for dist in distributions():
+        # broken metadata may be missing these keys, `[]` will raise `KeyError` in future versions:
+        name = dist.metadata.get("Name")
+        version = dist.metadata.get("Version")
+        if name and version:
+            # the first one found on `sys.path` is the one that gets imported:
+            python_libs.setdefault(name, version)
+    return dict(sorted(python_libs.items(), key=lambda item: item[0].lower()))
 
 
 def record_build_info() -> None:
