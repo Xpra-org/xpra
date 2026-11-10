@@ -23,7 +23,12 @@ class AutoPropGObjectMixin:
         self._gproperties = {}
 
     def do_get_property(self, pspec):
-        return self._gproperties.get(pspec.name)
+        try:
+            return self._gproperties[pspec.name]
+        except KeyError:
+            # not set yet: use the default value declared for scalar types,
+            # `TYPE_PYOBJECT` properties have none and remain `None`:
+            return getattr(pspec, "default_value", None)
 
     def do_set_property(self, pspec, value):
         self._internal_set_property(pspec.name, value)

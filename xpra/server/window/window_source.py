@@ -243,7 +243,7 @@ class WindowSource(WindowIconSource):
         self.window_dimensions = ww, wh
         #where the window is mapped on the client:
         self.mapped_at = None
-        self.fullscreen : bool = not self.is_tray and window.get("fullscreen")
+        self.fullscreen : bool = not self.is_tray and bool(window.get("fullscreen"))
         if default_encoding_options.get("scaling.control") is None:
             self.scaling_control = None     #means "auto"
         else:
@@ -318,7 +318,7 @@ class WindowSource(WindowIconSource):
             self.window_type = set(self.window.get_property("window-type"))
             sid = window.connect("notify::window-type", self.window_type_changed)
             self.window_signal_handlers.append(sid)
-        self._opaque_region = self.window.get("opaque-region", ())
+        self._opaque_region = self.window.get("opaque-region", ()) or ()
         if "opaque-region" in dyn_props:
             sid = window.connect("notify::opaque-region", self.window_opaque_region_changed)
             self.window_signal_handlers.append(sid)
@@ -721,7 +721,7 @@ class WindowSource(WindowIconSource):
         self.reconfigure(True)
 
     def _fullscreen_changed(self, _window, *_args) -> bool:
-        self.fullscreen = self.window.get_property("fullscreen")
+        self.fullscreen = bool(self.window.get_property("fullscreen"))
         log("window fullscreen state changed: %s", self.fullscreen)
         self.reconfigure(True)
         return True
