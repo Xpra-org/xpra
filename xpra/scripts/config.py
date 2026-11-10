@@ -405,6 +405,9 @@ def read_xpra_conf(conf_dir:str, xpra_conf_filename:str=DEFAULT_XPRA_CONF_FILENA
         Reads an <xpra_conf_filename> file from the given directory,
         returns a dict with values as strings and arrays of strings.
     """
+    # `conf.d` files are sorted so that their numeric prefix defines the order
+    # in which they are applied, ie: "90_configure_tool.conf" overrides "55_server_x11.conf"
+    # and `xpra.conf` comes last so that it overrides them all:
     files = conf_files(conf_dir, xpra_conf_filename)
     debug(f"read_xpra_conf({conf_dir}, {xpra_conf_filename}) conf files: {files}")
     d = {}
