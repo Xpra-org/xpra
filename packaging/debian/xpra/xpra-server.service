@@ -7,6 +7,7 @@ Requires=xpra-server.socket
 
 [Service]
 Type=simple
+WorkingDirectory=-/run/xpra/proxy
 EnvironmentFile=-/etc/sysconfig/xpra
 ExecStart=/usr/bin/xpra proxy :14500 --daemon=no \
     --tcp-auth=${TCP_AUTH} \
