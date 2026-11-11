@@ -5,7 +5,9 @@
 
 #we don't want to depend on libcuda via RPM dependencies
 #so that we can install NVidia drivers without using RPM packages:
-%define __requires_exclude ^libcuda.*$
+#xpra only uses `pycuda.driver` and `pycuda.gl`, which do not need pytools, platformdirs or mako
+#(only `pycuda.compiler`, `pycuda.gpuarray`, etc do), and pytools is not available everywhere (ie: EL10):
+%global __requires_exclude ^(libcuda.*|python3\\.[0-9]+t?dist\\((pytools|platformdirs|mako)\\).*)$
 
 %define _disable_source_fetch 0
 %if "%{getenv:PYTHON3}" == ""
@@ -30,7 +32,7 @@
 
 Name:           %{py3rpmname}-pycuda
 Version:        2026.1
-Release:        2
+Release:        3
 URL:            http://mathema.tician.de/software/pycuda
 Summary:        Python3 wrapper CUDA
 License:        MIT
@@ -49,10 +51,10 @@ BuildRequires:  boost-python3-devel
 BuildRequires:  libglvnd-devel
 BuildRequires:  cuda
 Requires:       %{py3rpmname}
-Requires:       %{py3rpmname}-decorator
 Requires:       %{py3rpmname}-numpy
-Requires:       %{py3rpmname}-pytools
-Requires:       %{py3rpmname}-six
+Recommends:     %{py3rpmname}-pytools
+Recommends:     %{py3rpmname}-platformdirs
+Recommends:     %{py3rpmname}-mako
 Suggests:       nvidia-driver-cuda-libs
 
 %description
@@ -101,6 +103,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/pycuda*
 
 %changelog
+* Thu Nov 12 2026 Antoine Martin <antoine@xpra.org> - 2026.1-3
+- pytools, platformdirs and mako are optional, decorator and six are not used
+
 * Wed Oct 21 2026 Antoine Martin <antoine@xpra.org> - 2026.1-2
 - the package dependencies were part of the description
 
