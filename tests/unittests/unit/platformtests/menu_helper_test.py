@@ -118,8 +118,10 @@ class TestPyxdgAstError(unittest.TestCase):
             raise raise_from_pyxdg_menu(TypeError("ast.Expression.__init__ got an unexpected keyword argument 'lineno'"))
 
         log = Mock()
+        # seccomp is optional and its menu policy is Linux-specific.
+        seccomp_menu = SimpleNamespace(is_enabled=lambda: False)
         with patch.object(Menu, "parse", parse), \
-             patch("xpra.seccomp.menu.is_enabled", return_value=False), \
+             patch.dict(sys.modules, {"xpra.seccomp.menu": seccomp_menu}), \
              patch.object(self.menu_helper, "get_pyxdg_version", return_value="0.28"), \
              patch.object(self.menu_helper, "first_time", return_value=True), \
              patch.object(self.menu_helper, "log", log), \
