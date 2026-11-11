@@ -12,8 +12,8 @@
 %endif
 
 Name:           %{py3rpmname}-pyxdg
-%global tag     v0.29-rc1
-Version:        0.29~rc1
+%global tag     v0.29-rc2
+Version:        0.29~rc2
 Release:        1%{?dist}
 Summary:		Python2 library to access freedesktop.org standards
 License:        LGPLv2
@@ -35,7 +35,7 @@ package contains a Python 2 version of PyXDG.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "843bf94b105c0444adb4abdd707e6cc8af558950671439518341311076e71bf1" ]; then
+if [ "${sha256}" != "473913d88d18f80443d0dc6f83fcba82425e1fb81c4b1b283744fd45e361c74b" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -54,6 +54,9 @@ fi
 %{python3_sitelib}/pyxdg-*.egg-info
 
 %changelog
+* Wed Nov 11 2026 Antoine Martin <antoine@xpra.org> - 0.29~rc2-1
+- build v0.29-rc2: public IconTheme get_themes() and clear_cache(), scalable icon size fixes
+
 * Wed Nov 11 2026 Antoine Martin <antoine@xpra.org> - 0.29~rc1-1
 - switch to new upstream: https://github.com/Xpra-org/pyxdg
 - build v0.29-rc1
