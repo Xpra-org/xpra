@@ -17,7 +17,7 @@ four layers, and a change usually has to land in more than one:
 1. **`## Client implementations`** — identity only: link, maintainer, license. No languages here;
    they belong to the size table below, which says more about them.
 2. **`## Project size and build`** — one row per client: languages, source size, binary size, build
-   time. Measured, not estimated — see [Measuring the size table](#measuring-the-size-table).
+   time, time to first window. Measured, not estimated — see [Measuring the size table](#measuring-the-size-table).
 3. **The feature matrix** — one narrow `| Feature | xpra | html5 | vispra | rust | go |` table
    carrying only markers, so it fits on screen. No prose, ever; a qualifier here re-widens the table.
 4. **A `###` section per client** — one intro sentence carrying what has no matrix row (maturity,
@@ -205,6 +205,33 @@ Cython already generated in the tree, so a first-ever build is longer than the m
 Windows and macOS builds are the ones that take over ten minutes, which no Linux measurement will
 show. The browser clients need their dependencies installed already (`npm ci` time is not build
 time).
+
+**Time to first window**: from executing the client until the server's `xterm` is mapped on the
+client's display, median of 8-10 runs, with the helpers in `ttfw/`. Everything runs on two free
+`Xvfb` displays — never `:0` or a display you did not start: the server on one, each client on the
+other, where `ttfw/watch.py` timestamps the `MapNotify` of the window titled `ttfw-xterm`:
+
+```sh
+T=.claude/skills/update-client-feature-table/ttfw
+Xvfb :152 -screen 0 1920x1080x24 -nolisten tcp &
+xpra start :151 --daemon=no --start="xterm -T ttfw-xterm -xrm 'XTerm*allowTitleOps: false'" \
+    --bind-tcp=127.0.0.1:10151 --html=$HOME/projects/xpra-html5/html5 --audio=no --mdns=no &
+python3 $T/run.py :152 10 -- xpra attach tcp://127.0.0.1:10151/ --opengl=no
+python3 $T/run.py :152 10 -- go-xpra tcp://127.0.0.1:10151/       # same for rust-xpra and c-xpra
+DISPLAY=:152 chromium-browser --user-data-dir=$SCRATCH/chrome --remote-debugging-port=10154 &
+python3 $T/cdp.py 10154 8 "http://127.0.0.1:10151/"                # xpra-html5, served by the server
+```
+
+- `allowTitleOps: false` stops the shell prompt from renaming the xterm, which the watcher matches on.
+- The browser clients are timed from navigation in an already running browser, each run in a fresh
+  browser context so nothing is cached; `cdp.py` waits for the title in the page plus a window
+  sized canvas. vispra is served separately (`python3 -m http.server` in its `dist/`, URL
+  `?host=127.0.0.1&port=10151`) and then needs its origin in `--http-origin=auto,<origin>`.
+- The server and the clients must speak the same protocol: rust-xpra encodes packets with `yaml`,
+  so the server's interpreter needs PyYAML; distro packages of a client can lag the protocol, so
+  build the clone into the scratch directory when the packaged one is refused.
+- The native client is measured with `--opengl=no`, and the doc says so: the OpenGL probe adds to
+  its startup and depends on the machine's drivers.
 
 ## Rules that keep the comparison honest
 
