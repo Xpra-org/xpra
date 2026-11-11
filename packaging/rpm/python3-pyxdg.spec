@@ -14,7 +14,7 @@
 Name:           %{py3rpmname}-pyxdg
 Version:        0.28
 Release:        1%{?dist}
-Summary:		Python2 library to access freedesktop.org standards
+Summary:		Python library to access freedesktop.org standards
 License:        LGPLv2
 URL:            http://freedesktop.org/Software/pyxdg
 Source0:        https://files.pythonhosted.org/packages/source/p/pyxdg/pyxdg-%{version}.tar.gz
@@ -25,7 +25,6 @@ BuildRequires:	hicolor-icon-theme
 BuildRequires:	shared-mime-info
 BuildRequires:  %{py3rpmname}-devel
 BuildRequires:  %{py3rpmname}-setuptools
-%{?python_provide:%python_provide python2-pyxdg}
 Provides:       pyxdg = %{version}-%{release}
 Obsoletes:      pyxdg < 0.25-10
 
