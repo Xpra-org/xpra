@@ -13,7 +13,11 @@ from unittest.mock import Mock, patch
 from xpra.common import is_covered_by_opaque_region
 # Import the model before patch.dict restores sys.modules: GObject cannot be
 # imported a second time after being removed from sys.modules.
-from xpra.wayland.models.window import Window
+try:
+    from xpra.wayland.models.window import Window
+except ImportError:
+    # the wayland bindings are not installed:
+    Window = None
 
 
 def load_window_server_class():
@@ -156,7 +160,8 @@ class WaylandPopupOpaqueRegionTest(unittest.TestCase):
 
 
 def main():
-    unittest.main()
+    if Window is not None:
+        unittest.main()
 
 
 if __name__ == "__main__":
