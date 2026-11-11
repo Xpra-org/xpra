@@ -61,7 +61,9 @@ This is a usable client.
 * cursors, window icons, bell ([cursor](../Subsystems/Cursor.md), [window](../Subsystems/Window.md))
 * the clipboard ([clipboard](../Subsystems/Clipboard.md))
 * notifications ([notification](../Subsystems/Notification.md))
-* more picture encodings: `jpeg`, `webp`, and the `scroll` encoding
+* more picture encodings: `jpeg`, `webp`, and the `scroll` encoding; with lossy encodings,
+  send `encoding.auto_refresh_delay` so the server refreshes them losslessly
+  ([auto-refresh](../Subsystems/Encoding.md#auto-refresh))
 * video: `h264`, `vp8`, `vp9`, `av1` ([encoding](../Subsystems/Encoding.md#video-streams))
 
 **Level 3 — everything else**

@@ -240,8 +240,23 @@ bandwidth and cause performance issues:
   [content-categories](https://github.com/Xpra-org/xpra/tree/master/fs/etc/xpra/content-categories/10_default.conf)
   mappings
 - raise `min-quality` and/or lower `min-speed`
-- consider lowering the `auto-refresh` delay, while remembering that lossless
-  refreshes can be costly
+- consider lowering the [auto-refresh](#auto-refresh) delay, while remembering
+  that lossless refreshes can be costly
+
+</section>
+
+<section class="docs-card" markdown="1">
+
+### Auto-refresh
+
+Areas sent with a lossy encoding are refreshed losslessly once they stop changing.
+`auto-refresh-delay` is the minimum delay in seconds (default: `0.15`), the server
+increases it for large windows, low quality or speed, and limited bandwidth.
+`0` disables it.
+
+Change it on a running session with
+`xpra control :DISPLAY auto-refresh 0.5 [WID...]`, force a refresh with
+`xpra control :DISPLAY refresh [WID...]`, and debug it with `-d refresh`.
 
 </section>
 

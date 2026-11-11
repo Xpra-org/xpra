@@ -1865,9 +1865,12 @@ set to automatic mode. See \fIspeed\fP above.
 This option sets a delay after which the windows are automatically
 refreshed using a lossless frame if their contents had been updated using
 a lossy encoding previously.
-The delay is a floating-point number and is in seconds.
-This option is enabled by default with a delay of 0.25 seconds.
+The delay is a floating-point number and is in seconds,
+it is the minimum delay: the server increases it for large windows,
+low quality or speed settings, network congestion and bandwidth limits.
+The default is 0.15 seconds, \fI0\fP disables the automatic refresh.
 This option is only relevant when using a lossy encoding.
+It can be changed at runtime with \fBxpra control\fP \fIDISPLAY\fP \fBauto-refresh\fP \fIDELAY\fP.
 .TP
 \fB\-\-shortcut\-modifiers\fP=\fIMODIFIERS\fP
 Defines the default shortcut modifiers required by the \fIkey-shortcuts\fP,

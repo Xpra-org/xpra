@@ -9,6 +9,7 @@ each feature involves and where it is specified.
 | TLS upgrade | `ssl-upgrade: true` | `ssl-upgrade` | [protocol](../Network/Protocol.md#53-authentication-and-upgrade-packets) |
 | Windows | `window`, `metadata.supported` | `window-*` | [window](../Subsystems/Window.md) |
 | Picture encodings | `encoding` | `window-draw`, `window-ack`, `encoding-*` | [encoding](../Subsystems/Encoding.md) |
+| Lossless auto-refresh | `encoding.auto_refresh_delay`, `encoding.auto_refresh_encodings` | `window-draw` | [encoding](../Subsystems/Encoding.md#auto-refresh) |
 | Display configuration | `display` | `display-*` | [display](../Subsystems/Display.md) |
 | Keyboard | `keyboard`, `keymap`, `modifiers`, `key_repeat` | `keyboard-*` | [keyboard](../Subsystems/Keyboard.md) |
 | Pointer | `pointer` | `pointer-*` | [pointer](../Subsystems/Pointer.md) |

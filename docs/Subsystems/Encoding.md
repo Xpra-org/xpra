@@ -46,6 +46,7 @@ needed by a client that wants windows; everything else has a server default.
 | `video_max_size` | pair of integers | `(8192, 8192)` | Largest video frame the decoders can handle |
 | `video_b_frames` | list of strings | `()` | Video encodings for which the client can handle B-frames (delayed frames) |
 | `batch` | map | server defaults | Damage batching: `always`, `min_delay`, `max_delay`, `max_events`, `max_pixels`, `time_unit`, `delay` |
+| `auto_refresh_delay` | integer, milliseconds | `0` | Minimum delay before lossy updates are refreshed losslessly, `0` disables it, see [auto-refresh](#auto-refresh). An `encoding-config` without this key leaves it unchanged |
 | `auto_refresh_encodings` | list of strings | automatic | Encodings to use for the lossless refresh after lossy updates |
 | `full_frames_only` | boolean | `False` | Always send whole window frames, never sub-regions |
 | `bit-depth` | integer | `24` | Bit depth of the client windows |
@@ -228,6 +229,35 @@ it logs a warning, discards the backlog and sends a full refresh. A client that
 never acknowledges therefore gets updates in bursts every few seconds instead of
 a continuous stream. With [mmap](MMAP.md), the acknowledgement is also what frees
 the shared memory area.
+
+<div class="docs-section-heading" markdown="1">
+
+## Auto-refresh
+
+</div>
+
+Lossy updates (`jpeg`, `webp`, video, or any encoding used with a quality below 100)
+leave artifacts on screen. The server keeps track of the areas it sent lossily, and once
+an area has stopped changing for long enough, it sends it again at full quality.
+
+The refresh is an ordinary `window-draw`: the client decodes, paints and acknowledges it
+like any other, there is nothing specific to implement. A client only needs to opt in by
+sending `auto_refresh_delay` in its `encoding` capabilities: without it, lossy updates
+are never refreshed. The reference client sends `150` (the `auto-refresh-delay` option).
+
+* the delay: the client value is the minimum, the server raises it for each window
+  depending on the window size, the current quality and speed, the network congestion,
+  the batch delay and the bandwidth limit (shorter for `text` content, longer for `video`)
+* the encoding: the first of `auto_refresh_encodings` (or of the server's defaults) that
+  both sides support, preferring encodings with an alpha channel for transparent windows
+* the quality: lossless, or almost lossless (`80` to `99`) when the window quality is low
+  and bandwidth is scarce
+* the video region of a window is refreshed separately, once the video stream stops
+  updating it
+* nothing is refreshed over [mmap](MMAP.md), which is always lossless
+
+Before v8, clients sent `auto_refresh_delay` at the top level of the `hello`; servers
+still read it from there unless `XPRA_BACKWARDS_COMPATIBLE=0`.
 
 <div class="docs-section-heading" markdown="1">
 
