@@ -91,7 +91,10 @@ class DisplayManager(StubServerMixin):
             out,err = proc.communicate()
             gllog("out(%s)=%s", cmd, out)
             gllog("err(%s)=%s", cmd, err)
-            if proc.returncode==0:
+            returncode = proc.returncode
+            del proc
+            gllog("returncode=%s", returncode)
+            if returncode==0:
                 #parse output:
                 for line in out.splitlines():
                     parts = bytestostr(line).split("=")
@@ -119,9 +122,14 @@ class DisplayManager(StubServerMixin):
                 else:
                     gllog.info("No OpenGL information available")
             else:
-                props["error-details"] = bytestostr(err).strip("\n\r")
-                error = "unknown error"
-                for x in str(err).splitlines():
+                error = bytestostr(err).strip("\n\r ")
+                props["error-details"] = error
+                gllog("error=%s", error)
+                if not error and -16 < returncode < 0:
+                    from xpra.os_util import SIGNAMES
+                    error = SIGNAMES.get(-returncode, "unknown execution error")
+                error = error or "unknown error"
+                for x in error.splitlines():
                     if x.startswith("RuntimeError: "):
                         error = x[len("RuntimeError: "):]
                         break
