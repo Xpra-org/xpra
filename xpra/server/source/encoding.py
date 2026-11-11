@@ -11,7 +11,7 @@ from time import sleep, monotonic
 from collections.abc import Sequence
 
 from xpra.os_util import gi_import
-from xpra.net.common import FULL_INFO
+from xpra.net.common import FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net.constants import TCP_SOCKTYPES
 from xpra.net.packet_type import ENCODING_SET
 from xpra.server.common import may_update_bandwidth_limits, wants_windows, validate_rgb_formats
@@ -338,6 +338,14 @@ class EncodingsConnection(StubClientConnection):
         self.rgb_formats = validate_rgb_formats(eopts.strtupleget("rgb_formats"), self.core_encodings)
 
         self.set_encoding(eopts.strget("setting") or eopts.strget(""), None)
+        # in milliseconds, 0 disables the lossless auto-refresh,
+        # left unchanged when missing (ie: from an `encoding-config` packet):
+        if "auto_refresh_delay" in eopts:
+            self.auto_refresh_delay = eopts.intget("auto_refresh_delay", 0)
+        elif BACKWARDS_COMPATIBLE and "auto_refresh_delay" in c:
+            # clients older than v8 send it at the top level:
+            self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
+        log("auto_refresh_delay=%i", self.auto_refresh_delay)
         self.icons_encoding_options.update(self.encoding_options.pop("icons", None) or {})
         log("encoding options: %s", self.encoding_options)
         log("icons encoding options: %s", self.icons_encoding_options)
