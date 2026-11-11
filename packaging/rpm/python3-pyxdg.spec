@@ -15,7 +15,7 @@ Name:           %{py3rpmname}-pyxdg
 %global tag     v0.29-rc2
 Version:        0.29~rc2
 Release:        1%{?dist}
-Summary:		Python2 library to access freedesktop.org standards
+Summary:		Python library to access freedesktop.org standards
 License:        LGPLv2
 URL:            https://github.com/Xpra-org/pyxdg
 Source0:        https://github.com/Xpra-org/pyxdg/archive/refs/tags/%{tag}/pyxdg-%{tag}.tar.gz
@@ -25,7 +25,6 @@ BuildRequires:	hicolor-icon-theme
 BuildRequires:	shared-mime-info
 BuildRequires:  %{py3rpmname}-devel
 BuildRequires:  %{py3rpmname}-setuptools
-%{?python_provide:%python_provide python2-pyxdg}
 Provides:       pyxdg = %{version}-%{release}
 Obsoletes:      pyxdg < 0.25-10
 
