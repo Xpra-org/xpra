@@ -10,6 +10,7 @@ using python-xdg
 """
 
 import os
+import re
 import sys
 import glob
 import hashlib
@@ -609,6 +610,48 @@ def load_xdg_menu_data() -> dict:
     return menu_data
 
 
+PYXDG_URL = "https://github.com/Xpra-org/pyxdg"
+
+
+def get_pyxdg_version() -> str:
+    try:
+        import xdg  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        return ""
+    return str(getattr(xdg, "__version__", ""))
+
+
+def is_pyxdg_ast_error(e: BaseException) -> bool:
+    """
+    pyxdg versions older than 0.29 use `ast` APIs which newer Python versions have removed:
+    `ast.Str` (Python 3.14) and the location arguments of `ast.Expression` (Python 3.15),
+    so parsing any menu with rules fails, whatever the prefix or `XDG_CONFIG_DIRS`.
+    """
+    if not isinstance(e, (TypeError, AttributeError)) or "ast" not in str(e):
+        return False
+    filename = ""
+    tb = e.__traceback__
+    while tb:
+        filename = tb.tb_frame.f_code.co_filename
+        tb = tb.tb_next
+    if not filename.endswith(os.path.join("xdg", "Menu.py")):
+        return False
+    # ie: "0.28" -> (0, 28), patched distro packages may still fail with a recent python:
+    version = tuple(int(x) for x in re.findall(r"\d+", get_pyxdg_version())[:2])
+    return version < (0, 29)
+
+
+def log_pyxdg_ast_error(e: BaseException) -> None:
+    if not first_time("xdg-menu-error"):
+        return
+    version = get_pyxdg_version() or "(unknown version)"
+    log.error("Error parsing xdg menu data:")
+    log.estr(e)
+    log.error(f" pyxdg {version} is not compatible with Python {sys.version_info.major}.{sys.version_info.minor}")
+    log.error(" please upgrade to pyxdg 0.29 or later:")
+    log.error(f" {PYXDG_URL}")
+
+
 def do_load_xdg_menu_data():
     sleep(MENU_DELAY)
     error = None
@@ -672,6 +715,10 @@ def do_load_xdg_menu_data():
                         return parse_menu()
                 except Exception as e:
                     log("load_xdg_menu_data()", exc_info=True)
+                    if is_pyxdg_ast_error(e):
+                        # retrying with other settings cannot help:
+                        log_pyxdg_ast_error(e)
+                        return {}
                     error = e
     assert error
     if not os.path.exists("/etc/xdg/menus"):
