@@ -9,6 +9,7 @@ from shutil import copy2
 from xpra.config import InitExit
 from xpra.exit_codes import ExitCode
 from xpra.platform.posix.paths import do_get_resources_dir
+from xpra.util.env import get_xdg_home
 
 
 def get_autostart_file() -> str:
@@ -22,7 +23,7 @@ def get_autostart_file() -> str:
             if os.path.exists(adir) and os.path.isdir(adir):
                 break
     else:
-        adir = os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"), "autostart")
+        adir = os.path.join(get_xdg_home("XDG_CONFIG_HOME"), "autostart")
     if not adir:
         return ""
     adir = os.path.expanduser(adir)

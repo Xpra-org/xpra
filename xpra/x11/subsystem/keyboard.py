@@ -15,7 +15,7 @@ from xpra.os_util import POSIX
 from xpra.server.source.keyboard import KeyboardConnection
 from xpra.util.pid import load_pid, write_pid
 from xpra.util.child_reaper import KILL_CHILD_PROCESS_GROUP, ProcInfo, get_child_reaper, pid_exists, stop_child_process
-from xpra.util.env import envbool
+from xpra.util.env import envbool, get_xdg_home
 from xpra.util.io import find_libexec_command, which
 from xpra.util.objects import typedict, Scheduler
 from xpra.server.subsystem.keyboard import KeyboardManager
@@ -86,8 +86,8 @@ def get_ibus_dirs() -> tuple[str, str]:
     Returns the directory containing the ibus address files,
     and the one containing its socket - creating them if needed.
     """
-    config_dir = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
-    cache_dir = os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache")
+    config_dir = os.path.expanduser(get_xdg_home("XDG_CONFIG_HOME"))
+    cache_dir = os.path.expanduser(get_xdg_home("XDG_CACHE_HOME"))
     dirs = os.path.join(config_dir, "ibus", "bus"), os.path.join(cache_dir, "ibus")
     for path in dirs:
         os.makedirs(path, mode=0o700, exist_ok=True)

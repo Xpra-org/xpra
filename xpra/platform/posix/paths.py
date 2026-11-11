@@ -137,7 +137,8 @@ def do_get_system_menu_dirs() -> list[str]:
 
 def do_get_state_dir() -> str:
     if os.getuid() > 0:
-        xdg_state = os.path.expanduser(os.environ.get("XDG_STATE_HOME", "~/.local/state"))
+        from xpra.util.env import get_xdg_home
+        xdg_state = os.path.expanduser(get_xdg_home("XDG_STATE_HOME"))
         state_dir = os.path.expanduser(xdg_state)
         if state_dir and os.path.exists(state_dir):
             xpra_state = os.path.join(state_dir, "xpra")
@@ -154,7 +155,8 @@ def do_get_user_conf_dirs(uid) -> list[str]:
         uid = os.getuid()
     dirs = []
     if uid > 0:
-        dirs += [os.path.join(os.environ.get("XDG_CONFIG_HOME", "~/.config"), "xpra")]
+        from xpra.util.env import get_xdg_home
+        dirs += [os.path.join(get_xdg_home("XDG_CONFIG_HOME"), "xpra")]
         dirs.append("~/.xpra")
     return dirs
 
@@ -249,7 +251,8 @@ def _get_xdg_download_dir() -> str:
 
 
 def _get_user_dirs_download_dir() -> str:
-    config_home = os.environ.get("XDG_CONFIG_HOME", "~/.config")
+    from xpra.util.env import get_xdg_home
+    config_home = get_xdg_home("XDG_CONFIG_HOME")
     user_dirs = os.path.expanduser(os.path.join(config_home, "user-dirs.dirs"))
     try:
         with open(user_dirs, encoding="utf-8") as f:

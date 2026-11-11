@@ -18,6 +18,7 @@ import tempfile
 from collections.abc import Iterator
 
 from xpra.log import Logger
+from xpra.util.env import get_xdg_home
 from xpra.os_util import LINUX
 
 log = Logger("util")
@@ -124,10 +125,10 @@ def get_landlock_read_paths() -> tuple[str, ...]:
     paths += [
         os.getcwd(),
         os.environ.get("HOME", "~"),
-        os.environ.get("XDG_CONFIG_HOME", "~/.config"),
-        os.environ.get("XDG_CACHE_HOME", "~/.cache"),
-        os.environ.get("XDG_DATA_HOME", "~/.local/share"),
-        os.environ.get("XDG_STATE_HOME", "~/.local/state"),
+        get_xdg_home("XDG_CONFIG_HOME"),
+        get_xdg_home("XDG_CACHE_HOME"),
+        get_xdg_home("XDG_DATA_HOME"),
+        get_xdg_home("XDG_STATE_HOME"),
         os.environ.get("XDG_RUNTIME_DIR", ""),
         sys.prefix,
         sys.base_prefix,
@@ -191,11 +192,11 @@ def get_strict_landlock_read_paths() -> tuple[str, ...]:
     if os.path.realpath(resources) != os.path.realpath(os.getcwd()):
         paths.append(resources)
     paths += get_user_conf_dirs()
-    for name, default, leaves in (
-        ("XDG_CONFIG_HOME", "~/.config", ("gtk-3.0", "gtk-4.0", "fontconfig", "pulse")),
-        ("XDG_DATA_HOME", "~/.local/share", ("fonts", "icons", "themes")),
+    for name, leaves in (
+        ("XDG_CONFIG_HOME", ("gtk-3.0", "gtk-4.0", "fontconfig", "pulse")),
+        ("XDG_DATA_HOME", ("fonts", "icons", "themes")),
     ):
-        paths += [os.path.join(os.environ.get(name, default), leaf) for leaf in leaves]
+        paths += [os.path.join(get_xdg_home(name), leaf) for leaf in leaves]
     paths += ["~/.fonts", "~/.icons", "~/.themes", os.environ.get("XAUTHORITY", "~/.Xauthority")]
     return tuple(paths)
 

@@ -39,6 +39,29 @@ def hasenv(name: str) -> bool:
     return os.environ.get(name) is not None
 
 
+XDG_HOME_DEFAULTS: dict[str, str] = {
+    "XDG_CONFIG_HOME": "~/.config",
+    "XDG_CACHE_HOME": "~/.cache",
+    "XDG_DATA_HOME": "~/.local/share",
+    "XDG_STATE_HOME": "~/.local/state",
+}
+
+
+def get_xdg_home(name: str) -> str:
+    """
+    Returns the value of an XDG base directory variable, ie: `XDG_CACHE_HOME`,
+    or its default when it is unset, empty or relative - as per the spec:
+    "If an implementation encounters a relative path in any of these variables
+    it should consider the path invalid and ignore it."
+    The default is not expanded, ie: "~/.cache"
+    """
+    default = XDG_HOME_DEFAULTS[name]
+    value = os.environ.get(name, "")
+    if value and os.path.isabs(value):
+        return value
+    return default
+
+
 def envint(name: str, d: int = 0) -> int:
     try:
         return int(os.environ.get(name, d))

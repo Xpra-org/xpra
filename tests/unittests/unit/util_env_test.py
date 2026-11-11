@@ -26,6 +26,7 @@ from xpra.util.env import (
     SilenceWarningsContext,
     get_exec_env,
     save_env, get_saved_env, get_saved_env_var,
+    get_xdg_home, XDG_HOME_DEFAULTS,
 )
 
 _TEST_VAR = "XPRA_TEST_UTIL_ENV"
@@ -491,6 +492,25 @@ class TestNumpyImportContext(unittest.TestCase):
             with env.nomodule_context(name):
                 self.assertIsNone(sys.modules[name])
             self.assertNotIn(name, sys.modules)
+
+
+class TestGetXdgHome(unittest.TestCase):
+
+    def test_values(self):
+        for name, default in XDG_HOME_DEFAULTS.items():
+            with OSEnvContext():
+                os.environ.pop(name, None)
+                self.assertEqual(get_xdg_home(name), default)
+                for invalid in ("", "relative/path", "./dot", "~/tilde"):
+                    os.environ[name] = invalid
+                    self.assertEqual(get_xdg_home(name), default, f"{invalid!r} should be ignored")
+                os.environ[name] = "/some/absolute/path"
+                self.assertEqual(get_xdg_home(name), "/some/absolute/path")
+
+    def test_unknown(self):
+        with OSEnvContext(XDG_RUNTIME_DIR="/run/user/1000"):
+            with self.assertRaises(KeyError):
+                get_xdg_home("XDG_RUNTIME_DIR")
 
 
 def main():

@@ -20,7 +20,7 @@ from threading import RLock
 from typing import Any
 from collections.abc import Generator, Sequence
 
-from xpra.util.env import envbool, envint, OSEnvContext, first_time, IgnoreWarningsContext, get_saved_env
+from xpra.util.env import envbool, envint, OSEnvContext, first_time, IgnoreWarningsContext, get_saved_env, get_xdg_home
 from xpra.util.io import load_binary_file
 from xpra.codecs import icon_util
 from xpra.codecs.image_type import get_image_type
@@ -167,9 +167,7 @@ MENU_ICON_CACHE_VERSION = 1
 def get_menu_icon_cache_dir() -> str:
     if os.geteuid() == 0:
         return GLOBAL_MENU_ICON_CACHE_DIR
-    cache_home = os.environ.get("XDG_CACHE_HOME", "")
-    if not cache_home or not os.path.isabs(cache_home):
-        cache_home = os.path.expanduser("~/.cache")
+    cache_home = os.path.expanduser(get_xdg_home("XDG_CACHE_HOME"))
     return os.path.join(cache_home, "xpra", "menu-icons")
 
 
@@ -640,7 +638,7 @@ def do_load_xdg_menu_data():
             # so we have to guess!
             config_dirs = []
             # XDG_CONFIG_HOME takes precedence so add it first:
-            if xdg_home:
+            if xdg_home and os.path.isabs(xdg_home):
                 config_dirs.append(f"{xdg_home}/xdg")
             for d in os.environ.get("XDG_CONFIG_DIRS", default_xdg).split(":"):
                 if d not in config_dirs:
