@@ -12,13 +12,13 @@
 %endif
 
 Name:           %{py3rpmname}-pyxdg
-Version:        0.28
+%global tag     v0.29-rc1
+Version:        0.29~rc1
 Release:        1%{?dist}
 Summary:		Python2 library to access freedesktop.org standards
 License:        LGPLv2
-URL:            http://freedesktop.org/Software/pyxdg
-Source0:        https://files.pythonhosted.org/packages/source/p/pyxdg/pyxdg-%{version}.tar.gz
-# https://gitlab.freedesktop.org/xdg/pyxdg/merge_requests/2
+URL:            https://github.com/Xpra-org/pyxdg
+Source0:        https://github.com/Xpra-org/pyxdg/archive/refs/tags/%{tag}/pyxdg-%{tag}.tar.gz
 BuildArch:      noarch
 Requires:       %{py3rpmname}
 BuildRequires:	hicolor-icon-theme
@@ -35,11 +35,11 @@ package contains a Python 2 version of PyXDG.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "3267bb3074e934df202af2ee0868575484108581e6f3cb006af1da35395e88b4" ]; then
+if [ "${sha256}" != "843bf94b105c0444adb4abdd707e6cc8af558950671439518341311076e71bf1" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
-%setup -q -n pyxdg-%{version}
+%setup -q -n pyxdg-%(echo %{tag} | sed 's/^v//')
 
 %build
 %{python3} setup.py build
@@ -49,11 +49,15 @@ fi
 
 %files
 %license COPYING
-%doc AUTHORS ChangeLog README TODO
+%doc AUTHORS ChangeLog README.md TODO
 %{python3_sitelib}/xdg
 %{python3_sitelib}/pyxdg-*.egg-info
 
 %changelog
+* Wed Nov 11 2026 Antoine Martin <antoine@xpra.org> - 0.29~rc1-1
+- switch to new upstream: https://github.com/Xpra-org/pyxdg
+- build v0.29-rc1
+
 * Mon Oct 02 2023 Antoine Martin <antoine@xpra.org> - 0.28-1
 - new upstream release
 
