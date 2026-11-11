@@ -291,7 +291,7 @@ def add_entry_icon(entry_props: dict[str, Any], category: str):
         value = entry_props.get(prop, "")
         if value:
             names.append(str(value))
-    eicon = find_glob_icon(*names, category)
+    eicon = find_glob_icon(*names, category=category)
     if not eicon:
         return
     bdata, ext = eicon
