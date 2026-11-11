@@ -6,6 +6,7 @@ After=network.target
 
 [Service]
 Type=simple
+WorkingDirectory=-/run/xpra/proxy
 EnvironmentFile=-/etc/default/xpra
 ExecStart=/usr/bin/xpra proxy :14500 --daemon=no \
     --bind-tcp=0.0.0.0:14500 --tcp-auth=${TCP_AUTH} \
