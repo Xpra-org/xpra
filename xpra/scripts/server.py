@@ -1000,7 +1000,7 @@ def _do_run_server(script_file:str, cmdline,
     if OSX and not xrd:
         xrd = osexpand("~/.xpra", uid=uid, gid=gid)
         os.environ["XDG_RUNTIME_DIR"] = xrd
-    xrd = os.path.abspath(xrd)
+    xrd = os.path.abspath(xrd) if xrd else ""
     if ROOT and (uid>0 or gid>0):
         #we're going to chown the directory if we create it,
         #ensure this cannot be abused, only use "safe" paths:
