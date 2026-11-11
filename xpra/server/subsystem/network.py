@@ -752,7 +752,7 @@ class NetworkServer(StubSubsystem):
                 log_fn("Error: %s request failure", req_info)
                 log_fn(" errno=%s", err)
             log_fn(" for client %s:", pretty_socket(frominfo))
-            if line1 and line1[0] >= 128 or line1[0] == 0x16:
+            if line1 and (line1[0] >= 128 or line1[0] == 0x16):
                 log_fn(" request as hex: '%s'", hexstr(line1))
             else:
                 log_fn(" request: %r", line1)
