@@ -13,7 +13,7 @@ from time import monotonic, sleep
 from subprocess import Popen
 
 from xpra.util.str_fn import repr_ellipsized
-from xpra.util.env import envint
+from xpra.util.env import envint, envbool
 from xpra.os_util import OSX, POSIX, OPENBSD
 from xpra.util.io import load_binary_file, pollwait
 from xpra.exit_codes import ExitCode, ExitValue
@@ -26,6 +26,9 @@ FAIL_WAIT = envint("XPRA_TEST_CONNECT_WAIT", 5)
 
 NOVERIFY = "--ssl-server-verify-mode=none"
 NOHOSTNAME = "--ssl-check-hostname=no"
+# debug the ssl / websocket connection setup in `test_ssl` (CI sets `XPRA_TEST_DEBUG`, which shows the output):
+SSL_DEBUG = os.environ.get("XPRA_TEST_SSL_DEBUG", "ssl,network,http,websocket") if envbool("XPRA_TEST_DEBUG", False) else ""
+SSL_DEBUG_ARGS = [f"--debug={SSL_DEBUG}"] if SSL_DEBUG else []
 
 
 def get_openssl_command(keyfile: str, outfile: str) -> list[str]:
@@ -292,7 +295,7 @@ class ServerSocketsTest(ServerTestUtil):
                     "--html=on",
                     f"--ssl-cert={genssl.certfile}",
                     f"--ssl-key={genssl.keyfile}",
-                ]
+                ] + SSL_DEBUG_ARGS
                 for bind_mode, bind_port in proto_ports.items():
                     server_args.append(f"--bind-{bind_mode}=0.0.0.0:{bind_port},auth=allow")
                 log("starting test ssl server on %s", display)
@@ -321,7 +324,7 @@ class ServerSocketsTest(ServerTestUtil):
                     uri = f"{mode}://foo:bar@127.0.0.1:{port}/"
                     stype = ports_proto.get(port, "").rjust(5)
                     try:
-                        self.verify_connect(uri, ExitCode.OK, NOVERIFY, NOHOSTNAME)
+                        self.verify_connect(uri, ExitCode.OK, NOVERIFY, NOHOSTNAME, *SSL_DEBUG_ARGS)
                     except RuntimeError as e:
                         err = f"failed to connect to {stype} port using mode {mode} with uri {uri!r} and {NOVERIFY!r} {NOHOSTNAME!r}: {e}"
                         log.error(f"Error: {err}")

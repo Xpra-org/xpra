@@ -620,12 +620,16 @@ class NetworkServer(StubSubsystem):
             elif ssl_mode == "auto" or ssl_mode in TRUE_OPTIONS and can_upgrade_to("wss"):
                 # use the header to guess:
                 if line1.find(b"HTTP/") > 0 or ssl_peek_data.find(b"\x08http/1.1") > 0:
+                    ssllog("may_wrap_socket: ALPN 'http/1.1' found in the %i bytes of ClientHello", len(ssl_peek_data))
                     http = True
                 else:
+                    ssllog("may_wrap_socket: no ALPN 'http/1.1' in the %i bytes of ClientHello, peeking for an http request",
+                           len(ssl_peek_data))
                     conn.enable_peek()
                     peek_data = peek_connection(conn)
                     line1 = peek_data.split(b"\n")[0]
                     http = line1.find(b"HTTP/") > 0
+                    ssllog("may_wrap_socket: peeked %r", Ellipsizer(peek_data))
             ssllog("may_wrap_socket SSL: %s, ssl mode=%s, http=%s", conn, ssl_mode, http)
             to_socktype = "wss" if http else "ssl"
             if not can_upgrade_to(to_socktype):
