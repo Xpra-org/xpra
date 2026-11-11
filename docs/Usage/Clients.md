@@ -46,16 +46,16 @@ with touch input, a soft-keyboard bridge and a window switcher.\
 
 These are not the same kind of project, and what it costs to build and ship them differs by two orders of magnitude:
 
-| Client      | Languages                        | Source               | Binaries                                                 | Build time                               |
-|-------------|----------------------------------|----------------------|----------------------------------------------------------|------------------------------------------|
-| xpra        | Python 3, Cython, C, CUDA - GTK3 | 1888 files, 407 kloc | 4-9 MB packages, 112 MB `.exe`, 71-92 MB `.dmg` / `.pkg` | 4 minutes, over 10 on MS Windows / MacOS |
-| xpra-html5  | JavaScript, no framework         | 33 files, 19 kloc    | 1.4-2.1 MB package, 2.3 MB served to the browser         | 20 seconds                               |
-| vispra      | TypeScript, SolidJS, Vite        | 117 files, 24 kloc   | 2.8 MB served to the browser, no packages                | 10 seconds                               |
-| rust-xpra   | Rust, `winit` / `softbuffer`     | 38 files, 13 kloc    | 2.4-2.8 MB package, 2.8 MB executable, 2.5 MB `.exe`     | 75 seconds                               |
-| go-xpra     | Go, no `cgo`, no toolkit         | 121 files, 21 kloc   | 4.0-4.3 MB package, 8.1 MB executable, 11 MB `.exe`      | 10 seconds                               |
-| c-xpra      | C99, Xlib                        | 24 files, 4.4 kloc   | 25-40 KB package, 44 KB executable, 23 KB with UPX       | 1 second                                 |
-| kotlin-xpra | Kotlin, Jetpack Compose          | 34 files, 4.5 kloc   | 1.5 MB `.apk`                                            | 100 seconds                              |
-| xpra-client | Java, Kotlin, Android / Swing    | 141 files, 16.6 kloc | 2.2 MB `.apk`, 8.3 MB debug `.apk`                       | 100 seconds, 50 for a debug build        |
+| Client      | Languages                        | Source               | Binaries                                                 | Build time                               | Time to first window |
+|-------------|----------------------------------|----------------------|----------------------------------------------------------|------------------------------------------|----------------------|
+| xpra        | Python 3, Cython, C, CUDA - GTK3 | 1888 files, 407 kloc | 4-9 MB packages, 112 MB `.exe`, 71-92 MB `.dmg` / `.pkg` | 4 minutes, over 10 on MS Windows / MacOS | 1 second             |
+| xpra-html5  | JavaScript, no framework         | 33 files, 19 kloc    | 1.4-2.1 MB package, 2.3 MB served to the browser         | 20 seconds                               | 0.4 seconds          |
+| vispra      | TypeScript, SolidJS, Vite        | 117 files, 24 kloc   | 2.8 MB served to the browser, no packages                | 10 seconds                               | -                    |
+| rust-xpra   | Rust, `winit` / `softbuffer`     | 38 files, 13 kloc    | 2.4-2.8 MB package, 2.8 MB executable, 2.5 MB `.exe`     | 75 seconds                               | 60 ms                |
+| go-xpra     | Go, no `cgo`, no toolkit         | 121 files, 21 kloc   | 4.0-4.3 MB package, 8.1 MB executable, 11 MB `.exe`      | 10 seconds                               | 60 ms                |
+| c-xpra      | C99, Xlib                        | 24 files, 4.4 kloc   | 25-40 KB package, 44 KB executable, 23 KB with UPX       | 1 second                                 | 15 ms                |
+| kotlin-xpra | Kotlin, Jetpack Compose          | 34 files, 4.5 kloc   | 1.5 MB `.apk`                                            | 100 seconds                              | -                    |
+| xpra-client | Java, Kotlin, Android / Swing    | 141 files, 16.6 kloc | 2.2 MB `.apk`, 8.3 MB debug `.apk`                       | 100 seconds, 50 for a debug build        | -                    |
 
 Source counts tracked files in each project's own languages, tests included and vendored libraries excluded - the
 `xpra-html5` figure leaves out some 70 kloc of bundled jquery and audio decoders, whereas `vispra` gets the equivalent
@@ -70,6 +70,13 @@ The `go-xpra` `.exe` the repositories serve is not stripped, unlike its Linux pa
 Build times are wall clock, from cold, on one 8 thread x86_64 desktop, with the dependencies already installed. Only
 xpra's is long enough to matter, and it is much longer on the two platforms that also build the toolchain, the
 bundled libraries and an installer.
+The time to first window is how long it takes from executing the client until the server's `xterm` window is mapped on
+the client's display, measured on the same machine against a local xpra 8.0 server over `tcp`, as the median of 8 to
+10 runs. The browser clients start from a browser that is already running, in a new browsing context with an empty cache.
+The xpra client was measured with OpenGL disabled: probing it adds to the startup time.
+`vispra` cannot connect to an xpra 8.0 server: it does not send the packet `encoders` list that xpra servers require
+since they dropped compatibility with versions older than 7.0.
+The two Android clients were not measured.
 
 Build `xpra-client` with `./gradlew assembleDebug`, using JDK 17 or later and the Android SDK.
 APKs are available as [CI artifacts](https://github.com/lukaszsobala/xpra-client/actions/workflows/main.yml).
