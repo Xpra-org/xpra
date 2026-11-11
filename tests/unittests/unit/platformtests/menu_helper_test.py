@@ -120,6 +120,25 @@ class TestMenuIconCache(unittest.TestCase):
         assert "IconData" not in props
         assert "IconType" not in props
 
+    def test_uncached_svg_falls_back_to_raster(self):
+        from xpra.platform.posix import menu_helper
+        props = {"Name": "Test"}
+
+        def do_find_icon(*_names, extensions=()):
+            return "/icons/test.svg" if "svg" in extensions else "/icons/test.png"
+
+        def load_icon_from_file(filename):
+            return (SVG_DATA, "svg") if filename.endswith(".svg") else (PNG_DATA, "png")
+
+        with patch.object(menu_helper, "do_find_icon", do_find_icon), \
+             patch.object(menu_helper.icon_util, "load_icon_from_file", load_icon_from_file), \
+             patch.object(menu_helper, "load_cached_svg", return_value=()):
+            menu_helper.load_entry_icon(props)
+        # the SVG remains the icon file, so `cache_menu_icons` can still cache it:
+        assert props["IconFile"] == "/icons/test.svg"
+        assert props["IconData"] == PNG_DATA
+        assert props["IconType"] == "png"
+
     def test_cached_svg_is_exported_as_png(self):
         from xpra.platform.posix import menu_helper
         props = {"Name": "Test"}

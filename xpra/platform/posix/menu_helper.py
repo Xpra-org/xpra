@@ -18,7 +18,7 @@ from time import monotonic, sleep
 from contextlib import nullcontext
 from threading import RLock
 from typing import Any
-from collections.abc import Generator, Sequence
+from collections.abc import Callable, Generator, Sequence
 
 from xpra.util.env import envbool, envint, OSEnvContext, first_time, IgnoreWarningsContext, get_saved_env, get_xdg_home
 from xpra.util.io import load_binary_file
@@ -160,6 +160,7 @@ if LOAD_FROM_THEME:
         init_themes()
 
 EXTENSIONS: Sequence[str] = ("png", "svg", "xpm")
+RASTER_EXTENSIONS: Sequence[str] = tuple(ext for ext in EXTENSIONS if ext != "svg")
 GLOBAL_MENU_ICON_CACHE_DIR = "/var/cache/xpra/menu-icons"
 MENU_ICON_CACHE_VERSION = 1
 
@@ -232,23 +233,36 @@ def load_entry_icon(props: dict):
             cmd = os.path.basename(cmd).split(" ")[0]
             if cmd not in names:
                 names.append(cmd)
-    filename = do_find_icon(*names)
-    icondata = None
-    if filename:
-        props["IconFile"] = filename
-        if icondata := icon_util.load_icon_from_file(filename):
-            bdata, ext = icondata
-            if ext == "svg":
-                icondata = load_cached_svg(bdata)
-                if not icondata:
-                    log(f"no cached PNG icon found for SVG {filename!r}")
-                    return props
-                bdata, ext = icondata
-            props["IconData"] = bdata
-            props["IconType"] = ext
-    if not icondata:
+    if not set_icon_props(props, lambda extensions: do_find_icon(*names, extensions=extensions)):
         log(f"no icon found for {names} from {props}")
     return props
+
+
+def set_icon_props(props: dict[str, Any], find_fn: Callable[[Sequence[str]], str]) -> bool:
+    """
+    Sets 'IconFile', 'IconData' and 'IconType' using the icon file returned by `find_fn(extensions)`.
+    SVG icons are exported using their cached PNG rendering, or if there is none,
+    using the raster icon `find_fn` finds without SVG.
+    'IconFile' remains the SVG file, so `cache_menu_icons` can still cache it.
+    """
+    filename = find_fn(EXTENSIONS)
+    if not filename:
+        return False
+    props["IconFile"] = filename
+    icondata = icon_util.load_icon_from_file(filename)
+    if icondata and icondata[1] == "svg":
+        icondata = load_cached_svg(icondata[0])
+        if not icondata:
+            log(f"no cached PNG icon found for SVG {filename!r}")
+            if raster := find_fn(RASTER_EXTENSIONS):
+                icondata = icon_util.load_icon_from_file(raster)
+                log(f"using raster icon {raster!r} instead: %s", bool(icondata))
+                if icondata and icondata[1] == "svg":
+                    icondata = ()
+    if not icondata:
+        return False
+    props["IconData"], props["IconType"] = icondata
+    return True
 
 
 def do_find_icon(*names: str, extensions=EXTENSIONS) -> str:
@@ -371,21 +385,7 @@ def add_entry_icon(entry_props: dict[str, Any], category: str):
     for prop in ("Name", "GenericName", "Exec", "TryExec"):
         if value := entry_props.get(prop, ""):
             names.append(str(value))
-    eicon = find_glob_icon(*names, category=category)
-    if not eicon:
-        return
-    entry_props["IconFile"] = eicon
-    icondata = icon_util.load_icon_from_file(eicon)
-    if not icondata:
-        return
-    bdata, ext = icondata
-    if ext == "svg":
-        icondata = load_cached_svg(bdata)
-        if not icondata:
-            return
-        bdata, ext = icondata
-    entry_props["IconData"] = bdata
-    entry_props["IconType"] = ext
+    set_icon_props(entry_props, lambda extensions: find_glob_icon(*names, category=category, extensions=extensions))
 
 
 def find_glob_icon(*names: str, category: str = "categories", extensions=EXTENSIONS) -> str:

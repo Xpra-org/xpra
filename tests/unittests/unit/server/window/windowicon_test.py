@@ -280,6 +280,21 @@ class DefaultWindowIconTest(unittest.TestCase):
             self.assertEqual(windowicon.do_get_default_window_icon(48, "app"), ICON_48)
         self.assertEqual(calls, [("/icons/app.svg", 48)])
 
+    def test_uncached_svg_falls_back_to_raster(self):
+        lookups = []
+
+        def find_icon(*_names, extensions=()):
+            lookups.append(tuple(extensions))
+            return "/icons/app.svg" if "svg" in extensions else "/icons/app.png"
+
+        with (
+            patch("xpra.platform.posix.menu_helper.find_icon", find_icon),
+            patch.object(windowicon, "load_cached_svg_icon", lambda _filename, _size: None),
+            patch.object(windowicon, "load_icon_file", lambda filename, size: (size, size, "png", filename.encode())),
+        ):
+            self.assertEqual(windowicon.do_get_default_window_icon(48, "app"), (48, 48, "png", b"/icons/app.png"))
+        self.assertEqual(lookups, [("png", "xpm", "svg"), ("png", "xpm")])
+
     def test_cached_svg(self):
         from xpra.platform.paths import get_icon_filename
         png_filename = get_icon_filename("xpra.png")

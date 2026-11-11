@@ -91,11 +91,15 @@ def do_get_default_window_icon(size: int, name: str) -> tuple[int, int, str, byt
     if POSIX and not OSX and Image:
         try:
             from xpra.platform.posix.menu_helper import find_icon
-            # prefer raster formats over SVG:
+            # the extension order only applies within an icon directory, so this may still find an SVG:
             filename = find_icon(name, extensions=("png", "xpm", "svg"))
             log("find_icon(%r)=%r", name, filename)
             if filename.endswith(".svg"):
-                return load_cached_svg_icon(filename, size)
+                if icon := load_cached_svg_icon(filename, size):
+                    return icon
+                # no PNG rendering of this SVG, try again without SVG:
+                filename = find_icon(name, extensions=("png", "xpm"))
+                log("find_icon(%r) without svg=%r", name, filename)
             if filename:
                 return load_icon_file(filename, size)
         except (OSError, ValueError, TypeError, ImportError) as e:
