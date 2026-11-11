@@ -787,7 +787,7 @@ class WindowServer(StubServerMixin):
     def control_command_auto_refresh(self, auto_refresh, *wids) -> str:
         delay = int(float(auto_refresh) * 1000.0)  # ie: 0.5 -> 500 (milliseconds)
         for ws in self._ws_from_args(*wids):
-            ws.set_auto_refresh_delay(auto_refresh)
+            ws.set_auto_refresh_delay(delay)
         return f"auto-refresh delay set to {delay}ms for windows {wids}"
 
     def control_command_refresh(self, *wids) -> str:

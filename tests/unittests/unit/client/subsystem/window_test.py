@@ -5,6 +5,8 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from xpra.net.common import Packet
 from xpra.util.objects import AdHocStruct
@@ -40,6 +42,16 @@ class WindowManagerTest(ClientMixinTest):
             Packet("window-resized", 1, 4, 5),
         )
         self.assertEqual(resize_counters, [0, 0])
+
+    def test_auto_refresh_delay_caps(self):
+        from xpra.client.subsystem.window.manager import WindowManagerClient
+        client = SimpleNamespace(auto_refresh_delay=0.15, get_window_caps=dict, windows_enabled=True)
+        for compat in (True, False):
+            with patch("xpra.client.subsystem.window.manager.BACKWARDS_COMPATIBLE", compat):
+                caps = WindowManagerClient.get_caps(client)
+            self.assertEqual(caps["encoding"], {"auto_refresh_delay": 150})
+            self.assertEqual(caps.get("auto_refresh_delay"), 150 if compat else None)
+            self.assertEqual(caps.get("windows"), True if compat else None)
 
     def test_windowmanager(self):
         with DisplayContext():
