@@ -7,10 +7,11 @@ Name:           python3-pylsqpack
 %if 0%{?el8}
 # Last release that builds with Python 3.6 and setuptools 39.2.
 Version:        0.3.16
-%else
-Version:        0.3.23
-%endif
 Release:        3%{?dist}
+%else
+Version:        1.1.0
+Release:        1%{?dist}
+%endif
 Summary:        pylsqpack is a wrapper around the ls-qpack library
 Group:          Development/Languages
 License:        MIT
@@ -29,7 +30,7 @@ Requires:       python3
 %if 0%{?el8}
 Provides:       bundled(ls-qpack) = 1.0.3
 %else
-Provides:       bundled(ls-qpack) = 2.6.2
+Provides:       bundled(ls-qpack) = 2.7.0
 %endif
 Provides:       bundled(xxhash)
 
@@ -43,7 +44,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 %if 0%{?el8}
 if [ "${sha256}" != "b67a6ce3f6937d850681827714be730aa361c049e37752e3ed9df11e7f232ffb" ]; then
 %else
-if [ "${sha256}" != "f55b126940d8b3157331f123d4428d703a698a6db65a6a7891f7ec1b90c86c56" ]; then
+if [ "${sha256}" != "08bf266893dcaed817d72ac14506a095c97b309f68ae57a694699d186660450e" ]; then
 %endif
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
@@ -76,6 +77,10 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Wed Nov 11 2026 Antoine Martin <antoine@xpra.org> - 1.1.0-1
+- new upstream release, retaining the EL8 compatibility pin
+- update the bundled ls-qpack version and pyproject license patch context
+
 * Sun Oct 18 2026 Antoine Martin <antoine@xpra.org> - 0.3.23-3
 - use 0.3.16 on EL8 for Python 3.6 and setuptools 39.2 compatibility
 - use the matching source checksum and bundled ls-qpack version on EL8
