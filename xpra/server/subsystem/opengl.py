@@ -35,7 +35,10 @@ def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
         out, err = proc.communicate()
         log("out(%s)=%s", cmd, out)
         log("err(%s)=%s", cmd, err)
-        if proc.returncode == 0:
+        returncode = proc.returncode
+        del proc
+        log("returncode=%s", returncode)
+        if returncode == 0:
             # parse output:
             for line in out.splitlines():
                 parts = bytestostr(line).split("=")
@@ -63,7 +66,11 @@ def run_opengl_probe(cmd: list[str], env: dict[str, str], display_name: str):
             else:
                 log.info("No OpenGL information available")
         else:
-            error = bytestostr(err).strip("\n\r")
+            error = bytestostr(err).strip("\n\r ")
+            log("error=%s", error)
+            if not error and -16 < returncode < 0:
+                from xpra.util.system import SIGNAMES
+                error = SIGNAMES.get(-returncode, "unknown execution error")
             for x in error.splitlines():
                 if x.startswith("RuntimeError: "):
                     error = x.removeprefix("RuntimeError: ")
