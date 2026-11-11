@@ -1,0 +1,31 @@
+Source: pyxdg
+Section: python
+Priority: optional
+Maintainer: Antoine Martin <antoine@xpra.org>
+Uploaders: Antoine Martin <antoine@xpra.org>
+Build-Depends:
+ debhelper-compat (= 12),
+ dh-python,
+ python3-all,
+ python3-setuptools
+Standards-Version: 4.6.0
+Homepage: https://github.com/Xpra-org/pyxdg
+Rules-Requires-Root: no
+
+Package: python3-xdg
+Architecture: all
+Depends:
+ ${misc:Depends},
+ ${python3:Depends}
+Description: Python 3 library to access freedesktop.org standards
+ PyXDG is a Python library to access freedesktop.org standards.
+ Currently supported are:
+  * Base Directory Specification
+  * Menu Specification
+  * Menu Editing Specification
+  * Desktop Entry Specification
+  * Icon Theme Specification
+  * Recent File Specification
+  * Shared-MIME-Database Specification
+ .
+ This package is built from the Xpra-org/pyxdg fork.

@@ -1,0 +1,12 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME=xdg
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+# the test suite needs a populated icon theme and mime database:
+override_dh_auto_test:
+
+override_dh_installchangelogs:
+	dh_installchangelogs ChangeLog

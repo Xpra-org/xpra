@@ -12,4 +12,5 @@ if [ `arch` == "x86_64" ]; then
 	$BASH ./libnvidia-fbc1.sh
 fi
 $BASH ./xserver-xorg-video-dummy.sh
+$BASH ./python3-xdg.sh
 $BASH ./xpra.sh

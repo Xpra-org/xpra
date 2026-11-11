@@ -1,0 +1,5 @@
+pyxdg (0.29~rc2-1) UNRELEASED; urgency=low
+  * build v0.29-rc2 from the new upstream: https://github.com/Xpra-org/pyxdg
+  * public IconTheme get_themes() and clear_cache(), scalable icon size fixes
+
+ -- Antoine Martin <antoine@xpra.org>  Thu, 12 Nov 2026 12:00:00 +0700

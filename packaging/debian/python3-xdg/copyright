@@ -1,0 +1,17 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: pyxdg
+Source: https://github.com/Xpra-org/pyxdg
+
+Files: *
+Copyright: 2003-2023 Heinrich Wendel, Sergey Kuleshov, Thomas Kluyver and others
+           2024-2026 Antoine Martin <antoine@xpra.org>
+License: LGPL-2
+
+License: LGPL-2
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Library General Public
+ License as published by the Free Software Foundation; version 2
+ of the License.
+ .
+ On Debian systems, the complete text of the GNU Library General Public
+ License version 2 can be found in "/usr/share/common-licenses/LGPL-2".
