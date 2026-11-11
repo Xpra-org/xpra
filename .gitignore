@@ -172,10 +172,12 @@ tests/unittests/test-file*
 /xpra/notification/*.c
 /xpra/opengl/*.c
 /xpra/platform/*/*.c
+/xpra/platform/posix/shadow/server.c
 /xpra/platform/*/*.cpp
 /xpra/platform/*.c
 /xpra/platform/win32/d3d11/*.c
 /xpra/scripts/*.c
+/xpra/config/*.c
 /xpra/seccomp/*.c
 /xpra/server/*/*.c
 /xpra/server/*.c
