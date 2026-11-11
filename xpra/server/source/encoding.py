@@ -341,6 +341,14 @@ class EncodingsConnection(StubClientConnection):
         self.rgb_formats = validate_rgb_formats(rgb_formats, self.core_encodings)
 
         self.set_encoding(eopts.strget("setting") or eopts.strget(""), None)
+        # in milliseconds, 0 disables the lossless auto-refresh,
+        # left unchanged when missing (ie: from an `encoding-config` packet):
+        if "auto_refresh_delay" in eopts:
+            self.auto_refresh_delay = eopts.intget("auto_refresh_delay", 0)
+        elif BACKWARDS_COMPATIBLE and "auto_refresh_delay" in c:
+            # clients older than v8 send it at the top level:
+            self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
+        log("auto_refresh_delay=%i", self.auto_refresh_delay)
         # encoding options (filter):
         # 1: these properties are special cased here because we
         # defined their name before the "encoding." prefix convention,
@@ -396,7 +404,6 @@ class EncodingsConnection(StubClientConnection):
         log("default encoding options: %s", self.default_encoding_options)
         self.set_min_speed(ms)
         self.set_min_quality(mq)
-        self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
         # are we going to need a cuda context?
         if not self.cuda_device_context and self.wants_cuda_device():
             self.allocate_cuda_device_context()

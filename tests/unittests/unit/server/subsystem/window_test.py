@@ -16,6 +16,21 @@ from unit.server.subsystem.servermixintest_util import ServerMixinTest
 
 class WebcamMixinTest(ServerMixinTest):
 
+    def test_auto_refresh_control_uses_milliseconds(self):
+        from xpra.server.subsystem.window import WindowServer
+
+        window_server = stubbable(WindowServer)(self)
+        sources = (Mock(), Mock())
+        window_server._ws_from_args = Mock(return_value=sources)
+        for seconds, milliseconds in ((0.5, 500), ("0.15", 150), (0, 0)):
+            with self.subTest(seconds=seconds):
+                result = window_server.control_command_auto_refresh(seconds, 1, 2)
+                window_server._ws_from_args.assert_called_with(1, 2)
+                for source in sources:
+                    source.set_auto_refresh_delay.assert_called_once_with(milliseconds)
+                    source.reset_mock()
+                self.assertEqual(result, f"auto-refresh delay set to {milliseconds}ms for windows (1, 2)")
+
     def test_x11_configure_modifiers(self):
         from xpra.x11.desktop.window import DesktopWindowServer
         from xpra.x11.subsystem.window import SeamlessWindowServer

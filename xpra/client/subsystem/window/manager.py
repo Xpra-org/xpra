@@ -225,14 +225,17 @@ class WindowManagerClient(StubClientSubsystem):
     ######################################################################
     # hello:
     def get_caps(self) -> dict[str, Any]:
-        # FIXME: the messy bits without proper namespace:
+        # in milliseconds, merged into the `encoding` caps of the encoding subsystem:
+        delay = int(self.auto_refresh_delay * 1000)
         caps: dict[str, Any] = {
             "window": self.get_window_caps(),
-            "auto_refresh_delay": int(self.auto_refresh_delay * 1000),
+            "encoding": {"auto_refresh_delay": delay},
         }
         if BACKWARDS_COMPATIBLE:
             # older servers look for this flag outside the `window` namespace:
             caps["windows"] = self.windows_enabled
+            # servers older than v8 only read it from the top level:
+            caps["auto_refresh_delay"] = delay
         return caps
 
     def get_window_caps(self) -> dict[str, Any]:
