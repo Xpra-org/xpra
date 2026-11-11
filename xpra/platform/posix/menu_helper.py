@@ -132,7 +132,8 @@ if LOAD_FROM_THEME:
         IconLoadingContext = KeepCacheLoadingContext
 
         def init_themes() -> None:
-            get_themes = getattr(IconTheme, "__get_themes", None)
+            # `get_themes` is public since pyxdg 0.29:
+            get_themes = getattr(IconTheme, "get_themes", None) or getattr(IconTheme, "__get_themes", None)
             if not callable(get_themes):
                 return
             global themes
@@ -215,6 +216,10 @@ def clear_cache() -> None:
     if not IconTheme:
         return
     with ic_lock:
+        # added in pyxdg 0.29:
+        if callable(pyxdg_clear_cache := getattr(IconTheme, "clear_cache", None)):
+            pyxdg_clear_cache()
+            return
         IconTheme.themes = []
         IconTheme.theme_cache = {}
         IconTheme.dir_cache = {}
@@ -374,6 +379,7 @@ def find_theme_icon(*names: str, extensions=EXTENSIONS) -> str:
                         log.warn(f" {e}")
                         log.warn(" this is likely to be this bug in pyxdg:")
                         log.warn(" https://github.com/takluyver/pyxdg/pull/20")
+                        log.warn(" which is fixed in pyxdg 0.29: https://github.com/Xpra-org/pyxdg")
     return ""
 
 

@@ -32,6 +32,43 @@ class TestMenuHelperDefaults(unittest.TestCase):
         clear_cache()   # must not raise
 
 
+class TestPyxdgAPI(unittest.TestCase):
+
+    def setUp(self):
+        from xpra.platform.posix import menu_helper
+        self.menu_helper = menu_helper
+
+    def test_clear_cache_uses_pyxdg(self):
+        calls = []
+        fake = SimpleNamespace(clear_cache=lambda: calls.append(True), themes=["unchanged"])
+        with patch.object(self.menu_helper, "IconTheme", fake):
+            self.menu_helper.clear_cache()
+        assert calls == [True]
+        assert fake.themes == ["unchanged"]
+
+    def test_clear_cache_older_pyxdg(self):
+        fake = SimpleNamespace(themes=["theme"], theme_cache={1: 1}, dir_cache={1: 1}, icon_cache={1: 1})
+        with patch.object(self.menu_helper, "IconTheme", fake):
+            self.menu_helper.clear_cache()
+        assert (fake.themes, fake.theme_cache, fake.dir_cache, fake.icon_cache) == ([], {}, {}, {})
+
+    def test_init_themes_get_themes(self):
+        init_themes = getattr(self.menu_helper, "init_themes", None)
+        if not init_themes:
+            self.skipTest("pyxdg is not installed")
+        theme = SimpleNamespace(name="test-theme")
+        for fake in (
+            SimpleNamespace(get_themes=lambda _name: [theme]),
+            SimpleNamespace(__get_themes=lambda _name: [theme]),
+        ):
+            with patch.object(self.menu_helper, "IconTheme", fake), \
+                 patch.object(self.menu_helper, "Config", SimpleNamespace(icon_theme="test-theme")), \
+                 patch.object(self.menu_helper, "themes", {}), \
+                 patch.object(self.menu_helper.glob, "glob", return_value=[]):
+                init_themes()
+                assert self.menu_helper.themes == {"test-theme": theme}, fake
+
+
 class TestMenuHelperMain(unittest.TestCase):
 
     def _run_main(self, argv=None):
