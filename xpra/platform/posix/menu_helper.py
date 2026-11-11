@@ -328,9 +328,8 @@ def find_theme_icon(*names: str, extensions=EXTENSIONS) -> str:
                     if first_time("xdg-icon-lookup"):
                         log.warn(f"Warning: icon loop failure for {name} in {theme}")
                         log.warn(f" {e}")
-                        log.warn(" this is likely to be this bug in pyxdg:")
-                        log.warn(" https://github.com/takluyver/pyxdg/pull/20")
-                        log.warn(" which is fixed in pyxdg 0.29: https://github.com/Xpra-org/pyxdg")
+                        log.warn(" this is likely to be this bug in pyxdg, fixed in version 0.29:")
+                        log.warn(" https://github.com/Xpra-org/pyxdg/commit/0a666511dbc009fa89a2b658cf84dbfcdb7e8519")
     return ""
 
 
