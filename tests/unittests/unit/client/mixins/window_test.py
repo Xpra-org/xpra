@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import patch
 
 from xpra.util import AdHocStruct
 from unit.process_test_util import DisplayContext
@@ -12,6 +13,19 @@ from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 
 class WindowManagerTest(ClientMixinTest):
+
+	def test_auto_refresh_delay_caps(self):
+		from xpra.client.mixins import window_manager
+		client = window_manager.WindowClient()
+		client.get_mouse_position = lambda: (0, 0)
+		for seconds, milliseconds in ((0.15, 150), (0.5, 500), (0, 0)):
+			with self.subTest(seconds=seconds):
+				client.auto_refresh_delay = seconds
+				with patch.object(window_manager, "get_double_click_time", return_value=250), \
+						patch.object(window_manager, "get_double_click_distance", return_value=(5, 5)):
+					caps = client.get_caps()
+				self.assertEqual(caps["encoding.auto_refresh_delay"], milliseconds)
+				self.assertEqual(caps["auto_refresh_delay"], milliseconds)
 
 	def test_windowmanager(self):
 		with DisplayContext():

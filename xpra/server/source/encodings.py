@@ -330,6 +330,11 @@ class EncodingsMixin(StubSourceMixin):
         if isinstance(v, dict):
             self.encoding_options.update(v)
         self.set_encoding(c.strget("encoding", None), None)
+        # In milliseconds, 0 disables lossless auto-refresh.
+        # Preserve the current delay when later encoding packets omit it.
+        self.auto_refresh_delay = c.intget("encoding.auto_refresh_delay",
+                                          c.intget("auto_refresh_delay", self.auto_refresh_delay))
+        log("auto_refresh_delay=%i", self.auto_refresh_delay)
         #encoding options (filter):
         #1: these properties are special cased here because we
         #defined their name before the "encoding." prefix convention,
@@ -395,7 +400,6 @@ class EncodingsMixin(StubSourceMixin):
         if ms>0 and (s<=0 or s>ms):
             self.default_encoding_options["min-speed"] = ms
         log("default encoding options: %s", self.default_encoding_options)
-        self.auto_refresh_delay = c.intget("auto_refresh_delay", 0)
         # are we going to need a cuda context?
         if not self.cuda_device_context and self.wants_cuda_device():
             self.allocate_cuda_device_context()

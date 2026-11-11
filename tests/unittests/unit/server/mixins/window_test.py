@@ -5,12 +5,28 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import Mock
 
 from xpra.util import AdHocStruct
 from unit.server.mixins.servermixintest_util import ServerMixinTest
 
 
 class WebcamMixinTest(ServerMixinTest):
+
+    def test_auto_refresh_control_uses_milliseconds(self):
+        from xpra.server.mixins.controlcommands import ServerBaseControlCommands
+
+        server = ServerBaseControlCommands()
+        sources = (Mock(), Mock())
+        server._ws_from_args = Mock(return_value=sources)
+        for seconds, milliseconds in ((0.5, 500), ("0.15", 150), (0, 0)):
+            with self.subTest(seconds=seconds):
+                result = server.control_command_auto_refresh(seconds, 1, 2)
+                server._ws_from_args.assert_called_with(1, 2)
+                for source in sources:
+                    source.set_auto_refresh_delay.assert_called_once_with(milliseconds)
+                    source.reset_mock()
+                self.assertEqual(result, f"auto-refresh delay set to {milliseconds}ms for windows (1, 2)")
 
     def test_windowserver(self):
         from xpra.server.mixins.window import WindowServer

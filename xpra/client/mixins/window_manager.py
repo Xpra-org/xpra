@@ -388,6 +388,7 @@ class WindowClient(StubClientMixin):
     # hello:
     def get_caps(self) -> Dict[str,Any]:
         #FIXME: the messy bits without proper namespace:
+        delay = int(self.auto_refresh_delay*1000)
         caps = {
             #generic server flags:
             #mouse and cursors:
@@ -405,13 +406,14 @@ class WindowClient(StubClientMixin):
             #features:
             "bell"                      : self.client_supports_bell,
             "windows"                   : self.windows_enabled,
-            "auto_refresh_delay"        : int(self.auto_refresh_delay*1000),
+            "auto_refresh_delay"        : delay,
             #system tray forwarding:
             "system_tray"               : self.client_supports_system_tray,
             }
         updict(caps, "window", self.get_window_caps())
         updict(caps, "encoding", {
             "eos"                       : True,
+            "auto_refresh_delay"        : delay,
             })
         return caps
 
