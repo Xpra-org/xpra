@@ -8,7 +8,8 @@ import os
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 PNG_DATA = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
 SVG_DATA = b'<svg xmlns="http://www.w3.org/2000/svg"></svg>'
@@ -66,6 +67,68 @@ class TestPyxdgAPI(unittest.TestCase):
                  patch.object(self.menu_helper.glob, "glob", return_value=[]):
                 init_themes()
                 assert self.menu_helper.themes == {"test-theme": theme}, fake
+
+
+def raise_from_pyxdg_menu(exc: BaseException) -> BaseException:
+    """ raises `exc` from code which looks like it comes from pyxdg's `xdg/Menu.py` """
+    code = compile("raise exc", os.path.join("/usr", "lib", "xdg", "Menu.py"), "exec")
+    try:
+        exec(code, {"exc": exc})
+    except BaseException as e:
+        return e
+    raise AssertionError("not raised")
+
+
+class TestPyxdgAstError(unittest.TestCase):
+
+    def setUp(self):
+        from xpra.platform.posix import menu_helper
+        self.menu_helper = menu_helper
+
+    def check(self, exc: BaseException, version: str) -> bool:
+        with patch.object(self.menu_helper, "get_pyxdg_version", return_value=version):
+            return self.menu_helper.is_pyxdg_ast_error(exc)
+
+    def test_detection(self):
+        lineno = TypeError("ast.Expression.__init__ got an unexpected keyword argument 'lineno'")
+        ast_str = AttributeError("module 'ast' has no attribute 'Str'")
+        for exc in (lineno, ast_str):
+            assert self.check(raise_from_pyxdg_menu(exc), "0.28")
+            assert self.check(raise_from_pyxdg_menu(exc), "")
+            assert not self.check(raise_from_pyxdg_menu(exc), "0.29")
+            assert not self.check(raise_from_pyxdg_menu(exc), "1.0")
+        # not raised from pyxdg's Menu.py:
+        try:
+            raise TypeError("ast.Expression.__init__ got an unexpected keyword argument 'lineno'")
+        except TypeError as e:
+            assert not self.check(e, "0.28")
+        # not an ast error:
+        assert not self.check(raise_from_pyxdg_menu(TypeError("something else")), "0.28")
+        assert not self.check(raise_from_pyxdg_menu(ValueError("ast")), "0.28")
+
+    def test_menu_loading_stops(self):
+        try:
+            from xdg import Menu
+        except ImportError:
+            self.skipTest("pyxdg is not installed")
+        calls = []
+
+        def parse(*_args):
+            calls.append(True)
+            raise raise_from_pyxdg_menu(TypeError("ast.Expression.__init__ got an unexpected keyword argument 'lineno'"))
+
+        log = Mock()
+        with patch.object(Menu, "parse", parse), \
+             patch("xpra.seccomp.menu.is_enabled", return_value=False), \
+             patch.object(self.menu_helper, "get_pyxdg_version", return_value="0.28"), \
+             patch.object(self.menu_helper, "first_time", return_value=True), \
+             patch.object(self.menu_helper, "log", log), \
+             patch.dict(os.environ, {"XDG_CONFIG_DIRS": "/etc/xdg"}):
+            assert self.menu_helper.do_load_xdg_menu_data() == {}
+        assert calls == [True], "should not retry"
+        errors = [call.args[0] for call in log.error.call_args_list]
+        assert any("pyxdg 0.28 is not compatible with Python" in msg for msg in errors), errors
+        assert any(self.menu_helper.PYXDG_URL in msg for msg in errors), errors
 
 
 class TestMenuHelperMain(unittest.TestCase):
