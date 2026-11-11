@@ -371,7 +371,7 @@ def add_entry_icon(entry_props: dict[str, Any], category: str):
     for prop in ("Name", "GenericName", "Exec", "TryExec"):
         if value := entry_props.get(prop, ""):
             names.append(str(value))
-    eicon = find_glob_icon(*names, category)
+    eicon = find_glob_icon(*names, category=category)
     if not eicon:
         return
     entry_props["IconFile"] = eicon
