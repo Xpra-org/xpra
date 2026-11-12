@@ -12,9 +12,13 @@ EnvironmentFile=-/etc/sysconfig/xpra
 ExecStart=/usr/bin/xpra proxy :14500 --daemon=no \
     --tcp-auth=${TCP_AUTH} \
     --bind=none --auth=${AUTH} --socket-permissions=666 \
-    --bind-quic=*:14500 --quic-auth=${QUIC_AUTH} \
     --ssl-cert=/etc/xpra/ssl/ssl-cert.pem --ssl-key=/etc/xpra/ssl/key.pem --ssl=on \
     --log-dir=/var/log --pidfile=/run/xpra/proxy/server.pid --debug=${DEBUG}
+#    --bind-quic=*:14500 --quic-auth=${QUIC_AUTH} \
+# `--bind-quic` is not enabled by default because it requires `python3-aioquic`,
+# which is not packaged in Ubuntu before 24.04 nor in Debian Bookworm,
+# it is also problematic to install on RHEL and clones.
+#
 #rely on SIGKILL which returns 128+15=143
 SuccessExitStatus=0 143
 Restart=on-abnormal
