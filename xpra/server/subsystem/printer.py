@@ -27,7 +27,7 @@ from xpra.util.thread import start_thread
 
 log = Logger("printing")
 
-SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", None)
+SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", "")
 # room for the other `printer-file` packet arguments (filename, title, options, etc):
 PRINT_PACKET_OVERHEAD = 64 * 1024
 
