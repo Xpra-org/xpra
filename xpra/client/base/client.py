@@ -698,5 +698,12 @@ class XpraClientBase(PacketDispatcher):
     def call_in_main_thread(self, call: Callable) -> None:
         self.idle_add(call)
 
+    def packet_error_disconnect(self, _proto, packet_type: str) -> None:
+        self.disconnect_and_quit(ExitCode.PACKET_FAILURE, f"error processing {packet_type!r} packet")
+
+    def packet_error_exit(self, packet_type: str) -> None:
+        log("packet_error_exit(%r)", packet_type)
+        self.quit(ExitCode.PACKET_FAILURE)
+
     def process_packet(self, proto, packet) -> None:
         self.dispatch_packet(proto, packet, True)

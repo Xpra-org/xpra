@@ -9,8 +9,8 @@ from unittest.mock import Mock
 
 from xpra.net.common import Packet
 from xpra.net import dispatch
-from xpra.net.dispatch import PacketDispatcher, find_packet_handler
-from unit.test_util import silence_error
+from xpra.net.dispatch import PacketDispatcher, find_packet_handler, parse_packet_error_policy
+from unit.test_util import silence_error, silence_warn
 
 
 class Subsystem:
@@ -203,6 +203,104 @@ class DispatchTest(unittest.TestCase):
         self.assertIsNone(find_packet_handler(subsystems, "window-eos"))
         self.assertIsNone(find_packet_handler(subsystems, "window"))
         self.assertIsNone(find_packet_handler({}, "window-draw"))
+
+
+class PolicyDispatcher(PacketDispatcher):
+    """ records the packet error policy actions instead of taking them """
+
+    def __init__(self, policy: str):
+        super().__init__()
+        self.packet_error_policy = parse_packet_error_policy(policy)
+        self.actions = []
+
+    def packet_error_disconnect(self, proto, packet_type: str) -> None:
+        self.actions.append(("disconnect", proto, packet_type))
+
+    def packet_error_exit(self, packet_type: str) -> None:
+        self.actions.append(("exit", packet_type))
+
+
+class PacketErrorPolicyTest(unittest.TestCase):
+
+    def test_parse(self):
+        for value, expected in {
+            "log": (-1, "log"),
+            "": (-1, "log"),
+            "log=3": (3, "log"),
+            "ignore": (0, "ignore"),
+            "log=2,ignore": (2, "log"),
+            "disconnect": (0, "disconnect"),
+            "exit": (0, "exit"),
+            "log=2,disconnect": (2, "disconnect"),
+            " Disconnect , log=2 ": (2, "disconnect"),
+            "log=5,exit": (5, "exit"),
+        }.items():
+            self.assertEqual(parse_packet_error_policy(value), expected, f"parsing {value!r}")
+        with silence_warn(dispatch):
+            for value in ("foo", "log=x", "log=-1", "disconnect,exit", "log=1,log=2", "exit=2", "log,,exit"):
+                self.assertEqual(parse_packet_error_policy(value), (-1, "log"), f"parsing {value!r}")
+
+    @staticmethod
+    def fail(dispatcher, proto, count=1) -> None:
+        handler = Mock(side_effect=ValueError("bad"))
+        dispatcher.add_packet_handler("bad", handler)
+        with silence_error(dispatch):
+            for _ in range(count):
+                dispatcher.dispatch_packet(proto, Packet("bad"), authenticated=True)
+
+    @staticmethod
+    def make_proto(closed=False):
+        proto = Mock()
+        proto.is_closed.return_value = closed
+        return proto
+
+    def test_log_takes_no_action(self):
+        for policy in ("log", "log=2", "ignore"):
+            dispatcher = PolicyDispatcher(policy)
+            proto = self.make_proto()
+            self.fail(dispatcher, proto, 5)
+            self.assertEqual(dispatcher.actions, [])
+            self.assertEqual(dispatcher.packet_errors[proto], 5)
+            proto.close.assert_not_called()
+
+    def test_disconnect_after_n_errors(self):
+        dispatcher = PolicyDispatcher("log=2,disconnect")
+        proto = self.make_proto()
+        self.fail(dispatcher, proto, 2)
+        self.assertEqual(dispatcher.actions, [])
+        self.fail(dispatcher, proto)
+        self.assertEqual(dispatcher.actions, [("disconnect", proto, "bad")])
+
+    def test_disconnect_counts_per_protocol(self):
+        dispatcher = PolicyDispatcher("log=1,disconnect")
+        proto1 = self.make_proto()
+        proto2 = self.make_proto()
+        self.fail(dispatcher, proto1)
+        self.fail(dispatcher, proto2)
+        self.assertEqual(dispatcher.actions, [])
+        self.fail(dispatcher, proto2)
+        self.assertEqual(dispatcher.actions, [("disconnect", proto2, "bad")])
+
+    def test_disconnect_closed_protocol(self):
+        dispatcher = PolicyDispatcher("disconnect")
+        proto = self.make_proto(closed=True)
+        # the dispatcher only calls the handlers of open protocols, so call it directly:
+        dispatcher.add_packet_handler("bad", Mock(side_effect=ValueError("bad")))
+        with silence_error(dispatch):
+            dispatcher.call_packet_handler(False, dispatcher._authenticated_packet_handlers["bad"], proto, Packet("bad"))
+        self.assertEqual(dispatcher.actions, [])
+
+    def test_exit(self):
+        dispatcher = PolicyDispatcher("exit")
+        self.fail(dispatcher, self.make_proto())
+        self.assertEqual(dispatcher.actions, [("exit", "bad")])
+
+    def test_default_disconnect_closes(self):
+        dispatcher = PacketDispatcher()
+        dispatcher.packet_error_policy = parse_packet_error_policy("disconnect")
+        proto = self.make_proto()
+        self.fail(dispatcher, proto)
+        proto.close.assert_called_once()
 
 
 if __name__ == "__main__":

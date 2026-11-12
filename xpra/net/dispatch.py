@@ -3,15 +3,54 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
 from typing import Any
 from collections.abc import Callable
+from weakref import WeakKeyDictionary
 
 from xpra.common import noop
+from xpra.exit_codes import ExitCode
+from xpra.os_util import force_quit
 from xpra.net.common import may_log_packet, Packet, PacketHandlerType, PacketHandlerSpec, PACKET_HANDLER_ATTR
 from xpra.log import Logger
 from xpra.util.str_fn import repr_ellipsized
 
 log = Logger("network")
+
+PACKET_ERROR_ACTIONS = ("log", "ignore", "disconnect", "exit")
+
+
+def parse_packet_error_policy(value: str) -> tuple[int, str]:
+    """
+    Parse a packet handler error policy: `log`, `log=N`, `ignore`, `disconnect`, `exit`,
+    or `log=N,disconnect` / `log=N,exit` to log `N` errors before taking the action.
+    Returns `(log_count, action)`, where a `log_count` of `-1` means no limit
+    and `action` is one of `PACKET_ERROR_ACTIONS`.
+    Invalid values fall back to `(-1, "log")`.
+    """
+    log_count = -1
+    action = ""
+    if not value.strip():
+        return log_count, "log"
+    for part in value.lower().split(","):
+        name, eq, count = part.strip().partition("=")
+        if eq and name == "log" and count.isdigit() and log_count < 0:
+            log_count = int(count)
+        elif not eq and name in PACKET_ERROR_ACTIONS and not action:
+            action = name
+        else:
+            log.warn(f"Warning: invalid packet error policy {value!r}, using 'log'")
+            return -1, "log"
+    if action in ("", "log"):
+        return log_count, "log"
+    if action == "ignore":
+        # `log=N,ignore` is the same as `log=N`:
+        return (log_count, "log") if log_count >= 0 else (0, action)
+    # plain `disconnect` / `exit` act on the first error:
+    return max(0, log_count), action
+
+
+PACKET_ERROR_POLICY = parse_packet_error_policy(os.environ.get("XPRA_PACKET_ERROR_POLICY", "log"))
 
 
 def find_packet_handler(subsystems: dict[str, Any], packet_type: str) -> tuple[Any, str, Callable, bool] | None:
@@ -191,6 +230,10 @@ class PacketDispatcher:
         # subsystem instances keyed by `PREFIX`: each one owns the handlers
         # for the packet types in its own namespace
         self.subsystems: dict[str, Any] = {}
+        # what to do when a packet handler fails, see `parse_packet_error_policy`:
+        self.packet_error_policy: tuple[int, str] = PACKET_ERROR_POLICY
+        # number of packet handler errors, per protocol:
+        self.packet_errors: WeakKeyDictionary = WeakKeyDictionary()
 
     def get_info(self) -> dict[str, Any]:
         routed: dict[str, Any] = {}
@@ -290,12 +333,59 @@ class PacketDispatcher:
             try:
                 handler(*args)
             except (AssertionError, TypeError, ValueError, RuntimeError):
-                log.error(f"Error processing {packet.get_type()!r} packet", exc_info=True)
+                self.packet_handler_error(proto, packet)
 
         if main:
             self.call_in_main_thread(call)
         else:
             call()
+
+    def packet_handler_error(self, proto, packet: Packet) -> None:
+        """
+        Called from the `except` block of a failed packet handler,
+        logs the error and applies the `packet_error_policy`.
+        """
+        log_count, action = self.packet_error_policy
+        packet_type = packet.get_type()
+        try:
+            count = self.packet_errors.get(proto, 0) + 1
+            self.packet_errors[proto] = count
+        except TypeError:
+            # not weak-referenceable:
+            count = 1
+        message = f"Error processing {packet_type!r} packet"
+        if action == "ignore" or action == "log" and 0 <= log_count < count:
+            log(message, exc_info=True)
+            return
+        log.error(message, exc_info=True)
+        if action == "log":
+            if count == log_count:
+                log.error(f" {count} packet handler errors from {proto}, further errors will not be logged")
+            return
+        if count <= log_count:
+            return
+        if action == "disconnect":
+            if proto.is_closed():
+                return
+            log.error(f" disconnecting {proto} after {count} packet handler error{'s' if count > 1 else ''}")
+
+            def disconnect() -> None:
+                if not proto.is_closed():
+                    self.packet_error_disconnect(proto, packet_type)
+            self.call_in_main_thread(disconnect)
+        elif action == "exit":
+            log.error(f" exiting after {count} packet handler error{'s' if count > 1 else ''} from {proto}")
+            self.call_in_main_thread(lambda: self.packet_error_exit(packet_type))
+
+    @staticmethod
+    def packet_error_disconnect(proto, packet_type: str) -> None:
+        log("packet_error_disconnect(%s, %r)", proto, packet_type)
+        proto.close()
+
+    @staticmethod
+    def packet_error_exit(packet_type: str) -> None:
+        log("packet_error_exit(%r)", packet_type)
+        force_quit(int(ExitCode.PACKET_FAILURE))
 
     @staticmethod
     def packet_handler_args(proto, packet: Packet) -> tuple:

@@ -671,3 +671,11 @@ class ServerCore(GLibServer):
             netlog.error(f" received from {proto}")
         if not ss:
             proto.close()
+
+    def packet_error_disconnect(self, proto, packet_type: str) -> None:
+        self.network.disconnect_client(proto, ConnectionMessage.SERVER_ERROR, f"error processing {packet_type!r} packet")
+
+    def packet_error_exit(self, packet_type: str) -> None:
+        netlog("packet_error_exit(%r)", packet_type)
+        # exit without stopping the session's applications:
+        self.clean_quit(ServerExitMode.EXIT)
