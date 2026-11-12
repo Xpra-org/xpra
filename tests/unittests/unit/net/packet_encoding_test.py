@@ -5,8 +5,10 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import patch
 
 from xpra.net import packet_encoding
+
 
 class TestPacketEncoding(unittest.TestCase):
 
@@ -17,14 +19,14 @@ class TestPacketEncoding(unittest.TestCase):
         for x in packet_encoding.get_enabled_encoders():
             e = packet_encoding.get_encoder(x)
             for packet_data in (
-                ["hello", {"foo" : 1, "bar" : True}],
-                #b"foo",
-                ):
+                ["hello", {"foo": 1, "bar": True}],
+                # b"foo",
+            ):
                 assert e
                 v, flag = e(packet_data)
                 assert v
-                if x=="none":
-                    #'none' cannot decode back
+                if x == "none":
+                    # 'none' cannot decode back
                     continue
                 try:
                     r = packet_encoding.decode(v, flag)
@@ -32,12 +34,32 @@ class TestPacketEncoding(unittest.TestCase):
                 except Exception:
                     print("error calling decode(%s, %s) for encoder %s" % (v, flag, x))
                     raise
-        #one-shot function:
+        # one-shot function:
         packet = ("hello", {})
         assert packet_encoding.pack_one_packet(packet)
 
+    def test_rencodeplus_decoder_limits(self):
+        from xpra.net.rencodeplus import rencodeplus
+        value = "leaf"
+        for _ in range(40):
+            value = (value, )
+        encoded = rencodeplus.dumps(value)
+        with self.assertRaises(ValueError):
+            rencodeplus.loads(encoded)
+        with self.assertRaises(ValueError):
+            rencodeplus.loads(rencodeplus.dumps(("hello", {})) + b"trailing")
+
+    def test_yaml_decoder_limits(self):
+        import yaml
+        with patch("xpra.net.protocol.check.MAX_PACKET_NESTING", 4):
+            decoder = packet_encoding.init_yaml().decode
+            with self.assertRaises(yaml.YAMLError):
+                decoder(b"- - - - - value")
+
+
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()

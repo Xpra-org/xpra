@@ -50,6 +50,11 @@ cdef enum:
     DEFAULT_FLOAT_BITS = 32
     # Maximum length of integer when written as base 10 string.
     MAX_INT_LENGTH = 64
+    # Decoded packets are processed recursively by a number of consumers.
+    # Bound containers here, before they can consume an unbounded amount of
+    # stack or memory.
+    MAX_DECODE_DEPTH = 32
+    MAX_CONTAINER_ITEMS = 65536
     # The bencode 'typecodes' such as i, d, etc have been extended and
     # relocated on the base-256 character set.
     CHR_LIST    = 59
@@ -470,6 +475,8 @@ cdef inline object decode_str(char *data, unsigned int *pos, long long data_leng
     check_pos(data, pos[0]+x, data_length)
     while data[pos[0]+x] not in (58, 47):
         x += 1
+        if x >= MAX_INT_LENGTH:
+            raise ValueError(f"String length is longer than {MAX_INT_LENGTH} characters")
         check_pos(data, pos[0]+x, data_length)
     cdef int size = int(data[pos[0]:pos[0]+x])
     cdef bool binary = data[pos[0]+x]==47
@@ -482,34 +489,57 @@ cdef inline object decode_str(char *data, unsigned int *pos, long long data_leng
     return s.decode("utf8")
 
 
-cdef inline tuple decode_fixed_list(char *data, unsigned int *pos, long long data_length):
+cdef inline tuple decode_fixed_list(char *data, unsigned int *pos, long long data_length, unsigned int depth):
+    if depth >= MAX_DECODE_DEPTH:
+        raise ValueError(f"Maximum nesting depth {MAX_DECODE_DEPTH} exceeded")
     size = <unsigned char>data[pos[0]] - LIST_FIXED_START
     pos[0] += 1
-    return tuple(decode(data, pos, data_length) for _ in range(size))
+    return tuple(decode(data, pos, data_length, depth + 1) for _ in range(size))
 
 
-cdef inline tuple decode_list(char *data, unsigned int *pos, long long data_length):
+cdef inline tuple decode_list(char *data, unsigned int *pos, long long data_length, unsigned int depth):
+    if depth >= MAX_DECODE_DEPTH:
+        raise ValueError(f"Maximum nesting depth {MAX_DECODE_DEPTH} exceeded")
     l = []
     pos[0] += 1
+    check_pos(data, pos[0], data_length)
     while data[pos[0]] != CHR_TERM:
-        l.append(decode(data, pos, data_length))
+        if len(l) >= MAX_CONTAINER_ITEMS:
+            raise ValueError(f"Container has more than {MAX_CONTAINER_ITEMS} items")
+        l.append(decode(data, pos, data_length, depth + 1))
+        check_pos(data, pos[0], data_length)
     pos[0] += 1
     return tuple(l)
 
 
-cdef inline dict decode_fixed_dict(char *data, unsigned int *pos, long long data_length):
+cdef inline dict decode_fixed_dict(char *data, unsigned int *pos, long long data_length, unsigned int depth):
+    if depth >= MAX_DECODE_DEPTH:
+        raise ValueError(f"Maximum nesting depth {MAX_DECODE_DEPTH} exceeded")
     size = <unsigned char>data[pos[0]] - DICT_FIXED_START
     pos[0] += 1
-    return dict((decode(data, pos, data_length), decode(data, pos, data_length)) for _ in range(size))
+    d = {}
+    for _ in range(size):
+        k = decode(data, pos, data_length, depth + 1)
+        if k in d:
+            raise ValueError("Duplicate dictionary key")
+        d[k] = decode(data, pos, data_length, depth + 1)
+    return d
 
 
-cdef inline dict decode_dict(char *data, unsigned int *pos, long long data_length):
+cdef inline dict decode_dict(char *data, unsigned int *pos, long long data_length, unsigned int depth):
+    if depth >= MAX_DECODE_DEPTH:
+        raise ValueError(f"Maximum nesting depth {MAX_DECODE_DEPTH} exceeded")
     d = {}
     pos[0] += 1
     check_pos(data, pos[0], data_length)
     while data[pos[0]] != CHR_TERM:
-        k = decode(data, pos, data_length)
-        d[k] = decode(data, pos, data_length)
+        if len(d) >= MAX_CONTAINER_ITEMS:
+            raise ValueError(f"Container has more than {MAX_CONTAINER_ITEMS} items")
+        k = decode(data, pos, data_length, depth + 1)
+        if k in d:
+            raise ValueError("Duplicate dictionary key")
+        d[k] = decode(data, pos, data_length, depth + 1)
+        check_pos(data, pos[0], data_length)
     pos[0] += 1
     return d
 
@@ -519,7 +549,7 @@ cdef inline void check_pos(char *data, unsigned int pos, long long data_length):
         raise IndexError(f"Tried to access data[{pos}] but data len is: {data_length}")
 
 
-cdef object decode(char *data, unsigned int *pos, long long data_length):
+cdef object decode(char *data, unsigned int *pos, long long data_length, unsigned int depth):
     check_pos(data, pos[0], data_length)
     cdef unsigned char typecode = data[pos[0]]
     if typecode == CHR_INT1:
@@ -555,13 +585,13 @@ cdef object decode(char *data, unsigned int *pos, long long data_length):
         return False
     elif LIST_FIXED_START <= typecode:
         #LIST_FIXED_START + LIST_FIXED_COUNT = 256
-        return decode_fixed_list(data, pos, data_length)
+        return decode_fixed_list(data, pos, data_length, depth)
     elif typecode == CHR_LIST:
-        return decode_list(data, pos, data_length)
+        return decode_list(data, pos, data_length, depth)
     elif DICT_FIXED_START <= typecode < DICT_FIXED_START + DICT_FIXED_COUNT:
-        return decode_fixed_dict(data, pos, data_length)
+        return decode_fixed_dict(data, pos, data_length, depth)
     elif typecode == CHR_DICT:
-        return decode_dict(data, pos, data_length)
+        return decode_dict(data, pos, data_length, depth)
     else:
         raise ValueError(f"unsupported typecode {typecode}")
 
@@ -575,4 +605,7 @@ def loads(data):
 
     """
     cdef unsigned int pos = 0
-    return decode(data, &pos, len(data))
+    cdef object value = decode(data, &pos, len(data), 0)
+    if pos != len(data):
+        raise ValueError(f"Trailing data after encoded value: {len(data) - pos} bytes")
+    return value

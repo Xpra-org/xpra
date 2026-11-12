@@ -51,6 +51,27 @@ def init_rencodeplus() -> PacketEncoder:
 
 def init_yaml() -> PacketEncoder:
     import yaml
+    from xpra.net.protocol.check import MAX_PACKET_NESTING, MAX_PACKET_NODES
+
+    class LimitedSafeLoader(yaml.SafeLoader):
+        """SafeLoader with packet-level composition budgets."""
+
+        def __init__(self, stream):
+            super().__init__(stream)
+            self.packet_depth = 0
+            self.packet_nodes = 0
+
+        def compose_node(self, parent, index):
+            if self.packet_depth >= MAX_PACKET_NESTING:
+                raise yaml.YAMLError(f"packet nesting exceeds {MAX_PACKET_NESTING} levels")
+            self.packet_nodes += 1
+            if self.packet_nodes > MAX_PACKET_NODES:
+                raise yaml.YAMLError(f"packet contains more than {MAX_PACKET_NODES} values")
+            self.packet_depth += 1
+            try:
+                return super().compose_node(parent, index)
+            finally:
+                self.packet_depth -= 1
 
     def represent_tuple(dumper, value):
         return dumper.represent_list(value)
@@ -61,7 +82,7 @@ def init_yaml() -> PacketEncoder:
         return yaml.dump(value).encode("utf-8"), FLAGS_YAML
 
     def yaml_decode(value) -> Any:
-        return yaml.load(value.decode("utf-8"), Loader=yaml.SafeLoader)
+        return yaml.load(value.decode("utf-8"), Loader=LimitedSafeLoader)
 
     return PacketEncoder("yaml", FLAGS_YAML, yaml.__version__, yaml_encode, yaml_decode)
 
