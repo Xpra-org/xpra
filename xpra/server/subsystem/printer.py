@@ -32,8 +32,8 @@ SAVE_PRINT_JOBS = os.environ.get("XPRA_SAVE_PRINT_JOBS", "")
 PRINT_PACKET_OVERHEAD = 64 * 1024
 
 
-def _save_print_job(filename, file_data) -> None:
-    save_filename = os.path.join(SAVE_PRINT_JOBS, filename)
+def _save_print_job(filename: str, file_data: bytes) -> None:
+    save_filename = os.path.join(SAVE_PRINT_JOBS, os.path.basename(filename))
     try:
         with open(save_filename, "wb") as f:
             f.write(file_data)
