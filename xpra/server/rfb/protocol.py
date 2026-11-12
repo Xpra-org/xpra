@@ -176,7 +176,15 @@ class RFBServerProtocol(RFBProtocol):
     def _send_challenge(self) -> None:
         self._packet_parser = self._parse_challenge
         assert self._authenticator
-        challenge, digest = self._authenticator.get_challenge(("des", ))
+        try:
+            challenge, digest = self._authenticator.get_challenge(("des", ))
+        except ValueError as e:
+            # ie: "des" is not available in FIPS mode
+            authlog("get_challenge(('des', ))", exc_info=True)
+            authlog.warn("Warning: unable to generate the RFB authentication challenge")
+            authlog.warn(" %s", e)
+            self.send_fail_challenge()
+            return
         assert digest == "des", "invalid digest %r, only 'des' is supported" % digest
         self._challenge = challenge[:16]
         authlog("sending RFB challenge value: %s", hexstr(self._challenge))

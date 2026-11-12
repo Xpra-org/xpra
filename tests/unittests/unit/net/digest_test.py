@@ -70,6 +70,9 @@ class TestDigest(unittest.TestCase):
             for d in digests:
                 assert d.startswith("hmac+"), f"{d!r} should not be offered in FIPS mode"
             assert "xor" not in get_caps()["digest"]
+            for d in ("xor", "des"):
+                self.assertRaises(ValueError, choose_digest, (d,))
+                assert choose_digest((d, "hmac+sha256")) == "hmac+sha256"
         with patch("xpra.net.digest.is_fips_mode", return_value=False):
             assert "xor" in get_digests()
 

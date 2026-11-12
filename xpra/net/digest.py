@@ -89,6 +89,8 @@ def choose_digest(options: Sequence[str]) -> str:
         hname = f"hmac+{h}"
         if hname in options:
             return hname
+    if is_fips_mode():
+        raise ValueError(f"no FIPS approved digest found in '{csv(options)}'")
     if "xor" in options:
         return "xor"
     if "des" in options:

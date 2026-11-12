@@ -223,8 +223,12 @@ class AuthenticationManager(StubSubsystem):
                             digest_modes, salt_digest_modes) -> None:
         # fake challenge so the client will send the real hello:
         salt: bytes = get_salt()
-        digest: str = choose_digest(digest_modes)
-        salt_digest: str = choose_digest(salt_digest_modes)
+        try:
+            digest: str = choose_digest(digest_modes)
+            salt_digest: str = choose_digest(salt_digest_modes)
+        except ValueError as e:
+            self.auth_failed(proto, str(e))
+            return
         self.send_challenge(proto, salt, auth_caps, digest, salt_digest)
 
     def verify_authenticator(self, proto: SocketProtocol, c: typedict, index: int, authenticator,
@@ -286,7 +290,10 @@ class AuthenticationManager(StubSubsystem):
                 f" sending challenge using {actual_digest!r} digest over {conn.socktype_wrapped} connection")
             if actual_digest not in digest_modes:
                 return fail(f"cannot proceed without {actual_digest!r} digest support")
-            salt_digest: str = authenticator.choose_salt_digest(salt_digest_modes)
+            try:
+                salt_digest: str = authenticator.choose_salt_digest(salt_digest_modes)
+            except ValueError as e:
+                return fail(str(e))
             log(f"{authenticator}.choose_salt_digest({salt_digest_modes})={salt_digest!r}")
             if salt_digest in ("xor", "des"):
                 return fail(f"insecure salt digest {salt_digest!r} rejected")
@@ -301,7 +308,10 @@ class AuthenticationManager(StubSubsystem):
                 actual_digest = digest.split(":", 1)[0]
                 if actual_digest not in digest_modes:
                     return fail(f"cannot proceed without {actual_digest!r} digest support")
-                salt_digest = authenticator.choose_salt_digest(salt_digest_modes)
+                try:
+                    salt_digest = authenticator.choose_salt_digest(salt_digest_modes)
+                except ValueError as e:
+                    return fail(str(e))
                 if salt_digest in ("xor", "des"):
                     return fail(f"insecure salt digest {salt_digest!r} rejected")
                 self.network.cancel_verify_connection_accepted(proto)

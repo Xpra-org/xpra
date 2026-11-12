@@ -9,7 +9,7 @@ from collections.abc import Sequence
 
 from xpra.util.str_fn import obsc
 from xpra.util.env import envbool
-from xpra.net.digest import get_salt
+from xpra.net.digest import get_salt, choose_digest
 from xpra.auth.sys_auth_base import SysAuthenticator, log
 from xpra.log import enable_color
 
@@ -64,8 +64,9 @@ class Authenticator(SysAuthenticator):
         if "xor" not in digests:
             log.error("Error: xor is not supported by the client")
             return b"", ""
+        # raises `ValueError` in FIPS mode:
+        self.digest = choose_digest(("xor", ))
         self.salt = get_salt()
-        self.digest = "xor"
         self.challenge_sent = True
         if SHOW:
             import pyotp  # @UnresolvedImport

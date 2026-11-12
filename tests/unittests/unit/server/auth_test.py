@@ -9,6 +9,7 @@
 import os
 import sys
 import unittest
+from unittest.mock import patch
 import tempfile
 import uuid
 import hmac
@@ -179,6 +180,20 @@ class TestAuth(unittest.TestCase):
                 ["fail", "succeed"][test_password == password], test_password, password)
             assert not self.capsauth(a, verify,
                                      client_salt), "should not be able to athenticate again with the same values"
+
+    def test_fips_mode(self) -> None:
+        with patch("xpra.net.digest.is_fips_mode", return_value=True):
+            for module, kwargs in {
+                "reject": {},
+                "env": {},
+                "exec": {"require-challenge": "yes"},
+            }.items():
+                a = self._init_auth(module, **kwargs)
+                self.assertRaises(ValueError, a.get_challenge, ("xor", "des"))
+            # still works with an approved digest:
+            a = self._init_auth("env")
+            salt, digest = a.get_challenge(("xor", "hmac+sha256"))
+            assert salt and digest == "hmac+sha256"
 
     def test_env(self) -> None:
         for var_name in ("XPRA_PASSWORD", "SOME_OTHER_VAR_NAME"):
