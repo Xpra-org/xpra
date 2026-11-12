@@ -8,6 +8,7 @@
 # pylint: disable=line-too-long
 
 import unittest
+from unittest.mock import patch
 
 from xpra.net.digest import (
     get_digests, get_digest_module,
@@ -61,6 +62,16 @@ class TestDigest(unittest.TestCase):
         assert "salt-digest" in caps
         for sd in caps["salt-digest"]:
             assert sd not in ("xor", "des")
+
+    def test_fips_mode(self):
+        with patch("xpra.net.digest.is_fips_mode", return_value=True):
+            digests = get_digests()
+            assert digests, "no digests left in FIPS mode"
+            for d in digests:
+                assert d.startswith("hmac+"), f"{d!r} should not be offered in FIPS mode"
+            assert "xor" not in get_caps()["digest"]
+        with patch("xpra.net.digest.is_fips_mode", return_value=False):
+            assert "xor" in get_digests()
 
     def test_salt_length_limits(self):
         self.assertRaises(ValueError, get_salt, 2)
