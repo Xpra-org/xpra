@@ -240,17 +240,17 @@ XPRA_X11_DEBUG_EVENTS="EnterNotify,CreateNotify" xpra seamless :10
 
 ***
 
-Errors raised by packet handlers are logged, and the connection is kept by default.\
+Errors raised by packet handlers are logged, and a connection is dropped after 10 of them (`log=10,disconnect`).\
 Use `XPRA_PACKET_ERROR_POLICY` to change that:
 
 | value               | effect                                                          |
 |---------------------|-----------------------------------------------------------------|
-| `log`               | log every error (default)                                       |
+| `log`               | log every error                                                 |
 | `log=N`             | log the first `N` errors from each connection, ignore the rest  |
 | `ignore`            | only log errors with `-d network`                               |
 | `disconnect`        | log the error and disconnect the peer                           |
 | `exit`              | log the error and exit                                          |
-| `log=N,disconnect`  | log `N` errors from a connection, disconnect it on the next one |
+| `log=N,disconnect`  | log `N` errors from a connection, disconnect it on the next one (default: `N=10`) |
 | `log=N,exit`        | log `N` errors from a connection, exit on the next one          |
 
 For example, to stop at the first error while testing:

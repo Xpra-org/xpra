@@ -50,7 +50,7 @@ def parse_packet_error_policy(value: str) -> tuple[int, str]:
     return max(0, log_count), action
 
 
-PACKET_ERROR_POLICY = parse_packet_error_policy(os.environ.get("XPRA_PACKET_ERROR_POLICY", "log"))
+PACKET_ERROR_POLICY = parse_packet_error_policy(os.environ.get("XPRA_PACKET_ERROR_POLICY", "log=10,disconnect"))
 
 
 def find_packet_handler(subsystems: dict[str, Any], packet_type: str) -> tuple[Any, str, Callable, bool] | None:
