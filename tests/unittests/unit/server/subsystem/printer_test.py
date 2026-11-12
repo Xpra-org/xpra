@@ -4,7 +4,10 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import os
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 from xpra.exit_codes import ExitCode
@@ -52,13 +55,14 @@ class PrintRequestTest(unittest.TestCase):
 
     def test_request_then_file(self):
         proto = Proto()
-        printer = self.request(proto, 512 * 1024)
+        file_data = b"%PDF" * (128 * 1024)
+        printer = self.request(proto, len(file_data))
         self.assertTrue(printer.boolget("ready"))
         # the hello reply makes room for the file:
         self.assertGreater(proto.max_packet_size, 512 * 1024)
         self.owner.send_disconnect.assert_not_called()
         handler = self.owner._default_packet_handlers["printer-file"]
-        packet = Packet("printer-file", "doc.pdf", b"%PDF", "application/pdf")
+        packet = Packet("printer-file", "doc.pdf", file_data, "application/pdf")
         with patch.object(type(self.printer), "do_print_file", return_value=(ExitCode.OK, "sent to 1 client")) as print_file:
             handler(proto, packet)
         print_file.assert_called_once_with(packet)
@@ -70,9 +74,26 @@ class PrintRequestTest(unittest.TestCase):
         print_file.assert_not_called()
         self.assertEqual(self.owner.send_disconnect.call_args.args[1], ConnectionMessage.PROTOCOL_ERROR)
 
+    def test_file_size_must_match_request(self):
+        handler = self.owner._default_packet_handlers["printer-file"]
+        cases = (
+            (5, Packet("printer-file", "doc.pdf", b"four")),
+            (3, Packet("printer-file", "doc.pdf", b"four")),
+            (4, Packet("printer-file", "doc.pdf", b"four", "", "*", "title", "printer", 1, "", "extra")),
+        )
+        for requested, packet in cases:
+            with self.subTest(requested=requested, packet=packet):
+                proto = Proto()
+                self.request(proto, requested)
+                self.owner.send_disconnect.reset_mock()
+                with patch.object(type(self.printer), "do_print_file") as print_file:
+                    handler(proto, packet)
+                print_file.assert_not_called()
+                self.assertEqual(self.owner.send_disconnect.call_args.args[1], ConnectionMessage.PROTOCOL_ERROR)
+
     def test_print_failure(self):
         proto = Proto()
-        self.request(proto, 100)
+        self.request(proto, 4)
         handler = self.owner._default_packet_handlers["printer-file"]
         with patch.object(type(self.printer), "do_print_file", return_value=(ExitCode.REMOTE_ERROR, "no clients")):
             handler(proto, Packet("printer-file", "doc.pdf", b"%PDF"))
@@ -144,6 +165,40 @@ class PrintClientTest(unittest.TestCase):
         client.do_command(typedict({"printer": {"ready": True}}))
         client._process_connection_close(Packet("connection-close", ConnectionMessage.SERVER_ERROR.value, "no clients"))
         self.assertEqual(client.warn_and_quit.call_args.args[0], ExitCode.FAILURE)
+
+
+class PrintJobContainmentTest(unittest.TestCase):
+
+    def save(self, directory: str, filename: str, data: bytes) -> None:
+        from xpra.server.subsystem import printer
+        with patch.object(printer, "SAVE_PRINT_JOBS", directory):
+            printer._save_print_job(filename, data)
+
+    def test_peer_filename_cannot_select_directory(self):
+        with tempfile.TemporaryDirectory() as save_dir, tempfile.TemporaryDirectory() as other_dir:
+            filename = os.path.join(other_dir, "job.pdf")
+            self.save(save_dir, filename, b"job")
+            self.assertEqual((Path(save_dir) / "job.pdf").read_bytes(), b"job")
+            self.assertFalse(Path(filename).exists())
+
+    def test_existing_file_is_not_overwritten(self):
+        with tempfile.TemporaryDirectory() as save_dir:
+            filename = Path(save_dir) / "job.pdf"
+            filename.write_bytes(b"existing")
+            self.save(save_dir, "job.pdf", b"replacement")
+            self.assertEqual(filename.read_bytes(), b"existing")
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "symlinks are not supported")
+    def test_existing_symlink_is_not_followed(self):
+        with tempfile.TemporaryDirectory() as save_dir, tempfile.TemporaryDirectory() as other_dir:
+            target = Path(other_dir) / "target.pdf"
+            target.write_bytes(b"existing")
+            try:
+                os.symlink(target, Path(save_dir) / "job.pdf")
+            except OSError as e:
+                self.skipTest(f"cannot create symlink: {e}")
+            self.save(save_dir, "job.pdf", b"replacement")
+            self.assertEqual(target.read_bytes(), b"existing")
 
 
 class PrinterLandlockTest(unittest.TestCase):

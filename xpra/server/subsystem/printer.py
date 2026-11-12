@@ -8,7 +8,7 @@
 
 import os.path
 from typing import Any
-from weakref import WeakSet
+from weakref import WeakKeyDictionary
 from collections.abc import Sequence
 
 from xpra.exit_codes import ExitCode
@@ -36,7 +36,9 @@ PRINT_PACKET_OVERHEAD = 64 * 1024
 def _save_print_job(filename: str, file_data: bytes) -> None:
     save_filename = os.path.join(SAVE_PRINT_JOBS, os.path.basename(filename))
     try:
-        with open(save_filename, "wb") as f:
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+        fd = os.open(save_filename, flags, 0o600)
+        with os.fdopen(fd, "wb") as f:
             f.write(file_data)
         log.info("saved print job to: %s", save_filename)
     except Exception as e:
@@ -67,7 +69,7 @@ class PrinterServer(StubSubsystem):
         # source/printer.py).
         self.file_transfer = FileTransferAttributes()
         # the connections which have made a `print` request and may now send us the `printer-file`:
-        self.print_requests: WeakSet = WeakSet()
+        self.print_requests: WeakKeyDictionary[Any, int] = WeakKeyDictionary()
         self.server.hello_request_handlers["print"] = self._handle_hello_request_print
 
     def init(self, opts) -> None:
@@ -180,7 +182,7 @@ class PrinterServer(StubSubsystem):
             return True
         # make room for the file:
         proto.max_packet_size = max(proto.max_packet_size, size + PRINT_PACKET_OVERHEAD)
-        self.print_requests.add(proto)
+        self.print_requests[proto] = size
         self.send_print_hello(proto, {"ready": True})
         return True
 
@@ -206,11 +208,22 @@ class PrinterServer(StubSubsystem):
     @packet_handler(PRINTER_FILE, manual=True)
     def _process_file(self, proto, packet: Packet) -> None:
         # this connection has no client source: it only made a `print` request
-        if proto not in self.print_requests:
+        try:
+            expected_size = self.print_requests.pop(proto)
+        except KeyError:
             log.warn("Warning: unexpected 'printer-file' packet from %s", proto)
             self.network.send_disconnect(proto, ConnectionMessage.PROTOCOL_ERROR, "unexpected 'printer-file' packet")
             return
-        self.print_requests.discard(proto)
+        try:
+            packet.check_len(3, 9)
+            file_size = len(packet.get_bytes(2, expected_size))
+            if file_size != expected_size:
+                raise ValueError(f"print job is {file_size} bytes, expected {expected_size}")
+        except (TypeError, ValueError) as e:
+            message = f"invalid 'printer-file' packet: {e}"
+            log.warn("Warning: %s", message)
+            self.network.send_disconnect(proto, ConnectionMessage.PROTOCOL_ERROR, message)
+            return
         code, message = self.do_print_file(packet)
         if code != ExitCode.OK:
             log.warn(message)
