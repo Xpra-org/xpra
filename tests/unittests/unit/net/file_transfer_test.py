@@ -1947,8 +1947,8 @@ class TestMalformedFileTransferPackets(unittest.TestCase):
 
     def test_truncated_and_invalid_packet_fields(self):
         cases = (
-            ("truncated file", "_process_send", Packet("file-send"), IndexError),
-            ("truncated chunk", "_process_send_chunk", Packet("file-send-chunk", "cid"), IndexError),
+            ("truncated file", "_process_send", Packet("file-send"), ValueError),
+            ("truncated chunk", "_process_send_chunk", Packet("file-send-chunk", "cid"), ValueError),
             ("negative chunk", "_process_send_chunk",
              Packet("file-send-chunk", "cid", -1, b"data", False), ValueError),
             ("oversized ack chunk", "_process_ack_chunk",
@@ -1956,8 +1956,8 @@ class TestMalformedFileTransferPackets(unittest.TestCase):
             ("invalid response", "_process_data_response",
              Packet("file-data-response", "sid", 128), ValueError),
             ("truncated request", "_process_data_request",
-             Packet("file-data-request", "file"), IndexError),
-            ("truncated URL", "_process_open_url", Packet("file-open-url"), IndexError),
+             Packet("file-data-request", "file"), ValueError),
+            ("truncated URL", "_process_open_url", Packet("file-open-url"), ValueError),
             ("invalid options", "_process_send",
              Packet("file-send", "file", "", False, False, 4, b"data", b"options"), TypeError),
             ("invalid UTF-8 filename", "_process_send",
@@ -1971,6 +1971,17 @@ class TestMalformedFileTransferPackets(unittest.TestCase):
                 self.assertFalse(handler.file_descriptors)
                 self.assertFalse(handler.receive_chunks_in_progress)
                 self.assertFalse(handler.send_chunks_in_progress)
+
+    def test_control_field_limits(self):
+        handler = _FullHandler()
+        cases = (
+            ("_process_open_url", Packet("file-open-url", "https://example.com/" + "x" * 4096, "sid")),
+            ("_process_data_response", Packet("file-data-response", "s" * 129, DENY)),
+            ("_process_ack_chunk", Packet("file-ack-chunk", "c" * 129, False, "cancelled", 0)),
+        )
+        for handler_name, packet in cases:
+            with self.subTest(handler=handler_name), self.assertRaises(ValueError):
+                getattr(handler, handler_name)(packet)
 
     def test_embedded_nul_filename_is_removed(self):
         handler = _FullHandler()
