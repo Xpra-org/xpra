@@ -25,6 +25,7 @@ def _client_opts():
     opts.encodings = ("rgb", "png")
     opts.encoding = "auto"
     opts.video_scaling = "auto"
+    opts.auto_refresh_delay = 0
     opts.quality = 80
     opts.min_quality = 0
     opts.speed = 50
