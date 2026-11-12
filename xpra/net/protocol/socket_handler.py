@@ -47,6 +47,7 @@ from xpra.net.compression import (
 from xpra.net import packet_encoding
 from xpra.net.socket_util import guess_packet_type
 from xpra.net.packet_encoding import decode, InvalidPacketEncodingException
+from xpra.net.protocol.check import packet_structure_error
 from xpra.net.crypto import get_cipher, get_key, get_mode, pad, get_block_size, INITIAL_PADDING
 from xpra.log import Logger
 
@@ -1272,7 +1273,10 @@ class SocketProtocol:
             return True
         # final packet (packet_index==0), decode it:
         try:
-            packet = list(decode(data, info.protocol_flags))
+            decoded = decode(data, info.protocol_flags)
+            if not isinstance(decoded, (list, tuple)):
+                raise TypeError(f"decoded packet is a {type(decoded).__name__}, expected a list or tuple")
+            packet = list(decoded)
         except InvalidPacketEncodingException as e:
             self.invalid(f"invalid packet encoding: {e}", data)
             return False
@@ -1308,19 +1312,23 @@ class SocketProtocol:
                 payload_size += len(raw_packet_data)
             state.raw_packets = {}
 
-        packet_type = str(packet[0])
+        try:
+            wrapped = Packet(*packet)
+        except (TypeError, ValueError):
+            log.error("Error parsing packet", exc_info=True)
+            self.invalid("invalid packet structure", data)
+            return False
+        if error := packet_structure_error(wrapped):
+            self.invalid(f"invalid packet structure: {error}", data)
+            return False
+        packet_type = wrapped.get_type()
         self.input_stats[packet_type] = self.input_stats.get(packet_type, 0) + 1
         if LOG_RAW_PACKET_SIZE and packet_type != "logging":
             log.info(f"received {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
         self.input_packetcount += 1
         self.receive_pending = not bool(info.protocol_flags & FLAGS_FLUSH)
         log("processing packet %s", packet_type)
-        try:
-            wrapped = Packet(*packet)
-        except (TypeError, ValueError):
-            log.error("Error parsing packet", exc_info=True)
-        else:
-            self._process_packet_cb(self, wrapped)
+        self._process_packet_cb(self, wrapped)
         return True
 
     def do_flush_then_close(self, encoder: Callable | None = None,
