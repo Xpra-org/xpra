@@ -101,7 +101,7 @@ class NoOp:
         return "noop"
 
 
-noop = NoOp()
+noop: Callable[..., None] = NoOp()
 
 
 def noerr(fn: Callable, *args):

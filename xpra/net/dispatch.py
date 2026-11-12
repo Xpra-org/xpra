@@ -199,11 +199,11 @@ class PacketDispatcher:
 
         try:
             if authenticated and not proto.is_closed():
-                if handler := self._authenticated_ui_packet_handlers.get(packet_type):
+                if handler := self._authenticated_ui_packet_handlers.get(packet_type, noop):
                     log("process ui packet %s", packet_type)
                     call_handler(True)
                     return
-                if handler := self._authenticated_packet_handlers.get(packet_type):
+                if handler := self._authenticated_packet_handlers.get(packet_type, noop):
                     log("process non-ui packet %s", packet_type)
                     call_handler(False)
                     return
@@ -212,11 +212,11 @@ class PacketDispatcher:
                     log("process %s packet %s", sub.PREFIX, packet_type)
                     call_handler(main_thread)
                     return
-            if handler := self._default_ui_packet_handlers.get(packet_type):
+            if handler := self._default_ui_packet_handlers.get(packet_type, noop):
                 log("process default ui packet %s", packet_type)
                 call_handler(True)
                 return
-            if handler := self._default_packet_handlers.get(packet_type):
+            if handler := self._default_packet_handlers.get(packet_type, noop):
                 log("process default packet %s", packet_type)
                 call_handler(False)
                 return
