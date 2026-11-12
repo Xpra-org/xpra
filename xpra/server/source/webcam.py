@@ -12,6 +12,7 @@ from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.server.source.stub import StubClientConnection
 from xpra.net.packet_type import WEBCAM_ACK, WEBCAM_FRAME, WEBCAM_STOP
+from xpra.codecs.constants import RGB_FORMAT_BPP, check_rgb_buffer
 from xpra.log import Logger
 
 log = Logger("webcam")
@@ -275,6 +276,8 @@ class WebcamConnection(StubClientConnection):
                 assert self.mmap_supported, "mmap is not supported, yet the client used it!?"
                 pixels, free = mmap_read_area.mmap_read(*chunks)
                 rgb_pixel_format = options.get("pixel-format", "BGRX")
+                # the chunks may not hold enough pixels for the frame:
+                check_rgb_buffer(rgb_pixel_format, len(pixels), w, h, w * RGB_FORMAT_BPP.get(rgb_pixel_format, 0), "mmap webcam frame")
             else:
                 # pylint: disable=import-outside-toplevel
                 from xpra.codecs.pillow.decoder import open_only
@@ -286,18 +289,22 @@ class WebcamConnection(StubClientConnection):
                     ack()
                     return True
                 img = open_only(data, (encoding,))
+                # only the header has been parsed so far:
+                if img.size != (w, h):
+                    raise ValueError(f"{encoding} image is {img.size[0]}x{img.size[1]} but the frame is {w}x{h}")
                 if img.mode != "RGBA":
                     img = img.convert("RGBA")
                 pixels = img.tobytes("raw", "BGRA")
                 rgb_pixel_format = "BGRX"
 
             from xpra.codecs.image import ImageWrapper
-            bgrx_image = ImageWrapper(0, 0, w, h, (pixels,), rgb_pixel_format, 32, w * 4, planes=ImageWrapper.PACKED)
+            bpp = RGB_FORMAT_BPP[rgb_pixel_format]
+            bgrx_image = ImageWrapper(0, 0, w, h, (pixels,), rgb_pixel_format, 32, w * bpp, bpp, planes=ImageWrapper.PACKED)
             if forward:
                 # re-compress because the webcam-client doesn't set up mmap:
                 from xpra.codecs.image import to_pil_encoding
                 data = to_pil_encoding(bgrx_image, "webp")
-                webcam.forward(frame_no, encoding, w, h, data, options)
+                webcam.forward(frame_no, "webp", w, h, data, {})
                 ack()
                 return True
 

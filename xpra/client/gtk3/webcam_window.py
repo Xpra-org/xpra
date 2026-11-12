@@ -32,18 +32,26 @@ GdkPixbuf = gi_import("GdkPixbuf")
 GLib = gi_import("GLib")
 
 
-def get_pixbuf(encoding: str, data: bytes):
+def get_pixbuf(encoding: str, data: bytes, width: int, height: int):
     try:
-        return load_pixbuf(data, (encoding, ))
+        pixbuf = load_pixbuf(data, (encoding, ))
     except Exception as e:
         log("get_pixbuf(%s, %i bytes) error: %s", encoding, len(data), e)
-        return get_pillow_pixbuf(encoding, data)
+        return get_pillow_pixbuf(encoding, data, width, height)
+    if pixbuf and (pixbuf.get_width(), pixbuf.get_height()) != (width, height):
+        log.error("Error: %r webcam frame is %ix%i, expected %ix%i",
+                  encoding, pixbuf.get_width(), pixbuf.get_height(), width, height)
+        return None
+    return pixbuf
 
 
-def get_pillow_pixbuf(encoding: str, data: bytes):
+def get_pillow_pixbuf(encoding: str, data: bytes, width: int, height: int):
     try:
         from xpra.codecs.pillow.decoder import open_only
-        img = open_only(data, encoding)
+        img = open_only(data, (encoding, ))
+        # only the header has been parsed so far:
+        if img.size != (width, height):
+            raise ValueError(f"image is {img.size[0]}x{img.size[1]}, expected {width}x{height}")
         img = img.convert("RGBA")
         w, h = img.size
         raw = GLib.Bytes.new(img.tobytes())
@@ -105,9 +113,11 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
     def _process_webcam_frame(self, packet: Packet) -> None:
         try:
             encoding = packet.get_str(3)
+            width = packet.get_u16(4)
+            height = packet.get_u16(5)
             data = packet.get_buffer(6)
-            log("webcam frame: %s", encoding)
-            self._update_frame(encoding, data)
+            log("webcam frame: %s %ix%i", encoding, width, height)
+            self._update_frame(encoding, data, width, height)
         except Exception as e:
             log.error("Error processing webcam frame: %s", e)
 
@@ -123,8 +133,8 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
         self.quit(ExitCode.OK)
         return False
 
-    def _update_frame(self, encoding: str, data: SizedBuffer) -> None:
-        self._pixbuf = get_pixbuf(encoding, memoryview_to_bytes(data))
+    def _update_frame(self, encoding: str, data: SizedBuffer, width: int, height: int) -> None:
+        self._pixbuf = get_pixbuf(encoding, memoryview_to_bytes(data), width, height)
         if self._pixbuf:
             w, h = self._pixbuf.get_width(), self._pixbuf.get_height()
             self._window.resize(w, h)
