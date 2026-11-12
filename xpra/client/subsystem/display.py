@@ -26,7 +26,7 @@ from xpra.os_util import WIN32, OSX, POSIX
 from xpra.util.parsing import (
     parse_scaling, scaleup_value, scaledown_value, fequ, r4cmp, str_to_bool,
     MIN_SCALING, MAX_SCALING, SCALING_EMBARGO_TIME, FALSE_OPTIONS, get_refresh_rate_for_value,
-    adjust_monitor_refresh_rate, MIN_VREFRESH, MAX_VREFRESH,
+    adjust_monitor_refresh_rate, validated_monitor_data, MIN_VREFRESH, MAX_VREFRESH,
 )
 from xpra.util.colourspace import Colourspace, SRGB
 from xpra.util.objects import typedict
@@ -230,7 +230,7 @@ class DisplayClient(StubClientSubsystem):
                 log_screen_sizes(root_w, root_h, sss)
         else:
             sss = ss
-        monitors = adjust_monitor_refresh_rate(self.refresh_rate, self.get_monitors_info())
+        monitors = adjust_monitor_refresh_rate(self.refresh_rate, validated_monitor_data(self.get_monitors_info(), strict=False))
         self._monitor_layout = MonitorLayout(monitors)
         caps["monitors"] = monitors
         # we attach a `monitor` descriptor to our window and pointer packets,
@@ -633,7 +633,7 @@ class DisplayClient(StubClientSubsystem):
         vrefresh = self.get_vrefresh()
         log("get_screen_settings() vrefresh=%s", vrefresh)
         # expose both the real and the cooked per-monitor refresh rate, as in the hello caps:
-        monitors = adjust_monitor_refresh_rate(self.refresh_rate, self.get_monitors_info())
+        monitors = adjust_monitor_refresh_rate(self.refresh_rate, validated_monitor_data(self.get_monitors_info(), strict=False))
         self._monitor_layout = MonitorLayout(monitors)
         return root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h, xdpi, ydpi, vrefresh, monitors
 
@@ -653,6 +653,7 @@ class DisplayClient(StubClientSubsystem):
         u_root_w, u_root_h = screen_settings[5:7]
         xdpi, ydpi = screen_settings[7:9]
         rrate, monitors = screen_settings[9:11]
+        monitors = validated_monitor_data(monitors, strict=False)
         attrs = {
             "desktop-size": (root_w, root_h),
             "desktop-size-unscaled": (u_root_w, u_root_h),

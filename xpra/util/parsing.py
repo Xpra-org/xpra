@@ -8,7 +8,7 @@ import re
 import binascii
 from functools import cache
 from typing import Any
-from collections.abc import Sequence, Callable
+from collections.abc import Mapping, Sequence, Callable
 
 from xpra.constants import RESOLUTION_ALIASES
 from xpra.util.env import envfloat, envint
@@ -599,54 +599,135 @@ def get_default_video_max_size() -> tuple[int, int]:
     return 4096, 4096
 
 
-MAX_MONITORS = envint("XPRA_MAX_MONITORS", 16)
+MAX_MONITORS = max(1, envint("XPRA_MAX_MONITORS", 16))
 MAX_MONITOR_STRING = 64
+MAX_MONITOR_INDEX = 255
+MAX_MONITOR_DIMENSION = 32768
+MAX_MONITOR_OFFSET = 32768
+MAX_MONITOR_PHYSICAL_SIZE = 10000
+MAX_MONITOR_REFRESH_RATE = 1000 * 1000
+MAX_MONITOR_SCALE_FACTOR = 16
+MAX_MONITOR_DEPTH = 128
 MONITOR_STRINGS = ("manufacturer", "model", "subpixel-layout", "name", "colorspace")
 
 
-def validated_monitor_data(monitors: dict) -> dict[int, dict[str, Any]]:
-    from xpra.util.objects import typedict
+def _monitor_integer(value: Any) -> int:
+    if isinstance(value, bool):
+        raise ValueError("boolean is not an integer")
+    if isinstance(value, float) and not value.is_integer():
+        raise ValueError("fractional value is not an integer")
+    return int(value)
+
+
+def _monitor_rectangle(value: Any, *, workarea: bool = False) -> tuple[int, int, int, int]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes, bytearray)) or len(value) != 4:
+        raise ValueError("monitor rectangle must contain four integers")
+    x, y, width, height = (_monitor_integer(v) for v in value)
+    minimum_size = 0 if workarea else 1
+    if not -MAX_MONITOR_OFFSET <= x <= MAX_MONITOR_OFFSET or not -MAX_MONITOR_OFFSET <= y <= MAX_MONITOR_OFFSET:
+        raise ValueError("monitor rectangle offset is out of range")
+    if not minimum_size <= width <= MAX_MONITOR_DIMENSION or not minimum_size <= height <= MAX_MONITOR_DIMENSION:
+        raise ValueError("monitor rectangle size is out of range")
+    return x, y, width, height
+
+
+def _monitor_text(value: Any) -> str:
+    if not isinstance(value, (str, bytes, bytearray)):
+        raise ValueError("monitor text must be a string")
+    from xpra.util.str_fn import bytestostr
+    # Bound the work done by decoding and cleaning locally supplied OS strings,
+    # not just the resulting wire value.
+    return truncate(single_line(bytestostr(value[:MAX_MONITOR_STRING * 4])), MAX_MONITOR_STRING)
+
+
+def validated_monitor_data(monitors: Mapping, *, strict: bool = True) -> dict[int, dict[str, Any]]:
+    """Return a detached, bounded monitor description safe to serialize or consume."""
+    log = Logger("screen")
     validated: dict[int, dict[str, Any]] = {}
+    if not isinstance(monitors, Mapping):
+        if strict:
+            raise TypeError(f"monitor data is not a dictionary: {type(monitors)}")
+        log.warn("Warning: ignoring invalid monitor data of type %s", type(monitors))
+        return validated
     if len(monitors) > MAX_MONITORS:
-        Logger("screen").warn("Warning: too many monitors, only using the first %i out of %i", MAX_MONITORS, len(monitors))
-        monitors = dict(tuple(monitors.items())[:MAX_MONITORS])
-    for i, mon_def in monitors.items():
-        vdef = validated.setdefault(int(i), {})
-        td = typedict(mon_def)
-        aconv: dict[str, Callable] = {
-            "geometry": td.inttupleget,
-            "primary": td.boolget,
-            "refresh-rate": td.intget,
-            "refresh-rate.cooked": td.intget,
-            "scale-factor": td.intget,
-            "width-mm": td.intget,
-            "height-mm": td.intget,
-            "manufacturer": td.strget,
-            "model": td.strget,
-            "subpixel-layout": td.strget,
-            "workarea": td.inttupleget,
-            "name": td.strget,
-            # color information (filled in incrementally, per platform):
-            "depth": td.intget,
-            "colorspace": td.strget,
-            "hdr": td.boolget,
-            "icc": td.dictget,
-            # `xpra.util.colourspace.Colourspace` in its dictionary form:
-            # the colourspace this monitor is composited into (server side),
-            # or a hint for the one we would prefer the session to use (client side).
-            # (distinct from `colorspace` above, which is free-form platform information)
-            "colourspace": td.dictget,
-        }
-        for attr, conv in aconv.items():
-            v = conv(attr)
-            if v is not None:
-                if attr == "icc":
-                    from xpra.net.icc import validate_icc_profile
-                    v = validate_icc_profile(v)
-                if attr in MONITOR_STRINGS:
-                    # the name may be used for the server's monitors:
-                    v = truncate(single_line(v), MAX_MONITOR_STRING)
-                vdef[attr] = v
+        log.warn("Warning: too many monitors, only using the first %i out of %i", MAX_MONITORS, len(monitors))
+    for position, (raw_index, mon_def) in enumerate(monitors.items()):
+        if position >= MAX_MONITORS:
+            break
+        try:
+            index = _monitor_integer(raw_index)
+            if not 0 <= index <= MAX_MONITOR_INDEX:
+                raise ValueError("monitor index is out of range")
+            if index in validated:
+                raise ValueError("duplicate monitor index")
+            if not isinstance(mon_def, Mapping):
+                raise TypeError("monitor definition is not a dictionary")
+        except (TypeError, ValueError) as e:
+            if strict:
+                raise ValueError(f"invalid monitor {raw_index!r}: {e}") from None
+            log.warn("Warning: ignoring invalid monitor %r: %s", raw_index, e)
+            continue
+        vdef: dict[str, Any] = {}
+        validated[index] = vdef
+        for attr in MONITOR_STRINGS:
+            if attr in mon_def:
+                try:
+                    vdef[attr] = _monitor_text(mon_def[attr])
+                except (TypeError, ValueError) as e:
+                    log.warn("Warning: ignoring invalid monitor %s %s: %s", index, attr, e)
+        for attr in ("geometry", "workarea"):
+            if attr in mon_def:
+                try:
+                    vdef[attr] = _monitor_rectangle(mon_def[attr], workarea=attr == "workarea")
+                except (TypeError, ValueError) as e:
+                    log.warn("Warning: ignoring invalid monitor %s %s: %s", index, attr, e)
+        for attr, minimum, maximum in (
+                ("refresh-rate", 1, MAX_MONITOR_REFRESH_RATE),
+                ("refresh-rate.cooked", 1, MAX_MONITOR_REFRESH_RATE),
+                ("scale-factor", 1, MAX_MONITOR_SCALE_FACTOR),
+                ("width-mm", 1, MAX_MONITOR_PHYSICAL_SIZE),
+                ("height-mm", 1, MAX_MONITOR_PHYSICAL_SIZE),
+                ("depth", 1, MAX_MONITOR_DEPTH),
+        ):
+            if attr in mon_def:
+                try:
+                    value = _monitor_integer(mon_def[attr])
+                    if not minimum <= value <= maximum:
+                        raise ValueError(f"value is outside the range {minimum} to {maximum}")
+                    vdef[attr] = value
+                except (TypeError, ValueError) as e:
+                    log.warn("Warning: ignoring invalid monitor %s %s: %s", index, attr, e)
+        for attr in ("primary", "hdr"):
+            if attr in mon_def:
+                value = mon_def[attr]
+                if isinstance(value, bool):
+                    vdef[attr] = value
+                else:
+                    log.warn("Warning: ignoring invalid monitor %s %s: value is not a boolean", index, attr)
+        if "colourspace" in mon_def:
+            value = mon_def["colourspace"]
+            if isinstance(value, Mapping):
+                from xpra.util.colourspace import Colourspace
+                fields = ("primaries", "transfer", "matrix", "range")
+                canonical_input = {}
+                try:
+                    for field in fields:
+                        if field in value:
+                            canonical_input[field] = _monitor_text(value[field])
+                except (TypeError, ValueError) as e:
+                    log.warn("Warning: ignoring invalid monitor %s colourspace: %s", index, e)
+                else:
+                    vdef["colourspace"] = Colourspace.from_dict(canonical_input).to_dict()
+            else:
+                log.warn("Warning: ignoring invalid monitor %s colourspace: value is not a dictionary", index)
+        if "icc" in mon_def:
+            try:
+                from xpra.net.icc import validate_icc_profile
+                vdef["icc"] = validate_icc_profile(mon_def["icc"])
+            except (TypeError, ValueError) as e:
+                if strict:
+                    raise
+                log.warn("Warning: ignoring invalid monitor %s ICC profile: %s", index, e)
         # Monitor refresh rates are represented in mHz throughout Xpra.  Some
         # clients send Hz instead, which would otherwise be interpreted as a
         # tiny fractional rate by display and batching code.
@@ -654,7 +735,7 @@ def validated_monitor_data(monitors: dict) -> dict[int, dict[str, Any]]:
             refresh_rate = vdef.get(attr, 0)
             if 0 < refresh_rate < 1000:
                 normalized = refresh_rate * 1000
-                Logger("screen").warn("Warning: normalizing monitor %s %s from %sHz to %smHz", i, attr, refresh_rate, normalized)
+                log.warn("Warning: normalizing monitor %s %s from %sHz to %smHz", index, attr, refresh_rate, normalized)
                 vdef[attr] = normalized
         # generate a name if we don't have one:
         name = vdef.get("name")
@@ -668,8 +749,8 @@ def validated_monitor_data(monitors: dict) -> dict[int, dict[str, Any]]:
                 else:
                     name = f"{manufacturer} {model}"
             else:
-                name = manufacturer or model or f"{i}"
-            vdef["name"] = name
+                name = manufacturer or model or f"{index}"
+            vdef["name"] = _monitor_text(name)
     return validated
 
 

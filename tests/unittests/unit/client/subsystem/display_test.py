@@ -171,6 +171,57 @@ class DisplayClientTest(ClientMixinTest):
         self.assertEqual(attrs["icc"]["global"]["data"], profile)
         self.assertIsInstance(attrs["icc"]["global"]["data"], bytes)
 
+    def test_update_screen_size_validates_monitor_metadata(self):
+        from xpra.client.subsystem.display import DisplayClient
+
+        display = stubbable(DisplayClient)()
+        monitors = {0: {
+            "geometry": [0, 0, 1024, 768],
+            "name": "screen\nname",
+            "manufacturer": "x" * 1000,
+            "device": r"\\.\DISPLAY1",
+            "scanout": {"pixel-clock": object()},
+        }}
+        display.get_screen_settings = Mock(return_value=(1024, 768, (), 1, (), 1024, 768, 96, 96, 60, monitors))
+        display.get_display_icc_info = Mock(return_value={})
+        display.get_icc_info = Mock(return_value={})
+        display.send = Mock()
+        display.set_max_packet_size = Mock()
+        self.assertTrue(display.update_screen_size())
+        sent = display.send.call_args.args[1]["monitors"]
+        self.assertEqual(sent[0]["geometry"], (0, 0, 1024, 768))
+        self.assertEqual(sent[0]["name"], "screen name")
+        self.assertEqual(len(sent[0]["manufacturer"]), 64)
+        self.assertNotIn("device", sent[0])
+        self.assertNotIn("scanout", sent[0])
+        monitors[0]["geometry"][2] = 1
+        self.assertEqual(sent[0]["geometry"], (0, 0, 1024, 768))
+
+    def test_display_capabilities_validate_monitor_metadata(self):
+        from xpra.client.subsystem import display as display_module
+
+        display = stubbable(display_module.DisplayClient)(Mock())
+        display.refresh_rate = "auto"
+        display.dpi = 96
+        display.log_screen_info = False
+        display.get_vrefresh = Mock(return_value=60)
+        display.get_raw_vrefresh = Mock(return_value=60)
+        display.get_screen_settings = Mock(return_value=(1024, 768, (), 1, (), 1024, 768, 96, 96, 60, {}))
+        display.get_screen_sizes = Mock(return_value=((1024, 768),))
+        display.get_monitors_info = Mock(return_value={0: {
+            "geometry": (0, 0, 1024, 768),
+            "name": "display\nname",
+            "device": r"\\.\DISPLAY1",
+        }})
+        display.get_screen_caps = Mock(return_value={})
+        display.get_dpi_caps = Mock(return_value={})
+        display.get_scaling_caps = Mock(return_value={})
+        with patch.object(display_module, "FULL_INFO", 0):
+            monitors = display.get_display_caps()["monitors"]
+        self.assertEqual(monitors[0]["geometry"], (0, 0, 1024, 768))
+        self.assertEqual(monitors[0]["name"], "display name")
+        self.assertNotIn("device", monitors[0])
+
     def test_display(self):
         with DisplayContext():
             from xpra.client.subsystem import display  # pylint: disable=import-outside-toplevel

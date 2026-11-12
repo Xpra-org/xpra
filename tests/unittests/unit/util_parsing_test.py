@@ -30,6 +30,8 @@ from xpra.util.parsing import (
     get_default_video_max_size,
     validated_monitor_data,
     MAX_MONITORS,
+    MAX_MONITOR_DIMENSION,
+    MAX_MONITOR_REFRESH_RATE,
     MAX_MONITOR_STRING,
     TRUE_OPTIONS,
     FALSE_OPTIONS,
@@ -585,6 +587,11 @@ class TestValidatedMonitorData(unittest.TestCase):
         result = validated_monitor_data(monitors)
         self.assertEqual(result[0]["name"], "ACME ViewPlus")
 
+    def test_generated_name_is_bounded(self):
+        monitors = {0: {"manufacturer": "A" * MAX_MONITOR_STRING, "model": "B" * MAX_MONITOR_STRING}}
+        result = validated_monitor_data(monitors)
+        self.assertEqual(len(result[0]["name"]), MAX_MONITOR_STRING)
+
     def test_name_fallback_to_index(self):
         monitors = {0: {}}
         result = validated_monitor_data(monitors)
@@ -648,6 +655,59 @@ class TestValidatedMonitorData(unittest.TestCase):
     def test_invalid_monitor_icc_is_rejected(self):
         with self.assertRaises(ValueError):
             validated_monitor_data({0: {"icc": {"data": b"invalid"}}})
+
+    def test_only_wire_monitor_fields_are_retained(self):
+        monitors = {0: {
+            "geometry": [0, 0, 1920, 1080],
+            "name": "DP-1",
+            "device": r"\\.\DISPLAY1",
+            "edid": b"host-derived-edid",
+            "scanout": {"pixel-clock": 123456789},
+            "backend-object": object(),
+        }}
+        result = validated_monitor_data(monitors)
+        self.assertEqual(result, {0: {"geometry": (0, 0, 1920, 1080), "name": "DP-1"}})
+        monitors[0]["geometry"][2] = 1
+        self.assertEqual(result[0]["geometry"], (0, 0, 1920, 1080))
+
+    def test_invalid_monitor_fields_are_omitted(self):
+        result = validated_monitor_data({0: {
+            "geometry": (0, 0, MAX_MONITOR_DIMENSION + 1, 1080),
+            "workarea": (0, 0, 100, -1),
+            "refresh-rate": MAX_MONITOR_REFRESH_RATE + 1,
+            "refresh-rate.cooked": -1,
+            "scale-factor": 0,
+            "width-mm": -1,
+            "height-mm": 10001,
+            "depth": 1024,
+            "primary": "yes",
+            "hdr": 1,
+            "manufacturer": object(),
+        }})
+        self.assertEqual(result, {0: {"name": "0"}})
+
+    def test_structured_colourspace_is_canonical(self):
+        raw = {"primaries": "display-p3", "transfer": "srgb", "matrix": "identity", "range": "full", "extra": {"nested": object()}}
+        result = validated_monitor_data({0: {"colourspace": raw}})
+        self.assertEqual(result[0]["colourspace"], {
+            "primaries": "display-p3",
+            "transfer": "srgb",
+            "matrix": "identity",
+            "range": "full",
+        })
+        self.assertIsNot(result[0]["colourspace"], raw)
+        result = validated_monitor_data({0: {"colourspace": {"primaries": object()}}})
+        self.assertNotIn("colourspace", result[0])
+
+    def test_invalid_local_monitor_does_not_block_valid_monitors(self):
+        result = validated_monitor_data({"bad": object(), 1: {"geometry": (0, 0, 800, 600)}}, strict=False)
+        self.assertEqual(result, {1: {"geometry": (0, 0, 800, 600), "name": "1"}})
+        with self.assertRaises(ValueError):
+            validated_monitor_data({"bad": object()})
+
+    def test_invalid_local_icc_is_omitted(self):
+        result = validated_monitor_data({0: {"name": "screen", "icc": {"data": b"invalid"}}}, strict=False)
+        self.assertEqual(result, {0: {"name": "screen"}})
 
 
 def main():
