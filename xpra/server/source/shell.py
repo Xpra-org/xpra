@@ -28,7 +28,6 @@ class ShellConnection(StubClientConnection):
         super().__init__()
         self._server = None
         self.shell_enabled = False
-        self.saved_logging_handler = None
         self.log_records = []
         self.log_thread = None
 
