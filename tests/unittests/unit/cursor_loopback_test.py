@@ -92,7 +92,7 @@ class CursorLoopbackTest(LoopbackTest):
         # no network compression layer in the loopback transport:
         source.compressed_wrapper = lambda _kind, data, **_kw: data
 
-        pixels = b"\x00" * 256  # >=256 so the "raw" encoding path is used
+        pixels = b"\x00" * (16 * 16 * 4)  # a full 16x16 BGRA cursor, >=256 so the "raw" encoding path is used
         serial = 0xABCD
         # cursor_data layout: [x, y, w, h, xhot, yhot, serial, pixels, name]
         cursor_data = [0, 0, 16, 16, 1, 2, serial, pixels, "test-cursor"]
