@@ -6,11 +6,37 @@
 
 import os
 import time
+from contextlib import contextmanager
 
 from xpra.os_util import get_hex_uuid
 from xpra.util.env import osexpand, OSEnvContext
 from xpra.util.io import pollwait
 from unit.server_test_util import ServerTestUtil, log
+
+
+@contextmanager
+def client_display_context(client_display: str):
+    """
+    Open an X11 connection to the client's Xvfb (unless we already have one)
+    with xpra's X11 error handler installed: without it, Xlib's default handler
+    calls `exit(1)` on the first X11 error - ie: a window going away just as we
+    sample it kills the whole test process instead of failing the test.
+    The `EventLoop` is bound to the connection it was created for,
+    so a new one is created for every connection and the error trap hooks
+    it replaces are restored on the way out.
+    """
+    from xpra.x11 import error
+    with OSEnvContext():
+        os.environ["DISPLAY"] = client_display
+        from xpra.x11.bindings.display_source import X11DisplayContext
+        with X11DisplayContext(client_display):
+            from xpra.x11.bindings.loop import EventLoop
+            saved = error.Xenter, error.Xexit
+            event_loop = EventLoop()
+            try:
+                yield event_loop
+            finally:
+                error.Xenter, error.Xexit = saved
 
 
 class X11ClientTestUtil(ServerTestUtil):
@@ -69,6 +95,7 @@ class X11ClientTestUtil(ServerTestUtil):
         with a clear message rather than as a bogus pixel value later on.
         """
         from xpra.x11.prop import prop_get
+        from xpra.x11.error import xsync, XError
         start = time.monotonic()
         candidates = []
         # keep a single X11 connection open for the whole polling loop instead of
@@ -76,113 +103,126 @@ class X11ClientTestUtil(ServerTestUtil):
         # bindings singletons (`X11WindowBindings()`, etc) cache the `Display*` they
         # were created for, so churning through connections makes them "stale" on
         # almost every call and forces them to be recreated constantly:
-        with OSEnvContext():
-            os.environ["DISPLAY"] = client_display
-            from xpra.x11.bindings.display_source import X11DisplayContext
-            with X11DisplayContext(client_display):
-                from xpra.x11.bindings.window import X11WindowBindings
-                x11window = X11WindowBindings()
+        with client_display_context(client_display):
+            from xpra.x11.bindings.window import X11WindowBindings
+            x11window = X11WindowBindings()
 
-                def mapped_size(xid):
-                    if not x11window.is_mapped(xid):
-                        return None
-                    geom = x11window.geometry_with_border(xid)
-                    if not geom:
-                        return None
-                    _wx, _wy, w, h, _border = geom
-                    if w < min_size or h < min_size:
-                        return None
-                    return w, h
+            def mapped_size(xid):
+                if not x11window.is_mapped(xid):
+                    return None
+                geom = x11window.geometry_with_border(xid)
+                if not geom:
+                    return None
+                _wx, _wy, w, h, _border = geom
+                if w < min_size or h < min_size:
+                    return None
+                return w, h
 
-                def matches(w, h, maxw, maxh) -> bool:
-                    if w > maxw or h > maxh:
-                        return False
-                    if size:
-                        return (w, h) == tuple(size)
-                    # the contents cover the whole window minus the CSD chrome,
-                    # any other window of the tree (input-only helpers, etc) is much smaller:
-                    return w * h * 2 >= maxw * maxh
+            def matches(w, h, maxw, maxh) -> bool:
+                if w > maxw or h > maxh:
+                    return False
+                if size:
+                    return (w, h) == tuple(size)
+                # the contents cover the whole window minus the CSD chrome,
+                # any other window of the tree (input-only helpers, etc) is much smaller:
+                return w * h * 2 >= maxw * maxh
 
-                def find_content(xid, w, h):
-                    # `get_all_children` returns the whole subtree, parents first,
-                    # so this also finds windows nested deeper than the direct children:
-                    best = (xid, w, h) if matches(w, h, w, h) else ()
-                    for descendant in x11window.get_all_children(xid):
-                        dsize = mapped_size(descendant)
-                        if not dsize or not matches(dsize[0], dsize[1], w, h):
-                            continue
-                        # prefer the innermost match: the OpenGL drawing area covers its
-                        # parent window, which then only ever shows us unpainted pixels
-                        if not best or dsize[0] * dsize[1] <= best[1] * best[2]:
-                            best = (descendant, dsize[0], dsize[1])
-                    return best
+            def find_content(xid, w, h):
+                # `get_all_children` returns the whole subtree, parents first,
+                # so this also finds windows nested deeper than the direct children:
+                best = (xid, w, h) if matches(w, h, w, h) else ()
+                for descendant in x11window.get_all_children(xid):
+                    dsize = mapped_size(descendant)
+                    if not dsize or not matches(dsize[0], dsize[1], w, h):
+                        continue
+                    # prefer the innermost match: the OpenGL drawing area covers its
+                    # parent window, which then only ever shows us unpainted pixels
+                    if not best or dsize[0] * dsize[1] <= best[1] * best[2]:
+                        best = (descendant, dsize[0], dsize[1])
+                return best
 
-                while time.monotonic() - start < timeout:
-                    candidates = []
-                    for xid in x11window.get_all_x11_windows():
-                        wsize = mapped_size(xid)
-                        if not wsize:
-                            continue
-                        w, h = wsize
-                        wtitle = prop_get(xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
-                        if not wtitle:
-                            wtitle = prop_get(xid, "WM_NAME", "latin1", ignore_errors=True)
-                        if title and (not wtitle or title not in wtitle):
-                            candidates.append((xid, wtitle, w, h))
-                            continue
-                        content = find_content(xid, w, h)
-                        if not content:
-                            # ie: the window is up but its contents don't have the expected size yet
-                            candidates.append((xid, wtitle, w, h))
-                            continue
-                        content_xid, content_w, content_h = content
-                        pos = x11window.get_absolute_position(content_xid)
-                        if not pos:
-                            continue
-                        x, y = pos
-                        return content_xid, x, y, content_w, content_h
-                    time.sleep(interval)
+            def probe(xid):
+                wsize = mapped_size(xid)
+                if not wsize:
+                    return None
+                w, h = wsize
+                wtitle = prop_get(xid, "_NET_WM_NAME", "utf8", ignore_errors=True)
+                if not wtitle:
+                    wtitle = prop_get(xid, "WM_NAME", "latin1", ignore_errors=True)
+                if title and (not wtitle or title not in wtitle):
+                    candidates.append((xid, wtitle, w, h))
+                    return None
+                content = find_content(xid, w, h)
+                if not content:
+                    # ie: the window is up but its contents don't have the expected size yet
+                    candidates.append((xid, wtitle, w, h))
+                    return None
+                content_xid, content_w, content_h = content
+                pos = x11window.get_absolute_position(content_xid)
+                if not pos:
+                    return None
+                x, y = pos
+                return content_xid, x, y, content_w, content_h
+
+            while time.monotonic() - start < timeout:
+                candidates = []
+                for xid in x11window.get_all_x11_windows():
+                    # the client may destroy windows (or their children) at any time,
+                    # ie: whilst we are walking the tree:
+                    try:
+                        with xsync:
+                            found = probe(xid)
+                    except XError as e:
+                        log("window %#x went away whilst probing it: %s", xid, e)
+                        continue
+                    if found:
+                        return found
+                time.sleep(interval)
         raise AssertionError(
             "no window found on display %s matching title=%r size=%s after %s seconds, candidates seen: %s" % (
                 client_display, title, size or "any", timeout, candidates))
 
     def read_client_pixel(self, client_display, xid, x, y):
-        with OSEnvContext():
-            os.environ["DISPLAY"] = client_display
-            from xpra.x11.bindings.display_source import X11DisplayContext
-            with X11DisplayContext(client_display):
-                from xpra.x11.bindings.ximage import XImageBindings
+        """
+        Raises `XError` if the window does not exist (anymore).
+        """
+        from xpra.x11.error import xsync
+        with client_display_context(client_display):
+            from xpra.x11.bindings.ximage import XImageBindings
+            with xsync:
                 ximg = XImageBindings().get_ximage(xid, x, y, 1, 1)
-                if ximg is None:
-                    raise RuntimeError("failed to capture pixel (%i, %i) from window %#x on %s" % (
-                        x, y, xid, client_display))
-                pixel_format = ximg.get_pixel_format()
-                if pixel_format not in ("BGRX", "BGRA"):
-                    raise RuntimeError("unexpected pixel format %r reading window %#x on %s" % (
-                        pixel_format, xid, client_display))
-                pixels = ximg.get_pixels()
-                b, g, r = pixels[0], pixels[1], pixels[2]
-                return r, g, b
+            if ximg is None:
+                raise RuntimeError("failed to capture pixel (%i, %i) from window %#x on %s" % (
+                    x, y, xid, client_display))
+            pixel_format = ximg.get_pixel_format()
+            if pixel_format not in ("BGRX", "BGRA"):
+                raise RuntimeError("unexpected pixel format %r reading window %#x on %s" % (
+                    pixel_format, xid, client_display))
+            pixels = ximg.get_pixels()
+            b, g, r = pixels[0], pixels[1], pixels[2]
+            return r, g, b
 
     def wait_for_client_pixel(self, client_display, xid, x, y, expected_rgb, tolerance=0, timeout=30, interval=0.5):
+        from xpra.x11.error import xsync, XError
         start = time.monotonic()
         last_rgb = None
         # see `find_client_window`: hold the X11 connection open for the whole
         # polling loop instead of reopening it (and re-creating the X11 bindings
         # singletons) on every single pixel read:
-        with OSEnvContext():
-            os.environ["DISPLAY"] = client_display
-            from xpra.x11.bindings.display_source import X11DisplayContext
-            with X11DisplayContext(client_display):
-                geom = ()
-                while time.monotonic() - start < timeout:
-                    last_rgb = self.read_client_pixel(client_display, xid, x, y)
-                    if all(abs(a - b) <= tolerance for a, b in zip(last_rgb, expected_rgb)):
-                        return last_rgb
-                    time.sleep(interval)
-                # the window geometry tells us if we ended up sampling the wrong window
-                # (ie: the client's CSD chrome rather than the window contents):
-                from xpra.x11.bindings.window import X11WindowBindings
-                geom = X11WindowBindings().geometry_with_border(xid)
+        with client_display_context(client_display):
+            geom = ()
+            while time.monotonic() - start < timeout:
+                last_rgb = self.read_client_pixel(client_display, xid, x, y)
+                if all(abs(a - b) <= tolerance for a, b in zip(last_rgb, expected_rgb)):
+                    return last_rgb
+                time.sleep(interval)
+            # the window geometry tells us if we ended up sampling the wrong window
+            # (ie: the client's CSD chrome rather than the window contents):
+            from xpra.x11.bindings.window import X11WindowBindings
+            try:
+                with xsync:
+                    geom = X11WindowBindings().geometry_with_border(xid)
+            except XError as e:
+                geom = str(e)
         raise AssertionError("pixel (%i, %i) of window %#x (geometry=%s) on %s: expected %s (tolerance %i) but got %s" % (
             x, y, xid, geom, client_display, expected_rgb, tolerance, last_rgb))
