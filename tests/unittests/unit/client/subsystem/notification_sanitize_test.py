@@ -87,6 +87,14 @@ class NotificationSanitizeTest(unittest.TestCase):
         self.assertEqual(len(shown["actions"][1]), MAX_ACTION_LABEL)
         self.assertEqual(len(shown["actions"]), 2)
 
+    def test_packet_structure_limits(self):
+        with self.assertRaises(ValueError):
+            self.show(actions=("x",) * (notification.MAX_NOTIFICATION_ACTION_FIELDS + 1))
+        with self.assertRaises(ValueError):
+            self.show(hints={str(i): i for i in range(notification.MAX_NOTIFICATION_HINTS + 1)})
+        with self.assertRaises(ValueError):
+            self.notifications._process_show(Packet("notification-show", "", 1))
+
     def test_urgency(self):
         self.assertEqual(self.show(nid=1, hints={"urgency": 2})["hints"]["urgency"], 2)
         self.assertEqual(self.show(nid=2, hints={"urgency": 99})["hints"]["urgency"], 2)

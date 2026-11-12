@@ -31,6 +31,9 @@ MAX_URGENCY = envint("XPRA_NOTIFICATION_MAX_URGENCY", 2)
 # (replacing an existing notification does not count)
 RATE_LIMIT = envint("XPRA_NOTIFICATION_RATE_LIMIT", 20)
 RATE_WINDOW = 10
+MAX_NOTIFICATION_ACTION_FIELDS = 256
+MAX_NOTIFICATION_ACTION_FIELD_SIZE = 4096
+MAX_NOTIFICATION_HINTS = 32
 
 
 notifier = None
@@ -203,17 +206,19 @@ class NotificationClient(StubClientSubsystem):
         if not self.enabled:
             log("process_notify_show: ignoring packet, notifications are disabled")
             return
+        if len(packet) not in (9, 10, 12):
+            raise ValueError(f"invalid notification packet size {len(packet)}")
         self.client._ui_event()
         from xpra.notification.common import (  # pylint: disable=import-outside-toplevel
             strip_unsafe_markup, limit_actions, clamp_expire_timeout,
             MAX_APP_NAME, MAX_SUMMARY, MAX_BODY,
         )
         from xpra.util.str_fn import single_line, clean_text, truncate  # pylint: disable=import-outside-toplevel
-        dbus_id = packet.get_str(1)
+        dbus_id = packet.get_str(1, 128)
         nid = packet.get_u64(2)
         app_name = truncate(single_line(packet.get_str(3)), MAX_APP_NAME)
         replaces_nid = packet.get_u64(4)
-        app_icon = packet.get_str(5)
+        app_icon = packet.get_str(5, 128)
         summary = truncate(single_line(packet.get_str(6)), MAX_SUMMARY)
         # notification daemons may interpret the body as markup:
         body = truncate(strip_unsafe_markup(clean_text(packet.get_str(7))), MAX_BODY)
@@ -225,8 +230,8 @@ class NotificationClient(StubClientSubsystem):
             # IconData or ()
             icon = packet[9]
         if len(packet) >= 12:
-            actions = limit_actions(packet.get_strs(10))
-            hints = packet.get_dict(11)
+            actions = limit_actions(packet.get_strs(10, MAX_NOTIFICATION_ACTION_FIELDS, MAX_NOTIFICATION_ACTION_FIELD_SIZE))
+            hints = dict(packet.get_dict(11, MAX_NOTIFICATION_HINTS))
         if "urgency" in hints:
             try:
                 hints["urgency"] = min(MAX_URGENCY, max(0, int(hints["urgency"])))
@@ -313,6 +318,7 @@ class NotificationClient(StubClientSubsystem):
     def _process_close(self, packet: Packet) -> None:
         if not self.enabled:
             return
+        packet.check_len(2, 2)
         assert self.notifier
         nid = packet.get_u64(1)
         log("_process_close(%s)", nid)
