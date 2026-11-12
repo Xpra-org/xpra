@@ -33,7 +33,20 @@ GdkPixbuf = gi_import("GdkPixbuf")
 GLib = gi_import("GLib")
 
 
+def check_encoded_size(encoding: str, data: bytes, width: int, height: int) -> None:
+    """Verify the encoded dimensions without decoding the image pixels."""
+    from xpra.codecs.pillow.decoder import open_only
+    with open_only(data, (encoding, )) as img:
+        if img.size != (width, height):
+            raise ValueError(f"image is {img.size[0]}x{img.size[1]}, expected {width}x{height}")
+
+
 def get_pixbuf(encoding: str, data: bytes, width: int, height: int):
+    try:
+        check_encoded_size(encoding, data, width, height)
+    except Exception as e:
+        log.error("Error loading %r webcam frame: %s", encoding, e)
+        return None
     try:
         pixbuf = load_pixbuf(data, (encoding, ))
     except Exception as e:
