@@ -11,6 +11,7 @@ from typing import Any
 from collections.abc import Callable
 from queue import Queue
 
+from xpra.common import noop
 from xpra.util.str_fn import repr_ellipsized, hexstr
 from xpra.util.env import envint
 from xpra.util.objects import Scheduler
@@ -367,7 +368,7 @@ class RFBProtocol:
         # clear all references to ensure we can get garbage collected quickly:
         self._write_thread = None
         self._read_thread = None
-        self._process_packet_cb = None
+        self._process_packet_cb = noop
 
     def terminate_queue_threads(self) -> None:
         log("terminate_queue_threads()")
