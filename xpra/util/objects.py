@@ -343,6 +343,8 @@ def merge_dicts(a: dict[str, Any], b: dict[str, Any], path: list[str] | None = N
                     get_util_logger().warn(f"Warning: merging dictionaries at path {path!r} for key {key!r}", backtrace=True)
                     get_util_logger().warn(" a=%s", repr_ellipsized(a))
                     get_util_logger().warn(" b=%s", repr_ellipsized(b))
+                    get_util_logger().warn(" a[%s]=%s", key, repr_ellipsized(a[key]))
+                    get_util_logger().warn(" b[%s]=%s", key, repr_ellipsized(b[key]))
                 merge_dicts(a[key], b[key], path + [str(key)])
             elif a[key] == b[key]:
                 pass  # same leaf value
