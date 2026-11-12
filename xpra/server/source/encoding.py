@@ -339,7 +339,7 @@ class EncodingsConnection(StubClientConnection):
 
         self.set_encoding(eopts.strget("setting") or eopts.strget(""), None)
         # in milliseconds, 0 disables the lossless auto-refresh,
-        # left unchanged when missing (ie: from an `encoding-config` packet):
+        # left unchanged when missing (ie: from an older client's `encoding-config` packet):
         if "auto_refresh_delay" in eopts:
             self.auto_refresh_delay = eopts.intget("auto_refresh_delay", 0)
         elif BACKWARDS_COMPATIBLE and "auto_refresh_delay" in c:

@@ -15,7 +15,7 @@ from xpra.codecs.video import getVideoHelper
 from xpra.util.parsing import parse_bool_or_int
 from xpra.common import noop
 from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
-from xpra.net.common import Packet, FULL_INFO, packet_handler
+from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE, packet_handler
 from xpra.net import compression
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
@@ -95,7 +95,7 @@ class Encodings(StubClientSubsystem):
     Mixin for adding encodings to a client
     """
     __slots__ = (
-        "_codecs_loaded", "_codecs_lock", "allowed_encodings", "csc_modules", "encoding", "encoding_defaults",
+        "_codecs_loaded", "_codecs_lock", "allowed_encodings", "auto_refresh_delay", "csc_modules", "encoding", "encoding_defaults",
         "min_quality", "min_speed", "quality", "server_core_encodings", "server_encodings",
         "server_encodings_with_lossless_mode", "server_encodings_with_quality", "server_encodings_with_speed",
         "speed", "video_decoders", "video_max_size", "video_scaling",
@@ -111,6 +111,8 @@ class Encodings(StubClientSubsystem):
         self._codecs_lock = Lock()
         self._codecs_loaded = Event()
         self.allowed_encodings: Sequence[str] = ()
+        # in seconds:
+        self.auto_refresh_delay: float = 0
         self.encoding = ""
         self.quality = -1
         self.min_quality = 0
@@ -132,6 +134,7 @@ class Encodings(StubClientSubsystem):
 
     def init(self, opts) -> None:
         self.allowed_encodings = opts.encodings
+        self.auto_refresh_delay = opts.auto_refresh_delay
         self.encoding = opts.encoding
         if opts.video_scaling.lower() in ("auto", "on"):
             self.video_scaling = None
@@ -283,7 +286,12 @@ class Encodings(StubClientSubsystem):
         self.send(ENCODING_CONFIG, caps)
 
     def get_caps(self) -> dict[str, Any]:
-        return {"encoding": self.get_encodings_caps()}
+        ecaps = self.get_encodings_caps()
+        caps: dict[str, Any] = {"encoding": ecaps}
+        if BACKWARDS_COMPATIBLE:
+            # servers older than v8 only read it from the top level:
+            caps["auto_refresh_delay"] = ecaps["auto_refresh_delay"]
+        return caps
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self._parse_server_capabilities(c)
@@ -320,6 +328,8 @@ class Encodings(StubClientSubsystem):
             "max-soft-expired": MAX_SOFT_EXPIRED,
             "send-timestamps": SEND_TIMESTAMPS,
             "eos": True,
+            # in milliseconds, 0 disables the lossless auto-refresh:
+            "auto_refresh_delay": int(self.auto_refresh_delay * 1000),
         }
         if self.video_scaling is not None:
             caps["scaling.control"] = self.video_scaling

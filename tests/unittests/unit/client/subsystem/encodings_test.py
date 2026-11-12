@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from unittest.mock import patch
 
 from xpra.util.objects import AdHocStruct
 from xpra.client.subsystem import encoding
@@ -26,12 +27,18 @@ class EncodingClientTest(ClientMixinTest):
         opts.video_decoders = []
         opts.csc_modules = []
         opts.video_encoders = []
+        opts.auto_refresh_delay = 0.15
         m = self._test_mixin_class(encoding.Encodings, opts, {
             "encodings": ["rgb"],
             "encodings.core": ["rgb32", "rgb24", "png"],
             "encodings.problematic": [],
             "encoding": "",
         })
+        for compat in (True, False):
+            with patch("xpra.client.subsystem.encoding.BACKWARDS_COMPATIBLE", compat):
+                caps = m.get_caps()
+            self.assertEqual(caps["encoding"]["auto_refresh_delay"], 150)
+            self.assertEqual(caps.get("auto_refresh_delay"), 150 if compat else None)
         m.set_encoding("auto")
         expected = "encoding-set"
         self.assertEqual(self.packets[-1], (expected, "auto"))

@@ -11,7 +11,7 @@ from typing import Any, Final
 from collections.abc import Callable, Sequence
 
 from xpra.platform.gui import get_window_min_size, get_window_max_size, is_session_locked
-from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE, packet_handler
+from xpra.net.common import Packet, PacketElement, packet_handler
 from xpra.net.packet_type import (
     WINDOW_UNMAP, WINDOW_REFRESH, WINDOW_STACKING, WINDOW_DESTROY, WINDOW_RAISE, WINDOW_RESIZED, WINDOW_RESTACK, WINDOW_MOVE_RESIZE, WINDOW_CREATE, WINDOW_METADATA, WINDOW_INITIATE_MOVERESIZE,
 )
@@ -93,7 +93,7 @@ class WindowManagerClient(StubClientSubsystem):
     PREFIX = "window"
     SLOT_NAMES = (
         "_id_to_window", "_locked_windows", "_stacking_watcher", "_win32_events", "_window_stacking", "_window_to_id",
-        "auto_refresh_delay", "max_window_size", "min_window_size", "modal_windows",
+        "max_window_size", "min_window_size", "modal_windows",
         "pixel_depth", "server_window_frame_extents", "server_window_stacking", "server_window_states",
         "sync_focus", "sync_position", "windows_enabled",
     )
@@ -108,7 +108,6 @@ class WindowManagerClient(StubClientSubsystem):
         self._id_to_window: dict[int, Any] = {}
         self._window_stacking: tuple[int, ...] = ()
 
-        self.auto_refresh_delay: int = -1
         self.min_window_size: tuple[int, int] = (0, 0)
         self.max_window_size: tuple[int, int] = (0, 0)
 
@@ -132,7 +131,6 @@ class WindowManagerClient(StubClientSubsystem):
         self._stacking_watcher = None
 
     def init(self, opts) -> None:
-        self.auto_refresh_delay = opts.auto_refresh_delay
         self.min_window_size = parse_window_size(opts.min_size) or get_window_min_size()
         self.max_window_size = parse_window_size(opts.max_size) or get_window_max_size()
         self.pixel_depth = int(opts.pixel_depth)
@@ -227,16 +225,7 @@ class WindowManagerClient(StubClientSubsystem):
     ######################################################################
     # hello:
     def get_caps(self) -> dict[str, Any]:
-        # in milliseconds, merged into the `encoding` caps of the encoding subsystem:
-        delay = int(self.auto_refresh_delay * 1000)
-        caps: dict[str, Any] = {
-            "window": self.get_window_caps(),
-            "encoding": {"auto_refresh_delay": delay},
-        }
-        if BACKWARDS_COMPATIBLE:
-            # servers older than v8 only read it from the top level:
-            caps["auto_refresh_delay"] = delay
-        return caps
+        return {"window": self.get_window_caps()}
 
     def get_window_caps(self) -> dict[str, Any]:
         if not self.windows_enabled:
