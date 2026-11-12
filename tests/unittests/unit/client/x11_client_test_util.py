@@ -218,7 +218,14 @@ class X11ClientTestUtil(ServerTestUtil):
             b, g, r = pixels[0], pixels[1], pixels[2]
             return r, g, b
 
-    def wait_for_client_pixel(self, client_display, xid, x, y, expected_rgb, tolerance=0, timeout=30, interval=0.5):
+    def wait_for_client_pixel(self, client_display, xid, x, y, expected_rgb, tolerance=0, timeout=30, interval=0.5, title="", size=()):
+        """
+        Poll the pixel at (x, y) of window `xid` until it matches `expected_rgb`.
+        The client may destroy and re-create its window after we have found it
+        (ie: when it re-initializes the window's backing), so when `title` is given
+        a window that has gone away is looked up again using `title` and `size`
+        (see `find_client_window`), otherwise this raises `XError`.
+        """
         from xpra.x11.error import xsync, XError
         start = time.monotonic()
         last_rgb = None
@@ -228,7 +235,15 @@ class X11ClientTestUtil(ServerTestUtil):
         with client_display_context(client_display):
             geom = ()
             while time.monotonic() - start < timeout:
-                last_rgb = self.read_client_pixel(client_display, xid, x, y)
+                try:
+                    last_rgb = self.read_client_pixel(client_display, xid, x, y)
+                except XError as e:
+                    if not title:
+                        raise
+                    log("window %#x went away (%s), looking for %r again", xid, e, title)
+                    remaining = max(1, timeout - (time.monotonic() - start))
+                    xid = self.find_client_window(client_display, title=title, size=size, timeout=remaining)[0]
+                    continue
                 if all(abs(a - b) <= tolerance for a, b in zip(last_rgb, expected_rgb)):
                     return last_rgb
                 time.sleep(interval)

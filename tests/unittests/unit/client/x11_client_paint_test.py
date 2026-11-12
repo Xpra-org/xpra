@@ -66,7 +66,7 @@ class X11ClientPaintTest(X11ClientTestUtil):
             xid, _cx, _cy, cw, ch = self.find_client_window(xvfb.display, title="Colors", size=COLORS_SIZE)
             for name, (point, expected) in self._quadrant_centers(cw, ch).items():
                 x, y = point
-                self.wait_for_client_pixel(xvfb.display, xid, x, y, expected, tolerance=tolerance)
+                self.wait_for_client_pixel(xvfb.display, xid, x, y, expected, tolerance=tolerance, title="Colors", size=COLORS_SIZE)
                 log("colors-plain %s quadrant OK at (%i, %i)", name, x, y)
         finally:
             if client:
@@ -120,7 +120,7 @@ class X11ClientPaintTest(X11ClientTestUtil):
                 xid, _cx, _cy, cw, ch = self.find_client_window(client_display, title="Colors", size=COLORS_SIZE)
                 for name, (point, expected) in self._quadrant_centers(cw, ch).items():
                     x, y = point
-                    self.wait_for_client_pixel(client_display, xid, x, y, expected, tolerance=4)
+                    self.wait_for_client_pixel(client_display, xid, x, y, expected, tolerance=4, title="Colors", size=COLORS_SIZE)
                     log("colors-plain %s quadrant OK at (%i, %i)", name, x, y)
             finally:
                 if client:
@@ -150,7 +150,7 @@ class X11ClientPaintTest(X11ClientTestUtil):
             # placed via `-geometry +120+90`, no window manager on either side:
             assert abs(cx - 120) <= 2 and abs(cy - 90) <= 2, "unexpected xterm position (%i, %i)" % (cx, cy)
             # no text is printed, so the whole cell area stays a uniform -bg fill:
-            self.wait_for_client_pixel(xvfb.display, xid, cw // 2, ch // 2, (0x10, 0x18, 0x20), tolerance=0)
+            self.wait_for_client_pixel(xvfb.display, xid, cw // 2, ch // 2, (0x10, 0x18, 0x20), tolerance=0, title="testxterm")
         finally:
             if client:
                 self.terminate_and_wait(client)
