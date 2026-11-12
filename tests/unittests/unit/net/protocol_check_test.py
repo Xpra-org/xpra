@@ -50,6 +50,17 @@ class TestVerifyPacket(unittest.TestCase):
         self.assertIn("aliased", packet_structure_error(Packet("test", [shared, shared])))
         self.assertEqual(packet_structure_error(Packet("test", [(), ()])), "")
 
+    def test_error_path(self):
+        error = packet_structure_error(Packet("info", {"xvfb": {"use-display": None}}))
+        self.assertEqual(error, "packet contains a None value at packet[1]['xvfb']['use-display']")
+        error = packet_structure_error(Packet("test", 1, [2, 1.5]))
+        self.assertTrue(error.endswith(" at packet[2][1]"), error)
+        error = packet_structure_error(Packet("test", {None: 1}))
+        self.assertTrue(error.endswith(" at packet[1].key(None)"), error)
+        error = packet_structure_error(Packet("test", {"x" * 100: None}))
+        self.assertTrue(error.endswith("...]"), error)
+        self.assertLess(len(error), 100)
+
 
 def main():
     unittest.main()
