@@ -333,7 +333,7 @@ class X11KeyboardManager(KeyboardManager):
     def send_ibus_layouts(self, ss):
         send_ibus_layouts = getattr(ss, "send_ibus_layouts", noop)
         ibuslog(f"{send_ibus_layouts=}")
-        if send_ibus_layouts == noop:
+        if not send_ibus_layouts:
             return
 
         # wait for ibus, so we will have the layouts if they exist

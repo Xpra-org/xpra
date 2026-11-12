@@ -11,6 +11,7 @@ Exercises the state-machine, packet-handling, and capability helpers directly.
 
 import unittest
 from unittest.mock import MagicMock, patch
+from xpra.common import noop
 from xpra.net.common import Packet
 from xpra.util.objects import typedict, AdHocStruct
 
@@ -472,7 +473,8 @@ class TestAudioSinkStateChanged(unittest.TestCase):
         x.on_sink_ready = lambda: ready_called.append(True)
         x.sink_state_changed(sink, "ready")
         assert ready_called
-        assert x.on_sink_ready.__name__ == "<lambda>" or x.on_sink_ready is not None
+        # the callback only fires once:
+        self.assertIs(x.on_sink_ready, noop)
 
     def test_emits_speaker_changed(self):
         x = _make_client()

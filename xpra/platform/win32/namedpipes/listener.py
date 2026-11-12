@@ -114,7 +114,7 @@ class NamedPipeListener(Thread):
         # the handle of the connection currently being accepted,
         # retrieved by the `new_connection_cb` callback (like `socket.accept` for regular sockets):
         self.pending_handle: HANDLE = INVALID_HANDLE
-        self.new_connection_cb = self.new_connection if new_connection_cb == noop else new_connection_cb
+        self.new_connection_cb = new_connection_cb or self.new_connection
         self.remote = remote
         self.exit_loop = False
         super().__init__(name="NamedPipeListener-%s" % pipe_name)

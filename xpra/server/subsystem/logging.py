@@ -102,18 +102,18 @@ class LoggingManager(StubSubsystem):
             self.start_capturing_logging()
 
     def start_capturing_logging(self) -> None:
-        if self.local_handler == noop:
+        if not self.local_handler:
             self.local_handler = set_global_logging_handler(self.remote_logging_handler)
 
     def stop_capturing_logging(self) -> None:
         ll = self.local_handler
-        if ll != noop:
+        if ll:
             self.local_handler = noop
             set_global_logging_handler(ll)
 
     def local_err(self, message: str, exc, level: int, msg: str, args, kwargs) -> None:
         ll = self.local_handler
-        if self.server._closing or ll == noop:
+        if self.server._closing or not ll:
             return
 
         def local_warn(*args) -> None:

@@ -112,7 +112,7 @@ class SplashServer(StubSubsystem):
                 register(progress_exit)
             else:
                 use_stderr = True
-        if self.progress_fn == noop and use_stderr:
+        if not self.progress_fn and use_stderr:
             def progress_to_stderr(*args) -> None:
                 stderr_print(" ".join(str(x) for x in args))
 

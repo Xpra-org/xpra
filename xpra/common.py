@@ -81,8 +81,27 @@ PaintCallback: TypeAlias = Callable[[int | bool, str], None]
 PaintCallbacks: TypeAlias = MutableSequence[PaintCallback]
 
 
-def noop(*_args, **_kwargs) -> None:
-    """ do nothing """
+class NoOp:
+    """ a falsy callable which does nothing, use `if fn:` to test for a real callback """
+    __slots__ = ()
+    # like a function, for code which logs `fn.__name__`:
+    __name__ = "noop"
+
+    def __bool__(self) -> bool:
+        return False
+
+    def __call__(self, *_args, **_kwargs) -> None:
+        """ do nothing """
+
+    def __repr__(self) -> str:
+        return "noop"
+
+    def __reduce__(self) -> str:
+        # copy, deepcopy and pickle all return the `noop` singleton:
+        return "noop"
+
+
+noop = NoOp()
 
 
 def noerr(fn: Callable, *args):

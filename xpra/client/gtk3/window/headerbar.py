@@ -29,7 +29,7 @@ def make_header_bar(title: str, image, show_window_menu=noop, show_xpra_menu=noo
     hb.set_has_subtitle(False)
     hb.set_show_close_button(True)
     hb.props.title = title
-    if WINDOW_MENU and show_window_menu != noop:
+    if WINDOW_MENU and show_window_menu:
         button = Gtk.Button()
         if image:
             button.add(image)
@@ -38,7 +38,7 @@ def make_header_bar(title: str, image, show_window_menu=noop, show_xpra_menu=noo
     elif WINDOW_ICON and image:
         # just the icon, no menu:
         hb.pack_start(image)
-    if WINDOW_XPRA_MENU and show_xpra_menu != noop:
+    if WINDOW_XPRA_MENU and show_xpra_menu:
         # defined in window:
         icon = Gio.ThemedIcon(name="open-menu-symbolic")
         image = Gtk.Image.new_from_gicon(icon, Gtk.IconSize.BUTTON)
@@ -98,7 +98,7 @@ class HeaderBarWindow(GtkStubWindow):
         # soft dependency on window methods:
         show_window_menu = getattr(self, "show_window_menu", noop)
         # only offered when the client has an xpra menu to show:
-        show_xpra_menu = getattr(self, "show_xpra_menu", noop) if getattr(self, "get_xpra_menu", None) else noop
+        show_xpra_menu = getattr(self, "get_xpra_menu", None) and getattr(self, "show_xpra_menu", noop)
         hb = make_header_bar(title, self.header_bar_image, show_window_menu, show_xpra_menu)
         self.set_titlebar(hb)
 

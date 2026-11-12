@@ -175,10 +175,10 @@ class BugReport:
             take_screenshot_fn = take_screenshot
         except ImportError:
             log("failed to load platform specific screenshot code", exc_info=True)
-        if take_screenshot_fn == noop:
+        if not take_screenshot_fn:
             # try with Pillow:
             take_screenshot_fn = get_pillow_imagegrab_fn()
-        if take_screenshot_fn == noop:
+        if not take_screenshot_fn:
             # default: gtk screen capture
             try:
                 from xpra.gtk.capture import GTKImageCapture
@@ -187,7 +187,7 @@ class BugReport:
             except (ImportError, AttributeError):
                 log.warn("Warning: failed to load gtk screenshot code", exc_info=True)
         log("take_screenshot_fn=%s", take_screenshot_fn)
-        if take_screenshot_fn != noop:
+        if take_screenshot_fn:
             def _get_screenshot():
                 # take_screenshot() returns: w, h, "png", rowstride, data
                 return take_screenshot_fn()[4]

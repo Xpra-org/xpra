@@ -46,7 +46,7 @@ class TrayRequest:
         tray = find_tray()
         if not tray:
             raise RuntimeError("no system tray icon found")
-        if tray.balloon_callback is not noop:
+        if tray.balloon_callback:
             raise RuntimeError("another request is already using the system tray icon")
         self.tray = tray
         self.summary = summary

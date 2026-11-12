@@ -137,7 +137,8 @@ class CompositePixmapTest(ServerTestUtil):
 
     def test_wrap_pixmap_frees_the_pixmap_if_it_raises(self):
         """ `wrap_pixmap` takes ownership unconditionally, including on failure """
-        from xpra.x11.bindings.core import set_context_check, noop
+        from xpra.common import noop
+        from xpra.x11.bindings.core import set_context_check
         from xpra.x11.bindings.ximage import XImageBindings
         xid = self.redirected_window()
         pixmap = self.name_pixmap(xid)

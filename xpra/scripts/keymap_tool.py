@@ -23,6 +23,7 @@ import sys
 from collections.abc import Iterable, Sequence
 from typing import Any
 
+from xpra.common import noop
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 
@@ -44,9 +45,7 @@ def get_local_keymap() -> dict[str, Any]:
         init_x11_display()
     from xpra.client.gtk3.keyboard_helper import GTKKeyboardHelper
 
-    def noop(*_args) -> None:
-        """ this keyboard helper is not connected to a server """
-
+    # this keyboard helper is not connected to a server:
     helper = GTKKeyboardHelper(noop)
     try:
         helper.query_xkbmap()

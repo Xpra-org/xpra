@@ -50,7 +50,7 @@ class LoggingClient(StubClientSubsystem):
     def cleanup(self) -> None:
         ll = self.local_logging
         log("cleanup() local_logging=%s", ll)
-        if ll != noop:
+        if ll:
             self.local_logging = noop
             set_global_logging_handler(ll)
 
@@ -96,7 +96,7 @@ class LoggingClient(StubClientSubsystem):
         self.send(LOGGING_CONTROL, "start")
 
     def _process_event(self, packet: Packet) -> None:
-        assert self.local_logging == noop, "cannot receive logging packets when forwarding logging!"
+        assert not self.local_logging, "cannot receive logging packets when forwarding logging!"
         level = packet.get_u8(1)
         msg = packet.get_str(2)
         prefix = "server: "

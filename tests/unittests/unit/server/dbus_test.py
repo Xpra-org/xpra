@@ -12,12 +12,9 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
+from xpra.common import noop
 from xpra.os_util import OSX, POSIX
 from xpra.util.env import OSEnvContext
-
-
-def noop(*_args, **_kwargs):
-    pass
 
 
 class FakeLogger:

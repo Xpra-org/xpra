@@ -14,6 +14,7 @@ from unittest.mock import Mock, patch
 
 from unit.test_util import LoggerSilencer, silence_error, silence_info
 
+from xpra.common import noop
 from xpra.util.objects import typedict, AdHocStruct
 from xpra.os_util import POSIX, OSX
 from xpra.util.io import get_util_logger
@@ -700,8 +701,6 @@ class SourceMixinsTest(unittest.TestCase):
         protocol._conn.options = {"shell" : "yes"}
         m = self._test_mixin_class(shell.ShellConnection, protocol=protocol)
 
-        def noop(*_args):
-            pass
         m.send = noop
         out,err = m.shell_exec("print('hello')")
         assert out.rstrip("\n")=="hello", "expected 'hello' but got '%s'" % out.rstrip("\n")

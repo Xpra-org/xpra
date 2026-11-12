@@ -216,7 +216,7 @@ def checkitem(title, cb: Callable = noop, active=False) -> Gtk.CheckMenuItem:
     """ Utility method for easily creating a CheckMenuItem """
     check_item = Gtk.CheckMenuItem(label=title)
     check_item.set_active(active)
-    if cb and cb != noop:
+    if cb:
         check_item.connect("toggled", cb)
     check_item.show()
     return check_item

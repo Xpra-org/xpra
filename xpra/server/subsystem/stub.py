@@ -218,7 +218,7 @@ class StubSubsystem(SubsystemPacketHandlers, SignalEmitter):
         if not control:
             return
         run = getattr(self, "control_command_%s" % name.replace("-", "_"), noop)
-        if run == noop:
+        if not run:
             from xpra.log import Logger
             Logger("util").warn("Warning: control command %r not found on %s", name, self)
             return

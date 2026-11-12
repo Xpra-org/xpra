@@ -136,7 +136,7 @@ class StartSession(Gtk.Window):
 
         def rb(sibling=None, text="", cb: Callable = noop, tooltip_text="") -> Gtk.RadioButton:
             btn = Gtk.RadioButton.new_with_label_from_widget(sibling, _(text))
-            if cb != noop:
+            if cb:
                 btn.connect("toggled", cb)
             if tooltip_text:
                 btn.set_tooltip_text(_(tooltip_text))

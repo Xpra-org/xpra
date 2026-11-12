@@ -285,7 +285,7 @@ cdef object get_caps(AMFCaps *caps, dict props):
             continue
         getter = getters.get(pyname, noop)
         log(f"getter({pyname})={getter}")
-        if getter != noop:
+        if getter:
             try:
                 value = getter(amfname)
             except RuntimeError as e:

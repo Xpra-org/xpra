@@ -157,7 +157,7 @@ class Win32Hooks:
         callback = self._message_map.get(msg, noop)
         vlog("_wndproc%s event name=%s, callback=%s", (hwnd, msg, wparam, lparam), event_name, callback)
         v = None
-        if callback != noop:
+        if callback:
             # run our callback
             try:
                 v = callback(hwnd, msg, wparam, lparam)

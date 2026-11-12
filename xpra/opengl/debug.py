@@ -75,7 +75,7 @@ def context_init_debug() -> None:
     global GREMEDY_DEBUG, KHR_DEBUG
     # Ask GL to send us all debug messages
     if KHR_DEBUG:
-        if GL_DEBUG_OUTPUT and gl_debug_callback != noop and glInitDebugKHR():
+        if GL_DEBUG_OUTPUT and gl_debug_callback and glInitDebugKHR():
             glEnable(GL_DEBUG_OUTPUT)
             glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS)
             glDebugMessageCallback(gl_debug_callback, None)

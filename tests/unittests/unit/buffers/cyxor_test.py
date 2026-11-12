@@ -76,7 +76,7 @@ class TestHMAC(unittest.TestCase):
 
 
 def main():
-    if xor_str != noop:
+    if xor_str:
         unittest.main()
     else:
         print("no cyxor module found, test skipped")

@@ -40,7 +40,7 @@ def validate_rgb_formats(rgb_formats: Sequence[str], encodings: Sequence[str]) -
 
 def get_sources_by_type(server, subsystem_type=object, exclude=None) -> Sequence:
     fn = getattr(server, GET_SOURCES_BY_TYPE, noop)
-    if fn == noop:
+    if not fn:
         from xpra.log import Logger
         Logger("server").error("Error: no %r in %s", GET_SOURCES_BY_TYPE, server)
         return ()

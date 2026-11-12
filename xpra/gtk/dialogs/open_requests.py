@@ -88,7 +88,7 @@ class OpenRequestsWindow:
             b = self.btn(text, callback, icon_name)
             hbox.pack_start(b)
 
-        if self.show_file_upload_cb != noop:
+        if self.show_file_upload_cb:
             btn("Upload", self.show_file_upload_cb, "upload.png")
         btn("Close", self.close, "quit.png")
         if get_download_dir():

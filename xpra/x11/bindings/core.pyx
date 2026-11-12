@@ -8,6 +8,8 @@ import cython
 import traceback
 from collections.abc import Callable, Sequence
 
+from xpra.common import noop
+
 from xpra.x11.bindings.xlib cimport (
     Time, Status, Atom, Window,
     XInternAtom, XInternAtoms,
@@ -268,10 +270,6 @@ errors = {
     BadLength: "BadLength",
     BadImplementation: "BadImplementation",
 }
-
-
-def noop(*args) -> None:
-    pass
 
 
 cdef object context_check = noop

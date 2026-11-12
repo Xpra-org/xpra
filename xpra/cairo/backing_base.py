@@ -70,7 +70,7 @@ def cairo_paint_pointer_overlay(context, cursor_data, px: int, py: int, start_ti
     if not cursor_data:
         log("cairo_paint_pointer_overlay: no cursor data")
         return
-    if make_image_surface == noop:
+    if not make_image_surface:
         log("cairo_paint_pointer_overlay: no make_image_surface")
         return
     elapsed = max(0, monotonic() - start_time)
@@ -529,7 +529,7 @@ class CairoBackingBase(WindowBackingBase):
 
     @staticmethod
     def get_alert_image():
-        if not CairoBackingBase.alert_image and make_image_surface != noop:
+        if not CairoBackingBase.alert_image and make_image_surface:
             iw, ih, pixels = WindowBackingBase.get_alert_icon()
             if iw and ih and pixels:
                 CairoBackingBase.alert_image = iw, ih, make_image_surface(Format.ARGB32, "RGBA", pixels, iw, ih, iw * 4)
