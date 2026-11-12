@@ -103,6 +103,18 @@ class Packet(Sequence):
     def get_type(self) -> str:
         return str(self.data[0])
 
+    def check_len(self, min_size: int, max_size: int = 0) -> None:
+        size = len(self.data)
+        if size < min_size:
+            raise ValueError(f"{self.get_type()!r} packet has {size} items, minimum is {min_size}")
+        if max_size and size > max_size:
+            raise ValueError(f"{self.get_type()!r} packet has {size} items, maximum is {max_size}")
+
+    @staticmethod
+    def _check_size(value, max_size: int, datatype: str) -> None:
+        if max_size and len(value) > max_size:
+            raise ValueError(f"{datatype} is too large: {len(value)} items, maximum is {max_size}")
+
     def get_wid(self, i=1) -> int:
         v = int(self.data[i])
         if v < -1 or v >= 2**48:
@@ -160,50 +172,69 @@ class Packet(Sequence):
             raise ValueError(f"invalid u64 value {v!r}")
         return v
 
-    def get_str(self, i: int) -> str:
+    def get_str(self, i: int, max_size: int = 0) -> str:
         v = self.data[i]
         if isinstance(v, bytes):
-            return v.decode("utf8")
-        return str(v)
+            v = v.decode("utf8")
+        else:
+            v = str(v)
+        self._check_size(v, max_size, "string")
+        return v
 
-    def get_bytes(self, i: int) -> bytes:
+    def get_bytes(self, i: int, max_size: int = 0) -> bytes:
         v = self.data[i]
-        if isinstance(v, bytes):
-            return v
-        if v == "":
-            return b""
-        return bytes(v)
+        if not isinstance(v, bytes):
+            if v == "":
+                v = b""
+            else:
+                v = bytes(v)
+        self._check_size(v, max_size, "byte string")
+        return v
 
-    def get_buffer(self, i: int) -> SizedBuffer:
+    def get_buffer(self, i: int, max_size: int = 0) -> SizedBuffer:
         v = self.data[i]
-        if isinstance(v, (memoryview, bytes, bytearray)):
-            return v
-        # the html5 client sends strings when we expect a buffer...
-        if isinstance(v, str):
-            return v.encode("utf8")
-        return bytes(v)
+        if not isinstance(v, (memoryview, bytes, bytearray)):
+            # the html5 client sends strings when we expect a buffer...
+            if isinstance(v, str):
+                v = v.encode("utf8")
+            else:
+                v = bytes(v)
+        self._check_size(v, max_size, "buffer")
+        return v
 
-    def get_dict(self, i: int) -> dict:
+    def get_dict(self, i: int, max_items: int = 0) -> dict:
         v = self.data[i]
         if isinstance(v, dict):
+            self._check_size(v, max_items, "dictionary")
             return v
         raise TypeError("expected dictionary at index %i but got a %s" % (i, type(v)))
 
-    def get_strs(self, i: int) -> Sequence[str]:
+    def get_strs(self, i: int, max_items: int = 0, max_item_size: int = 0) -> Sequence[str]:
         v = self.data[i]
-        if isinstance(v, Sequence):
-            return tuple(str(x) for x in v)
+        if isinstance(v, (list, tuple)):
+            self._check_size(v, max_items, "string sequence")
+            values = tuple(x.decode("utf8") if isinstance(x, bytes) else str(x) for x in v)
+            if max_item_size:
+                for value in values:
+                    self._check_size(value, max_item_size, "string sequence item")
+            return values
         raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 
-    def get_bytes_seq(self, i: int) -> Sequence[str]:
+    def get_bytes_seq(self, i: int, max_items: int = 0, max_item_size: int = 0) -> Sequence[bytes]:
         v = self.data[i]
-        if isinstance(v, Sequence):
-            return tuple(bytes(x) for x in v)
+        if isinstance(v, (list, tuple)):
+            self._check_size(v, max_items, "byte string sequence")
+            values = tuple(bytes(x) for x in v)
+            if max_item_size:
+                for value in values:
+                    self._check_size(value, max_item_size, "byte string sequence item")
+            return values
         raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 
-    def get_ints(self, i: int) -> Sequence[int]:
+    def get_ints(self, i: int, max_items: int = 0) -> Sequence[int]:
         v = self.data[i]
-        if isinstance(v, Sequence):
+        if isinstance(v, (list, tuple)):
+            self._check_size(v, max_items, "integer sequence")
             return tuple(int(x) for x in v)
         raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 

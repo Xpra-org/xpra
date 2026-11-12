@@ -37,6 +37,15 @@ class TestPacketData(unittest.TestCase):
         with self.assertRaises(AttributeError):
             p.data.append("other")
 
+    def test_length_validation(self):
+        from xpra.net.common import Packet
+        p = Packet("test", 1, 2)
+        p.check_len(3, 3)
+        with self.assertRaises(ValueError):
+            p.check_len(4)
+        with self.assertRaises(ValueError):
+            p.check_len(1, 2)
+
 
 class TestPacketGetWid(unittest.TestCase):
 
@@ -263,6 +272,11 @@ class TestPacketGetStr(unittest.TestCase):
         p = Packet("t", 42)
         assert p.get_str(1) == "42"
 
+    def test_size_limit(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(ValueError):
+            Packet("t", "1234").get_str(1, 3)
+
 
 class TestPacketGetBytes(unittest.TestCase):
 
@@ -281,6 +295,11 @@ class TestPacketGetBytes(unittest.TestCase):
         p = Packet("t", b"\x01\x02")
         result = p.get_bytes(1)
         assert isinstance(result, bytes)
+
+    def test_size_limit(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(ValueError):
+            Packet("t", b"1234").get_bytes(1, 3)
 
 
 class TestPacketGetBuffer(unittest.TestCase):
@@ -316,6 +335,11 @@ class TestPacketGetDict(unittest.TestCase):
         with self.assertRaises(TypeError):
             p.get_dict(1)
 
+    def test_item_limit(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(ValueError):
+            Packet("t", {"a": 1, "b": 2}).get_dict(1, 1)
+
 
 class TestPacketGetStrs(unittest.TestCase):
 
@@ -331,6 +355,19 @@ class TestPacketGetStrs(unittest.TestCase):
         with self.assertRaises(TypeError):
             p.get_strs(1)
 
+    def test_scalar_strings_are_not_sequences(self):
+        from xpra.net.common import Packet
+        for value in ("abc", b"abc"):
+            with self.assertRaises(TypeError):
+                Packet("t", value).get_strs(1)
+
+    def test_limits(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(ValueError):
+            Packet("t", ["a", "b"]).get_strs(1, max_items=1)
+        with self.assertRaises(ValueError):
+            Packet("t", ["ab"]).get_strs(1, max_item_size=1)
+
 
 class TestPacketGetInts(unittest.TestCase):
 
@@ -345,6 +382,11 @@ class TestPacketGetInts(unittest.TestCase):
         p = Packet("t", 999)
         with self.assertRaises(TypeError):
             p.get_ints(1)
+
+    def test_scalar_bytes_are_not_sequences(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(TypeError):
+            Packet("t", b"\x01\x02").get_ints(1)
 
 
 class TestPacketGetBytesSeq(unittest.TestCase):
