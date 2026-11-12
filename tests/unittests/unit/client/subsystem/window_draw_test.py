@@ -11,7 +11,8 @@ from unittest.mock import Mock, patch
 
 from xpra.net.common import Packet
 from xpra.constants import WINDOW_DECODE_LOST
-from xpra.client.subsystem.window import draw
+from xpra.net import draw_packet
+from xpra.net.draw_packet import DrawRequest, parse_draw_packet
 from xpra.client.subsystem.window.draw import WindowDraw
 
 
@@ -48,8 +49,8 @@ class WindowDrawTest(unittest.TestCase):
     def test_overloaded_pixel_data(self):
         # v7 servers running in backwards compatible mode duplicate the mmap `chunks` in the pixel data:
         window = Mock()
-        with patch.object(draw, "BACKWARDS_COMPATIBLE", True):
-            Draw(window)._do_draw(mmap_packet(((8, 400), )))
+        with patch.object(draw_packet, "BACKWARDS_COMPATIBLE", True):
+            Draw(window)._do_draw(parse_draw_packet(mmap_packet(((8, 400), ))))
         window.draw_region.assert_called_once()
         args = window.draw_region.call_args.args
         self.assertEqual(args[4], "mmap")
@@ -58,17 +59,137 @@ class WindowDrawTest(unittest.TestCase):
 
     def test_overloaded_pixel_data_rejected(self):
         window = Mock()
-        with patch.object(draw, "BACKWARDS_COMPATIBLE", False):
+        with patch.object(draw_packet, "BACKWARDS_COMPATIBLE", False):
             with self.assertRaises((TypeError, ValueError)):
-                Draw(window)._do_draw(mmap_packet(((8, 400), )))
+                Draw(window)._do_draw(parse_draw_packet(mmap_packet(((8, 400), ))))
         window.draw_region.assert_not_called()
 
     def test_buffer_pixel_data(self):
         for backwards_compatible in (False, True):
             window = Mock()
-            with patch.object(draw, "BACKWARDS_COMPATIBLE", backwards_compatible):
-                Draw(window)._do_draw(mmap_packet(b""))
+            with patch.object(draw_packet, "BACKWARDS_COMPATIBLE", backwards_compatible):
+                Draw(window)._do_draw(parse_draw_packet(mmap_packet(b"")))
             window.draw_region.assert_called_once()
+
+
+JPEG = b"\xff\xd8\xff\xe0" + bytes(100)
+
+
+def make_draw_packet(coding="rgb24", width=4, height=2, data=None, rowstride=12, options=None) -> Packet:
+    if data is None:
+        data = bytes(rowstride * height)
+    return Packet("window-draw", 1, 0, 0, width, height, coding, data, 7, rowstride, options or {})
+
+
+class DrawValidationTest(unittest.TestCase):
+
+    def test_arity(self):
+        packet = make_draw_packet()
+        parse_draw_packet(packet)
+        for bad in (Packet(*packet[:10]), Packet(*packet, 0)):
+            with self.assertRaises(ValueError):
+                parse_draw_packet(bad)
+            with self.assertRaises(ValueError):
+                Fragments()._process_draw(bad)
+        with self.assertRaises(ValueError):
+            Fragments()._process_eos(Packet("window-eos", 1, 2))
+
+    def check_invalid_options(self, *options: dict):
+        for opts in options:
+            with self.assertRaises((ValueError, TypeError), msg=f"options {opts} accepted"):
+                parse_draw_packet(make_draw_packet(options=opts))
+
+    def test_options(self):
+        self.check_invalid_options(
+            {f"key{i}": i for i in range(65)},
+            {"": 1},
+            {"x" * 65: 1},
+            {"long": "x" * 2000},
+            {"list": list(range(100))},
+            {"deep": ((((1, ), ), ), )},
+            {"object": object()},
+            {"scaled_size": (0, 10)},
+            {"scaled_size": (10, 10**6)},
+            {"scaled_size": (10, )},
+            {"window-size": "100x100"},
+            {"chunks": ((8, ), )},
+            {"chunks": ((-1, 400), )},
+            {"chunks": ((8, 0), )},
+            {"chunks": ((0, 8), ) * 257},
+            {"scroll": ((0, 0, 10, 10, 0), )},
+            {"scroll": ((0, 0, 0, 10, 0, 5), )},
+            {"scroll": ((0, 0, 10, 10, 0, 2**20), )},
+        )
+        request = parse_draw_packet(make_draw_packet(options={
+            "quality": 50, "csc": "YUV420P", "scaled_size": [2, 1], "fragments": 4, "missing-fragments": (1, ),
+        }))
+        # client-only options are dropped, and the sizes are normalized:
+        self.assertEqual(request.options, {"quality": 50, "csc": "YUV420P", "scaled_size": (2, 1)})
+
+    def do_draw(self, packet: Packet, encodings=("rgb24", "rgb32", "h264", "jpeg", "png", "webp")):
+        window = Mock()
+        client = Draw(window)
+        encoding = SimpleNamespace(allowed_encodings=encodings)
+        client.get_subsystem = lambda name: encoding if name == "encoding" else None
+        client._do_draw(parse_draw_packet(packet))
+        return window, client
+
+    def assert_draw_error(self, packet: Packet, message: str):
+        from xpra.constants import WINDOW_DECODE_ERROR
+        window, client = self.do_draw(packet)
+        window.draw_region.assert_not_called()
+        self.assertEqual(len(client.acks), 1)
+        self.assertEqual(client.acks[0][5], WINDOW_DECODE_ERROR)
+        self.assertIn(message, client.acks[0][6])
+
+    def assert_drawn(self, packet: Packet):
+        window, client = self.do_draw(packet)
+        window.draw_region.assert_called_once()
+        self.assertEqual(client.acks, [])
+
+    def test_rgb(self):
+        self.assert_drawn(make_draw_packet())
+        # rowstride 0 means tightly packed:
+        self.assert_drawn(make_draw_packet(rowstride=0, data=bytes(24)))
+        # the last row does not need the padding:
+        self.assert_drawn(make_draw_packet(rowstride=16, data=bytes(28)))
+        self.assert_drawn(make_draw_packet("rgb32", rowstride=16, data=bytes(32)))
+        self.assert_draw_error(make_draw_packet(rowstride=8), "rowstride")
+        self.assert_draw_error(make_draw_packet(data=bytes(23)), "not enough")
+        self.assert_draw_error(make_draw_packet("rgb32", rowstride=12), "rowstride")
+        self.assert_draw_error(make_draw_packet(options={"rgb_format": "XYZ"}), "XYZ")
+        self.assert_draw_error(make_draw_packet(width=0), "invalid")
+        self.assert_draw_error(make_draw_packet(width=10000, height=10000, rowstride=30000, data=b""), "pixels limit")
+        # compressed:
+        self.assert_drawn(make_draw_packet(data=b"z" * 10, options={"lz4": 1}))
+        self.assert_draw_error(make_draw_packet(data=b"", options={"lz4": 1}), "compressed")
+        self.assert_draw_error(make_draw_packet(data=bytes(100000), options={"lz4": 1}), "compressed")
+
+    def test_compressed(self):
+        self.assert_drawn(make_draw_packet("h264", 64, 32, b"data", 0))
+        self.assert_drawn(make_draw_packet("jpeg", 64, 32, JPEG, 0))
+        self.assert_drawn(make_draw_packet("webp", 64, 32, b"RIFF\0\0\0\0WEBP", 0))
+        self.assert_draw_error(make_draw_packet("h264", 64, 32, b"", 0), "no h264")
+        self.assert_draw_error(make_draw_packet("h264", 64, 32, bytes(64 * 32 * 8 + 65537), 0), "too much")
+        # the limit applies to the scaled size:
+        self.assert_draw_error(make_draw_packet("h264", 64, 32, bytes(32 * 16 * 8 + 65537), 0, {"scaled_size": (32, 16)}),
+                               "too much")
+        self.assert_draw_error(make_draw_packet("jpeg", 64, 32, b"\x89PNG" + bytes(100), 0), "signature")
+        self.assert_draw_error(make_draw_packet("png", 64, 32, JPEG, 0), "signature")
+
+    def test_mmap(self):
+        from xpra.net.draw_packet import check_draw_request
+        mmap = parse_draw_packet(mmap_packet(b""))
+        self.assertEqual(check_draw_request(mmap), "")
+        self.assertIn("not enough", check_draw_request(mmap._replace(options={"chunks": ((8, 100), )})))
+        self.assertIn("chunks", check_draw_request(mmap._replace(options={})))
+        self.assertIn("pixel data", check_draw_request(mmap._replace(data=b"x")))
+
+    def test_scroll(self):
+        from xpra.net.draw_packet import check_draw_request
+        scroll = parse_draw_packet(make_draw_packet("scroll", 0, 0, b"", 0, {"scroll": ((0, 0, 10, 10, 0, 5), )}))
+        self.assertEqual(check_draw_request(scroll), "")
+        self.assertIn("scroll", check_draw_request(scroll._replace(options={})))
 
 
 class Fragments(Draw):
@@ -88,8 +209,8 @@ class Fragments(Draw):
     def source_remove(self, _timer):
         pass
 
-    def add_decode_work(self, _fn, packet):
-        self.drawn.append(packet)
+    def add_decode_work(self, _fn, request):
+        self.drawn.append(request)
 
 
 def make_fragments(data: bytes, nals, datagram=100, frame_type="", stream_sequence=6, last_frame_loss=0):
@@ -146,12 +267,11 @@ class WindowDrawFragmentTest(unittest.TestCase):
         for fragment in reversed(fragments):
             client._process_draw_fragment(fragment)
         self.assertEqual(len(client.drawn), 1)
-        packet = client.drawn[0]
-        self.assertEqual(packet.get_type(), "window-draw")
-        self.assertEqual(tuple(packet[1:7]), (1, 10, 20, 64, 32, "h264"))
-        self.assertEqual(packet[7], self.DATA)
+        request = client.drawn[0]
+        self.assertEqual(tuple(request[:6]), (1, 10, 20, 64, 32, "h264"))
+        self.assertEqual(request.data, self.DATA)
         # the decoders are told that this frame was re-assembled:
-        self.assertEqual(tuple(packet[8:]), (7, 0, {"frame": 5, "fragments": len(fragments)}))
+        self.assertEqual(tuple(request[7:]), (7, 0, {"frame": 5, "fragments": len(fragments)}))
         self.assertEqual(client.get_info()["fragments"]["complete"], 1)
 
     def test_waits_for_stream_packet(self):
@@ -160,7 +280,7 @@ class WindowDrawFragmentTest(unittest.TestCase):
             client._process_draw_fragment(fragment)
         self.assertFalse(client.drawn)
         client._process_draw(self.stream_packet(6))
-        self.assertEqual([p.get_u64(8) for p in client.drawn], [6, 7])
+        self.assertEqual([p.sequence for p in client.drawn], [6, 7])
 
     def test_partial_after_timeout(self):
         client = Fragments()
@@ -175,10 +295,10 @@ class WindowDrawFragmentTest(unittest.TestCase):
         with patch("xpra.client.subsystem.window.draw.monotonic", return_value=10**6):
             _delay, fn, args = client.timers[0]
             fn(*args)
-        packet = client.drawn[0]
-        self.assertEqual(packet[7], b"".join(f[7] for f in fragments[1:]))
-        self.assertEqual(packet[10]["missing-fragments"], (0, ))
-        self.assertEqual(packet[10]["fragments"], len(fragments))
+        request = client.drawn[0]
+        self.assertEqual(request.data, b"".join(f[7] for f in fragments[1:]))
+        self.assertEqual(request.options["missing-fragments"], (0, ))
+        self.assertEqual(request.options["fragments"], len(fragments))
 
     def test_stream_packet_flushes(self):
         client = Fragments()
@@ -188,7 +308,7 @@ class WindowDrawFragmentTest(unittest.TestCase):
         client._process_draw_fragment(fragments[0])
         # the next frame is sent on the stream (ie: a keyframe), the partial one must be painted first:
         client._process_draw(self.stream_packet(8))
-        self.assertEqual([p.get_u64(8) for p in client.drawn], [7, 8])
+        self.assertEqual([p.sequence for p in client.drawn], [7, 8])
         # fragments for frame 7 are now too late:
         client._process_draw_fragment(fragments[1])
         self.assertEqual(len(client.drawn), 2)
@@ -210,8 +330,8 @@ class WindowDrawFragmentTest(unittest.TestCase):
         for fragment in with_parity[1:]:
             client._process_draw_fragment(fragment)
         self.assertEqual(len(client.drawn), 1)
-        self.assertEqual(client.drawn[0][7], self.DATA)
-        self.assertNotIn("missing-fragments", client.drawn[0][10])
+        self.assertEqual(client.drawn[0].data, self.DATA)
+        self.assertNotIn("missing-fragments", client.drawn[0].options)
         self.assertEqual(client.get_info()["fragments"]["recovered"], 1)
 
     def test_fixed_parity(self):
@@ -245,7 +365,7 @@ class WindowDrawFragmentTest(unittest.TestCase):
         for fragment in make_fragments(self.DATA, self.NALS):
             fragment = Packet(*fragment[:8], 9, *fragment[9:])
             client._process_draw_fragment(fragment)
-        self.assertEqual([p.get_u64(8) for p in client.drawn], [9])
+        self.assertEqual([p.sequence for p in client.drawn], [9])
         self.assertEqual([(ack[4], ack[5]) for ack in client.acks], [(7, WINDOW_DECODE_LOST), (8, WINDOW_DECODE_LOST)])
 
     def test_unknown_window(self):
@@ -256,7 +376,7 @@ class WindowDrawFragmentTest(unittest.TestCase):
         client._process_draw(self.stream_packet(6))
         # no assembler for windows that do not exist, the stream packet is still processed:
         self.assertEqual(client.frame_assemblers, {})
-        self.assertEqual([p.get_u64(8) for p in client.drawn], [6])
+        self.assertEqual([p.sequence for p in client.drawn], [6])
 
     def test_assembler_dropped_with_window(self):
         client = Fragments()
@@ -267,12 +387,35 @@ class WindowDrawFragmentTest(unittest.TestCase):
         client.fragment_timeout()
         self.assertEqual(client.frame_assemblers, {})
 
+    def test_fragment_limits(self):
+        client = Fragments()
+        client._process_draw(self.stream_packet(6))
+        fragment = make_fragments(self.DATA, self.NALS)[0]
+        for bad in (
+            Packet(*fragment[:12], 257, *fragment[13:]),
+            Packet(*fragment[:7], bytes(65537), *fragment[8:]),
+            Packet(*fragment[:15]),
+        ):
+            with self.assertRaises(ValueError):
+                client._process_draw_fragment(bad)
+
+    def test_fragment_metadata_mismatch(self):
+        client = Fragments()
+        client._process_draw(self.stream_packet(6))
+        client.drawn = []
+        fragments = make_fragments(self.DATA, self.NALS)
+        client._process_draw_fragment(fragments[0])
+        # a fragment of the same frame claiming a different geometry:
+        client._process_draw_fragment(Packet(*fragments[1][:4], 128, *fragments[1][5:]))
+        self.assertEqual(client.get_info()["fragments"]["invalid"], 1)
+
     def check_decode_ack(self, options: dict, success, expected_code, expected_extra):
         window = Mock()
         client = Draw(window)
         encoding = SimpleNamespace(allowed_encodings=("h264", ))
         client.get_subsystem = lambda name: encoding if name == "encoding" else None
-        client._do_draw(Packet("window-draw", 1, 0, 0, 64, 32, "h264", b"data", 7, 0, options))
+        # as re-assembled by `draw_assembled_frame`:
+        client._do_draw(DrawRequest(1, 0, 0, 64, 32, "h264", b"data", 7, 0, options))
         callbacks = window.draw_region.call_args.args[-1]
         for cb in callbacks:
             cb(success, "")

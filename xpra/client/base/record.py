@@ -12,7 +12,8 @@ from collections.abc import Mapping, Sequence
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.base.command import XpraClientBase
 from xpra.exit_codes import ExitValue
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, packet_handler
+from xpra.net.common import Packet, packet_handler
+from xpra.net.draw_packet import parse_draw_packet
 from xpra.net.packet_type import (
     WINDOW_REFRESH, WINDOW_ACK, WINDOW_STACKING, POINTER_WHEEL, WINDOW_RAISE, NOTIFICATION_SHOW, WINDOW_EOS,
     WINDOW_DRAW, WINDOW_UNGRAB, CURSOR_DATA, POINTER_BUTTON, WINDOW_CREATE, WINDOW_INITIATE_MOVERESIZE,
@@ -498,27 +499,11 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
 
     @packet_handler(WINDOW_DRAW, main_thread=True)
     def _process_window_draw(self, packet: Packet) -> None:
-        wid = packet.get_wid()
+        wid, x, y, width, height, coding, data, packet_sequence, rowstride, options = parse_draw_packet(packet)
         window = self.get_window(wid)
         if not window:
             log.warn("Warning: window %#x not found!", wid)
             return
-        x = packet.get_i16(2)
-        y = packet.get_i16(3)
-        width = packet.get_u16(4)
-        height = packet.get_u16(5)
-        coding = packet.get_str(6)
-        if BACKWARDS_COMPATIBLE and coding in ("mmap", "scroll") and not isinstance(packet[7], (bytes, bytearray, memoryview)):
-            # v7 servers running in backwards compatible mode also send the `chunks` / `scroll` options here,
-            # we only use the options:
-            data = b""
-        else:
-            data = packet.get_buffer(7)
-        packet_sequence = packet.get_u64(8)
-        rowstride = packet.get_u32(9)
-        options = {}
-        if len(packet) > 10:
-            options = packet.get_dict(10)
         log("record: %ix%i %s update", width, height, coding)
         kwargs = {
             "geometry": (x, y, width, height),

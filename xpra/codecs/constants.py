@@ -133,6 +133,114 @@ def check_image_size(width: int, height: int, what: str = "image") -> None:
         raise ValueError(f"{what} size {width}x{height} exceeds the {MAX_IMAGE_DIMENSION} pixel limit")
 
 
+# bytes per pixel of the packed rgb formats we can paint:
+RGB_FORMAT_BPP: dict[str, int] = {
+    "r210": 4,
+    "R210": 4,
+    "BGR": 3,
+    "RGB": 3,
+    "BGRA": 4,
+    "BGRX": 4,
+    "RGBA": 4,
+    "RGBX": 4,
+    "ABGR": 4,
+    "ARGB": 4,
+    "XBGR": 4,
+    "XRGB": 4,
+    "BGR565": 2,
+    "RGB565": 2,
+}
+
+
+def check_plane_buffer(size: int, width: int, height: int, rowstride: int, bpp: int, what: str = "image") -> None:
+    """
+    verify that a buffer of `size` bytes really holds `width` x `height` pixels of `bpp` bytes,
+    `rowstride` bytes apart (the last row only needs `width * bpp` bytes), raises ValueError
+    """
+    if width <= 0 or height <= 0:
+        raise ValueError(f"invalid {what} size {width}x{height}")
+    if rowstride < width * bpp:
+        raise ValueError(f"invalid {what} rowstride {rowstride} for {width} pixels of {bpp} bytes")
+    if rowstride > MAX_IMAGE_DIMENSION * 8:
+        raise ValueError(f"{what} rowstride {rowstride} exceeds the {MAX_IMAGE_DIMENSION * 8} bytes limit")
+    needed = rowstride * (height - 1) + width * bpp
+    if size < needed:
+        raise ValueError(f"not enough {what} pixel data: {size} bytes, expected {needed}"
+                         f" for {width}x{height} with rowstride={rowstride}")
+
+
+def check_rgb_buffer(rgb_format: str, size: int, width: int, height: int, rowstride: int, what: str = "rgb") -> None:
+    """ `check_plane_buffer` for one of the packed `RGB_FORMAT_BPP` formats """
+    bpp = RGB_FORMAT_BPP.get(rgb_format, 0)
+    if not bpp:
+        raise ValueError(f"unknown bytes per pixel for {what} format {rgb_format!r}")
+    check_plane_buffer(size, width, height, rowstride, bpp, f"{rgb_format} {what}")
+
+
+def get_sample_size(pixel_format: str) -> int:
+    """ bytes per sample of the planar formats in `PIXEL_SUBSAMPLING` """
+    if pixel_format.endswith(("P10", "P16", "LE")):
+        return 2
+    return 1
+
+
+# these planar formats are made of single byte (or 16-bit with a P10 / P16 suffix) samples,
+# so we can verify the size of each plane:
+CHECKED_PLANAR_FORMATS: Sequence[str] = ("NV12", "YUV420P", "YUVA420P", "YUV422P", "YUVA422P",
+                                         "YUV444P", "YUVA444P", "GBRP", "GBRP9LE")
+
+
+def check_image_planes(img, width: int, height: int, pixel_formats: Iterable[str] = (), what: str = "image") -> None:
+    """
+    verify that a decoded image matches the frame we asked for:
+    its dimensions, pixel format, number of planes and the size of each plane's buffer, raises ValueError
+    """
+    iw, ih = img.get_width(), img.get_height()
+    if (iw, ih) != (width, height):
+        raise ValueError(f"{what} is {iw}x{ih} but the frame is {width}x{height}")
+    pixel_format = img.get_pixel_format()
+    if pixel_format_options := tuple(pixel_formats):
+        if pixel_format not in pixel_format_options:
+            raise ValueError(f"unexpected {what} pixel format {pixel_format!r}, expected one of {csv(pixel_format_options)}")
+    planes = int(img.get_planes())
+    rowstride = img.get_rowstride()
+    if pixel_format in RGB_FORMAT_BPP:
+        if planes != 0:
+            raise ValueError(f"{what} {pixel_format!r} must be packed, not {planes} planes")
+        if not isinstance(rowstride, int):
+            raise ValueError(f"invalid {what} rowstride {rowstride!r} for packed {pixel_format!r}")
+        rowstrides = (rowstride, )
+        layout: Sequence[tuple[int, int]] = ((1, 1), )
+        sample_sizes: Sequence[int] = (RGB_FORMAT_BPP[pixel_format], )
+    else:
+        base_format = get_subsampling(pixel_format)
+        if base_format not in CHECKED_PLANAR_FORMATS:
+            # we don't know enough about this format to check its planes:
+            return
+        layout = PIXEL_SUBSAMPLING[base_format]
+        if planes != len(layout):
+            raise ValueError(f"{what} {pixel_format!r} must have {len(layout)} planes, not {planes}")
+        if not isinstance(rowstride, (tuple, list)) or len(rowstride) != planes:
+            raise ValueError(f"invalid {what} rowstrides {rowstride!r} for {planes} planes")
+        rowstrides = tuple(rowstride)
+        sample_size = get_sample_size(pixel_format)
+        # NV12's second plane interleaves U and V:
+        sample_sizes = tuple(sample_size * (2 if pixel_format == "NV12" and i == 1 else 1) for i in range(planes))
+    pixels = img.pixels
+    if not pixels:
+        # GPU images have no CPU pixels until they are downloaded:
+        return
+    if len(pixels) != len(rowstrides):
+        raise ValueError(f"{what} has {len(pixels)} pixel buffers for {len(rowstrides)} planes")
+    for i, ((xdiv, ydiv), stride, bpp) in enumerate(zip(layout, rowstrides, sample_sizes)):
+        pw = (width + xdiv - 1) // xdiv
+        if pixel_format == "NV12" and i == 1:
+            # the divisors of the UV plane count bytes, not samples:
+            pw = (width + 1) // 2
+        ph = (height + ydiv - 1) // ydiv
+        check_plane_buffer(memoryview(pixels[i]).nbytes, pw, ph, int(stride), bpp, f"{what} plane {i}")
+
+
 def get_subsampling(pixel_format: str) -> str:
     # "YUV420P16" and "YUV420P10" are the same as "YUV420P" when it comes to subsampling:
     return pixel_format.replace("P16", "P").replace("P10", "P")

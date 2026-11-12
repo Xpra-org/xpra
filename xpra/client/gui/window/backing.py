@@ -21,7 +21,10 @@ from xpra.util.thread import check_main_thread
 from xpra.codecs.loader import get_codec
 from xpra.codecs.image import ImageWrapper
 from xpra.codecs.video import getVideoHelper, VdictEntry, CodecSpec
-from xpra.codecs.constants import TransientCodecException, CodecStateException, EncodingNotSupported
+from xpra.codecs.constants import (
+    TransientCodecException, CodecStateException, EncodingNotSupported,
+    RGB_FORMAT_BPP, check_rgb_buffer, check_image_planes,
+)
 from xpra.codecs.protocols import VideoDecoder, ColorspaceConverter
 from xpra.constants import Gravity
 from xpra.common import PaintCallbacks
@@ -640,6 +643,7 @@ class WindowBackingBase:
                 return
             options["rgb_format"] = packable[0]
         rgb_format, img_data, iwidth, iheight, rowstride = self.pil_decoder.decompress(coding, img_data, options)
+        self.check_decoded_size(coding, iwidth, iheight, width, height, options)
         # the decoder may not have been able to honour the request,
         # so record the format we actually got:
         options["rgb_format"] = rgb_format
@@ -675,12 +679,61 @@ class WindowBackingBase:
         self.ui_paint_rgb("rgb", rgb_format, rgb_data,
                           x, y, width, height, width, height, rowstride, options, callbacks)
 
-    def ui_paint_rgb(self, *args) -> None:
-        """ calls do_paint_rgb from the ui thread """
-        self.with_gfx_context(self.do_paint_rgb, *args)
+    def ui_paint_rgb(self, encoding: str, rgb_format: str, img_data,
+                     x: int, y: int, width: int, height: int, render_width: int, render_height: int, rowstride: int,
+                     options: typedict, callbacks: PaintCallbacks) -> None:
+        """ verifies the pixel buffer, then calls do_paint_rgb from the ui thread """
+        if not rowstride:
+            rowstride = width * RGB_FORMAT_BPP.get(rgb_format, 0)
+        check_rgb_buffer(rgb_format, len(img_data), width, height, rowstride, encoding)
+        self.with_gfx_context(self.do_paint_rgb, encoding, rgb_format, img_data,
+                              x, y, width, height, render_width, render_height, rowstride, options, callbacks)
+
+    @staticmethod
+    def check_decoded_size(encoding: str, iwidth: int, iheight: int, width: int, height: int, options: typedict) -> None:
+        """
+        the decoded image must be the size of the update, or the scaled size it was encoded with,
+        raises ValueError otherwise
+        """
+        sizes = {(width, height), options.intpair("scaled_size", (width, height))}
+        if (iwidth, iheight) not in sizes:
+            expected = " or ".join("%ix%i" % size for size in sorted(sizes))
+            raise ValueError(f"{encoding} image is {iwidth}x{iheight}, expected {expected}")
+
+    def check_decoded_image(self, encoding: str, img, width: int, height: int, options: typedict) -> None:
+        """ verify the size, planes and buffers of a decoded image, frees it and raises ValueError if they are wrong """
+        try:
+            self.check_decoded_size(encoding, img.get_width(), img.get_height(), width, height, options)
+            check_image_planes(img, img.get_width(), img.get_height(), what=f"{encoding} image")
+        except ValueError:
+            img.free()
+            raise
+
+    def is_outside(self, x: int, y: int, width: int, height: int, options: typedict, gravity_adjusted=False) -> bool:
+        """
+        an update which does not overlap the backing at all, ie: if the window has been resized since it was sent,
+        we never know that while the backing has not been sized yet
+        """
+        bw, bh = self.size
+        if bw <= 0 or bh <= 0:
+            return False
+        if not gravity_adjusted:
+            x, y = self.gravity_adjust(x, y, options)
+        return x >= bw or y >= bh or x + width <= 0 or y + height <= 0
+
+    def skip_outside(self, encoding: str, x: int, y: int, width: int, height: int,
+                     options: typedict, callbacks: PaintCallbacks, gravity_adjusted=False) -> bool:
+        """ skip updates which are entirely outside the backing: this is not an error """
+        if not self.is_outside(x, y, width, height, options, gravity_adjusted):
+            return False
+        log("%s update %ix%i at %i,%i is outside the %ix%i backing, skipped",
+            encoding, width, height, x, y, *self.size)
+        fire_paint_callbacks(callbacks, -1, "outside the backing")
+        return True
 
     def paint_image_wrapper(self, encoding: str, img, x: int, y: int, width: int, height: int,
                             options: typedict, callbacks: PaintCallbacks) -> None:
+        self.check_decoded_image(encoding, img, width, height, options)
         self.with_gfx_context(self.do_paint_image_wrapper, encoding, img, x, y, width, height, options, callbacks)
 
     def do_paint_image_wrapper(self, context, encoding: str, img, x: int, y: int, width: int, height: int,
@@ -979,7 +1032,20 @@ class WindowBackingBase:
                         videolog.error(f"    {k:10}={v}")
                 return
 
+            try:
+                check_image_planes(img, enc_width, enc_height, what=f"{coding} {vd.get_type()} image")
+            except ValueError as e:
+                img.free()
+                videolog.error("Error: %s produced an invalid image", vd.get_type())
+                videolog.estr(e)
+                restart("invalid image")
+                fire_paint_callbacks(callbacks, False, f"invalid decoded image: {e}")
+                return
             x, y = self.gravity_adjust(x, y, options)
+            # the frame had to be decoded, as the next ones may depend on it, but there is nothing to paint:
+            if self.skip_outside(coding, x, y, width, height, options, callbacks, True):
+                img.free()
+                return
             self.do_video_paint(coding, img, x, y, enc_width, enc_height, width, height, options, callbacks)
         if self._backing is None:
             self.close_decoder(True)
@@ -1050,6 +1116,8 @@ class WindowBackingBase:
         rgb_format = options.strget("rgb_format", "RGB")
         # Note: BGR(A) is only handled by gl.backing
         x, y = self.gravity_adjust(x, y, options)
+        if self.skip_outside("mmap", x, y, width, height, options, callbacks, True):
+            return
         enc_width, enc_height = options.intpair("scaled_size", (width, height))
         self.ui_paint_rgb("mmap", rgb_format, data, x, y, enc_width, enc_height, width, height, rowstride,
                           options, callbacks)
@@ -1087,6 +1155,12 @@ class WindowBackingBase:
             log("draw_region(%s, %s, %s, %s, %s, %s bytes, %s, %s, %s)",
                 x, y, width, height, coding, len(img_data), rowstride, options, callbacks)
             options["encoding"] = coding  # used for choosing the color of the paint box
+            # the position is not validated: the window may have been resized since this update was sent,
+            # but there is no point in decoding an update that cannot be seen:
+            # (mmap updates must still be read, and video frames decoded: see `paint_mmap` and `paint_with_video_decoder`)
+            if coding not in VIDEO_DECODERS and coding not in ("mmap", "scroll"):
+                if self.skip_outside(coding, x, y, width, height, options, callbacks):
+                    return
             if coding == "mmap":
                 self.paint_mmap(img_data, x, y, width, height, rowstride, options, callbacks)
             elif coding in ("rgb24", "rgb32"):

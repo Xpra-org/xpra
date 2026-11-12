@@ -60,7 +60,7 @@ from xpra.util.objects import typedict
 from xpra.util.system import is_X11
 from xpra.common import roundup
 from xpra.codecs.constants import (
-    get_subsampling_divs, get_plane_name,
+    get_subsampling_divs, get_plane_name, check_rgb_buffer, check_image_planes,
     CodecSpec, TransientCodecException,
 )
 from xpra.client.gui.window_border import WindowBorder
@@ -125,18 +125,6 @@ PIXEL_FORMAT_TO_CONSTANT: dict[str, IntConstant] = {
     "RGBX": GL_RGBA,
     "BGR565": GL_RGB,
     "RGB565": GL_RGB,
-}
-PIXEL_FORMAT_BPP: dict[str, int] = {
-    "r210": 4,
-    "R210": 4,
-    "BGR": 3,
-    "RGB": 3,
-    "BGRA": 4,
-    "BGRX": 4,
-    "RGBA": 4,
-    "RGBX": 4,
-    "BGR565": 2,
-    "RGB565": 2,
 }
 PIXEL_INTERNAL_FORMAT: dict[str, Sequence[IntConstant]] = {
     # defaults to: GL_R8, GL_R8, GL_R8, GL_R8
@@ -1638,6 +1626,12 @@ class GLWindowBackingBase(WindowBackingBase):
             rgb_format = img.get_pixel_format()
             if rgb_format not in ("RGB", "BGR", "RGBA", "BGRA"):
                 raise ValueError(f"unexpected rgb format {rgb_format}")
+            # we upload `width` x `height` pixels from a pbo the size of the decoded image:
+            try:
+                check_image_planes(img, width, height, what="nvjpeg image")
+            except ValueError:
+                img.free_cuda()
+                raise
             # `pixels` is a cuda buffer:
             cuda_buffer = img.get_gpu_buffer()
             pbo = self.cuda_buffer_to_pbo(gl_context, cuda_buffer, img.get_rowstride(), 0, img.get_height(), stream)
@@ -1740,17 +1734,8 @@ class GLWindowBackingBase(WindowBackingBase):
             # the pixel data comes from the server, so make sure that the buffer
             # really does contain the number of pixels we are about to upload:
             # (the GL driver would happily read past the end of it)
-            bpp = PIXEL_FORMAT_BPP.get(rgb_format, 0)
-            if not bpp:
-                raise ValueError(f"unknown bytes per pixel for {rgb_format!r}")
             if width > 0 and height > 0:
-                if rowstride < width * bpp:
-                    raise ValueError(f"invalid rowstride {rowstride} for {width}x{height} {rgb_format}")
-                # the last row only needs `width * bpp` bytes:
-                needed = rowstride * (height - 1) + width * bpp
-                if len(img_data) < needed:
-                    raise ValueError(f"not enough pixel data: {len(img_data)} bytes, expected {needed}"
-                                     f" for {width}x{height} {rgb_format} with rowstride={rowstride}")
+                check_rgb_buffer(rgb_format, len(img_data), width, height, rowstride)
 
             # BGRX and RGBX contain padding rather than alpha.  Storing those
             # uploads in an RGB texture discards the X component; framebuffer

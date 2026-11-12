@@ -247,7 +247,8 @@ class FrameAssembler:
                 return
             frame = self.pending[sequence] = PendingFrame(sequence, count, now + self.timeout,
                                                           stream_sequence, now + self.stream_timeout, metadata)
-        elif frame.count != count or frame.stream_sequence != stream_sequence:
+        elif frame.count != count or frame.stream_sequence != stream_sequence or frame.metadata != metadata:
+            # all the fragments of a frame must agree on everything but their data:
             self.stats["invalid"] += 1
             return
         if is_parity:

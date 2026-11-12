@@ -9,7 +9,11 @@ from collections import deque
 from time import monotonic
 from typing import Any
 
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, packet_handler
+from xpra.net.common import Packet, packet_handler
+from xpra.net.draw_packet import (
+    DrawRequest, parse_draw_packet, check_draw_request,
+    MAX_DRAW_FRAGMENTS, MAX_FRAGMENT_SIZE,
+)
 from xpra.net.fragments import FrameAssembler, AssembledFrame, FrameStatus
 from xpra.net.packet_type import WINDOW_ACK, WINDOW_DRAW, WINDOW_DRAW_FRAGMENT, WINDOW_EOS
 from xpra.constants import WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND, WINDOW_DECODE_LOST
@@ -72,14 +76,15 @@ class WindowDraw(StubClientSubsystem):
     # that creates the window they refer to - do not "optimize" it away.
     @packet_handler(WINDOW_DRAW, main_thread=True)
     def _process_draw(self, packet: Packet) -> None:
+        request = parse_draw_packet(packet)
         # the frames we are still assembling must be painted before this one,
         # and the ones sent after it must wait for it:
-        assembler = self.get_frame_assembler(packet.get_wid())
+        assembler = self.get_frame_assembler(request.wid)
         if assembler is None:
             # the window is gone, `_do_draw` will tell the server:
-            self.queue_draw(packet)
+            self.queue_draw(request)
             return
-        assembler.flush(packet.get_u64(8), lambda: self.queue_draw(packet))
+        assembler.flush(request.sequence, lambda: self.queue_draw(request))
 
     def get_frame_assembler(self, wid: int) -> FrameAssembler | None:
         assembler = self.frame_assemblers.get(wid)
@@ -93,15 +98,21 @@ class WindowDraw(StubClientSubsystem):
             assembler = self.frame_assemblers[wid] = FrameAssembler(deliver, DRAW_FRAGMENT_TIMEOUT / 1000)
         return assembler
 
-    def queue_draw(self, packet: Packet) -> None:
+    def queue_draw(self, request: DrawRequest) -> None:
         if PAINT_DELAY >= 0:
-            self.timeout_add(PAINT_DELAY, self.add_decode_work, self._do_draw, packet)
+            self.timeout_add(PAINT_DELAY, self.add_decode_work, self._do_draw, request)
         else:
-            self.add_decode_work(self._do_draw, packet)
+            self.add_decode_work(self._do_draw, request)
 
     @packet_handler(WINDOW_EOS, main_thread=True)
     def _process_eos(self, packet: Packet) -> None:
-        self.add_decode_work(self._do_draw, packet)
+        packet.check_len(2, 2)
+        self.add_decode_work(self._do_eos, packet.get_wid())
+
+    def _do_eos(self, wid: int) -> None:
+        """ this runs from the decode thread, so it is ordered with the draw packets """
+        if window := self.get_window(wid):
+            window.eos()
 
     @packet_handler(WINDOW_DRAW_FRAGMENT, main_thread=True)
     def _process_draw_fragment(self, packet: Packet) -> None:
@@ -111,37 +122,43 @@ class WindowDraw(StubClientSubsystem):
         and the sequence of the last `window-draw` packet sent on the stream before this frame.
         These may be received as datagrams, so they can be lost or re-ordered.
         """
-        wid = packet.get_wid()
-        assembler = self.get_frame_assembler(wid)
+        request = parse_draw_packet(packet, 16)
+        index = packet.get_u16(11)
+        count = packet.get_u16(12)
+        group_start = packet.get_u16(13)
+        group_size = packet.get_u16(14)
+        stream_sequence = packet.get_u64(15)
+        if count > MAX_DRAW_FRAGMENTS:
+            raise ValueError(f"too many draw fragments: {count}, maximum is {MAX_DRAW_FRAGMENTS}")
+        if len(request.data) > MAX_FRAGMENT_SIZE:
+            raise ValueError(f"draw fragment is too large: {len(request.data)} bytes, maximum is {MAX_FRAGMENT_SIZE}")
+        assembler = self.get_frame_assembler(request.wid)
         if assembler is None:
-            log("fragment for unknown window %#x", wid)
+            log("fragment for unknown window %#x", request.wid)
             return
-        metadata = tuple(packet[1:7]) + tuple(packet[8:11])
-        assembler.add(packet.get_u64(8), packet.get_u16(11), packet.get_u16(12),
-                      packet.get_u16(13), packet.get_u16(14), packet.get_buffer(7), metadata, monotonic(),
-                      packet.get_u64(15))
+        # all the fragments of a frame must agree on everything but the data:
+        metadata = request._replace(data=b"")
+        assembler.add(request.sequence, index, count, group_start, group_size, request.data, metadata, monotonic(),
+                      stream_sequence)
         self.schedule_fragment_timer()
 
     def draw_assembled_frame(self, wid: int, frame: AssembledFrame) -> None:
-        # metadata = (wid, x, y, width, height, coding, sequence, rowstride, options)
-        metadata = frame.metadata
-        width, height = metadata[3], metadata[4]
+        request: DrawRequest = frame.metadata
         log("draw_assembled_frame(%#x, %s) %i bytes from %i fragments, missing=%s",
             wid, frame.status, len(frame.data), frame.count, frame.missing)
         for sequence in frame.lost_sequences:
             # we have not received anything for these frames:
             self.send_draw_ack(wid, 0, 0, sequence, WINDOW_DECODE_LOST, "lost")
         if frame.status == FrameStatus.LOST:
-            self.send_draw_ack(wid, width, height, frame.sequence, WINDOW_DECODE_LOST, "lost",
+            self.send_draw_ack(wid, request.width, request.height, frame.sequence, WINDOW_DECODE_LOST, "lost",
                                {"missing": frame.missing, "fragments": frame.count})
             return
-        options = dict(metadata[8])
+        options = dict(request.options)
         # tells the decoders this frame may be damaged (see `record_decode_time`):
         options["fragments"] = frame.count
         if frame.missing:
             options["missing-fragments"] = frame.missing
-        packet = Packet(WINDOW_DRAW, *metadata[:6], frame.data, *metadata[6:8], options)
-        self.queue_draw(packet)
+        self.queue_draw(request._replace(data=frame.data, options=options))
 
     def schedule_fragment_timer(self) -> None:
         if self.fragment_timer:
@@ -178,32 +195,11 @@ class WindowDraw(StubClientSubsystem):
         log("sending ack: %s", args)
         self.send_now(*args)
 
-    def _do_draw(self, packet: Packet) -> None:
+    def _do_draw(self, request: DrawRequest) -> None:
         """ this runs from the decode thread (see `xpra/client/subsystem/decode.py`) """
-        wid = packet.get_wid()
+        wid, x, y, width, height, coding, data, packet_sequence, rowstride, draw_options = request
         window = self.get_window(wid)
-        # `window-eos` packets are routed here too:
-        if packet.get_type() == "window-eos":
-            if window:
-                window.eos()
-            return
-        x = packet.get_i16(2)
-        y = packet.get_i16(3)
-        width = packet.get_u16(4)
-        height = packet.get_u16(5)
-        coding = packet.get_str(6)
-        if BACKWARDS_COMPATIBLE and coding in ("mmap", "scroll") and not isinstance(packet[7], (bytes, bytearray, memoryview)):
-            # v7 servers running in backwards compatible mode also send the `chunks` / `scroll` options here,
-            # we only use the options:
-            data = b""
-        else:
-            data = packet.get_buffer(7)
-        packet_sequence = packet.get_u64(8)
-        rowstride = packet.get_u32(9)
-        # rename old encoding aliases early:
-        options = typedict()
-        if len(packet) > 10:
-            options.update(packet.get_dict(10))
+        options = typedict(draw_options)
         dtype = DRAW_TYPES.get(type(data), type(data))
         log(DRAW_LOG_FMT, len(data), dtype, wid, packet_sequence, width, height, x, y, coding, options)
         start = monotonic()
@@ -260,6 +256,12 @@ class WindowDraw(StubClientSubsystem):
         if coding not in allowed_encodings and coding != "mmap":
             log.warn("Warning: server sent unsupported encoding %r", coding)
             self.idle_add(draw_abort, WINDOW_DECODE_ERROR, f"unsupported encoding {coding!r}")
+            return
+
+        if error := check_draw_request(request):
+            log.warn("Warning: invalid %r update for window %#x, sequence %i", coding, wid, packet_sequence)
+            log.warn(" %s", error)
+            self.idle_add(draw_abort, WINDOW_DECODE_ERROR, error)
             return
 
         self._draw_counter += 1
