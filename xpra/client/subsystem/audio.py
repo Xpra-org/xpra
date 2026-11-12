@@ -19,6 +19,11 @@ from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE, packet_handler
+from xpra.net.audio_packet import (
+    AudioData, parse_audio_data_packet, parse_audio_stream_packet,
+    parse_audio_capabilities_packet, parse_audio_keepalive_packet,
+)
+from xpra.net.packet_values import check_value
 from xpra.net.compression import Compressed
 from xpra.common import noop, SizedBuffer, may_notify_client
 from xpra.constants import NotificationID
@@ -730,16 +735,20 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
 
     @packet_handler(AUDIO_KEEPALIVE)
     def _process_keepalive(self, packet: Packet) -> None:
-        self.audio_keepalive(packet.get_u64(1))
+        self.audio_keepalive(parse_audio_keepalive_packet(packet))
 
     @packet_handler(AUDIO_LEVEL)
     @staticmethod
     def _process_level(packet: Packet) -> None:
-        log("audio level: %s", packet.get_dict(1))
+        packet.check_len(2, 2)
+        level = packet.get_dict(1, 16)
+        check_value("level", level, "audio level")
+        log("audio level: %s", level)
 
     @packet_handler(AUDIO_SIGNAL)
     @staticmethod
     def _process_signal(packet: Packet) -> None:
+        packet.check_len(2, 2)
         log("audio signal: %s", packet.get_bool(1))
 
     def send_audio_sync(self, v: int) -> None:
@@ -750,21 +759,20 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
     # packet handlers
     @packet_handler(AUDIO_CAPABILITIES, main_thread=True)
     def _process_capabilities(self, packet: Packet) -> None:
-        audio = typedict(packet.get_dict(1))
+        audio = typedict(parse_audio_capabilities_packet(packet))
         self.parse_audio_capabilities(audio)
         self.auto_start()
         self.emit("audio-initialized")
 
     @packet_handler(AUDIO_DATA)
     def _process_data(self, packet: Packet) -> None:
-        codec = packet.get_str(1)
-        data = packet.get_buffer(2)
-        metadata = typedict(packet.get_dict(3))
-        self.update_latest_received_audio_timestamp(metadata)
+        self.do_process_data(parse_audio_data_packet(packet))
+
+    def do_process_data(self, audio_data: AudioData) -> None:
         # the server may send packet_metadata, which is pushed before the actual audio data:
-        packet_metadata = ()
-        if len(packet) > 4:
-            packet_metadata = packet.get_bytes_seq(4)
+        codec, data, audio_metadata, packet_metadata = audio_data
+        metadata = typedict(audio_metadata)
+        self.update_latest_received_audio_timestamp(metadata)
         if data:
             self.in_bytecount += len(data)
         # verify sequence number if present:
@@ -781,7 +789,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
                 return
         if not self.speaker_enabled:
             # with datagrams, the data can overtake the `audio-stream` start packet:
-            if self.server_stream_packet and self.pending_audio.add(packet):
+            if self.server_stream_packet and self.pending_audio.add(audio_data):
                 log("audio data received before the stream has started, holding on to it")
                 return
             if not self.speaker_enabled:
@@ -829,9 +837,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
     # so neither of them uses `main_thread`:
     @packet_handler(AUDIO_STREAM)
     def _process_stream(self, packet: Packet) -> None:
-        event = packet.get_str(1)
-        codec = packet.get_str(2)
-        seq = packet.get_i64(3)
+        event, codec, seq = parse_audio_stream_packet(packet)
         if self.old_sink_sequence(seq):
             return
         if event == AUDIO_STREAM_START:
@@ -860,8 +866,8 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         log("starting speaker on server request using codec %s", codec)
         if self.start_sink(codec):
             # replay the data that arrived before this packet:
-            for packet in self.pending_audio.start():
-                self._process_data(packet)
+            for audio_data in self.pending_audio.start():
+                self.do_process_data(audio_data)
 
     def audio_stream_end(self, seq: int) -> None:
         if not self.speaker_enabled or self.sink is None:

@@ -15,6 +15,7 @@ from typing import NamedTuple
 
 from xpra.common import SizedBuffer
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.packet_values import check_key, check_value, get_int_tuples, get_mmap_chunks
 from xpra.codecs.constants import RGB_FORMAT_BPP, check_image_size, check_rgb_buffer
 from xpra.util.env import envint
 from xpra.util.str_fn import repr_ellipsized
@@ -25,10 +26,6 @@ log = Logger("window", "draw")
 # limits for the `window-draw` and `window-draw-fragment` packets:
 MAX_DRAW_PIXELS: int = envint("XPRA_MAX_DRAW_PIXELS", 8192 * 8192)
 MAX_DRAW_OPTIONS: int = envint("XPRA_MAX_DRAW_OPTIONS", 64)
-# for the option values, except the ones we validate specifically (see `validate_draw_options`):
-MAX_OPTION_ITEMS: int = 64
-MAX_OPTION_SIZE: int = 1024
-MAX_OPTION_DEPTH: int = 2
 MAX_MMAP_CHUNKS: int = envint("XPRA_MAX_MMAP_CHUNKS", 256)
 MAX_SCROLL_RECTS: int = envint("XPRA_MAX_SCROLL_RECTS", 4096)
 MAX_DRAW_FRAGMENTS: int = envint("XPRA_MAX_DRAW_FRAGMENTS", 256)
@@ -66,49 +63,6 @@ class DrawRequest(NamedTuple):
     options: dict
 
 
-def check_option_value(key: str, value, depth: int = 0) -> None:
-    if value is None or isinstance(value, (bool, int, float)):
-        return
-    if isinstance(value, (str, bytes)):
-        if len(value) > MAX_OPTION_SIZE:
-            raise ValueError(f"draw option {key!r} is too large: {len(value)} bytes")
-        return
-    if isinstance(value, (tuple, list, dict)):
-        if depth >= MAX_OPTION_DEPTH:
-            raise ValueError(f"draw option {key!r} is nested too deeply")
-        if len(value) > MAX_OPTION_ITEMS:
-            raise ValueError(f"draw option {key!r} has too many items: {len(value)}")
-        if isinstance(value, dict):
-            for k, v in value.items():
-                check_option_key(k)
-                check_option_value(f"{key}.{k}", v, depth + 1)
-        else:
-            for v in value:
-                check_option_value(key, v, depth + 1)
-        return
-    raise TypeError(f"invalid type for draw option {key!r}: {type(value)}")
-
-
-def check_option_key(key) -> None:
-    if not isinstance(key, str) or not key or len(key) > 64:
-        raise ValueError(f"invalid draw option key {key!r}")
-
-
-def get_int_tuples(options: dict, key: str, size: int, max_items: int, limit: int) -> tuple[tuple[int, ...], ...]:
-    """ a sequence of at most `max_items` tuples of `size` integers, all within -`limit` and `limit` """
-    value = options[key]
-    if not isinstance(value, (tuple, list)) or len(value) > max_items:
-        raise ValueError(f"invalid draw option {key!r}")
-    items = []
-    for item in value:
-        if not isinstance(item, (tuple, list)) or len(item) != size:
-            raise ValueError(f"invalid draw option {key!r} item {item!r}")
-        if any(not isinstance(v, int) or isinstance(v, bool) or abs(v) > limit for v in item):
-            raise ValueError(f"invalid draw option {key!r} item {item!r}")
-        items.append(tuple(item))
-    return tuple(items)
-
-
 def get_size_option(options: dict, key: str) -> tuple[int, int]:
     value = options[key]
     if not isinstance(value, (tuple, list)) or len(value) != 2 or any(type(v) is not int for v in value):
@@ -126,22 +80,20 @@ def validate_draw_options(options: dict) -> dict:
     """
     validated = {}
     for key, value in options.items():
-        check_option_key(key)
+        check_key(key, "draw option")
         if key in CLIENT_OPTIONS:
             log("ignoring client-only draw option %r=%s", key, repr_ellipsized(value))
             continue
         if key == "chunks":
-            value = get_int_tuples(options, key, 2, MAX_MMAP_CHUNKS, 2**32)
-            if any(offset < 0 or length <= 0 for offset, length in value):
-                raise ValueError(f"invalid mmap chunks: {value!r}")
+            value = get_mmap_chunks(value, MAX_MMAP_CHUNKS, "draw option")
         elif key == "scroll":
-            value = get_int_tuples(options, key, 6, MAX_SCROLL_RECTS, 2**16)
+            value = get_int_tuples(value, key, 6, MAX_SCROLL_RECTS, 2**16, "draw option")
             if any(w <= 0 or h <= 0 for _x, _y, w, h, _dx, _dy in value):
                 raise ValueError("invalid scroll rectangle size")
         elif key in ("scaled_size", "window-size"):
             value = get_size_option(options, key)
         else:
-            check_option_value(key, value)
+            check_value(key, value, "draw option")
         validated[key] = value
     return validated
 

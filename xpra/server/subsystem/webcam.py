@@ -15,6 +15,7 @@ from xpra.server.source.webcam import WebcamConnection
 from xpra.util.objects import typedict
 from xpra.util.child_reaper import KILL_CHILD_PROCESS_GROUP, get_child_reaper, stop_child_process
 from xpra.net.common import Packet, packet_handler
+from xpra.net.webcam_packet import parse_webcam_start_packet, parse_webcam_stop_packet, parse_webcam_frame_packet
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.packet_type import WEBCAM_FRAME, WEBCAM_START, WEBCAM_STOP
@@ -201,6 +202,7 @@ class WebcamServer(StubSubsystem):
 
     @packet_handler(WEBCAM_START, enabled=lambda self: self.enabled)
     def _process_start(self, proto, packet: Packet) -> None:
+        device_id, w, h = parse_webcam_start_packet(packet)
         if self.is_readonly(proto):
             return
         assert self.enabled
@@ -208,9 +210,6 @@ class WebcamServer(StubSubsystem):
         if not ss:
             log.warn("Warning: invalid client source for webcam start")
             return
-        device_id = packet.get_i64(1)
-        w = packet.get_u16(2)
-        h = packet.get_u16(3)
         if self.client_mode:
             ss.request_webcam_client_forwarder(device_id, w, h)
             self._spawn_webcam_client(ss, device_id, w, h)
@@ -255,16 +254,13 @@ class WebcamServer(StubSubsystem):
 
     @packet_handler(WEBCAM_STOP, enabled=lambda self: self.enabled)
     def _process_stop(self, proto, packet: Packet) -> None:
+        device_id, message = parse_webcam_stop_packet(packet)
         if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
         if not ss:
-            log.warn("Warning: invalid client source for webcam start")
+            log.warn("Warning: invalid client source for webcam stop")
             return
-        device_id = packet.get_i64(1)
-        message = ""
-        if len(packet) >= 3:
-            message = packet.get_str(2)
         ss.stop_virtual_webcam(device_id, message)
         self._cleanup_webcam_client(device_id, "stop")
 
@@ -276,19 +272,11 @@ class WebcamServer(StubSubsystem):
 
     @packet_handler(WEBCAM_FRAME, enabled=lambda self: self.enabled)
     def _process_frame(self, proto, packet: Packet) -> None:
+        frame = parse_webcam_frame_packet(packet)
         if self.is_readonly(proto):
             return
         ss = self.get_server_source(proto)
         if not ss:
             log.warn("Warning: invalid client source for webcam frame")
             return
-        device_id = packet.get_i64(1)
-        frame_no = packet.get_u64(2)
-        encoding = packet.get_str(3)
-        w = packet.get_u16(4)
-        h = packet.get_u16(5)
-        data = packet.get_buffer(6)
-        options = {}
-        if len(packet) >= 8:
-            options = packet.get_dict(7)
-        ss.process_webcam_frame(device_id, frame_no, encoding, w, h, data, options)
+        ss.process_webcam_frame(*frame)

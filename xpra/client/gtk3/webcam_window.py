@@ -15,6 +15,7 @@ from typing import Any
 
 from xpra.common import SizedBuffer
 from xpra.net.common import Packet, packet_handler
+from xpra.net.webcam_packet import parse_webcam_frame_packet, check_webcam_frame
 from xpra.os_util import gi_import
 from xpra.gtk.pixbuf import load_pixbuf
 from xpra.exit_codes import ExitCode, ExitValue
@@ -111,13 +112,15 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
 
     @packet_handler(WEBCAM_FRAME, main_thread=True)
     def _process_webcam_frame(self, packet: Packet) -> None:
+        frame = parse_webcam_frame_packet(packet)
+        log("webcam frame: %s %ix%i", frame.encoding, frame.width, frame.height)
+        # the server forwards the compressed frames, mmap frames are re-compressed:
+        if error := check_webcam_frame(frame, ("png", "jpeg", "webp")):
+            log.error("Error: invalid webcam frame %i", frame.frame_no)
+            log.error(" %s", error)
+            return
         try:
-            encoding = packet.get_str(3)
-            width = packet.get_u16(4)
-            height = packet.get_u16(5)
-            data = packet.get_buffer(6)
-            log("webcam frame: %s %ix%i", encoding, width, height)
-            self._update_frame(encoding, data, width, height)
+            self._update_frame(frame.encoding, frame.data, frame.width, frame.height)
         except Exception as e:
             log.error("Error processing webcam frame: %s", e)
 

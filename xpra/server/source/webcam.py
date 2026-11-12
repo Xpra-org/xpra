@@ -12,6 +12,7 @@ from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.server.source.stub import StubClientConnection
 from xpra.net.packet_type import WEBCAM_ACK, WEBCAM_FRAME, WEBCAM_STOP
+from xpra.net.webcam_packet import WebcamFrame, check_webcam_frame
 from xpra.codecs.constants import RGB_FORMAT_BPP, check_rgb_buffer
 from xpra.log import Logger
 
@@ -249,9 +250,13 @@ class WebcamConnection(StubClientConnection):
         pending = self.webcam_pending_clients.get(device_id)
         log("process_webcam_frame: device %s, frame no %i: %s %ix%i, %i bytes, options=%s, webcam=%s, pending=%s",
             device_id, frame_no, encoding, w, h, len(data), options, webcam, pending)
-        if not (encoding and w and h and (data or (encoding == "mmap" and options))):
-            log.error("Error: webcam frame data is incomplete")
-            self.send_webcam_stop(device_id, "incomplete frame data")
+        encodings = tuple(self.webcam_encodings) + (("mmap", ) if getattr(self, "mmap_supported", False) else ())
+        if error := check_webcam_frame(WebcamFrame(device_id, frame_no, encoding, w, h, data, options), encodings):
+            log.error("Error: invalid webcam frame %i for device %i", frame_no, device_id)
+            log.error(" %s", error)
+            self.send_webcam_stop(device_id, error)
+            if webcam:
+                self.stop_virtual_webcam(device_id)
             return False
 
         def ack() -> None:
@@ -281,8 +286,6 @@ class WebcamConnection(StubClientConnection):
             else:
                 # pylint: disable=import-outside-toplevel
                 from xpra.codecs.pillow.decoder import open_only
-                if encoding not in self.webcam_encodings:
-                    raise ValueError(f"invalid encoding specified: {encoding} (must be one of {self.webcam_encodings})")
                 if forward:
                     # shortcut: just forward the compressed data:
                     webcam.forward(frame_no, encoding, w, h, data, options)

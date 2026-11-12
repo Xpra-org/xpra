@@ -15,6 +15,10 @@ from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
 from xpra.util.env import first_time, envbool, envint
 from xpra.net.common import Packet, packet_handler
+from xpra.net.audio_packet import (
+    parse_audio_data_packet, parse_audio_stream_packet, parse_audio_control_packet,
+    parse_audio_capabilities_packet, parse_audio_keepalive_packet,
+)
 from xpra.util.thread import start_thread
 from xpra.scripts.parsing import audio_option
 from xpra.server.source.audio import AudioConnection
@@ -384,6 +388,7 @@ class AudioServer(StubSubsystem):
 
     @packet_handler(AUDIO_CONTROL, main_thread=True, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_control(self, proto, packet: Packet) -> None:
+        action, args = parse_audio_control_packet(packet)
         ss = self.get_server_source(proto)
         if not ss:
             return
@@ -394,29 +399,33 @@ class AudioServer(StubSubsystem):
                 log.warn(" audio is not enabled for this connection")
             return
         # noinspection calling-non-callable
-        audio_control(*packet[1:])
+        audio_control(action, *args)
 
     @packet_handler(AUDIO_DATA, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_data(self, proto, packet: Packet) -> None:
+        audio_data = parse_audio_data_packet(packet)
         if ss := self.get_server_source(proto):
-            ss.audio_data(*packet[1:])
+            ss.audio_data(*audio_data)
 
     # `audio-stream` must not be re-ordered with the `audio-data` packets,
     # so neither of them uses `main_thread`:
     @packet_handler(AUDIO_STREAM, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_stream(self, proto, packet: Packet) -> None:
+        event, codec, sequence = parse_audio_stream_packet(packet)
         if ss := self.get_server_source(proto):
-            ss.audio_stream(packet.get_str(1), packet.get_str(2), packet.get_i64(3))
+            ss.audio_stream(event, codec, sequence)
 
     @packet_handler(AUDIO_CAPABILITIES, main_thread=True, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_capabilities(self, proto, packet: Packet) -> None:
+        capabilities = parse_audio_capabilities_packet(packet)
         if ss := self.get_server_source(proto):
-            ss.client_audio_capabilities(packet.get_dict(1))
+            ss.client_audio_capabilities(capabilities)
 
     @packet_handler(AUDIO_KEEPALIVE, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_keepalive(self, proto, packet: Packet) -> None:
+        timestamp = parse_audio_keepalive_packet(packet)
         if ss := self.get_server_source(proto):
-            ss.audio_keepalive(packet.get_u64(1))
+            ss.audio_keepalive(timestamp)
 
     #########################################
     # Control Commands

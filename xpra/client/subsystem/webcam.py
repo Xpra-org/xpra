@@ -23,6 +23,7 @@ from xpra.common import may_notify_client
 from xpra.constants import NotificationID
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.net.packet_type import WEBCAM_ACK, WEBCAM_FRAME, WEBCAM_START, WEBCAM_STOP
+from xpra.net.webcam_packet import parse_webcam_stop_packet, parse_webcam_ack_packet
 from xpra.log import Logger
 
 log = Logger("webcam")
@@ -362,8 +363,8 @@ class WebcamForwarder(StubClientSubsystem):
     # packet handlers
     @packet_handler(WEBCAM_STOP)
     def _process_stop(self, packet: Packet) -> None:
-        device_no = packet.get_u64(1)
-        log("webcam-stop for device %i", device_no)
+        device_no, message = parse_webcam_stop_packet(packet)
+        log("webcam-stop for device %i: %r", device_no, message)
         if device_no != self.device_no:
             return
         self.stop_sending_webcam()
@@ -371,9 +372,9 @@ class WebcamForwarder(StubClientSubsystem):
     @packet_handler(WEBCAM_ACK)
     def _process_ack(self, packet: Packet) -> None:
         log("process_webcam_ack: %s", packet)
+        _device_no, frame_no = parse_webcam_ack_packet(packet)
         with self.lock:
             if self.device:
-                frame_no = packet.get_u64(2)
                 self.last_ack = frame_no
                 if self.may_send_webcam_frame():
                     self.cancel_webcam_send_timer()
