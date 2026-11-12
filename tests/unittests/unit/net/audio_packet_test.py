@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 
 from xpra.net.common import Packet
 from xpra.net.audio_packet import (
-    MAX_AUDIO_DATA,
+    MAX_AUDIO_DATA, MAX_AUDIO_CAPABILITY_ITEMS, MAX_AUDIO_CAPABILITY_NAME, MAX_AUDIO_CAPABILITY_STRING, MAX_AUDIO_DEVICE_NAME,
     parse_audio_data_packet, parse_audio_stream_packet, parse_audio_control_packet,
     parse_audio_capabilities_packet, parse_audio_keepalive_packet,
 )
@@ -85,17 +85,61 @@ class AudioPacketTest(unittest.TestCase):
                 parse_audio_control_packet(packet)
 
     def test_capabilities_and_keepalive(self):
-        self.assertEqual(parse_audio_capabilities_packet(Packet("audio-capabilities", {"send": True})), {"send": True})
+        capabilities = {
+            "send": True,
+            "receive": False,
+            "encoders": ["opus", b"mp3"],
+            "keepalive.interval": 5,
+            "gst.version": (1, 24, "3"),
+            "python.bits": "64",
+            "pulseaudio": {"found": True, "id": "audio-server"},
+            "device": {"output.1": "Speakers"},
+        }
+        self.assertEqual(parse_audio_capabilities_packet(Packet("audio-capabilities", capabilities)), capabilities)
         self.assertEqual(parse_audio_keepalive_packet(Packet("audio-keepalive", 10)), 10)
         for fn, packet in (
             (parse_audio_capabilities_packet, Packet("audio-capabilities", {}, 1)),
-            (parse_audio_capabilities_packet, Packet("audio-capabilities", {str(i): i for i in range(257)})),
+            (parse_audio_capabilities_packet, Packet("audio-capabilities", {str(i): i for i in range(33)})),
             (parse_audio_capabilities_packet, Packet("audio-capabilities", "send")),
             (parse_audio_keepalive_packet, Packet("audio-keepalive", -1)),
             (parse_audio_keepalive_packet, Packet("audio-keepalive", 1, 2)),
         ):
             with self.assertRaises((ValueError, TypeError), msg=f"{packet!r} accepted"):
                 fn(packet)
+
+    def test_invalid_capabilities(self):
+        invalid = (
+            {"unknown": True},
+            {1: True},
+            {"send": 1},
+            {"send": "yes"},
+            {"keepalive.interval": True},
+            {"keepalive.interval": -1},
+            {"keepalive.interval": 2**31},
+            {"python.bits": 128},
+            {"pulseaudio.id": object()},
+            {"pulseaudio.id": "x" * (MAX_AUDIO_CAPABILITY_STRING + 1)},
+            {"encoders": "opus"},
+            {"encoders": ["opus"] * (MAX_AUDIO_CAPABILITY_ITEMS + 1)},
+            {"encoders": ["x" * (MAX_AUDIO_CAPABILITY_NAME + 1)]},
+            {"encoders": [1]},
+            {"gst.version": "1.24"},
+            {"gst.version": [1] * 9},
+            {"gst.version": [True]},
+            {"pulseaudio": []},
+            {"pulseaudio": {"unknown": True}},
+            {"pulseaudio": {"found": 1}},
+            {"pulseaudio": {"id": object()}},
+            {"device": []},
+            {"device": {str(i): "device" for i in range(MAX_AUDIO_CAPABILITY_ITEMS + 1)}},
+            {"device": {"x" * (MAX_AUDIO_DEVICE_NAME + 1): "device"}},
+            {"device": {"output": "x" * (MAX_AUDIO_CAPABILITY_STRING + 1)}},
+            {"device": {"output": 1}},
+        )
+        for capabilities in invalid:
+            packet = Packet("audio-capabilities", capabilities)
+            with self.assertRaises((ValueError, TypeError), msg=f"{packet!r} accepted"):
+                parse_audio_capabilities_packet(packet)
 
 
 class AudioHandlersTest(unittest.TestCase):
