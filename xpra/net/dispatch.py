@@ -79,7 +79,10 @@ def find_packet_handler(subsystems: dict[str, Any], packet_type: str) -> tuple[A
 _specs_cache: dict[type, tuple[tuple[str, PacketHandlerSpec], ...]] = {}
 
 
-def get_packet_handler_specs(cls: type) -> tuple[tuple[str, PacketHandlerSpec], ...]:
+def get_packet_handler_specs(cls) -> tuple[tuple[str, PacketHandlerSpec], ...]:
+    # `cls` is deliberately not annotated as `type`:
+    # when cythonized, that becomes an exact builtin type check which rejects
+    # classes with a metaclass, ie: `GObjectMeta` for all the GObject based servers
     """
     The `(method name, spec)` pairs of the methods decorated with `packet_handler`
     anywhere in this class hierarchy.
