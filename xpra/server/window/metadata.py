@@ -96,7 +96,11 @@ def _make_window_metadata(window, propname: str, skip_defaults=False) -> dict[st
 
     if propname in DEFAULT_VALUES:
         v = raw()
-        if skip_defaults and v in (DEFAULT_VALUES[propname], None):
+        if v is None:
+            # ie: "frame" before the window has one,
+            # packets must not contain `None` values:
+            v = DEFAULT_VALUES[propname]
+        if skip_defaults and v == DEFAULT_VALUES[propname]:
             return {}
         return {propname: v}
     if propname in ("group-leader", "transient-for", "parent"):
