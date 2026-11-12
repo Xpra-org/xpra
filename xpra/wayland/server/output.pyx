@@ -5,6 +5,8 @@
 
 # cython: language_level=3
 
+from fractions import Fraction
+
 from xpra.wayland.server.events cimport ListenerObject
 
 from xpra.wayland.server.wlroots cimport (
@@ -113,8 +115,10 @@ cdef dict get_output_info(wlr_output *output, wlr_output_layout *output_layout):
         "width": output.width,
         "height": output.height,
         "enabled": bool(output.enabled),
-        "scale": output.scale,
     })
+    # floats are not valid in packets, send the scale as a fraction:
+    scale = Fraction(output.scale).limit_denominator(8192)
+    info["scale"] = (scale.numerator, scale.denominator)
     if output_layout != NULL:
         wlr_output_layout_get_box(output_layout, output, &box)
         info.update({
