@@ -124,11 +124,14 @@ def check_webcam_frame(frame: WebcamFrame, encodings: Sequence[str] = WEBCAM_FRA
             return "mmap webcam frame without any chunks"
         pixel_format = frame.options.get("pixel-format", "BGRX")
         mmap_size = sum(length for _offset, length in chunks)
+        expected_size = frame.width * frame.height * RGB_FORMAT_BPP[pixel_format]
         try:
             check_rgb_buffer(pixel_format, mmap_size, frame.width, frame.height,
                              frame.width * RGB_FORMAT_BPP[pixel_format], "mmap webcam frame")
         except ValueError as e:
             return str(e)
+        if mmap_size != expected_size:
+            return f"invalid mmap webcam frame size: {mmap_size} bytes, expected {expected_size}"
         return ""
     from xpra.codecs.image_type import get_image_type
     image_type = get_image_type(frame.data)
