@@ -34,8 +34,22 @@ def get_salt_digests() -> Sequence[str]:
     return _get_hmac_digests()
 
 
+def is_fips_mode() -> bool:
+    try:
+        from _hashlib import get_fips_mode  # pylint: disable=import-outside-toplevel
+        return bool(get_fips_mode())
+    except (ImportError, AttributeError, ValueError) as e:
+        log("is_fips_mode() %s", e)
+        return False
+
+
 def get_digests() -> Sequence[str]:
-    digests = ["xor"] + _get_hmac_digests()
+    hmac_digests = _get_hmac_digests()
+    if is_fips_mode():
+        # "xor" and "des" are not FIPS approved:
+        log("FIPS mode: not offering 'xor' or 'des'")
+        return tuple(hmac_digests)
+    digests = ["xor"] + hmac_digests
     try:
         from xpra.net.rfb import d3des  # pylint: disable=import-outside-toplevel
         if not d3des:
