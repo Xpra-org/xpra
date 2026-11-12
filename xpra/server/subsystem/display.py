@@ -8,6 +8,7 @@ from contextlib import contextmanager
 from typing import Any
 
 from xpra.net.constants import ConnectionMessage
+from xpra.net.icc import validate_icc_data
 from xpra.os_util import POSIX, OSX
 from xpra.util.rectangle import rectangle
 
@@ -427,6 +428,7 @@ class DisplayManager(StubSubsystem):
         if ss is None:
             return
         attrs = typedict(packet.get_dict(1))
+        iccdata = validate_icc_data(attrs.get("icc")) if "icc" in attrs else {}
         desktop_size = attrs.intpair("desktop-size")
         if desktop_size != (0, 0):
             ss.desktop_size = desktop_size
@@ -464,7 +466,7 @@ class DisplayManager(StubSubsystem):
             ss.set_desktops(attrs.intget("desktops", len(desktop_names)), desktop_names)
             self.server.calculate_desktops()
         # soft dependency on ICC:
-        if iccdata := attrs.dictget("icc"):
+        if iccdata:
             if icc := self.get_subsystem("icc"):
                 icc.process_icc(ss, iccdata)
         self.apply_refresh_rate(ss)

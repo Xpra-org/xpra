@@ -36,6 +36,13 @@ from xpra.util.parsing import (
 )
 
 
+def make_icc_profile(size: int = 128) -> bytes:
+    profile = bytearray(size)
+    profile[:4] = size.to_bytes(4, "big")
+    profile[36:40] = b"acsp"
+    return bytes(profile)
+
+
 class TestStrToBool(unittest.TestCase):
 
     def test_true_options(self):
@@ -628,7 +635,7 @@ class TestValidatedMonitorData(unittest.TestCase):
                 "depth": 30,
                 "colorspace": "Display-P3",
                 "hdr": True,
-                "icc": {"source": "test", "data": b"abc"},
+                "icc": {"source": "test", "data": make_icc_profile()},
             }
         }
         result = validated_monitor_data(monitors)
@@ -637,6 +644,10 @@ class TestValidatedMonitorData(unittest.TestCase):
         self.assertEqual(m["colorspace"], "Display-P3")
         self.assertTrue(m["hdr"])
         self.assertEqual(m["icc"].get("source"), "test")
+
+    def test_invalid_monitor_icc_is_rejected(self):
+        with self.assertRaises(ValueError):
+            validated_monitor_data({0: {"icc": {"data": b"invalid"}}})
 
 
 def main():

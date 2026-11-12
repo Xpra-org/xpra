@@ -172,7 +172,7 @@ def get_pillow_icc_info() -> dict[str, Any]:
                         v = m(p)
                         if conv:
                             v = conv(v)
-                        info[k] = bytestostr(v).rstrip("\n\r")
+                        info[k] = v if k == "data" else bytestostr(v).rstrip("\n\r")
                     except Exception as e:
                         screenlog("get_icc_info()", exc_info=True)
                         screenlog("ICC profile error on %s using %s: %s", k, fn, e)

@@ -6,6 +6,7 @@
 from typing import Any
 
 from xpra.server.source.display import DisplayConnection
+from xpra.net.icc import validate_icc_data
 from xpra.util.colourspace import Colourspace, SRGB
 from xpra.util.env import envbool
 from xpra.util.str_fn import hexstr
@@ -76,9 +77,9 @@ class ICCServer(StubSubsystem):
         return {"colourspace": self.colourspace.to_dict()}
 
     # TODO: should use its own packet rather than getting called by `DisplayManager`:
-    def process_icc(self, ss, iccdata: dict[str, Any]):
+    def process_icc(self, ss, iccdata: dict[str, Any]) -> None:
         if iccdata:
-            iccd = typedict(iccdata)
+            iccd = typedict(validate_icc_data(iccdata))
             ss.icc = iccd.get("global", ss.icc)
             ss.display_icc = iccd.get("display", ss.display_icc)
             self.set_icc_profile()

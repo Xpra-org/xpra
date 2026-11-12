@@ -8,6 +8,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.net.packet_type import DISPLAY_CONFIGURE, DISPLAY_RESIZED, DISPLAY_SHOW_DESKTOP
+from xpra.net.icc import validate_icc_data
 from xpra.exit_codes import ExitCode
 from xpra.platform.gui import (
     get_vrefresh,
@@ -661,10 +662,11 @@ class DisplayClient(StubClientSubsystem):
         icc = self.get_icc_info()
         dicc = self.get_display_icc_info()
         if icc or dicc:
-            attrs["icc"] = {
-                "global": icc,
-                "display": dicc,
-            }
+            try:
+                attrs["icc"] = validate_icc_data({"global": icc, "display": dicc})
+            except (TypeError, ValueError) as e:
+                log.warn("Warning: ignoring invalid ICC profile data")
+                log.warn(" %s", e)
         if ndesktops:
             attrs["desktops"] = ndesktops
             attrs["desktop-names"] = desktop_names or ()

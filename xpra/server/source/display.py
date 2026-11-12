@@ -11,6 +11,7 @@ from xpra.util.str_fn import single_line, truncate
 from xpra.util.rectangle import rectangle
 from xpra.util.screen import MonitorLayout
 from xpra.net.packet_type import DISPLAY_RESIZED, DISPLAY_SHOW_DESKTOP
+from xpra.net.icc import validate_icc_data
 from xpra.util.parsing import validated_monitor_data
 from xpra.server.source.stub import StubClientConnection, is_recording_allowed
 from xpra.log import Logger
@@ -103,8 +104,12 @@ class DisplayConnection(StubClientConnection):
         desktop_names = tuple(str(x) for x in c.tupleget("desktop.names"))
         self.set_desktops(c.intget("desktops", 1), desktop_names)
         self.show_desktop_allowed = c.boolget("show-desktop")
-        self.icc = c.dictget("icc")
-        self.display_icc = c.dictget("display-icc")
+        raw_icc = c.get("icc", {})
+        raw_display_icc = c.get("display-icc", {})
+        if raw_icc or raw_display_icc:
+            iccdata = validate_icc_data({"global": raw_icc, "display": raw_display_icc})
+            self.icc = iccdata.get("global", {})
+            self.display_icc = iccdata.get("display", {})
         self.opengl_props = c.dictget("opengl")
         self.display_record = c.boolget("record", False) and is_recording_allowed(self, "display")
 

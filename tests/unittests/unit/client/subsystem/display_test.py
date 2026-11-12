@@ -15,6 +15,13 @@ from unit.process_test_util import DisplayContext
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
 
+def make_icc_profile(size: int = 128) -> bytes:
+    profile = bytearray(size)
+    profile[:4] = size.to_bytes(4, "big")
+    profile[36:40] = b"acsp"
+    return bytes(profile)
+
+
 class DisplayClientTest(ClientMixinTest):
 
     def test_xsettings_negotiation(self):
@@ -141,6 +148,28 @@ class DisplayClientTest(ClientMixinTest):
         packet_handlers[resize_packet_type](client, Packet(resize_packet_type, 1024, 768, 3840, 2160))
         self.assertEqual(client.server_actual_desktop_size, (1024, 768))
         self.assertEqual(client.server_max_desktop_size, (3840, 2160))
+
+    def test_update_screen_size_validates_icc(self):
+        from xpra.client.subsystem.display import DisplayClient
+
+        display = stubbable(DisplayClient)()
+        display.get_screen_settings = Mock(return_value=(1024, 768, (), 1, (), 1024, 768, 96, 96, 60, {}))
+        display.get_display_icc_info = Mock(return_value={})
+        display.send = Mock()
+        display.set_max_packet_size = Mock()
+        display.get_icc_info = Mock(return_value={"data": b"invalid"})
+        self.assertTrue(display.update_screen_size())
+        attrs = display.send.call_args.args[1]
+        self.assertNotIn("icc", attrs)
+
+        display._last_screen_settings = ()
+        display.send.reset_mock()
+        profile = make_icc_profile()
+        display.get_icc_info.return_value = {"source": "test", "data": bytearray(profile)}
+        self.assertTrue(display.update_screen_size())
+        attrs = display.send.call_args.args[1]
+        self.assertEqual(attrs["icc"]["global"]["data"], profile)
+        self.assertIsInstance(attrs["icc"]["global"]["data"], bytes)
 
     def test_display(self):
         with DisplayContext():

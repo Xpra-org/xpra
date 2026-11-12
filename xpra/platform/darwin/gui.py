@@ -312,8 +312,8 @@ def get_colorspace_info(cs) -> dict[str, Any]:
 
     defs = (
         ("name", "CGColorSpaceCopyName", str),
-        ("icc-profile", "CGColorSpaceCopyICCProfile", str),
-        ("icc-data", "CGColorSpaceCopyICCData", str),
+        ("icc-profile", "CGColorSpaceCopyICCProfile", bytes),
+        ("icc-data", "CGColorSpaceCopyICCData", bytes),
         ("components", "CGColorSpaceGetNumberOfComponents", int),
         ("supports-output", "CGColorSpaceSupportsOutput", bool),
         ("model", "CGColorSpaceGetModel", tomodelstr),

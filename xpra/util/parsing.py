@@ -640,6 +640,9 @@ def validated_monitor_data(monitors: dict) -> dict[int, dict[str, Any]]:
         for attr, conv in aconv.items():
             v = conv(attr)
             if v is not None:
+                if attr == "icc":
+                    from xpra.net.icc import validate_icc_profile
+                    v = validate_icc_profile(v)
                 if attr in MONITOR_STRINGS:
                     # the name may be used for the server's monitors:
                     v = truncate(single_line(v), MAX_MONITOR_STRING)

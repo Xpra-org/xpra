@@ -12,6 +12,13 @@ from unit.server.subsystem.servermixintest_util import ServerMixinTest
 from unit.process_test_util import DisplayContext
 
 
+def make_icc_profile(size: int = 128) -> bytes:
+    profile = bytearray(size)
+    profile[:4] = size.to_bytes(4, "big")
+    profile[36:40] = b"acsp"
+    return bytes(profile)
+
+
 class DisplayMixinTest(ServerMixinTest):
 
     def test_display(self):
@@ -166,7 +173,7 @@ class ConfigureDisplayTest(unittest.TestCase):
             "monitors": {0: {"geometry": (0, 0, 1920, 1080)}},
             "dpi": {"x": 120, "y": 144},
             "desktop-names": ("one", "two"),
-            "icc": {"global": {"data": b"icc"}},
+            "icc": {"global": {"data": make_icc_profile()}},
         })
         dm._process_configure("proto", packet)
         self.assertEqual(ss.desktop_size, (1920, 1080))
@@ -185,6 +192,26 @@ class ConfigureDisplayTest(unittest.TestCase):
         server.calculate_desktops.assert_called_once_with()
         icc.process_icc.assert_called_once()
         xsettings.update_all_server_settings.assert_called_once_with()
+
+    def test_invalid_icc_is_rejected_before_display_changes(self):
+        from unittest.mock import Mock
+        from xpra.net.common import Packet
+        from xpra.server.subsystem.display import DisplayManager
+        server = AdHocStruct()
+        server.hello_request_handlers = {}
+        server.subsystems = {"icc": Mock()}
+        ss = Mock()
+        server.get_server_source = lambda _proto: ss
+        dm = stubbable(DisplayManager)(server)
+        dm.apply_refresh_rate = Mock()
+        with self.assertRaises(ValueError):
+            dm._process_configure("proto", Packet("configure-display", {
+                "desktop-size": (1920, 1080),
+                "icc": {"global": {"data": b"not-an-icc-profile"}},
+            }))
+        self.assertNotIn("desktop_size", vars(ss))
+        dm.apply_refresh_rate.assert_not_called()
+        server.subsystems["icc"].process_icc.assert_not_called()
 
     def test_dpi_is_applied_before_resizing(self):
         # the new DPI is used for the physical dimensions of the resized display,
