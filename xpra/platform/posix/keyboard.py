@@ -105,15 +105,16 @@ class Keyboard(KeyboardBase):
         try:
             from xpra.dbus.helper import DBusHelper
             self.__dbus_helper = DBusHelper()
-            # we really want to catch `dbus.exceptions.DBusException` here instead:
         except ImportError:
             log("init_vars()", exc_info=True)
             self.__dbus_helper = None
             log.warn("Warning: gnome input sources requires the python dbus bindings")
-        except Exception:
+        except Exception as e:
             log("init_vars()", exc_info=True)
             self.__dbus_helper = None
-            log.error("Error: failed to load the dbus helper", exc_info=True)
+            # no session bus is not an error, ie: CI, containers, ssh sessions:
+            if getattr(e, "get_dbus_name", str)() != "org.freedesktop.DBus.Error.NoServer":
+                log.error("Error: failed to load the dbus helper", exc_info=True)
         else:
             self._dbus_gnome_shell_ism("List", [], self._store_input_sources)
 
