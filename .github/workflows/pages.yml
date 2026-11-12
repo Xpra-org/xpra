@@ -1,0 +1,56 @@
+name: Documentation site
+
+# Builds https://xpra-org.github.io/xpra/ from `docs/` with the same Jekyll setup
+# as the legacy "Deploy from a branch" GitHub Pages build,
+# then generates the pagefind search index used by `docs/_layouts/default.html`.
+# Requires "Settings > Pages > Build and deployment > Source" set to "GitHub Actions".
+on:
+  push:
+    branches: [master]
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/jekyll-build-pages@v1
+        with:
+          source: ./docs
+          destination: ./_site
+
+      # the Jekyll build runs in a container and leaves `_site` owned by root
+      - name: Build the search index
+        run: |
+          sudo chown -R "$(id -u):$(id -g)" _site
+          npx --yes pagefind@1.5.2 --site _site
+
+      - uses: actions/upload-pages-artifact@v5
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
