@@ -27,6 +27,45 @@ from xpra.util.str_fn import print_nested_dict, Ellipsizer
 
 SSL_RETRY = envbool("XPRA_SSL_RETRY", True)
 SSL_HANDSHAKE_TIMEOUT = envint("XPRA_SSL_HANDSHAKE_TIMEOUT", 20)
+LIBRESSL_CLEAR_ERRORS = envbool("XPRA_LIBRESSL_CLEAR_ERRORS", True)
+
+
+def get_err_clear_error():
+    """
+    LibreSSL keeps the error queue of each thread in a table keyed by `pthread_self()`,
+    and never frees it when the thread exits.
+    Python 3.13 does not clear the queue when an SSL call fails with a system error (ie: `EPIPE`),
+    and the next thread that gets the same (recycled) `pthread_t` inherits the stale error:
+    its first `SSL_read` that would just block then fails with that error instead,
+    because `SSL_get_error` looks at the queue before checking for `SSL_ERROR_WANT_READ`.
+    (seen on OpenBSD as a spurious `BrokenPipeError` on a perfectly healthy connection)
+    """
+    import ssl
+    if not ssl.OPENSSL_VERSION.startswith("LibreSSL") or not LIBRESSL_CLEAR_ERRORS:
+        return None
+    log = get_ssl_logger()
+    try:
+        import ctypes
+        import _ssl
+        # `dlsym` on the `_ssl` module's handle also searches its dependencies,
+        # so this finds the `libcrypto` that python is actually using:
+        fn = ctypes.CDLL(_ssl.__file__).ERR_clear_error
+    except (ImportError, AttributeError, OSError) as e:
+        log("cannot access LibreSSL's ERR_clear_error: %s", e)
+        return None
+    fn.argtypes = []
+    fn.restype = None
+    log("will clear the LibreSSL error queue at the start of every thread")
+    return fn
+
+
+def init_thread_error_queue() -> None:
+    if clear := get_err_clear_error():
+        from xpra.util.thread import add_thread_start_hook
+        add_thread_start_hook(clear)
+
+
+init_thread_error_queue()
 
 
 def ssl_wrap_socket(sock, alpn_protocols: Sequence[str] = (), **kwargs):

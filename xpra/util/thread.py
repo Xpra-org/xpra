@@ -22,8 +22,25 @@ from xpra.util.env import envbool
 
 UI_THREAD_CHECK = envbool("XPRA_UI_THREAD_CHECK", True)
 
+# functions called at the start of every thread we create, before its target:
+THREAD_START_HOOKS: list[Callable[[], None]] = []
+
+
+def add_thread_start_hook(hook: Callable[[], None]) -> None:
+    if hook not in THREAD_START_HOOKS:
+        THREAD_START_HOOKS.append(hook)
+
+
+def run_with_hooks(target: Callable, *args) -> None:
+    for hook in tuple(THREAD_START_HOOKS):
+        hook()
+    target(*args)
+
 
 def make_thread(target: Callable, name: str, daemon: bool = False, args=()) -> Thread:
+    if THREAD_START_HOOKS:
+        args = (target, *args)
+        target = run_with_hooks
     t = Thread(target=target, name=name, args=args)
     t.daemon = daemon
     return t
