@@ -7,6 +7,7 @@
 
 from libc.stdint cimport uintptr_t
 
+from xpra.common import noop
 from xpra.log import Logger
 from xpra.wayland.server.events cimport ListenerObject
 from xpra.wayland.server.wlroots cimport (
@@ -110,7 +111,7 @@ cdef class SeatCursorTracker(ListenerObject):
             cursor_surface.destroy()
         self._detach_all()
         self.seat = NULL
-        self.callback = None
+        self.callback = noop
 
     cdef void dispatch(self, wl_listener *listener, void *data) noexcept:
         cdef int slot = self.slot_of(listener)
@@ -150,8 +151,7 @@ cdef class SeatCursorTracker(ListenerObject):
         self.cursor_surface.refresh()
 
     cdef void emit_cursor(self, object image, int hotspot_x, int hotspot_y):
-        if self.callback is not None:
-            self.callback(image, hotspot_x, hotspot_y)
+        self.callback(image, hotspot_x, hotspot_y)
 
     def cursor_image(self, wid: int, image, hotspot_x: int, hotspot_y: int) -> None:
         if self.cursor_surface is None or self.cursor_surface.wid != wid:

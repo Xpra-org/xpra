@@ -38,7 +38,7 @@ def icon_image(icon_name: str, size: int = 0) -> Gtk.Image | None:
     return None
 
 
-def imagebutton(title, icon=None, tooltip="", clicked_callback: Callable | None = None, icon_size=32,
+def imagebutton(title, icon=None, tooltip="", clicked_callback: Callable = noop, icon_size=32,
                 default=False, min_size=None, label_color=None, label_font="") -> Gtk.Button:
     button = Gtk.Button(label=title)
     settings = button.get_settings()

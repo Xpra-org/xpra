@@ -6,6 +6,7 @@
 from typing import Any
 from collections.abc import Sequence, Callable
 
+from xpra.common import noop
 from xpra.notification.common import IconData
 from xpra.net.packet_type import NOTIFICATION_SHOW, NOTIFICATION_CLOSE
 from xpra.util.objects import typedict
@@ -48,7 +49,7 @@ class NotificationConnection(StubClientConnection):
     # Utility functions for subsystem (makes notifications optional)
     def notify_client(self, nid: int | NotificationID = 0, summary: str = "", body: str = "",
                       actions=(), hints: dict | None = None, expire_timeout=10 * 1000,
-                      icon_name: str = "", user_callback: Callable | None = None) -> None:
+                      icon_name: str = "", user_callback: Callable = noop) -> None:
         try:
             from xpra.platform.paths import get_icon_filename
             from xpra.notification.common import parse_image_path
@@ -64,7 +65,7 @@ class NotificationConnection(StubClientConnection):
     def notify(self, dbus_id: str, nid: int | NotificationID, app_name: str, replaces_nid: int, app_icon: str,
                summary: str, body: str,
                actions: Sequence[str], hints: dict, expire_timeout: int,
-               icon: IconData | None, user_callback: Callable | None = None) -> bool:
+               icon: IconData | None, user_callback: Callable = noop) -> bool:
         # `nid` can be a `NotificationID` enum, which we cannot send as-is:
         nid = int(nid)
         replaces_nid = int(replaces_nid)

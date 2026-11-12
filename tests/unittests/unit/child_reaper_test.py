@@ -15,6 +15,7 @@ import subprocess
 from itertools import product
 from unittest.mock import Mock, call, patch
 
+from xpra.common import noop
 from xpra.util.env import OSEnvContext
 from xpra.util import child_reaper
 from xpra.util.child_reaper import get_child_reaper, reaper_cleanup, log
@@ -44,7 +45,7 @@ class TestChildReaper(unittest.TestCase):
                     self.assertTrue(info.dead)
                     self.assertEqual(info.returncode, returncode)
                     self.assertIsNone(info.process)
-                    self.assertIsNone(info.callback)
+                    self.assertIs(info.callback, noop)
                     self.assertEqual(info in cr._proc_info, not forget)
                     events.idle_add.assert_called_once_with(callback, proc)
                     if child_reaper.POSIX and kill_group:

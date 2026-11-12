@@ -135,7 +135,7 @@ class ShadowServer(ShadowServerBase):
     def make_tray_widget(self):
         from xpra.gtk.statusicon_tray import GTKStatusIconTray
         return GTKStatusIconTray(self, 0, self.tray, "Xpra Shadow Server",
-                                 click_cb=self.tray_click_callback, mouseover_cb=None, exit_cb=self.tray_exit_callback)
+                                 click_cb=self.tray_click_callback, exit_cb=self.tray_exit_callback)
 
     def setup_capture(self):
         # AVCaptureScreenInput delivers whole frames (no damage rectangles), so it

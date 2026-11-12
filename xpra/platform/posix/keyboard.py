@@ -6,8 +6,9 @@
 
 import os
 import json
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 
+from xpra.common import noop
 from xpra.platform.keyboard_base import KeyboardBase
 from xpra.keyboard.mask import MODIFIER_MAP
 from xpra.log import Logger
@@ -124,7 +125,7 @@ class Keyboard(KeyboardBase):
             layout = layout_variant.split("+", 1)[0]
             self.__input_sources[layout] = index
 
-    def _dbus_gnome_shell_ism(self, method, args, callback=None) -> None:
+    def _dbus_gnome_shell_ism(self, method, args, callback: Callable = noop) -> None:
         from xpra.dbus.helper import dbus_to_native
 
         def ok_cb(success, res) -> None:
@@ -132,7 +133,7 @@ class Keyboard(KeyboardBase):
                 if not dbus_to_native(success):
                     log("_dbus_gnome_shell_ism(method=%s, args=%s): %s", method, args, success)
                     return
-                if callback is not None:
+                if callback:
                     callback(json.loads(dbus_to_native(res)))
             except Exception:
                 log("_dbus_gnome_shell_ism(method=%s, args=%s)", method, args, exc_info=True)
@@ -160,7 +161,7 @@ class Keyboard(KeyboardBase):
             err_cb,
         )
 
-    def _dbus_gnome_shell_eval_ism(self, cmd, callback=None) -> None:
+    def _dbus_gnome_shell_eval_ism(self, cmd, callback: Callable = noop) -> None:
         from xpra.dbus.helper import dbus_to_native, native_to_dbus
         ism = "imports.ui.status.keyboard.getInputSourceManager()"
 
@@ -169,7 +170,7 @@ class Keyboard(KeyboardBase):
                 if not dbus_to_native(success):
                     log("_dbus_gnome_shell_eval_ism(%s): %s", cmd, success)
                     return
-                if callback is not None:
+                if callback:
                     callback(json.loads(dbus_to_native(res)))
             except Exception:
                 log("_dbus_gnome_shell_eval_ism(%s)", cmd, exc_info=True)

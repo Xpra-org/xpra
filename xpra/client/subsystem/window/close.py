@@ -6,6 +6,7 @@
 import os
 from collections.abc import Callable
 
+from xpra.common import noop
 from xpra.net.packet_type import WINDOW_CLOSE, SHUTDOWN_SERVER
 from xpra.util.objects import typedict
 from xpra.client.base.stub import StubClientSubsystem
@@ -27,7 +28,7 @@ class WindowClose(StubClientSubsystem):
         # close handling (see `xpra/gtk/examples/fake_client_window.py`).
         # This subsystem is slotted, so the `window_close_event` method below
         # cannot be replaced on the instance - set this callback instead:
-        self.window_close_callback: Callable[[int], None] | None = None
+        self.window_close_callback: Callable[[int], None] = noop
 
     def init(self, opts) -> None:
         if opts.window_close in ("forward", "ignore", "disconnect", "shutdown", "auto"):

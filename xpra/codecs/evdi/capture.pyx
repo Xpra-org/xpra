@@ -9,8 +9,9 @@ import os
 import select
 import binascii
 from time import monotonic
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
+from xpra.common import noop
 from xpra.util.str_fn import strtobytes
 
 from xpra.log import Logger
@@ -232,7 +233,7 @@ cdef class EvdiDevice:
     cdef object edid
     cdef int export_buffer
 
-    def __init__(self, int device, damage_cb=None):
+    def __init__(self, int device, damage_cb: Callable = noop):
         self.device = device
         self.damage_cb = damage_cb
         self.handle = NULL
@@ -338,9 +339,7 @@ cdef class EvdiDevice:
         log(f"evdi_grab_pixels(%#x, %#x, {nrects}) areas={areas}", <uintptr_t> self.handle, <uintptr_t> rects)
         cdef int buf_size = rowstride * self.mode.height
         buf_slice = memoryview(buf)[:buf_size]
-        damage_cb = self.damage_cb
-        if damage_cb:
-            self.damage_cb(self.mode.width, self.mode.height, buf_slice, areas)
+        self.damage_cb(self.mode.width, self.mode.height, buf_slice, areas)
         #toggle buffer:
         self.export_buffer = 3-self.export_buffer
         return self.mode.width, self.mode.height, buf_slice, areas

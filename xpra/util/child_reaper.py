@@ -17,6 +17,7 @@ from threading import Lock
 from typing import Any
 from collections.abc import Callable, Sequence
 
+from xpra.common import noop
 from xpra.util.env import envint, envbool
 from xpra.util.objects import AtomicInteger
 from xpra.os_util import POSIX, gi_import
@@ -132,7 +133,7 @@ class ProcInfo:
     forget: bool
     dead: bool
     returncode: int | None
-    callback: Callable | None
+    callback: Callable
     kill_process_group: bool
     process: Any
     lock: Lock
@@ -171,7 +172,7 @@ class ChildReaper:
 
     # note: the quit callback will fire only once!
 
-    def __init__(self, quit_cb=None):
+    def __init__(self, quit_cb: Callable = noop):
         log("ChildReaper(%s)", quit_cb)
         self._quit = quit_cb
         self._proc_info = []
@@ -208,16 +209,16 @@ class ChildReaper:
             self._retry = 0
         with self._proc_lock:
             self._proc_info = []
-        self._quit = None
+        self._quit = noop
 
-    def add_pid(self, pid: int, name: str, command: str | Sequence[str], ignore=False, forget=False, callback=None,
+    def add_pid(self, pid: int, name: str, command: str | Sequence[str], ignore=False, forget=False, callback: Callable = noop,
                 kill_process_group: bool = False) -> ProcInfo:
         # this method is used when we have a pid but not a Popen object
         process = PidPopen(pid)
         return self.add_process(process, name, command, ignore=ignore, forget=forget, callback=callback,
                                 kill_process_group=kill_process_group)
 
-    def add_process(self, process, name: str, command: str | Sequence[str], ignore=False, forget=False, callback=None,
+    def add_process(self, process, name: str, command: str | Sequence[str], ignore=False, forget=False, callback: Callable = noop,
                     kill_process_group: bool = False) -> ProcInfo:
         pid = process.pid
         if pid <= 0:
@@ -280,7 +281,7 @@ class ChildReaper:
         log("check() watched=%s, alive=%s, quit callback=%s", watched, alive, cb)
         if watched and not alive:
             if cb:
-                self._quit = None
+                self._quit = noop
                 cb()
             return False
         return True
@@ -334,7 +335,7 @@ class ChildReaper:
                 _terminate_process_group(procinfo.pid)
             # clear the reference to the process to free up resources:
             procinfo.process = None
-            cb, procinfo.callback = procinfo.callback, None
+            cb, procinfo.callback = procinfo.callback, noop
             if procinfo.pidfile and procinfo.pidinode:
                 from xpra.util.pid import rm_pidfile
                 rm_pidfile(procinfo.pidfile, procinfo.pidinode)

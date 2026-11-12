@@ -173,7 +173,7 @@ def get_connection_modes() -> list[str]:
     return modes
 
 
-def image_button(text="", tooltip="", icon_pixbuf=None, clicked_cb=None) -> Gtk.Image:
+def image_button(text="", tooltip="", icon_pixbuf=None, clicked_cb: Callable = noop) -> Gtk.Image:
     icon = Gtk.Image()
     icon.set_from_pixbuf(icon_pixbuf)
     return imagebutton(text, icon, tooltip, clicked_cb, icon_size=None)

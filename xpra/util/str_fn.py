@@ -173,14 +173,10 @@ def ellipsize(astr, limit=100) -> str:
 
 
 def print_nested_dict(d: Mapping, prefix: str = "", lchar: str = "*", pad: int = 32,
-                      vformat=None, print_fn: Callable | None = None,
+                      vformat=None, print_fn: Callable[[str], None] = print,
                       version_keys=("version", "revision"), hex_keys=("data",)) -> None:
     # "smart" value formatting function:
-    def sprint(arg) -> None:
-        if print_fn:
-            print_fn(arg)
-        else:
-            print(arg)
+    sprint = print_fn
 
     def vf(k, v) -> str:
         if vformat:

@@ -28,7 +28,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, single_line, truncate
 from xpra.util.env import envint, envbool
 from xpra.util.parsing import str_to_bool, parse_with_unit
-from xpra.common import SizedBuffer
+from xpra.common import noop, SizedBuffer
 from xpra.net.common import Packet, PacketElement
 from xpra.util.stats import std_unit
 from xpra.util.thread import start_thread
@@ -1010,7 +1010,7 @@ class FileTransferHandler(FileTransferAttributes):
         return True
 
     def send_request_file(self, filename: str, openit: bool = True, basename_pattern: str = "",
-                          callback: Callable[[str, int], None] | None = None) -> str:
+                          callback: Callable[[str, int], None] = noop) -> str:
         send_id = uuid.uuid4().hex
         self.files_requested[send_id] = RequestedFile(filename, openit, basename_pattern)
         if callback:

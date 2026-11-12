@@ -18,6 +18,7 @@ from collections.abc import Callable, Sequence
 from subprocess import Popen, PIPE, call
 import os.path
 
+from xpra.common import noop
 from xpra.config import InitException
 from xpra.config.vfb import get_Xdummy_confdir
 from xpra.util.str_fn import csv
@@ -278,7 +279,7 @@ def x11_socket_dir_writable(uid: int, gid: int) -> bool:
 
 def start_Xvfb(xvfb_cmd: Sequence[str], vfb_geom, pixel_depth: int, fps: int, display_name: str, cwd,
                uid: int, gid: int, username: str, uinput_uuid="",
-               prepare_uinput: Callable[[], None] | None = None) -> tuple[Popen, str]:
+               prepare_uinput: Callable[[], None] = noop) -> tuple[Popen, str]:
     if not POSIX:
         raise InitException(f"starting an Xvfb is not supported on {os.name}")
     if not xvfb_cmd:
@@ -366,8 +367,7 @@ def start_Xvfb(xvfb_cmd: Sequence[str], vfb_geom, pixel_depth: int, fps: int, di
         # (we have to assume that Xorg is configured to use this path..)
         xorg_conf_dir = pathexpand(get_Xdummy_confdir())
         create_xorg_device_configs(xorg_conf_dir, uinput_uuid, uid, gid)
-        if prepare_uinput:
-            prepare_uinput()
+        prepare_uinput()
     check_xorg_config(xvfb_cmd)
 
     xvfb_executable = xvfb_cmd[0]

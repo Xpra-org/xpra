@@ -12,6 +12,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Callable
 
+from xpra.common import noop
 from xpra.exit_codes import ExitCode
 from xpra.net.common import ConnectionClosedException, get_peercred_info, get_peer_uid, FULL_INFO, pretty_socket
 from xpra.net.constants import IP_SOCKTYPES, TCP_SOCKTYPES, IP_OPTIONS, IPV6_OPTIONS, TCP_OPTIONS, SOCKET_OPTIONS
@@ -254,7 +255,7 @@ class Connection:
 # client.py relies on self.filename to locate the unix domain
 # socket (if it exists)
 class TwoFileConnection(Connection):
-    def __init__(self, writeable, readable, abort_test=None, target=None, socktype="", close_cb=None, info=None):
+    def __init__(self, writeable, readable, abort_test=None, target=None, socktype="", close_cb: Callable[[], None] = noop, info=None):
         super().__init__(target, socktype, info)
         self._writeable = writeable
         self._readable = readable
@@ -287,7 +288,7 @@ class TwoFileConnection(Connection):
             self, self._close_cb, self._readable, self._writeable)
         super().close()
         if cc := self._close_cb:
-            self._close_cb = None
+            self._close_cb = noop
             log("%s.close() calling %s", self, cc)
             with log.trap_error(f"{self}.close() error on callback {cc}"):
                 cc()

@@ -366,7 +366,7 @@ class ChildCommandServer(StubSubsystem):
         if not self.server.session_name:
             self.idle_add(self.guess_session_name, procs)
 
-    def start_command(self, name: str, child_cmd, ignore: bool = False, callback: Callable | None = None,
+    def start_command(self, name: str, child_cmd, ignore: bool = False, callback: Callable = noop,
                       use_wrapper: bool = True, shell: bool = False, source=None, **kwargs):
         env = self.server.get_child_env()
         log("start_command%s exec_wrapper=%s, exec_cwd=%s",

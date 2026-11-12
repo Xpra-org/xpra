@@ -7,6 +7,7 @@
 import sys
 from collections.abc import Callable
 
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.env import envbool, envint, first_time
 from xpra.log import Logger
@@ -85,7 +86,7 @@ SCREENSAVER_BUS_NAME = "org.gnome.ScreenSaver"
 SCREENSAVER_IFACE_NAME = SCREENSAVER_BUS_NAME
 
 
-def add_bus_handler(get_bus: Callable, callback: Callable, signal: str, iface: str, bus_name: str) -> Callable | None:
+def add_bus_handler(get_bus: Callable, callback: Callable, signal: str, iface: str, bus_name: str) -> Callable[[], None]:
     # ie: add_bus_handler(system_bus, "Sleeping", UPOWER_IFACE_NAME, UPOWER_BUS_NAME)
     try:
         bus = get_bus()
@@ -94,17 +95,17 @@ def add_bus_handler(get_bus: Callable, callback: Callable, signal: str, iface: s
         # a bus that does not exist is not an error, ie: no system bus in a container
         if getattr(e, "get_dbus_name", str)() not in ("org.freedesktop.DBus.Error.FileNotFound", "org.freedesktop.DBus.Error.NoServer"):
             log.warn(f"Warning: no bus for {signal!r}: {e}")
-        return None
+        return noop
     if not bus:
-        return None
+        return noop
     log(f"{bus}.add_signal_receiver({callback}, {signal!r}, {iface!r}, {bus_name!r})")
     try:
         match = bus.add_signal_receiver(callback, signal, iface, bus_name)
     except (ValueError, RuntimeError) as e:
         log(f"failed to add bus handler for {signal!r}: {e}")
-        return None
+        return noop
     if not match:
-        return None
+        return noop
 
     def cleanup() -> None:
         bus._clean_up_signal_match(match)

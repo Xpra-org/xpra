@@ -5,6 +5,7 @@
 
 from time import monotonic
 
+from xpra.common import noop
 from xpra.x11.bindings.display_source import get_display_name   # @UnresolvedImport
 from xpra.x11.bindings.core import call_context_check  # @UnresolvedImport
 from xpra.x11.bindings.core cimport X11CoreBindingsInstance, import_check
@@ -317,7 +318,7 @@ cdef class XShmImageWrapper(XImageWrapper):
     cdef Bool frozen
 
     def __init__(self, *args):
-        self.free_callback = None
+        self.free_callback = noop
         self.frozen = False
 
     def __repr__(self):
@@ -357,7 +358,7 @@ cdef class XShmImageWrapper(XImageWrapper):
             self.freed = True
             cb = self.free_callback
             if cb:
-                self.free_callback = None
+                self.free_callback = noop
                 cb()
             xshmdebug("XShmImageWrapper.free() done for %s, callback fired=%s", self, bool(cb))
 

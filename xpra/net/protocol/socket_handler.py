@@ -1502,7 +1502,7 @@ class SocketProtocol:
         log_count("received", icount, ibytes)
         log_count("sent", ocount, obytes)
 
-    def steal_connection(self, read_callback: Callable[[SizedBuffer], None] | None = None):
+    def steal_connection(self, read_callback: Callable[[SizedBuffer], None] = noop):
         # so we can re-use this connection somewhere else
         # (frees all protocol threads and resources)
         # Note: this method can only be used with non-blocking sockets,
