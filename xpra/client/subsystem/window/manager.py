@@ -91,7 +91,7 @@ class WindowManagerClient(StubClientSubsystem):
     PREFIX = "window"
     SLOT_NAMES = (
         "_id_to_window", "_locked_windows", "_stacking_watcher", "_win32_events", "_window_stacking", "_window_to_id",
-        "auto_refresh_delay", "max_window_size", "min_window_size", "modal_windows",
+        "max_window_size", "min_window_size", "modal_windows",
         "pixel_depth", "server_window_frame_extents", "server_window_stacking", "server_window_states",
         "sync_focus", "sync_position", "windows_enabled",
     )
@@ -106,7 +106,6 @@ class WindowManagerClient(StubClientSubsystem):
         self._id_to_window: dict[int, Any] = {}
         self._window_stacking: tuple[int, ...] = ()
 
-        self.auto_refresh_delay: int = -1
         self.min_window_size: tuple[int, int] = (0, 0)
         self.max_window_size: tuple[int, int] = (0, 0)
 
@@ -130,7 +129,6 @@ class WindowManagerClient(StubClientSubsystem):
         self._stacking_watcher = None
 
     def init(self, opts) -> None:
-        self.auto_refresh_delay = opts.auto_refresh_delay
         self.min_window_size = parse_window_size(opts.min_size) or get_window_min_size()
         self.max_window_size = parse_window_size(opts.max_size) or get_window_max_size()
         self.pixel_depth = int(opts.pixel_depth)
@@ -225,17 +223,10 @@ class WindowManagerClient(StubClientSubsystem):
     ######################################################################
     # hello:
     def get_caps(self) -> dict[str, Any]:
-        # in milliseconds, merged into the `encoding` caps of the encoding subsystem:
-        delay = int(self.auto_refresh_delay * 1000)
-        caps: dict[str, Any] = {
-            "window": self.get_window_caps(),
-            "encoding": {"auto_refresh_delay": delay},
-        }
+        caps: dict[str, Any] = {"window": self.get_window_caps()}
         if BACKWARDS_COMPATIBLE:
             # older servers look for this flag outside the `window` namespace:
             caps["windows"] = self.windows_enabled
-            # servers older than v8 only read it from the top level:
-            caps["auto_refresh_delay"] = delay
         return caps
 
     def get_window_caps(self) -> dict[str, Any]:

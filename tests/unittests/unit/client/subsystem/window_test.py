@@ -377,14 +377,15 @@ class WindowManagerTest(ClientMixinTest):
         self.assertFalse(watcher.stacking_timer)
         self.assertIsNone(watcher.observer)
 
-    def test_auto_refresh_delay_caps(self):
+    def test_window_caps(self):
         from xpra.client.subsystem.window.manager import WindowManagerClient
-        client = SimpleNamespace(auto_refresh_delay=0.15, get_window_caps=dict, windows_enabled=True)
+        client = SimpleNamespace(get_window_caps=dict, windows_enabled=True)
         for compat in (True, False):
             with patch("xpra.client.subsystem.window.manager.BACKWARDS_COMPATIBLE", compat):
                 caps = WindowManagerClient.get_caps(client)
-            self.assertEqual(caps["encoding"], {"auto_refresh_delay": 150})
-            self.assertEqual(caps.get("auto_refresh_delay"), 150 if compat else None)
+            self.assertEqual(caps["window"], {})
+            self.assertNotIn("encoding", caps)
+            self.assertNotIn("auto_refresh_delay", caps)
             self.assertEqual(caps.get("windows"), True if compat else None)
 
     def test_windowmanager(self):
@@ -398,7 +399,6 @@ class WindowManagerTest(ClientMixinTest):
             opts.cursors = True
             opts.bell = True
             opts.input_devices = True
-            opts.auto_refresh_delay = 0
             opts.min_size = "100x100"
             opts.max_size = "2000x2000"
             opts.pixel_depth = 24
