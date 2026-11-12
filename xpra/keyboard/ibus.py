@@ -78,6 +78,10 @@ def ibus_ready_watch():
     except ImportError as e:
         log(f"failed to import ibus functions: {e}")
         return
+    except Exception as e:
+        # ie: no session bus
+        log(f"cannot watch for ibus: {e}")
+        return
 
     # warning: this callback will not fire unless a GLib main loop is running!
     def got_name(name) -> None:
