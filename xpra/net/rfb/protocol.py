@@ -10,6 +10,7 @@ from socket import error as socket_error
 from collections.abc import Callable, Sequence
 from queue import Queue
 
+from xpra.common import noop
 from xpra.os_util import gi_import
 from xpra.util.str_fn import repr_ellipsized, hexstr
 from xpra.util.env import envint
@@ -323,7 +324,7 @@ class RFBProtocol:
         # clear all references to ensure we can get garbage collected quickly:
         self._write_thread = None
         self._read_thread = None
-        self._process_packet_cb = None
+        self._process_packet_cb = noop
 
     def terminate_queue_threads(self) -> None:
         log("terminate_queue_threads()")
