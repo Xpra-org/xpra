@@ -24,7 +24,15 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 from xpra.common import noop
+from xpra.util.env import envint
 from xpra.util.str_fn import memoryview_to_bytes
+
+
+# how many frames we can be re-assembling at the same time, for each window:
+MAX_PENDING_FRAMES: int = envint("XPRA_MAX_PENDING_FRAMES", 16)
+# how far ahead of the frames we have already processed a fragmented frame can be,
+# the frames in between are acknowledged as lost when it is delivered:
+MAX_SEQUENCE_GAP: int = envint("XPRA_MAX_SEQUENCE_GAP", 256)
 
 
 def fragment_frame(data, boundaries: Sequence[int], max_size: int) -> list[tuple[bytes, int, int]]:
@@ -228,8 +236,15 @@ class FrameAssembler:
         if sequence <= self.last_sequence:
             self.stats["late"] += 1
             return
+        if sequence - max(self.last_sequence, stream_sequence) > MAX_SEQUENCE_GAP:
+            # we would have to acknowledge all the frames in between as lost:
+            self.stats["invalid"] += 1
+            return
         frame = self.pending.get(sequence)
         if frame is None:
+            if len(self.pending) >= MAX_PENDING_FRAMES:
+                self.stats["invalid"] += 1
+                return
             frame = self.pending[sequence] = PendingFrame(sequence, count, now + self.timeout,
                                                           stream_sequence, now + self.stream_timeout, metadata)
         elif frame.count != count or frame.stream_sequence != stream_sequence:

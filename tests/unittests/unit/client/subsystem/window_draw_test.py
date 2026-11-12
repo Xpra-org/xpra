@@ -248,6 +248,25 @@ class WindowDrawFragmentTest(unittest.TestCase):
         self.assertEqual([p.get_u64(8) for p in client.drawn], [9])
         self.assertEqual([(ack[4], ack[5]) for ack in client.acks], [(7, WINDOW_DECODE_LOST), (8, WINDOW_DECODE_LOST)])
 
+    def test_unknown_window(self):
+        client = Fragments()
+        client.window = None
+        for fragment in make_fragments(self.DATA, self.NALS):
+            client._process_draw_fragment(fragment)
+        client._process_draw(self.stream_packet(6))
+        # no assembler for windows that do not exist, the stream packet is still processed:
+        self.assertEqual(client.frame_assemblers, {})
+        self.assertEqual([p.get_u64(8) for p in client.drawn], [6])
+
+    def test_assembler_dropped_with_window(self):
+        client = Fragments()
+        client._process_draw(self.stream_packet(6))
+        client._process_draw_fragment(make_fragments(self.DATA, self.NALS)[0])
+        self.assertIn(1, client.frame_assemblers)
+        client.window = None
+        client.fragment_timeout()
+        self.assertEqual(client.frame_assemblers, {})
+
     def check_decode_ack(self, options: dict, success, expected_code, expected_extra):
         window = Mock()
         client = Draw(window)

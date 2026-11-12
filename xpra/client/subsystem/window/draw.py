@@ -75,11 +75,19 @@ class WindowDraw(StubClientSubsystem):
         # the frames we are still assembling must be painted before this one,
         # and the ones sent after it must wait for it:
         assembler = self.get_frame_assembler(packet.get_wid())
+        if assembler is None:
+            # the window is gone, `_do_draw` will tell the server:
+            self.queue_draw(packet)
+            return
         assembler.flush(packet.get_u64(8), lambda: self.queue_draw(packet))
 
-    def get_frame_assembler(self, wid: int) -> FrameAssembler:
+    def get_frame_assembler(self, wid: int) -> FrameAssembler | None:
         assembler = self.frame_assemblers.get(wid)
         if assembler is None:
+            # only for windows that exist, the server can send any window id:
+            if not self.get_window(wid):
+                return None
+
             def deliver(frame: AssembledFrame) -> None:
                 self.draw_assembled_frame(wid, frame)
             assembler = self.frame_assemblers[wid] = FrameAssembler(deliver, DRAW_FRAGMENT_TIMEOUT / 1000)
@@ -103,7 +111,11 @@ class WindowDraw(StubClientSubsystem):
         and the sequence of the last `window-draw` packet sent on the stream before this frame.
         These may be received as datagrams, so they can be lost or re-ordered.
         """
-        assembler = self.get_frame_assembler(packet.get_wid())
+        wid = packet.get_wid()
+        assembler = self.get_frame_assembler(wid)
+        if assembler is None:
+            log("fragment for unknown window %#x", wid)
+            return
         metadata = tuple(packet[1:7]) + tuple(packet[8:11])
         assembler.add(packet.get_u64(8), packet.get_u16(11), packet.get_u16(12),
                       packet.get_u16(13), packet.get_u16(14), packet.get_buffer(7), metadata, monotonic(),
@@ -144,7 +156,11 @@ class WindowDraw(StubClientSubsystem):
     def fragment_timeout(self) -> bool:
         self.fragment_timer = 0
         now = monotonic()
-        for assembler in tuple(self.frame_assemblers.values()):
+        for wid, assembler in tuple(self.frame_assemblers.items()):
+            if not self.get_window(wid):
+                # the window is gone, so are the frames we were assembling for it:
+                self.frame_assemblers.pop(wid, None)
+                continue
             assembler.expire(now)
         self.schedule_fragment_timer()
         return False

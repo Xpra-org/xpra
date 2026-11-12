@@ -320,6 +320,32 @@ class FrameAssemblerTest(unittest.TestCase):
         self.assertEqual(self.assembler.stats["invalid"], 6)
         self.assertFalse(self.delivered)
 
+    def test_sequence_gap(self):
+        data, boundaries = make_frame([100] * 4)
+        fragments = fragment_frame(data, boundaries, 100)
+        self.assembler.flush(3)
+        # this would make us acknowledge billions of frames as lost:
+        self.send(2**60, fragments, stream_sequence=3)
+        self.assertFalse(self.delivered)
+        self.assertFalse(self.assembler.pending)
+        self.assertEqual(self.assembler.stats["invalid"], len(fragments))
+        # the largest gap allowed:
+        from xpra.net.fragments import MAX_SEQUENCE_GAP
+        self.send(3 + MAX_SEQUENCE_GAP, fragments, stream_sequence=3)
+        self.assertEqual(len(self.delivered[0].lost_sequences), MAX_SEQUENCE_GAP - 1)
+
+    def test_pending_frames_limit(self):
+        from xpra.net.fragments import MAX_PENDING_FRAMES
+        data, boundaries = make_frame([100] * 4)
+        fragments = fragment_frame(data, boundaries, 100)
+        for sequence in range(1, MAX_PENDING_FRAMES + 2):
+            self.send(sequence, fragments, (1, ))
+        self.assertEqual(len(self.assembler.pending), MAX_PENDING_FRAMES)
+        self.assertEqual(self.assembler.stats["invalid"], 1)
+        # fragments for the frames we already have are still accepted:
+        self.send(1, fragments, (0, 2, 3))
+        self.assertEqual([f.sequence for f in self.delivered], [1])
+
 
 def main():
     unittest.main()
