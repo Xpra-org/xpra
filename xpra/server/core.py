@@ -41,6 +41,7 @@ from xpra.util.pysystem import dump_all_frames
 from xpra.util.objects import typedict
 from xpra.util.str_fn import Ellipsizer, print_nested_dict
 from xpra.util.env import envint, envbool, restore_script_env
+from xpra.net.packet_type import HELLO, SSL_UPGRADE
 from xpra.log import Logger
 
 # pylint: disable=import-outside-toplevel
@@ -381,7 +382,7 @@ class ServerCore(GLibServer):
     def init_packet_handlers(self) -> None:
         # the `network` subsystem adds its own unauthenticated packet handlers:
         self._default_packet_handlers = {
-            "hello": self._process_hello,
+            HELLO: self._process_hello,
         }
         self.register_packet_handlers()
         netlog("initializing packet handlers for %s", list(self.subsystems))
@@ -402,12 +403,12 @@ class ServerCore(GLibServer):
     # hello / authentication:
     def send_version_info(self, proto: SocketProtocol, full: bool = False) -> None:
         version = version_str() if (full and FULL_INFO) else XPRA_VERSION.split(".", 1)[0]
-        proto.send_now(Packet("hello", {"version": version}))
+        proto.send_now(Packet(HELLO, {"version": version}))
         # client is meant to close the connection itself, but just in case:
         GLib.timeout_add(5 * 1000, self.network.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
 
     # registered in the pre-authentication "default" table, see `init_packet_handlers`:
-    @packet_handler("hello", manual=True)
+    @packet_handler(HELLO, manual=True)
     def _process_hello(self, proto: SocketProtocol, packet: Packet) -> None:
         capabilities = packet.get_dict(1)
         c = typedict(capabilities)
@@ -453,7 +454,7 @@ class ServerCore(GLibServer):
                     def send_ssl_upgrade() -> bool:
                         cert_data = load_binary_file(cert)
                         ssl_attrs = {"cert-data": cert_data}
-                        proto.send_now(Packet("ssl-upgrade", ssl_attrs))
+                        proto.send_now(Packet(SSL_UPGRADE, ssl_attrs))
                         return False
                     GLib.idle_add(send_ssl_upgrade)
                     return
@@ -534,7 +535,7 @@ class ServerCore(GLibServer):
     def _handle_hello_request_connect_test(self, proto, caps: typedict) -> bool:
         ctr = caps.strget("connect_test_request")
         response = {"connect_test_response": ctr}
-        proto.send_now(Packet("hello", response))
+        proto.send_now(Packet(HELLO, response))
         return True
 
     def get_caps(self, source) -> dict:

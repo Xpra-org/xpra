@@ -32,6 +32,7 @@ WINDOW_UNMAP: Final[str] = "window-unmap"
 WINDOW_CONFIGURE: Final[str] = "window-configure"
 WINDOW_CLOSE: Final[str] = "window-close"
 WINDOW_DISMISS: Final[str] = "window-dismiss"
+WINDOW_SIGNAL: Final[str] = "window-signal"
 WINDOW_FOCUS: Final[str] = "window-focus"
 WINDOW_ACTION: Final[str] = "window-action"
 WINDOW_STACKING: Final[str] = "window-stacking"
@@ -48,11 +49,15 @@ POINTER_MOTION: Final[str] = "pointer-motion"
 POINTER_BUTTON: Final[str] = "pointer-button"
 POINTER_WHEEL: Final[str] = "pointer-wheel"
 POINTER_DEVICES: Final[str] = "pointer-devices"
+# the pointer position of the other clients (`sync` pointer capability):
+POINTER_POSITION: Final[str] = "pointer-position"
 
 LOGGING_EVENT: Final[str] = "logging-event"
 LOGGING_CONTROL: Final[str] = "logging-control"
 
 PRINT_DEVICES: Final[str] = "printer-devices"
+# sent by `xpra print` connections:
+PRINTER_FILE: Final[str] = "printer-file"
 
 FILE_SEND: Final[str] = "file-send"
 FILE_ACK_CHUNK: Final[str] = "file-ack-chunk"
@@ -67,6 +72,8 @@ EVENTS: Final[str] = "events"
 # the server's encoding capabilities, sent once the codecs have been initialized
 # (see `EncodingsConnection.threaded_init_complete`)
 ENCODING_SET: Final[str] = "encoding-set"
+ENCODING_OPTIONS: Final[str] = "encoding-options"
+ENCODING_CONFIG: Final[str] = "encoding-config"
 
 CURSOR_SET: Final[str] = "cursor-set"
 CURSOR_DATA: Final[str] = "cursor-data"
@@ -88,6 +95,7 @@ DISPLAY_SHOW_DESKTOP: Final[str] = "display-show-desktop"
 NOTIFICATION_SHOW: Final[str] = "notification-show"
 NOTIFICATION_CLOSE: Final[str] = "notification-close"
 NOTIFICATION_STATUS: Final[str] = "notification-status"
+NOTIFICATION_ACTION: Final[str] = "notification-action"
 
 BELL_SET: Final[str] = "bell-set"
 
@@ -97,13 +105,64 @@ SHARING_LOCK: Final[str] = "sharing-lock"
 INFO_REQUEST: Final[str] = "info-request"
 INFO_RESPONSE: Final[str] = "info-response"
 
+# control commands, from the server to the client:
+CONTROL: Final[str] = "control"
+# and from the client to the server:
+CONTROL_REQUEST: Final[str] = "control-request"
+
+HELLO: Final[str] = "hello"
 CHALLENGE: Final[str] = "challenge"
+SSL_UPGRADE: Final[str] = "ssl-upgrade"
+STARTUP_COMPLETE: Final[str] = "startup-complete"
+SETTING_CHANGE: Final[str] = "setting-change"
+SUSPEND: Final[str] = "suspend"
 
 CONNECTION_CLOSE: Final[str] = "connection-close"
 CONNECTION_LOST: Final[str] = "connection-lost"
 GIBBERISH: Final[str] = "gibberish"
 INVALID: Final[str] = "invalid"
 
+PING: Final[str] = "ping"
 PING_ECHO: Final[str] = "ping-echo"
 
 SHUTDOWN_SERVER: Final[str] = "shutdown-server"
+
+BANDWIDTH_LIMIT: Final[str] = "bandwidth-limit"
+BANDWIDTH_STATUS: Final[str] = "bandwidth-status"
+
+CLIPBOARD_DATA: Final[str] = "clipboard-data"
+CLIPBOARD_REQUEST: Final[str] = "clipboard-request"
+CLIPBOARD_CONTENTS: Final[str] = "clipboard-contents"
+CLIPBOARD_CONTENTS_NONE: Final[str] = "clipboard-contents-none"
+CLIPBOARD_PENDING_REQUESTS: Final[str] = "clipboard-pending-requests"
+CLIPBOARD_ENABLE_SELECTIONS: Final[str] = "clipboard-enable-selections"
+CLIPBOARD_STATUS: Final[str] = "clipboard-status"
+CLIPBOARD_RECORD: Final[str] = "clipboard-record"
+
+AUDIO_DATA: Final[str] = "audio-data"
+AUDIO_CONTROL: Final[str] = "audio-control"
+AUDIO_CAPABILITIES: Final[str] = "audio-capabilities"
+# marks the start and end of an audio stream, in either direction:
+AUDIO_STREAM: Final[str] = "audio-stream"
+AUDIO_KEEPALIVE: Final[str] = "audio-keepalive"
+AUDIO_LEVEL: Final[str] = "audio-level"
+AUDIO_SIGNAL: Final[str] = "audio-signal"
+
+WEBCAM_START: Final[str] = "webcam-start"
+WEBCAM_STOP: Final[str] = "webcam-stop"
+WEBCAM_FRAME: Final[str] = "webcam-frame"
+WEBCAM_ACK: Final[str] = "webcam-ack"
+
+SHELL_EXEC: Final[str] = "shell-exec"
+SHELL_REPLY: Final[str] = "shell-reply"
+
+GSETTINGS_UPDATE: Final[str] = "gsettings-update"
+
+# remote encoder:
+ENCODE: Final[str] = "encode"
+ENCODE_RESPONSE: Final[str] = "encode-response"
+CONTEXT_REQUEST: Final[str] = "context-request"
+CONTEXT_RESPONSE: Final[str] = "context-response"
+CONTEXT_COMPRESS: Final[str] = "context-compress"
+CONTEXT_DATA: Final[str] = "context-data"
+CONTEXT_CLOSE: Final[str] = "context-close"

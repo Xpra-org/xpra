@@ -23,6 +23,7 @@ from xpra.util.stats import std_unit
 from xpra.util.str_fn import Ellipsizer
 from xpra.util.thread import check_main_thread
 from xpra.platform.gui import force_focus
+from xpra.net.packet_type import CONTROL_REQUEST
 from xpra.log import Logger
 
 log = Logger("gtk", "client")
@@ -371,11 +372,11 @@ class GTKDialogClient(StubClientSubsystem):
             return
 
         def enable(category: str) -> None:
-            packet_type = "control-request"
+            packet_type = CONTROL_REQUEST
             self.send(packet_type, "debug", "enable", category)
 
         def disable(category: str) -> None:
-            packet_type = "control-request"
+            packet_type = CONTROL_REQUEST
             self.send(packet_type, "debug", "disable", category)
 
         from xpra.gtk.dialogs.debug import DebugConfig

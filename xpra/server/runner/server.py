@@ -7,6 +7,7 @@ from xpra.util.objects import typedict
 from xpra.net.constants import ConnectionMessage
 from xpra.net.common import Packet
 from xpra.server.runner.factory import get_server_base_class
+from xpra.net.packet_type import HELLO
 from xpra.log import Logger
 
 log = Logger("server", "exec")
@@ -28,7 +29,7 @@ class RunnerServer(SERVER_BASE):
     def do_handle_hello_request(self, request: str, proto, caps: typedict) -> bool:
         if request == "command":
             # TBD:
-            proto.send_now(Packet("hello", {"command": True}))
+            proto.send_now(Packet(HELLO, {"command": True}))
             # client is meant to close the connection itself, but just in case:
             self.timeout_add(5 * 1000, self.network.send_disconnect, proto, ConnectionMessage.DONE, "command started")
             return True

@@ -9,17 +9,17 @@ from typing import Any
 from collections.abc import Callable, Sequence, Iterable
 
 from xpra.audio.common import (
-    AUDIO_DATA_PACKET, AUDIO_CONTROL_PACKET, AUDIO_KEEPALIVE_PACKET,
-    AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET,
-    AUDIO_STREAM_PACKET, AUDIO_STREAM_START, AUDIO_STREAM_END,
-    PendingAudio, get_matching_codecs, audio_stream_packet,
+    AUDIO_STREAM_START, AUDIO_STREAM_END, PendingAudio, get_matching_codecs, audio_stream_packet,
+)
+from xpra.net.packet_type import (
+    AUDIO_DATA, AUDIO_CONTROL, AUDIO_KEEPALIVE, AUDIO_LEVEL, AUDIO_SIGNAL, AUDIO_STREAM, CONNECTION_LOST,
+    AUDIO_CAPABILITIES,
 )
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE, packet_handler
 from xpra.net.compression import Compressed
-from xpra.net.packet_type import CONNECTION_LOST
 from xpra.common import noop, SizedBuffer, may_notify_client
 from xpra.constants import NotificationID
 from xpra.os_util import get_machine_id, get_user_uuid, WIN32, OSX, POSIX
@@ -337,7 +337,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
     def send_audio_capabilities(self) -> None:
         caps = self.get_audio_capabilities()
         log("send_audio_capabilities: %s", caps)
-        self.send("audio-capabilities", caps)
+        self.send(AUDIO_CAPABILITIES, caps)
 
     def parse_audio_capabilities(self, audio: typedict) -> None:
         log("parse_audio_capabilities(%s)", audio)
@@ -531,7 +531,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             def sink_ready(*args) -> None:
                 scodec = codec
                 log("sink_ready(%s) codec=%s (server codec name=%s)", args, codec, scodec)
-                self.send(AUDIO_CONTROL_PACKET, "start", scodec)
+                self.send(AUDIO_CONTROL, "start", scodec)
 
             self.on_sink_ready = sink_ready
             enabled = self.start_sink(codec)
@@ -559,9 +559,9 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         if not ss:
             return
         if tell_server and ss.sequence == self.sink_sequence:
-            self.send(AUDIO_CONTROL_PACKET, "stop", self.sink_sequence)
+            self.send(AUDIO_CONTROL, "stop", self.sink_sequence)
         self.sink_sequence += 1
-        self.send(AUDIO_CONTROL_PACKET, "new-sequence", self.sink_sequence)
+        self.send(AUDIO_CONTROL, "new-sequence", self.sink_sequence)
         self.sink = None
         log("stop_receiving_audio(%s) calling %s", tell_server, ss.cleanup)
         ss.cleanup()
@@ -709,10 +709,10 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
         # tag the packet metadata as already compressed:
         pmetadata = Compressed("packet metadata", packet_metadata)
         packet_data = [codec, Compressed(codec, data), metadata, pmetadata]
-        self.send(AUDIO_DATA_PACKET, *packet_data)
+        self.send(AUDIO_DATA, *packet_data)
 
     def send_audio_keepalive_packet(self, timestamp: int) -> None:
-        self.send(AUDIO_KEEPALIVE_PACKET, timestamp)
+        self.send(AUDIO_KEEPALIVE, timestamp)
 
     def audio_keepalive_active(self) -> bool:
         """ override the keepalive superclass implementation because our attributes have been renamed / shortened """
@@ -728,34 +728,34 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
     def audio_keepalive_timer_remove(self, timer: int) -> None:
         self.source_remove(timer)
 
-    @packet_handler(AUDIO_KEEPALIVE_PACKET)
+    @packet_handler(AUDIO_KEEPALIVE)
     def _process_keepalive(self, packet: Packet) -> None:
         self.audio_keepalive(packet.get_u64(1))
 
-    @packet_handler(AUDIO_LEVEL_PACKET)
+    @packet_handler(AUDIO_LEVEL)
     @staticmethod
     def _process_level(packet: Packet) -> None:
         log("audio level: %s", packet.get_dict(1))
 
-    @packet_handler(AUDIO_SIGNAL_PACKET)
+    @packet_handler(AUDIO_SIGNAL)
     @staticmethod
     def _process_signal(packet: Packet) -> None:
         log("audio signal: %s", packet.get_bool(1))
 
     def send_audio_sync(self, v: int) -> None:
         if self.server_av_sync:
-            self.send(AUDIO_CONTROL_PACKET, "sync", v)
+            self.send(AUDIO_CONTROL, "sync", v)
 
     ######################################################################
     # packet handlers
-    @packet_handler("audio-capabilities", main_thread=True)
+    @packet_handler(AUDIO_CAPABILITIES, main_thread=True)
     def _process_capabilities(self, packet: Packet) -> None:
         audio = typedict(packet.get_dict(1))
         self.parse_audio_capabilities(audio)
         self.auto_start()
         self.emit("audio-initialized")
 
-    @packet_handler("audio-data")
+    @packet_handler(AUDIO_DATA)
     def _process_data(self, packet: Packet) -> None:
         codec = packet.get_str(1)
         data = packet.get_buffer(2)
@@ -827,7 +827,7 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
 
     # `audio-stream` must not be re-ordered with the `audio-data` packets,
     # so neither of them uses `main_thread`:
-    @packet_handler(AUDIO_STREAM_PACKET)
+    @packet_handler(AUDIO_STREAM)
     def _process_stream(self, packet: Packet) -> None:
         event = packet.get_str(1)
         codec = packet.get_str(2)

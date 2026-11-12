@@ -13,7 +13,7 @@ from xpra.util.env import envint, envbool
 from xpra.util.system import getloadavg
 from xpra.net.common import FULL_INFO, parse_thread_getloadavg
 from xpra.net.constants import ConnectionMessage
-from xpra.net.packet_type import PING_ECHO
+from xpra.net.packet_type import PING_ECHO, PING
 from xpra.server.source.stub import StubClientConnection
 from xpra.log import Logger
 
@@ -70,7 +70,7 @@ class PingConnection(StubClientConnection):
         # NOTE: all ping time/echo time/load avg values are in milliseconds
         now_ms = int(1000 * monotonic())
         log("sending ping to %s with time=%s", self.protocol, now_ms)
-        self.send_async("ping", now_ms, int(time.time() * 1000), self.ping_uuid, will_have_more=False)
+        self.send_async(PING, now_ms, int(time.time() * 1000), self.ping_uuid, will_have_more=False)
         timeout = PING_TIMEOUT
         self.check_ping_echo_timers[now_ms] = GLib.timeout_add(timeout * 1000,
                                                                self.check_ping_echo_timeout, now_ms, timeout)

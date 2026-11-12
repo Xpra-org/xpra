@@ -11,6 +11,7 @@ from xpra.server import features
 from xpra.util.str_fn import print_nested_dict, csv
 from xpra.util.objects import typedict, merge_dicts
 from xpra.net.common import LOG_HELLO
+from xpra.net.packet_type import HELLO
 from xpra.log import Logger
 
 log = Logger("subsystems")
@@ -199,7 +200,7 @@ def get_client_connection_class(caps: typedict):
                 netlog = Logger("network")
                 netlog.info(f"sending hello to {self}:")
                 print_nested_dict(capabilities, print_fn=netlog.info)
-            self.send("hello", capabilities)
+            self.send(HELLO, capabilities)
             self.hello_sent = monotonic()
 
         def get_info(self) -> dict[str, Any]:

@@ -24,6 +24,10 @@ from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.codecs.constants import COMPRESS_RATIO, COMPRESS_FMT_SUFFIX, TransientCodecException
 from xpra.server.base import ServerBase
 from xpra.codecs.video import getVideoHelper
+from xpra.net.packet_type import (
+    CONTEXT_CLOSE, CONTEXT_COMPRESS, CONTEXT_DATA, CONTEXT_REQUEST, CONTEXT_RESPONSE, ENCODE,
+    ENCODE_RESPONSE,
+)
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -145,14 +149,14 @@ class EncoderServer(ServerBase):
 
     def add_new_client(self, ss, *args) -> None:
         super().add_new_client(ss, *args)
-        ss.protocol.large_packets.append("encode-response")
+        ss.protocol.large_packets.append(ENCODE_RESPONSE)
         # the packet handlers run on the network parse thread,
         # so the encode thread they would start would inherit its seccomp filter,
         # which does not allow the video encoders to initialize, ie: `eventfd2` for CUDA:
         # start it now instead (see `docs/Usage/Seccomp.md`)
         ss.call_in_encode_thread(noop)
 
-    @packet_handler("encode")
+    @packet_handler(ENCODE)
     def _process_encode(self, proto: SocketProtocol, packet: Packet) -> None:
         # this function is only used by the `encode` client,
         # not the `remote` encoder
@@ -247,10 +251,10 @@ class EncoderServer(ServerBase):
             return
         finally:
             free()
-        packet = Packet("encode-response", coding, bdata, client_options, width, height, stride, bpp, metadata)
+        packet = Packet(ENCODE_RESPONSE, coding, bdata, client_options, width, height, stride, bpp, metadata)
         ss.send_async(*packet)
 
-    @packet_handler("context-close")
+    @packet_handler(CONTEXT_CLOSE)
     def _process_context_close(self, proto: SocketProtocol, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -270,7 +274,7 @@ class EncoderServer(ServerBase):
         except RuntimeError:
             log.error(f"Error cleaning encoder {encoder} for sequence {seq} of connection {ss}")
 
-    @packet_handler("context-request")
+    @packet_handler(CONTEXT_REQUEST)
     def _process_context_request(self, proto: SocketProtocol, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -293,7 +297,7 @@ class EncoderServer(ServerBase):
             log(f"new encoder: {encoder}")
         except (RuntimeError, ValueError) as e:
             log("context request failed", exc_info=True)
-            ss.send("context-response", seq, False, f"initialization error: {e}", {})
+            ss.send(CONTEXT_RESPONSE, seq, False, f"initialization error: {e}", {})
             return
         # some encoders finish their initialization in a thread, ie: nvenc,
         # and they cannot compress anything until then:
@@ -302,13 +306,13 @@ class EncoderServer(ServerBase):
 
         def send_response_when_ready() -> bool:
             if encoder.is_closed():
-                ss.send("context-response", seq, False, "initialization failed", {})
+                ss.send(CONTEXT_RESPONSE, seq, False, "initialization failed", {})
             elif encoder.is_ready():
                 log("%s ready after %ims", encoder, (monotonic() - start) * 1000)
-                ss.send("context-response", seq, True, "", encoder.get_info())
+                ss.send(CONTEXT_RESPONSE, seq, True, "", encoder.get_info())
             elif monotonic() - start > CONTEXT_READY_TIMEOUT:
                 log.warn(f"Warning: encoder {encoder} is still not ready after {CONTEXT_READY_TIMEOUT} seconds")
-                ss.send("context-response", seq, False, "initialization timeout", {})
+                ss.send(CONTEXT_RESPONSE, seq, False, "initialization timeout", {})
             else:
                 # check again later:
                 return True
@@ -317,7 +321,7 @@ class EncoderServer(ServerBase):
         if send_response_when_ready():
             GLib.timeout_add(10, send_response_when_ready)
 
-    @packet_handler("context-compress")
+    @packet_handler(CONTEXT_COMPRESS)
     def _process_context_compress(self, proto: SocketProtocol, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -334,7 +338,7 @@ class EncoderServer(ServerBase):
         encoder = self.encoders.get(ss.uuid, {}).get(seq)
         if not encoder:
             log.error(f"Error encoder not found for uuid {ss.uuid!r} and sequence {seq}")
-            ss.send("context-data", seq, b"", {"error": "context not found"}, {})
+            ss.send(CONTEXT_DATA, seq, b"", {"error": "context not found"}, {})
             return
         encoding = encoder.get_encoding()
         free_cb = []
@@ -377,7 +381,7 @@ class EncoderServer(ServerBase):
         except TransientCodecException as e:
             # ie: nvenc "failed to acquire cuda device lock", the client can try again:
             log("compress_image(%s, ..)", image, exc_info=True)
-            ss.send("context-data", seq, b"", {"error": str(e)}, {})
+            ss.send(CONTEXT_DATA, seq, b"", {"error": str(e)}, {})
             return
         finally:
             free_all()
@@ -386,7 +390,7 @@ class EncoderServer(ServerBase):
         if bdata is None and not delayed:
             log.warn(f"Warning: no data from encoder {encoder}")
             log.warn(" options:%s", client_options)
-            ss.send("context-data", seq, b"", {"error": "no data from encoder"}, {})
+            ss.send(CONTEXT_DATA, seq, b"", {"error": "no data from encoder"}, {})
             return
         reply_opts = {}
         data = Compressed(encoding, bdata or b"")
@@ -405,7 +409,7 @@ class EncoderServer(ServerBase):
                     log.error(" the client is not using the mmap area correctly, mmap is now disabled")
                     mmap_write_area.enabled = False
                     ss.mmap_write_area = None
-        ss.send("context-data", seq, data, client_options, reply_opts)
+        ss.send(CONTEXT_DATA, seq, data, client_options, reply_opts)
         end = monotonic()
         csize = len(bdata or b"")
         psize = image.get_bytesperpixel() * image.get_width() * image.get_height()

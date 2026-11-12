@@ -11,7 +11,9 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.net.packet_type import (
-    INFO_REQUEST, INFO_RESPONSE, CONNECTION_CLOSE, SHUTDOWN_SERVER, PING_ECHO, DISPLAY_ICON, EVENTS, DISPLAY_SCREENSHOT,
+    INFO_REQUEST, INFO_RESPONSE, CONNECTION_CLOSE, SHUTDOWN_SERVER, PING_ECHO, DISPLAY_ICON,
+    EVENTS, DISPLAY_SCREENSHOT, PING, PRINTER_FILE, SHELL_EXEC, SHELL_REPLY,
+    STARTUP_COMPLETE,
 )
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
@@ -53,7 +55,7 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
         for x in SKIP:
             self.hello_extra[x] = False
 
-    @packet_handler("startup-complete", main_thread=True, early=True)
+    @packet_handler(STARTUP_COMPLETE, main_thread=True, early=True)
     def _process_startup_complete(self, packet: Packet) -> None:
         self.completed_startup = packet
 
@@ -401,7 +403,7 @@ class MonitorXpraClient(SendCommandConnectClient):
     def _process_events(self, packet: Packet) -> None:
         log.info(": ".join(str(x) for x in packet[1:]))
 
-    @packet_handler("ping", early=True)
+    @packet_handler(PING, early=True)
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
         sid = packet.get_str(3) if len(packet) >= 4 else ""
@@ -550,20 +552,20 @@ class ShellXpraClient(SendCommandConnectClient):
                         self.disconnect_and_quit(ExitCode.OK, "user requested %s" % line)
                         self.stdin_io_watch = None
                         return False
-                    self.send("shell-exec", line.encode())
+                    self.send(SHELL_EXEC, line.encode())
                     sent += 1
         self.stdin_buffer = ""
         if not sent:
             print_prompt()
         return True
 
-    @packet_handler("ping", early=True)
+    @packet_handler(PING, early=True)
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
         sid = packet.get_str(3) if len(packet) >= 4 else ""
         self.send(PING_ECHO, echotime, 0, 0, 0, -1, sid)
 
-    @packet_handler("shell-reply", main_thread=True, early=True)
+    @packet_handler(SHELL_REPLY, main_thread=True, early=True)
     @staticmethod
     def _process_shell_reply(packet: Packet) -> None:
         fd = packet.get_u8(1)
@@ -772,7 +774,7 @@ class PrintClient(SendCommandConnectClient):
         # we don't compress it (this should run locally most of the time anyway):
         from xpra.net.compression import Compressed  # pylint: disable=import-outside-toplevel
         blob = Compressed("print", self.file_data)
-        self.send("printer-file", self.filename, blob, *self.command)
+        self.send(PRINTER_FILE, self.filename, blob, *self.command)
         self.file_sent = True
         log("print: sending %s as %s for printing", self.filename, blob)
         # the server disconnects us once the file has been handled

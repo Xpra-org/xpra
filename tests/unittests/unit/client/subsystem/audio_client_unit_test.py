@@ -284,9 +284,9 @@ class TestStopSendingAudio(unittest.TestCase):
         x = _make_client()
         _make_source(x)
         x.stop_sending_audio()
-        from xpra.audio.common import AUDIO_DATA_PACKET
+        from xpra.net.packet_type import AUDIO_DATA
         sent_types = [p[0] for p in x._sent]
-        assert AUDIO_DATA_PACKET in sent_types
+        assert AUDIO_DATA in sent_types
 
     def test_increments_sequence(self):
         x = _make_client()
@@ -314,10 +314,10 @@ class TestStopReceivingAudio(unittest.TestCase):
         x = _make_client()
         _make_sink(x)
         x.stop_receiving_audio(tell_server=True)
-        from xpra.audio.common import AUDIO_CONTROL_PACKET
+        from xpra.net.packet_type import AUDIO_CONTROL
         types = [p[0] for p in x._sent]
-        assert AUDIO_CONTROL_PACKET in types
-        cmds = [p[1] for p in x._sent if p[0] == AUDIO_CONTROL_PACKET]
+        assert AUDIO_CONTROL in types
+        cmds = [p[1] for p in x._sent if p[0] == AUDIO_CONTROL]
         assert "stop" in cmds
         assert "new-sequence" in cmds
 
@@ -325,8 +325,8 @@ class TestStopReceivingAudio(unittest.TestCase):
         x = _make_client()
         _make_sink(x)
         x.stop_receiving_audio(tell_server=False)
-        from xpra.audio.common import AUDIO_CONTROL_PACKET
-        cmds = [p[1] for p in x._sent if p[0] == AUDIO_CONTROL_PACKET]
+        from xpra.net.packet_type import AUDIO_CONTROL
+        cmds = [p[1] for p in x._sent if p[0] == AUDIO_CONTROL]
         assert "stop" not in cmds
 
     def test_increments_sequence(self):
@@ -404,9 +404,9 @@ class TestNewStream(unittest.TestCase):
         source = _make_source(x)
         source.codec = "opus"
         x.new_stream(source, "opus")
-        from xpra.audio.common import AUDIO_DATA_PACKET
-        assert any(p[0] == AUDIO_DATA_PACKET for p in x._sent)
-        meta = next(p[3] for p in x._sent if p[0] == AUDIO_DATA_PACKET)
+        from xpra.net.packet_type import AUDIO_DATA
+        assert any(p[0] == AUDIO_DATA for p in x._sent)
+        meta = next(p[3] for p in x._sent if p[0] == AUDIO_DATA)
         assert meta.get("start-of-stream") is True
 
     def test_drops_stale_source(self):
@@ -427,8 +427,8 @@ class TestNewAudioBuffer(unittest.TestCase):
         source.codec = "opus"
         source.sequence = x.source_sequence
         x.new_buffer(source, b"audio bytes", {})
-        from xpra.audio.common import AUDIO_DATA_PACKET
-        assert any(p[0] == AUDIO_DATA_PACKET for p in x._sent)
+        from xpra.net.packet_type import AUDIO_DATA
+        assert any(p[0] == AUDIO_DATA for p in x._sent)
 
     def test_increments_bytecount(self):
         x = _make_client()
@@ -451,8 +451,8 @@ class TestSendAudioSync(unittest.TestCase):
     def test_sends_when_server_av_sync(self):
         x = _make_client(server_av_sync=True)
         x.send_audio_sync(100)
-        from xpra.audio.common import AUDIO_CONTROL_PACKET
-        assert any(p[0] == AUDIO_CONTROL_PACKET and p[1] == "sync" for p in x._sent)
+        from xpra.net.packet_type import AUDIO_CONTROL
+        assert any(p[0] == AUDIO_CONTROL and p[1] == "sync" for p in x._sent)
 
     def test_noop_when_server_av_sync_disabled(self):
         x = _make_client(server_av_sync=False)

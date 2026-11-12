@@ -18,7 +18,11 @@ from typing import Any
 from collections.abc import Callable, Iterable, Sequence, Mapping
 
 from xpra.exit_codes import ExitCode
-from xpra.net.packet_type import CONNECTION_CLOSE, CONNECTION_LOST, INVALID, GIBBERISH
+from xpra.net.packet_type import (
+    CONNECTION_CLOSE, CONNECTION_LOST, INVALID, GIBBERISH, AUDIO_DATA, CLIPBOARD_CONTENTS, CLIPBOARD_DATA,
+    CLIPBOARD_RECORD, DISPLAY_CONFIGURE, ENCODING_SET, HELLO, INFO_RESPONSE, NOTIFICATION_SHOW, SETTING_CHANGE,
+    SHELL_REPLY, WINDOW_METADATA,
+)
 from xpra.util.objects import typedict, Scheduler
 from xpra.util.str_fn import (
     csv, hexstr,
@@ -65,11 +69,11 @@ MODERN_INITIAL_PACKET_SIZE = 16 * 1024
 # Infrequent packets containing text or nested dictionaries benefit from Brotli.
 # These are preferences: both ends must support the compressor, and level zero still disables compression.
 PACKET_COMPRESSORS: dict[str, str] = {
-    "clipboard-data": "brotli",
-    "clipboard-record": "brotli",
-    "notification-show": "brotli",
-    "info-response": "brotli",
-    "encoding-set": "brotli",
+    CLIPBOARD_DATA: "brotli",
+    CLIPBOARD_RECORD: "brotli",
+    NOTIFICATION_SHOW: "brotli",
+    INFO_RESPONSE: "brotli",
+    ENCODING_SET: "brotli",
 }
 # Packets whose payload is already compressed by their own codec (ie: audio, video),
 # compressing them again only wastes CPU, and these packets may be sent as datagrams:
@@ -220,10 +224,10 @@ class SocketProtocol:
         self.max_packet_size = MAX_PACKET_SIZE if BACKWARDS_COMPATIBLE else min(MAX_PACKET_SIZE, MODERN_INITIAL_PACKET_SIZE)
         self.abs_max_packet_size = 256 * 1024 * 1024
         self.large_packets = [
-            "hello", "window-metadata", "audio-data", "notification-show", "setting-change",
-            "shell-reply", "display-configure",
-            "encoding-set", "info-response",
-            "clipboard-data", "clipboard-contents", "clipboard-record",
+            HELLO, WINDOW_METADATA, AUDIO_DATA, NOTIFICATION_SHOW, SETTING_CHANGE,
+            SHELL_REPLY, DISPLAY_CONFIGURE,
+            ENCODING_SET, INFO_RESPONSE,
+            CLIPBOARD_DATA, CLIPBOARD_CONTENTS, CLIPBOARD_RECORD,
         ]
         self._log_stats = None  # None here means auto-detect
         if "XPRA_LOG_SOCKET_STATS" in os.environ:

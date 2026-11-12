@@ -13,7 +13,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.common import noerr
-from xpra.net.packet_type import SHUTDOWN_SERVER
+from xpra.net.packet_type import SHUTDOWN_SERVER, HELLO
 from xpra.util.system import stop_proc
 from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized, print_nested_dict, bytestostr
@@ -393,7 +393,7 @@ class ProxyServer(ServerCore):
             return True
         self._registered_protos[proto] = session
         # acknowledge — keep the connection alive (no 10s timeout)
-        proto.send_now(Packet("hello", self.make_hello(None)))
+        proto.send_now(Packet(HELLO, self.make_hello(None)))
         authlog.info("registered session %r (uuid=%s) from %s",
                      session_name or "<unnamed>", uuid, getattr(proto._conn, "target", proto))
         return True
@@ -429,7 +429,7 @@ class ProxyServer(ServerCore):
         self._requests.add(proto)
         # send a hello back and the client should then send its "shutdown-server" packet
         capabilities = self.make_hello(None)
-        proto.send_now(Packet("hello", capabilities))
+        proto.send_now(Packet(HELLO, capabilities))
 
         def force_exit_request_client() -> None:
             try:
@@ -599,7 +599,7 @@ class ProxyServer(ServerCore):
             # echo mode if present:
             if mode := str(sns.get("mode", "")):
                 hello["mode"] = mode
-            client_proto.send_now(Packet("hello", hello))
+            client_proto.send_now(Packet(HELLO, hello))
             return
 
         def stop_server_subprocess() -> None:

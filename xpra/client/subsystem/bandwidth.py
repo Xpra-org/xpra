@@ -14,6 +14,7 @@ from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.util.parsing import parse_with_unit
+from xpra.net.packet_type import BANDWIDTH_LIMIT
 from xpra.log import Logger
 
 log = Logger("network", "bandwidth")
@@ -113,4 +114,4 @@ class BandwidthClient(StubClientSubsystem):
 
     def send_limit(self) -> None:
         log("send_limit() bandwidth-limit=%i", self.limit)
-        self.send("bandwidth-limit", self.limit)
+        self.send(BANDWIDTH_LIMIT, self.limit)

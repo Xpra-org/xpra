@@ -15,7 +15,9 @@ from tkinter import Tk
 from xpra import __version__
 from xpra.common import noop
 from xpra.net.packet_type import (
-    WINDOW_FOCUS, WINDOW_ACK, WINDOW_DESTROY, WINDOW_RAISE, ENCODING_SET, WINDOW_DRAW, WINDOW_RESTACK, CONNECTION_CLOSE, WINDOW_CREATE, WINDOW_METADATA, WINDOW_INITIATE_MOVERESIZE, WINDOW_BELL,
+    WINDOW_FOCUS, WINDOW_ACK, WINDOW_DESTROY, WINDOW_RAISE, ENCODING_SET, WINDOW_DRAW,
+    WINDOW_RESTACK, CONNECTION_CLOSE, WINDOW_CREATE, WINDOW_METADATA, WINDOW_INITIATE_MOVERESIZE, WINDOW_BELL,
+    HELLO, SETTING_CHANGE, STARTUP_COMPLETE,
 )
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
@@ -101,7 +103,7 @@ class XpraTkClient:
             "encodings": ("png", "jpeg", "webp"),    # "rgb32", "rgb24"
             "display": {"refresh-rate": 50},
         }
-        self.send("hello", hello)
+        self.send(HELLO, hello)
 
     def send(self, packet_type: str, *args) -> None:
         packet = (packet_type, *args)
@@ -134,17 +136,17 @@ class XpraTkClient:
         log("%s", packet)
         self.quit(0)
 
-    @packet_handler("hello")
+    @packet_handler(HELLO)
     def _process_hello(self, packet: Packet) -> None:
         self.hello = packet.get_dict(1)
         netlog.info("got hello from %s server" % self.hello.get("version", ""))
 
-    @packet_handler("setting-change")
+    @packet_handler(SETTING_CHANGE)
     def _process_setting_change(self, packet: Packet) -> None:
         setting = packet.get_str(1)
         netlog.info(f"ignoring setting-change for {setting!r}")
 
-    @packet_handler("startup-complete")
+    @packet_handler(STARTUP_COMPLETE)
     def _process_startup_complete(self, _packet: Packet) -> None:
         netlog.info("client is connected")
 

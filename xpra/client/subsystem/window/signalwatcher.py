@@ -18,6 +18,7 @@ from xpra.util.system import stop_proc
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.client.base.stub import StubClientSubsystem
+from xpra.net.packet_type import WINDOW_SIGNAL
 from xpra.log import Logger
 
 log = Logger("window", "exec")
@@ -157,7 +158,7 @@ class WindowSignalWatcher(StubClientSubsystem):
                 log("signal_watcher_event: %s", signame)
                 if signame:
                     if signame in self.server_window_signals:
-                        self.send("window-signal", wid, signame)
+                        self.send(WINDOW_SIGNAL, wid, signame)
                     else:
                         log(f"Warning: signal {signame!r} cannot be forwarded to this server")
             except Exception as e:

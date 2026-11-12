@@ -12,7 +12,7 @@ from threading import Event, Lock
 from collections import deque
 from queue import SimpleQueue
 
-from xpra.net.packet_type import INFO_RESPONSE
+from xpra.net.packet_type import INFO_RESPONSE, SETTING_CHANGE, STARTUP_COMPLETE
 from xpra.util.thread import start_thread
 from xpra.util.objects import AtomicInteger, notypedict
 from xpra.util.env import envbool
@@ -126,7 +126,7 @@ class ClientConnection(StubClientConnection):
 
     def startup_complete(self) -> None:
         log("startup_complete()")
-        self.send("startup-complete")
+        self.send(STARTUP_COMPLETE)
 
     # The encode thread loop management:
     #
@@ -279,4 +279,4 @@ class ClientConnection(StubClientConnection):
         self.send_async(INFO_RESPONSE, notypedict(info))
 
     def send_setting_change(self, setting: str, value: PacketElement) -> None:
-        self.send_more("setting-change", setting, value)
+        self.send_more(SETTING_CHANGE, setting, value)

@@ -17,6 +17,10 @@ from xpra.util.str_fn import csv
 from xpra.net.common import Packet, PacketElement, packet_handler
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.net.packet_type import (
+    CLIPBOARD_CONTENTS, CLIPBOARD_CONTENTS_NONE, CLIPBOARD_DATA, CLIPBOARD_ENABLE_SELECTIONS,
+    CLIPBOARD_PENDING_REQUESTS, CLIPBOARD_REQUEST, CLIPBOARD_STATUS, CLIPBOARD_RECORD,
+)
 from xpra.log import Logger
 
 log = Logger("clipboard")
@@ -210,10 +214,10 @@ class ClipboardManager(StubSubsystem):
             ch.enable_selections()
 
     @packet_handler(
-        "clipboard-data", "clipboard-request",
-        "clipboard-contents", "clipboard-contents-none",
-        "clipboard-pending-requests", "clipboard-enable-selections",
-        "clipboard-status",
+        CLIPBOARD_DATA, CLIPBOARD_REQUEST,
+        CLIPBOARD_CONTENTS, CLIPBOARD_CONTENTS_NONE,
+        CLIPBOARD_PENDING_REQUESTS, CLIPBOARD_ENABLE_SELECTIONS,
+        CLIPBOARD_STATUS,
         enabled=lambda self: self.enabled,
     )
     def _process_packet(self, proto, packet: Packet) -> None:
@@ -226,7 +230,7 @@ class ClipboardManager(StubSubsystem):
             return
         self.may_record("server", *packet)
         packet_type = packet.get_type()
-        if packet_type == "clipboard-status":
+        if packet_type == CLIPBOARD_STATUS:
             self._process_status(proto, packet)
             return
         if self.client != ss:
@@ -287,7 +291,7 @@ class ClipboardManager(StubSubsystem):
         clipboard_sources = self.get_sources_by_type(ClipboardConnection)
         for ss in clipboard_sources:
             if ss.clipboard_record:
-                rec_packet = ("clipboard-record", direction, packet_type, *parts)
+                rec_packet = (CLIPBOARD_RECORD, direction, packet_type, *parts)
                 ss.send_clipboard(rec_packet)
 
     #########################################

@@ -6,6 +6,7 @@
 
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.common import Packet, packet_handler
+from xpra.net.packet_type import SUSPEND
 from xpra.log import Logger
 
 log = Logger("events")
@@ -18,7 +19,7 @@ class SuspendServer(StubSubsystem):
     __slots__ = ()
     PREFIX = "suspend"
 
-    @packet_handler("suspend", main_thread=True)
+    @packet_handler(SUSPEND, main_thread=True)
     def _process_suspend(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         # the boolean argument tells us whether we are suspending or resuming:

@@ -14,7 +14,7 @@ from xpra.util.str_fn import Ellipsizer, std
 from xpra.net.common import Packet, packet_handler
 from xpra.util.thread import start_thread
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.net.packet_type import NOTIFICATION_CLOSE, NOTIFICATION_STATUS
+from xpra.net.packet_type import NOTIFICATION_CLOSE, NOTIFICATION_STATUS, NOTIFICATION_ACTION
 from xpra.log import Logger
 
 log = Logger("notify")
@@ -183,7 +183,7 @@ class NotificationForwarder(StubSubsystem):
                 closed = self.forwarder.notification_closed(nid, reason)
                 log("notification-close nid=%s, reason=%s, text=%s, closed=%s", nid, reason, text, closed)
 
-    @packet_handler("notification-action", main_thread=True, enabled=lambda self: self.enabled)
+    @packet_handler(NOTIFICATION_ACTION, main_thread=True, enabled=lambda self: self.enabled)
     def _process_action(self, proto, packet: Packet) -> None:
         assert self.enabled
         nid = packet.get_u64(1)

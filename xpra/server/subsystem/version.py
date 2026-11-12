@@ -11,6 +11,7 @@ from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.net.common import Packet, FULL_INFO
 from xpra.util.objects import typedict
 from xpra.util.version import XPRA_VERSION, vparts
+from xpra.net.packet_type import HELLO
 
 
 class VersionServer(StubSubsystem):
@@ -44,6 +45,6 @@ class VersionServer(StubSubsystem):
     def send_version_info(self, proto: SocketProtocol, full: bool = False) -> None:
         from xpra.util.version import XPRA_VERSION, version_str
         version = version_str() if (full and FULL_INFO) else XPRA_VERSION.split(".", 1)[0]
-        proto.send_now(Packet("hello", {"version": version}))
+        proto.send_now(Packet(HELLO, {"version": version}))
         # client is meant to close the connection itself, but just in case:
         self.timeout_add(5 * 1000, self.network.send_disconnect, proto, ConnectionMessage.DONE, "version sent")

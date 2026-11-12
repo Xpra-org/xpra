@@ -19,7 +19,7 @@ from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.util.env import envbool, envint, first_time
 from xpra.client.base import features
 from xpra.client.base.stub import StubClientSubsystem
-from xpra.net.packet_type import NOTIFICATION_CLOSE, NOTIFICATION_SHOW
+from xpra.net.packet_type import NOTIFICATION_CLOSE, NOTIFICATION_SHOW, NOTIFICATION_ACTION
 from xpra.log import Logger
 
 log = Logger("notify")
@@ -139,7 +139,7 @@ class NotificationClient(StubClientSubsystem):
         if callback := self.callbacks.get(nid, None):
             callback("notification-action", nid, action_id)
         elif self.server:
-            self.send("notification-action", nid, action_id)
+            self.send(NOTIFICATION_ACTION, nid, action_id)
 
     @staticmethod
     def get_native_notifier_classes() -> Sequence[Callable]:

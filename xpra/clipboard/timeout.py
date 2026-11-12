@@ -11,6 +11,7 @@ from xpra.clipboard.common import env_timeout
 from xpra.clipboard.core import ClipboardProtocolHelperCore
 from xpra.clipboard.proxy import ClipboardProxyCore
 from xpra.util.str_fn import Ellipsizer
+from xpra.net.packet_type import CLIPBOARD_REQUEST
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -53,7 +54,7 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         timer = GLib.timeout_add(REMOTE_TIMEOUT, self.timeout_request, request_id)
         self._clipboard_outstanding_requests[request_id] = (timer, selection, target)
         self.progress()
-        self.send("clipboard-request", request_id, remote, target)
+        self.send(CLIPBOARD_REQUEST, request_id, remote, target)
 
     def timeout_request(self, request_id: int) -> None:
         try:

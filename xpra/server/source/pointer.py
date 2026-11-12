@@ -8,6 +8,7 @@ from math import copysign
 from typing import Any
 from xpra.server.source.stub import StubClientConnection, PointerSource, is_sync_allowed
 from xpra.util.objects import typedict
+from xpra.net.packet_type import POINTER_POSITION
 from xpra.log import Logger
 
 log = Logger("pointer")
@@ -97,4 +98,4 @@ class PointerConnection(StubClientConnection, PointerSource):
         if self.mouse_last_position != (x, y) or self.mouse_last_relative_position != (rx, ry):
             self.mouse_last_position = (x, y)
             self.mouse_last_relative_position = (rx, ry)
-            self.send_async("pointer-position", wid, x, y, rx, ry)
+            self.send_async(POINTER_POSITION, wid, x, y, rx, ry)

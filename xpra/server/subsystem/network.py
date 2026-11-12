@@ -12,7 +12,7 @@ from weakref import WeakKeyDictionary
 from typing import Any, TYPE_CHECKING
 from collections.abc import Callable, Sequence, Iterable
 
-from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_LOST, GIBBERISH, INVALID, CONNECTION_CLOSE
+from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_LOST, GIBBERISH, INVALID, CONNECTION_CLOSE, SSL_UPGRADE
 from xpra.server import ServerExitMode
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.net.common import pretty_socket, has_websocket_handler, connection_close_info, HttpResponse, Packet, packet_handler
@@ -144,7 +144,7 @@ class NetworkServer(StubSubsystem):
         # these packets are not prefixed and must be handled before authentication:
         self.server._default_packet_handlers |= {
             CONNECTION_CLOSE: self._process_connection_close,
-            "ssl-upgrade": self._process_ssl_upgrade,
+            SSL_UPGRADE: self._process_ssl_upgrade,
             CONNECTION_LOST: self._process_connection_lost,
             GIBBERISH: self._process_gibberish,
             INVALID: self._process_invalid,
@@ -875,7 +875,7 @@ class NetworkServer(StubSubsystem):
         netlog(" data: %s", Ellipsizer(data))
         self.disconnect_client(protocol, message)
 
-    @packet_handler("ssl-upgrade", manual=True)
+    @packet_handler(SSL_UPGRADE, manual=True)
     def _process_ssl_upgrade(self, proto: SocketProtocol, packet: Packet) -> None:
         socktype = proto._conn.socktype
         new_socktype = {"tcp": "ssl", "ws": "wss"}.get(socktype)

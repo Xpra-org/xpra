@@ -9,6 +9,7 @@ from typing import Any
 from xpra.util.objects import typedict
 from xpra.net.common import PacketElement
 from xpra.server.source.stub import StubClientConnection
+from xpra.net.packet_type import CONTROL
 from xpra.log import Logger
 
 log = Logger("command")
@@ -36,4 +37,4 @@ class ControlConnection(StubClientConnection):
 
     def send_client_command(self, command: str, *args: PacketElement) -> None:
         if self.hello_sent:
-            self.send_more("control", command, *args)
+            self.send_more(CONTROL, command, *args)

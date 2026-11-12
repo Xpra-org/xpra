@@ -8,6 +8,7 @@ from collections.abc import Callable
 
 from xpra.net.common import Packet, packet_handler
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.net.packet_type import SETTING_CHANGE
 from xpra.log import Logger
 
 log = Logger("server")
@@ -50,7 +51,7 @@ class SettingsServer(StubSubsystem):
         """
         self.client_settings[setting] = (getter, apply)
 
-    @packet_handler("setting-change")
+    @packet_handler(SETTING_CHANGE)
     def _process_change(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:

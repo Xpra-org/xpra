@@ -9,6 +9,7 @@ from typing import Any
 
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.common import Packet, packet_handler
+from xpra.net.packet_type import SHELL_EXEC
 
 
 class ShellServer(StubSubsystem):
@@ -36,7 +37,7 @@ class ShellServer(StubSubsystem):
             ShellServer.PREFIX: True,
         }
 
-    @packet_handler("shell-exec")
+    @packet_handler(SHELL_EXEC)
     def _process_exec(self, proto, packet: Packet) -> None:
         code = packet.get_str(1)
         if ss := self.get_server_source(proto):

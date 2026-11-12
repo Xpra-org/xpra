@@ -22,7 +22,9 @@ from xpra.config import InitExit
 from xpra.config.defaults import make_defaults_struct
 from xpra.net.common import PacketElement, Packet, FULL_INFO, REMOTE_CODEC_PROTOCOL_VERSION, connection_close_info, packet_handler
 from xpra.net.dispatch import get_decorated_handler
-from xpra.net.packet_type import ENCODING_SET, CONNECTION_LOST, CONNECTION_CLOSE
+from xpra.net.packet_type import (
+    ENCODING_SET, CONNECTION_LOST, CONNECTION_CLOSE, HELLO, STARTUP_COMPLETE, CONTEXT_COMPRESS, CONTEXT_DATA,
+)
 from xpra.log import Logger
 
 log = Logger("client")
@@ -217,7 +219,7 @@ class RemoteServerAdapter(baseclass):
         protocol.enable_default_encoder()
         protocol.enable_default_compressor()
         protocol._log_stats = False
-        protocol.large_packets += [ENCODING_SET, "context-compress", "context-data"]
+        protocol.large_packets += [ENCODING_SET, CONTEXT_COMPRESS, CONTEXT_DATA]
         # self.add_packet_handler("setting-change", noop)
         # if conn.timeout > 0:
         #    self.timeout_add((conn.timeout + conn.connection_delay) * 1000, self.verify_connected)
@@ -262,12 +264,12 @@ class RemoteServerAdapter(baseclass):
         from xpra.net.net_util import get_network_caps
         caps.update(get_network_caps(0))
         log(f"sending hello={caps!r}")
-        self.send("hello", caps)
+        self.send(HELLO, caps)
         self.connect_event.clear()
         self.protocol.start()
         self.connect_event.wait(self.server_timeout)
 
-    @packet_handler("hello")
+    @packet_handler(HELLO)
     def _process_hello(self, packet: Packet) -> None:
         caps = packet.get_dict(1)
         log("got hello: %s", Ellipsizer(caps))
@@ -311,7 +313,7 @@ class RemoteServerAdapter(baseclass):
         super().cleanup()
         self.schedule_connect(self.reconnect_delay)
 
-    @packet_handler("startup-complete")
+    @packet_handler(STARTUP_COMPLETE)
     def _process_startup_complete(self, packet: Packet) -> None:
         log(f"{packet!r}")
         self.connect_event.set()

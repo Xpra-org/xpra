@@ -21,7 +21,7 @@ from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.client.base.stub import StubClientSubsystem
-from xpra.net.packet_type import ENCODING_SET
+from xpra.net.packet_type import ENCODING_SET, ENCODING_CONFIG
 from xpra.log import Logger
 from xpra.util.thread import start_thread
 
@@ -280,7 +280,7 @@ class Encodings(StubClientSubsystem):
     def send_encoding_config(self) -> None:
         caps = self.get_encodings_caps()
         log("send_encoding_config() caps=%s", caps)
-        self.send("encoding-config", caps)
+        self.send(ENCODING_CONFIG, caps)
 
     def get_caps(self) -> dict[str, Any]:
         return {"encoding": self.get_encodings_caps()}

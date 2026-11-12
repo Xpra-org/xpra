@@ -25,7 +25,7 @@ from xpra.net.common import Packet, FULL_INFO
 from xpra.net.connect import connect_to
 from xpra.net.digest import get_salt, gendigest, get_caps as get_digest_caps
 from xpra.net.net_util import get_network_caps
-from xpra.net.packet_type import INFO_RESPONSE
+from xpra.net.packet_type import INFO_RESPONSE, HELLO
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.scripts.parsing import parse_display_name
 from xpra.server.subsystem.stub import StubSubsystem
@@ -242,7 +242,7 @@ class RegisterSubsystem(StubSubsystem):
             if ptype == "challenge":
                 self._handle_challenge(proto, password, packet)
                 continue
-            if ptype == "hello":
+            if ptype == HELLO:
                 if not ack_received:
                     log.info("registered with %s", getattr(proto._conn, "target", proto))
                     # the registration is steady-state from here; clear the
@@ -322,7 +322,7 @@ class RegisterSubsystem(StubSubsystem):
             if client_salt:
                 hello["challenge_client_salt"] = client_salt
         log("register: sending hello %s", hello)
-        proto.send_now(Packet("hello", hello))
+        proto.send_now(Packet(HELLO, hello))
 
     def make_proxy_hello(self) -> dict[str, Any]:
         srv = self.server

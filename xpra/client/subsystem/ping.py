@@ -13,7 +13,7 @@ from collections.abc import Sequence, Iterable
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet, FULL_INFO, parse_thread_getloadavg, packet_handler
-from xpra.net.packet_type import PING_ECHO
+from xpra.net.packet_type import PING_ECHO, PING
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 from xpra.os_util import get_hex_uuid
@@ -43,8 +43,6 @@ class PingClient(StubClientSubsystem):
     )
     PREFIX = "ping"
     __signals__: list[str] = ["timeout"]
-
-    PACKET_TYPES = ("ping", "ping-echo")
 
     def __init__(self, client=None):
         StubClientSubsystem.__init__(self, client)
@@ -159,7 +157,7 @@ class PingClient(StubClientSubsystem):
             self.timer = 0
             return False
         now_ms = int(1000.0 * monotonic())
-        self.send("ping", now_ms, int(time.time() * 1000), self.uuid)
+        self.send(PING, now_ms, int(time.time() * 1000), self.uuid)
         wait = 1000 * MIN_PING_TIMEOUT
         if aspl := tuple(self.server_latency):
             spl: Sequence[float] = tuple(x[1] for x in aspl)
@@ -192,7 +190,7 @@ class PingClient(StubClientSubsystem):
             self.client_latency.append((monotonic(), cl / 1000.0))
         log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
-    @packet_handler("ping")
+    @packet_handler(PING)
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
         sid = ""

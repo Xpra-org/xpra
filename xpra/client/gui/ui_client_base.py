@@ -20,8 +20,8 @@ from xpra.net.common import (
     Packet, PacketElement, print_proxy_caps, FULL_INFO,
 )
 from xpra.net.packet_type import (
-    CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS, SHARING_TOGGLE, SHARING_LOCK,
-    DISPLAY_MONITOR_CONFIGURE, DISPLAY_UNGRAB,
+    CURSOR_SET, KEYBOARD_SYNC, NOTIFICATION_STATUS, SHARING_TOGGLE, SHARING_LOCK, DISPLAY_MONITOR_CONFIGURE,
+    DISPLAY_UNGRAB, SETTING_CHANGE, STARTUP_COMPLETE,
 )
 from xpra.util.child_reaper import reaper_cleanup
 from xpra.util.objects import typedict
@@ -401,7 +401,7 @@ class UIXpraClient(XpraClientBase):
         self.connection_established = True
         self.idle_add(self.handshake_complete)
 
-    @packet_handler("startup-complete", main_thread=True)
+    @packet_handler(STARTUP_COMPLETE, main_thread=True)
     def _process_startup_complete(self, packet: Packet) -> None:
         log("all the existing windows and system trays have been received")
         super()._process_startup_complete(packet)
@@ -422,7 +422,7 @@ class UIXpraClient(XpraClientBase):
         if value is not None:
             cb(setting, value)
 
-    @packet_handler("setting-change", main_thread=True)
+    @packet_handler(SETTING_CHANGE, main_thread=True)
     def _process_setting_change(self, packet: Packet) -> None:
         setting = packet.get_str(1)
         value = packet[2]
@@ -485,7 +485,7 @@ class UIXpraClient(XpraClientBase):
     # features:
     def send_setting_change(self, setting: str, value: PacketElement) -> None:
         """ ask the server to change a setting (mirror of `ClientConnection.send_setting_change`) """
-        self.send("setting-change", setting, value)
+        self.send(SETTING_CHANGE, setting, value)
 
     def send_sharing_enabled(self) -> None:
         assert self.server_sharing and self.server_sharing_toggle

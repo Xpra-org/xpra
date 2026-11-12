@@ -22,6 +22,7 @@ from xpra.os_util import WIN32, OSX, POSIX
 from xpra.common import may_notify_client
 from xpra.constants import NotificationID
 from xpra.client.base.stub import StubClientSubsystem
+from xpra.net.packet_type import WEBCAM_ACK, WEBCAM_FRAME, WEBCAM_START, WEBCAM_STOP
 from xpra.log import Logger
 
 log = Logger("webcam")
@@ -62,7 +63,6 @@ class WebcamForwarder(StubClientSubsystem):
         "last_ack", "lock", "option", "resume_restart", "send_timer", "server_client_mode", "server_enabled",
         "server_encodings", "server_rgb_formats",
     )
-    PACKET_TYPES = ("webcam-ack", "webcam-stop")
     PREFIX = "webcam"
     __signals__ = ["webcam-changed"]
 
@@ -208,7 +208,7 @@ class WebcamForwarder(StubClientSubsystem):
             self.device_no = device_no
             self.device_str = device
             self.device = webcam_device
-            self.send("webcam-start", self.device_no, w, h)
+            self.send(WEBCAM_START, self.device_no, w, h)
             self.webcam_state_changed()
             log("webcam started")
             if self.send_webcam_frame():
@@ -249,7 +249,7 @@ class WebcamForwarder(StubClientSubsystem):
         log("do_stop_sending_webcam() device=%s", wd)
         if not wd:
             return
-        self.send("webcam-stop", self.device_no)
+        self.send(WEBCAM_STOP, self.device_no)
         assert self.server_enabled
         self.device = None
         self.device_no = -1
@@ -333,7 +333,7 @@ class WebcamForwarder(StubClientSubsystem):
 
             frame_no = self.frame_no
             self.frame_no += 1
-            self.send("webcam-frame", self.device_no, frame_no, encoding, w, h, img_data, options)
+            self.send(WEBCAM_FRAME, self.device_no, frame_no, encoding, w, h, img_data, options)
             self.cancel_webcam_check_ack_timer()
             self.ack_check_timer = self.timeout_add(10 * 1000, self.webcam_check_acks)
             return True
@@ -360,7 +360,7 @@ class WebcamForwarder(StubClientSubsystem):
 
     ######################################################################
     # packet handlers
-    @packet_handler("webcam-stop")
+    @packet_handler(WEBCAM_STOP)
     def _process_stop(self, packet: Packet) -> None:
         device_no = packet.get_u64(1)
         log("webcam-stop for device %i", device_no)
@@ -368,7 +368,7 @@ class WebcamForwarder(StubClientSubsystem):
             return
         self.stop_sending_webcam()
 
-    @packet_handler("webcam-ack")
+    @packet_handler(WEBCAM_ACK)
     def _process_ack(self, packet: Packet) -> None:
         log("process_webcam_ack: %s", packet)
         with self.lock:

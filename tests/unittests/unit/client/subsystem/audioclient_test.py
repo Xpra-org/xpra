@@ -11,7 +11,7 @@ import unittest
 from xpra.os_util import WIN32, POSIX, OSX
 from xpra.util.objects import AdHocStruct
 from xpra.client.subsystem.audio import AudioClient
-from xpra.audio.common import AUDIO_CONTROL_PACKET, AUDIO_DATA_PACKET
+from xpra.net.packet_type import AUDIO_CONTROL, AUDIO_DATA
 from xpra.audio.gstreamer_util import CODEC_ORDER
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
 
@@ -72,9 +72,9 @@ class AudioClientSendTestUtil(AudioClientTestUtil):
         self.glib.timeout_add(5000, self.main_loop.quit)
         self.main_loop.run()
         assert len(self.packets) > 2
-        self.verify_packet(0, (AUDIO_DATA_PACKET, ))
+        self.verify_packet(0, (AUDIO_DATA, ))
         assert self.packets[0][3].get("start-of-stream"), "start-of-stream not found"
-        self.verify_packet(-1, (AUDIO_DATA_PACKET, ))
+        self.verify_packet(-1, (AUDIO_DATA, ))
         assert self.packets[-1][3].get("end-of-stream"), "end-of-stream not found"
 
 
@@ -133,7 +133,7 @@ class AudioClientReceiveTest(AudioClientTestUtil):
              {b'duration': 20000000, b'timestamp': 73500000, b'time': 159963616, 'sequence': 0}),
             ('audio-data', 'opus', b'', {'end-of-stream': True, 'sequence': 0}),
         ]
-        packet_data = [(AUDIO_DATA_PACKET, *packet[1:]) for packet in packet_data]
+        packet_data = [(AUDIO_DATA, *packet[1:]) for packet in packet_data]
         L = len(packet_data)
 
         def feed_data() -> bool:
@@ -148,7 +148,7 @@ class AudioClientReceiveTest(AudioClientTestUtil):
         def check_start() -> bool:
             if not self.packets:
                 return True
-            self.verify_packet(0, (AUDIO_CONTROL_PACKET, "start", "opus"))
+            self.verify_packet(0, (AUDIO_CONTROL, "start", "opus"))
             self.glib.timeout_add(100, feed_data)
             return False
 
@@ -158,8 +158,8 @@ class AudioClientReceiveTest(AudioClientTestUtil):
         self.main_loop.run()
         assert len(packet_data) < L, "none of the data was fed to the receiver"
         assert not packet_data, "not all the data was fed to the receiver: remains: %s" % len(packet_data)
-        self.verify_packet(0, (AUDIO_CONTROL_PACKET, "start", "opus"))
-        self.verify_packet(1, (AUDIO_CONTROL_PACKET, "new-sequence", 1))
+        self.verify_packet(0, (AUDIO_CONTROL, "start", "opus"))
+        self.verify_packet(1, (AUDIO_CONTROL, "new-sequence", 1))
         # assert not self.packets, "sent some unexpected packets: %s" % (self.packets,)
         assert self.mixin.sink is None, "sink is still active: %s" % self.mixin.sink
 

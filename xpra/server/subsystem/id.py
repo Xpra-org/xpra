@@ -14,6 +14,7 @@ from xpra.os_util import get_hex_uuid, get_machine_id
 from xpra.scripts.session import load_session_file
 from xpra.util.version import XPRA_NUMERIC_VERSION
 from xpra.util.objects import typedict
+from xpra.net.packet_type import HELLO
 from xpra.log import Logger
 
 # pylint: disable=import-outside-toplevel
@@ -66,7 +67,7 @@ class IDServer(StubSubsystem):
     def send_id_info(self, proto: SocketProtocol) -> None:
         log("id info request from %s", proto._conn)
         proto._log_stats = False
-        proto.send_now(Packet("hello", self.get_session_id_info()))
+        proto.send_now(Packet(HELLO, self.get_session_id_info()))
 
     def get_session_id_info(self) -> dict[str, Any]:
         # minimal information for identifying the session

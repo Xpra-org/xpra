@@ -22,7 +22,7 @@ from xpra.net.common import Packet, packet_handler
 from xpra.net.constants import ConnectionMessage
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.net.packet_type import PRINT_DEVICES
+from xpra.net.packet_type import PRINT_DEVICES, HELLO, PRINTER_FILE
 from xpra.log import Logger
 from xpra.util.thread import start_thread
 
@@ -200,10 +200,10 @@ class PrinterServer(StubSubsystem):
         from xpra.net.packet_encoding import get_packet_encoding_caps
         hello = get_packet_encoding_caps()
         hello[PrinterServer.PREFIX] = printer
-        proto.send_now(Packet("hello", hello))
+        proto.send_now(Packet(HELLO, hello))
 
     # registered in the pre-authentication "default" table, see `init_packet_handlers`:
-    @packet_handler("printer-file", manual=True)
+    @packet_handler(PRINTER_FILE, manual=True)
     def _process_file(self, proto, packet: Packet) -> None:
         # this connection has no client source: it only made a `print` request
         if proto not in self.print_requests:
@@ -323,4 +323,4 @@ class PrinterServer(StubSubsystem):
         if self.file_transfer.printing:
             # sent by `xpra print` connections, which have no client source,
             # so this cannot be one of our subsystem's (authenticated) packet handlers:
-            self.server._default_packet_handlers["printer-file"] = self._process_file
+            self.server._default_packet_handlers[PRINTER_FILE] = self._process_file

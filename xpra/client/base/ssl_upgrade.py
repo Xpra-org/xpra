@@ -9,6 +9,7 @@ from xpra.util.thread import start_thread
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitCode
 from xpra.config import InitExit
+from xpra.net.packet_type import SSL_UPGRADE
 from xpra.log import Logger
 
 log = Logger("ssl")
@@ -25,10 +26,10 @@ class SSLUpgrade(StubClientSubsystem):
         return {"ssl-upgrade": True}
 
     def parse_server_capabilities(self, c: typedict) -> bool:  # pylint: disable=unused-argument
-        self.remove_packet_handlers("ssl-upgrade")
+        self.remove_packet_handlers(SSL_UPGRADE)
         return True
 
-    @packet_handler("ssl-upgrade", early=True)
+    @packet_handler(SSL_UPGRADE, early=True)
     def _process_ssl_upgrade(self, packet: Packet) -> None:
         ssl_attrs = typedict(packet.get_dict(1))
         start_thread(self.ssl_upgrade, "ssl-upgrade", True, args=(ssl_attrs,))
@@ -42,7 +43,7 @@ class SSLUpgrade(StubClientSubsystem):
         if not new_socktype:
             raise ValueError(f"cannot upgrade {socktype} to ssl")
         log.info(f"upgrading {conn} to {new_socktype}")
-        self.send("ssl-upgrade", {})
+        self.send(SSL_UPGRADE, {})
         from xpra.net.tls.socket import ssl_handshake, ssl_wrap_socket
         from xpra.net.tls.file import get_ssl_attributes
         from xpra.net.tls.common import SSL_UPGRADE_DEFAULTS

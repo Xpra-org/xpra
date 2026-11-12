@@ -13,10 +13,8 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 from xpra.audio import common
-from xpra.audio.common import (
-    AUDIO_DATA_PACKET, AUDIO_STREAM_PACKET, AUDIO_STREAM_START, AUDIO_STREAM_END,
-    audio_stream_packet,
-)
+from xpra.audio.common import AUDIO_STREAM_START, AUDIO_STREAM_END, audio_stream_packet
+from xpra.net.packet_type import AUDIO_DATA, AUDIO_STREAM
 from xpra.net.common import Packet
 from xpra.util.objects import typedict
 from xpra.server.source.audio import AudioConnection
@@ -34,21 +32,21 @@ def legacy(fn):
 class TestAudioStreamPacket(unittest.TestCase):
 
     def test_stream_packet(self):
-        assert audio_stream_packet(True, AUDIO_STREAM_START, "opus", 3) == (AUDIO_STREAM_PACKET, "start", "opus", 3)
-        assert audio_stream_packet(True, AUDIO_STREAM_END, "opus", 3) == (AUDIO_STREAM_PACKET, "end", "opus", 3)
+        assert audio_stream_packet(True, AUDIO_STREAM_START, "opus", 3) == (AUDIO_STREAM, "start", "opus", 3)
+        assert audio_stream_packet(True, AUDIO_STREAM_END, "opus", 3) == (AUDIO_STREAM, "end", "opus", 3)
 
     @legacy
     def test_legacy_packet(self):
         assert audio_stream_packet(False, AUDIO_STREAM_START, "opus", 3) == (
-            AUDIO_DATA_PACKET, "opus", (), {"start-of-stream": True, "codec": "opus", "sequence": 3},
+            AUDIO_DATA, "opus", (), {"start-of-stream": True, "codec": "opus", "sequence": 3},
         )
         assert audio_stream_packet(False, AUDIO_STREAM_END, "opus", 3) == (
-            AUDIO_DATA_PACKET, "opus", (), {"end-of-stream": True, "sequence": 3},
+            AUDIO_DATA, "opus", (), {"end-of-stream": True, "sequence": 3},
         )
 
     def test_not_backwards_compatible(self):
         with patch.object(common, "BACKWARDS_COMPATIBLE", False):
-            assert audio_stream_packet(False, AUDIO_STREAM_START, "opus", 3)[0] == AUDIO_STREAM_PACKET
+            assert audio_stream_packet(False, AUDIO_STREAM_START, "opus", 3)[0] == AUDIO_STREAM
 
 
 class TestClientSend(unittest.TestCase):
@@ -64,7 +62,7 @@ class TestClientSend(unittest.TestCase):
         source = _make_source(x)
         source.sequence = 2
         x.new_stream(source, "opus")
-        assert x._sent == [(AUDIO_STREAM_PACKET, AUDIO_STREAM_START, "opus", 2)]
+        assert x._sent == [(AUDIO_STREAM, AUDIO_STREAM_START, "opus", 2)]
 
     def test_stop_sending(self):
         x = _make_client()
@@ -72,7 +70,7 @@ class TestClientSend(unittest.TestCase):
         source = _make_source(x)
         source.sequence = 2
         x.stop_sending_audio()
-        assert (AUDIO_STREAM_PACKET, AUDIO_STREAM_END, "opus", 2) in x._sent
+        assert (AUDIO_STREAM, AUDIO_STREAM_END, "opus", 2) in x._sent
 
     @legacy
     def test_legacy_new_stream(self):
@@ -81,7 +79,7 @@ class TestClientSend(unittest.TestCase):
         x.new_stream(source, "opus")
         assert len(x._sent) == 1
         packet = x._sent[0]
-        assert packet[0] == AUDIO_DATA_PACKET
+        assert packet[0] == AUDIO_DATA
         assert packet[3].get("start-of-stream") is True
 
 
@@ -91,7 +89,7 @@ class TestClientReceive(unittest.TestCase):
         x = _make_client()
         x.speaker_allowed = True
         with patch.object(x, "start_sink") as start_sink:
-            x._process_stream(Packet(AUDIO_STREAM_PACKET, AUDIO_STREAM_START, "opus", 0))
+            x._process_stream(Packet(AUDIO_STREAM, AUDIO_STREAM_START, "opus", 0))
         start_sink.assert_called_once_with("opus")
         assert x.speaker_enabled
 
@@ -99,7 +97,7 @@ class TestClientReceive(unittest.TestCase):
         x = _make_client()
         x.speaker_allowed = False
         with patch.object(x, "start_sink") as start_sink, patch.object(x, "stop_receiving_audio") as stop:
-            x._process_stream(Packet(AUDIO_STREAM_PACKET, AUDIO_STREAM_START, "opus", 0))
+            x._process_stream(Packet(AUDIO_STREAM, AUDIO_STREAM_START, "opus", 0))
         start_sink.assert_not_called()
         stop.assert_called_once_with(True)
 
@@ -107,14 +105,14 @@ class TestClientReceive(unittest.TestCase):
         x = _make_client(speaker_enabled=True)
         _make_sink(x)
         with patch.object(x, "start_sink") as start_sink:
-            x._process_stream(Packet(AUDIO_STREAM_PACKET, AUDIO_STREAM_START, "opus", 0))
+            x._process_stream(Packet(AUDIO_STREAM, AUDIO_STREAM_START, "opus", 0))
         start_sink.assert_not_called()
 
     def test_end(self):
         x = _make_client(speaker_enabled=True)
         _make_sink(x)
         with patch.object(x, "stop_receiving_audio") as stop:
-            x._process_stream(Packet(AUDIO_STREAM_PACKET, AUDIO_STREAM_END, "opus", 0))
+            x._process_stream(Packet(AUDIO_STREAM, AUDIO_STREAM_END, "opus", 0))
         stop.assert_called_once_with(False)
 
     def test_end_old_sequence(self):
@@ -122,14 +120,14 @@ class TestClientReceive(unittest.TestCase):
         _make_sink(x)
         x.sink_sequence = 5
         with patch.object(x, "stop_receiving_audio") as stop:
-            x._process_stream(Packet(AUDIO_STREAM_PACKET, AUDIO_STREAM_END, "opus", 3))
+            x._process_stream(Packet(AUDIO_STREAM, AUDIO_STREAM_END, "opus", 3))
         stop.assert_not_called()
 
     def test_unknown_event(self):
         x = _make_client(speaker_enabled=True)
         _make_sink(x)
         with patch.object(x, "stop_receiving_audio") as stop, patch.object(x, "start_sink") as start_sink:
-            x._process_stream(Packet(AUDIO_STREAM_PACKET, "pause", "opus", 0))
+            x._process_stream(Packet(AUDIO_STREAM, "pause", "opus", 0))
         stop.assert_not_called()
         start_sink.assert_not_called()
 
@@ -139,7 +137,7 @@ class TestClientReceive(unittest.TestCase):
         sink = _make_sink(x)
         with patch.object(client_audio, "BACKWARDS_COMPATIBLE", False), \
                 patch.object(x, "stop_receiving_audio") as stop:
-            x._process_data(Packet(AUDIO_DATA_PACKET, "opus", b"", {"end-of-stream": True, "sequence": -1}))
+            x._process_data(Packet(AUDIO_DATA, "opus", b"", {"end-of-stream": True, "sequence": -1}))
         stop.assert_not_called()
         sink.add_data.assert_not_called()
 
@@ -175,13 +173,13 @@ class TestServerSource(unittest.TestCase):
         c = FakeConnection()
         c.audio_stream_packet = True
         c.send_eos("opus", 4)
-        assert c.sent == [(AUDIO_STREAM_PACKET, AUDIO_STREAM_END, "opus", 4)]
+        assert c.sent == [(AUDIO_STREAM, AUDIO_STREAM_END, "opus", 4)]
 
     @legacy
     def test_legacy_send_eos(self):
         c = FakeConnection()
         c.send_eos("opus", 4)
-        assert c.sent == [(AUDIO_DATA_PACKET, "opus", (), {"end-of-stream": True, "sequence": 4})]
+        assert c.sent == [(AUDIO_DATA, "opus", (), {"end-of-stream": True, "sequence": 4})]
 
     def test_new_stream(self):
         c = FakeConnection()
@@ -193,7 +191,7 @@ class TestServerSource(unittest.TestCase):
         with patch.object(c, "new_stream_sound"), patch.object(c, "call_update_av_sync_delay"), \
                 patch("xpra.server.source.audio.GLib"):
             c.new_stream(source, "opus")
-        assert c.sent == [(AUDIO_STREAM_PACKET, AUDIO_STREAM_START, "opus", 1)]
+        assert c.sent == [(AUDIO_STREAM, AUDIO_STREAM_START, "opus", 1)]
 
     def test_receive_start(self):
         c = FakeConnection()
@@ -335,7 +333,7 @@ class TestEarlyData(unittest.TestCase):
         x = _make_client()
         x.speaker_allowed = True
         x.server_stream_packet = True
-        early = [Packet(AUDIO_DATA_PACKET, "opus", b"data%i" % i, {"sequence": 0}) for i in range(3)]
+        early = [Packet(AUDIO_DATA, "opus", b"data%i" % i, {"sequence": 0}) for i in range(3)]
         for packet in early:
             x._process_data(packet)
         sink = MagicMock()
@@ -347,22 +345,22 @@ class TestEarlyData(unittest.TestCase):
             return True
 
         with patch.object(x, "start_sink", side_effect=start_sink):
-            x._process_stream(Packet(AUDIO_STREAM_PACKET, AUDIO_STREAM_START, "opus", 0))
+            x._process_stream(Packet(AUDIO_STREAM, AUDIO_STREAM_START, "opus", 0))
         assert [c.args[0] for c in sink.add_data.call_args_list] == [b"data0", b"data1", b"data2"]
         # later packets go straight to the sink:
-        x._process_data(Packet(AUDIO_DATA_PACKET, "opus", b"later", {"sequence": 0}))
+        x._process_data(Packet(AUDIO_DATA, "opus", b"later", {"sequence": 0}))
         assert sink.add_data.call_args_list[-1].args[0] == b"later"
 
     def test_client_without_stream_packet(self):
         # older servers send the legacy start of stream, never overtaken by datagrams
         x = _make_client()
-        x._process_data(Packet(AUDIO_DATA_PACKET, "opus", b"data", {"sequence": 0}))
+        x._process_data(Packet(AUDIO_DATA, "opus", b"data", {"sequence": 0}))
         assert not x.pending_audio.items
 
     def test_client_stop_drops_early_data(self):
         x = _make_client()
         x.server_stream_packet = True
-        x._process_data(Packet(AUDIO_DATA_PACKET, "opus", b"data", {"sequence": 0}))
+        x._process_data(Packet(AUDIO_DATA, "opus", b"data", {"sequence": 0}))
         x.stop_receiving_audio(False)
         assert not x.pending_audio.items
 
@@ -400,7 +398,7 @@ class TestServerSubsystem(unittest.TestCase):
         ss = MagicMock()
         server.server = MagicMock()
         server.server.get_server_source.return_value = ss
-        server._process_stream(None, Packet(AUDIO_STREAM_PACKET, AUDIO_STREAM_END, "opus", 7))
+        server._process_stream(None, Packet(AUDIO_STREAM, AUDIO_STREAM_END, "opus", 7))
         ss.audio_stream.assert_called_once_with(AUDIO_STREAM_END, "opus", 7)
 
 

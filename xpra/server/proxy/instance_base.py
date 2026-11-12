@@ -10,13 +10,12 @@ from queue import Queue
 from typing import Any
 from collections.abc import Callable, Iterable
 
-from xpra.audio.common import AUDIO_DATA_PACKET
+from xpra.net.packet_type import (
+    AUDIO_DATA, INFO_RESPONSE, CHALLENGE, WINDOW_ICON, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA, CONNECTION_LOST,
+    CONNECTION_CLOSE, PING_ECHO, POINTER_DEVICES, KEYBOARD_CONFIG, HELLO, PING,
+)
 from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
-from xpra.net.packet_type import (
-    INFO_RESPONSE, CHALLENGE, WINDOW_ICON, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA,
-    CONNECTION_LOST, CONNECTION_CLOSE, PING_ECHO, POINTER_DEVICES, KEYBOARD_CONFIG,
-)
 from xpra.net.common import Packet, FULL_INFO
 from xpra.net.constants import MAX_PACKET_SIZE, ConnectionMessage
 from xpra.net.digest import get_salt, gendigest, get_caps as get_digest_caps
@@ -244,7 +243,7 @@ class ProxyInstance:
                 "challenge_client_salt": client_salt,
             })
         hello.setdefault("network", {})["pings"] = self.pings
-        self.queue_server_packet(Packet("hello", hello))
+        self.queue_server_packet(Packet(HELLO, hello))
 
     def filter_client_caps(self, remove=CLIENT_REMOVE_CAPS) -> dict:
         fc = self.filter_caps(self.caps, remove, self.server_protocol)
@@ -307,14 +306,14 @@ class ProxyInstance:
             self.stop(proto, "client connection lost")
             return
         self.client_has_more = proto.receive_pending
-        if packet_type == "hello":
+        if packet_type == HELLO:
             log("forwarding client hello")
             log(" for challenge packet %s", self.client_challenge_packet)
             # update caps with latest hello caps from client:
             self.caps = typedict(packet.get_dict(1))
             # keep challenge data in the hello response:
             hello = self.filter_client_caps(CLIENT_REMOVE_CAPS_CHALLENGE)
-            self.queue_server_packet(Packet("hello", hello))
+            self.queue_server_packet(Packet(HELLO, hello))
             return
         if packet_type == PING_ECHO and self.client_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
@@ -398,7 +397,7 @@ class ProxyInstance:
                 return False
         now = monotonic()
         self.server_last_ping = now
-        packet = Packet("ping", int(now * 1000), int(time() * 1000), self.uuid)
+        packet = Packet(PING, int(now * 1000), int(time() * 1000), self.uuid)
         self.queue_server_packet(packet)
         return True
 
@@ -415,7 +414,7 @@ class ProxyInstance:
                 return False
         now = monotonic()
         self.client_last_ping = now
-        packet = Packet("ping", int(now * 1000), int(time() * 1000), self.uuid)
+        packet = Packet(PING, int(now * 1000), int(time() * 1000), self.uuid)
         self.queue_client_packet(packet)
         return True
 
@@ -433,7 +432,7 @@ class ProxyInstance:
                 self.server_protocol.close()
             else:
                 self.stop(None, "disconnect from server", reason)
-        elif packet_type == "hello":
+        elif packet_type == HELLO:
             c = typedict(packet.get_dict(1))
             self.schedule_server_ping()
             maxw, maxh = c.intpair("max_desktop_size", (4096, 4096))
@@ -452,7 +451,7 @@ class ProxyInstance:
                                                      enc_caps.boolget("stream", True))
             # may need to bump packet size:
             proto.max_packet_size = max(MAX_PACKET_SIZE, maxw * maxh * 4 * 4)
-            packet = ("hello", caps)
+            packet = (HELLO, caps)
         elif packet_type == PING_ECHO and self.server_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
             self.server_last_ping_echo = float(packet.get_u64(1))
@@ -471,10 +470,10 @@ class ProxyInstance:
             size = len(pixel_data)
             if size > 1024:
                 packet = self.compressed_marker(packet, 7, "pixel-data")
-        elif packet_type == AUDIO_DATA_PACKET:
+        elif packet_type == AUDIO_DATA:
             if packet[2]:
                 # best if we use raw packets for the actual audio-data chunk:
-                packet = self.compressed_marker(packet, 2, AUDIO_DATA_PACKET)
+                packet = self.compressed_marker(packet, 2, AUDIO_DATA)
         elif packet_type == CURSOR_DATA:
             packet = self._packet_recompress(packet, 7, "cursor")
         elif packet_type == WINDOW_ICON:

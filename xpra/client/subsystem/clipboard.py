@@ -18,6 +18,10 @@ from xpra.net import compression
 from xpra.util.env import envbool
 from xpra.util.parsing import parse_simple_dict, TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.util.objects import typedict
+from xpra.net.packet_type import (
+    CLIPBOARD_CONTENTS, CLIPBOARD_CONTENTS_NONE, CLIPBOARD_DATA, CLIPBOARD_ENABLE_SELECTIONS, CLIPBOARD_PENDING_REQUESTS, CLIPBOARD_REQUEST,
+    CLIPBOARD_STATUS,
+)
 from xpra.log import Logger
 
 log = Logger("clipboard")
@@ -280,17 +284,17 @@ class ClipboardClient(StubClientSubsystem):
         return None
 
     @packet_handler(
-        "clipboard-data", "clipboard-request",
-        "clipboard-contents", "clipboard-contents-none",
-        "clipboard-pending-requests", "clipboard-enable-selections",
-        "clipboard-status",
+        CLIPBOARD_DATA, CLIPBOARD_REQUEST,
+        CLIPBOARD_CONTENTS, CLIPBOARD_CONTENTS_NONE,
+        CLIPBOARD_PENDING_REQUESTS, CLIPBOARD_ENABLE_SELECTIONS,
+        CLIPBOARD_STATUS,
         main_thread=True,
     )
     def _process_packet(self, packet: Packet) -> None:
         ch = self.clipboard_helper
         packet_type = packet.get_type()
         log("process_clipboard_packet: %s, helper=%s", packet_type, ch)
-        if packet_type == "clipboard-status":
+        if packet_type == CLIPBOARD_STATUS:
             self._process_status(packet)
         elif ch:
             ch.process_clipboard_packet(packet)
@@ -308,7 +312,7 @@ class ClipboardClient(StubClientSubsystem):
         log("clipboard_toggled%s clipboard_enabled=%s, server_clipboard=%s",
             args, self.clipboard_enabled, self.server_clipboard)
         if self.server_clipboard:
-            packet_type = "clipboard-status"
+            packet_type = CLIPBOARD_STATUS
             self.send_now(packet_type, self.clipboard_enabled)
             if self.clipboard_enabled:
                 ch = self.clipboard_helper
@@ -318,7 +322,7 @@ class ClipboardClient(StubClientSubsystem):
 
     def send_clipboard_selections(self, selections: Sequence[str]) -> None:
         log("send_clipboard_selections(%s)", selections)
-        self.send_now("clipboard-enable-selections", tuple(selections))
+        self.send_now(CLIPBOARD_ENABLE_SELECTIONS, tuple(selections))
 
     def setup_clipboard_helper(self, helper_class, options: dict):
         log("setup_clipboard_helper(%s, %s)", helper_class, options)

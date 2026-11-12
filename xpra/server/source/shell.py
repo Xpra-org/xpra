@@ -10,6 +10,7 @@ from contextlib import redirect_stdout, redirect_stderr
 from xpra.util.objects import typedict
 from xpra.util.parsing import TRUE_OPTIONS
 from xpra.server.source.stub import StubClientConnection
+from xpra.net.packet_type import SHELL_REPLY
 from xpra.log import Logger
 
 log = Logger("exec")
@@ -53,9 +54,9 @@ class ShellConnection(StubClientConnection):
         log("shell_exec(%s) stdout=%r", code, stdout)
         log("shell_exec(%s) stderr=%r", code, stderr)
         if stdout is not None:
-            self.send("shell-reply", 1, stdout)
+            self.send(SHELL_REPLY, 1, stdout)
         if stderr:
-            self.send("shell-reply", 2, stderr)
+            self.send(SHELL_REPLY, 2, stderr)
         return stdout, stderr
 
     def do_shell_exec(self, code) -> tuple[str, str]:

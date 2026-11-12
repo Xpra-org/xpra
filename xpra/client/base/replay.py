@@ -19,6 +19,7 @@ from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
 from xpra.util.parsing import TRUE_OPTIONS
 from xpra.util.str_fn import csv, sorted_nicely, print_nested_dict, Ellipsizer
+from xpra.net.packet_type import POINTER_MOTION, POINTER_POSITION
 from xpra.log import Logger
 
 log = Logger("client")
@@ -272,7 +273,7 @@ class WindowReplay:
             cursor_data = to_cursor_data(event)
             log("cursor-data: %s", Ellipsizer(cursor_data))
             self.window.set_cursor_data(cursor_data)
-        elif etype in ("pointer-position", "pointer-motion"):
+        elif etype in (POINTER_POSITION, POINTER_MOTION):
             position = event.inttupleget("position", ())
             if len(position) >= 4:
                 log("pointer motion: %s", position)

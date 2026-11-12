@@ -16,7 +16,9 @@ from xpra.net.common import Packet, MmapPointerError, packet_handler
 from xpra.codecs.constants import VideoSpec, CodecStateException
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.codecs.remote.common import get_type, get_version, get_info, RemoteCodecClient, RemoteCodec
-from xpra.net.packet_type import ENCODING_SET
+from xpra.net.packet_type import (
+    ENCODING_SET, CONTEXT_CLOSE, CONTEXT_COMPRESS, CONTEXT_DATA, CONTEXT_REQUEST, CONTEXT_RESPONSE,
+)
 from xpra.log import Logger
 
 log = Logger("encoder", "remote")
@@ -68,16 +70,16 @@ class EncoderClient(RemoteCodecClient):
 
     def request_close(self, seq: int, message="") -> None:
         if self.is_connected():
-            self.send("context-close", seq, message)
+            self.send(CONTEXT_CLOSE, seq, message)
 
     def request_context(self, encoder, encoding: str, width: int, height: int, src_format: str, options: dict) -> None:
         seq = encoder.generation
         codec_type = encoder.codec_type
         self.encoders[seq] = encoder
         sopts = safe_dict(options)
-        self.send("context-request", seq, codec_type, encoding, width, height, src_format, sopts)
+        self.send(CONTEXT_REQUEST, seq, codec_type, encoding, width, height, src_format, sopts)
 
-    @packet_handler("context-response")
+    @packet_handler(CONTEXT_RESPONSE)
     def _process_context_response(self, packet: Packet) -> None:
         seq = packet.get_u64(1)
         ok = packet.get_bool(2)
@@ -132,9 +134,9 @@ class EncoderClient(RemoteCodecClient):
                 raise CodecStateException("the remote encoder corrupted the mmap area") from None
             send_opts["chunks"] = tuple(mmap_data)
             pixels = b""
-        self.send("context-compress", seq, metadata, pixels, safe_dict(options), send_opts)
+        self.send(CONTEXT_COMPRESS, seq, metadata, pixels, safe_dict(options), send_opts)
 
-    @packet_handler("context-data")
+    @packet_handler(CONTEXT_DATA)
     def _process_context_data(self, packet: Packet) -> None:
         seq = packet.get_u64(1)
         bdata = packet.get_buffer(2)

@@ -14,7 +14,7 @@ from xpra.exit_codes import ExitCode
 from xpra.net.common import Packet, MmapPointerError, REMOTE_CODEC_PROTOCOL_VERSION, packet_handler
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
-from xpra.net.packet_type import ENCODING_SET
+from xpra.net.packet_type import ENCODING_SET, ENCODE, ENCODE_RESPONSE
 from xpra.log import Logger
 
 log = Logger("client", "encoding")
@@ -84,7 +84,7 @@ class EncodeClient(SendCommandConnectClient):
         log("server encodings=%s, common=%s", encodings, common)
 
     # this handler writes files, which the parse thread's seccomp filter does not allow:
-    @packet_handler("encode-response", main_thread=True, early=True)
+    @packet_handler(ENCODE_RESPONSE, main_thread=True, early=True)
     def _process_encode_response(self, packet: Packet) -> None:
         encoding = packet.get_str(1)
         data = packet.get_buffer(2)
@@ -124,7 +124,7 @@ class EncodeClient(SendCommandConnectClient):
 
     def do_command(self, caps: typedict) -> None:
         log(f"{caps=}")
-        self._protocol.large_packets.append("encode")
+        self._protocol.large_packets.append(ENCODE)
         # we're called from the `hello` handler on the parse thread:
         self.idle_add(self.send_encode)
 
@@ -180,4 +180,4 @@ class EncodeClient(SendCommandConnectClient):
             encode_options["chunks"] = mmap_data
 
         metadata = {"filename": filename}
-        self.send("encode", encoding, rgb_format, data, width, height, rowstride, encode_options, metadata)
+        self.send(ENCODE, encoding, rgb_format, data, width, height, rowstride, encode_options, metadata)

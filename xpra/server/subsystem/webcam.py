@@ -17,6 +17,7 @@ from xpra.util.child_reaper import KILL_CHILD_PROCESS_GROUP, get_child_reaper, s
 from xpra.net.common import Packet, packet_handler
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.net.packet_type import WEBCAM_FRAME, WEBCAM_START, WEBCAM_STOP
 from xpra.log import Logger, is_debug_enabled
 
 log = Logger("webcam")
@@ -184,7 +185,7 @@ class WebcamServer(StubSubsystem):
             if not other_ss.attach_webcam_client(matched, ss):
                 continue
             self.client_connections[matched] = proto
-            proto.large_packets.append("webcam-frame")
+            proto.large_packets.append(WEBCAM_FRAME)
             log("webcam-client connection accepted for device %i", matched)
             return
         log.warn("Warning: no webcam device available (requested device_id=%i)", device_id)
@@ -198,7 +199,7 @@ class WebcamServer(StubSubsystem):
     # ------------------------------------------------------------------
     # Packet handlers
 
-    @packet_handler("webcam-start", enabled=lambda self: self.enabled)
+    @packet_handler(WEBCAM_START, enabled=lambda self: self.enabled)
     def _process_start(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -252,7 +253,7 @@ class WebcamServer(StubSubsystem):
             log.error("Error: failed to spawn webcam-client process: %s", e)
             ss.send_webcam_stop(device_id, f"spawn failed: {e}")
 
-    @packet_handler("webcam-stop", enabled=lambda self: self.enabled)
+    @packet_handler(WEBCAM_STOP, enabled=lambda self: self.enabled)
     def _process_stop(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -273,7 +274,7 @@ class WebcamServer(StubSubsystem):
         if proc := self.client_processes.pop(device_id, None):
             stop_child_process(proc, "webcam-client")
 
-    @packet_handler("webcam-frame", enabled=lambda self: self.enabled)
+    @packet_handler(WEBCAM_FRAME, enabled=lambda self: self.enabled)
     def _process_frame(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return

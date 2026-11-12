@@ -12,6 +12,7 @@ from xpra.net.common import Packet, PacketElement, packet_handler
 from xpra.net.control.common import ControlCode, parse_boolean_value
 from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.net.packet_type import CONTROL_REQUEST, HELLO
 from xpra.log import Logger
 
 log = Logger("command")
@@ -79,7 +80,7 @@ class ControlHandler(StubSubsystem):
         from xpra.net.control.common import process_control_command
         code, response = process_control_command(proto, self.commands, *args)
         hello = {"command_response": (int(code), response)}
-        proto.send_now(Packet("hello", hello))
+        proto.send_now(Packet(HELLO, hello))
 
     def _handle_hello_request_command(self, proto, caps: typedict) -> bool:
         command_req = tuple(str(x) for x in caps.tupleget("command_request"))
@@ -90,7 +91,7 @@ class ControlHandler(StubSubsystem):
 
     # control commands may spawn subprocesses or do file I/O, so run them on the
     # main thread rather than inline on the network parse thread:
-    @packet_handler("control-request", main_thread=True)
+    @packet_handler(CONTROL_REQUEST, main_thread=True)
     def _process_request(self, protocol, packet: Packet) -> None:
         """ client sent a command request through its normal channel """
         assert len(packet) >= 2, "invalid command request packet (too small!)"

@@ -25,7 +25,7 @@ from xpra.net.net_util import get_network_caps
 from xpra.net.digest import get_caps as get_digest_caps
 from xpra.net.common import is_request_allowed, Packet, FULL_INFO
 from xpra.net.protocol.socket_handler import SocketProtocol
-from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH
+from xpra.net.packet_type import CONNECTION_LOST, GIBBERISH, HELLO
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.config import InitExit
@@ -194,7 +194,7 @@ class NetworkListener(StubClientSubsystem):
             except ValueError:
                 pass
 
-        if packet_type == "hello":
+        if packet_type == HELLO:
             caps = typedict(packet.get_dict(1))
             proto.parse_remote_caps(caps)
             proto.enable_compressor_from_caps(caps)
@@ -216,7 +216,7 @@ class NetworkListener(StubClientSubsystem):
 
     def handle_hello_request(self, proto, request: str, caps: typedict) -> bool:
         def hello_reply(data) -> None:
-            proto.send_now(Packet("hello", data))
+            proto.send_now(Packet(HELLO, data))
 
         if not is_request_allowed(proto, request):
             log.info("request %r is not handled by this client", request)

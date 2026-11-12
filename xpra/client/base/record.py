@@ -14,7 +14,11 @@ from xpra.client.base.command import XpraClientBase
 from xpra.exit_codes import ExitValue
 from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, packet_handler
 from xpra.net.packet_type import (
-    WINDOW_REFRESH, WINDOW_ACK, WINDOW_STACKING, POINTER_WHEEL, WINDOW_RAISE, NOTIFICATION_SHOW, WINDOW_EOS, WINDOW_DRAW, WINDOW_UNGRAB, CURSOR_DATA, POINTER_BUTTON, WINDOW_CREATE, WINDOW_INITIATE_MOVERESIZE, WINDOW_DESTROY, NOTIFICATION_CLOSE, ENCODING_SET, KEYBOARD_RECORD, WINDOW_RESIZED, WINDOW_RESTACK, WINDOW_MOVE_RESIZE, POINTER_MOTION, WINDOW_GRAB, CURSOR_DEFAULT, WINDOW_METADATA, WINDOW_BELL,
+    WINDOW_REFRESH, WINDOW_ACK, WINDOW_STACKING, POINTER_WHEEL, WINDOW_RAISE, NOTIFICATION_SHOW, WINDOW_EOS,
+    WINDOW_DRAW, WINDOW_UNGRAB, CURSOR_DATA, POINTER_BUTTON, WINDOW_CREATE, WINDOW_INITIATE_MOVERESIZE,
+    WINDOW_DESTROY, NOTIFICATION_CLOSE, ENCODING_SET, KEYBOARD_RECORD, WINDOW_RESIZED, WINDOW_RESTACK,
+    WINDOW_MOVE_RESIZE, POINTER_MOTION, WINDOW_GRAB, CURSOR_DEFAULT, WINDOW_METADATA, WINDOW_BELL,
+    CLIPBOARD_RECORD, POINTER_POSITION, STARTUP_COMPLETE, CLIPBOARD_CONTENTS,
 )
 from xpra.platform.paths import initial_cwd
 from xpra.util.env import envint
@@ -264,7 +268,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             })
         return caps
 
-    @packet_handler("startup-complete", main_thread=True)
+    @packet_handler(STARTUP_COMPLETE, main_thread=True)
     def _process_startup_complete(self, _packet: Packet) -> None:
         self.refresh_timer = self.timeout_add(REFRESH * 1000, self.request_refresh)
         self.get_desktop_window()
@@ -566,7 +570,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         if record := packet.get_dict(2):
             window.record("key", key=record)
 
-    @packet_handler("clipboard-record", main_thread=True)
+    @packet_handler(CLIPBOARD_RECORD, main_thread=True)
     def _process_clipboard_record(self, packet: Packet) -> None:
         # example packet:
         # 'clipboard-record', 'client', 'clipboard-contents', 6, 'CLIPBOARD', 'UTF8_STRING', 8, 'bytes', b'foo', 0
@@ -576,7 +580,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         kwargs: dict[str, Any] = {
             "record": record,
         }
-        if subpacket_type == "clipboard-contents" and isinstance(record[7], bytes):
+        if subpacket_type == CLIPBOARD_CONTENTS and isinstance(record[7], bytes):
             kwargs["contents"] = record[7]
             record[7] = ''
         window.record("clipboard", **kwargs)
@@ -628,7 +632,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             window.cursor_data = cursor_data
             window.record("cursor-data", **cursor_data)
 
-    @packet_handler("pointer-position", main_thread=True)
+    @packet_handler(POINTER_POSITION, main_thread=True)
     def _process_pointer_position(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)

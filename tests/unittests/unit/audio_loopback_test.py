@@ -91,7 +91,7 @@ class AudioLoopbackTest(LoopbackTest):
         self.assertIn("opus", client.server_encoders)
 
     def test_audio_telemetry_server_to_client(self):
-        from xpra.audio.common import AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET
+        from xpra.net.packet_type import AUDIO_LEVEL, AUDIO_SIGNAL
         from xpra.server.source.audio import AudioConnection
         from xpra.server.source import audio
         # telemetry capabilities are only sent asynchronously, in `audio-capabilities`:
@@ -108,24 +108,24 @@ class AudioLoopbackTest(LoopbackTest):
         level = {"unit": "dBFS", "peak": [-3.0], "rms": [-20.0]}
         source.send_audio_level(level)
         source.send_audio_signal(True)
-        self.assertNotIn((AUDIO_LEVEL_PACKET, level), self.s2c)
-        self.assertNotIn((AUDIO_SIGNAL_PACKET, True), self.s2c)
+        self.assertNotIn((AUDIO_LEVEL, level), self.s2c)
+        self.assertNotIn((AUDIO_SIGNAL, True), self.s2c)
 
         client.send("audio-capabilities", {"level": True, "signal": True})
         # still nothing until our hello has been sent, the client has no handlers yet:
         source.send_audio_level(level)
         source.send_audio_signal(True)
-        self.assertNotIn((AUDIO_LEVEL_PACKET, level), self.s2c)
-        self.assertNotIn((AUDIO_SIGNAL_PACKET, True), self.s2c)
+        self.assertNotIn((AUDIO_LEVEL, level), self.s2c)
+        self.assertNotIn((AUDIO_SIGNAL, True), self.s2c)
 
         source.hello_sent = monotonic()
         source.send_audio_level(level)
         source.send_audio_signal(True)
-        self.assertIn((AUDIO_LEVEL_PACKET, level), self.s2c)
-        self.assertIn((AUDIO_SIGNAL_PACKET, True), self.s2c)
+        self.assertIn((AUDIO_LEVEL, level), self.s2c)
+        self.assertIn((AUDIO_SIGNAL, True), self.s2c)
 
     def test_audio_data_server_to_client(self):
-        from xpra.audio.common import AUDIO_DATA_PACKET
+        from xpra.net.packet_type import AUDIO_DATA
         client, _server, source = self._connect()
         # a mock sink standing in for the GStreamer pipeline:
         client.speaker_enabled = True
@@ -137,10 +137,10 @@ class AudioLoopbackTest(LoopbackTest):
         client.sink = sink
 
         # the server pushes an audio-data packet to the client:
-        source.send(AUDIO_DATA_PACKET, "opus", b"payload", {"sequence": -1})
+        source.send(AUDIO_DATA, "opus", b"payload", {"sequence": -1})
 
         # it crossed the wire and was forwarded to the client's sink:
-        self.assertTrue(any(p[0] == AUDIO_DATA_PACKET for p in self.s2c))
+        self.assertTrue(any(p[0] == AUDIO_DATA for p in self.s2c))
         sink.add_data.assert_called()
 
 

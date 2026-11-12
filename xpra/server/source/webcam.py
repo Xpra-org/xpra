@@ -11,6 +11,7 @@ from xpra.os_util import POSIX, OSX
 from xpra.util.objects import typedict
 from xpra.util.env import envint
 from xpra.server.source.stub import StubClientConnection
+from xpra.net.packet_type import WEBCAM_ACK, WEBCAM_FRAME, WEBCAM_STOP
 from xpra.log import Logger
 
 log = Logger("webcam")
@@ -32,7 +33,7 @@ class WebcamClientForwarder:
         self._target = target
 
     def forward(self, frame_no: int, encoding: str, w: int, h: int, data, options: dict) -> None:
-        self._target.send_async("webcam-frame", self._device_id, frame_no, encoding, w, h, data, options)
+        self._target.send_async(WEBCAM_FRAME, self._device_id, frame_no, encoding, w, h, data, options)
 
     def get_width(self) -> int:
         return self._w
@@ -44,7 +45,7 @@ class WebcamClientForwarder:
         target = self._target
         self._target = None
         if target:
-            target.send_async("webcam-stop", self._device_id, "session ended")
+            target.send_async(WEBCAM_STOP, self._device_id, "session ended")
 
     def __repr__(self) -> str:
         return f"WebcamClientForwarder({self._device_id}, {self._w}x{self._h})"
@@ -168,10 +169,10 @@ class WebcamConnection(StubClientConnection):
         return True
 
     def send_webcam_ack(self, device, frame: int, *args) -> None:
-        self.send_async("webcam-ack", device, frame, *args)
+        self.send_async(WEBCAM_ACK, device, frame, *args)
 
     def send_webcam_stop(self, device, message) -> None:
-        self.send_async("webcam-stop", device, message)
+        self.send_async(WEBCAM_STOP, device, message)
 
     def start_virtual_webcam(self, device_id, w: int, h: int) -> bool:
         log("start_virtual_webcam%s", (device_id, w, h))

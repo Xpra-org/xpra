@@ -9,7 +9,7 @@ from typing import Any
 from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.net.common import Packet, packet_handler
-from xpra.net.packet_type import PING_ECHO
+from xpra.net.packet_type import PING_ECHO, PING
 from xpra.log import Logger
 
 log = Logger("network", "ping")
@@ -61,7 +61,7 @@ class PingServer(StubSubsystem):
         if ss := self.get_server_source(proto):
             ss.process_ping_echo(packet)
 
-    @packet_handler("ping")
+    @packet_handler(PING)
     def _process_ping(self, proto, packet: Packet) -> None:
         time_to_echo = packet.get_u64(1)
         sid = ""

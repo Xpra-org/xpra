@@ -11,6 +11,7 @@ from xpra.util.gsettings import (
     parse_gsettings_option, gsettings_match, gsettings_key,
 )
 from xpra.client.base.stub import StubClientSubsystem
+from xpra.net.packet_type import GSETTINGS_UPDATE
 from xpra.log import Logger
 
 log = Logger("client", "gsettings")
@@ -120,7 +121,7 @@ class GSettingsClient(StubClientSubsystem):
                 log.warn("Warning: unable to read GSettings %r / %r: %s", schema_id, key, e)
         if values:
             log("sending initial gsettings: %s", values)
-            self.send("gsettings-update", values)
+            self.send(GSETTINGS_UPDATE, values)
 
     def _gsetting_changed(self, settings, key: str, schema: str) -> None:
         if (schema, key) in self.values or not self.allowed(schema, key):
@@ -131,4 +132,4 @@ class GSettingsClient(StubClientSubsystem):
             log("error reading changed gsetting %s:%s", schema, key, exc_info=True)
             return
         log("gsetting changed: %s:%s=%s", schema, key, value)
-        self.send("gsettings-update", {gsettings_key(schema, key): value})
+        self.send(GSETTINGS_UPDATE, {gsettings_key(schema, key): value})

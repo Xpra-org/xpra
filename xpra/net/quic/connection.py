@@ -23,6 +23,7 @@ from xpra.net.quic.congestion import get_congestion_control
 from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes
 from xpra.util.version import parse_version, vtrim
 from xpra.util.env import envbool
+from xpra.net.packet_type import AUDIO_DATA
 from xpra.log import Logger
 
 log = Logger("quic")
@@ -32,7 +33,7 @@ HttpConnection = H0Connection | H3Connection
 # the packet types we want to send as datagrams, if the peer accepts them:
 DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
     "XPRA_QUIC_DATAGRAM_PACKET_TYPES",
-    "audio-data",
+    AUDIO_DATA,
 ).split(",") if x.strip())
 
 # a datagram must fit in a single QUIC packet, along with the packet header,

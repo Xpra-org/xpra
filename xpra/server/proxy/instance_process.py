@@ -12,7 +12,7 @@ from typing import Any
 from queue import Queue, SimpleQueue
 from multiprocessing import Process as DefaultProcess, get_context
 
-from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_LOST
+from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_LOST, HELLO
 from xpra.server.proxy.instance_base import ProxyInstance, PROXY_QUEUE_SIZE
 from xpra.util.queue_scheduler import QueueScheduler
 from xpra.util.daemon import setuidgid
@@ -321,7 +321,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             if proto in self.potential_protocols:
                 self.potential_protocols.remove(proto)
             return
-        if packet_type == "hello":
+        if packet_type == HELLO:
             caps = typedict(packet.get_dict(1))
             request = caps.strget("request")
             if request and self.handle_hello_request(request, proto, caps):
@@ -349,7 +349,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
                 info.setdefault("connection", {}).update(self.get_connection_info())
             else:
                 info = {"error": "`info` requests are not enabled for this connection"}
-            proto.send_now(Packet("hello", info))
+            proto.send_now(Packet(HELLO, info))
             self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                              "info sent")
             return True
@@ -367,13 +367,13 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             version = XPRA_VERSION
             if caps.boolget("full-version-request", True) and FULL_INFO:
                 version = full_version_str()
-            proto.send_now(Packet("hello", {"version": version}))
+            proto.send_now(Packet(HELLO, {"version": version}))
             self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                              "version sent")
             return True
         if request == "id":
             proto._log_stats = False
-            proto.send_now(Packet("hello", self.get_session_id_info()))
+            proto.send_now(Packet(HELLO, self.get_session_id_info()))
             self.timeout_add(5 * 1000, self.send_disconnect, proto, ConnectionMessage.CLIENT_EXIT_TIMEOUT,
                              "id info sent")
             return True

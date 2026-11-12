@@ -24,7 +24,8 @@ from xpra.net.common import (
 from xpra.net.dispatch import PacketDispatcher
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.packet_type import (
-    CONNECTION_LOST, GIBBERISH, INVALID, SHUTDOWN_SERVER, POINTER_DEVICES, KEYBOARD_CONFIG, LOGGING_EVENT, CONNECTION_CLOSE,
+    CONNECTION_LOST, GIBBERISH, INVALID, SHUTDOWN_SERVER, POINTER_DEVICES, KEYBOARD_CONFIG,
+    LOGGING_EVENT, CONNECTION_CLOSE, HELLO, SETTING_CHANGE,
 )
 from xpra.util.thread import is_main_thread
 from xpra.util import subsystem as dispatch
@@ -275,7 +276,7 @@ class XpraClientBase(PacketDispatcher):
     def make_protocol(self, conn):
         if not conn:
             raise ValueError("no connection")
-        self.add_packet_handler("setting-change", noop)
+        self.add_packet_handler(SETTING_CHANGE, noop)
         protocol_class = get_client_protocol_class(conn.socktype)
         netlog("setup_connection(%s) timeout=%s, socktype=%s, protocol-class=%s",
                conn, conn.timeout, conn.socktype, protocol_class)
@@ -344,7 +345,7 @@ class XpraClientBase(PacketDispatcher):
         if LOG_HELLO:
             netlog.info("sending hello:")
             print_nested_dict(hello, print_fn=netlog.info)
-        self.send("hello", hello)
+        self.send(HELLO, hello)
         self.cancel_verify_connected_timer()
         self.schedule_verify_connected()
 
@@ -538,7 +539,7 @@ class XpraClientBase(PacketDispatcher):
             msg = exit_str(exit_code).lower().replace("_", " ").replace("connection", "Connection")
             self.warn_and_quit(exit_code, msg)
 
-    @packet_handler("hello", early=True)
+    @packet_handler(HELLO, early=True)
     def _process_hello(self, packet: Packet) -> None:
         hello_data = packet.get_dict(1)
         if LOG_HELLO:

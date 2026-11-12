@@ -30,7 +30,7 @@ from xpra.util.thread import start_thread
 from xpra.util.pysystem import get_frame_info
 from xpra.util.objects import typedict, notypedict, merge_dicts
 from xpra.util.env import envbool
-from xpra.net.packet_type import INFO_REQUEST
+from xpra.net.packet_type import INFO_REQUEST, HELLO
 from xpra.log import Logger
 
 # pylint: disable=import-outside-toplevel
@@ -131,7 +131,7 @@ class InfoServer(StubSubsystem):
 
     def send_version_info(self, proto: SocketProtocol, full: bool = False) -> None:
         version = version_str() if (full and FULL_INFO) else XPRA_VERSION.split(".", 1)[0]
-        proto.send_now(Packet("hello", {"version": version}))
+        proto.send_now(Packet(HELLO, {"version": version}))
         # client is meant to close the connection itself, but just in case:
         self.timeout_add(5 * 1000, self.network.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
 
@@ -154,7 +154,7 @@ class InfoServer(StubSubsystem):
         self.get_all_info(cb, proto, **kwargs)
 
     def do_send_info(self, proto: SocketProtocol, info: dict[str, Any]) -> None:
-        proto.send_now(Packet("hello", notypedict(info)))
+        proto.send_now(Packet(HELLO, notypedict(info)))
 
     def get_all_info(self,
                      callback: Callable[[Any, dict], None],

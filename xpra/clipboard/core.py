@@ -32,6 +32,9 @@ from xpra.clipboard.targets import (
     DISCARD_EXTRA_TARGETS,
     DISCARD_TARGETS,
 )
+from xpra.net.packet_type import (
+    CLIPBOARD_CONTENTS, CLIPBOARD_CONTENTS_NONE, CLIPBOARD_DATA, CLIPBOARD_ENABLE_SELECTIONS, CLIPBOARD_PENDING_REQUESTS, CLIPBOARD_REQUEST,
+)
 from xpra.log import Logger, is_debug_enabled
 
 log = Logger("clipboard")
@@ -334,7 +337,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
             wire_items[target] = (dtype, dformat, wire_encoding, wire_data)
         if wire_items:
             options["data"] = wire_items
-        packet = ["clipboard-data", remote, options]
+        packet = [CLIPBOARD_DATA, remote, options]
         log("send_clipboard_token_handler %s to %s", proxy._selection, remote)
         self.send(*packet)
 
@@ -355,7 +358,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         log("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
         return proxy
 
-    @packet_handler("clipboard-data")
+    @packet_handler(CLIPBOARD_DATA)
     def _process_data(self, packet: Packet) -> None:
         selection = packet.get_str(1)
         proxy = self._get_clipboard_token_proxy(selection)
@@ -507,14 +510,14 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
             return struct.pack(fstr, *data)
         raise ValueError("unhanled encoding: %s" % ((encoding, dtype, dformat),))
 
-    @packet_handler("clipboard-request")
+    @packet_handler(CLIPBOARD_REQUEST)
     def _process_request(self, packet: Packet) -> None:
         request_id = packet.get_u64(1)
         selection = packet.get_str(2)
         target = packet.get_str(3)
 
         def no_contents():
-            self.send("clipboard-contents-none", request_id, selection)
+            self.send(CLIPBOARD_CONTENTS_NONE, request_id, selection)
 
         if must_discard(target):
             log("invalid target %r", target)
@@ -548,7 +551,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
 
     def proxy_got_contents(self, request_id: int, selection: str, target: str, dtype: str, dformat: int, data) -> None:
         def no_contents():
-            self.send("clipboard-contents-none", request_id, selection)
+            self.send(CLIPBOARD_CONTENTS_NONE, request_id, selection)
 
         dtype = bytestostr(dtype)
         if is_debug_enabled("clipboard"):
@@ -577,7 +580,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         if wire_data is None:
             no_contents()
             return
-        packet = ["clipboard-contents", request_id, selection,
+        packet = [CLIPBOARD_CONTENTS, request_id, selection,
                   dtype, dformat, wire_encoding, wire_data, truncated]
         self.send(*packet)
 
@@ -596,7 +599,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
             return Compressible(f"clipboard: {dtype} / {dformat}", wire_data)
         return wire_data
 
-    @packet_handler("clipboard-contents")
+    @packet_handler(CLIPBOARD_CONTENTS)
     def _process_contents(self, packet: Packet) -> None:
         request_id = packet.get_u64(1)
         selection = packet.get_str(2)
@@ -612,7 +615,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         assert isinstance(request_id, int) and isinstance(dformat, int)
         self._clipboard_got_contents(request_id, dtype, dformat, raw_data)
 
-    @packet_handler("clipboard-contents-none")
+    @packet_handler(CLIPBOARD_CONTENTS_NONE)
     def _process_contents_none(self, packet: Packet) -> None:
         log("process clipboard contents none")
         request_id = packet.get_u64(1)
@@ -624,12 +627,12 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
     def progress(self) -> None:
         self.progress_cb(len(self._clipboard_outstanding_requests), -1)
 
-    @packet_handler("clipboard-pending-requests")
+    @packet_handler(CLIPBOARD_PENDING_REQUESTS)
     def _process_pending_requests(self, packet: Packet) -> None:
         pending = packet.get_u8(1)
         self.progress_cb(-1, pending)
 
-    @packet_handler("clipboard-enable-selections")
+    @packet_handler(CLIPBOARD_ENABLE_SELECTIONS)
     def _process_enable_selections(self, packet: Packet) -> None:
         selections = packet.get_strs(1)
         self.enable_selections(selections)

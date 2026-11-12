@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from xpra.os_util import OSX
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.net.common import Packet, PacketElement, packet_handler
-from xpra.net.packet_type import POINTER_MOTION, POINTER_BUTTON, POINTER_WHEEL
+from xpra.net.packet_type import POINTER_MOTION, POINTER_BUTTON, POINTER_WHEEL, POINTER_POSITION
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
 from xpra.util.parsing import is_sharing_sync, FALSE_OPTIONS
@@ -347,7 +347,7 @@ class PointerClient(StubClientSubsystem):
 
     # the server sends us the pointer events of the other clients
     # when the `sync` pointer capability is enabled:
-    @packet_handler("pointer-position", main_thread=True)
+    @packet_handler(POINTER_POSITION, main_thread=True)
     def _process_position(self, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)

@@ -18,6 +18,7 @@ from xpra.net.rfb.const import (
 )
 from xpra.util.objects import Scheduler, typedict
 from xpra.util.str_fn import csv, repr_ellipsized, hexstr, bytestostr
+from xpra.net.packet_type import CLIPBOARD_DATA, HELLO
 from xpra.log import Logger
 
 log = Logger("network", "protocol", "rfb")
@@ -81,7 +82,7 @@ class RFBClientProtocol(RFBProtocol):
             "pointer-button": self.send_pointer_button,
             "keyboard-event": self.send_keyboard_event,
             "window-configure": self.track_window,
-            "clipboard-data": self.send_clipboard_data,
+            CLIPBOARD_DATA: self.send_clipboard_data,
         }
         self.send_lock = RLock()
         super().__init__(conn, process_packet_cb, scheduler=scheduler)
@@ -521,7 +522,7 @@ class RFBClientProtocol(RFBProtocol):
             self.invalid("server is not true color", packet)
             return 0
         # simulate hello:
-        self._process_packet_cb(self, Packet("hello", {
+        self._process_packet_cb(self, Packet(HELLO, {
             "session-name": session_name,
             "display": {
                 "desktop_size": (w, h),
@@ -641,7 +642,7 @@ class RFBClientProtocol(RFBProtocol):
         # incoming `clipboard-data` packet that carries the text inline (as utf8 bytes);
         # the dispatcher routes this UI packet to the main thread for us:
         data = text.encode("utf8")
-        token = Packet("clipboard-data", "CLIPBOARD", {
+        token = Packet(CLIPBOARD_DATA, "CLIPBOARD", {
             "targets": ("UTF8_STRING", ),
             "data": {"UTF8_STRING": ("UTF8_STRING", 8, "bytes", data)},
             "claim": True,

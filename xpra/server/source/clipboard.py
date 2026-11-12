@@ -15,6 +15,7 @@ from xpra.server.source.stub import StubClientConnection, is_recording_allowed
 from xpra.net.common import Packet
 from xpra.util.objects import typedict
 from xpra.util.env import envint
+from xpra.net.packet_type import CLIPBOARD_PENDING_REQUESTS, CLIPBOARD_STATUS
 from xpra.log import Logger
 
 log = Logger("clipboard")
@@ -91,7 +92,7 @@ class ClipboardConnection(StubClientConnection):
     def send_clipboard_enabled(self, reason: str = "") -> None:
         if not self.hello_sent:
             return
-        packet_type = "clipboard-status"
+        packet_type = CLIPBOARD_STATUS
         self.send_async(packet_type, self.clipboard_enabled, reason)
 
     def cancel_clipboard_progress_timer(self) -> None:
@@ -112,7 +113,7 @@ class ClipboardConnection(StubClientConnection):
             if self.clipboard_notifications_current != self.clipboard_notifications_pending:
                 self.clipboard_notifications_current = self.clipboard_notifications_pending
                 log("sending clipboard-pending-requests=%s to %s", self.clipboard_notifications_current, self)
-                self.send_more("clipboard-pending-requests", self.clipboard_notifications_current)
+                self.send_more(CLIPBOARD_PENDING_REQUESTS, self.clipboard_notifications_current)
 
         delay = (count == 0) * 100
         self.clipboard_progress_timer = GLib.timeout_add(delay, may_send_progress_update)

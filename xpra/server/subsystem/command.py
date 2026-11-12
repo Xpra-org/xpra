@@ -26,7 +26,7 @@ from xpra.exit_codes import ExitCode
 from xpra.scripts.parsing import parse_env
 from xpra.util.pid import write_pid
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.net.packet_type import COMMAND_SIGNAL, COMMAND_START
+from xpra.net.packet_type import COMMAND_SIGNAL, COMMAND_START, HELLO
 from xpra.log import Logger
 
 log = Logger("exec")
@@ -501,7 +501,7 @@ class ChildCommandServer(StubSubsystem):
                 response = {
                     "pid": proc.pid,
                 }
-        proto.send_now(Packet("hello", {"run_response": response}))
+        proto.send_now(Packet(HELLO, {"run_response": response}))
         return True
 
     # starting a new command spawns a subprocess, so run it on the main thread

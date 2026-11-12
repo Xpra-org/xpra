@@ -20,7 +20,7 @@ from xpra.codecs.constants import preforder, STREAM_ENCODINGS, TRUE_LOSSLESS_ENC
 from xpra.codecs.loader import get_codec, codec_versions, load_codec, unload_codecs
 from xpra.codecs.video import getVideoHelper
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.net.packet_type import ENCODING_SET
+from xpra.net.packet_type import ENCODING_SET, ENCODING_CONFIG, ENCODING_OPTIONS
 from xpra.log import Logger
 
 log = Logger("encoding")
@@ -39,7 +39,7 @@ ENCODINGS_WITH_QUALITY = (
     "scroll",
 )
 
-ENCODING_OPTIONS = (
+ENCODING_OPTION_NAMES = (
     "quality", "min-quality", "max-quality",
     "speed", "min-speed", "max-speed",
 )
@@ -296,7 +296,7 @@ class EncodingServer(StubSubsystem):
             log.warn("ignored invalid default encoding option: %s", self.encoding)
             self.default_encoding = self.encoding
 
-    @packet_handler("encoding-config")
+    @packet_handler(ENCODING_CONFIG)
     def _process_config(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -339,14 +339,14 @@ class EncodingServer(StubSubsystem):
         if window := self.get_subsystem("window"):
             window._idle_refresh_all_windows(proto)
 
-    @packet_handler("encoding-options")
+    @packet_handler(ENCODING_OPTIONS)
     def _process_options(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
             return
         updates = packet.get_dict(1)
         for attr, value in updates.items():
-            if attr not in ENCODING_OPTIONS:
+            if attr not in ENCODING_OPTION_NAMES:
                 log.warn(f"Warning: {attr!r} is not a valid encoding option")
                 continue
             log(f"setting {attr!r} to {value!r}")

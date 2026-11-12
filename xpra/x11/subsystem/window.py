@@ -18,7 +18,7 @@ from xpra.util.env import envbool, envint
 from xpra.common import noop
 from xpra.constants import WORKSPACE_NAMES
 from xpra.net.common import Packet, packet_handler
-from xpra.net.packet_type import WINDOW_CREATE, WINDOW_METADATA, WINDOW_DISMISS
+from xpra.net.packet_type import WINDOW_CREATE, WINDOW_METADATA, WINDOW_DISMISS, WINDOW_SIGNAL
 from xpra.server import features
 from xpra.x11.common import Unmanageable, X11Event, get_pid
 from xpra.x11.bindings.core import constants, get_root_xid
@@ -1096,7 +1096,7 @@ class SeamlessWindowServer(WindowServer):
             windowlog("cannot close window %s: it is already gone!", wid)
         self.repaint_root_overlay()
 
-    @packet_handler("window-signal", main_thread=True)
+    @packet_handler(WINDOW_SIGNAL, main_thread=True)
     def _process_signal(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return

@@ -9,7 +9,8 @@ from threading import Event
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from xpra.audio.common import AUDIO_KEEPALIVE_PACKET, AUDIO_STREAM_PACKET, SILENCE_FLOOR_DB
+from xpra.audio.common import SILENCE_FLOOR_DB
+from xpra.net.packet_type import AUDIO_KEEPALIVE, AUDIO_STREAM, AUDIO_CAPABILITIES, AUDIO_CONTROL, AUDIO_DATA
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
 from xpra.util.env import first_time, envbool, envint
@@ -381,7 +382,7 @@ class AudioServer(StubSubsystem):
         log(" microphone: supported=%s, decoders=%s", self.supports_microphone, csv(self.microphone_codecs))
         log(" audio properties=%s", self.properties)
 
-    @packet_handler("audio-control", main_thread=True, enabled=lambda self: self.supports_speaker or self.supports_microphone)
+    @packet_handler(AUDIO_CONTROL, main_thread=True, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_control(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -395,24 +396,24 @@ class AudioServer(StubSubsystem):
         # noinspection calling-non-callable
         audio_control(*packet[1:])
 
-    @packet_handler("audio-data", enabled=lambda self: self.supports_speaker or self.supports_microphone)
+    @packet_handler(AUDIO_DATA, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_data(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
             ss.audio_data(*packet[1:])
 
     # `audio-stream` must not be re-ordered with the `audio-data` packets,
     # so neither of them uses `main_thread`:
-    @packet_handler(AUDIO_STREAM_PACKET, enabled=lambda self: self.supports_speaker or self.supports_microphone)
+    @packet_handler(AUDIO_STREAM, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_stream(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
             ss.audio_stream(packet.get_str(1), packet.get_str(2), packet.get_i64(3))
 
-    @packet_handler("audio-capabilities", main_thread=True, enabled=lambda self: self.supports_speaker or self.supports_microphone)
+    @packet_handler(AUDIO_CAPABILITIES, main_thread=True, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_capabilities(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
             ss.client_audio_capabilities(packet.get_dict(1))
 
-    @packet_handler(AUDIO_KEEPALIVE_PACKET, enabled=lambda self: self.supports_speaker or self.supports_microphone)
+    @packet_handler(AUDIO_KEEPALIVE, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_keepalive(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
             ss.audio_keepalive(packet.get_u64(1))

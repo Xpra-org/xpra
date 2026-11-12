@@ -12,6 +12,7 @@ from xpra.util.parsing import parse_with_unit
 from xpra.util.stats import std_unit
 from xpra.net.common import Packet, packet_handler
 from xpra.util.env import envint
+from xpra.net.packet_type import BANDWIDTH_LIMIT, BANDWIDTH_STATUS
 from xpra.log import Logger
 
 log = Logger("network", "bandwidth")
@@ -52,12 +53,12 @@ class BandwidthManager(StubSubsystem):
         caps = BandwidthManager.get_info(self, source)
         return caps
 
-    @packet_handler("bandwidth-status")
+    @packet_handler(BANDWIDTH_STATUS)
     def _process_status(self, proto, packet: Packet) -> None:
         if ss := self.get_server_source(proto):
             ss.update_connection_data(packet.get_dict(1))
 
-    @packet_handler("bandwidth-limit")
+    @packet_handler(BANDWIDTH_LIMIT)
     def _process_limit(self, proto, packet: Packet) -> None:
         log("_process_limit(%s, %s)", proto, packet)
         ss = self.get_server_source(proto)

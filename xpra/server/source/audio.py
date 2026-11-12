@@ -10,10 +10,10 @@ from typing import Any
 from collections.abc import Sequence, Callable
 
 from xpra.audio.common import (
-    AUDIO_DATA_PACKET, AUDIO_KEEPALIVE_PACKET, AUDIO_LEVEL_PACKET, AUDIO_SIGNAL_PACKET, PULSEAUDIO_DISCONNECTED,
-    AUDIO_STREAM_START, AUDIO_STREAM_END,
-    PendingAudio, get_matching_codecs, audio_stream_packet,
+    PULSEAUDIO_DISCONNECTED, AUDIO_STREAM_START, AUDIO_STREAM_END, PendingAudio, get_matching_codecs,
+    audio_stream_packet,
 )
+from xpra.net.packet_type import AUDIO_DATA, AUDIO_KEEPALIVE, AUDIO_LEVEL, AUDIO_SIGNAL, AUDIO_CAPABILITIES
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.net.compression import Compressed
 from xpra.server.source.stub import StubClientConnection
@@ -167,7 +167,7 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
     def send_audio_capabilities(self) -> None:
         caps = self.get_audio_caps()
         log("send_audio_capabilities: %s", caps)
-        self.send_async("audio-capabilities", caps)
+        self.send_async(AUDIO_CAPABILITIES, caps)
 
     def parse_audio_caps(self, audio: typedict) -> None:
         self.pulseaudio_id = audio.strget("pulseaudio.id")
@@ -219,11 +219,11 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         # `audio_level` is set while parsing the client's hello,
         # but the client only registers a handler once it receives ours:
         if self.audio_level and self.hello_sent:
-            self.send_async(AUDIO_LEVEL_PACKET, level)
+            self.send_async(AUDIO_LEVEL, level)
 
     def send_audio_signal(self, signal: bool) -> None:
         if self.audio_signal and self.hello_sent:
-            self.send_async(AUDIO_SIGNAL_PACKET, signal)
+            self.send_async(AUDIO_SIGNAL, signal)
 
     def audio_loop_check(self, mode: str = "speaker") -> bool:
         log("audio_loop_check(%s)", mode)
@@ -466,11 +466,11 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
             metadata["sequence"] = sequence
         if not self.audio_keepalive_may_send(audio_source.codec, metadata):
             return
-        self.send(AUDIO_DATA_PACKET, *packet_data, synchronous=False, will_have_more=True)
+        self.send(AUDIO_DATA, *packet_data, synchronous=False, will_have_more=True)
         self.schedule_audio_keepalive_check()
 
     def send_audio_keepalive_packet(self, timestamp: int) -> None:
-        self.send_async(AUDIO_KEEPALIVE_PACKET, timestamp)
+        self.send_async(AUDIO_KEEPALIVE, timestamp)
 
     @staticmethod
     def audio_keepalive_timer_add(delay: int, fn: Callable) -> int:

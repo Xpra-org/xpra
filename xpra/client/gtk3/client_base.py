@@ -33,6 +33,7 @@ from xpra.client.gtk3.keyboard_helper import GTKKeyboardHelper
 from xpra.client.gtk3.subsystem.display import Gtk3DisplayClient
 from xpra.client.gtk3.frame_extents import setup_frame_request_window, get_window_frame_sizes
 from xpra.platform.gui import system_bell
+from xpra.net.packet_type import STARTUP_COMPLETE
 from xpra.log import Logger
 
 log = Logger("gtk", "client")
@@ -185,7 +186,7 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
     def _process_startup_complete(self, packet: Packet) -> None:
         super()._process_startup_complete(packet)
         Gdk.notify_startup_complete()
-        self.remove_packet_handlers("startup-complete")
+        self.remove_packet_handlers(STARTUP_COMPLETE)
 
     # every other dialog delegation lives on `UIXpraClient`, which any backend
     # composing a `dialogs` subsystem inherits; only this one is Gtk-only,

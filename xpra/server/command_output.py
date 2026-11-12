@@ -16,6 +16,7 @@ from xpra.net.common import Packet
 from xpra.net.constants import MAX_PACKET_SIZE
 from xpra.util.child_reaper import get_child_reaper
 from xpra.util.thread import start_thread
+from xpra.net.packet_type import HELLO
 from xpra.log import Logger
 
 log = Logger("exec")
@@ -126,7 +127,7 @@ class RunCommand:
         proto = self.proto
         self.proto = None
         if proto and not proto.is_closed():
-            proto.send_now(Packet("hello", {"run_response": response}))
+            proto.send_now(Packet(HELLO, {"run_response": response}))
 
     def expire(self) -> bool:
         self.timer = 0

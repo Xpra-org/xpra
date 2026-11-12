@@ -9,6 +9,7 @@ from xpra.client.base.stub import StubClientSubsystem
 from xpra.net.common import Packet, packet_handler
 from xpra.net.control.common import ControlCode
 from xpra.util.objects import typedict
+from xpra.net.packet_type import CONTROL
 from xpra.log import Logger
 
 log = Logger("exec")
@@ -58,7 +59,7 @@ class Control(StubClientSubsystem):
     def add_control_command(self, name: str, control) -> None:
         self.control_commands[name] = control
 
-    @packet_handler("control", main_thread=True)
+    @packet_handler(CONTROL, main_thread=True)
     def _process_control(self, packet: Packet) -> None:
         args = packet[1:]
         code, msg = self.process_control_command(self.client._protocol, *args)
