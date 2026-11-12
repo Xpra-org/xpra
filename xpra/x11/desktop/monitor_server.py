@@ -8,7 +8,7 @@ from typing import Any
 
 from xpra.os_util import gi_import
 from xpra.config import InitException
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.server.common import get_sources_by_type
 from xpra.util.env import envbool
 from xpra.x11.desktop.base import DesktopServerBase
@@ -16,6 +16,7 @@ from xpra.server.subsystem.window import WindowsConnection
 from xpra.x11.common import X11Event
 from xpra.x11.bindings.randr import RandRBindings
 from xpra.x11.error import xsync, xlog, XError
+from xpra.net.packet_type import DISPLAY_MONITOR_CONFIGURE
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
@@ -361,6 +362,7 @@ class XpraMonitorServer(DesktopServerBase):
         for ss in window_sources:
             self.send_new_desktop_model(model, ss)
 
+    @packet_handler(DISPLAY_MONITOR_CONFIGURE, main_thread=True)
     def _process_display_monitor_configure(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -389,10 +391,6 @@ class XpraMonitorServer(DesktopServerBase):
         else:
             raise ValueError(f"unsupported monitor configuration action {action!r}")
         self.refresh_all_windows()
-
-    def init_packet_handlers(self) -> None:
-        super().init_packet_handlers()
-        self.add_packets("display-monitor-configure", main_thread=True)
 
 
 GObject.type_register(XpraMonitorServer)

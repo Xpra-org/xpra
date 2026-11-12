@@ -5,7 +5,7 @@
 # pylint: disable-msg=E1101
 
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.log import Logger
 
 log = Logger("events")
@@ -18,6 +18,7 @@ class SuspendServer(StubSubsystem):
     __slots__ = ()
     PREFIX = "suspend"
 
+    @packet_handler("suspend", main_thread=True)
     def _process_suspend(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         # the boolean argument tells us whether we are suspending or resuming:
@@ -25,6 +26,3 @@ class SuspendServer(StubSubsystem):
         log("suspend(%s) suspend=%s source=%s", packet[1:], suspend, ss)
         if ss:
             ss.emit("suspend" if suspend else "resume")
-
-    def init_packet_handlers(self) -> None:
-        self.add_packets("suspend", main_thread=True)

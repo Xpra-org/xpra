@@ -14,8 +14,10 @@ from xpra.util.env import osexpand
 from xpra.util.io import load_binary_file
 from xpra.common import may_notify_client
 from xpra.constants import NotificationID
-from xpra.net.common import Packet
-from xpra.net.packet_type import FILE_DATA_RESPONSE
+from xpra.net.common import Packet, packet_handler
+from xpra.net.packet_type import (
+    FILE_DATA_RESPONSE, FILE_SEND, FILE_ACK_CHUNK, FILE_SEND_CHUNK, FILE_DATA_REQUEST, FILE_REQUEST,
+)
 from xpra.net.file_transfer import DENY, FileTransferAttributes
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
@@ -63,6 +65,7 @@ class FileServer(StubSubsystem):
 
     ######################################################################
     # file transfers:
+    @packet_handler(FILE_SEND, enabled=lambda self: self.file_transfer.printing or self.file_transfer.file_transfer)
     def _process_send(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -70,6 +73,7 @@ class FileServer(StubSubsystem):
             return
         ss._process_send(packet)
 
+    @packet_handler(FILE_ACK_CHUNK, enabled=lambda self: self.file_transfer.printing or self.file_transfer.file_transfer)
     def _process_ack_chunk(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -77,6 +81,7 @@ class FileServer(StubSubsystem):
             return
         ss._process_ack_chunk(packet)
 
+    @packet_handler(FILE_SEND_CHUNK, enabled=lambda self: self.file_transfer.printing or self.file_transfer.file_transfer)
     def _process_send_chunk(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -84,6 +89,7 @@ class FileServer(StubSubsystem):
             return
         ss._process_send_chunk(packet)
 
+    @packet_handler(FILE_DATA_REQUEST, enabled=lambda self: self.file_transfer.printing or self.file_transfer.file_transfer)
     def _process_data_request(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -91,6 +97,7 @@ class FileServer(StubSubsystem):
             return
         ss._process_data_request(packet)
 
+    @packet_handler(FILE_DATA_RESPONSE, enabled=lambda self: self.file_transfer.printing or self.file_transfer.file_transfer)
     def _process_data_response(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -98,6 +105,7 @@ class FileServer(StubSubsystem):
             return
         ss._process_data_response(packet)
 
+    @packet_handler(FILE_REQUEST, enabled=lambda self: self.file_transfer.file_transfer)
     def _process_request(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             log.warn("Warning: file request denied by readonly mode")
@@ -149,16 +157,6 @@ class FileServer(StubSubsystem):
             return
         ss.send_file(filename, "", data, len(data), openit=openit, send_id=send_id,
                      options={"request-file": (argf, openit)})
-
-    def init_packet_handlers(self) -> None:
-        # noqa: E241
-        if self.file_transfer.printing or self.file_transfer.file_transfer:
-
-            self.add_packets("file-send", "file-ack-chunk", "file-send-chunk",
-                             "file-data-request", "file-data-response")
-
-        if self.file_transfer.file_transfer:
-            self.add_packets("file-request")
 
     #########################################
     # Control Commands

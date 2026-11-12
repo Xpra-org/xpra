@@ -17,7 +17,7 @@ from xpra.audio.common import (
 from xpra.audio.keepalive import AudioKeepaliveMixin
 from xpra.platform.paths import get_icon_filename
 from xpra.scripts.parsing import audio_option
-from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE, packet_handler
 from xpra.net.compression import Compressed
 from xpra.net.packet_type import CONNECTION_LOST
 from xpra.common import noop, SizedBuffer, may_notify_client
@@ -728,13 +728,16 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
     def audio_keepalive_timer_remove(self, timer: int) -> None:
         self.source_remove(timer)
 
+    @packet_handler(AUDIO_KEEPALIVE_PACKET)
     def _process_keepalive(self, packet: Packet) -> None:
         self.audio_keepalive(packet.get_u64(1))
 
+    @packet_handler(AUDIO_LEVEL_PACKET)
     @staticmethod
     def _process_level(packet: Packet) -> None:
         log("audio level: %s", packet.get_dict(1))
 
+    @packet_handler(AUDIO_SIGNAL_PACKET)
     @staticmethod
     def _process_signal(packet: Packet) -> None:
         log("audio signal: %s", packet.get_bool(1))
@@ -745,12 +748,14 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
 
     ######################################################################
     # packet handlers
+    @packet_handler("audio-capabilities", main_thread=True)
     def _process_capabilities(self, packet: Packet) -> None:
         audio = typedict(packet.get_dict(1))
         self.parse_audio_capabilities(audio)
         self.auto_start()
         self.emit("audio-initialized")
 
+    @packet_handler("audio-data")
     def _process_data(self, packet: Packet) -> None:
         codec = packet.get_str(1)
         data = packet.get_buffer(2)
@@ -820,6 +825,9 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             return True
         return False
 
+    # `audio-stream` must not be re-ordered with the `audio-data` packets,
+    # so neither of them uses `main_thread`:
+    @packet_handler(AUDIO_STREAM_PACKET)
     def _process_stream(self, packet: Packet) -> None:
         event = packet.get_str(1)
         codec = packet.get_str(2)
@@ -861,14 +869,3 @@ class AudioClient(AudioKeepaliveMixin, StubClientSubsystem):
             return
         log("server sent end-of-stream for sequence %s, closing audio pipeline", seq)
         self.stop_receiving_audio(False)
-
-    def init_authenticated_packet_handlers(self) -> None:
-        log("init_authenticated_packet_handlers()")
-        # these handlers can run directly from the network thread,
-        # `audio-stream` must not be re-ordered with the `audio-data` packets:
-        self.add_packets(f"{AudioClient.PREFIX}-data")
-        self.add_packets(AUDIO_STREAM_PACKET)
-        self.add_packets(f"{AudioClient.PREFIX}-capabilities", main_thread=True)
-        self.add_packets(AUDIO_KEEPALIVE_PACKET)
-        self.add_packets(AUDIO_LEVEL_PACKET)
-        self.add_packets(AUDIO_SIGNAL_PACKET)

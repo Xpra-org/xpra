@@ -5,8 +5,9 @@
 
 from typing import Any
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.net.packet_type import BELL_SET
 from xpra.log import Logger
 
 log = Logger("bell")
@@ -43,6 +44,7 @@ class BellServer(StubSubsystem):
             "bell": self.bell,
         }
 
+    @packet_handler(BELL_SET, main_thread=True, enabled=lambda self: self.bell)
     def _process_set(self, proto, packet: Packet) -> None:
         assert self.bell, "cannot toggle send_bell: the feature is disabled"
         if ss := self.get_server_source(proto):
@@ -55,7 +57,3 @@ class BellServer(StubSubsystem):
             return
         for ss in self.server.window_sources():
             ss.bell(wid, device, percent, pitch, duration, bell_class, bell_id, bell_name)
-
-    def init_packet_handlers(self) -> None:
-        if self.bell:
-            self.add_packets("bell-set", main_thread=True)

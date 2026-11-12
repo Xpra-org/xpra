@@ -9,9 +9,9 @@ from collections import deque
 from time import monotonic
 from typing import Any
 
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, packet_handler
 from xpra.net.fragments import FrameAssembler, AssembledFrame, FrameStatus
-from xpra.net.packet_type import WINDOW_ACK, WINDOW_DRAW
+from xpra.net.packet_type import WINDOW_ACK, WINDOW_DRAW, WINDOW_DRAW_FRAGMENT, WINDOW_EOS
 from xpra.constants import WINDOW_DECODE_SKIPPED, WINDOW_DECODE_ERROR, WINDOW_NOT_FOUND, WINDOW_DECODE_LOST
 from xpra.util.objects import typedict
 from xpra.util.str_fn import repr_ellipsized
@@ -70,6 +70,7 @@ class WindowDraw(StubClientSubsystem):
     # these handlers only queue the work, but they must stay on the UI thread
     # (`main_thread=True`): that hop is what orders them after the `new-window`
     # that creates the window they refer to - do not "optimize" it away.
+    @packet_handler(WINDOW_DRAW, main_thread=True)
     def _process_draw(self, packet: Packet) -> None:
         # the frames we are still assembling must be painted before this one,
         # and the ones sent after it must wait for it:
@@ -90,9 +91,11 @@ class WindowDraw(StubClientSubsystem):
         else:
             self.add_decode_work(self._do_draw, packet)
 
+    @packet_handler(WINDOW_EOS, main_thread=True)
     def _process_eos(self, packet: Packet) -> None:
         self.add_decode_work(self._do_draw, packet)
 
+    @packet_handler(WINDOW_DRAW_FRAGMENT, main_thread=True)
     def _process_draw_fragment(self, packet: Packet) -> None:
         """
         A part of a `window-draw` packet, with the same fields,
@@ -260,10 +263,3 @@ class WindowDraw(StubClientSubsystem):
             log.error("Error drawing on window %#x", wid)
             log.error(f" using encoding {coding} with {options=}", exc_info=True)
             self.idle_add(record_draw_error, WINDOW_DECODE_ERROR, str(e))
-
-    ######################################################################
-    # packets:
-    def init_authenticated_packet_handlers(self) -> None:
-        # `main_thread=True` is required for ordering, not for the (trivial) handlers:
-        # see `_process_draw` above
-        self.add_packets("window-draw", "window-eos", "window-draw-fragment", main_thread=True)

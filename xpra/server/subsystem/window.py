@@ -12,9 +12,11 @@ from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.server.source.window import WindowsConnection
 from xpra.platform.events import add_handler, remove_handler
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.net.constants import ConnectionMessage
-from xpra.net.packet_type import WINDOW_CREATE
+from xpra.net.packet_type import (
+    WINDOW_CREATE, WINDOW_CLOSE, WINDOW_STACKING, WINDOW_FOCUS, WINDOW_UNMAP, WINDOW_CONFIGURE, WINDOW_REFRESH, WINDOW_MAP, WINDOW_ACK, WINDOW_ACTION,
+)
 from xpra.log import Logger
 
 log = Logger("window")
@@ -449,6 +451,7 @@ class WindowServer(StubSubsystem):
                                     y += dy
             ss.new_window(ptype, wid, window, x, y, w, h, wprops)
 
+    @packet_handler(WINDOW_ACK, main_thread=True)
     def _process_ack(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         width = packet.get_u16(2)
@@ -474,6 +477,7 @@ class WindowServer(StubSubsystem):
         for ss in self.window_sources():
             ss.damage(wid, window, x, y, width, height, options)
 
+    @packet_handler(WINDOW_REFRESH, main_thread=True)
     def _process_refresh(self, proto, packet: Packet) -> None:
         """ can be used for requesting a refresh, or tuning batch config, or both """
         wid = packet.get_wid()
@@ -557,15 +561,19 @@ class WindowServer(StubSubsystem):
         else:
             ss.unmap_window(wid, window)
 
+    @packet_handler(WINDOW_CLOSE, main_thread=True)
     def _process_close(self, proto, packet: Packet) -> None:
         log.warn("Warning: unimplemented packet handler for %r", packet.get_type())
 
+    @packet_handler(WINDOW_MAP, main_thread=True)
     def _process_map(self, proto, packet: Packet) -> None:
         log.warn("Warning: unimplemented packet handler for %r", packet.get_type())
 
+    @packet_handler(WINDOW_UNMAP, main_thread=True)
     def _process_unmap(self, proto, packet: Packet) -> None:
         log.warn("Warning: unimplemented packet handler for %r", packet.get_type())
 
+    @packet_handler(WINDOW_CONFIGURE, main_thread=True)
     def _process_configure(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -584,6 +592,7 @@ class WindowServer(StubSubsystem):
     def do_process_window_configure(self, proto, wid, config: typedict) -> None:
         log.warn("Warning: no implementation for window-configure handler in %s", type(self))
 
+    @packet_handler(WINDOW_STACKING, main_thread=True)
     def _process_stacking(self, proto, packet: Packet) -> None:
         stacking = packet.get_ints(1)
         focuslog("process_window_stacking: %s", stacking)
@@ -598,6 +607,7 @@ class WindowServer(StubSubsystem):
     def update_window_stacking(self, wids: Sequence[int]) -> None:
         """Variants may use a client's bottom-to-top window stacking order."""
 
+    @packet_handler(WINDOW_ACTION, main_thread=True)
     def _process_action(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -657,6 +667,7 @@ class WindowServer(StubSubsystem):
         log("reset_focus%s", args)
         self._focus(None, 0, [])
 
+    @packet_handler(WINDOW_FOCUS, main_thread=True)
     def _process_focus(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -692,19 +703,6 @@ class WindowServer(StubSubsystem):
         # (ie: not shadow servers which only have a single window)
         # default: no focus
         return -1
-
-    def init_packet_handlers(self) -> None:
-        self.add_packets(
-            "window-map",
-            "window-unmap",
-            "window-configure",
-            "window-close",
-            "window-focus",
-            "window-stacking",
-            "window-refresh",
-            "window-action",
-            "window-ack",
-            main_thread=True)
 
     #########################################
     # Control Commands

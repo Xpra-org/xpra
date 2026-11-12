@@ -8,9 +8,10 @@ from typing import Any
 
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.util.parsing import str_to_bool, parse_sharing
 from xpra.net.constants import ConnectionMessage
+from xpra.net.packet_type import SHARING_LOCK, SHARING_TOGGLE
 from xpra.log import Logger
 
 log = Logger("server", "sharing")
@@ -169,6 +170,7 @@ class SharingServer(StubSubsystem):
                 return f"{ConnectionMessage.SERVER_SHUTDOWN}:last client has exited"
         return ""
 
+    @packet_handler(SHARING_TOGGLE)
     def _process_toggle(self, proto, packet: Packet) -> None:
         assert self.sharing is None
         ss = self.get_server_source(proto)
@@ -184,15 +186,12 @@ class SharingServer(StubSubsystem):
                     self.network.disconnect_client(p, ConnectionMessage.DETACH_REQUEST,
                                                    f"client {ss.counter} no longer wishes to share the session")
 
+    @packet_handler(SHARING_LOCK)
     def _process_lock(self, proto, packet: Packet) -> None:
         assert self.lock is None
         if ss := self.get_server_source(proto):
             ss.lock = packet.get_bool(1)
             log("lock set to %s for client %i", ss.lock, ss.counter)
-
-    def init_packet_handlers(self) -> None:
-        # no need for main thread:
-        self.add_packets("sharing-toggle", "sharing-lock")
 
     #########################################
     # Control Commands

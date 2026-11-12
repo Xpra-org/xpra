@@ -12,7 +12,7 @@ from collections.abc import Callable, Iterable, Sequence
 
 from xpra.common import noop
 from xpra.net.compression import Compressible
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet, PacketElement, packet_handler
 from xpra.net.dispatch import SubsystemPacketHandlers
 from xpra.os_util import POSIX, get_hex_uuid
 from xpra.util.objects import typedict
@@ -267,11 +267,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         # this is also the only place the registry is created: the helper can be driven
         # standalone, without `__init__` having run (see `unit/clipboard_core_test.py`)
         self._packet_handlers = {}
-        self.add_packets(
-            "clipboard-data", "clipboard-request",
-            "clipboard-contents", "clipboard-contents-none",
-            "clipboard-pending-requests", "clipboard-enable-selections",
-        )
+        self.register_packet_handlers()
 
     def make_proxy(self, selection: str):
         raise NotImplementedError()
@@ -359,6 +355,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         log("process clipboard token selection=%s, local clipboard name=%s, proxy=%s", selection, name, proxy)
         return proxy
 
+    @packet_handler("clipboard-data")
     def _process_data(self, packet: Packet) -> None:
         selection = packet.get_str(1)
         proxy = self._get_clipboard_token_proxy(selection)
@@ -510,6 +507,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
             return struct.pack(fstr, *data)
         raise ValueError("unhanled encoding: %s" % ((encoding, dtype, dformat),))
 
+    @packet_handler("clipboard-request")
     def _process_request(self, packet: Packet) -> None:
         request_id = packet.get_u64(1)
         selection = packet.get_str(2)
@@ -598,6 +596,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
             return Compressible(f"clipboard: {dtype} / {dformat}", wire_data)
         return wire_data
 
+    @packet_handler("clipboard-contents")
     def _process_contents(self, packet: Packet) -> None:
         request_id = packet.get_u64(1)
         selection = packet.get_str(2)
@@ -613,6 +612,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         assert isinstance(request_id, int) and isinstance(dformat, int)
         self._clipboard_got_contents(request_id, dtype, dformat, raw_data)
 
+    @packet_handler("clipboard-contents-none")
     def _process_contents_none(self, packet: Packet) -> None:
         log("process clipboard contents none")
         request_id = packet.get_u64(1)
@@ -624,10 +624,12 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
     def progress(self) -> None:
         self.progress_cb(len(self._clipboard_outstanding_requests), -1)
 
+    @packet_handler("clipboard-pending-requests")
     def _process_pending_requests(self, packet: Packet) -> None:
         pending = packet.get_u8(1)
         self.progress_cb(-1, pending)
 
+    @packet_handler("clipboard-enable-selections")
     def _process_enable_selections(self, packet: Packet) -> None:
         selections = packet.get_strs(1)
         self.enable_selections(selections)

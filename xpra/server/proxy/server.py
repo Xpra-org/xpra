@@ -25,7 +25,7 @@ from xpra.os_util import (
     WIN32, POSIX, OSX,
 )
 from xpra.util.io import umask_context
-from xpra.net.common import Packet, is_request_allowed
+from xpra.net.common import Packet, is_request_allowed, packet_handler
 from xpra.net.socket_util import SOCKET_DIR_MODE
 from xpra.server import features
 from xpra.server.core import ServerCore
@@ -256,6 +256,7 @@ class ProxyServer(ServerCore):
         from xpra.scripts.sessions import get_xpra_sessions  # pylint: disable=import-outside-toplevel
         return get_xpra_sessions(self.network.dotxpra)
 
+    @packet_handler(SHUTDOWN_SERVER, manual=True)
     def _process_proxy_shutdown_server(self, proto, _packet: Packet) -> None:
         assert proto in self._requests
         self.clean_quit(False)

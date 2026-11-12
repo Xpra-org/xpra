@@ -19,13 +19,14 @@ from xpra.os_util import OSX, WIN32, POSIX
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool, source_env
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.util.system import stop_proc, is_child_alive
 from xpra.util.thread import start_thread
 from xpra.exit_codes import ExitCode
 from xpra.scripts.parsing import parse_env
 from xpra.util.pid import write_pid
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.net.packet_type import COMMAND_SIGNAL, COMMAND_START
 from xpra.log import Logger
 
 log = Logger("exec")
@@ -503,6 +504,9 @@ class ChildCommandServer(StubSubsystem):
         proto.send_now(Packet("hello", {"run_response": response}))
         return True
 
+    # starting a new command spawns a subprocess, so run it on the main thread
+    # rather than inline on the network parse thread:
+    @packet_handler(COMMAND_START, main_thread=True, enabled=lambda self: self.start_new_commands)
     def _process_start(self, proto, packet: Packet) -> None:
         log(f"start new command: {packet}")
         if self.is_readonly(proto):
@@ -531,6 +535,7 @@ class ChildCommandServer(StubSubsystem):
                 ss.add_window_filter("window", "pid", "=", proc.pid)
         log(f"process_start_command: proc={proc}")
 
+    @packet_handler(COMMAND_SIGNAL, enabled=lambda _self: COMMAND_SIGNALS)
     def _process_signal(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             log.warn("Warning: command signal request denied by readonly mode")
@@ -556,16 +561,6 @@ class ChildCommandServer(StubSubsystem):
         except Exception as e:
             log.error(f"Error sending signal {signame!r} to pid {pid}")
             log.estr(e)
-
-    def init_packet_handlers(self) -> None:
-        log("init_packet_handlers() COMMANDS_SIGNALS=%s, start new commands=%s",
-            COMMAND_SIGNALS, self.start_new_commands)
-        if COMMAND_SIGNALS:
-            self.add_packets("command-signal")
-        if self.start_new_commands:
-            # starting a new command spawns a subprocess, so run it on the main thread
-            # rather than inline on the network parse thread:
-            self.add_packets(f"{ChildCommandServer.PREFIX}-start", main_thread=True)
 
     #########################################
     # Control Commands

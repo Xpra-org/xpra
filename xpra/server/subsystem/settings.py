@@ -6,7 +6,7 @@
 from typing import Any
 from collections.abc import Callable
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
 
@@ -50,6 +50,7 @@ class SettingsServer(StubSubsystem):
         """
         self.client_settings[setting] = (getter, apply)
 
+    @packet_handler("setting-change")
     def _process_change(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -67,6 +68,3 @@ class SettingsServer(StubSubsystem):
         ss.set_client_readonly(readonly)
         log("client %s toggled readonly=%s", ss, ss.client_readonly)
         self.server.emit("setting-changed", "readonly", ss.effective_readonly(), ss)
-
-    def init_packet_handlers(self) -> None:
-        self.add_packets(f"{SettingsServer.PREFIX}-change")

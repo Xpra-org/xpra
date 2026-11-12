@@ -17,8 +17,8 @@ from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
 from xpra.common import noop
 from xpra.constants import WORKSPACE_NAMES
-from xpra.net.common import Packet
-from xpra.net.packet_type import WINDOW_CREATE, WINDOW_METADATA
+from xpra.net.common import Packet, packet_handler
+from xpra.net.packet_type import WINDOW_CREATE, WINDOW_METADATA, WINDOW_DISMISS
 from xpra.server import features
 from xpra.x11.common import Unmanageable, X11Event, get_pid
 from xpra.x11.bindings.core import constants, get_root_xid
@@ -194,10 +194,6 @@ class SeamlessWindowServer(WindowServer):
             self.root_event_xid = 0
             remove_event_receiver(xid, self)
         super().cleanup()
-
-    def init_packet_handlers(self) -> None:
-        super().init_packet_handlers()
-        self.add_packets("window-signal", "window-dismiss", main_thread=True)
 
     def get_visible_areas(self, screen_w: int, screen_h: int) -> list:
         """
@@ -1070,6 +1066,7 @@ class SeamlessWindowServer(WindowServer):
         with xswallow:
             window.raise_window()
 
+    @packet_handler(WINDOW_DISMISS, main_thread=True)
     def _process_dismiss(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -1099,6 +1096,7 @@ class SeamlessWindowServer(WindowServer):
             windowlog("cannot close window %s: it is already gone!", wid)
         self.repaint_root_overlay()
 
+    @packet_handler("window-signal", main_thread=True)
     def _process_signal(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return

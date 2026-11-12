@@ -18,10 +18,11 @@ from xpra.os_util import WIN32, POSIX
 from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.auth.auth_helper import AuthDef
 from xpra.util.objects import typedict
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.net.constants import ConnectionMessage
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.net.packet_type import PRINT_DEVICES
 from xpra.log import Logger
 from xpra.util.thread import start_thread
 
@@ -201,6 +202,8 @@ class PrinterServer(StubSubsystem):
         hello[PrinterServer.PREFIX] = printer
         proto.send_now(Packet("hello", hello))
 
+    # registered in the pre-authentication "default" table, see `init_packet_handlers`:
+    @packet_handler("printer-file", manual=True)
     def _process_file(self, proto, packet: Packet) -> None:
         # this connection has no client source: it only made a `print` request
         if proto not in self.print_requests:
@@ -298,6 +301,9 @@ class PrinterServer(StubSubsystem):
         log(message)
         return ExitCode.OK if sent > 0 else ExitCode.REMOTE_ERROR, message
 
+    # `printer-devices` configures virtual printers (spawns `lpadmin`), so it
+    # runs on the main thread rather than inline on the network parse thread:
+    @packet_handler(PRINT_DEVICES, main_thread=True, enabled=lambda self: self.file_transfer.printing)
     def _process_devices(self, proto, packet: Packet) -> None:
         if not self.file_transfer.printing or WIN32:
             log.error("Error: received printer definitions data")
@@ -313,11 +319,8 @@ class PrinterServer(StubSubsystem):
         ss.set_printers(printers, password_file, auth_class)
 
     def init_packet_handlers(self) -> None:
-        # noqa: E241
+        super().init_packet_handlers()
         if self.file_transfer.printing:
-            # `printer-devices` configures virtual printers (spawns `lpadmin`), so it
-            # runs on the main thread rather than inline on the network parse thread:
-            self.add_packets("printer-devices", main_thread=True)
             # sent by `xpra print` connections, which have no client source,
             # so this cannot be one of our subsystem's (authenticated) packet handlers:
             self.server._default_packet_handlers["printer-file"] = self._process_file

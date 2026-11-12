@@ -8,7 +8,7 @@ import unittest
 from unittest.mock import Mock, call, patch
 
 from xpra.net.common import Packet
-from xpra.net.dispatch import SubsystemPacketHandlers
+from xpra.net.dispatch import get_packet_handler_specs
 from xpra.util.objects import AdHocStruct, typedict
 from unit.test_util import silence_info, stubbable
 from unit.process_test_util import DisplayContext
@@ -122,37 +122,25 @@ class DisplayClientTest(ClientMixinTest):
     def test_show_desktop_packet_handlers(self):
         from xpra.client.subsystem.display import DisplayClient
 
-        class Receiver(SubsystemPacketHandlers):
-            # derive from the real mixin so that `packet_handler_name` (and the
-            # `PREFIX` stripping it does) is exercised, not re-implemented here:
-            PREFIX = DisplayClient.PREFIX
-            screen_sizes = ()
-
-            def __init__(self):
-                self.aliases = {}
-                self.packet_handlers = {}
-
-            def add_packets(self, *packet_types, **_kwargs):
-                for packet_type in packet_types:
-                    name = self.packet_handler_name(packet_type)
-                    self.packet_handlers[packet_type] = getattr(DisplayClient, name)
-
-        receiver = Receiver()
-        DisplayClient.init_authenticated_packet_handlers(receiver)
-        self.assertIn("display-show-desktop", receiver.packet_handlers)
+        # the packet types declared by the `packet_handler` decorators:
+        packet_handlers = {
+            packet_type: getattr(DisplayClient, name)
+            for name, spec in get_packet_handler_specs(DisplayClient)
+            for packet_type in spec.packet_types
+        }
+        self.assertIn("display-show-desktop", packet_handlers)
         resize_packet_type = "display-resized"
-        self.assertIn(resize_packet_type, receiver.packet_handlers)
-        self.assertNotIn("desktop_size", receiver.packet_handlers)
+        self.assertIn(resize_packet_type, packet_handlers)
+        self.assertNotIn("desktop_size", packet_handlers)
 
         class Client:
             can_scale = False
             _process_resized = DisplayClient._process_resized
 
         client = Client()
-        receiver.packet_handlers[resize_packet_type](client, Packet(resize_packet_type, 1024, 768, 3840, 2160))
+        packet_handlers[resize_packet_type](client, Packet(resize_packet_type, 1024, 768, 3840, 2160))
         self.assertEqual(client.server_actual_desktop_size, (1024, 768))
         self.assertEqual(client.server_max_desktop_size, (3840, 2160))
-        self.assertEqual(receiver.aliases, {})
 
     def test_display(self):
         with DisplayContext():

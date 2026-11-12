@@ -11,7 +11,7 @@ from typing import Any
 from collections.abc import Sequence
 
 from xpra.net.packet_type import (
-    INFO_REQUEST, INFO_RESPONSE, CONNECTION_CLOSE, SHUTDOWN_SERVER, PING_ECHO,
+    INFO_REQUEST, INFO_RESPONSE, CONNECTION_CLOSE, SHUTDOWN_SERVER, PING_ECHO, DISPLAY_ICON, EVENTS, DISPLAY_SCREENSHOT,
 )
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, ellipsize, sorted_nicely, bytestostr, hexstr
@@ -19,7 +19,7 @@ from xpra.util.env import envint, first_time
 from xpra.net.constants import ConnectionMessage, MAX_PACKET_SIZE
 from xpra.os_util import gi_import, get_hex_uuid, POSIX, OSX
 from xpra.util.io import stderr_print, load_binary_file
-from xpra.net.common import Packet, PacketElement, disconnect_is_an_error, connection_close_info
+from xpra.net.common import Packet, PacketElement, disconnect_is_an_error, connection_close_info, packet_handler
 from xpra.util.stats import std_unit
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.base.client import XpraClientBase
@@ -53,10 +53,7 @@ class CommandConnectClient(GObjectClientAdapter, XpraClientBase):
         for x in SKIP:
             self.hello_extra[x] = False
 
-    def init_packet_handlers(self) -> None:
-        super().init_packet_handlers()
-        self.add_packets("startup-complete", main_thread=True)
-
+    @packet_handler("startup-complete", main_thread=True, early=True)
     def _process_startup_complete(self, packet: Packet) -> None:
         self.completed_startup = packet
 
@@ -225,12 +222,9 @@ class ScreenshotXpraClient(AbstractImageXpraClient):
     """
         Request a screenshot and save it.
     """
+    @packet_handler(DISPLAY_SCREENSHOT, main_thread=True, early=True)
     def _process_display_screenshot(self, packet: Packet) -> None:
         self._process_image(packet)
-
-    def init_packet_handlers(self) -> None:
-        super().init_packet_handlers()
-        self.add_packets("display-screenshot", main_thread=True)
 
 
 class WindowshotXpraClient(ScreenshotXpraClient):
@@ -251,12 +245,9 @@ class IconXpraClient(AbstractImageXpraClient):
     def __init__(self, opts, image_filename: str):
         super().__init__(opts, image_filename, "icon")
 
+    @packet_handler(DISPLAY_ICON, main_thread=True, early=True)
     def _process_display_icon(self, packet: Packet) -> None:
         self._process_image(packet)
-
-    def init_packet_handlers(self) -> None:
-        super().init_packet_handlers()
-        self.add_packets("display-icon", main_thread=True)
 
 
 class InfoXpraClient(CommandConnectClient):
@@ -406,13 +397,11 @@ class MonitorXpraClient(SendCommandConnectClient):
     def do_command(self, caps: typedict) -> None:
         log.info("waiting for server events")
 
+    @packet_handler(EVENTS, early=True)
     def _process_events(self, packet: Packet) -> None:
         log.info(": ".join(str(x) for x in packet[1:]))
 
-    def init_packet_handlers(self) -> None:
-        super().init_packet_handlers()
-        self.add_packets("events", "ping")
-
+    @packet_handler("ping", early=True)
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
         sid = packet.get_str(3) if len(packet) >= 4 else ""
@@ -472,15 +461,12 @@ class InfoTimerClient(MonitorXpraClient):
             self.info_timer = self.timeout_add((self.REFRESH_RATE + 2) * 1000, self.info_timeout)
         return True
 
-    def init_packet_handlers(self) -> None:
-        MonitorXpraClient.init_packet_handlers(self)
-        self.add_packets(INFO_RESPONSE)
-
     def _process_events(self, packet: Packet) -> None:
         self.log("server event: %s" % (packet,))
         self.last_server_event = packet[1:]
         self.update_screen()
 
+    @packet_handler(INFO_RESPONSE, early=True)
     def _process_info_response(self, packet: Packet) -> None:
         self.log("info response: %s" % repr_ellipsized(packet))
         self.cancel_info_timer()
@@ -571,16 +557,13 @@ class ShellXpraClient(SendCommandConnectClient):
             print_prompt()
         return True
 
-    def init_packet_handlers(self) -> None:
-        super().init_packet_handlers()
-        self.add_packets("shell-reply", main_thread=True)
-        self.add_packets("ping")
-
+    @packet_handler("ping", early=True)
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
         sid = packet.get_str(3) if len(packet) >= 4 else ""
         self.send(PING_ECHO, echotime, 0, 0, 0, -1, sid)
 
+    @packet_handler("shell-reply", main_thread=True, early=True)
     @staticmethod
     def _process_shell_reply(packet: Packet) -> None:
         fd = packet.get_u8(1)

@@ -12,10 +12,10 @@ from weakref import WeakKeyDictionary
 from typing import Any, TYPE_CHECKING
 from collections.abc import Callable, Sequence, Iterable
 
-from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_LOST, GIBBERISH, INVALID
+from xpra.net.packet_type import INFO_RESPONSE, CONNECTION_LOST, GIBBERISH, INVALID, CONNECTION_CLOSE
 from xpra.server import ServerExitMode
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
-from xpra.net.common import pretty_socket, has_websocket_handler, connection_close_info, HttpResponse, Packet
+from xpra.net.common import pretty_socket, has_websocket_handler, connection_close_info, HttpResponse, Packet, packet_handler
 from xpra.net.constants import MAX_PACKET_SIZE, IP_SOCKTYPES, ConnectionMessage
 from xpra.net.socket_util import (
     setup_local_sockets, add_listen_socket, accept_connection, guess_packet_type,
@@ -140,9 +140,10 @@ class NetworkServer(StubSubsystem):
         self.init_ssl(opts)
 
     def init_packet_handlers(self) -> None:
+        super().init_packet_handlers()
         # these packets are not prefixed and must be handled before authentication:
         self.server._default_packet_handlers |= {
-            "connection-close": self._process_connection_close,
+            CONNECTION_CLOSE: self._process_connection_close,
             "ssl-upgrade": self._process_ssl_upgrade,
             CONNECTION_LOST: self._process_connection_lost,
             GIBBERISH: self._process_gibberish,
@@ -824,6 +825,7 @@ class NetworkServer(StubSubsystem):
             protocol.send_disconnect(reasons)
         self.server.cleanup_protocol(protocol)
 
+    @packet_handler(CONNECTION_CLOSE, manual=True)
     def _process_connection_close(self, proto: SocketProtocol, packet: Packet) -> None:
         reason, *extra = connection_close_info(packet) or ("", )
         info = reason
@@ -844,6 +846,7 @@ class NetworkServer(StubSubsystem):
             return f" {proto}"
         return ""
 
+    @packet_handler(CONNECTION_LOST, manual=True)
     def _process_connection_lost(self, proto: SocketProtocol, packet: Packet) -> None:
         netlog("process_connection_lost(%s, %s)", proto, packet)
         self.cancel_verify_connection_accepted(proto)
@@ -856,6 +859,7 @@ class NetworkServer(StubSubsystem):
             self._potential_protocols.remove(proto)
         self.server.cleanup_protocol(proto)
 
+    @packet_handler(GIBBERISH, manual=True)
     def _process_gibberish(self, proto: SocketProtocol, packet: Packet) -> None:
         message = packet.get_str(1)
         data = packet.get_bytes(2)
@@ -863,6 +867,7 @@ class NetworkServer(StubSubsystem):
         netlog(" data: %s", Ellipsizer(data))
         self.disconnect_client(proto, message)
 
+    @packet_handler(INVALID, manual=True)
     def _process_invalid(self, protocol: SocketProtocol, packet: Packet) -> None:
         message = packet.get_str(1)
         data = packet.get_bytes(2)
@@ -870,6 +875,7 @@ class NetworkServer(StubSubsystem):
         netlog(" data: %s", Ellipsizer(data))
         self.disconnect_client(protocol, message)
 
+    @packet_handler("ssl-upgrade", manual=True)
     def _process_ssl_upgrade(self, proto: SocketProtocol, packet: Packet) -> None:
         socktype = proto._conn.socktype
         new_socktype = {"tcp": "ssl", "ws": "wss"}.get(socktype)

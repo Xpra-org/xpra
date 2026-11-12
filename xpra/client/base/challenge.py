@@ -12,7 +12,7 @@ from xpra.client.base.stub import StubClientSubsystem
 from xpra.platform.info import get_username
 from xpra.config import InitExit
 from xpra.net.digest import get_salt, gendigest, get_digests, get_salt_digests
-from xpra.net.common import Packet, pretty_socket
+from xpra.net.common import Packet, pretty_socket, packet_handler
 from xpra.common import may_show_progress
 from xpra.net.constants import ConnectionMessage
 from xpra.util.io import use_gui_prompt
@@ -22,6 +22,7 @@ from xpra.util.thread import start_thread
 from xpra.util.str_fn import std, obsc, hexstr
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitCode, ExitValue
+from xpra.net.packet_type import CHALLENGE
 from xpra.log import Logger
 
 log = Logger("auth")
@@ -156,6 +157,11 @@ class Challenge(StubClientSubsystem):
             log.error(f" {mod_name!r}: {e}")
         return None
 
+    # dispatch on the main thread: `_process_challenge` spawns the
+    # "call-challenge-handlers" worker, and we don't want that worker to
+    # inherit the network parse thread's seccomp filter (auth handlers may
+    # spawn subprocesses / read files) - see xpra/seccomp/parse.py
+    @packet_handler(CHALLENGE, main_thread=True, early=True)
     def _process_challenge(self, packet: Packet) -> None:
         log(f"processing challenge: {packet[1:]}")
         if not self.validate_challenge_packet(packet):
@@ -362,10 +368,3 @@ class Challenge(StubClientSubsystem):
             self.client._protocol.send_challenge_reply(challenge_response)
             return
         self.client.send_hello(challenge_response, client_salt)
-
-    def init_packet_handlers(self) -> None:
-        # dispatch on the main thread: `_process_challenge` spawns the
-        # "call-challenge-handlers" worker, and we don't want that worker to
-        # inherit the network parse thread's seccomp filter (auth handlers may
-        # spawn subprocesses / read files) - see xpra/seccomp/parse.py
-        self.add_packets("challenge", main_thread=True)

@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 from xpra.client.base.stub import StubClientSubsystem
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.util.thread import start_thread
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitCode
@@ -28,6 +28,7 @@ class SSLUpgrade(StubClientSubsystem):
         self.remove_packet_handlers("ssl-upgrade")
         return True
 
+    @packet_handler("ssl-upgrade", early=True)
     def _process_ssl_upgrade(self, packet: Packet) -> None:
         ssl_attrs = typedict(packet.get_dict(1))
         start_thread(self.ssl_upgrade, "ssl-upgrade", True, args=(ssl_attrs,))
@@ -88,6 +89,3 @@ class SSLUpgrade(StubClientSubsystem):
         # `make_protocol` sets `self.client._protocol` itself:
         protocol = self.client.make_protocol(ssl_conn)
         protocol.start()
-
-    def init_packet_handlers(self) -> None:
-        self.add_packets("ssl-upgrade")

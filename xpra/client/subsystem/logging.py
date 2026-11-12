@@ -15,7 +15,7 @@ from xpra.net.packet_type import LOGGING_CONTROL, LOGGING_EVENT
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, repr_ellipsized, single_line
 from xpra.client.base.stub import StubClientSubsystem
-from xpra.net.common import Packet, LOG_PACKET_TYPE, FULL_INFO
+from xpra.net.common import Packet, LOG_PACKET_TYPE, FULL_INFO, packet_handler
 from xpra.log import Logger, set_global_logging_handler, get_info
 
 log = Logger("client")
@@ -92,9 +92,11 @@ class LoggingClient(StubClientSubsystem):
         return True
 
     def start_receiving_logging(self) -> None:
-        self.add_packets("logging-event")
+        self.add_packet_handler(LOGGING_EVENT, self._process_event)
         self.send(LOGGING_CONTROL, "start")
 
+    # only registered once we have requested the server log output, see `start_receiving_logging`:
+    @packet_handler(LOGGING_EVENT, manual=True)
     def _process_event(self, packet: Packet) -> None:
         assert not self.local_logging, "cannot receive logging packets when forwarding logging!"
         level = packet.get_u8(1)

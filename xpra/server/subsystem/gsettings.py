@@ -7,7 +7,7 @@ from typing import Any
 
 from xpra.os_util import gi_import, OSX, WIN32
 from xpra.util.str_fn import bytestostr
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.util.gsettings import (
     parse_gsettings_option, gsettings_match, parse_gsettings_key,
     parse_gsettings_value,
@@ -88,9 +88,7 @@ class GSettingsServer(StubSubsystem):
             }
         }
 
-    def init_packet_handlers(self) -> None:
-        self.add_packets("gsettings-update", main_thread=True)
-
+    @packet_handler("gsettings-update", main_thread=True)
     def _process_update(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             log("ignoring gsettings update from readonly client %s", proto)

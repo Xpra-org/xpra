@@ -74,7 +74,10 @@ Xpra is a remote display system with a client-server architecture. Both sides ar
 - `protocol/` — packet encoding/decoding (bencode, rencodeplus, etc.).
 - `compression.py`, `crypto.py` — pluggable compression (lz4, brotli) and encryption (AES).
 - `ssh/`, `tls/`, `quic/`, `websockets/` — transport adapters.
-- `dispatch.py` — `PacketDispatcher`: routes incoming packets to `_process_<type>` handler methods.
+- `dispatch.py` — `PacketDispatcher`: routes incoming packets to their handler methods.
+  Handlers are declared with `@packet_handler("cursor-data", main_thread=True)` (`xpra/net/common.py`)
+  and registered automatically by the `init_*packet_handlers` hooks; `enabled=` makes the registration conditional,
+  `early=True` registers client handlers before authentication, `manual=True` only documents explicitly registered ones.
 
 ### Codecs (`xpra/codecs/`)
 Most codecs are Cython (`.pyx`) compiled to C extensions. Pure-Python fallbacks exist for some.

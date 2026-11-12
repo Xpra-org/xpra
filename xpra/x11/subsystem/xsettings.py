@@ -89,6 +89,7 @@ class XSettingsServer(StubSubsystem):
         return {}
 
     def init_packet_handlers(self) -> None:
+        super().init_packet_handlers()
         # clients send us their settings using the `xsettings` key of a `setting-change` packet:
         self.add_client_setting("xsettings", "get_dict", self.set_client_xsettings)
 

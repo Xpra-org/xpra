@@ -104,10 +104,6 @@ class WindowClient(WindowClientClass):
             caps.update(bc.get_caps(self))
         return caps
 
-    def init_authenticated_packet_handlers(self) -> None:
-        for bc in WINDOW_CLIENT_BASES:
-            bc.init_authenticated_packet_handlers(self)
-
     def run(self) -> ExitValue:
         for bc in WINDOW_CLIENT_BASES:
             bc.run(self)

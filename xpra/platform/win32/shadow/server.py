@@ -13,7 +13,7 @@ from xpra.util.env import envbool
 from xpra.util.str_fn import csv
 from xpra.constants import XPRA_APP_ID
 from xpra.exit_codes import ExitCode
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.config import InitException, InitExit
 from xpra.server.shadow.shadow_server_base import ShadowServerBase
 from xpra.platform.win32 import constants as win32con
@@ -21,6 +21,7 @@ from xpra.platform.win32.gui import get_desktop_name, get_display_size
 from xpra.platform.win32.events import get_win32_event_listener
 from xpra.platform.win32.shadow.common import get_monitors
 from xpra.util.screen import prettify_plug_name
+from xpra.net.packet_type import DISPLAY_MONITOR_CONFIGURE
 from xpra.log import Logger
 
 # user32:
@@ -509,6 +510,7 @@ class ShadowServer(ShadowServerBase):
         vddlog("discarding capture %s", capture)
         capture.clean()
 
+    @packet_handler(DISPLAY_MONITOR_CONFIGURE, main_thread=True)
     def _process_display_monitor_configure(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -537,10 +539,6 @@ class ShadowServer(ShadowServerBase):
             self.remove_monitor(index)
         else:
             raise ValueError(f"unsupported monitor configuration action {action!r}")
-
-    def init_packet_handlers(self) -> None:
-        super().init_packet_handlers()
-        self.add_packets("display-monitor-configure", main_thread=True)
 
     def guess_session_name(self, _procs=()) -> None:
         desktop_name = get_desktop_name()

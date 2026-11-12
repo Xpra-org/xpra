@@ -11,9 +11,10 @@ from collections.abc import Sequence
 from xpra.client.base.command import SendCommandConnectClient
 from xpra.codecs.pillow.decoder import get_encodings, decompress
 from xpra.exit_codes import ExitCode
-from xpra.net.common import Packet, MmapPointerError, REMOTE_CODEC_PROTOCOL_VERSION
+from xpra.net.common import Packet, MmapPointerError, REMOTE_CODEC_PROTOCOL_VERSION, packet_handler
 from xpra.util.io import load_binary_file
 from xpra.util.objects import typedict
+from xpra.net.packet_type import ENCODING_SET
 from xpra.log import Logger
 
 log = Logger("client", "encoding")
@@ -45,9 +46,6 @@ class EncodeClient(SendCommandConnectClient):
         super().__init__(options)
         self.client_type = "encoder"
         self.filenames = list(filenames)
-        # this handler writes files, which the parse thread's seccomp filter does not allow:
-        self.add_packets("encode-response", main_thread=True)
-        self.add_packets("encoding-set")
         self.decompress = decompress
         self.encoding_options = {}
         self.encodings = get_encodings()
@@ -79,11 +77,14 @@ class EncodeClient(SendCommandConnectClient):
         # this will call do_command()
         return super().server_connection_established(c)
 
+    @packet_handler(ENCODING_SET, early=True)
     def _process_encoding_set(self, packet: Packet) -> None:
         encodings = typedict(typedict(packet.get_dict(1)).dictget("encodings")).strtupleget("core", ())
         common = tuple(set(self.encodings) & set(encodings))
         log("server encodings=%s, common=%s", encodings, common)
 
+    # this handler writes files, which the parse thread's seccomp filter does not allow:
+    @packet_handler("encode-response", main_thread=True, early=True)
     def _process_encode_response(self, packet: Packet) -> None:
         encoding = packet.get_str(1)
         data = packet.get_buffer(2)

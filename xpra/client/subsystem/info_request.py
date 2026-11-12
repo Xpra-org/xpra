@@ -9,7 +9,7 @@ import re
 
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.net.packet_type import INFO_REQUEST, INFO_RESPONSE
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
@@ -36,6 +36,7 @@ class InfoRequest(StubClientSubsystem):
             self.send_info_request()
         self.client.connect("startup-complete", request_initial_info)
 
+    @packet_handler(INFO_RESPONSE)
     def _process_response(self, packet: Packet) -> None:
         self.request_pending = False
         self.last_info = typedict(packet.get_dict(1))
@@ -53,6 +54,3 @@ class InfoRequest(StubClientSubsystem):
             self.request_pending = True
             window_ids = ()  # no longer used or supported by servers
             self.send(INFO_REQUEST, [self.get_subsystem("clientid").uuid], window_ids, categories)
-
-    def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets(INFO_RESPONSE)

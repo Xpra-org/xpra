@@ -6,8 +6,9 @@
 
 from typing import Any
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.server.subsystem.pointer import PointerManager
+from xpra.net.packet_type import POINTER_DEVICES
 from xpra.log import Logger
 
 log = Logger("pointer")
@@ -118,6 +119,7 @@ class X11PointerManager(PointerManager):
             return X11CoreBindings().query_pointer()
         return 0, 0
 
+    @packet_handler(POINTER_DEVICES, main_thread=True)
     def _process_devices(self, _proto, packet: Packet) -> None:
         self.input_devices_format = packet.get_str(1)
         self.input_devices_data = packet.get_dict(2)
@@ -164,10 +166,3 @@ class X11PointerManager(PointerManager):
                 xinputlog.info("found touchpad device: %s", name)
                 xinputlog("axes: %s", touchpad_axes)
                 self.pointer_device_map[deviceid] = self.touchpad_device
-
-    def init_packet_handlers(self) -> None:
-        super().init_packet_handlers()
-        self.add_packets(
-            "pointer-devices",
-            main_thread=True
-        )

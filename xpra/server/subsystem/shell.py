@@ -8,7 +8,7 @@ from collections import deque
 from typing import Any
 
 from xpra.server.subsystem.stub import StubSubsystem
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 
 
 class ShellServer(StubSubsystem):
@@ -36,12 +36,10 @@ class ShellServer(StubSubsystem):
             ShellServer.PREFIX: True,
         }
 
+    @packet_handler("shell-exec")
     def _process_exec(self, proto, packet: Packet) -> None:
         code = packet.get_str(1)
         if ss := self.get_server_source(proto):
             self.counter += 1
             self.commands.append(code)
             ss.shell_exec(code)
-
-    def init_packet_handlers(self) -> None:
-        self.add_packets("shell-exec")

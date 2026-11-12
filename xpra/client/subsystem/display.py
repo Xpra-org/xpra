@@ -7,7 +7,7 @@ from time import monotonic
 from typing import Any
 from collections.abc import Sequence
 
-from xpra.net.packet_type import DISPLAY_CONFIGURE, DISPLAY_RESIZED
+from xpra.net.packet_type import DISPLAY_CONFIGURE, DISPLAY_RESIZED, DISPLAY_SHOW_DESKTOP
 from xpra.exit_codes import ExitCode
 from xpra.platform.gui import (
     get_vrefresh,
@@ -15,7 +15,7 @@ from xpra.platform.gui import (
     get_xdpi, get_ydpi, get_number_of_desktops, get_desktop_names, get_wm_name,
 )
 from xpra.scripts.main import check_display
-from xpra.net.common import Packet, FULL_INFO
+from xpra.net.common import Packet, FULL_INFO, packet_handler
 from xpra.net.constants import MAX_PACKET_SIZE
 from xpra.common import (
     noop, skipkeys, may_notify_client,
@@ -439,11 +439,13 @@ class DisplayClient(StubClientSubsystem):
             return None
         return self._monitor_layout.relative_position(int(position[0]), int(position[1]))
 
+    @packet_handler(DISPLAY_SHOW_DESKTOP, main_thread=True)
     def _process_show_desktop(self, packet: Packet) -> None:
         show = packet.get_bool(1)
         log("calling %s(%s)", show_desktop, show)
         show_desktop(show)
 
+    @packet_handler(DISPLAY_RESIZED, main_thread=True)
     def _process_resized(self, packet: Packet) -> None:
         root_w = packet.get_u16(1)
         root_h = packet.get_u16(2)
@@ -792,6 +794,3 @@ class DisplayClient(StubClientSubsystem):
             window.resize_windows(new_size_fn)
             window.reinit_window_icons()
         self.emit("scaling-changed")
-
-    def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("display-show-desktop", DISPLAY_RESIZED, main_thread=True)

@@ -32,6 +32,7 @@ from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode, ExitValue
 from xpra.client.base import features
 from xpra.log import Logger
+from xpra.net.common import packet_handler
 
 # Composed subsystems live as separate instances in `client.subsystems` (reached via
 # `get_subsystem(...)`), so they are kept OUT of the client's MRO - `UIXpraClient` just
@@ -400,6 +401,7 @@ class UIXpraClient(XpraClientBase):
         self.connection_established = True
         self.idle_add(self.handshake_complete)
 
+    @packet_handler("startup-complete", main_thread=True)
     def _process_startup_complete(self, packet: Packet) -> None:
         log("all the existing windows and system trays have been received")
         super()._process_startup_complete(packet)
@@ -420,6 +422,7 @@ class UIXpraClient(XpraClientBase):
         if value is not None:
             cb(setting, value)
 
+    @packet_handler("setting-change", main_thread=True)
     def _process_setting_change(self, packet: Packet) -> None:
         setting = packet.get_str(1)
         value = packet[2]
@@ -569,11 +572,3 @@ class UIXpraClient(XpraClientBase):
         # redraws all the windows without requesting a refresh from the server:
         for window in self.get_windows():
             window.redraw()
-
-    ######################################################################
-    # packets:
-    def init_authenticated_packet_handlers(self) -> None:
-        log("init_authenticated_packet_handlers()")
-        XpraClientBase.init_authenticated_packet_handlers(self)
-        # run from the UI thread:
-        self.add_packets("startup-complete", "setting-change", main_thread=True)

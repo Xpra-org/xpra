@@ -14,11 +14,14 @@ from tkinter import Tk
 
 from xpra import __version__
 from xpra.common import noop
-from xpra.net.packet_type import WINDOW_FOCUS, WINDOW_ACK
+from xpra.net.packet_type import (
+    WINDOW_FOCUS, WINDOW_ACK, WINDOW_DESTROY, WINDOW_RAISE, ENCODING_SET, WINDOW_DRAW, WINDOW_RESTACK, CONNECTION_CLOSE, WINDOW_CREATE, WINDOW_METADATA, WINDOW_INITIATE_MOVERESIZE, WINDOW_BELL,
+)
 from xpra.util.objects import typedict
 from xpra.exit_codes import ExitValue
 from xpra.net.protocol.factory import get_client_protocol_class
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
+from xpra.net.dispatch import get_decorated_handler
 from xpra.client.gui.simple_pointer import SimplePointer
 from xpra.log import Logger
 
@@ -115,9 +118,8 @@ class XpraTkClient:
 
     def process_packet(self, _protocol, packet: Packet) -> None:
         packet_type = packet.get_type()
-        packet_type_fn_name = packet_type.replace("-", "_")
-        meth = getattr(self, f"_process_{packet_type_fn_name}", None)
-        if not callable(meth):
+        meth = get_decorated_handler(self, packet_type)
+        if not meth:
             netlog.warn(f"Warning: missing callable handler for {packet_type!r}")
             netlog("packet=%r", packet)
             return
@@ -127,24 +129,30 @@ class XpraTkClient:
             meth(packet)
         app.after(0, call_handler)
 
+    @packet_handler(CONNECTION_CLOSE)
     def _process_connection_close(self, packet: Packet):
         log("%s", packet)
         self.quit(0)
 
+    @packet_handler("hello")
     def _process_hello(self, packet: Packet) -> None:
         self.hello = packet.get_dict(1)
         netlog.info("got hello from %s server" % self.hello.get("version", ""))
 
+    @packet_handler("setting-change")
     def _process_setting_change(self, packet: Packet) -> None:
         setting = packet.get_str(1)
         netlog.info(f"ignoring setting-change for {setting!r}")
 
+    @packet_handler("startup-complete")
     def _process_startup_complete(self, _packet: Packet) -> None:
         netlog.info("client is connected")
 
+    @packet_handler(ENCODING_SET)
     def _process_encoding_set(self, packet: Packet) -> None:
         log(f"server encodings: {packet.get_dict(1)}")
 
+    @packet_handler(WINDOW_CREATE)
     def _process_window_create(self, packet: Packet):
         self.new_window(packet)
 
@@ -162,26 +170,31 @@ class XpraTkClient:
         self.windows[wid] = window
         window.show()
 
+    @packet_handler(WINDOW_DESTROY)
     def _process_window_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.windows.get(wid):
             window.destroy()
             del self.windows[wid]
 
+    @packet_handler(WINDOW_INITIATE_MOVERESIZE)
     def _process_window_initiate_moveresize(self, packet: Packet) -> None:
         log(f"ignoring initiate-moveresize: {packet[1:]}")
 
+    @packet_handler(WINDOW_BELL)
     def _process_window_bell(self, packet: Packet) -> None:
         wid = packet.get_wid()
         log(f"bell for window {wid:#x}")
         app.bell()
 
+    @packet_handler(WINDOW_RAISE)
     def _process_window_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.windows.get(wid):
             if not window.has_toplevel_focus():
                 window.present()
 
+    @packet_handler(WINDOW_RESTACK)
     def _process_window_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
         detail = packet.get_i8(2)
@@ -191,6 +204,7 @@ class XpraTkClient:
             other_window = self.windows.get(other_wid)
             window.restack(other_window, above)
 
+    @packet_handler(WINDOW_DRAW)
     def _process_window_draw(self, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
@@ -213,6 +227,7 @@ class XpraTkClient:
             decode_time = -1
         self.send(WINDOW_ACK, wid, width, height, packet_sequence, decode_time, message)
 
+    @packet_handler(WINDOW_METADATA)
     def _process_window_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()
         metadata = packet.get_dict(2)

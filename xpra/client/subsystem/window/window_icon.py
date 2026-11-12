@@ -7,12 +7,13 @@ import os
 from time import time
 
 from xpra.common import noop
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.util.str_fn import memoryview_to_bytes
 from xpra.os_util import OSX
 from xpra.util.system import is_Ubuntu
 from xpra.util.env import envint, envbool, first_time
 from xpra.client.base.stub import StubClientSubsystem
+from xpra.net.packet_type import WINDOW_ICON
 from xpra.log import Logger
 
 log = Logger("window")
@@ -187,6 +188,7 @@ class WindowIcon(StubClientSubsystem):
     # this handler only queues the work, but it must stay on the UI thread
     # (`main_thread=True`): that hop is what orders it after the `new-window`
     # that creates the window it refers to - do not "optimize" it away.
+    @packet_handler(WINDOW_ICON, main_thread=True)
     def _process_icon(self, packet: Packet) -> None:
         packet.check_len(6, 6)
         wid = packet.get_wid()
@@ -218,8 +220,3 @@ class WindowIcon(StubClientSubsystem):
             window.update_icon(img)
             set_tray_icon = getattr(self, "set_tray_icon", noop)
             set_tray_icon()
-
-    def init_authenticated_packet_handlers(self) -> None:
-        # `main_thread=True` is required for ordering, not for the (trivial) handler:
-        # see `_process_icon` above
-        self.add_packets("window-icon", main_thread=True)

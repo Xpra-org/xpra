@@ -5,10 +5,11 @@
 
 from typing import Any
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.util.env import first_time
 from xpra.util.objects import typedict
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.net.packet_type import CURSOR_SET
 from xpra.log import Logger
 
 log = Logger("cursor")
@@ -119,6 +120,7 @@ class CursorManager(StubSubsystem):
             info.setdefault("sizes", {})[name] = size
         return {CursorManager.PREFIX: info}
 
+    @packet_handler(CURSOR_SET)
     def _process_set(self, proto, packet: Packet) -> None:
         assert self.enabled, "cannot toggle send_cursors: the feature is disabled"
         if ss := self.get_server_source(proto):
@@ -144,6 +146,3 @@ class CursorManager(StubSubsystem):
         ss = self.get_server_source(proto)
         if ss and hasattr(ss, "send_cursor"):
             ss.send_cursor()
-
-    def init_packet_handlers(self) -> None:
-        self.add_packets(f"{CursorManager.PREFIX}-set")

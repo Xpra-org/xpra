@@ -11,11 +11,12 @@ from importlib.util import find_spec
 from weakref import WeakKeyDictionary
 
 from xpra.common import SizedBuffer
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
 from xpra.client.base.stub import StubClientSubsystem
+from xpra.net.packet_type import CURSOR_DATA, CURSOR_DEFAULT
 from xpra.log import Logger
 
 log = Logger("cursor")
@@ -163,6 +164,7 @@ class CursorClient(StubClientSubsystem):
             raise ValueError(f"cursor encoding {encoding!r} is not supported")
         return decompress_cursor_data(encoding, cpixels, serial)
 
+    @packet_handler(CURSOR_DATA, main_thread=True)
     def _process_data(self, packet: Packet) -> None:
         if not self.enabled:
             return
@@ -195,6 +197,7 @@ class CursorClient(StubClientSubsystem):
         cursor_data = ("raw", 0, 0, w, h, xhot, yhot, serial, pixels, name)
         self.idle_add(self.apply_cursor, cursor_data, False)
 
+    @packet_handler(CURSOR_DEFAULT, main_thread=True)
     def _process_default(self, packet: Packet) -> None:
         log("setting default cursor: %s", packet)
         if not self.enabled:
@@ -215,6 +218,3 @@ class CursorClient(StubClientSubsystem):
         # record the current cursor, then let the toolkit client render it:
         self.last_data = new_cursor
         self.client.set_windows_cursor(client_windows, new_cursor)
-
-    def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("cursor-data", "cursor-default", main_thread=True)

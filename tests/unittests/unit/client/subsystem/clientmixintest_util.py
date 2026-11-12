@@ -103,11 +103,6 @@ class ClientMixinTest(unittest.TestCase):
         # log("add_packet_handler%s", (packet_type, handler, main_thread))
         self.packet_handlers[packet_type] = handler
 
-    def add_packets(self, *packet_types: str, main_thread=False) -> None:
-        for packet_type in packet_types:
-            handler = getattr(self.mixin, "_process_" + packet_type.replace("-", "_"))
-            self.add_packet_handler(packet_type, handler, main_thread)
-
     def lookup_packet_handler(self, packet_type: str) -> Callable | None:
         # the flat registry holds the legacy / unprefixed names,
         # everything else belongs to the subsystem that owns the prefix

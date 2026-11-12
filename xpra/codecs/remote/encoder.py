@@ -12,10 +12,11 @@ from weakref import WeakValueDictionary
 from xpra.util.str_fn import Ellipsizer, print_nested_dict
 from xpra.util.objects import typedict
 from xpra.config import InitExit
-from xpra.net.common import Packet, MmapPointerError
+from xpra.net.common import Packet, MmapPointerError, packet_handler
 from xpra.codecs.constants import VideoSpec, CodecStateException
 from xpra.codecs.image import ImageWrapper, PlanarFormat
 from xpra.codecs.remote.common import get_type, get_version, get_info, RemoteCodecClient, RemoteCodec
+from xpra.net.packet_type import ENCODING_SET
 from xpra.log import Logger
 
 log = Logger("encoder", "remote")
@@ -52,6 +53,7 @@ class EncoderClient(RemoteCodecClient):
         self.specs = {}
         self.encodings = ()
 
+    @packet_handler(ENCODING_SET)
     def _process_encoding_set(self, packet: Packet) -> None:
         log(f"{Ellipsizer(packet)!r}")
         specs = typedict(packet.get_dict(1)).dictget("video")
@@ -75,6 +77,7 @@ class EncoderClient(RemoteCodecClient):
         sopts = safe_dict(options)
         self.send("context-request", seq, codec_type, encoding, width, height, src_format, sopts)
 
+    @packet_handler("context-response")
     def _process_context_response(self, packet: Packet) -> None:
         seq = packet.get_u64(1)
         ok = packet.get_bool(2)
@@ -131,6 +134,7 @@ class EncoderClient(RemoteCodecClient):
             pixels = b""
         self.send("context-compress", seq, metadata, pixels, safe_dict(options), send_opts)
 
+    @packet_handler("context-data")
     def _process_context_data(self, packet: Packet) -> None:
         seq = packet.get_u64(1)
         bdata = packet.get_buffer(2)

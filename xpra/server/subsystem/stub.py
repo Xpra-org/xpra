@@ -169,8 +169,10 @@ class StubSubsystem(SubsystemPacketHandlers, SignalEmitter):
 
     def init_packet_handlers(self) -> None:
         """
-        Register the packet types that this subsystem can handle.
+        Register the packet types that this subsystem can handle:
+        the methods decorated with `@packet_handler`.
         """
+        self.register_packet_handlers()
 
     def parse_hello(self, ss, caps: typedict) -> str | ConnectionMessage:
         """

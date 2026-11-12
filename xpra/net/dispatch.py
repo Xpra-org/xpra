@@ -7,7 +7,7 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.common import noop
-from xpra.net.common import may_log_packet, Packet, PacketHandlerType
+from xpra.net.common import may_log_packet, Packet, PacketHandlerType, PacketHandlerSpec, PACKET_HANDLER_ATTR
 from xpra.log import Logger
 from xpra.util.str_fn import repr_ellipsized
 
@@ -35,6 +35,77 @@ def find_packet_handler(subsystems: dict[str, Any], packet_type: str) -> tuple[A
             return None
         more, sep, subtype = subtype.partition("-")
         prefix = f"{prefix}-{more}"
+
+
+_specs_cache: dict[type, tuple[tuple[str, PacketHandlerSpec], ...]] = {}
+
+
+def get_packet_handler_specs(cls: type) -> tuple[tuple[str, PacketHandlerSpec], ...]:
+    """
+    The `(method name, spec)` pairs of the methods decorated with `packet_handler`
+    anywhere in this class hierarchy.
+    A subclass may re-decorate a method to change its spec, or override it without
+    the decorator: the base class spec still applies, and since the handlers are always
+    looked up on the instance, the most derived method is the one that gets registered.
+    """
+    specs = _specs_cache.get(cls)
+    if specs is not None:
+        return specs
+    by_name: dict[str, PacketHandlerSpec] = {}
+    for klass in reversed(cls.__mro__):
+        for name, value in vars(klass).items():
+            # look through `staticmethod` / `classmethod` wrappers:
+            spec = getattr(value, PACKET_HANDLER_ATTR, None) or getattr(getattr(value, "__func__", None), PACKET_HANDLER_ATTR, None)
+            if isinstance(spec, PacketHandlerSpec):
+                by_name[name] = spec
+    owners: dict[str, str] = {}
+    for name, spec in by_name.items():
+        for packet_type in spec.packet_types:
+            if (other := owners.setdefault(packet_type, name)) != name:
+                raise ValueError(f"{cls.__name__} declares more than one handler for {packet_type!r}: {other} and {name}")
+    specs = tuple(by_name.items())
+    _specs_cache[cls] = specs
+    return specs
+
+
+_names_cache: dict[type, dict[str, str]] = {}
+
+
+def get_decorated_handler(obj, packet_type: str) -> Callable | None:
+    """
+    The method of `obj` decorated with `packet_handler` for this packet type, if any.
+    For the endpoints which dispatch their packets themselves, without a `PacketDispatcher`.
+    """
+    cls = type(obj)
+    names = _names_cache.get(cls)
+    if names is None:
+        names = {}
+        for name, spec in get_packet_handler_specs(cls):
+            for ptype in spec.packet_types:
+                names[ptype] = name
+        _names_cache[cls] = names
+    name = names.get(packet_type)
+    return getattr(obj, name) if name else None
+
+
+def register_packet_handlers(obj, early: bool | None = None) -> None:
+    """
+    Register the methods of `obj` decorated with `packet_handler` using `obj.add_packet_handler`.
+    `early` selects the handlers registered before (`True`) or after (`False`) authentication,
+    `None` registers both.
+    The `manual` handlers, and those whose `enabled` predicate is false, are skipped.
+    """
+    for name, spec in get_packet_handler_specs(type(obj)):
+        if spec.manual:
+            continue
+        if early is not None and spec.early != early:
+            continue
+        if spec.enabled and not spec.enabled(obj):
+            log("%s.%s not enabled", type(obj).__name__, name)
+            continue
+        handler = getattr(obj, name)
+        for packet_type in spec.packet_types:
+            obj.add_packet_handler(packet_type, handler, spec.main_thread)
 
 
 class SubsystemPacketHandlers:
@@ -69,26 +140,9 @@ class SubsystemPacketHandlers:
         """ strip our own `PREFIX`: `bell-set` -> `set`, `suspend` -> `` """
         return "" if packet_type == self.PREFIX else packet_type[len(self.PREFIX) + 1:]
 
-    def packet_handler_name(self, packet_type: str) -> str:
-        """
-        The name of the method handling this packet type.
-        Packets in this subsystem's namespace drop the redundant `PREFIX`:
-        the `bell` subsystem handles `bell-set` with `_process_set`.
-        Packets we do not own - unprefixed packet types - keep their full name,
-        and so does a subsystem's bare `PREFIX`
-        (`ping` -> `_process_ping`), which has nothing left to strip.
-        """
-        subtype = self.packet_subtype(packet_type) if self.owns_packet(packet_type) else ""
-        return "_process_" + (subtype or packet_type).replace("-", "_")
-
-    def add_packets(self, *packet_types: str, main_thread: bool = False) -> None:
-        """
-        Register packet handlers for this subsystem.
-        Handlers are looked up on this instance, see `packet_handler_name`.
-        """
-        for packet_type in packet_types:
-            handler = getattr(self, self.packet_handler_name(packet_type))
-            self.add_packet_handler(packet_type, handler, main_thread)
+    def register_packet_handlers(self, early: bool | None = None) -> None:
+        """ register the methods decorated with `packet_handler` """
+        register_packet_handlers(self, early)
 
     def add_packet_handler(self, packet_type: str, handler: Callable, main_thread: bool = False) -> None:
         """
@@ -184,10 +238,9 @@ class PacketDispatcher:
         handlers = self._authenticated_ui_packet_handlers if main_thread else self._authenticated_packet_handlers
         handlers[packet_type] = handler
 
-    def add_packets(self, *packet_types: str, main_thread=False) -> None:
-        for packet_type in packet_types:
-            handler = getattr(self, "_process_" + packet_type.replace("-", "_"))
-            self.add_packet_handler(packet_type, handler, main_thread)
+    def register_packet_handlers(self, early: bool | None = None) -> None:
+        """ register the methods decorated with `packet_handler` """
+        register_packet_handlers(self, early)
 
     def dispatch_packet(self, proto, packet: Packet, authenticated=False) -> None:
         packet_type = packet.get_type()

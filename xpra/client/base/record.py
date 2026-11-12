@@ -12,8 +12,10 @@ from collections.abc import Mapping, Sequence
 from xpra.client.base.gobject import GObjectClientAdapter
 from xpra.client.base.command import XpraClientBase
 from xpra.exit_codes import ExitValue
-from xpra.net.common import Packet, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import WINDOW_REFRESH, WINDOW_ACK, WINDOW_STACKING
+from xpra.net.common import Packet, BACKWARDS_COMPATIBLE, packet_handler
+from xpra.net.packet_type import (
+    WINDOW_REFRESH, WINDOW_ACK, WINDOW_STACKING, POINTER_WHEEL, WINDOW_RAISE, NOTIFICATION_SHOW, WINDOW_EOS, WINDOW_DRAW, WINDOW_UNGRAB, CURSOR_DATA, POINTER_BUTTON, WINDOW_CREATE, WINDOW_INITIATE_MOVERESIZE, WINDOW_DESTROY, NOTIFICATION_CLOSE, ENCODING_SET, KEYBOARD_RECORD, WINDOW_RESIZED, WINDOW_RESTACK, WINDOW_MOVE_RESIZE, POINTER_MOTION, WINDOW_GRAB, CURSOR_DEFAULT, WINDOW_METADATA, WINDOW_BELL,
+)
 from xpra.platform.paths import initial_cwd
 from xpra.util.env import envint
 from xpra.util.objects import typedict
@@ -163,6 +165,8 @@ class WindowModel:
 
 
 class RecordClient(GObjectClientAdapter, XpraClientBase):
+    # all the packet handlers record events to files, which the parse thread's seccomp filter does not allow,
+    # running them all on the main thread also preserves the order of the events.
 
     @staticmethod
     def get_subsystem_classes() -> dict[str, type]:
@@ -260,6 +264,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             })
         return caps
 
+    @packet_handler("startup-complete", main_thread=True)
     def _process_startup_complete(self, _packet: Packet) -> None:
         self.refresh_timer = self.timeout_add(REFRESH * 1000, self.request_refresh)
         self.get_desktop_window()
@@ -295,6 +300,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         self.refresh_needed = set()
         return True
 
+    @packet_handler(ENCODING_SET, main_thread=True)
     def _process_encoding_set(self, packet: Packet) -> None:
         encodings = typedict(packet.get_dict(1)).dictget("encodings").get("core", ())
         common = tuple(set(self.encodings) & set(encodings))
@@ -338,6 +344,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             window.grabbed = True
             window.schedule_sync()
 
+    @packet_handler(WINDOW_CREATE, main_thread=True)
     def _process_window_create(self, packet: Packet) -> None:
         self._process_new_common(packet, False)
 
@@ -380,10 +387,12 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         window.record("new", geometry=(x, y, w, h), metadata=metadata,
                       focused=window.focused, grabbed=window.grabbed, stacking=self.stacking)
 
+    @packet_handler(WINDOW_INITIATE_MOVERESIZE, main_thread=True)
     def _process_window_initiate_moveresize(self, packet: Packet) -> None:
         # should not be received!
         pass
 
+    @packet_handler(WINDOW_METADATA, main_thread=True)
     def _process_window_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()
         metadata = packet.get_dict(2)
@@ -394,6 +403,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
                 self.set_focused(0)
             window.record("metadata", metadata=metadata)
 
+    @packet_handler(WINDOW_MOVE_RESIZE, main_thread=True)
     def _process_window_move_resize(self, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
@@ -404,6 +414,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             window.geometry = (x, y, w, h)
             window.record("move-resize", geometry=(x, y, w, h))
 
+    @packet_handler(WINDOW_RESIZED, main_thread=True)
     def _process_window_resized(self, packet: Packet) -> None:
         wid = packet.get_wid()
         w = packet.get_u32(2)
@@ -413,6 +424,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             window.geometry = (x, y, w, h)
             window.record("resize", size=(w, h))
 
+    @packet_handler(WINDOW_RAISE, main_thread=True)
     def _process_window_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.get_window(wid):
@@ -421,6 +433,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             self.set_focused(wid)
             window.record("raise")
 
+    @packet_handler(WINDOW_RESTACK, main_thread=True)
     def _process_window_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
         detail = packet.get_i16(2)
@@ -434,6 +447,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
                 self.set_focused(0)
             window.record("restack", detail=detail, other=other_wid)
 
+    @packet_handler(WINDOW_STACKING, main_thread=True)
     def _process_window_stacking(self, packet: Packet) -> None:
         stacking = packet.get_ints(1)
         focuslog("process_window_stacking(%s)", stacking)
@@ -443,6 +457,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         if desktop := self.get_window(0):
             desktop.record("stacking", stacking=stacking)
 
+    @packet_handler(WINDOW_DESTROY, main_thread=True)
     def _process_window_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.get_window(wid):
@@ -456,6 +471,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
                 self.set_grabbed(0)
             window.record("destroy")
 
+    @packet_handler(WINDOW_GRAB, main_thread=True)
     def _process_window_grab(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
@@ -465,6 +481,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         self.set_grabbed(wid)
         window.record("grab")
 
+    @packet_handler(WINDOW_UNGRAB, main_thread=True)
     def _process_window_ungrab(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if wid <= 0:
@@ -475,6 +492,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         if window:
             window.record("ungrab")
 
+    @packet_handler(WINDOW_DRAW, main_thread=True)
     def _process_window_draw(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
@@ -514,6 +532,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         if x != 0 or y != 0 or (width, height) != window.geometry[2:4] or options.get("quality", 100) != 100:
             self.refresh_needed.add(wid)
 
+    @packet_handler(NOTIFICATION_SHOW, main_thread=True)
     def _process_notification_show(self, packet: Packet) -> None:
         nid = packet.get_u64(2)
         app_name = packet.get_str(3)
@@ -528,13 +547,16 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         self.get_desktop_window().record("notification", nid=nid, app_name=app_name, replaces_nid=replaces_nid,
                                          summary=summary, body=body, expire_timeout=expire_timeout)
 
+    @packet_handler(NOTIFICATION_CLOSE, main_thread=True)
     def _process_notification_close(self, packet: Packet) -> None:
         nid = packet.get_u64(1)
         self.get_desktop_window().record("notification-close", nid=nid)
 
+    @packet_handler(WINDOW_EOS, main_thread=True)
     def _process_window_eos(self, packet: Packet) -> None:
         """ safe to ignore - we don't have streams to replay """
 
+    @packet_handler(KEYBOARD_RECORD, main_thread=True)
     def _process_keyboard_record(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
@@ -544,6 +566,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         if record := packet.get_dict(2):
             window.record("key", key=record)
 
+    @packet_handler("clipboard-record", main_thread=True)
     def _process_clipboard_record(self, packet: Packet) -> None:
         # example packet:
         # 'clipboard-record', 'client', 'clipboard-contents', 6, 'CLIPBOARD', 'UTF8_STRING', 8, 'bytes', b'foo', 0
@@ -558,6 +581,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             record[7] = ''
         window.record("clipboard", **kwargs)
 
+    @packet_handler(WINDOW_BELL, main_thread=True)
     def _process_window_bell(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
@@ -574,11 +598,13 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         window.record("bell", device=device, percent=percent, pitch=pitch, duration=duration,
                       bell_class=bell_class, bell_id=bell_id, bell_name=bell_name)
 
+    @packet_handler(CURSOR_DEFAULT, main_thread=True)
     def _process_cursor_default(self, _packet: Packet) -> None:
         for window in self._id_to_window.values():
             window.cursor_data = {}
             window.record("cursor-default")
 
+    @packet_handler(CURSOR_DATA, main_thread=True)
     def _process_cursor_data(self, packet: Packet) -> None:
         encoding = packet.get_str(1)
         w = packet.get_u16(2)
@@ -602,6 +628,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             window.cursor_data = cursor_data
             window.record("cursor-data", **cursor_data)
 
+    @packet_handler("pointer-position", main_thread=True)
     def _process_pointer_position(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
@@ -617,6 +644,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             rx, ry = -1, -1
         window.record("pointer-motion", position=(x, y, rx, ry))
 
+    @packet_handler(POINTER_MOTION, main_thread=True)
     def _process_pointer_motion(self, packet: Packet) -> None:
         device_id = packet.get_i64(1)
         seq = packet.get_u64(2)
@@ -631,6 +659,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             return
         window.record("pointer-motion", position=(x, y, rx, ry), device_id=device_id, sequence=seq, props=props)
 
+    @packet_handler(POINTER_BUTTON, main_thread=True)
     def _process_pointer_button(self, packet: Packet) -> None:
         device_id = packet.get_i64(1)
         seq = packet.get_u64(2)
@@ -646,6 +675,7 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
         window.record("pointer-button", position=pointer, device_id=device_id, sequence=seq, props=props,
                       button=button, pressed=pressed)
 
+    @packet_handler(POINTER_WHEEL, main_thread=True)
     def _process_pointer_wheel(self, packet: Packet) -> None:
         wid = packet.get_wid()
         button = packet.get_u8(2)
@@ -657,36 +687,3 @@ class RecordClient(GObjectClientAdapter, XpraClientBase):
             log.warn("Warning: window %#x not found!", wid)
             return
         window.record("pointer-wheel", position=pointer, button=button, distance=distance, modifiers=tuple(modifiers))
-
-    def init_authenticated_packet_handlers(self) -> None:
-        super().init_authenticated_packet_handlers()
-        # all the handlers record events to files, which the parse thread's seccomp filter does not allow,
-        # running them all on the main thread also preserves the order of the events:
-        self.add_packets("startup-complete", "encoding-set", main_thread=True)
-        self.add_packets(
-            "window-create",
-            "window-raise",
-            "window-restack",
-            WINDOW_STACKING,
-            "window-initiate-moveresize",
-            "window-move-resize",
-            "window-resized",
-            "window-metadata",
-            "window-destroy",
-            "window-grab",
-            "window-ungrab",
-            "window-draw",
-            "window-bell",
-            "window-eos",
-            "keyboard-record",
-            "cursor-data",
-            "cursor-default",
-            "pointer-position",
-            "pointer-button",
-            "pointer-motion",
-            "pointer-wheel",
-            "clipboard-record",
-            "notification-show",
-            "notification-close",
-            main_thread=True,
-        )

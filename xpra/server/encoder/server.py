@@ -16,7 +16,7 @@ from xpra.os_util import gi_import
 from xpra.util.env import envint
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
-from xpra.net.common import Packet, MmapPointerError, REMOTE_CODEC_PROTOCOL_VERSION
+from xpra.net.common import Packet, MmapPointerError, REMOTE_CODEC_PROTOCOL_VERSION, packet_handler
 from xpra.util.version import protocol_compat_check
 from xpra.net.compression import Compressed
 from xpra.net.protocol.socket_handler import SocketProtocol
@@ -132,10 +132,6 @@ class EncoderServer(ServerBase):
             except RuntimeError:
                 log.error(f"Error cleaning encoder {encoder} for sequence {seq} of connection {source}")
 
-    def init_packet_handlers(self) -> None:
-        super().init_packet_handlers()
-        self.add_packets("encode", "context-request", "context-compress", "context-close")
-
     def parse_hello(self, ss, c: typedict) -> str | ConnectionMessage:
         if err := super().parse_hello(ss, c):
             return err
@@ -156,6 +152,7 @@ class EncoderServer(ServerBase):
         # start it now instead (see `docs/Usage/Seccomp.md`)
         ss.call_in_encode_thread(noop)
 
+    @packet_handler("encode")
     def _process_encode(self, proto: SocketProtocol, packet: Packet) -> None:
         # this function is only used by the `encode` client,
         # not the `remote` encoder
@@ -253,6 +250,7 @@ class EncoderServer(ServerBase):
         packet = Packet("encode-response", coding, bdata, client_options, width, height, stride, bpp, metadata)
         ss.send_async(*packet)
 
+    @packet_handler("context-close")
     def _process_context_close(self, proto: SocketProtocol, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -272,6 +270,7 @@ class EncoderServer(ServerBase):
         except RuntimeError:
             log.error(f"Error cleaning encoder {encoder} for sequence {seq} of connection {ss}")
 
+    @packet_handler("context-request")
     def _process_context_request(self, proto: SocketProtocol, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -318,6 +317,7 @@ class EncoderServer(ServerBase):
         if send_response_when_ready():
             GLib.timeout_add(10, send_response_when_ready)
 
+    @packet_handler("context-compress")
     def _process_context_compress(self, proto: SocketProtocol, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:

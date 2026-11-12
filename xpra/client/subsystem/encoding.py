@@ -15,12 +15,13 @@ from xpra.codecs.video import getVideoHelper
 from xpra.util.parsing import parse_bool_or_int
 from xpra.common import noop
 from xpra.client.gui.window.backing import VIDEO_MAX_SIZE
-from xpra.net.common import Packet, FULL_INFO
+from xpra.net.common import Packet, FULL_INFO, packet_handler
 from xpra.net import compression
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
 from xpra.util.env import envint, envbool
 from xpra.client.base.stub import StubClientSubsystem
+from xpra.net.packet_type import ENCODING_SET
 from xpra.log import Logger
 from xpra.util.thread import start_thread
 
@@ -252,9 +253,7 @@ class Encodings(StubClientSubsystem):
             getVideoHelper().cleanup()
         unload_codecs()
 
-    def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets(f"{Encodings.PREFIX}-set")
-
+    @packet_handler(ENCODING_SET)
     def _process_set(self, packet: Packet) -> None:
         caps = typedict(packet.get_dict(1))
         Encodings._parse_server_capabilities(self, caps)

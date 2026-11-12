@@ -47,7 +47,6 @@ def get_info() -> dict[str, Any]:
 class RemoteCodecClient(RemoteServerAdapter):
 
     SYSTEM_SOCKET_PATH = "/run/xpra/encoder"
-    PACKET_TYPES = RemoteServerAdapter.PACKET_TYPES + ["context-response", "context-data"]
     MODE = "encoder"
 
     def __init__(self, options: dict):

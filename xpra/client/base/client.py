@@ -19,12 +19,12 @@ from xpra.net.constants import ConnectionMessage
 from xpra.net.common import (
     Packet, PacketElement,
     disconnect_is_an_error, connection_close_info,
-    FULL_INFO, LOG_HELLO,
+    FULL_INFO, LOG_HELLO, packet_handler,
 )
 from xpra.net.dispatch import PacketDispatcher
 from xpra.net.protocol.factory import get_client_protocol_class
 from xpra.net.packet_type import (
-    CONNECTION_LOST, GIBBERISH, INVALID, SHUTDOWN_SERVER, POINTER_DEVICES, KEYBOARD_CONFIG, LOGGING_EVENT,
+    CONNECTION_LOST, GIBBERISH, INVALID, SHUTDOWN_SERVER, POINTER_DEVICES, KEYBOARD_CONFIG, LOGGING_EVENT, CONNECTION_CLOSE,
 )
 from xpra.util.thread import is_main_thread
 from xpra.util import subsystem as dispatch
@@ -464,6 +464,7 @@ class XpraClientBase(PacketDispatcher):
         assert self.server_client_shutdown
         self.send(SHUTDOWN_SERVER)
 
+    @packet_handler(CONNECTION_CLOSE, manual=True)
     def _process_connection_close(self, packet: Packet) -> None:
         # ie: ("disconnect", "version error", "incompatible version")
         netlog("%s", packet)
@@ -513,6 +514,7 @@ class XpraClientBase(PacketDispatcher):
             return ExitCode.AUTHENTICATION_FAILED
         return ExitCode.OK
 
+    @packet_handler(CONNECTION_LOST, manual=True)
     def _process_connection_lost(self, _packet: Packet) -> None:
         p = self._protocol
         transport_error = getattr(p, "error", ExitCode.OK)
@@ -536,6 +538,7 @@ class XpraClientBase(PacketDispatcher):
             msg = exit_str(exit_code).lower().replace("_", " ").replace("connection", "Connection")
             self.warn_and_quit(exit_code, msg)
 
+    @packet_handler("hello", early=True)
     def _process_hello(self, packet: Packet) -> None:
         hello_data = packet.get_dict(1)
         if LOG_HELLO:
@@ -605,6 +608,7 @@ class XpraClientBase(PacketDispatcher):
         self.completed_startup = packet
         self.emit("startup-complete")
 
+    @packet_handler(GIBBERISH, manual=True)
     def _process_gibberish(self, packet: Packet) -> None:
         log("process_gibberish(%s)", Ellipsizer(packet))
         if self.exit_code is not None:
@@ -652,6 +656,7 @@ class XpraClientBase(PacketDispatcher):
                 netlog.error(f" packet no {pcount} data: {repr_ellipsized(data)}")
         self.quit(exit_code)
 
+    @packet_handler(INVALID, manual=True)
     def _process_invalid(self, packet: Packet) -> None:
         log("process-invalid: %s", packet)
         if self.exit_code is not None:
@@ -669,18 +674,19 @@ class XpraClientBase(PacketDispatcher):
     ######################################################################
     # packets:
     def init_packet_handlers(self) -> None:
-        self.add_packets("hello")
-        # lifecycle packets are registered as default UI handlers so they bypass the
+        self.register_packet_handlers(early=True)
+        # the `manual` lifecycle packets are registered as default UI handlers so they bypass the
         # is_closed() gate in dispatch_packet but still run on the UI thread
         # (they tear down GTK/X11 resources via cleanup(), which must not happen
         # from the network parse thread):
-        self._default_ui_packet_handlers["connection-close"] = self._process_connection_close
+        self._default_ui_packet_handlers[CONNECTION_CLOSE] = self._process_connection_close
         self._default_ui_packet_handlers[CONNECTION_LOST] = self._process_connection_lost
         self._default_ui_packet_handlers[GIBBERISH] = self._process_gibberish
         self._default_ui_packet_handlers[INVALID] = self._process_invalid
         dispatch.call(self.subsystems, "init_packet_handlers")
 
     def init_authenticated_packet_handlers(self) -> None:
+        self.register_packet_handlers(early=False)
         dispatch.call(self.subsystems, "init_authenticated_packet_handlers")
 
     @staticmethod

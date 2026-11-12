@@ -14,7 +14,7 @@ from xpra.os_util import OSX, POSIX
 from xpra.server.source.webcam import WebcamConnection
 from xpra.util.objects import typedict
 from xpra.util.child_reaper import KILL_CHILD_PROCESS_GROUP, get_child_reaper, stop_child_process
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger, is_debug_enabled
@@ -198,6 +198,7 @@ class WebcamServer(StubSubsystem):
     # ------------------------------------------------------------------
     # Packet handlers
 
+    @packet_handler("webcam-start", enabled=lambda self: self.enabled)
     def _process_start(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -251,6 +252,7 @@ class WebcamServer(StubSubsystem):
             log.error("Error: failed to spawn webcam-client process: %s", e)
             ss.send_webcam_stop(device_id, f"spawn failed: {e}")
 
+    @packet_handler("webcam-stop", enabled=lambda self: self.enabled)
     def _process_stop(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -271,6 +273,7 @@ class WebcamServer(StubSubsystem):
         if proc := self.client_processes.pop(device_id, None):
             stop_child_process(proc, "webcam-client")
 
+    @packet_handler("webcam-frame", enabled=lambda self: self.enabled)
     def _process_frame(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -288,7 +291,3 @@ class WebcamServer(StubSubsystem):
         if len(packet) >= 8:
             options = packet.get_dict(7)
         ss.process_webcam_frame(device_id, frame_no, encoding, w, h, data, options)
-
-    def init_packet_handlers(self) -> None:
-        if self.enabled:
-            self.add_packets("webcam-start", "webcam-stop", "webcam-frame")

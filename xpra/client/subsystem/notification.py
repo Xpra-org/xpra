@@ -13,12 +13,13 @@ from xpra.common import noop
 from xpra.constants import NotificationID
 from xpra.platform.paths import get_icon_filename
 from xpra.platform.notification import get_backends
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.util.objects import typedict, make_instance
 from xpra.util.str_fn import repr_ellipsized, csv
 from xpra.util.env import envbool, envint, first_time
 from xpra.client.base import features
 from xpra.client.base.stub import StubClientSubsystem
+from xpra.net.packet_type import NOTIFICATION_CLOSE, NOTIFICATION_SHOW
 from xpra.log import Logger
 
 log = Logger("notify")
@@ -202,6 +203,7 @@ class NotificationClient(StubClientSubsystem):
     # these handlers hand the packet to the decode thread, which parses the icons the
     # server sent us; they must stay on the UI thread (`main_thread=True`) so that they
     # reach the decode queue in the order the server sent them - do not "optimize" it away.
+    @packet_handler(NOTIFICATION_SHOW, main_thread=True)
     def _process_show(self, packet: Packet) -> None:
         if not self.enabled:
             log("process_notify_show: ignoring packet, notifications are disabled")
@@ -315,6 +317,7 @@ class NotificationClient(StubClientSubsystem):
             # so the server doesn't think it is still on screen:
             self.notification_closed(nid, 4, "failed to show the notification")
 
+    @packet_handler(NOTIFICATION_CLOSE, main_thread=True)
     def _process_close(self, packet: Packet) -> None:
         if not self.enabled:
             return
@@ -336,6 +339,3 @@ class NotificationClient(StubClientSubsystem):
         self.shown.pop(nid, None)
         if self.enabled and self.notifier:
             self.notifier.close_notify(nid)
-
-    def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets(f"{NotificationClient.PREFIX}-show", f"{NotificationClient.PREFIX}-close", main_thread=True)

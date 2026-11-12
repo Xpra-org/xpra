@@ -18,7 +18,7 @@ from xpra.exit_codes import ExitCode
 from xpra.util.system import is_X11
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.config import InitExit
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.common import may_notify_client
 from xpra.constants import MAX_WINDOW_SIZE, NotificationID
 from xpra.util.rectangle import rectangle
@@ -29,6 +29,7 @@ from xpra.util.parsing import (
 )
 from xpra.x11.xroot_props import root_set, root_get, root_del
 from xpra.server.subsystem.display import DisplayManager
+from xpra.net.packet_type import DISPLAY_UNGRAB
 from xpra.log import Logger
 
 log = Logger("screen")
@@ -846,6 +847,7 @@ class X11DisplayManager(DisplayManager):
     # display-ungrab:
 
     # noinspection method-may-be-static
+    @packet_handler(DISPLAY_UNGRAB, main_thread=True)
     def _process_ungrab(self, proto, _packet: Packet) -> None:
         # ignore the window id: wid = packet.get_wid()
         grablog("display ungrab from %s", proto)
@@ -858,6 +860,3 @@ class X11DisplayManager(DisplayManager):
         x11_ungrab()
 
     # noinspection PyMethodMayBeStatic
-    def init_packet_handlers(self) -> None:
-        DisplayManager.init_packet_handlers(self)
-        self.add_packets("display-ungrab", main_thread=True)

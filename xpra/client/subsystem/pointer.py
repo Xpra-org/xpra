@@ -11,7 +11,7 @@ from collections.abc import Sequence
 
 from xpra.os_util import OSX
 from xpra.client.base.stub import StubClientSubsystem
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet, PacketElement, packet_handler
 from xpra.net.packet_type import POINTER_MOTION, POINTER_BUTTON, POINTER_WHEEL
 from xpra.util.objects import typedict
 from xpra.util.env import envbool, envint
@@ -345,6 +345,9 @@ class PointerClient(StubClientSubsystem):
         log("wheel_event%s new deltas=%s,%s",
             (device_id, wid, deltax, deltay), self.wheel_deltax, self.wheel_deltay)
 
+    # the server sends us the pointer events of the other clients
+    # when the `sync` pointer capability is enabled:
+    @packet_handler("pointer-position", main_thread=True)
     def _process_position(self, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
@@ -357,6 +360,7 @@ class PointerClient(StubClientSubsystem):
         log("process_pointer_position: %i,%i (%i,%i relative to wid %i)", x, y, rx, ry, wid)
         self.show_remote_pointer(wid, rx, ry)
 
+    @packet_handler(POINTER_MOTION, main_thread=True)
     def _process_motion(self, packet: Packet) -> None:
         # another client moved the pointer, and the server is synchronizing it with us
         # (see the `sync` pointer capability)
@@ -370,11 +374,13 @@ class PointerClient(StubClientSubsystem):
         if len(rel) == 2:
             self.show_remote_pointer(wid, *rel)
 
+    @packet_handler(POINTER_BUTTON, main_thread=True)
     def _process_button(self, packet: Packet) -> None:
         # another client clicked: the position was already synchronized
         # by the `pointer-motion` packet which always precedes it
         log("process_pointer_button: %s", packet[1:])
 
+    @packet_handler(POINTER_WHEEL, main_thread=True)
     def _process_wheel(self, packet: Packet) -> None:
         # another client used the wheel, there is nothing to show for it
         log("process_pointer_wheel: %s", packet[1:])
@@ -431,9 +437,3 @@ class PointerClient(StubClientSubsystem):
             }
         server_position = display.get_server_position(raw_position) if display else raw_position
         return server_position, props
-
-    def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("pointer-position", main_thread=True)
-        # the server sends us the pointer events of the other clients
-        # when the `sync` pointer capability is enabled:
-        self.add_packets("pointer-motion", "pointer-button", "pointer-wheel", main_thread=True)

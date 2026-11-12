@@ -16,7 +16,7 @@ from xpra.util.str_fn import csv
 from xpra.util.env import envint, OSEnvContext
 from xpra.util.thread import start_thread
 from xpra.net import compression
-from xpra.net.common import Packet, MmapPointerError
+from xpra.net.common import Packet, MmapPointerError, packet_handler
 from xpra.exit_codes import ExitCode
 from xpra.os_util import WIN32, OSX, POSIX
 from xpra.common import may_notify_client
@@ -360,6 +360,7 @@ class WebcamForwarder(StubClientSubsystem):
 
     ######################################################################
     # packet handlers
+    @packet_handler("webcam-stop")
     def _process_stop(self, packet: Packet) -> None:
         device_no = packet.get_u64(1)
         log("webcam-stop for device %i", device_no)
@@ -367,6 +368,7 @@ class WebcamForwarder(StubClientSubsystem):
             return
         self.stop_sending_webcam()
 
+    @packet_handler("webcam-ack")
     def _process_ack(self, packet: Packet) -> None:
         log("process_webcam_ack: %s", packet)
         with self.lock:
@@ -378,6 +380,3 @@ class WebcamForwarder(StubClientSubsystem):
                     delay = 1000 // WEBCAM_TARGET_FPS
                     log("new webcam timer with delay=%ims for %i fps target)", delay, WEBCAM_TARGET_FPS)
                     self.send_timer = self.timeout_add(delay, self.may_send_webcam_frame)
-
-    def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets(*WebcamForwarder.PACKET_TYPES)

@@ -5,8 +5,9 @@
 
 from typing import Any
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.client.base.stub import StubClientSubsystem
+from xpra.net.packet_type import EVENTS
 from xpra.log import Logger
 
 log = Logger("events")
@@ -22,10 +23,8 @@ class Events(StubClientSubsystem):
     def get_caps(self) -> dict[str, Any]:
         return {"events": True}
 
+    # run directly from the network thread:
+    @packet_handler(EVENTS)
     @staticmethod
     def _process_events(packet: Packet) -> None:
         log(": ".join(str(x) for x in packet[1:]))
-
-    def init_authenticated_packet_handlers(self) -> None:
-        # run directly from the network thread:
-        self.add_packets("events")

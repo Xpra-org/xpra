@@ -14,8 +14,9 @@ from xpra.util.env import envbool
 from xpra.util.str_fn import csv
 from xpra.util.objects import typedict
 from xpra.common import noerr
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.net.packet_type import KEYBOARD_CONFIG, KEYBOARD_EVENT, KEYBOARD_SYNC
 from xpra.log import Logger
 
 log = Logger("keyboard")
@@ -191,6 +192,7 @@ class KeyboardManager(StubSubsystem):
         log("get_keyboard_info took %ims", (monotonic() - start) * 1000)
         return info
 
+    @packet_handler(KEYBOARD_CONFIG, main_thread=True)
     def _process_config(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -209,6 +211,7 @@ class KeyboardManager(StubSubsystem):
         if "modifiers" in props:
             ss.make_keymask_match(props.strtupleget("modifiers"))
 
+    @packet_handler(KEYBOARD_EVENT, main_thread=True)
     def _process_event(self, proto, packet: Packet) -> None:
         wid = packet.get_wid()
         keyname = packet.get_str(2)
@@ -356,6 +359,7 @@ class KeyboardManager(StubSubsystem):
         self._handle_key(wid, False, keyname, keyval, keycode, modifiers, is_mod, True)
         self.keys_timedout[keycode] = now
 
+    @packet_handler(KEYBOARD_SYNC, main_thread=True)
     def _process_sync(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -438,13 +442,6 @@ class KeyboardManager(StubSubsystem):
     def set_default_keymap(self, server_source) -> None:
         log("set_default_keymap(%s)", server_source)
         server_source.set_default_keymap()
-
-    def init_packet_handlers(self) -> None:
-
-        self.add_packets(
-            "keyboard-event", "keyboard-config", "keyboard-sync",
-            main_thread=True
-        )
 
     #########################################
     # Control Commands

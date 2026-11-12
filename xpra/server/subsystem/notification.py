@@ -11,9 +11,10 @@ from collections.abc import Sequence
 from xpra.os_util import OSX, POSIX
 from xpra.server.source.notification import NotificationConnection
 from xpra.util.str_fn import Ellipsizer, std
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.util.thread import start_thread
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.net.packet_type import NOTIFICATION_CLOSE, NOTIFICATION_STATUS
 from xpra.log import Logger
 
 log = Logger("notify")
@@ -155,11 +156,13 @@ class NotificationForwarder(StubSubsystem):
         for ss in notification_sources:
             ss.notify_close(int(nid))
 
+    @packet_handler(NOTIFICATION_STATUS, main_thread=True, enabled=lambda self: self.enabled)
     def _process_status(self, proto, packet: Packet) -> None:
         assert self.enabled, "cannot toggle notifications: the feature is disabled"
         if ss := self.get_server_source(proto):
             ss.send_notifications = packet.get_bool(1)
 
+    @packet_handler(NOTIFICATION_CLOSE, main_thread=True, enabled=lambda self: self.enabled)
     def _process_close(self, proto, packet: Packet) -> None:
         assert self.enabled
         nid = packet.get_u64(1)
@@ -180,6 +183,7 @@ class NotificationForwarder(StubSubsystem):
                 closed = self.forwarder.notification_closed(nid, reason)
                 log("notification-close nid=%s, reason=%s, text=%s, closed=%s", nid, reason, text, closed)
 
+    @packet_handler("notification-action", main_thread=True, enabled=lambda self: self.enabled)
     def _process_action(self, proto, packet: Packet) -> None:
         assert self.enabled
         nid = packet.get_u64(1)
@@ -204,10 +208,6 @@ class NotificationForwarder(StubSubsystem):
         else:
             log("notification callback for %s: %s", (nid, action_key), client_callback)
             client_callback(nid, action_key)
-
-    def init_packet_handlers(self) -> None:
-        if self.enabled:
-            self.add_packets("notification-close", "notification-action", "notification-status", main_thread=True)
 
     #########################################
     # Control Commands

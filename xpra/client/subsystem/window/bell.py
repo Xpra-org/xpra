@@ -5,8 +5,8 @@
 
 from typing import Any
 
-from xpra.net.common import Packet
-from xpra.net.packet_type import BELL_SET
+from xpra.net.common import Packet, packet_handler
+from xpra.net.packet_type import BELL_SET, WINDOW_BELL
 from xpra.util.objects import typedict
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
@@ -58,6 +58,7 @@ class WindowBell(StubClientSubsystem):
         self.bell_enabled = self.server_bell and self.client_supports_bell
         return True
 
+    @packet_handler(WINDOW_BELL, main_thread=True)
     def _process_bell(self, packet: Packet) -> None:
         if not self.bell_enabled:
             return
@@ -75,6 +76,3 @@ class WindowBell(StubClientSubsystem):
     def window_bell(self, window, device: int, percent: int, pitch: int, duration: int, bell_class,
                     bell_id: int, bell_name: str) -> None:
         raise NotImplementedError()
-
-    def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("window-bell", main_thread=True)

@@ -20,8 +20,9 @@ from xpra.net.connect import connect_to
 from xpra.scripts.parsing import parse_display_name
 from xpra.config import InitExit
 from xpra.config.defaults import make_defaults_struct
-from xpra.net.common import PacketElement, Packet, FULL_INFO, REMOTE_CODEC_PROTOCOL_VERSION, connection_close_info
-from xpra.net.packet_type import ENCODING_SET
+from xpra.net.common import PacketElement, Packet, FULL_INFO, REMOTE_CODEC_PROTOCOL_VERSION, connection_close_info, packet_handler
+from xpra.net.dispatch import get_decorated_handler
+from xpra.net.packet_type import ENCODING_SET, CONNECTION_LOST, CONNECTION_CLOSE
 from xpra.log import Logger
 
 log = Logger("client")
@@ -103,11 +104,6 @@ class RemoteServerAdapter(baseclass):
         "system_socket_path", "uri", "logged_errors",
     )
     SYSTEM_SOCKET_PATH = ""
-    PACKET_TYPES = [
-        "hello", ENCODING_SET, "startup-complete",
-        "setting-change",
-        "connection-lost", "connection-close",
-    ]
     MODE = "invalid"
 
     def __init__(self, options: dict):
@@ -236,10 +232,17 @@ class RemoteServerAdapter(baseclass):
         self._ordinary_packets.append(packet)
         self.protocol.source_has_more()
 
+    # we dispatch our own packets in `_process_packet` below,
+    # so the decorated handlers must not be registered with a subsystem table:
+    def init_packet_handlers(self) -> None:
+        """ nothing to register """
+
+    def init_authenticated_packet_handlers(self) -> None:
+        """ nothing to register """
+
     def _process_packet(self, proto, packet: Packet) -> None:
         packet_type = packet.get_type()
-        if packet_type in self.PACKET_TYPES:
-            fn = getattr(self, "_process_%s" % packet_type.replace("-", "_"))
+        if fn := get_decorated_handler(self, packet_type):
             fn(packet)
         else:
             log.warn(f"Warning: received unexpected {packet_type!r} from encoder server connection {proto}")
@@ -264,6 +267,7 @@ class RemoteServerAdapter(baseclass):
         self.protocol.start()
         self.connect_event.wait(self.server_timeout)
 
+    @packet_handler("hello")
     def _process_hello(self, packet: Packet) -> None:
         caps = packet.get_dict(1)
         log("got hello: %s", Ellipsizer(caps))
@@ -290,12 +294,14 @@ class RemoteServerAdapter(baseclass):
         for detail in details:
             logfn(" %s", detail)
 
+    @packet_handler(CONNECTION_CLOSE)
     def _process_connection_close(self, packet: Packet) -> None:
         log("disconnected from server %s: %s", self.protocol, packet)
         if info := connection_close_info(packet):
             self.log_once(log.warn, "Warning: the encoder server closed the connection:", *info)
         self.server_connection_cleanup()
 
+    @packet_handler(CONNECTION_LOST)
     def _process_connection_lost(self, _packet: Packet) -> None:
         log("connection-lost for server %s", self.protocol)
         self.server_connection_cleanup()
@@ -305,6 +311,7 @@ class RemoteServerAdapter(baseclass):
         super().cleanup()
         self.schedule_connect(self.reconnect_delay)
 
+    @packet_handler("startup-complete")
     def _process_startup_complete(self, packet: Packet) -> None:
         log(f"{packet!r}")
         self.connect_event.set()

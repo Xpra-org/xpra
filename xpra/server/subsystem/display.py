@@ -13,9 +13,10 @@ from xpra.util.rectangle import rectangle
 
 from xpra.server.source.display import DisplayConnection
 from xpra.util.objects import typedict
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.util.parsing import get_refresh_rate_for_value, parse_sharing_layout, DEFAULT_REFRESH_RATE
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.net.packet_type import DISPLAY_CONFIGURE, DISPLAY_REQUEST_ICON, DISPLAY_REQUEST_SCREENSHOT
 from xpra.log import Logger
 
 log = Logger("screen")
@@ -420,6 +421,7 @@ class DisplayManager(StubSubsystem):
         self.calculate_workarea(width, height)
         self.set_desktop_geometry_attributes(width, height)
 
+    @packet_handler(DISPLAY_CONFIGURE, main_thread=True)
     def _process_configure(self, proto, packet: Packet) -> None:
         ss = self.get_server_source(proto)
         if ss is None:
@@ -578,12 +580,14 @@ class DisplayManager(StubSubsystem):
             proto.send_now(packet)
         return True
 
+    @packet_handler(DISPLAY_REQUEST_SCREENSHOT, main_thread=True)
     def _process_request_screenshot(self, proto, _packet: Packet) -> None:
         packet = self.make_screenshot_packet()
         ss = self.get_server_source(proto)
         if packet and ss:
             ss.send(*packet)
 
+    @packet_handler(DISPLAY_REQUEST_ICON, main_thread=True)
     def _process_request_icon(self, proto, _packet: Packet) -> None:
         packet = self.make_icon_packet()
         ss = self.get_server_source(proto)
@@ -603,6 +607,3 @@ class DisplayManager(StubSubsystem):
 
     def do_make_icon_packet(self) -> Packet:
         raise NotImplementedError("no icon capability in %s" % type(self))
-
-    def init_packet_handlers(self) -> None:
-        self.add_packets("display-configure", "display-request-screenshot", "display-request-icon", main_thread=True)

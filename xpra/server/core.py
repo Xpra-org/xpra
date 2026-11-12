@@ -23,7 +23,7 @@ from xpra.util import subsystem as dispatch
 from xpra.util.parsing import TRUE_OPTIONS
 from xpra.net.common import (
     is_request_allowed, Packet,
-    FULL_INFO, LOG_HELLO, MIN_PROTOCOL_VERSION,
+    FULL_INFO, LOG_HELLO, MIN_PROTOCOL_VERSION, packet_handler,
 )
 from xpra.net.constants import ConnectionMessage
 from xpra.net.digest import get_caps as get_digest_caps
@@ -383,6 +383,7 @@ class ServerCore(GLibServer):
         self._default_packet_handlers = {
             "hello": self._process_hello,
         }
+        self.register_packet_handlers()
         netlog("initializing packet handlers for %s", list(self.subsystems))
         dispatch.call(self.subsystems, "init_packet_handlers")
 
@@ -405,6 +406,8 @@ class ServerCore(GLibServer):
         # client is meant to close the connection itself, but just in case:
         GLib.timeout_add(5 * 1000, self.network.send_disconnect, proto, ConnectionMessage.DONE, "version sent")
 
+    # registered in the pre-authentication "default" table, see `init_packet_handlers`:
+    @packet_handler("hello", manual=True)
     def _process_hello(self, proto: SocketProtocol, packet: Packet) -> None:
         capabilities = packet.get_dict(1)
         c = typedict(capabilities)

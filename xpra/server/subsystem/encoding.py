@@ -11,7 +11,7 @@ from collections.abc import Sequence
 from xpra.server.source.encoding import EncodingsConnection
 from xpra.util.env import envint
 from xpra.os_util import OSX
-from xpra.net.common import Packet, FULL_INFO
+from xpra.net.common import Packet, FULL_INFO, packet_handler
 from xpra.util.objects import typedict
 from xpra.util.thread import start_thread
 from xpra.util.version import vtrim
@@ -20,6 +20,7 @@ from xpra.codecs.constants import preforder, STREAM_ENCODINGS, TRUE_LOSSLESS_ENC
 from xpra.codecs.loader import get_codec, codec_versions, load_codec, unload_codecs
 from xpra.codecs.video import getVideoHelper
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.net.packet_type import ENCODING_SET
 from xpra.log import Logger
 
 log = Logger("encoding")
@@ -295,6 +296,7 @@ class EncodingServer(StubSubsystem):
             log.warn("ignored invalid default encoding option: %s", self.encoding)
             self.default_encoding = self.encoding
 
+    @packet_handler("encoding-config")
     def _process_config(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -306,6 +308,7 @@ class EncodingServer(StubSubsystem):
             ss.reinit_encodings(self)
             ss.reinit_encoders()
 
+    @packet_handler(ENCODING_SET)
     def _process_set(self, proto, packet: Packet) -> None:
         encoding = packet.get_str(1)
         ss = self.get_server_source(proto)
@@ -336,6 +339,7 @@ class EncodingServer(StubSubsystem):
         if window := self.get_subsystem("window"):
             window._idle_refresh_all_windows(proto)
 
+    @packet_handler("encoding-options")
     def _process_options(self, proto, packet) -> None:
         ss = self.get_server_source(proto)
         if not ss:
@@ -349,8 +353,3 @@ class EncodingServer(StubSubsystem):
             fn = getattr(ss, "set_%s" % attr.replace("-", "_"))
             fn(value)
         self.call_idle_refresh_all_windows(proto)
-
-    def init_packet_handlers(self) -> None:
-        self.add_packets(f"{EncodingServer.PREFIX}-set",
-                         f"{EncodingServer.PREFIX}-options",
-                         f"{EncodingServer.PREFIX}-config")

@@ -11,8 +11,10 @@ from typing import Any, Final
 from collections.abc import Callable, Sequence
 
 from xpra.platform.gui import get_window_min_size, get_window_max_size, is_session_locked
-from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE
-from xpra.net.packet_type import WINDOW_UNMAP, WINDOW_REFRESH, WINDOW_STACKING
+from xpra.net.common import Packet, PacketElement, BACKWARDS_COMPATIBLE, packet_handler
+from xpra.net.packet_type import (
+    WINDOW_UNMAP, WINDOW_REFRESH, WINDOW_STACKING, WINDOW_DESTROY, WINDOW_RAISE, WINDOW_RESIZED, WINDOW_RESTACK, WINDOW_MOVE_RESIZE, WINDOW_CREATE, WINDOW_METADATA, WINDOW_INITIATE_MOVERESIZE,
+)
 from xpra.client.subsystem.window.grab import should_force_grab
 from xpra.client.subsystem.window.signalwatcher import kill_signalwatcher
 from xpra.client.gui.window_title import get_window_title
@@ -611,9 +613,11 @@ class WindowManagerClient(StubClientSubsystem):
     def get_client_window_classes(self, _geom, _metadata, _override_redirect) -> Sequence[type]:
         raise NotImplementedError()
 
+    @packet_handler(WINDOW_CREATE, main_thread=True)
     def _process_create(self, packet: Packet) -> None:
         return self._process_new_common(packet, False)
 
+    @packet_handler(WINDOW_INITIATE_MOVERESIZE, main_thread=True)
     def _process_initiate_moveresize(self, packet: Packet) -> None:
         geomlog("%s", packet)
         wid = packet.get_wid()
@@ -626,6 +630,7 @@ class WindowManagerClient(StubClientSubsystem):
             display = self.get_subsystem("display")
             window.initiate_moveresize(display.sx(x_root), display.sy(y_root), direction, button, source_indication)
 
+    @packet_handler(WINDOW_METADATA, main_thread=True)
     def _process_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()
         metadata = packet.get_dict(2)
@@ -634,6 +639,7 @@ class WindowManagerClient(StubClientSubsystem):
             metadata = self.client.cook_metadata(False, metadata)
             window.update_metadata(metadata)
 
+    @packet_handler(WINDOW_MOVE_RESIZE, main_thread=True)
     def _process_move_resize(self, packet: Packet) -> None:
         wid = packet.get_wid()
         x = packet.get_i16(2)
@@ -654,6 +660,7 @@ class WindowManagerClient(StubClientSubsystem):
         if window:
             window.move_resize(ax, ay, aw, ah, resize_counter)
 
+    @packet_handler(WINDOW_RESIZED, main_thread=True)
     def _process_resized(self, packet: Packet) -> None:
         wid = packet.get_wid()
         w = packet.get_u32(2)
@@ -669,6 +676,7 @@ class WindowManagerClient(StubClientSubsystem):
         if window:
             window.resize(aw, ah, resize_counter)
 
+    @packet_handler(WINDOW_RAISE, main_thread=True)
     def _process_raise(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
@@ -676,6 +684,7 @@ class WindowManagerClient(StubClientSubsystem):
         if window and present_window(window):
             self.window_stacking_changed()
 
+    @packet_handler(WINDOW_RESTACK, main_thread=True)
     def _process_restack(self, packet: Packet) -> None:
         wid = packet.get_wid()
         detail = packet.get_i8(2)
@@ -695,6 +704,7 @@ class WindowManagerClient(StubClientSubsystem):
                         activate_window(window)
             self.window_stacking_changed()
 
+    @packet_handler(WINDOW_DESTROY, main_thread=True)
     def _process_destroy(self, packet: Packet) -> None:
         wid = packet.get_wid()
         if window := self.get_window(wid):
@@ -879,17 +889,3 @@ class WindowManagerClient(StubClientSubsystem):
     def cp(self, x, y) -> tuple[int, int]:
         """ convert X,Y coordinates from client to server """
         return self.cx(x), self.cy(y)
-
-    ######################################################################
-    # packets:
-    def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets(
-            "window-create",
-            "window-raise",
-            "window-restack",
-            "window-initiate-moveresize",
-            "window-move-resize",
-            "window-resized",
-            "window-metadata",
-            "window-destroy",
-            main_thread=True)

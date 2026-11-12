@@ -5,7 +5,7 @@
 
 from typing import Any
 
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import SHUTDOWN_SERVER
 from xpra.server import ServerExitMode
@@ -56,6 +56,7 @@ class ShutdownServer(StubSubsystem):
         self.timeout_add(500, self.server.clean_quit, ServerExitMode.EXIT)
         return True
 
+    @packet_handler(SHUTDOWN_SERVER)
     def _process_server(self, proto, packet: Packet = Packet(SHUTDOWN_SERVER)) -> None:
         # an optional boolean argument requests a full server exit rather than a shutdown,
         # the exit mode defaults to `False` (shutdown) and the reason to the empty string:
@@ -80,6 +81,3 @@ class ShutdownServer(StubSubsystem):
         self.network.cleanup_all_protocols(reason=ConnectionMessage.SERVER_SHUTDOWN)
         self.timeout_add(500, self.server.clean_quit)
         return True
-
-    def init_packet_handlers(self) -> None:
-        self.add_packets(SHUTDOWN_SERVER)

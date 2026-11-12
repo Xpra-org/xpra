@@ -12,8 +12,9 @@ from xpra.server.drag_scroll import DragScrollTracker
 from xpra.server.source.pointer import PointerConnection
 from xpra.util.env import envbool
 from xpra.util.objects import typedict
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet, PacketElement, packet_handler
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.net.packet_type import POINTER_BUTTON, POINTER_MOTION, POINTER_WHEEL
 from xpra.log import Logger
 
 log = Logger("pointer")
@@ -195,6 +196,7 @@ class PointerManager(StubSubsystem):
             if ss.pointer_sync and ss is not exclude:
                 ss.send_async(packet_type, *data)
 
+    @packet_handler(POINTER_BUTTON, main_thread=True)
     def _process_button(self, proto, packet: Packet) -> None:
         log("process_pointer_button(%s, %s)", proto, packet)
         if self.is_readonly(proto):
@@ -372,6 +374,7 @@ class PointerManager(StubSubsystem):
                 with log.trap_error("Error releasing pointer button %i on device %i", button, device_id):
                     self.button_action(device_id, 0, button, False, {})
 
+    @packet_handler(POINTER_MOTION, main_thread=True)
     def _process_motion(self, proto, packet: Packet) -> None:
         # v5 packet format
         log("_process_motion(%s, %s) readonly=%s, ui_driver=%s",
@@ -405,6 +408,7 @@ class PointerManager(StubSubsystem):
                 self._update_modifiers(proto, wid, modifiers)
         self._drag_scroll.maybe_record_drag_scroll(wid, pdata)
 
+    @packet_handler(POINTER_WHEEL, main_thread=True)
     def _process_wheel(self, proto, packet: Packet) -> None:
         if self.is_readonly(proto):
             return
@@ -456,11 +460,3 @@ class PointerManager(StubSubsystem):
             return
         for ss in window_sub.window_sources():
             ss.record_scroll_event(wid)
-
-    def init_packet_handlers(self) -> None:
-        self.add_packets(
-            "pointer-button",
-            "pointer-motion",
-            "pointer-wheel",
-            main_thread=True
-        )

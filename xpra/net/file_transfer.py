@@ -29,7 +29,7 @@ from xpra.util.str_fn import csv, single_line, truncate
 from xpra.util.env import envint, envbool
 from xpra.util.parsing import str_to_bool, parse_with_unit
 from xpra.common import noop, SizedBuffer
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet, PacketElement, packet_handler
 from xpra.util.stats import std_unit
 from xpra.util.thread import start_thread
 from xpra.log import Logger
@@ -539,6 +539,7 @@ class FileTransferHandler(FileTransferAttributes):
                 filelog.error(f" {filename!r} : {e}")
         self.send(FILE_ACK_CHUNK, chunk_id, False, message, chunk)
 
+    @packet_handler(FILE_SEND_CHUNK)
     def _process_send_chunk(self, packet: Packet) -> None:
         # write the chunk to disk from the file I/O thread, off the parse thread:
         self.schedule_file_io(self.do_process_file_send_chunk, packet)
@@ -695,6 +696,7 @@ class FileTransferHandler(FileTransferAttributes):
             openit = False
         return True, printit, openit
 
+    @packet_handler(FILE_SEND)
     def _process_send(self, packet: Packet) -> None:
         # save the file from the file I/O thread, off the parse thread:
         self.schedule_file_io(self.do_process_file_send, packet)
@@ -1018,6 +1020,11 @@ class FileTransferHandler(FileTransferAttributes):
         self.send(FILE_REQUEST, filename, openit, send_id)
         return send_id
 
+    # `file-open-url` spawns a subprocess / web browser (ie: `execve`) and may prompt
+    # the user via a dialog, so it must run on the main thread rather than inline
+    # on the network parse thread - which the seccomp filter forbids from
+    # spawning processes (see `docs/Usage/Seccomp.md`):
+    @packet_handler(FILE_OPEN_URL, main_thread=True)
     def _process_open_url(self, packet: Packet) -> None:
         packet.check_len(3, 3)
         url = packet.get_str(1, MAX_URL)
@@ -1116,6 +1123,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.send(FILE_DATA_REQUEST, dtype, send_id, url, mimetype, filesize, printit, openit, options or {})
         return send_id
 
+    @packet_handler(FILE_DATA_REQUEST, main_thread=True)
     def _process_data_request(self, packet: Packet) -> None:
         packet.check_len(8, 9)
         dtype = packet.get_str(1, 16)
@@ -1197,6 +1205,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog("ask_data_request%s", (send_id, dtype, url, filesize, printit, openit, mimetype, options))
         cb_answer(False)
 
+    @packet_handler(FILE_DATA_RESPONSE)
     def _process_data_response(self, packet: Packet) -> None:
         packet.check_len(3, 3)
         send_id = packet.get_str(1, MAX_SEND_ID)
@@ -1325,6 +1334,7 @@ class FileTransferHandler(FileTransferAttributes):
             chunk_state.timer = 0
             GLib.source_remove(timer)
 
+    @packet_handler(FILE_ACK_CHUNK)
     def _process_ack_chunk(self, packet: Packet) -> None:
         # compress and send the next chunk from the file worker thread, off the parse thread:
         self.schedule_file_io(self.do_process_file_ack_chunk, packet)

@@ -179,10 +179,14 @@ class StubClientSubsystem(SubsystemPacketHandlers, SignalEmitter):
 
     def init_packet_handlers(self) -> None:
         """
-        Register the packet types that this subsystem can handle, even before authentication.
+        Register the packet types that this subsystem can handle, even before authentication:
+        the methods decorated with `@packet_handler(..., early=True)`.
         """
+        self.register_packet_handlers(early=True)
 
     def init_authenticated_packet_handlers(self) -> None:
         """
-        Register the packet types that this subsystem can handle after authentication.
+        Register the packet types that this subsystem can handle after authentication:
+        the methods decorated with `@packet_handler` (without `early=True`).
         """
+        self.register_packet_handlers(early=False)

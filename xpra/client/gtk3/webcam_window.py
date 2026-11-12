@@ -14,7 +14,7 @@ import uuid
 from typing import Any
 
 from xpra.common import SizedBuffer
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.os_util import gi_import
 from xpra.gtk.pixbuf import load_pixbuf
 from xpra.exit_codes import ExitCode, ExitValue
@@ -93,16 +93,14 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
         caps["webcam-client"] = {"device": self._device_no}
         return caps
 
-    def init_authenticated_packet_handlers(self) -> None:
-        super().init_authenticated_packet_handlers()
-        self.add_packets("webcam-frame", "webcam-stop", "startup-complete", main_thread=True)
-
+    @packet_handler("startup-complete", main_thread=True)
     def _process_startup_complete(self, _packet: Packet) -> None:
         log("startup-complete")
 
     # ------------------------------------------------------------------
     # Packet handlers — dispatched on the GLib main loop by XpraClientBase
 
+    @packet_handler("webcam-frame", main_thread=True)
     def _process_webcam_frame(self, packet: Packet) -> None:
         try:
             encoding = packet.get_str(3)
@@ -112,6 +110,7 @@ class WebcamClient(GObjectClientAdapter, XpraClientBase):
         except Exception as e:
             log.error("Error processing webcam frame: %s", e)
 
+    @packet_handler("webcam-stop", main_thread=True)
     def _process_webcam_stop(self, _packet) -> None:
         log.info("webcam forwarding stopped by server")
         self.quit(ExitCode.OK)

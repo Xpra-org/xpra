@@ -12,7 +12,7 @@ from collections.abc import Sequence, Iterable
 
 from xpra.util.env import envint, envbool
 from xpra.exit_codes import ExitCode
-from xpra.net.common import Packet, FULL_INFO, parse_thread_getloadavg
+from xpra.net.common import Packet, FULL_INFO, parse_thread_getloadavg, packet_handler
 from xpra.net.packet_type import PING_ECHO
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
@@ -172,6 +172,7 @@ class PingClient(StubClientSubsystem):
         self.echo_timers[now_ms] = t
         return True
 
+    @packet_handler(PING_ECHO)
     def _process_echo(self, packet: Packet) -> None:
         echoedtime = packet.get_u64(1)
         l1 = packet.get_u64(2)
@@ -191,6 +192,7 @@ class PingClient(StubClientSubsystem):
             self.client_latency.append((monotonic(), cl / 1000.0))
         log("ping echo server load=%s, measured client latency=%sms", self.server_load, cl)
 
+    @packet_handler("ping")
     def _process_ping(self, packet: Packet) -> None:
         echotime = packet.get_u64(1)
         sid = ""
@@ -211,6 +213,3 @@ class PingClient(StubClientSubsystem):
             return
         log(f"got ping, sending echo time={echotime} for {sid=}")
         self.send(PING_ECHO, echotime, l1, l2, l3, int(1000.0 * sl), sid)
-
-    def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets(*PingClient.PACKET_TYPES)

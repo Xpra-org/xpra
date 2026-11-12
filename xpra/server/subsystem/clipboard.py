@@ -14,7 +14,7 @@ from xpra.net.constants import ConnectionMessage
 from xpra.server.source.clipboard import ClipboardConnection
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet, PacketElement, packet_handler
 from xpra.util.parsing import FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger
@@ -209,6 +209,13 @@ class ClipboardManager(StubSubsystem):
         else:
             ch.enable_selections()
 
+    @packet_handler(
+        "clipboard-data", "clipboard-request",
+        "clipboard-contents", "clipboard-contents-none",
+        "clipboard-pending-requests", "clipboard-enable-selections",
+        "clipboard-status",
+        enabled=lambda self: self.enabled,
+    )
     def _process_packet(self, proto, packet: Packet) -> None:
         assert self.enabled
         if self.is_readonly(proto):
@@ -282,15 +289,6 @@ class ClipboardManager(StubSubsystem):
             if ss.clipboard_record:
                 rec_packet = ("clipboard-record", direction, packet_type, *parts)
                 ss.send_clipboard(rec_packet)
-
-    def init_packet_handlers(self) -> None:
-        if self.enabled:
-            for x in (
-                    "data", "request", "contents", "contents-none",
-                    "pending-requests", "enable-selections",
-                    "status",
-            ):
-                self.add_packet_handler(f"{ClipboardManager.PREFIX}-%s" % x, self._process_packet)
 
     #########################################
     # Control Commands

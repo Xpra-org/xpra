@@ -17,7 +17,7 @@ from xpra.util.version import (
     XPRA_VERSION, version_str, get_version_info,
     get_build_info, get_host_info, parse_version,
 )
-from xpra.net.common import is_request_allowed, Packet, FULL_INFO
+from xpra.net.common import is_request_allowed, Packet, FULL_INFO, packet_handler
 from xpra.net.dispatch import PacketDispatcher
 from xpra.net.net_util import get_info as get_net_info
 from xpra.net.protocol.socket_handler import SocketProtocol
@@ -30,6 +30,7 @@ from xpra.util.thread import start_thread
 from xpra.util.pysystem import get_frame_info
 from xpra.util.objects import typedict, notypedict, merge_dicts
 from xpra.util.env import envbool
+from xpra.net.packet_type import INFO_REQUEST
 from xpra.log import Logger
 
 # pylint: disable=import-outside-toplevel
@@ -97,6 +98,7 @@ class InfoServer(StubSubsystem):
         self.send_hello_info(proto, subsystems=subsystems)
         return True
 
+    @packet_handler(INFO_REQUEST, main_thread=True)
     def _process_request(self, proto, packet: Packet) -> None:
         log("process_info_request(%s, %s)", proto, packet)
         # ignoring the list of client uuids supplied in packet[1]
@@ -246,9 +248,6 @@ class InfoServer(StubSubsystem):
 
     def get_socket_info(self) -> dict[str, Any]:
         return {}
-
-    def init_packet_handlers(self) -> None:
-        self.add_packets("info-request", main_thread=True)
 
     #########################################
     # Control Commands

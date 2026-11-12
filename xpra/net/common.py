@@ -252,6 +252,51 @@ PacketHandlerType: TypeAlias = Callable[[Any, Packet], None]
 ClientPacketHandlerType: TypeAlias = Callable[[Packet], None]
 ServerPacketHandlerType: TypeAlias = PacketHandlerType
 
+# the attribute `packet_handler` stores its `PacketHandlerSpec` under:
+PACKET_HANDLER_ATTR = "_packet_handler_spec"
+
+
+class PacketHandlerSpec:
+    """
+    How a method decorated with `packet_handler` gets registered.
+    This is also where the packet validation will be declared.
+    """
+    __slots__ = ("packet_types", "main_thread", "early", "enabled", "manual")
+
+    def __init__(self, packet_types: tuple[str, ...], main_thread=False, early=False,
+                 enabled: Callable[[Any], bool] | None = None, manual=False):
+        self.packet_types = packet_types
+        self.main_thread = main_thread
+        self.early = early
+        self.enabled = enabled
+        self.manual = manual
+
+    def __repr__(self):
+        return f"PacketHandlerSpec{self.packet_types}"
+
+
+def packet_handler(*packet_types: str, main_thread=False, early=False,
+                   enabled: Callable[[Any], bool] | None = None, manual=False) -> Callable:
+    """
+    Declares a method as the handler for the given packet types (full packet type names),
+    the method is registered automatically by `register_packet_handlers` (see `xpra.net.dispatch`):
+    * `main_thread`: the handler must be called from the main thread
+    * `early`: (client only) register the handler before authentication
+    * `enabled`: predicate called with the instance at registration time, the handler is only registered if true
+    * `manual`: the handler is registered explicitly, ie: in a pre-authentication "default" table,
+      or only at runtime: the decorator only documents it
+    The function is returned unchanged: there is no wrapper and no extra cost per call.
+    """
+    if not packet_types:
+        raise ValueError("packet_handler needs at least one packet type")
+    spec = PacketHandlerSpec(tuple(packet_types), main_thread, early, enabled, manual)
+
+    def decorator(fn: Callable) -> Callable:
+        setattr(fn, PACKET_HANDLER_ATTR, spec)
+        return fn
+    return decorator
+
+
 NetPacketType: TypeAlias = tuple[int, int, int, SizedBuffer]
 
 

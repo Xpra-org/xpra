@@ -13,9 +13,9 @@ from typing import Any
 from collections.abc import Callable
 
 from xpra.common import noop
-from xpra.net.packet_type import LOGGING_EVENT
+from xpra.net.packet_type import LOGGING_EVENT, LOGGING_CONTROL
 from xpra.util.str_fn import repr_ellipsized, memoryview_to_bytes, single_line
-from xpra.net.common import Packet
+from xpra.net.common import Packet, packet_handler
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.server.subsystem.stub import StubSubsystem
 from xpra.log import Logger, set_global_logging_handler, get_info as get_log_info
@@ -204,6 +204,7 @@ class LoggingManager(StubSubsystem):
         finally:
             self.in_handler = False
 
+    @packet_handler(LOGGING_CONTROL, enabled=lambda self: self.send)
     def _process_control(self, proto, packet: Packet) -> None:
         action = packet.get_str(1)
         if action == "start":
@@ -213,6 +214,7 @@ class LoggingManager(StubSubsystem):
         else:
             log.warn("Warning: unknown logging-control action '%r'", action)
 
+    @packet_handler(LOGGING_EVENT, enabled=lambda self: self.receive)
     def _process_event(self, proto, packet: Packet) -> None:
         assert self.receive
         ss = self.get_server_source(proto)
@@ -240,9 +242,3 @@ class LoggingManager(StubSubsystem):
     def do_log(self, level, line) -> None:
         with self.lock:
             log.log(level, line)
-
-    def init_packet_handlers(self) -> None:
-        if self.receive:
-            self.add_packets("logging-event")
-        if self.send:
-            self.add_packets("logging-control")

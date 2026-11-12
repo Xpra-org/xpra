@@ -8,7 +8,7 @@ from typing import Any
 from xpra.util.objects import typedict
 from xpra.util.parsing import str_to_bool
 from xpra.util.str_fn import csv
-from xpra.net.common import Packet, PacketElement
+from xpra.net.common import Packet, PacketElement, packet_handler
 from xpra.net.control.common import ControlCode, parse_boolean_value
 from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubSubsystem
@@ -88,17 +88,15 @@ class ControlHandler(StubSubsystem):
         self.handle_command_request(proto, *command_req)
         return True
 
+    # control commands may spawn subprocesses or do file I/O, so run them on the
+    # main thread rather than inline on the network parse thread:
+    @packet_handler("control-request", main_thread=True)
     def _process_request(self, protocol, packet: Packet) -> None:
         """ client sent a command request through its normal channel """
         assert len(packet) >= 2, "invalid command request packet (too small!)"
         # this may end up calling do_handle_command_request via the adapter
         code, msg = self.process_control_command(protocol, *packet[1:])
         log("command request returned: %s (%s)", code, msg)
-
-    def init_packet_handlers(self) -> None:
-        # control commands may spawn subprocesses or do file I/O, so run them on the
-        # main thread rather than inline on the network parse thread:
-        self.add_packets("control-request", main_thread=True)
 
     #########################################
     # Control Commands

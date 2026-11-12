@@ -6,8 +6,8 @@
 import os
 from typing import Any
 
-from xpra.net.common import Packet
-from xpra.net.packet_type import WINDOW_DISMISS
+from xpra.net.common import Packet, packet_handler
+from xpra.net.packet_type import WINDOW_DISMISS, WINDOW_GRAB, WINDOW_UNGRAB
 from xpra.util.objects import typedict
 from xpra.util.env import envbool
 from xpra.client.base.stub import StubClientSubsystem
@@ -127,6 +127,7 @@ class WindowGrab(StubClientSubsystem):
             if window.is_OR() and not window.is_tray():
                 self.send(WINDOW_DISMISS, wid)
 
+    @packet_handler(WINDOW_GRAB, main_thread=True)
     def _process_grab(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
@@ -134,13 +135,9 @@ class WindowGrab(StubClientSubsystem):
         if window:
             self.window_grab(wid, window)
 
+    @packet_handler(WINDOW_UNGRAB, main_thread=True)
     def _process_ungrab(self, packet: Packet) -> None:
         wid = packet.get_wid()
         window = self.get_window(wid)
         log("ungrabbing %#x: %s", wid, window)
         self.window_ungrab()
-
-    ######################################################################
-    # packets:
-    def init_authenticated_packet_handlers(self) -> None:
-        self.add_packets("window-grab", "window-ungrab", main_thread=True)
