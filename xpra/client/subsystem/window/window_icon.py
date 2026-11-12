@@ -20,6 +20,8 @@ log = Logger("window")
 DYNAMIC_TRAY_ICON: bool = envbool("XPRA_DYNAMIC_TRAY_ICON", not OSX and not is_Ubuntu())
 ICON_OVERLAY: int = envint("XPRA_ICON_OVERLAY", 50)
 ICON_SHRINKAGE: int = envint("XPRA_ICON_SHRINKAGE", 75)
+MAX_WINDOW_ICON_DIMENSION: int = max(1, envint("XPRA_MAX_WINDOW_ICON_DIMENSION", 1024))
+MAX_WINDOW_ICON_DATA_SIZE: int = MAX_WINDOW_ICON_DIMENSION * MAX_WINDOW_ICON_DIMENSION * 4
 
 
 def get_save_window_icons() -> bool:
@@ -124,6 +126,9 @@ class WindowIcon(StubClientSubsystem):
             img = self.overlay_image
         elif coding in ("BGRA", "RGBA"):
             rowstride = width * 4
+            expected_size = rowstride * height
+            if len(data) != expected_size:
+                raise ValueError(f"invalid raw window icon size: expected {expected_size} bytes, found {len(data)}")
             img = Image.frombytes("RGBA", (width, height), memoryview_to_bytes(data),
                                   "raw", coding, rowstride, 1)
         else:
@@ -134,6 +139,8 @@ class WindowIcon(StubClientSubsystem):
             # pylint: disable=import-outside-toplevel
             from xpra.codecs.pillow.decoder import open_only
             img = open_only(data, ("png",))
+            if img.size != (width, height):
+                raise ValueError(f"window icon dimensions do not match: packet says {width}x{height}, image is {img.width}x{img.height}")
             if img.mode not in ("RGB", "RGBA"):
                 img = img.convert("RGBA")
         icon = img
@@ -181,11 +188,19 @@ class WindowIcon(StubClientSubsystem):
     # (`main_thread=True`): that hop is what orders it after the `new-window`
     # that creates the window it refers to - do not "optimize" it away.
     def _process_icon(self, packet: Packet) -> None:
+        packet.check_len(6, 6)
         wid = packet.get_wid()
         w = packet.get_u16(2)
         h = packet.get_u16(3)
-        coding = packet.get_str(4)
-        data = packet.get_bytes(5)
+        coding = packet.get_str(4, 16)
+        if coding != "default" and (not 0 < w <= MAX_WINDOW_ICON_DIMENSION or not 0 < h <= MAX_WINDOW_ICON_DIMENSION):
+            raise ValueError(
+                f"invalid window icon dimensions {w}x{h}, maximum is {MAX_WINDOW_ICON_DIMENSION}x{MAX_WINDOW_ICON_DIMENSION}")
+        data = packet.get_bytes(5, MAX_WINDOW_ICON_DATA_SIZE)
+        if coding == "default" and data:
+            raise ValueError("default window icon packet contains image data")
+        if coding in ("BGRA", "RGBA") and len(data) != w * h * 4:
+            raise ValueError(f"invalid raw window icon size: expected {w * h * 4} bytes, found {len(data)}")
         self.add_decode_work(self._decode_window_icon, wid, w, h, coding, data)
 
     def _decode_window_icon(self, wid: int, w: int, h: int, coding: str, data) -> None:
