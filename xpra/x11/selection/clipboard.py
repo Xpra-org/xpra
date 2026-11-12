@@ -4,10 +4,11 @@
 # later version. See the file COPYING for details.
 
 from typing import Any, Final
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 
 from xpra.common import noop
 from xpra.os_util import gi_import
+from xpra.util.env import envint, first_time
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.common import X11Event
 from xpra.x11.error import xsync, xlog
@@ -24,6 +25,10 @@ GObject = gi_import("GObject")
 
 log = Logger("x11", "clipboard")
 
+
+# the number of new atoms the peer can make us create:
+# atoms are never freed, so this limit applies to the whole session and not just to each client
+MAX_CLIPBOARD_ATOMS: Final[int] = envint("XPRA_MAX_CLIPBOARD_ATOMS", 1024)
 
 IGNORED_PROPERTIES = (
     "_NET_WM_NAME", "WM_NAME", "_NET_WM_ICON_NAME", "WM_ICON_NAME",
@@ -81,6 +86,8 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
 
     def __init__(self, send_packet_cb: Callable, progress_cb=noop, **kwargs):
         GObject.GObject.__init__(self)
+        # the atoms we have created for names received from the peer:
+        self._peer_atoms: set[str] = set()
         self.gtk_filter = False
         # gtk's wrapper for `event_window_xid`, which only exists to keep gtk's own
         # lookup of that window working - nothing here ever uses it, see `init_event_window`:
@@ -203,6 +210,31 @@ class X11Clipboard(ClipboardTimeoutHelper, GObject.GObject):
         # target = parts[1]           # ie: VALUE
         if proxy := self._get_proxy(selection):
             proxy.do_property_notify(event)
+
+    def accept_names(self, names: Sequence[str]) -> set[str]:
+        unknown = tuple(dict.fromkeys(name for name in names if name not in self._peer_atoms))
+        if not unknown:
+            return set(names)
+        with xsync:
+            from xpra.x11.bindings.core import X11CoreBindings
+            existing = set(X11CoreBindings().get_existing_atoms(unknown))
+        accepted = set(names) - set(unknown)
+        for name in unknown:
+            if name in existing:
+                accepted.add(name)
+            elif len(self._peer_atoms) < MAX_CLIPBOARD_ATOMS:
+                self._peer_atoms.add(name)
+                accepted.add(name)
+            elif first_time("clipboard-atoms"):
+                log.warn("Warning: the clipboard peer has created too many X11 atoms, the limit is %i",
+                         MAX_CLIPBOARD_ATOMS)
+                log.warn(" new clipboard targets and types will be ignored")
+        log("accept_names(%s)=%s", names, accepted)
+        return accepted
+
+    def may_request(self, selection: str, target: str) -> bool:
+        # see `X11ClipboardProxy.get_contents`, which converts the selection into this property:
+        return self.may_intern(target, f"{selection}-{target}")
 
     ############################################################################
     # x11 specific munging support:

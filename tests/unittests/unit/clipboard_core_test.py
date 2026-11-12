@@ -67,6 +67,7 @@ class ClipboardCoreTest(unittest.TestCase):
         helper._greedy = ()
         helper._clipboard_proxies = {"CLIPBOARD": proxy}
         helper._clipboard_origins = {}
+        helper._peer_requests = {}
         helper.local_selections = ("CLIPBOARD",)
         helper.local_greedy = ()
         helper.filter_res = ()
@@ -224,7 +225,7 @@ class ClipboardCoreTest(unittest.TestCase):
             {
                 "targets": ("UTF8_STRING", "text/plain"),
                 "data": {
-                    "UTF8_STRING": ("STRING", 8, "bytes", b"hello", "future-field"),
+                    "UTF8_STRING": ("STRING", 8, "bytes", b"hello"),
                     "text/plain": ("text/plain", 8, "bytes", b"world"),
                 },
                 "claim": False,
@@ -249,13 +250,158 @@ class ClipboardCoreTest(unittest.TestCase):
         targets = tuple(f"text/x-{i}" for i in range(count))
         helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {
             "targets": targets,
-            "data": {target: ("STRING", 8, "bytes", b"x") for target in targets},
+            "data": {target: ("STRING", 8, "bytes", b"x") for target in targets[:core.MAX_CLIPBOARD_TARGETS]},
         }))
         local_targets, target_data, _claim, _sync = proxy.tokens[0]
         self.assertEqual(local_targets, targets[:core.MAX_CLIPBOARD_TARGETS])
         self.assertEqual(tuple(target_data.keys()), targets[:core.MAX_CLIPBOARD_TARGETS])
         # the targets can also be sent as clipboard contents:
         self.assertEqual(helper.local_targets(targets), targets[:core.MAX_CLIPBOARD_TARGETS])
+        # but the data for that many targets is rejected:
+        with self.assertRaises(ValueError):
+            helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {
+                "data": {target: ("STRING", 8, "bytes", b"x") for target in targets},
+            }))
+        self.assertEqual(len(proxy.tokens), 1)
+
+    def test_malformed_packets_are_rejected(self):
+        helper, proxy, packets = self.make_helper()
+        item = ("STRING", 8, "bytes", b"x")
+        for packet in (
+            Packet("clipboard-data", "CLIPBOARD"),
+            Packet("clipboard-data", "CLIPBOARD", {}, 1),
+            Packet("clipboard-data", "CLIPBOARD", []),
+            Packet("clipboard-data", "CLIPBOARD", {f"key{i}": i for i in range(17)}),
+            Packet("clipboard-data", "CLIPBOARD", {"": 1}),
+            Packet("clipboard-data", "CLIPBOARD", {"data": {"UTF8_STRING": item + ("extra", )}}),
+            Packet("clipboard-data", "CLIPBOARD", {"data": {"UTF8_STRING": item[:3]}}),
+            Packet("clipboard-data", "CLIPBOARD", {"origin": "x" * 65}),
+            Packet("clipboard-data", "CLIPBOARD", {"origin": 1}),
+            Packet("clipboard-data", "CLIPBOARD", {"targets": "UTF8_STRING"}),
+            Packet("clipboard-data", "CLIP\nBOARD", {}),
+            Packet("clipboard-request", 1, "CLIPBOARD"),
+            Packet("clipboard-request", 1, "CLIPBOARD", "UTF8_STRING", 2),
+            Packet("clipboard-request", -1, "CLIPBOARD", "UTF8_STRING"),
+            Packet("clipboard-request", 1, "x" * 65, "UTF8_STRING"),
+            Packet("clipboard-request", 1, "CLIPBOARD", ""),
+            Packet("clipboard-request", 1, "CLIPBOARD", "x" * 257),
+            Packet("clipboard-request", 1, "CLIPBOARD", "UTF8\x00STRING"),
+            Packet("clipboard-contents", 1, "CLIPBOARD", "STRING", 8, "bytes"),
+            Packet("clipboard-contents", 1, "CLIPBOARD", "STRING", 8, "bytes", b"x", 0, 0),
+            Packet("clipboard-contents", 1, "CLIPBOARD", "", 8, "bytes", b"x"),
+            Packet("clipboard-contents", 1, "CLIPBOARD", "STRING", 9, "bytes", b"x"),
+            Packet("clipboard-contents", 1, "CLIPBOARD", "STRING", 8, "x" * 17, b"x"),
+            Packet("clipboard-contents", 1, "CLIPBOARD", "STRING", 8, "bytes", b"x", -1),
+            Packet("clipboard-contents-none", 1),
+            Packet("clipboard-contents-none", 1, "CLIPBOARD", 2),
+            Packet("clipboard-pending-requests", 1, 2),
+            Packet("clipboard-pending-requests", 256),
+            Packet("clipboard-enable-selections", ("CLIPBOARD", ), 1),
+            Packet("clipboard-enable-selections", ["X"] * 9),
+            Packet("clipboard-enable-selections", ["x" * 65]),
+            Packet("clipboard-enable-selections", ["a\nb"]),
+        ):
+            with self.assertRaises((ValueError, TypeError), msg=f"{packet!r} accepted"):
+                helper.process_clipboard_packet(packet)
+        self.assertEqual(proxy.tokens, [])
+        self.assertEqual(packets, [])
+
+    def test_data_targets_and_options(self):
+        helper, proxy, _packets = self.make_helper()
+        helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {
+            "origin": b"abc",
+            # invalid target names are dropped:
+            "targets": ("UTF8_STRING", "\x00", b"TEXT"),
+            "claim": False,
+            "synchronous": True,
+        }))
+        self.assertEqual(proxy.tokens, [(("UTF8_STRING", "TEXT"), None, False, True)])
+        self.assertEqual(proxy._clipboard_origin, "abc")
+        self.assertFalse(proxy._greedy_client)
+        helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {"greedy": True, "token": False}))
+        self.assertTrue(proxy._greedy_client)
+        self.assertEqual(len(proxy.tokens), 1)
+
+    def test_enable_selections(self):
+        helper, proxy, _packets = self.make_helper()
+        primary = ClipboardProxy("PRIMARY")
+        helper._clipboard_proxies["PRIMARY"] = primary
+        helper.process_clipboard_packet(Packet("clipboard-enable-selections", ["CLIPBOARD"]))
+        self.assertTrue(proxy.is_enabled())
+        self.assertFalse(primary.is_enabled())
+        helper.process_clipboard_packet(Packet("clipboard-enable-selections", [b"PRIMARY"]))
+        self.assertFalse(proxy.is_enabled())
+        self.assertTrue(primary.is_enabled())
+
+    def test_pending_requests(self):
+        helper, _proxy, _packets = self.make_helper()
+        progress = []
+        helper.progress_cb = lambda *args: progress.append(args)
+        helper.process_clipboard_packet(Packet("clipboard-pending-requests", 3))
+        self.assertEqual(progress, [(-1, 3)])
+
+    def test_token_data_budget(self):
+        helper, proxy, _packets = self.make_helper()
+        helper.max_clipboard_packet_size = 1000
+        data = {
+            "UTF8_STRING": ("STRING", 8, "bytes", b"x" * 600),
+            "text/plain": ("STRING", 8, "bytes", b"x" * 600),
+        }
+        with self.assertRaises(ValueError):
+            helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {"data": data}))
+        data["text/plain"] = ("STRING", 8, "bytes", b"x" * 400)
+        helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {"data": data}))
+        self.assertEqual(len(proxy.tokens), 1)
+
+    def test_rejected_names_are_dropped(self):
+        helper, proxy, packets = self.make_helper()
+        refused = {"text/x-refused", "REFUSED_TYPE"}
+        helper.accept_names = lambda names: set(names) - refused
+        helper.process_clipboard_packet(Packet("clipboard-data", "CLIPBOARD", {
+            "targets": ("UTF8_STRING", "text/x-refused"),
+            "data": {
+                "UTF8_STRING": ("STRING", 8, "bytes", b"hello"),
+                "text/x-refused": ("STRING", 8, "bytes", b"x"),
+                "TEXT": ("REFUSED_TYPE", 8, "bytes", b"x"),
+            },
+        }))
+        targets, target_data, _claim, _sync = proxy.tokens[0]
+        self.assertEqual(targets, ("UTF8_STRING", ))
+        self.assertEqual(target_data, {"UTF8_STRING": ("STRING", 8, b"hello")})
+        # a request for a refused target is answered without asking the proxy:
+        with patch.object(proxy, "get_contents") as get_contents:
+            helper.process_clipboard_packet(Packet("clipboard-request", 7, "CLIPBOARD", "text/x-refused"))
+        get_contents.assert_not_called()
+        self.assertEqual(packets, [("clipboard-contents-none", 7, "CLIPBOARD")])
+        self.assertEqual(helper._peer_requests, {})
+
+    def test_peer_request_limits(self):
+        helper, proxy, packets = self.make_helper()
+        callbacks = []
+        with patch.object(proxy, "get_contents", side_effect=lambda _target, callback: callbacks.append(callback)):
+            for request_id in range(core.MAX_CLIPBOARD_PEER_REQUESTS):
+                helper.process_clipboard_packet(Packet("clipboard-request", request_id, "CLIPBOARD", "UTF8_STRING"))
+            self.assertEqual(len(callbacks), core.MAX_CLIPBOARD_PEER_REQUESTS)
+            self.assertEqual(packets, [])
+            # a duplicate request id is ignored:
+            helper.process_clipboard_packet(Packet("clipboard-request", 0, "CLIPBOARD", "UTF8_STRING"))
+            self.assertEqual(packets, [])
+            # one more is answered straight away:
+            helper.process_clipboard_packet(Packet("clipboard-request", 1000, "CLIPBOARD", "UTF8_STRING"))
+            self.assertEqual(packets, [("clipboard-contents-none", 1000, "CLIPBOARD")])
+            self.assertEqual(len(callbacks), core.MAX_CLIPBOARD_PEER_REQUESTS)
+            # answering a request makes room for another one:
+            callbacks[0]("STRING", 8, b"hello")
+            self.assertEqual(packets[-1], ("clipboard-contents", 0, "CLIPBOARD", "STRING", 8, "bytes", b"hello", 0))
+            helper.process_clipboard_packet(Packet("clipboard-request", 1001, "CLIPBOARD", "UTF8_STRING"))
+            self.assertEqual(len(callbacks), core.MAX_CLIPBOARD_PEER_REQUESTS + 1)
+            # requests which are never answered expire:
+            with patch.object(core, "monotonic", return_value=core.monotonic() + core.PEER_REQUEST_EXPIRY + 1):
+                helper.process_clipboard_packet(Packet("clipboard-request", 1002, "CLIPBOARD", "UTF8_STRING"))
+            self.assertEqual(len(callbacks), core.MAX_CLIPBOARD_PEER_REQUESTS + 2)
+            self.assertEqual(tuple(helper._peer_requests), (1002, ))
+        helper.client_reset()
+        self.assertEqual(helper._peer_requests, {})
 
     def test_selection_capabilities_backwards_compatibility(self):
         caps = typedict({"greedy": ("CLIPBOARD",)})

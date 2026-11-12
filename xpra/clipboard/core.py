@@ -6,6 +6,7 @@
 
 import os
 import struct
+from time import monotonic
 from typing import Any, Final
 from collections import deque
 from collections.abc import Callable, Iterable, Sequence
@@ -13,11 +14,17 @@ from collections.abc import Callable, Iterable, Sequence
 from xpra.common import noop
 from xpra.net.compression import Compressible
 from xpra.net.common import Packet, PacketElement, packet_handler
+from xpra.net.clipboard_packet import (
+    MAX_CLIPBOARD_TARGETS, MAX_CLIPBOARD_ORIGIN_SIZE, MAX_CLIPBOARD_OPTIONS, MAX_SELECTIONS, MAX_SELECTION_NAME,
+    MAX_WIRE_ENCODING,
+    get_name, get_names, get_selection, parse_wire_data, parse_clipboard_data_items,
+)
+from xpra.net.packet_values import check_key
 from xpra.net.dispatch import SubsystemPacketHandlers
 from xpra.os_util import POSIX, get_hex_uuid
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer, repr_ellipsized, bytestostr, hexstr
-from xpra.util.env import envint, envbool
+from xpra.util.env import envint, envbool, first_time
 from xpra.clipboard.common import (
     get_format_size, sizeof_long, sizeof_short, compile_filters, get_local_selections,
     ALL_CLIPBOARDS,
@@ -44,9 +51,10 @@ MAX_CLIPBOARD_PACKET_SIZE: Final[int] = 16 * 1024 * 1024
 MAX_CLIPBOARD_RECEIVE_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_RECEIVE_SIZE", -1)
 MAX_CLIPBOARD_SEND_SIZE: Final[int] = envint("XPRA_MAX_CLIPBOARD_SEND_SIZE", -1)
 MAX_CLIPBOARD_ORIGINS: Final[int] = 16
-MAX_CLIPBOARD_ORIGIN_SIZE: Final[int] = 64
-# each target may become an X11 atom, and those are never freed:
-MAX_CLIPBOARD_TARGETS: Final[int] = envint("XPRA_MAX_CLIPBOARD_TARGETS", 100)
+# the requests from the peer we are still serving, each one may be waiting for a local application:
+MAX_CLIPBOARD_PEER_REQUESTS: Final[int] = envint("XPRA_MAX_CLIPBOARD_PEER_REQUESTS", 32)
+# a request which has not been answered by then is forgotten:
+PEER_REQUEST_EXPIRY: Final[float] = 10
 
 DEFAULT_PREFERRED_TARGETS = ",".join(
     PLAIN_TEXT_TARGETS + HTML_TARGETS + URI_TARGETS + RTF_TARGETS
@@ -92,7 +100,8 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         self.max_clipboard_send_size: int = d.intget("max-send-size", MAX_CLIPBOARD_SEND_SIZE)
         self.filter_res = compile_filters(d.strtupleget("filters"))
         self._clipboard_request_counter: int = 0
-        self._clipboard_outstanding_requests: dict[int, tuple[int, str, str]] = {}
+        self._clipboard_outstanding_requests: dict[int, tuple[int, str, str, str]] = {}
+        self._peer_requests: dict[int, float] = {}
         self._clipboard_origins: dict[str, deque[str]] = {}
         self._local_to_remote: dict[str, str] = {}
         self._remote_to_local: dict[str, str] = {}
@@ -202,6 +211,7 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
             "filters": [x.pattern for x in self.filter_res],
             "requests": self._clipboard_request_counter,
             "pending": tuple(self._clipboard_outstanding_requests.keys()),
+            "peer-requests": len(self._peer_requests),
             "can-send": self.can_send,
             "can-receive": self.can_receive,
             "remote": {
@@ -225,10 +235,12 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
             x.cleanup()
         self._clipboard_proxies = {}
         self._clipboard_origins = {}
+        self._peer_requests = {}
 
     def client_reset(self) -> None:
         """Reset state associated with the disconnected clipboard peer."""
         self._clipboard_origins.clear()
+        self._peer_requests.clear()
         for proxy in self._clipboard_proxies.values():
             # a token we have scheduled but not sent belongs to the peer which is gone:
             proxy.cancel_emit_token()
@@ -360,53 +372,42 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
 
     @packet_handler(CLIPBOARD_DATA)
     def _process_data(self, packet: Packet) -> None:
-        selection = packet.get_str(1)
+        packet.check_len(3, 3)
+        selection = get_selection(packet[1])
+        options = packet.get_dict(2, MAX_CLIPBOARD_OPTIONS)
+        for key in options:
+            check_key(key, "clipboard option")
+        origin = options.get("origin", "")
+        if isinstance(origin, bytes):
+            origin = origin.decode("latin1")
+        if not isinstance(origin, str) or len(origin) > MAX_CLIPBOARD_ORIGIN_SIZE:
+            raise ValueError(f"invalid clipboard origin {repr_ellipsized(origin)}")
+        remote_targets = get_names(options["targets"]) if "targets" in options else None
+        data = parse_clipboard_data_items(options["data"], self.max_clipboard_packet_size) if "data" in options else {}
         proxy = self._get_clipboard_token_proxy(selection)
         if proxy is None:
             return
-        options = typedict(packet.get_dict(2))
-        origin = options.strget("origin")
-        if len(origin) > MAX_CLIPBOARD_ORIGIN_SIZE:
-            log.warn("Warning: ignoring oversized clipboard origin for %r", selection)
-            origin = ""
         if origin:
             if self.is_clipboard_loop(proxy._selection, origin):
                 log.warn("Warning: clipboard loop detected for %r", proxy._selection)
                 return
-            proxy._clipboard_origin = origin
-        else:
-            proxy._clipboard_origin = ""
+        proxy._clipboard_origin = origin
         targets = None
         target_data = None
         if proxy._can_receive:
-            if "targets" in options:
-                targets = self.local_targets(options.strtupleget("targets"))
-            wire_items = options.dictget("data")
-            if len(wire_items) > MAX_CLIPBOARD_TARGETS:
-                log.warn("Warning: too much clipboard data for %r, only using %i out of %i targets",
-                         selection, MAX_CLIPBOARD_TARGETS, len(wire_items))
-                wire_items = dict(tuple(wire_items.items())[:MAX_CLIPBOARD_TARGETS])
-            if wire_items:
+            if remote_targets is not None:
+                targets = self.local_targets(remote_targets)
+            if data:
                 target_data = {}
-                for target, item in wire_items.items():
-                    target = bytestostr(target)
-                    if not isinstance(item, (tuple, list)) or len(item) < 4:
-                        raise ValueError(f"invalid clipboard data for target {target!r}: {item!r}")
-                    dtype, dformat, wire_encoding, wire_data = item[:4]
-                    dtype = bytestostr(dtype)
-                    dformat = int(dformat)
-                    wire_encoding = bytestostr(wire_encoding)
-                    if dformat not in (8, 16, 32):
-                        raise ValueError(
-                            f"invalid format '{dformat!r}' for type {dtype!r} and wire {wire_encoding=!r}")
-                    if target and not must_discard(target):
-                        raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
-                        target_data[target] = (dtype, dformat, raw_data)
-        claim = options.boolget("claim", True)
-        proxy._greedy_client = options.boolget("greedy", proxy._greedy_client)
-        if options.boolget("token", True):
-            synchronous_client = options.boolget("synchronous", False)
-            proxy.got_token(targets, target_data, claim, synchronous_client)
+                for target, (dtype, dformat, wire_encoding, wire_data) in data.items():
+                    if must_discard(target) or not self.may_intern(target, dtype):
+                        continue
+                    raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
+                    target_data[target] = (dtype, dformat, raw_data)
+        if "greedy" in options:
+            proxy._greedy_client = bool(options["greedy"])
+        if options.get("token", True):
+            proxy.got_token(targets, target_data, bool(options.get("claim", True)), bool(options.get("synchronous", False)))
 
     def local_targets(self, remote_targets: Iterable[str]) -> Sequence[str]:
         """ filter remote targets to values that can be used locally """
@@ -415,7 +416,22 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
             log.warn("Warning: too many clipboard targets, only using the first %i out of %i",
                      MAX_CLIPBOARD_TARGETS, len(targets))
             targets = targets[:MAX_CLIPBOARD_TARGETS]
-        return targets
+        accepted = self.accept_names(targets)
+        return tuple(target for target in targets if target in accepted)
+
+    def accept_names(self, names: Sequence[str]) -> set[str]:
+        """
+        the target and type names received from the peer which we are willing to use,
+        subclasses that store them in a resource which is never freed (ie: X11 atoms) must limit them
+        """
+        return set(names)
+
+    def may_intern(self, *names: str) -> bool:
+        return set(names) <= self.accept_names(names)
+
+    def may_request(self, selection: str, target: str) -> bool:
+        """ can we request this target from the local `selection` on behalf of the peer """
+        return self.may_intern(target)
 
     def remote_targets(self, local_targets: Iterable[str]) -> Sequence[str]:
         """ export local targets """
@@ -510,15 +526,34 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
             return struct.pack(fstr, *data)
         raise ValueError("unhanled encoding: %s" % ((encoding, dtype, dformat),))
 
+    def expire_peer_requests(self) -> None:
+        now = monotonic()
+        for request_id, start in tuple(self._peer_requests.items()):
+            if now - start > PEER_REQUEST_EXPIRY:
+                log("clipboard request %i has expired", request_id)
+                del self._peer_requests[request_id]
+
     @packet_handler(CLIPBOARD_REQUEST)
     def _process_request(self, packet: Packet) -> None:
+        packet.check_len(4, 4)
         request_id = packet.get_u64(1)
-        selection = packet.get_str(2)
-        target = packet.get_str(3)
+        selection = get_selection(packet[2])
+        target = get_name(packet[3])
 
         def no_contents():
+            self._peer_requests.pop(request_id, None)
             self.send(CLIPBOARD_CONTENTS_NONE, request_id, selection)
 
+        if request_id in self._peer_requests:
+            log.warn("Warning: duplicate clipboard request id %i, ignored", request_id)
+            return
+        self.expire_peer_requests()
+        if len(self._peer_requests) >= MAX_CLIPBOARD_PEER_REQUESTS:
+            if first_time("clipboard-peer-requests"):
+                log.warn("Warning: too many pending clipboard requests, the limit is %i", MAX_CLIPBOARD_PEER_REQUESTS)
+            self.send(CLIPBOARD_CONTENTS_NONE, request_id, selection)
+            return
+        self._peer_requests[request_id] = monotonic()
         if must_discard(target):
             log("invalid target %r", target)
             no_contents()
@@ -540,6 +575,10 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
             log("request for %s but sending is disabled, sending 'none' back", name)
             no_contents()
             return
+        if not self.may_request(name, target):
+            log("request for %s target %r refused", name, target)
+            no_contents()
+            return
         if TEST_DROP_CLIPBOARD_REQUESTS > 0 and (request_id % TEST_DROP_CLIPBOARD_REQUESTS) == 0:
             log.warn("clipboard request %s dropped for testing!", request_id)
             return
@@ -550,6 +589,8 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         proxy.get_contents(target, got_contents)
 
     def proxy_got_contents(self, request_id: int, selection: str, target: str, dtype: str, dformat: int, data) -> None:
+        self._peer_requests.pop(request_id, None)
+
         def no_contents():
             self.send(CLIPBOARD_CONTENTS_NONE, request_id, selection)
 
@@ -601,27 +642,41 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
 
     @packet_handler(CLIPBOARD_CONTENTS)
     def _process_contents(self, packet: Packet) -> None:
+        # the html5 client does not send the `truncated` field:
+        packet.check_len(7, 8)
         request_id = packet.get_u64(1)
-        selection = packet.get_str(2)
-        dtype = packet.get_str(3)
+        selection = get_selection(packet[2])
+        dtype = get_name(packet[3], what="type")
         dformat = packet.get_u8(4)
-        wire_encoding = packet.get_str(5)
-        wire_data = packet[6]
+        wire_encoding = packet.get_str(5, MAX_WIRE_ENCODING)
+        wire_data, _size = parse_wire_data(wire_encoding, dformat, packet[6], self.max_clipboard_packet_size)
+        if len(packet) > 7:
+            packet.get_u64(7)
         log("process clipboard contents, selection=%s, type=%s, format=%s", selection, dtype, dformat)
+        if not self.may_intern(dtype):
+            log("clipboard contents type %r refused", dtype)
+            self._clipboard_got_contents(request_id, selection=selection)
+            return
         raw_data = self._munge_wire_selection_to_raw(wire_encoding, dtype, dformat, wire_data)
         if log.is_debug_enabled():
             r = Ellipsizer
             log("clipboard wire -> raw: %s -> %s", (dtype, dformat, wire_encoding, r(wire_data)), r(raw_data))
-        assert isinstance(request_id, int) and isinstance(dformat, int)
-        self._clipboard_got_contents(request_id, dtype, dformat, raw_data)
+        self._clipboard_got_contents(request_id, dtype, dformat, raw_data, selection=selection, encoding=wire_encoding)
 
     @packet_handler(CLIPBOARD_CONTENTS_NONE)
     def _process_contents_none(self, packet: Packet) -> None:
         log("process clipboard contents none")
+        packet.check_len(3, 3)
         request_id = packet.get_u64(1)
-        self._clipboard_got_contents(request_id, "", 0, None)
+        selection = get_selection(packet[2])
+        self._clipboard_got_contents(request_id, selection=selection)
 
-    def _clipboard_got_contents(self, request_id: int, dtype: str, dformat: int, data) -> None:
+    def _clipboard_got_contents(self, request_id: int, dtype: str = "", dformat: int = 0, data=None,
+                                selection: str = "", encoding: str = "") -> None:
+        """
+        `selection` and `encoding` are only specified for replies received from the peer,
+        they must match the request
+        """
         raise NotImplementedError()
 
     def progress(self) -> None:
@@ -629,12 +684,14 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
 
     @packet_handler(CLIPBOARD_PENDING_REQUESTS)
     def _process_pending_requests(self, packet: Packet) -> None:
+        packet.check_len(2, 2)
         pending = packet.get_u8(1)
         self.progress_cb(-1, pending)
 
     @packet_handler(CLIPBOARD_ENABLE_SELECTIONS)
     def _process_enable_selections(self, packet: Packet) -> None:
-        selections = packet.get_strs(1)
+        packet.check_len(2, 2)
+        selections = tuple(get_selection(x) for x in packet.get_strs(1, MAX_SELECTIONS, MAX_SELECTION_NAME))
         self.enable_selections(selections)
 
     def process_clipboard_packet(self, packet: Packet) -> None:

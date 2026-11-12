@@ -20,6 +20,9 @@ class FakeGLib:
         self.timers: dict[int, tuple] = {}
         self.counter = 0
 
+    def idle_add(self, callback, *args) -> int:
+        return self.timeout_add(0, callback, *args)
+
     def timeout_add(self, _delay: int, callback, *args) -> int:
         self.counter += 1
         self.timers[self.counter] = (callback, args)
@@ -54,6 +57,9 @@ class ClipboardTimeoutTest(unittest.TestCase):
         helper._local_to_remote = {}
         helper._clipboard_proxies = {"CLIPBOARD": proxy}
         helper._clipboard_origins = {}
+        helper._peer_requests = {}
+        helper.max_clipboard_packet_size = 1024
+        helper.max_clipboard_receive_size = -1
         helper._clipboard_request_counter = 0
         helper._clipboard_outstanding_requests = {}
         return helper, proxy, glib
@@ -107,6 +113,50 @@ class ClipboardTimeoutTest(unittest.TestCase):
         callback(*args)
         self.assertEqual(proxy.contents, [("UTF8_STRING", "", 0, None)])
         self.assertEqual(helper._clipboard_outstanding_requests, {})
+
+    def test_reply_for_another_selection_is_ignored(self):
+        helper, proxy, glib = self.make_helper()
+        self.request(helper, proxy)
+        helper._process_contents(Packet("clipboard-contents", 0, "PRIMARY", "STRING", 8, "bytes", b"hello", 0))
+        helper._process_contents_none(Packet("clipboard-contents-none", 0, "PRIMARY"))
+        self.assertEqual(proxy.contents, [])
+        # the request is still pending, and its timer answers it:
+        callback, args = glib.timers[1]
+        callback(*args)
+        self.assertEqual(proxy.contents, [("UTF8_STRING", "", 0, None)])
+
+    def test_html5_reply(self):
+        # without the `truncated` field:
+        helper, proxy, glib = self.make_helper()
+        self.request(helper, proxy)
+        helper._process_contents(Packet("clipboard-contents", 0, "CLIPBOARD", "UTF8_STRING", 8, "bytes", "hello"))
+        self.assertEqual(proxy.contents, [("UTF8_STRING", "UTF8_STRING", 8, b"hello")])
+        self.assertEqual(glib.timers, {})
+
+    def test_targets_reply_must_be_atoms(self):
+        helper, proxy, glib = self.make_helper()
+        self.request(helper, proxy, "TARGETS")
+        # ie: the html5 client answers every request with text:
+        helper._process_contents(Packet("clipboard-contents", 0, "CLIPBOARD", "UTF8_STRING", 8, "bytes", b"hello", 0))
+        self.assertEqual(proxy.contents, [("TARGETS", "", 0, None)])
+        self.assertEqual(glib.timers, {})
+
+    def test_outstanding_requests_limit(self):
+        helper, proxy, glib = self.make_helper()
+        for _ in range(timeout.MAX_CLIPBOARD_OUTSTANDING_REQUESTS):
+            self.request(helper, proxy)
+        self.assertEqual(len(helper._clipboard_outstanding_requests), timeout.MAX_CLIPBOARD_OUTSTANDING_REQUESTS)
+        sent = []
+        helper.send = lambda *packet: sent.append(packet)
+        self.request(helper, proxy, "TARGETS")
+        self.assertEqual(sent, [])
+        self.assertEqual(len(helper._clipboard_outstanding_requests), timeout.MAX_CLIPBOARD_OUTSTANDING_REQUESTS)
+        # answered from the main loop, not from the signal handler:
+        self.assertEqual(proxy.contents, [])
+        callback, args = glib.timers[glib.counter]
+        callback(*args)
+        self.assertEqual(proxy.contents, [("TARGETS", "", 0, None)])
+        helper.cleanup()
 
 
 def main():

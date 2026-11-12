@@ -11,6 +11,7 @@ from xpra.clipboard.common import env_timeout
 from xpra.clipboard.core import ClipboardProtocolHelperCore
 from xpra.clipboard.proxy import ClipboardProxyCore
 from xpra.util.str_fn import Ellipsizer
+from xpra.util.env import envint, first_time
 from xpra.net.packet_type import CLIPBOARD_REQUEST
 from xpra.log import Logger
 
@@ -19,6 +20,9 @@ GLib = gi_import("GLib")
 log = Logger("clipboard")
 
 REMOTE_TIMEOUT = env_timeout("REMOTE", 2500)
+# local applications can make as many requests as they like,
+# but we only forward this many to the peer at any given time:
+MAX_CLIPBOARD_OUTSTANDING_REQUESTS = envint("XPRA_MAX_CLIPBOARD_OUTSTANDING_REQUESTS", 32)
 
 
 class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
@@ -26,7 +30,8 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
 
     def __init__(self, send_packet_cb: Callable, progress_cb=noop, **kwargs):
         super().__init__(send_packet_cb, progress_cb, **kwargs)
-        self._clipboard_outstanding_requests: dict[int, tuple[int, str, str]] = {}
+        # request_id: (timer, local selection, target, remote selection)
+        self._clipboard_outstanding_requests: dict[int, tuple[int, str, str, str]] = {}
 
     def cleanup(self) -> None:
         self.cancel_outstanding_requests()
@@ -47,18 +52,25 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
 
     def _send_clipboard_request_handler(self, proxy: ClipboardProxyCore, selection: str, target: str):
         log("send_clipboard_request_handler%s", (proxy, selection, target))
+        if len(self._clipboard_outstanding_requests) >= MAX_CLIPBOARD_OUTSTANDING_REQUESTS:
+            if first_time("clipboard-outstanding-requests"):
+                log.warn("Warning: too many pending clipboard requests, the limit is %i",
+                         MAX_CLIPBOARD_OUTSTANDING_REQUESTS)
+            # answer from the main loop: the proxy only records the request once this handler returns
+            GLib.idle_add(proxy.got_contents, target)
+            return
         request_id = self._clipboard_request_counter
         self._clipboard_request_counter += 1
         remote = self.local_to_remote(selection)
         log("send_clipboard_request %s to %s, id=%s", selection, remote, request_id)
         timer = GLib.timeout_add(REMOTE_TIMEOUT, self.timeout_request, request_id)
-        self._clipboard_outstanding_requests[request_id] = (timer, selection, target)
+        self._clipboard_outstanding_requests[request_id] = (timer, selection, target, remote)
         self.progress()
         self.send(CLIPBOARD_REQUEST, request_id, remote, target)
 
     def timeout_request(self, request_id: int) -> None:
         try:
-            selection, target = self._clipboard_outstanding_requests.pop(request_id)[1:]
+            selection, target = self._clipboard_outstanding_requests.pop(request_id)[1:3]
         except KeyError:
             log.warn("Warning: clipboard request id %i not found", request_id)
             return
@@ -69,19 +81,31 @@ class ClipboardTimeoutHelper(ClipboardProtocolHelperCore):
         if proxy := self._get_proxy(selection):
             proxy.got_contents(target)
 
-    def _clipboard_got_contents(self, request_id: int, dtype: str = "", dformat: int = 0, data=None) -> None:
-        try:
-            timer, selection, target = self._clipboard_outstanding_requests.pop(request_id)
-        except KeyError:
+    def _clipboard_got_contents(self, request_id: int, dtype: str = "", dformat: int = 0, data=None,
+                                selection: str = "", encoding: str = "") -> None:
+        request = self._clipboard_outstanding_requests.get(request_id)
+        if not request:
             log.warn("Warning: request id %i not found", request_id)
             log.warn(" already timed out or duplicate reply")
-            return
-        finally:
             self.progress()
+            return
+        timer, local, target, remote = request
+        if selection and selection != remote:
+            # leave the request for its timer to answer:
+            log.warn("Warning: clipboard reply for request id %i does not match the request", request_id)
+            log.warn(" expected selection %r but got %r", remote, selection)
+            return
+        del self._clipboard_outstanding_requests[request_id]
+        self.progress()
         GLib.source_remove(timer)
-        proxy = self._get_proxy(selection)
+        if target == "TARGETS" and data is not None and ((dtype, dformat) != ("ATOM", 32) or encoding not in ("", "atoms")):
+            # ie: the html5 client answers every request with text
+            log.warn("Warning: invalid clipboard reply for %r TARGETS: %r, format %s, encoding %r",
+                     remote, dtype, dformat, encoding)
+            dtype, dformat, data = "", 0, None
+        proxy = self._get_proxy(local)
         log("clipboard got contents%s: proxy=%s for selection=%s",
-            (request_id, dtype, dformat, Ellipsizer(data)), proxy, selection)
+            (request_id, dtype, dformat, Ellipsizer(data)), proxy, local)
         if data and isinstance(data, memoryview):
             data = bytes(data)
         if proxy:

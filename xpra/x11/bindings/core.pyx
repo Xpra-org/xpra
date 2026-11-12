@@ -468,6 +468,48 @@ cdef class X11CoreBindingsInstance:
         free(atoms_return)
         assert s!=0, "failed to intern some atoms"
 
+    def get_existing_atoms(self, atom_names: Sequence[str]) -> Sequence[str]:
+        """
+        the names from `atom_names` which already exist as atoms on the server,
+        unlike `intern_atoms`, this never creates any atoms
+        """
+        cdef bint cache = atom_cache_valid(self.display)
+        existing = []
+        missing = []
+        for name in atom_names:
+            if cache and strtobytes(name) in name_to_atom:
+                existing.append(name)
+            else:
+                missing.append(name)
+        cdef int count = len(missing)
+        if count == 0:
+            return tuple(existing)
+        self.context_check("get_existing_atoms")
+        cdef char** names = <char **> malloc(sizeof(uintptr_t)*(count+1))
+        assert names!=NULL
+        cdef Atom* atoms_return = <Atom*> malloc(sizeof(Atom)*(count+1))
+        assert atoms_return!=NULL
+        from ctypes import create_string_buffer, addressof
+        str_names = [create_string_buffer(x.encode("latin1")) for x in missing]
+        cdef uintptr_t ptr
+        for i, x in enumerate(str_names):
+            ptr = addressof(x)
+            names[i] = <char*> ptr
+        # `only_if_exists=True`: the status is zero unless every atom exists, so it is not checked,
+        # and the atoms which do not exist are returned as `None`:
+        XInternAtoms(self.display, names, count, 1, atoms_return)
+        free(names)
+        cdef Atom atom
+        for i, name in enumerate(missing):
+            atom = atoms_return[i]
+            if atom:
+                existing.append(name)
+                if cache:
+                    name_to_atom[name.encode("latin1")] = atom
+                    atom_to_name[atom] = name
+        free(atoms_return)
+        return tuple(existing)
+
     def get_xatom(self, str_or_int) -> Atom:
         return self.xatom(str_or_int)
 
