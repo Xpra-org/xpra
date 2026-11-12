@@ -72,7 +72,7 @@ class XvfbManager(StubSubsystem):
         self.username = ""
         self.start_vfb = False
         self.xauth_data = ""
-        self.use_display = None
+        self.use_display: bool | None = None
 
     def init(self, opts) -> None:
         self.displayfd = str(opts.displayfd or "")
@@ -342,6 +342,6 @@ class XvfbManager(StubSubsystem):
                 "resize-display": self.resize_display,
                 "refresh-rate": self.refresh_rate,
                 "start": self.start_vfb,
-                "use-display": self.use_display,
+                "use-display": "auto" if self.use_display is None else bool(self.use_display),
             },
         }
