@@ -14,7 +14,7 @@ from xpra.common import SizedBuffer
 from xpra.net.common import Packet
 from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes
 from xpra.util.objects import typedict
-from xpra.util.env import envbool
+from xpra.util.env import envbool, envint
 from xpra.client.base.stub import StubClientSubsystem
 from xpra.log import Logger
 
@@ -37,6 +37,9 @@ def get_save_cursors() -> bool:
 
 
 SAVE_CURSORS: bool = get_save_cursors()
+MAX_CURSOR_DIMENSION: int = max(1, envint("XPRA_MAX_CURSOR_DIMENSION", 1024))
+MAX_CURSOR_DATA_SIZE: int = MAX_CURSOR_DIMENSION * MAX_CURSOR_DIMENSION * 4
+MAX_CURSOR_NAME_SIZE: int = 128
 
 
 def decompress_cursor_data(encoding: str, cpixels: SizedBuffer, serial: int) -> bytes:
@@ -163,14 +166,21 @@ class CursorClient(StubClientSubsystem):
     def _process_data(self, packet: Packet) -> None:
         if not self.enabled:
             return
-        encoding = packet.get_str(1)
+        packet.check_len(9, 9)
+        encoding = packet.get_str(1, 16)
         w = packet.get_u16(2)
         h = packet.get_u16(3)
         xhot = packet.get_u16(4)
         yhot = packet.get_u16(5)
+        if not 0 < w <= MAX_CURSOR_DIMENSION or not 0 < h <= MAX_CURSOR_DIMENSION:
+            raise ValueError(f"invalid cursor dimensions {w}x{h}, maximum is {MAX_CURSOR_DIMENSION}x{MAX_CURSOR_DIMENSION}")
+        if xhot >= w or yhot >= h:
+            raise ValueError(f"cursor hotspot {xhot},{yhot} is outside {w}x{h}")
         serial = packet.get_u64(6)
-        cpixels = packet.get_bytes(7)
-        name = packet.get_str(8)
+        cpixels = packet.get_bytes(7, MAX_CURSOR_DATA_SIZE)
+        name = packet.get_str(8, MAX_CURSOR_NAME_SIZE)
+        if encoding == "raw" and len(cpixels) != w * h * 4:
+            raise ValueError(f"invalid raw cursor buffer size: expected {w * h * 4} bytes, found {len(cpixels)}")
         self.add_decode_work(self._decode_cursor_data, encoding, w, h, xhot, yhot, serial, cpixels, name)
 
     def _decode_cursor_data(self, encoding: str, w: int, h: int, xhot: int, yhot: int,
@@ -179,6 +189,9 @@ class CursorClient(StubClientSubsystem):
         log("_decode_cursor_data(%s, %s, %s, %s, %s, %#x, %i bytes, %s)",
             encoding, w, h, xhot, yhot, serial, len(cpixels), name)
         pixels = self.decompress_cursor_data(encoding, cpixels, serial)
+        expected_size = w * h * 4
+        if len(pixels) != expected_size:
+            raise ValueError(f"invalid decoded cursor buffer size: expected {expected_size} bytes, found {len(pixels)}")
         cursor_data = ("raw", 0, 0, w, h, xhot, yhot, serial, pixels, name)
         self.idle_add(self.apply_cursor, cursor_data, False)
 
