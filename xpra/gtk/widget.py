@@ -122,9 +122,9 @@ def setfont(widget, font=""):
             widget.modify_font(fontdesc)
 
 
-def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN,
-                 callback=None, file_filter=None, multiple=True) -> list[str]:
-    log("choose_files%s", (parent_window, title, action, action_button, callback, file_filter))
+def choose_files(parent_window, title: str, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN,
+                 file_filter=None, multiple=True) -> list[str]:
+    log("choose_files%s", (parent_window, title, action, action_button, file_filter))
     chooser = Gtk.FileChooserDialog(title=title, parent=parent_window, action=action)
     chooser.add_buttons(
         Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
@@ -143,7 +143,7 @@ def choose_files(parent_window, title, action=Gtk.FileChooserAction.OPEN, action
     return filenames
 
 
-def choose_file(parent_window, title, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN,
+def choose_file(parent_window, title: str, action=Gtk.FileChooserAction.OPEN, action_button=Gtk.STOCK_OPEN,
                 callback=noop, file_filter=None) -> None:
     filenames = choose_files(parent_window, title, action, action_button, callback, file_filter, False)
     if not filenames or len(filenames) != 1:
