@@ -82,7 +82,7 @@
     }
     const greyed = get_greyed();
     controls.channel.querySelectorAll("input").forEach(function (input) {
-      input.parentElement.classList.toggle("dl-greyed", greyed.indexOf(input.value) >= 0);
+      input.parentElement.classList.toggle("dl-greyed", greyed.includes(input.value));
     });
   }
 
@@ -96,7 +96,7 @@
       return;
     }
     const input = Array.from(controls.channel.querySelectorAll("input")).find(function (i) {
-      return greyed.indexOf(i.value) < 0;
+      return !greyed.includes(i.value);
     });
     if (input) {
       input.checked = true;
@@ -112,7 +112,7 @@
     document.querySelectorAll(".dl-cond").forEach(function (el) {
       el.hidden = !Object.keys(selection).every(function (key) {
         const wanted = el.dataset[key];
-        return wanted === undefined || wanted.split(" ").indexOf(selection[key]) >= 0;
+        return wanted === undefined || wanted.split(" ").includes(selection[key]);
       });
     });
     if (save) {
