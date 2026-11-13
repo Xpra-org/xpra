@@ -68,7 +68,7 @@ def fragment_frame(data, boundaries: Sequence[int], max_size: int) -> list[tuple
         # this unit is too big, split it into a group of fragments:
         group_start = len(fragments)
         count = (boundary - start + max_size - 1) // max_size
-        for i in range(count):
+        for _ in range(count):
             piece_end = min(boundary, start + max_size)
             fragments.append((memoryview_to_bytes(view[start:piece_end]), group_start, count))
             start = piece_end
