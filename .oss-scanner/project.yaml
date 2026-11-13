@@ -1,0 +1,14 @@
+# Enrolment in Anthropic's OSS scanner: https://github.com/anthropics/oss-scanner
+# This is the copy of `projects/xpra/project.yaml` in that repository, keep both in sync.
+repo: https://github.com/Xpra-org/xpra#master
+primary_contact: security@xpra.org
+homepage: https://xpra.org
+output_format:
+  email:
+    min_severity: low
+  github_security_advisory:
+    min_severity: none
+disabled: false
+dockerfile: .oss-scanner/Dockerfile
+threat_model: .oss-scanner/threat_model.md
+patch_guidelines: .oss-scanner/patch_guidelines.md

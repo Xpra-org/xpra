@@ -67,6 +67,7 @@ but cannot be exploited because the code is not actually used:
 
 
 ## Hardening
+* [automated scanning with Anthropic's OSS scanner](https://github.com/Xpra-org/xpra/issues/5146), configured in [`.oss-scanner`](https://github.com/Xpra-org/xpra/tree/master/.oss-scanner)
 * [process level protections: prevent ptrace / core dumps](https://github.com/Xpra-org/xpra/issues/4958)
 * [rate limit authentication requests](https://github.com/Xpra-org/xpra/issues/4959)
 * [landlock the client](https://github.com/Xpra-org/xpra/issues/4960)
