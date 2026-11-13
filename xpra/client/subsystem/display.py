@@ -203,7 +203,7 @@ class DisplayClient(StubClientSubsystem):
             caps["opengl"] = op
 
         self._last_screen_settings = self.get_screen_settings()
-        root_w, root_h, sss, ndesktops, desktop_names, u_root_w, u_root_h = self._last_screen_settings[:7]
+        _, _, sss, ndesktops, desktop_names, u_root_w, u_root_h = self._last_screen_settings[:7]
         if u_root_w and u_root_h:
             caps["desktop_size"] = self.cp(u_root_w, u_root_h)
         if ndesktops:
@@ -228,8 +228,6 @@ class DisplayClient(StubClientSubsystem):
                 log.info(" %sscaled to %s, virtual screen size: %ix%i",
                          "up" if scaled_up else "down", sinfo, root_w, root_h)
                 log_screen_sizes(root_w, root_h, sss)
-        else:
-            sss = ss
         monitors = adjust_monitor_refresh_rate(self.refresh_rate, validated_monitor_data(self.get_monitors_info(), strict=False))
         self._monitor_layout = MonitorLayout(monitors)
         caps["monitors"] = monitors
