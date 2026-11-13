@@ -68,6 +68,15 @@ class TestLZ4(unittest.TestCase):
     def test_decompressinputtoosmall(self):
         self.fd(b"hello")
 
+    def test_decompress_invalid_header(self):
+        from xpra.net.lz4.lz4 import decompress
+        # too short for the size header, or a size that does not fit in a C int:
+        for data in (b"", b"\x05", b"\x05\x00\x00", b"\xff\xff\xff\xff\x00", b"\x00\x00\x00\x80\x00"):
+            with self.assertRaises(ValueError):
+                decompress(data, max_size=1024 * 1024)
+            with self.assertRaises(ValueError):
+                decompress(memoryview(data))
+
     def test_decompressvalid(self):
         self.td(b"\x05\x00\x00\x00Phello", b"hello")
 

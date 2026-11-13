@@ -8,6 +8,7 @@ import unittest
 
 from xpra.net import packet_encoding
 
+
 class TestPacketEncoding(unittest.TestCase):
 
     def test_env_log(self):
@@ -17,14 +18,14 @@ class TestPacketEncoding(unittest.TestCase):
         for x in packet_encoding.get_enabled_encoders():
             e = packet_encoding.get_encoder(x)
             for packet_data in (
-                ["hello", {"foo" : 1, "bar" : True}],
-                #b"foo",
-                ):
+                ["hello", {"foo": 1, "bar": True}],
+                # b"foo",
+            ):
                 assert e
                 v, flag = e(packet_data)
                 assert v
-                if x=="none":
-                    #'none' cannot decode back
+                if x == "none":
+                    # 'none' cannot decode back
                     continue
                 try:
                     r = packet_encoding.decode(v, flag)
@@ -32,12 +33,21 @@ class TestPacketEncoding(unittest.TestCase):
                 except Exception:
                     print("error calling decode(%s, %s) for encoder %s" % (v, flag, x))
                     raise
-        #one-shot function:
+        # one-shot function:
         packet = ("hello", {})
         assert packet_encoding.pack_one_packet(packet)
 
+    def test_rencodeplus_invalid_lengths(self):
+        from xpra.net.rencodeplus import rencodeplus
+        # string lengths that do not fit in a C int, or longer than the data:
+        for length in (b"9" * 40, b"4294967296", b"2147483648", b"100"):
+            with self.assertRaises(ValueError):
+                rencodeplus.loads(length + b"/" + b"x" * 10)
+
+
 def main():
     unittest.main()
+
 
 if __name__ == '__main__':
     main()
