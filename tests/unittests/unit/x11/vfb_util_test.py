@@ -250,6 +250,22 @@ class TestVfbUtil(unittest.TestCase):
             _xvfb, display_name = start_Xvfb(["Xvfb"], (), 0, 0, ":42", "/tmp", os.getuid(), os.getgid(), "")
         self.assertEqual(display_name, ":42")
 
+    def test_start_xvfb_explicit_display_leads_own_session(self):
+        # `kill_xvfb` only kills the whole process group if the vfb leads it,
+        # which must also be true when a root server starts the vfb as another user:
+        from xpra.x11.vfb_util import start_Xvfb
+        for root, uid in ((False, os.getuid()), (True, 1100)):
+            with self.subTest(root=root):
+                events = []
+                with patch("xpra.x11.vfb_util.get_xvfb_env", return_value={}), \
+                        patch("xpra.x11.vfb_util.getuid", return_value=0 if root else os.getuid()), \
+                        patch("xpra.x11.vfb_util.Popen", return_value=Mock(pid=1234)) as popen, \
+                        patch("xpra.x11.vfb_util.os.setsid", side_effect=lambda: events.append("setsid")), \
+                        patch("xpra.x11.vfb_util.setuidgid", side_effect=lambda *_args: events.append("setuidgid")):
+                    start_Xvfb(["Xvfb"], (), 0, 0, ":42", "/tmp", uid, 1000, "")
+                    popen.call_args.kwargs["preexec_fn"]()
+                self.assertEqual(events, ["setsid", "setuidgid"] if root else ["setsid"])
+
     # patch_pixel_depth
     def test_patch_depth_update_existing(self):
         from xpra.x11.vfb_util import patch_pixel_depth
