@@ -118,6 +118,15 @@ class ProxyInstance:
         self.exit = False
         self.server_packets: Queue[Packet] = Queue(PROXY_QUEUE_SIZE)
         self.client_packets: Queue[Packet] = Queue(PROXY_QUEUE_SIZE)
+        # gathered now, because `filter_caps` runs on the network parse threads,
+        # whose seccomp filter does not allow reading '/etc/machine-id' or calling `uname`:
+        self.proxy_info: dict[str, Any] = {
+            "session-type": "proxy",
+            "machine-id": get_machine_id(),
+            "version": vparts(XPRA_VERSION, FULL_INFO + 1),
+        }
+        if FULL_INFO > 0:
+            self.proxy_info["hostname"] = socket.gethostname()
 
     def is_alive(self) -> bool:
         return not self.exit
@@ -279,15 +288,8 @@ class ProxyInstance:
         if self.cipher_mode:
             from xpra.server.subsystem.encryption import proto_crypto_caps
             pcaps |= proto_crypto_caps(proto)
-            # then add the proxy info:
-        si = {
-            "session-type": "proxy",
-            "machine-id": get_machine_id(),
-            "version": vparts(XPRA_VERSION, FULL_INFO + 1),
-        }
-        if FULL_INFO > 0:
-            si["hostname"] = socket.gethostname()
-        pcaps["proxy"] = si
+        # then add the proxy info:
+        pcaps["proxy"] = dict(self.proxy_info)
         return pcaps
 
     ################################################################################
