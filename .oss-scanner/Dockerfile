@@ -80,9 +80,10 @@ RUN useradd --create-home --shell /bin/bash xpra-test && \
 USER xpra-test
 # run the unit tests the same way as the CI (this builds another copy under `/src/dist`),
 # without letting failures abort the build,
+# and with a time limit so that a slow machine cannot push the build past the scanner's 45 minutes,
 # `pillow_encoder_test` and `windowicon_test` are broken by the Ubuntu python3-pil 12.1.1 update:
 RUN export XDG_RUNTIME_DIR=/run/user/$(id -u) && \
-    XPRA_TEST_COVERAGE=0 dbus-run-session -- python3 setup.py unittests \
+    XPRA_TEST_COVERAGE=0 timeout --kill-after=1m 20m dbus-run-session -- python3 setup.py unittests \
         --skip-fail unit.codecs.pillow_encoder_test \
         --skip-fail unit.server.window.windowicon_test \
         --skip-fail unit.client.splash_test \
