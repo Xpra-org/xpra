@@ -301,13 +301,14 @@ class TestSocketWaitingAndPermissions(unittest.TestCase):
             self.assertFalse(io.wait_for_socket("socket", timeout=0))
             create.assert_not_called()
 
-    def test_writable_checks_owner_group_and_readonly_filesystems(self):
+    def test_writable_checks_owner_group_other_and_readonly_filesystems(self):
         info = SimpleNamespace(st_uid=1000, st_gid=2000, st_mode=0)
         with patch("xpra.os_util.getuid", return_value=9999), patch.object(io.os, "access", return_value=False), \
                 patch.object(io.os, "stat", return_value=info), \
                 patch.object(io.os, "statvfs", return_value=SimpleNamespace(f_flag=0)) as statvfs:
             for mode, uid, gid, expected in ((stat.S_IWUSR, 1000, 0, True), (stat.S_IWGRP, 0, 2000, True),
-                                             (stat.S_IWUSR, 0, 2000, False), (0, 1000, 2000, False)):
+                                             (stat.S_IWUSR, 0, 2000, False), (0, 1000, 2000, False),
+                                             (stat.S_IWOTH, 0, 0, True), (stat.S_IWUSR | stat.S_IWGRP, 0, 0, False)):
                 with self.subTest(mode=mode, uid=uid, gid=gid):
                     info.st_mode = mode
                     self.assertEqual(io.is_writable("file", uid, gid), expected)

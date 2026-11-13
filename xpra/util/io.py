@@ -131,7 +131,8 @@ def is_writable(path: str, uid: int, gid: int) -> bool:
     if s.st_gid == gid and mode & stat.S_IWGRP:
         # gid has write access:
         return True
-    return False
+    # ie: '/tmp/.X11-unix' is world-writable (1777) and owned by root:
+    return bool(mode & stat.S_IWOTH)
 
 
 def stderr_print(msg: str = "") -> bool:
