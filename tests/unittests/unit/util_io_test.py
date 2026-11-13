@@ -5,8 +5,10 @@
 # later version. See the file COPYING for details.
 
 import os
+import stat
 import tempfile
 import unittest
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from xpra.os_util import POSIX
@@ -21,6 +23,7 @@ from xpra.util.io import (
     get_proc_cmdline,
     path_permission_info,
     find_lib,
+    is_writable,
     osclose,
 )
 
@@ -243,6 +246,26 @@ class TestProcessAndPathHelpers(unittest.TestCase):
         with patch("xpra.util.io.get_util_logger", return_value=logger):
             osclose(rfd)
         logger.error.assert_called_once()
+
+    @unittest.skipUnless(POSIX, "Unix permission helpers")
+    def test_writable_checks_owner_group_other_and_readonly_filesystems(self):
+        info = SimpleNamespace(st_uid=1000, st_gid=2000, st_mode=0)
+        with patch("xpra.os_util.getuid", return_value=9999), patch("xpra.util.io.os.access", return_value=False), \
+                patch("xpra.util.io.os.stat", return_value=info), \
+                patch("xpra.util.io.os.statvfs", return_value=SimpleNamespace(f_flag=0)) as statvfs:
+            for mode, uid, gid, expected in ((stat.S_IWUSR, 1000, 0, True), (stat.S_IWGRP, 0, 2000, True),
+                                             (stat.S_IWUSR, 0, 2000, False), (0, 1000, 2000, False),
+                                             (stat.S_IWOTH, 0, 0, True), (stat.S_IWUSR | stat.S_IWGRP, 0, 0, False)):
+                with self.subTest(mode=mode, uid=uid, gid=gid):
+                    info.st_mode = mode
+                    self.assertEqual(is_writable("file", uid, gid), expected)
+            info.st_mode = stat.S_IWUSR
+            statvfs.return_value.f_flag = os.ST_RDONLY
+            self.assertFalse(is_writable("file", 1000, 2000))
+            statvfs.side_effect = OSError("unavailable")
+            self.assertTrue(is_writable("file", 1000, 2000))
+        with patch("xpra.util.io.os.access", return_value=False), patch("xpra.util.io.os.stat", side_effect=OSError("missing")):
+            self.assertFalse(is_writable("missing", 1000, 2000))
 
 
 def main():
