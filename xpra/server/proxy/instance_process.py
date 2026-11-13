@@ -9,6 +9,7 @@ import sys
 import signal
 import socket
 from typing import Any
+from collections.abc import Sequence
 from queue import Queue, SimpleQueue
 from multiprocessing import Process as DefaultProcess, get_context
 
@@ -24,11 +25,12 @@ from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.net.common import Packet, FULL_INFO
 from xpra.os_util import POSIX, getuid, getgid, get_username_for_uid, get_machine_id
 from xpra.util.env import osexpand
-from xpra.exit_codes import ExitValue, ExitCode
+from xpra.exit_codes import ExitValue
+from xpra.config import InitExit
 from xpra.util.parsing import str_to_bool
 from xpra.util.system import SIGNAMES, register_SIGUSR_signals, set_proc_title, deadly_signal
 from xpra.util.objects import typedict
-from xpra.util.str_fn import Ellipsizer
+from xpra.util.str_fn import Ellipsizer, csv
 from xpra.util.version import XPRA_VERSION
 from xpra.util.thread import start_thread
 from xpra.util.version import full_version_str
@@ -58,7 +60,7 @@ def set_blocking(conn) -> None:
 class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
     def __init__(self, uid: int, gid: int, env_options: dict[str, str], session_options: dict[str, str],
-                 socket_dir: str,
+                 socket_dirs: Sequence[str],
                  pings: int,
                  client_conn, disp_desc: dict[str, Any], client_state: dict[str, Any],
                  cipher: str, cipher_mode: str, encryption_key: bytes, server_conn, caps: typedict, message_queue):
@@ -76,9 +78,9 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         self.uid = uid
         self.gid = gid
         self.env_options = env_options
-        self.socket_dir = socket_dir
+        self.socket_dirs = tuple(socket_dirs)
         self.client_state = client_state
-        log("ProxyProcess%s", (uid, gid, env_options, session_options, socket_dir,
+        log("ProxyProcess%s", (uid, gid, env_options, session_options, socket_dirs,
                                client_conn, disp_desc, Ellipsizer(client_state),
                                cipher, cipher_mode, encryption_key, server_conn,
                                "%s: %s.." % (type(caps), Ellipsizer(caps)), message_queue))
@@ -166,8 +168,10 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         if POSIX and (getuid() != self.uid or getgid() != self.gid):
             # do we need a valid XDG_RUNTIME_DIR for the socket-dir?
             username = get_username_for_uid(self.uid)
-            socket_dir = osexpand(self.socket_dir, username, self.uid, self.gid)
-            if not os.path.exists(socket_dir):
+            for sdir in self.socket_dirs:
+                socket_dir = osexpand(sdir, username, self.uid, self.gid)
+                if os.path.exists(socket_dir):
+                    continue
                 log("the socket directory '%s' does not exist, checking for $XDG_RUNTIME_DIR path", socket_dir)
                 for prefix in ("/run/user/", "/var/run/user/"):
                     if socket_dir.startswith(prefix):
@@ -188,9 +192,8 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
         start_thread(self.server_message_queue, "server message queue")
 
-        if not self.create_control_socket():
-            return ExitCode.FAILURE
-        self.control_socket_thread = start_thread(self.control_socket_loop, "control", daemon=True)
+        if self.create_control_socket():
+            self.control_socket_thread = start_thread(self.control_socket_loop, "control", daemon=True)
 
         self.main_queue = SimpleQueue()
 
@@ -214,27 +217,37 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     # control socket:
 
     def create_control_socket(self) -> bool:
-        assert self.socket_dir
-
-        def stop(msg) -> None:
-            self.stop(None, f"cannot create the proxy control socket: {msg}")
-
+        """
+        The control socket is optional: try each socket directory in turn,
+        (the user may not be allowed to write to the first one, ie: '/run/xpra' outside the 'xpra' group)
+        and carry on without one if none of them can be used.
+        """
         username = get_username_for_uid(self.uid)
-        dotxpra = DotXpra([self.socket_dir], actual_username=username, uid=self.uid, gid=self.gid)
         sockname = f":proxy-{os.getpid()}"
-        sockpath = dotxpra.socket_path(sockname)
-        log("%s.socket_path(%s)=%s", dotxpra, sockname, sockpath)
+        for socket_dir in self.socket_dirs:
+            dotxpra = DotXpra([socket_dir], actual_username=username, uid=self.uid, gid=self.gid)
+            sockpath = dotxpra.socket_path(sockname)
+            if self.create_control_socket_at(dotxpra, sockpath):
+                log.info("proxy instance now also available using unix domain socket:")
+                log.info(" %s", self.control_socket_path)
+                return True
+        log.warn("Warning: no control socket for this proxy instance")
+        log.warn(" tried: %s", csv(self.socket_dirs) or "no socket directories")
+        return False
+
+    def create_control_socket_at(self, dotxpra: DotXpra, sockpath: str) -> bool:
+        log("%s.socket_path()=%s", dotxpra, sockpath)
         state = dotxpra.get_server_state(sockpath)
-        log("create_control_socket: socket path='%s', uid=%i, gid=%i, state=%s", sockpath, getuid(), getgid(), state)
+        log("create_control_socket_at: socket path='%s', uid=%i, gid=%i, state=%s", sockpath, getuid(), getgid(), state)
         if state in (SocketState.LIVE, SocketState.UNKNOWN, SocketState.INACCESSIBLE):
-            log.error("Error: you already have a proxy server running at '%s'", sockpath)
-            log.error(" the control socket will not be created")
-            stop("socket already exists")
+            log.warn("Warning: cannot create the proxy control socket '%s'", sockpath)
+            log.warn(" a socket in state %s already exists", state)
             return False
         d = os.path.dirname(sockpath)
         try:
             dotxpra.mksockdir(d, SOCKET_DIR_MODE)
         except Exception as e:
+            log("mksockdir(%s, %s)", d, SOCKET_DIR_MODE, exc_info=True)
             log.warn("Warning: failed to create socket directory '%s'", d)
             log.warn(" %s", e)
         sock = None
@@ -243,16 +256,17 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             sock.listen(5)
         except Exception as e:
             log("create_unix_domain_socket failed for '%s'", sockpath, exc_info=True)
-            log.error("Error: failed to setup control socket '%s':", sockpath)
+            try:
+                handle_socket_error(sockpath, 0o600, e)
+            except InitExit:
+                # the control socket is optional, try the next directory
+                pass
             if sock:
                 noerr(sock.close)
-            handle_socket_error(sockpath, 0o600, e)
-            stop(e)
+            self.control_socket_cleanup = noop
             return False
         self.control_socket = sock
         self.control_socket_path = sockpath
-        log.info("proxy instance now also available using unix domain socket:")
-        log.info(" %s", self.control_socket_path)
         return True
 
     def stop_control_socket(self) -> None:

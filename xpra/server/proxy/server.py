@@ -707,8 +707,7 @@ class ProxyServer(ServerCore):
                     return
                 client_conn.set_active(True)
                 from xpra.server.proxy.instance_process import ProxyInstanceProcess
-                socket_dir = self.socket_dirs[0] if self.socket_dirs else ""
-                process = ProxyInstanceProcess(uid, gid, env_options, session_options, socket_dir,
+                process = ProxyInstanceProcess(uid, gid, env_options, session_options, self.socket_dirs,
                                                self.pings,
                                                client_conn, disp_desc, client_state,
                                                cipher, cipher_mode, encryption_key, server_conn, c, message_queue)

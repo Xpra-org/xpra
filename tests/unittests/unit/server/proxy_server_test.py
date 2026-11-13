@@ -113,6 +113,49 @@ class ProxyControlTest(unittest.TestCase):
             sock.close()
             peer.close()
 
+    @unittest.skipUnless(POSIX, "unix domain sockets are only used on posix")
+    def test_control_socket_directories(self):
+        # the user may not be allowed to use the first socket directory,
+        # ie: '/run/xpra' when the user is not a member of the 'xpra' group
+        import os
+        import tempfile
+        from xpra.common import noop
+        from xpra.server.proxy.instance_process import ProxyInstanceProcess
+        if os.getuid() == 0:
+            self.skipTest("root can write to read-only directories")
+
+        def make_instance(*socket_dirs: str):
+            instance = ProxyInstanceProcess.__new__(ProxyInstanceProcess)
+            instance.uid = os.getuid()
+            instance.gid = os.getgid()
+            instance.socket_dirs = socket_dirs
+            instance.control_socket = None
+            instance.control_socket_path = ""
+            instance.control_socket_cleanup = noop
+            return instance
+
+        with tempfile.TemporaryDirectory(prefix="ctl") as tmpdir:
+            readonly = os.path.join(tmpdir, "ro")
+            writable = os.path.join(tmpdir, "rw")
+            os.mkdir(readonly, 0o500)
+            os.mkdir(writable, 0o700)
+            try:
+                instance = make_instance(readonly, writable)
+                self.assertTrue(instance.create_control_socket())
+                try:
+                    self.assertEqual(os.path.dirname(instance.control_socket_path), writable)
+                    self.assertTrue(os.path.exists(instance.control_socket_path))
+                finally:
+                    instance.stop_control_socket()
+                self.assertFalse(os.listdir(writable))
+                # no usable directory: carry on without a control socket
+                instance = make_instance(readonly)
+                self.assertFalse(instance.create_control_socket())
+                self.assertIsNone(instance.control_socket)
+                self.assertFalse(make_instance().create_control_socket())
+            finally:
+                os.chmod(readonly, 0o700)
+
     def test_filter_caps_on_parse_thread(self):
         # `filter_caps` runs on the parse threads, where seccomp makes these lookups fail:
         from xpra.server.proxy import instance_base
