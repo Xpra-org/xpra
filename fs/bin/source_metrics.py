@@ -490,7 +490,7 @@ def snapshot(repo: Path, commit: str, paths, age: bool, cache: Cache) -> dict:
         python_files = 0
         for path, data in content.items():
             suffix = Path(path).suffix
-            stats = cache.get_or_create("lines", [blobs[path], suffix], lambda: vars(line_stats_for(path, data)))
+            stats = cache.get_or_create("lines", [blobs[path], suffix], lambda: vars(line_stats_for(path, data)))  # NOSONAR
             total = by_type.setdefault(suffix, {key: 0 for key in stats})
             for key, value in stats.items():
                 total[key] += value
@@ -500,7 +500,7 @@ def snapshot(repo: Path, commit: str, paths, age: bool, cache: Cache) -> dict:
                 module = module_name(path)
                 analysis = cache.get_or_create(
                     "python", [blobs[path], module, path.endswith("/__init__.py")],
-                    lambda: analyze_python(data, module, path.endswith("/__init__.py")),
+                    lambda: analyze_python(data, module, path.endswith("/__init__.py")),  # NOSONAR
                 )
                 if analysis["errors"]:
                     errors.append({"path": path, "metric": "python", "error": "; ".join(analysis["errors"])})
@@ -600,10 +600,18 @@ def survival(repo: Path, base: str, end: str, paths, cache: Cache) -> dict:
                 if total and fraction <= .5 and half_life is None:
                     half_life = days
         complete = not errors and observed == total
+        if not complete:
+            status = "incomplete"
+        elif not total:
+            status = "empty"
+        elif half_life is not None:
+            status = "reached"
+        else:
+            status = "not reached"
         return {"base": base, "end": end, "baseline_lines": total, "observed_lines": observed,
                 "observation_days": max(0, (dates[-1] - dates[0]) / 86400),
                 "half_life_days": half_life if complete else None,
-                "status": "incomplete" if not complete else "empty" if not total else "reached" if half_life is not None else "not reached",
+                "status": status,
                 "points": points if complete and total else [], "complete": complete, "errors": errors}
     return cache.get_or_create("survival", [base, end, list(paths)], collect)
 
