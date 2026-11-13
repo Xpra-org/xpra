@@ -8,6 +8,7 @@ import os
 import sys
 import time
 import unittest
+from unittest.mock import Mock
 
 from xpra.util.objects import AdHocStruct
 from xpra.os_util import WIN32, OSX
@@ -99,6 +100,21 @@ class NotificationForwarderMixinTest(ServerMixinTest):
         # no longer active:
         forwarder.notification_closed(nid, 2)
         self.assertFalse(action("reply"))
+
+    def test_replies_after_disconnect(self):
+        from xpra.net.common import Packet
+        from xpra.server.subsystem.notification import NotificationForwarder
+        # these handlers run from the main loop,
+        # the client may have disconnected since the packet was received:
+        server = AdHocStruct()
+        server.get_server_source = lambda _proto: None
+        nf = NotificationForwarder(server)
+        nf.enabled = True
+        nf.forwarder = forwarder = Mock()
+        nf._process_close(None, Packet("notification-close", 1, 1, "expired"))
+        nf._process_action(None, Packet("notification-action", 1, "default"))
+        # the replies are dropped, not forwarded to the application:
+        self.assertEqual(forwarder.mock_calls, [])
 
 
 def main():
