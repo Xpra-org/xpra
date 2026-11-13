@@ -19,6 +19,9 @@ ARG XDUMMY=1
 
 ENV DEBIAN_FRONTEND=noninteractive
 
+# known issue: Ubuntu's gdk-pixbuf loads every image through glycin's sandboxed loaders (`bwrap --dev /dev`),
+# which cannot mount `devpts` inside a rootless podman container, so the server cannot load icon theme icons
+# and only sends the windows' own icons (see `.oss-scanner/Dockerfile` for a `bwrap` wrapper which works around it)
 # apt needs the CA certificates before it can use the https xpra repository:
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates
