@@ -6,7 +6,6 @@
 import os
 import sys
 import ssl
-import binascii
 from typing import Any
 
 from xpra.exit_codes import ExitCode
@@ -42,7 +41,7 @@ def extract_certificates(data: bytes, max_size: int = 0, max_certificates: int =
         pem = data[begin:end]
         try:
             der = ssl.PEM_cert_to_DER_cert(pem.decode("ascii"))
-        except (UnicodeDecodeError, ValueError, binascii.Error) as e:
+        except ValueError as e:
             raise ValueError("invalid PEM certificate block") from e
         if not der:
             raise ValueError("empty PEM certificate block")

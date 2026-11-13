@@ -246,7 +246,7 @@ def analyze_python(data: bytes, module: str, package: bool) -> dict:
         visitor.bind_definitions(tree.body)
         visitor.visit(tree)
         return {"classes": visitor.classes, "imports": sorted(visitor.imports), "functions": visitor.functions, "errors": []}
-    except (SyntaxError, ValueError, UnicodeError) as e:
+    except (SyntaxError, ValueError) as e:
         return {"classes": {}, "imports": [], "functions": [], "errors": [str(e)]}
 
 
@@ -354,7 +354,7 @@ def codec_counts(content: dict[str, bytes]) -> dict:
             names = codec_names_from_loader(loader.decode("utf-8"), strict=True)
             if not names:
                 errors.append("ALL_CODECS could not be resolved")
-        except (SyntaxError, ValueError, UnicodeError, TypeError) as e:
+        except (SyntaxError, ValueError, TypeError) as e:
             errors.append(str(e))
     roles = {role: [] for role in ("encoder", "decoder", "converter", "filter", "capture", "other")}
     for name in names:

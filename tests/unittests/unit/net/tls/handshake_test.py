@@ -151,7 +151,7 @@ class TestSSLVerifyFailure(unittest.TestCase):
                 try:
                     with self.server_context.wrap_socket(conn, server_side=True) as ssl_conn:
                         ssl_conn.recv(1)
-                except (OSError, ssl.SSLError):
+                except OSError:
                     pass
                 finally:
                     conn.close()

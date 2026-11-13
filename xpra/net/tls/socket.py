@@ -345,7 +345,7 @@ def get_server_certificate(display_desc: dict[str, Any], server_hostname: str) -
         with context.wrap_socket(sock, server_hostname=server_hostname) as ssl_sock:
             der = ssl_sock.getpeercert(binary_form=True)
         return ssl.DER_cert_to_PEM_cert(der) if der else ""
-    except (OSError, ValueError, TypeError, ssl.SSLError, InitException):
+    except (OSError, ValueError, TypeError, InitException):
         log("get_server_certificate(%s, %s)", display_desc, server_hostname, exc_info=True)
         return ""
     finally:

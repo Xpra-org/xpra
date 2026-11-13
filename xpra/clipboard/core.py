@@ -387,10 +387,9 @@ class ClipboardProtocolHelperCore(SubsystemPacketHandlers):
         proxy = self._get_clipboard_token_proxy(selection)
         if proxy is None:
             return
-        if origin:
-            if self.is_clipboard_loop(proxy._selection, origin):
-                log.warn("Warning: clipboard loop detected for %r", proxy._selection)
-                return
+        if origin and self.is_clipboard_loop(proxy._selection, origin):
+            log.warn("Warning: clipboard loop detected for %r", proxy._selection)
+            return
         proxy._clipboard_origin = origin
         targets = None
         target_data = None

@@ -184,7 +184,7 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
     try:
         results = load_results(args.input)
-    except (OSError, ValueError, json.JSONDecodeError) as e:
+    except (OSError, ValueError) as e:
         parser.error(str(e))
     selected = {value for value in args.encodings.split(",") if value}
     by_encoding = defaultdict(list)

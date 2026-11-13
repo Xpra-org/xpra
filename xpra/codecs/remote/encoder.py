@@ -179,7 +179,7 @@ def init_module(options: dict) -> None:
             uri_override["uri"] = uri
             add_server(uri_override)
     # single uri:
-    if uri := options.get("uri", ""):
+    if options.get("uri", ""):
         add_server(options)
 
 
