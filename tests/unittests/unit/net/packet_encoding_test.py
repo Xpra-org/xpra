@@ -48,6 +48,10 @@ class TestPacketEncoding(unittest.TestCase):
             rencodeplus.loads(encoded)
         with self.assertRaises(ValueError):
             rencodeplus.loads(rencodeplus.dumps(("hello", {})) + b"trailing")
+        # string lengths that do not fit in a C int, or longer than the data:
+        for length in (b"9" * 40, b"4294967296", b"2147483648", b"100"):
+            with self.assertRaises(ValueError):
+                rencodeplus.loads(length + b"/" + b"x" * 10)
 
     def test_yaml_decoder_limits(self):
         import yaml

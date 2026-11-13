@@ -89,7 +89,13 @@ def compress(data: SizedBuffer, acceleration=1) -> memoryview:
 def decompress(data: SizedBuffer, int max_size=0, int size=0) -> memoryview:
     cdef int size_header = 0
     if size == 0:
-        size = struct.unpack_from(b"<I", data[:4])[0]
+        if len(data) < 4:
+            raise ValueError(f"lz4 data is too short: {len(data)} bytes")
+        # validate it before converting it to a C int, which raises `OverflowError` for large values:
+        header_size = struct.unpack_from(b"<I", data[:4])[0]
+        if header_size > LZ4_MAX_INPUT_SIZE:
+            raise ValueError("data would overflow lz4 max input size %i" % LZ4_MAX_INPUT_SIZE)
+        size = header_size
         size_header = 4
     if max_size > 0 and size > max_size:
         raise ValueError("data would overflow max-size %i" % max_size)

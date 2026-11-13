@@ -478,7 +478,11 @@ cdef inline object decode_str(char *data, unsigned int *pos, long long data_leng
         if x >= MAX_INT_LENGTH:
             raise ValueError(f"String length is longer than {MAX_INT_LENGTH} characters")
         check_pos(data, pos[0]+x, data_length)
-    cdef int size = int(data[pos[0]:pos[0]+x])
+    length = int(data[pos[0]:pos[0]+x])
+    # validate it before converting it to a C int, which raises `OverflowError` for large values:
+    if length > data_length - pos[0] - x - 1:
+        raise ValueError(f"String length {length} exceeds the {data_length - pos[0] - x - 1} bytes remaining")
+    cdef int size = length
     cdef bool binary = data[pos[0]+x]==47
     pos[0] += x + 1
     check_pos(data, pos[0] + size - 1, data_length)
