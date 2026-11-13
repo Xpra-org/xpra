@@ -7,7 +7,7 @@
   const uad = navigator.userAgentData;
 
   function detect_os() {
-    const platform = (uad && uad.platform) || navigator.platform || "";
+    const platform = uad?.platform || navigator.platform || "";
     if (/android|iphone|ipad|ipod|cros/i.test(ua + " " + platform)) {
       return "other";
     }
@@ -73,7 +73,7 @@
     }
     const select = controls[get_value("method")];
     const option = select.options[select.selectedIndex];
-    return option && option.dataset.grey ? option.dataset.grey.split(" ") : [];
+    return option?.dataset.grey ? option.dataset.grey.split(" ") : [];
   }
 
   function update_greyed() {
@@ -126,7 +126,7 @@
   }
 
   function guess_arch() {
-    if (!uad || !uad.getHighEntropyValues || !controls.arch) {
+    if (!uad?.getHighEntropyValues || !controls.arch) {
       return Promise.resolve("");
     }
     return uad.getHighEntropyValues(["architecture"]).then(function (values) {
