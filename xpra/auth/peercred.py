@@ -31,10 +31,11 @@ class Authenticator(SysAuthenticator):
         uids = kwargs.pop("uid", "")
         gids = kwargs.pop("gid", "")
         allow_owner = kwargs.pop("allow-owner", "yes").lower() in TRUE_OPTIONS
-        self.check_peercred(connection, uids, gids, allow_owner)
+        root_allowed = str(kwargs.pop("root-allowed", True)).lower() in TRUE_OPTIONS
+        self.check_peercred(connection, uids, gids, allow_owner, root_allowed)
         super().__init__(**kwargs)
 
-    def check_peercred(self, connection, uids="", gids="", allow_owner: bool = False) -> None:
+    def check_peercred(self, connection, uids="", gids="", allow_owner: bool = False, root_allowed: bool = True) -> None:
         allow_uids = allow_gids = None
         if uids:
             allow_uids = []
@@ -67,9 +68,9 @@ class Authenticator(SysAuthenticator):
                     else:
                         log.warn("Warning: unknown group '%s'", x)
             log("peercred: allow_gids(%s)=%s", gids, allow_gids)
-        self.do_check_peercred(connection, allow_uids, allow_gids, allow_owner)
+        self.do_check_peercred(connection, allow_uids, allow_gids, allow_owner, root_allowed)
 
-    def do_check_peercred(self, connection, allow_uids=None, allow_gids=None, allow_owner=False):
+    def do_check_peercred(self, connection, allow_uids=None, allow_gids=None, allow_owner=False, root_allowed=True):
         try:
             if connection and isinstance(connection, SocketConnection):
                 sock = connection._socket
@@ -81,6 +82,9 @@ class Authenticator(SysAuthenticator):
                 _, uid, gid = peercred
 
                 def check() -> bool:
+                    if root_allowed and uid == 0:
+                        log("matched root user")
+                        return True
                     if allow_owner and uid == getuid():
                         log(f"matched owner: {uid}")
                         return True

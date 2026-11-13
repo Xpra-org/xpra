@@ -1135,6 +1135,8 @@ Access can be restricted by supplying a colon separated list of valid
 \fIuid\fPs and \fIgid\fPs that are allowed to connect.
 Those id values may be specified using numerical values or using
 the usernames / group names.
+The root user is allowed by default; use \fIroot\-allowed=no\fP to disable
+this implicit authorization.
 This module is different from the others in that it will not require
 the client to supply a username or password, as those are ignored.
 Environment variables and pseudo-environment variables may also be used

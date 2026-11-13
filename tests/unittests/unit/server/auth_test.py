@@ -403,6 +403,23 @@ class TestAuth(unittest.TestCase):
                 pass
         assert verified
 
+    def test_peercred_root_allowed(self) -> None:
+        if not POSIX or OSX:
+            return
+        from xpra.net.bytestreams import SocketConnection
+
+        connection = SocketConnection(None, "local", "remote", "target", "unix")
+        with patch("xpra.auth.peercred.get_peercred", return_value=(123, 0, 0)), patch("xpra.auth.peercred.getuid", return_value=1000):
+            pc = self._init_auth("peercred", connection=connection)
+            assert self.capsauth(pc)
+            assert pc.get_uid() == 0 and pc.get_gid() == 0
+
+            pc = self._init_auth("peercred", connection=connection, **{"root-allowed": "no"})
+            assert not self.capsauth(pc)
+
+            pc = self._init_auth("peercred", connection=connection, uid="0", **{"root-allowed": "no"})
+            assert self.capsauth(pc)
+
     def test_hosts(self) -> None:
         # cannot be tested (would require root to edit the hosts.deny file)
         pass
