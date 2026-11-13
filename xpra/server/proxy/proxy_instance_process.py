@@ -31,6 +31,7 @@ from xpra.version_util import full_version_str
 from xpra.net.socket_util import create_unix_domain_socket, handle_socket_error
 from xpra.platform.dotxpra import DotXpra
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
+from xpra.scripts.config import InitExit
 from xpra.log import Logger
 
 log = Logger("proxy")
@@ -67,7 +68,7 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         self.uid = uid
         self.gid = gid
         self.env_options = env_options
-        self.socket_dir = socket_dir
+        self.socket_dirs = (socket_dir,) if isinstance(socket_dir, str) else tuple(socket_dir)
         self.client_state = client_state
         log("ProxyProcess%s", (uid, gid, env_options, session_options, socket_dir,
                                video_encoder_modules,
@@ -139,8 +140,10 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         if POSIX and (getuid()!=self.uid or getgid()!=self.gid):
             #do we need a valid XDG_RUNTIME_DIR for the socket-dir?
             username = get_username_for_uid(self.uid)
-            socket_dir = osexpand(self.socket_dir, username, self.uid, self.gid)
-            if not os.path.exists(socket_dir):
+            for sdir in self.socket_dirs:
+                socket_dir = osexpand(sdir, username, self.uid, self.gid)
+                if os.path.exists(socket_dir):
+                    continue
                 log("the socket directory '%s' does not exist, checking for $XDG_RUNTIME_DIR path", socket_dir)
                 for prefix in ("/run/user/", "/var/run/user/"):
                     if socket_dir.startswith(prefix):
@@ -161,9 +164,8 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
 
         start_thread(self.server_message_queue, "server message queue")
 
-        if not self.create_control_socket():
-            return
-        self.control_socket_thread = start_thread(self.control_socket_loop, "control", daemon=True)
+        if self.create_control_socket():
+            self.control_socket_thread = start_thread(self.control_socket_loop, "control", daemon=True)
 
         self.main_queue = Queue()
 
@@ -185,11 +187,15 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
     ################################################################################
     # control socket:
     def create_control_socket(self) -> bool:
-        assert self.socket_dir
-        def stop(msg):
-            self.stop(None, f"cannot create the proxy control socket: {msg}")
+        for socket_dir in self.socket_dirs:
+            if self.create_control_socket_at(socket_dir):
+                return True
+        log.warn("Warning: no control socket for this proxy instance")
+        return False
+
+    def create_control_socket_at(self, socket_dir) -> bool:
         username = get_username_for_uid(self.uid)
-        dotxpra = DotXpra(self.socket_dir, actual_username=username, uid=self.uid, gid=self.gid)
+        dotxpra = DotXpra(socket_dir, actual_username=username, uid=self.uid, gid=self.gid)
         sockname = f":proxy-{os.getpid()}"
         sockpath = dotxpra.socket_path(sockname)
         log("%s.socket_path(%s)=%s", dotxpra, sockname, sockpath)
@@ -198,7 +204,6 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
         if state in (DotXpra.LIVE, DotXpra.UNKNOWN, DotXpra.INACCESSIBLE):
             log.error("Error: you already have a proxy server running at '%s'", sockpath)
             log.error(" the control socket will not be created")
-            stop("socket already exists")
             return False
         d = os.path.dirname(sockpath)
         try:
@@ -215,8 +220,11 @@ class ProxyInstanceProcess(ProxyInstance, QueueScheduler, Process):
             log.error("Error: failed to setup control socket '%s':", sockpath)
             if sock:
                 noerr(sock.close)
-            handle_socket_error(sockpath, 0o600, e)
-            stop(e)
+            try:
+                handle_socket_error(sockpath, 0o600, e)
+            except InitExit:
+                pass
+            self.control_socket_cleanup = None
             return False
         self.control_socket = sock
         self.control_socket_path = sockpath

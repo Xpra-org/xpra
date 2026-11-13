@@ -287,6 +287,8 @@ class ProxyServer(ServerCore):
             #already handled in superclass
             return
         self.accept_client(proto, c)
+        from xpra.net.bytestreams import set_socket_timeout
+        set_socket_timeout(proto._conn, self._socket_timeout)
         generic_request = c.strget("request")
         def is_req(mode):
             return generic_request==mode or c.boolget("%s_request" % mode)
@@ -556,7 +558,8 @@ class ProxyServer(ServerCore):
                     return
                 client_conn.set_active(True)
                 from xpra.server.proxy.proxy_instance_process import ProxyInstanceProcess
-                process = ProxyInstanceProcess(uid, gid, env_options, session_options, self._socket_dir,
+                socket_dirs = tuple(dict.fromkeys(x for x in (self._socket_dir, *self._socket_dirs) if x))
+                process = ProxyInstanceProcess(uid, gid, env_options, session_options, socket_dirs,
                                                self.video_encoders, self.pings,
                                                client_conn, disp_desc, client_state,
                                                cipher, cipher_mode, encryption_key, server_conn, c, message_queue)
