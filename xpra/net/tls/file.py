@@ -5,6 +5,8 @@
 
 import os
 import sys
+import ssl
+import binascii
 from typing import Any
 
 from xpra.exit_codes import ExitCode
@@ -19,6 +21,39 @@ from xpra.util.str_fn import std, Ellipsizer
 KEY_SIZE = 4096
 KEY_DAYS = 3650
 KEY_SUBJ = "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost"
+PEM_CERTIFICATE_BEGIN = b"-----BEGIN CERTIFICATE-----"
+PEM_CERTIFICATE_END = b"-----END CERTIFICATE-----"
+
+
+def extract_certificates(data: bytes) -> bytes:
+    """Return only canonical PEM certificate blocks from *data*."""
+    certificates: list[bytes] = []
+    offset = 0
+    while True:
+        begin = data.find(PEM_CERTIFICATE_BEGIN, offset)
+        if begin < 0:
+            break
+        end = data.find(PEM_CERTIFICATE_END, begin + len(PEM_CERTIFICATE_BEGIN))
+        if end < 0:
+            raise ValueError("unterminated PEM certificate block")
+        end += len(PEM_CERTIFICATE_END)
+        pem = data[begin:end]
+        try:
+            der = ssl.PEM_cert_to_DER_cert(pem.decode("ascii"))
+        except (UnicodeDecodeError, ValueError, binascii.Error) as e:
+            raise ValueError("invalid PEM certificate block") from e
+        if not der:
+            raise ValueError("empty PEM certificate block")
+        certificates.append(ssl.DER_cert_to_PEM_cert(der).encode("ascii"))
+        offset = end
+    if not certificates:
+        raise ValueError("no PEM certificate blocks found")
+    return b"".join(certificates)
+
+
+def load_certificates(filename: str) -> bytes:
+    from xpra.util.io import load_binary_file
+    return extract_certificates(load_binary_file(filename))
 
 
 def find_ssl_cert(filename: str = CERT_FILENAME) -> str:

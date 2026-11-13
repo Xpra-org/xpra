@@ -368,10 +368,12 @@ The server MAY answer a client `hello` with `ssl-upgrade` before authentication,
 when the connection is plain TCP, the client set the top-level `ssl-upgrade`
 boolean to true, it did not request `encryption`, and the server has a TLS
 certificate. TLS and upgrades must also be enabled for that server connection.
-The `attributes` contain `cert-data:bytes`, the contents of the server's
-certificate file (PEM). The client sends `["ssl-upgrade", {}]`, finishes sending
-that packet and stops packet I/O, performs a TLS client handshake on the same
-socket, then sends its `hello` again over TLS.
+The `attributes` contain `cert-data:bytes`, consisting only of the canonical PEM
+certificate blocks extracted from the server's certificate chain. Private keys
+and other file contents MUST NOT be included. The client sends
+`["ssl-upgrade", {}]`, finishes sending that packet and stops packet I/O,
+performs a TLS client handshake on the same socket, then sends its `hello` again
+over TLS.
 
 A client MUST only advertise `ssl-upgrade: true` if it implements this exchange.
 It should include the capability in its initial `hello`, including a minimal

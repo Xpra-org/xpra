@@ -7,12 +7,18 @@
 import os
 import tempfile
 import unittest
+from base64 import b64encode
 
 
 SAMPLE_CERT = (
     b"-----BEGIN CERTIFICATE-----\n"
-    b"MIICpDCCAYwCCQDU+pQ4pHgSpDANBgkqhkiG9w0BAQsFADAUMRIwEAYDVQQDDAls\n"
-    b"b2NhbGhvc3QwHhcN...\n"
+    + b64encode(b"certificate-one") + b"\n"
+    b"-----END CERTIFICATE-----\n"
+)
+
+SAMPLE_CERT_2 = (
+    b"-----BEGIN CERTIFICATE-----\n"
+    + b64encode(b"certificate-two") + b"\n"
     b"-----END CERTIFICATE-----\n"
 )
 
@@ -52,6 +58,39 @@ class TestStripCert(unittest.TestCase):
     def test_empty_input(self):
         from xpra.net.tls.file import strip_cert
         assert strip_cert(b"") == b""
+
+
+class TestExtractCertificates(unittest.TestCase):
+
+    def test_extracts_only_certificate_chain(self):
+        from xpra.net.tls.file import extract_certificates
+        data = b"leading data\n" + SAMPLE_KEY + b"middle data\n" + SAMPLE_CERT + SAMPLE_CERT_2 + b"trailing data\n"
+        result = extract_certificates(data)
+        assert result.count(b"-----BEGIN CERTIFICATE-----") == 2
+        assert b"PRIVATE KEY" not in result
+        assert b"leading data" not in result
+        assert b"middle data" not in result
+        assert b"trailing data" not in result
+
+    def test_rejects_missing_and_malformed_certificates(self):
+        from xpra.net.tls.file import extract_certificates
+        for data in (
+            b"", SAMPLE_KEY,
+            b"-----BEGIN CERTIFICATE-----\nmissing end",
+            b"-----BEGIN CERTIFICATE-----\n!!!\n-----END CERTIFICATE-----",
+            b"-----BEGIN CERTIFICATE-----\nabc\n-----END CERTIFICATE-----",
+        ):
+            with self.subTest(data=data), self.assertRaises(ValueError):
+                extract_certificates(data)
+
+    def test_loads_certificate_only_file_data(self):
+        from xpra.net.tls.file import load_certificates
+        with tempfile.NamedTemporaryFile() as certificate_file:
+            certificate_file.write(SAMPLE_KEY + SAMPLE_CERT)
+            certificate_file.flush()
+            result = load_certificates(certificate_file.name)
+        assert b"PRIVATE KEY" not in result
+        assert result.count(b"-----BEGIN CERTIFICATE-----") == 1
 
 
 class TestLoadSslOptions(unittest.TestCase):

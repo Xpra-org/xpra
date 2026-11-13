@@ -6,10 +6,13 @@
 
 import unittest
 import sys
+import tempfile
+from base64 import b64encode
 from types import SimpleNamespace
 from unittest.mock import Mock, call, patch
 
 from xpra.net.common import Packet
+from xpra.net.constants import ConnectionMessage
 from xpra.net.socket_util import SocketListener
 from xpra.os_util import OSX, POSIX
 from xpra.server.base import ServerBase
@@ -18,6 +21,44 @@ from xpra.server.subsystem.network import NetworkServer
 
 
 class TestServerCore(unittest.TestCase):
+
+    def ssl_upgrade(self, certificate_data: bytes):
+        with tempfile.NamedTemporaryFile() as certificate_file:
+            certificate_file.write(certificate_data)
+            certificate_file.flush()
+            network = SimpleNamespace(
+                ssl_upgrade=True,
+                get_ssl_socket_options=Mock(return_value={"cert": certificate_file.name}),
+                disconnect_client=Mock(),
+            )
+            server = ServerCore.__new__(ServerCore)
+            server.subsystems = {"network": network}
+            server.compression_level = 0
+            proto = Mock()
+            proto._conn = SimpleNamespace(socktype="tcp", options={})
+            proto.enable_encoder_from_caps.return_value = True
+            packet = Packet("hello", {"protocol-version": (7, 0), "ssl-upgrade": True})
+            with patch("xpra.server.core.GLib.idle_add", side_effect=lambda callback: callback()):
+                ServerCore._process_hello(server, proto, packet)
+        return proto, network
+
+    def test_ssl_upgrade_sends_certificates_only(self):
+        certificate = (
+            b"-----BEGIN CERTIFICATE-----\n" + b64encode(b"certificate") + b"\n-----END CERTIFICATE-----\n"
+        )
+        private_key = b"-----BEGIN PRIVATE KEY-----\nprivate\n-----END PRIVATE KEY-----\n"
+        proto, network = self.ssl_upgrade(private_key + certificate + b"unrelated\n")
+        proto.send_now.assert_called_once()
+        cert_data = proto.send_now.call_args.args[0].get_dict(1)["cert-data"]
+        self.assertEqual(cert_data.count(b"-----BEGIN CERTIFICATE-----"), 1)
+        self.assertNotIn(b"PRIVATE KEY", cert_data)
+        self.assertNotIn(b"unrelated", cert_data)
+        network.disconnect_client.assert_not_called()
+
+    def test_ssl_upgrade_rejects_invalid_certificate_file(self):
+        proto, network = self.ssl_upgrade(b"-----BEGIN PRIVATE KEY-----\nprivate\n-----END PRIVATE KEY-----\n")
+        proto.send_now.assert_not_called()
+        network.disconnect_client.assert_called_once_with(proto, ConnectionMessage.SERVER_ERROR, "invalid SSL certificate")
 
     @unittest.skipUnless(POSIX and not OSX, "X11 server classes require a POSIX X11 build")
     def test_display_mode_hello(self):

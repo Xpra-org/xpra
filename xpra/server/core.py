@@ -32,7 +32,6 @@ from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.platform import set_name, threaded_server_init
 from xpra.os_util import force_quit, OSX, gi_import
 from xpra.util.system import register_SIGUSR_signals, get_run_info, deadly_signal
-from xpra.util.io import load_binary_file
 from xpra.util.background_worker import get_worker, quit_worker
 from xpra.util.thread import start_thread, check_main_thread
 from xpra.common import noop, noerr, stop_asyncio_loop
@@ -452,7 +451,13 @@ class ServerCore(GLibServer):
                     # thread we are running on (which the seccomp filter forbids from
                     # opening files - see `docs/Usage/Seccomp.md`):
                     def send_ssl_upgrade() -> bool:
-                        cert_data = load_binary_file(cert)
+                        from xpra.net.tls.file import load_certificates
+                        try:
+                            cert_data = load_certificates(cert)
+                        except (OSError, ValueError) as e:
+                            log.error("Error: cannot load SSL certificates from %r: %s", cert, e)
+                            self.network.disconnect_client(proto, ConnectionMessage.SERVER_ERROR, "invalid SSL certificate")
+                            return False
                         ssl_attrs = {"cert-data": cert_data}
                         proto.send_now(Packet(SSL_UPGRADE, ssl_attrs))
                         return False
