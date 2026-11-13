@@ -162,7 +162,8 @@ class NotificationForwarder(StubServerMixin):
         assert self.notifications
         nid, reason, text = packet[1:4]
         ss = self.get_server_source(proto)
-        assert ss
+        if not ss:
+            return
         log("closing notification %s: %s, %s", nid, reason, text)
         try:
             #remove client callback if we have one:
@@ -180,7 +181,8 @@ class NotificationForwarder(StubServerMixin):
         assert self.notifications
         nid, action_key = packet[1:3]
         ss = self.get_server_source(proto)
-        assert ss
+        if not ss:
+            return
         ss.user_event()
         try:
             #special client callback notification:
