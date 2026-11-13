@@ -41,6 +41,7 @@ from xpra.config.types import PROXY_START_OVERRIDABLE_OPTIONS, OPTION_TYPES
 from xpra.scripts.parsing import parse_display_name
 from xpra.scripts.proxy import start_server_subprocess
 from xpra.net.connect import connect_to
+from xpra.net.bytestreams import set_socket_timeout
 from xpra.util.thread import start_thread
 from xpra.log import Logger
 
@@ -336,6 +337,10 @@ class ProxyServer(ServerCore):
             # already handled in superclass, which also rejects the requests we don't support
             return
         self.network.accept_protocol(proto, c)
+        # `accept_protocol` switches to long socket timeouts, but the parse thread must notice
+        # `steal_connection` within `wait_for_io_threads_exit`'s timeout - even when starting a new session
+        # takes longer than that and the client has nothing more to send while it waits for our hello:
+        set_socket_timeout(proto._conn, self.network._socket_timeout)
         self.proxy_auth(proto, c, auth_caps)
 
     def disconnect_all(self):
@@ -622,6 +627,13 @@ class ProxyServer(ServerCore):
         if uid or gid:
             disp_desc["uid"] = uid
             disp_desc["gid"] = gid
+        if disp_desc.get("type") == "socket" and uid != getuid():
+            # don't use the session's abstract socket,
+            # its `peercred` authentication rejects a proxy running as another user (ie: root):
+            disp_desc["abstract-socket"] = False
+            if socket_path and not disp_desc.get("socket_path"):
+                # the socket of the session we have just started:
+                disp_desc["socket_path"] = socket_path
         log("display description(%s) = %s", display, disp_desc)
         try:
             server_conn = connect_to(disp_desc)

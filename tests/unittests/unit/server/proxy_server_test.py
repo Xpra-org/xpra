@@ -87,6 +87,48 @@ class ProxyControlTest(unittest.TestCase):
         self.assertFalse(stop_allowed(True, True, options={"stop": "no"}))
         self.assertTrue(stop_allowed(False, False, options={"stop": "yes"}))
 
+    def test_hello_oked_keeps_short_socket_timeout(self):
+        # the parse thread only notices `steal_connection` when its `recv` times out,
+        # so it would block for `SOCKET_TIMEOUT` after starting a new session (#5143)
+        import socket
+        from xpra.net.bytestreams import SocketConnection, set_socket_timeout, SOCKET_TIMEOUT
+        from xpra.server.core import ServerCore
+        from xpra.server.proxy.server import ProxyServer
+        sock, peer = socket.socketpair()
+        try:
+            conn = SocketConnection(sock, "local", "remote", "target", "tcp")
+            server = ProxyServer.__new__(ProxyServer)
+            network = Mock(_socket_timeout=0.1)
+            # like `NetworkServer.accept_protocol` + `SocketProtocol.parse_remote_caps`:
+            network.accept_protocol.side_effect = lambda proto, _caps: set_socket_timeout(proto._conn, SOCKET_TIMEOUT)
+            server.subsystems = {"network": network}
+            timeouts = []
+            server.proxy_auth = Mock(side_effect=lambda proto, *_args: timeouts.append(proto._conn._socket.gettimeout()))
+            proto = Mock(_conn=conn)
+            with patch.object(ServerCore, "hello_oked", return_value=False):
+                server.hello_oked(proto, typedict(), {})
+            network.accept_protocol.assert_called_once()
+            self.assertEqual(timeouts, [0.1])
+        finally:
+            sock.close()
+            peer.close()
+
+    def test_filter_caps_on_parse_thread(self):
+        # `filter_caps` runs on the parse threads, where seccomp makes these lookups fail:
+        from xpra.server.proxy import instance_base
+        instance = instance_base.ProxyInstance({}, 0, {}, "", "", b"", typedict())
+        blocked = PermissionError(1, "Operation not permitted")
+        with patch.object(instance_base, "get_machine_id", side_effect=blocked), \
+                patch.object(instance_base.socket, "gethostname", side_effect=blocked), \
+                patch.object(instance_base, "get_network_caps", return_value={}), \
+                patch.object(instance_base, "get_digest_caps", return_value={}):
+            caps = instance.filter_caps(typedict({"aliases": {}, "foo": "bar"}), ("aliases", ))
+        self.assertEqual(caps["foo"], "bar")
+        self.assertNotIn("aliases", caps)
+        self.assertEqual(caps["proxy"]["session-type"], "proxy")
+        self.assertEqual(caps["proxy"], instance.proxy_info)
+        self.assertIsNot(caps["proxy"], instance.proxy_info)
+
 
 class ProxyServerTest(ServerTestUtil):
 
