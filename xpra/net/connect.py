@@ -220,8 +220,7 @@ def connect_to_socket(display_desc: dict[str, Any]):
     sock = None
     timeout = display_desc.get("timeout", SOCKET_TIMEOUT)
     display_name = display_desc["display_name"]
-    abstract = AUTO_ABSTRACT_SOCKET and display_desc.get("abstract-socket", True)
-    if display_name and not display_desc.get("socket_path") and abstract:
+    if display_name and not display_desc.get("socket_path") and AUTO_ABSTRACT_SOCKET:
         # see if we can just connect to the abstract socket if one exists:
         from xpra.platform.dotxpra import strip_display_prefix
         sockpath = "@" + ABSTRACT_SOCKET_PREFIX + strip_display_prefix(display_name)

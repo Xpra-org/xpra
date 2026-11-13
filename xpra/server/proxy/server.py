@@ -627,13 +627,6 @@ class ProxyServer(ServerCore):
         if uid or gid:
             disp_desc["uid"] = uid
             disp_desc["gid"] = gid
-        if disp_desc.get("type") == "socket" and uid != getuid():
-            # don't use the session's abstract socket,
-            # its `peercred` authentication rejects a proxy running as another user (ie: root):
-            disp_desc["abstract-socket"] = False
-            if socket_path and not disp_desc.get("socket_path"):
-                # the socket of the session we have just started:
-                disp_desc["socket_path"] = socket_path
         log("display description(%s) = %s", display, disp_desc)
         try:
             server_conn = connect_to(disp_desc)
