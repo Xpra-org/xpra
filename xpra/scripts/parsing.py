@@ -340,8 +340,13 @@ def parse_display_name(opts, display_name: str, cmdline=(),
         if protocol in ("wt", "ssl", "wss", "quic"):
             desc["ssl-options"] = get_ssl_options(desc, opts, cmdline)
         elif str(opts.ssl_upgrade).lower() not in FALSE_OPTIONS:
-            from xpra.net.tls.common import SSL_UPGRADE_DEFAULTS
-            desc["ssl-options"] = get_ssl_options(desc, opts, cmdline, SSL_UPGRADE_DEFAULTS)
+            try:
+                from xpra.net.tls.common import SSL_UPGRADE_DEFAULTS
+            except ImportError:
+                # ie: `--ssl=no` blocks the `xpra.net.tls` modules, so there is no ssl upgrade to configure
+                pass
+            else:
+                desc["ssl-options"] = get_ssl_options(desc, opts, cmdline, SSL_UPGRADE_DEFAULTS)
         if protocol != "wt" and desc.get("proxy") == "auto":
             alt_scheme = "https" if protocol in ("ssl", "wss", "quic") else "http"
             for scheme in (protocol, alt_scheme):
