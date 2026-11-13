@@ -8,7 +8,7 @@ start a server with TCP and SSL support using an existing certificate `cert.pem`
 ```
 xpra start --start=xterm \
      --bind-tcp=0.0.0.0:10000 \
-     --ssl-cert=/path/to/ssl-cert.pem
+     --ssl-cert=/path/to/cert.pem --ssl-key=/path/to/key.pem
 ```
 connect a client:
 ```
@@ -28,7 +28,6 @@ You can:
 ### Generating a self signed certificate
 ```
 openssl req -new -x509 -days 365 -nodes -out cert.pem -keyout key.pem -sha256
-cat key.pem cert.pem > ssl-cert.pem
 ```
 For trusting your own certificates and testing with localhost, see [certificates for localhost](https://letsencrypt.org/docs/certificates-for-localhost/)
 </details>
@@ -53,7 +52,7 @@ For more details see [#1252](https://github.com/Xpra-org/xpra/issues/1252).
 ### Default Certificate
 When using the binary packages from https://xpra.org, a self-signed SSL certificate will be generated during the first installation.\
 It is placed in:
-* `/etc/xpra/ssl-cert.pem` on Posix platforms
+* `/etc/xpra/cert.pem` and `/etc/xpra/key.pem` on Posix platforms
 * `C:\ProgramData\Xpra\ssl-cert.pem` on MS Windows
 * `/Library/Application Support/Xpra/ssl-cert.pem` on Mac OS
 

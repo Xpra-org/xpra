@@ -10,4 +10,4 @@ Index: ./packaging/debian/xpra/xpra-server.service
 +EnvironmentFile=-/etc/default/xpra
  ExecStart=/usr/bin/xpra proxy :14500 --daemon=no \
      --tcp-auth=${TCP_AUTH} \
-     --ssl-cert=/etc/xpra/ssl-cert.pem --ssl=on \
+     --ssl-cert=/etc/xpra/cert.pem --ssl-key=/etc/xpra/key.pem --ssl=on \

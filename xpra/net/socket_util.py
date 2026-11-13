@@ -988,7 +988,7 @@ def get_ssl_attributes(opts, server_side:bool=True, overrides:Optional[dict]=Non
         args[attr] = v
     return args
 
-def find_ssl_cert(filename:str="ssl-cert.pem"):
+def find_ssl_cert(filename:str="cert.pem"):
     from xpra.log import Logger
     ssllog = Logger("ssl")
     #try to locate the cert file from known locations
@@ -1225,6 +1225,10 @@ def get_ssl_wrap_socket_context(cert=None, key=None, key_password=None, ca_certs
         if cert=="auto":
             #try to locate the cert file from known locations
             cert = find_ssl_cert()
+            if cert and server_side and not key:
+                key = find_ssl_cert("key.pem")
+            if not cert:
+                cert = find_ssl_cert("ssl-cert.pem")
             if not cert:
                 raise InitException("failed to automatically locate an SSL certificate to use")
         key_password = key_password or os.environ.get("XPRA_SSL_KEY_PASSWORD")
