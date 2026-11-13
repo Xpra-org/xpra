@@ -825,7 +825,6 @@ class X11DisplayManager(DisplayManager):
         if len(display_clients) != 1:
             return {}
         ss = display_clients[0]
-        mdef = ss.get_monitor_definitions()
         mdef = ss.get_normalized_monitor_definitions()
         if not mdef:
             return {}
