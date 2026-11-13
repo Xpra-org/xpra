@@ -92,7 +92,7 @@
       return;
     }
     const greyed = get_greyed();
-    if (greyed.indexOf(get_value("channel")) < 0) {
+    if (!greyed.includes(get_value("channel"))) {
       return;
     }
     const input = Array.from(controls.channel.querySelectorAll("input")).find(function (i) {
