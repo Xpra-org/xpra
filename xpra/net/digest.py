@@ -19,10 +19,17 @@ DEFAULT_SALT_LENGTH = envint("XPRA_DEFAULT_SALT_LENGTH", 64)
 
 
 def get_digests() -> List[str]:
-    digests = ["xor"]
+    try:
+        from _hashlib import get_fips_mode
+        fips = bool(get_fips_mode())
+    except (ImportError, AttributeError, ValueError):
+        fips = False
+    digests = [] if fips else ["xor"]
     digests += [f"hmac+{x}" for x in tuple(reversed(sorted(hashlib.algorithms_available)))
                 if not x.startswith("shake_") and x not in BLACKLISTED_HASHES
                 and getattr(hashlib, x, None) is not None]
+    if fips:
+        return digests
     try:
         from xpra.net.rfb import d3des  #pylint: disable=import-outside-toplevel
         assert d3des
