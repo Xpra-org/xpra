@@ -48,6 +48,48 @@ class TestDefaultValues(unittest.TestCase):
         self.assertEqual(DEFAULT_VALUES["depth"], 24)
         self.assertEqual(DEFAULT_VALUES["opacity"], -1)
 
+    def test_every_model_property_is_handled(self):
+        # every name in a window model's property lists ends up in `make_window_metadata`,
+        # (ie: `xpra info` and the clients that request it), so it must not raise "unhandled property name".
+        # The X11 models cannot be imported without a display, so parse the sources instead:
+        import ast
+        from pathlib import Path
+        src = Path(__file__).resolve().parents[5] / "xpra"
+        if not src.is_dir():
+            self.skipTest(f"source directory {str(src)!r} not found")
+        lists = ("property_names", "dynamic_property_names", "internal_property_names")
+
+        def list_name(node) -> str:
+            name = node.attr if isinstance(node, ast.Attribute) else getattr(node, "id", "")
+            return name if name.lstrip("_") in lists else ""
+
+        declared: dict[str, str] = {}
+        for path in src.rglob("*.py"):
+            source = path.read_text(encoding="utf8")
+            if "property_names" not in source:
+                continue
+            for node in ast.walk(ast.parse(source)):
+                values = ()
+                if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
+                    targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+                    if node.value is not None and any(list_name(t) for t in targets):
+                        values = (node.value, )
+                elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+                    if node.func.attr in ("append", "extend") and list_name(node.func.value):
+                        values = node.args
+                for value in values:
+                    for n in ast.walk(value):
+                        if isinstance(n, ast.Constant) and isinstance(n.value, str):
+                            declared.setdefault(n.value, f"{path.relative_to(src.parent)}:{node.lineno}")
+        self.assertIn("title", declared)
+        # "icons" are sent separately, using their own packet:
+        declared.pop("icons", None)
+        for prop, location in sorted(declared.items()):
+            if prop in ("group-leader", "transient-for", "parent"):
+                continue
+            with self.subTest(prop=prop):
+                self.assertTrue(prop in DEFAULT_VALUES, f"{prop!r} declared in {location} is not handled")
+
 
 class TestMakeWindowMetadata(unittest.TestCase):
 
