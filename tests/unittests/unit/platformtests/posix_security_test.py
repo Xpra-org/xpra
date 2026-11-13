@@ -80,7 +80,9 @@ class PosixSecurityTest(unittest.TestCase):
 
     def test_gpu_flag(self):
         for gpu in (False, True):
+            # don't create the real temporary directories, ie: '/run/user/$UID/xpra' without `XDG_RUNTIME_DIR`:
             with tempfile.TemporaryDirectory() as directory, \
+                 patch.object(security, "get_landlock_temp_paths", return_value=(directory,)), \
                  patch("xpra.platform.posix.landlock.restrict_paths", return_value=9) as restrict:
                 security.enforce_landlock("default", (directory,), allow_socket_creation=False, gpu=gpu)
                 devices = restrict.call_args.kwargs["device_paths"]

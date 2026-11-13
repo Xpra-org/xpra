@@ -128,8 +128,16 @@ class WestonTestUtil(ServerTestUtil):
             raise
         return client
 
+    def run_with_stderr(self, cmd: list[str], **kwargs):
+        # `run_command` does not capture the output when `XPRA_TEST_DEBUG` is set,
+        # but we need it to tell an unsupported compositor apart from a real failure:
+        stderr_file = self._temp_file(prefix="xpra-stderr-")
+        proc = self.run_command(cmd, stderr=stderr_file, **kwargs)
+        proc.stderr_file = stderr_file
+        return proc
+
     def run_wtype(self, *args: str) -> None:
-        proc = self.run_command(["wtype", *args], env=self.wayland_client_env())
+        proc = self.run_with_stderr(["wtype", *args], env=self.wayland_client_env())
         try:
             self.wait_for_exit(proc, "wtype")
             if proc.returncode != 0:
@@ -156,7 +164,7 @@ class WestonTestUtil(ServerTestUtil):
             cmd.append("--primary")
         # Keep stdout and stderr in run_command's temporary files: wl-copy's
         # forked clipboard owner inherits them and would keep pipes open.
-        proc = self.run_command(cmd, env=env, stdin=subprocess.PIPE)
+        proc = self.run_with_stderr(cmd, env=env, stdin=subprocess.PIPE)
         try:
             # communicate() tolerates wl-copy exiting before reading stdin.
             proc.communicate(input=value.encode("utf8"), timeout=WESTON_TIMEOUT)

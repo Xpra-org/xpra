@@ -3,7 +3,15 @@
 import unittest
 from unittest.mock import patch
 
-from xpra.platform.posix.shadow.fd_portal import PortalShadow
+from dbus.exceptions import DBusException
+
+try:
+    from xpra.platform.posix.shadow.fd_portal import PortalShadow
+    NO_PORTAL = ""
+except DBusException as e:
+    # the module connects to the session bus when it is imported:
+    PortalShadow = None
+    NO_PORTAL = f"cannot connect to the session bus: {e}"
 
 
 class FakeCapture:
@@ -14,6 +22,7 @@ class FakeCapture:
         self.cleaned += 1
 
 
+@unittest.skipIf(PortalShadow is None, NO_PORTAL)
 class PortalShadowCaptureTest(unittest.TestCase):
     def test_multi_stream_cleanup(self):
         server = PortalShadow.__new__(PortalShadow)
