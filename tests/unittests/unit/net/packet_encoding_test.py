@@ -10,6 +10,12 @@ from xpra.net import packet_encoding
 
 class TestPacketEncoding(unittest.TestCase):
 
+    def test_rencodeplus_invalid_lengths(self):
+        from xpra.net.rencodeplus import rencodeplus
+        for length in (b"9" * 40, b"4294967296", b"2147483648", b"100"):
+            with self.subTest(length=length), self.assertRaises(ValueError):
+                rencodeplus.loads(length + b"/" + b"x" * 10)
+
     def test_env_log(self):
         packet_encoding.init_all()
         assert packet_encoding.get_packet_encoding_caps()

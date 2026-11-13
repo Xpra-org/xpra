@@ -77,6 +77,9 @@ class TestBrotli(unittest.TestCase):
     def test_decompressvalid(self):
         self.td(b("2110000468656c6c6f03"), b"hello")
 
+    def test_decompress_empty(self):
+        self.td(b("3f0b06"), b"")
+
     def test_limit(self):
         br = b("59 ff ff 8f 5f 02 26 1e 0b 04 72 ef 1f 00")
         self.td(br, b"0"*1024*1024, 1024*1024)

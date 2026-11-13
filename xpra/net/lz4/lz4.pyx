@@ -84,7 +84,12 @@ def compress(data, acceleration=1):
 def decompress(data, int max_size=0, int size=0):
     cdef int size_header = 0
     if size==0:
-        size = struct.unpack_from(b"<I", data[:4])[0]
+        if len(data)<4:
+            raise ValueError("lz4 data is too short")
+        header_size = struct.unpack_from(b"<I", data[:4])[0]
+        if header_size>LZ4_MAX_INPUT_SIZE:
+            raise ValueError("data would overflow lz4 max input size %i" % LZ4_MAX_INPUT_SIZE)
+        size = header_size
         size_header = 4
     if max_size>0 and size>max_size:
         raise ValueError("data would overflow max-size %i" % max_size)

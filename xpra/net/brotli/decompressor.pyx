@@ -109,10 +109,12 @@ def decompress(data, maxsize=MAX_DECOMPRESSED_SIZE):
                 continue
             assert r==BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT or r==BROTLI_DECODER_RESULT_SUCCESS, "unknown return value %i" % r
             decoded = len(out_buf) - available_out
-            assert decoded>0, "decoder returned no data"
-            out_ptr = <uint8_t*> out_buf.get_mem()
-            b = out_ptr[:decoded]
-            chunks.append(b)
+            if decoded:
+                out_ptr = <uint8_t*> out_buf.get_mem()
+                b = out_ptr[:decoded]
+                chunks.append(b)
+            elif r==BROTLI_DECODER_RESULT_NEEDS_MORE_OUTPUT:
+                raise ValueError("brotli decoder returned no data")
             if r==BROTLI_DECODER_RESULT_SUCCESS:
                 break
     finally:

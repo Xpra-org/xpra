@@ -69,6 +69,12 @@ class TestLZ4(unittest.TestCase):
     def test_decompressinputtoosmall(self):
         self.fd(b"hello")
 
+    def test_invalid_header(self):
+        from xpra.net.lz4.lz4 import decompress
+        for data in (b"", b"\x05", b"\x05\x00\x00", b"\xff\xff\xff\xff\x00"):
+            with self.subTest(data=data), self.assertRaises(ValueError):
+                decompress(data)
+
     def test_decompressvalid(self):
         self.td(b"\x05\x00\x00\x00Phello", b"hello")
 
