@@ -16,7 +16,7 @@ from xpra.net.packet_type import (
 from xpra.os_util import gi_import
 from xpra.server.common import may_update_bandwidth_limits, wants_windows
 from xpra.server.source.stub import StubClientConnection, is_recording_allowed, is_sync_allowed
-from xpra.server.window.metadata import make_window_metadata
+from xpra.server.window.metadata import make_window_metadata, DEFAULT_VALUES
 from xpra.server.window.filters import get_window_filter
 from xpra.util.objects import typedict
 from xpra.util.env import envint
@@ -399,8 +399,12 @@ class WindowsConnection(StubClientConnection):
                 continue
             if hidden:
                 metadata[prop] = True
-            else:
+            elif prop in window.get_property_names():
                 metadata.update(make_window_metadata(window, prop))
+            else:
+                # ie: wayland windows have no "skip-taskbar" or "skip-pager",
+                # but we still have to undo the value we forced on the client:
+                metadata[prop] = DEFAULT_VALUES[prop]
         return metadata
 
     def update_window_visibility(self, wid: int, window, geometry: Sequence[int] = (),
