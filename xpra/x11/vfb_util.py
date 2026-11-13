@@ -429,10 +429,11 @@ def start_Xvfb(xvfb_cmd: Sequence[str], vfb_geom, pixel_depth: int, fps: int, di
             xvfb_cmd.append(display_name)
 
             def preexec() -> None:
+                # lead our own process group, so `kill_xvfb` can stop the wrapper script's children too
+                # (ie: weston and Xwayland started by `xpra_weston_xvfb`)
+                os.setsid()
                 if getuid() == 0 and (uid != 0 or gid != 0):
                     setuidgid(uid, gid)
-                else:
-                    os.setsid()
             log("xvfb_cmd=%s", xvfb_cmd)
             # pylint: disable=consider-using-with
             # pylint: disable=subprocess-popen-preexec-fn
