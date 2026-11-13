@@ -1030,4 +1030,4 @@ def is_writable(path : str, uid:int=getuid(), gid:int=getgid()) -> bool:
     if s.st_gid==gid and mode & stat.S_IWGRP:
         #gid has write access:
         return True
-    return False
+    return bool(mode & stat.S_IWOTH)
