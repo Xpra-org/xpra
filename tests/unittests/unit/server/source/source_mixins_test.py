@@ -454,11 +454,26 @@ class SourceMixinsTest(unittest.TestCase):
             def is_tray() -> bool:
                 return False
 
-            def get_property(self, prop):
+            def get_property_names(self) -> list[str]:
+                return list(self.get_properties())
+
+            def get_properties(self) -> dict:
                 return {
                     "iconic": False, "skip-taskbar": False, "skip-pager": True,
                     "requested-position": self.geometry[:2],
-                }.get(prop)
+                }
+
+            def get_property(self, prop):
+                props = self.get_properties()
+                if prop not in props:
+                    # just like GObject:
+                    raise TypeError(f"no property {prop!r}")
+                return props[prop]
+
+        class FakeWaylandWindow(FakeWindow):
+            # the wayland window model has no "skip-taskbar" or "skip-pager" properties:
+            def get_properties(self) -> dict:
+                return {"iconic": True, "requested-position": self.geometry[:2]}
 
         source = WindowsConnection()
         WindowsConnection.__init__(source)
@@ -499,6 +514,18 @@ class SourceMixinsTest(unittest.TestCase):
         self.assertFalse(source.is_window_hidden(outside))
         self.assertEqual(packets, [
             ("window-metadata", 2, {"iconic": False, "skip-taskbar": False, "skip-pager": True}),
+        ])
+
+        # a window model without some of these properties still gets them restored:
+        packets.clear()
+        wayland = FakeWaylandWindow((100, 200, 800, 600))
+        self.assertTrue(source.update_window_visibility(3, wayland))
+        self.assertEqual(packets, [("window-metadata", 3, {k: True for k in HIDDEN_METADATA})])
+        packets.clear()
+        wayland.geometry = (4600, 200, 800, 600)
+        self.assertFalse(source.update_window_visibility(3, wayland))
+        self.assertEqual(packets, [
+            ("window-metadata", 3, {"iconic": True, "skip-taskbar": False, "skip-pager": False}),
         ])
 
     def test_window_readonly_size_constraints(self):
@@ -569,6 +596,10 @@ class SourceMixinsTest(unittest.TestCase):
             @staticmethod
             def get_dimensions():
                 return 800, 600
+
+            @staticmethod
+            def get_property_names() -> list[str]:
+                return list(HIDDEN_METADATA)
 
             @staticmethod
             def get_property(prop):
