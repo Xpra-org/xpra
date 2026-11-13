@@ -60,9 +60,11 @@ Out of scope:
   `python3 setup.py unittests unit/codecs/argb_test.py` rebuilds and installs into `/src/dist/` before running the test,
   `cd tests/unittests && PYTHONPATH=. python3 unit/codecs/argb_test.py` runs it against the system wide installation
   (the source tree in `/src` has no compiled extensions, so do not put it on `PYTHONPATH`)
-* already known to fail in this image: `unit/codecs/pillow_encoder_test.py` and `unit/server/window/windowicon_test.py`
-  (also failing in the CI), and tests which need a desktop environment the image does not have (icon theme, dbus session bus,
-  `XDG_RUNTIME_DIR`): `wayland_client_test`, `posix_security_test`, `portal_shadow_capture_test`, `icon_image_test`
+* some tests need a session: set `XDG_RUNTIME_DIR=/run/user/$(id -u)` and run them under `dbus-run-session`, as the Dockerfile does
+* `unit/codecs/pillow_encoder_test.py` and `unit/server/window/windowicon_test.py` are known to fail,
+  because of a broken Ubuntu `python3-pil` update (`Image.resize`), this is not an xpra bug
+* `/usr/local/bin/bwrap` is a wrapper which lets gdk-pixbuf's sandboxed image loaders run inside a container,
+  see the Dockerfile
 * the image also has xpra installed system wide: `xpra start --bind-tcp=127.0.0.1:10000 --no-daemon --start=xterm`
   then `xpra attach tcp://127.0.0.1:10000/` or `xpra info tcp://127.0.0.1:10000/`
 * use `Xvfb` on a high display number (ie: `:1000` and above), the way `tests/unittests/unit/server_test_util.py`

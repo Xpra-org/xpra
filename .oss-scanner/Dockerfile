@@ -55,14 +55,36 @@ ENV CFLAGS="-g -O1 -fno-omit-frame-pointer"
 RUN DEB_PYTHON_INSTALL_LAYOUT=deb python3 ./setup.py install \
         --without-nvidia --without-printing --without-docs --with-scripts --prefix=/usr --root=/
 
+# gdk-pixbuf loads images through glycin, which runs its loaders with `bwrap --dev /dev`,
+# but containers may not allow mounting a new `devpts`, so every image fails to load
+# (and GTK aborts when it cannot load any icon): bind the existing `/dev` instead
+RUN printf '%s\n' \
+        '#!/bin/sh' \
+        'for arg; do' \
+        '    shift' \
+        '    if [ "$arg" = "--dev" ]; then' \
+        '        set -- "$@" --dev-bind "$1"' \
+        '        continue' \
+        '    fi' \
+        '    set -- "$@" "$arg"' \
+        'done' \
+        'exec /usr/bin/bwrap "$@"' \
+        > /usr/local/bin/bwrap && \
+    chmod 755 /usr/local/bin/bwrap
+
 # some tests behave differently as root (ie: the authentication modules verify the username),
-# so run them as a regular user, like the CI does:
+# so run them as a regular user, like the CI does, with a runtime directory and a session bus:
 RUN useradd --create-home --shell /bin/bash xpra-test && \
-    chown -R xpra-test /src
+    chown -R xpra-test /src && \
+    install -d -m 700 -o xpra-test -g xpra-test /run/user/$(id -u xpra-test)
 USER xpra-test
 # run the unit tests the same way as the CI (this builds another copy under `/src/dist`),
-# without letting failures abort the build:
-RUN XPRA_TEST_COVERAGE=0 python3 setup.py unittests \
+# without letting failures abort the build,
+# `pillow_encoder_test` and `windowicon_test` are broken by the Ubuntu python3-pil 12.1.1 update:
+RUN export XDG_RUNTIME_DIR=/run/user/$(id -u) && \
+    XPRA_TEST_COVERAGE=0 dbus-run-session -- python3 setup.py unittests \
+        --skip-fail unit.codecs.pillow_encoder_test \
+        --skip-fail unit.server.window.windowicon_test \
         --skip-fail unit.client.splash_test \
         --skip-slow unit.client.x11_client_test \
         --skip-fail unit.client.x11_client_paint_test \
