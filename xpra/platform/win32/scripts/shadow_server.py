@@ -43,9 +43,10 @@ def main() -> None:
     ] + sys.argv[1:]
     commonappdata = get_commonappdata_dir()
     if commonappdata:
-        ssl_cert = os.path.join(commonappdata, "Xpra", "ssl-cert.pem")
-        if os.path.exists(ssl_cert):
-            args.append("--ssl-cert=%s" % ssl_cert)
+        ssl_cert = os.path.join(commonappdata, "Xpra", "cert.pem")
+        ssl_key = os.path.join(commonappdata, "Xpra", "key.pem")
+        if os.path.exists(ssl_cert) and os.path.exists(ssl_key):
+            args += [f"--ssl-cert={ssl_cert}", f"--ssl-key={ssl_key}"]
     sys.exit(xpra_main(sys.argv[0], args))
 
 

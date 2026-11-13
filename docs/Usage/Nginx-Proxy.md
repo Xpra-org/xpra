@@ -50,7 +50,7 @@ http {
 
 		root /usr/share/xpra/www;
 
-		ssl_certificate /etc/xpra/ssl/ssl-cert.pem;
+		ssl_certificate /etc/xpra/ssl/cert.pem;
 		ssl_certificate_key /etc/xpra/ssl/key.pem;
 
 		location / {
@@ -118,7 +118,7 @@ http {
 
 		root /usr/share/xpra/www;
 
-		ssl_certificate /etc/xpra/ssl/ssl-cert.pem;
+		ssl_certificate /etc/xpra/ssl/cert.pem;
 		ssl_certificate_key /etc/xpra/ssl/key.pem;
 
 		proxy_redirect off;

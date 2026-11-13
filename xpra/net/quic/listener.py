@@ -228,11 +228,10 @@ async def do_listen(sock, xpra_server, cert: str, key: str | None, retry: bool):
 
 def listen_quic(sock, xpra_server, socket_options: dict) -> Callable[[], None]:
     from xpra.net.tls.file import find_ssl_cert
-    from xpra.net.tls.common import SSL_CERT_FILENAME
-    from xpra.net.tls.common import KEY_FILENAME
+    from xpra.net.tls.common import CERT_FILENAME, KEY_FILENAME
     log(f"listen_quic({sock}, {xpra_server}, {socket_options})")
     ssl_socket_options = xpra_server.get_ssl_socket_options(socket_options)
-    cert = ssl_socket_options.get("cert", "") or find_ssl_cert(SSL_CERT_FILENAME)
+    cert = ssl_socket_options.get("cert", "") or find_ssl_cert(CERT_FILENAME)
     key = ssl_socket_options.get("key", "") or find_ssl_cert(KEY_FILENAME)
     if not cert:
         raise InitExit(ExitCode.SSL_FAILURE, "missing ssl certificate")

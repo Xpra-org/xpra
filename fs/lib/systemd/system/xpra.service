@@ -12,7 +12,7 @@ EnvironmentFile=-/etc/sysconfig/xpra
 ExecStart=/usr/bin/xpra proxy :14500 --daemon=no \
     --tcp-auth=${TCP_AUTH} \
     --bind=none --auth=${AUTH} --socket-permissions=666 \
-    --ssl-cert=/etc/xpra/ssl/ssl-cert.pem --ssl-key=/etc/xpra/ssl/key.pem --ssl=on \
+    --ssl-cert=/etc/xpra/ssl/cert.pem --ssl-key=/etc/xpra/ssl/key.pem --ssl=on \
     --log-dir=/var/log --pidfile=/run/xpra/proxy/server.pid --debug=${DEBUG}
 #    --bind-quic=*:14500 --quic-auth=${QUIC_AUTH} \
 # `--bind-quic` is not enabled by default because it requires `python3-aioquic`,

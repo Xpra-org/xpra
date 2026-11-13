@@ -8,12 +8,12 @@ import sys
 from typing import Any
 
 from xpra.exit_codes import ExitCode
-from xpra.net.tls.common import KEY_FILENAME, CERT_FILENAME, SSL_CERT_FILENAME, SSL_ATTRIBUTES, get_ssl_logger
-from xpra.os_util import is_admin, OSX, WIN32, POSIX
+from xpra.net.tls.common import KEY_FILENAME, CERT_FILENAME, SSL_ATTRIBUTES, get_ssl_logger
+from xpra.os_util import is_admin, OSX, WIN32
 from xpra.scripts.config import InitExit
 from xpra.util.parsing import TRUE_OPTIONS
 from xpra.util.env import osexpand, envbool
-from xpra.util.io import umask_context, load_binary_file
+from xpra.util.io import umask_context
 from xpra.util.str_fn import std, Ellipsizer
 
 KEY_SIZE = 4096
@@ -21,7 +21,7 @@ KEY_DAYS = 3650
 KEY_SUBJ = "/C=US/ST=Denial/L=Springfield/O=Dis/CN=localhost"
 
 
-def find_ssl_cert(filename: str = SSL_CERT_FILENAME) -> str:
+def find_ssl_cert(filename: str = CERT_FILENAME) -> str:
     log = get_ssl_logger()
     # try to locate the cert file from known locations
     from xpra.platform.paths import get_ssl_cert_dirs  # pylint: disable=import-outside-toplevel
@@ -257,14 +257,6 @@ def gen_ssl_cert() -> tuple[str, str]:
             exit_code = p.wait()
     if exit_code != 0:
         raise InitExit(ExitCode.FAILURE, f"openssl command returned {exit_code}")
-    key = load_binary_file(keypath)
-    cert = load_binary_file(certpath)
-    sslcert = key+cert
-    sslcertpath = f"{ssldir}/{SSL_CERT_FILENAME}"
-    with open(sslcertpath, "wb") as f:
-        if POSIX:
-            os.fchmod(f.fileno(), 0o600)
-        f.write(sslcert)
     return keypath, certpath
 
 
