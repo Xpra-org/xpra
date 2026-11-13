@@ -1695,7 +1695,7 @@ class ServerCore:
                 l("Error: %s request failure", req_info)
                 l(" errno=%s", err)
             l(" for client %s:", pretty_socket(frominfo))
-            if line1 and line1[0]>=128 or line1[0]==0x16:
+            if line1 and (line1[0]>=128 or line1[0]==0x16):
                 l(" request as hex: '%s'", hexstr(line1))
             else:
                 l(" request: %r", bytestostr(line1))
