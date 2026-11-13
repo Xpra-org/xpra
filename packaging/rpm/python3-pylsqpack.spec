@@ -9,7 +9,7 @@ Name:           python3-pylsqpack
 Version:        0.3.16
 Release:        3%{?dist}
 %else
-Version:        1.1.0
+Version:        1.1.1
 Release:        1%{?dist}
 %endif
 Summary:        pylsqpack is a wrapper around the ls-qpack library
@@ -44,7 +44,7 @@ sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
 %if 0%{?el8}
 if [ "${sha256}" != "b67a6ce3f6937d850681827714be730aa361c049e37752e3ed9df11e7f232ffb" ]; then
 %else
-if [ "${sha256}" != "08bf266893dcaed817d72ac14506a095c97b309f68ae57a694699d186660450e" ]; then
+if [ "${sha256}" != "d20d920ccac8aac5ffa2c65fa2816b76f6d11c47b9b01145ad786fc2399c1b3b" ]; then
 %endif
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
@@ -77,6 +77,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Thu Nov 12 2026 Antoine Martin <antoine@xpra.org> - 1.1.1-1
+- new upstream release, retaining the EL8 compatibility pin
+
 * Wed Nov 11 2026 Antoine Martin <antoine@xpra.org> - 1.1.0-1
 - new upstream release, retaining the EL8 compatibility pin
 - update the bundled ls-qpack version and pyproject license patch context
