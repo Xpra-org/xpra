@@ -38,7 +38,6 @@ class SSLVerifyFailure(InitExit):
 
 KEY_FILENAME = "key.pem"
 CERT_FILENAME = "cert.pem"
-SSL_CERT_FILENAME = "ssl-cert.pem"
 SSL_ATTRIBUTES: Sequence[str] = (
     "cert", "key", "ca-certs", "ca-data",
     "protocol",

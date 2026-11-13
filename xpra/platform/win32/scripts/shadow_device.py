@@ -40,9 +40,10 @@ def main() -> None:
     # remaining args are passed through unchanged.
     args = sys.argv[:1] + ["shadow-device"] + sys.argv[1:]
     if commonappdata := get_commonappdata_dir():
-        ssl_cert = os.path.join(commonappdata, "Xpra", "ssl-cert.pem")
-        if os.path.exists(ssl_cert):
-            args.append("--ssl-cert=%s" % ssl_cert)
+        ssl_cert = os.path.join(commonappdata, "Xpra", "cert.pem")
+        ssl_key = os.path.join(commonappdata, "Xpra", "key.pem")
+        if os.path.exists(ssl_cert) and os.path.exists(ssl_key):
+            args += [f"--ssl-cert={ssl_cert}", f"--ssl-key={ssl_key}"]
     sys.exit(xpra_main(sys.argv[0], args))
 
 

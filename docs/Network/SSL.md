@@ -16,7 +16,8 @@ start a server with TCP and SSL support using an existing certificate `cert.pem`
 ```
 xpra seamless --start=xterm \
      --bind-tcp=0.0.0.0:10000 \
-     --ssl-cert=/path/to/ssl-cert.pem
+     --ssl-cert=/path/to/cert.pem \
+     --ssl-key=/path/to/key.pem
 ```
 connect a client:
 ```
@@ -28,7 +29,7 @@ To avoid this error when the server uses a self-signed certificate:
 ```
 You can:
 * *temporarily* add `--ssl-server-verify-mode=none` to your client command line
-* or copy the key to the client then use `ssl-ca-certs` to use it for validation:
+* or copy the certificate to the client then use `ssl-ca-certs` to use it for validation:
 ```
    xpra attach ssl://host:10000/ --ssl-ca-certs=./cert.pem
 ```
@@ -36,7 +37,6 @@ You can:
 ### Generating a self-signed certificate
 ```
 openssl req -new -x509 -days 365 -nodes -out cert.pem -keyout key.pem -sha256
-cat key.pem cert.pem > ssl-cert.pem
 ```
 For trusting your own certificates and testing with localhost, see [certificates for localhost](https://letsencrypt.org/docs/certificates-for-localhost/)
 </details>
@@ -109,9 +109,14 @@ It is placed in:
 * `C:\ProgramData\Xpra\ssl\` on MS Windows
 * `/Library/Application Support/Xpra/ssl/` on Mac OS
 
-That directory holds the private key as `key.pem`, the certificate as `cert.pem`,
-and the two concatenated as `ssl-cert.pem` - which is the one the `ssl-cert`
-option locates by default.
+That directory holds the private key as `key.pem` and the certificate as
+`cert.pem`. Xpra uses these separate files by default. Configure them explicitly
+with `--ssl-key` and `--ssl-cert` when using certificates stored elsewhere.
+
+Older installations may also contain a combined `ssl-cert.pem`. Explicitly
+configured combined files remain supported, but separate certificate and key
+files prevent private key material from being handled where only the public
+certificate is needed.
 
 <div class="docs-section-heading" markdown="1">
 

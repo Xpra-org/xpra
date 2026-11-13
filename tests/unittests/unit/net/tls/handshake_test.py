@@ -202,6 +202,17 @@ class TestSSLVerifyFailure(unittest.TestCase):
         # the accepted certificate is enough to connect:
         self.handshake(mods["ca-certs"])
 
+    def test_default_server_certificate_files(self) -> None:
+        from xpra.net.tls.common import CERT_FILENAME, KEY_FILENAME
+        from xpra.net.tls.socket import get_ssl_wrap_socket_context
+
+        paths = {CERT_FILENAME: self.cert, KEY_FILENAME: self.key}
+        with patch("xpra.net.tls.socket.find_ssl_cert", side_effect=paths.get) as find:
+            context, kwargs = get_ssl_wrap_socket_context(server_side=True)
+        self.assertIsInstance(context, ssl.SSLContext)
+        self.assertTrue(kwargs["server_side"])
+        self.assertEqual([call.args[0] for call in find.call_args_list], [CERT_FILENAME, KEY_FILENAME])
+
     def check_download(self, display_desc: dict) -> None:
         e = self.verify_failure()
         # what older Python versions give us, which have no `get_unverified_chain()`:

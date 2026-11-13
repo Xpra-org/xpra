@@ -56,9 +56,10 @@ def main(argv: list[str]) -> int:
         os.environ["XPRA_NAMED_PIPE_UNRESTRICTED"] = "1"
         args.append(f"--bind={PIPE_NAME},auth=sys")
     if commonappdata := get_commonappdata_dir():
-        ssl_cert = os.path.join(commonappdata, "Xpra", "ssl-cert.pem")
-        if os.path.exists(ssl_cert):
-            args.append(f"--ssl-cert={ssl_cert}")
+        ssl_cert = os.path.join(commonappdata, "Xpra", "cert.pem")
+        ssl_key = os.path.join(commonappdata, "Xpra", "key.pem")
+        if os.path.exists(ssl_cert) and os.path.exists(ssl_key):
+            args += [f"--ssl-cert={ssl_cert}", f"--ssl-key={ssl_key}"]
     return run_mode("Xpra-Proxy", args)
 
 

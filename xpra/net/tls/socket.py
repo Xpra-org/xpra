@@ -11,7 +11,7 @@ from xpra.exit_codes import ExitCode
 from xpra.net.tls.common import (
     get_ssl_logger,
     SSL_VERIFY_WRONG_HOST, SSL_VERIFY_SELF_SIGNED, SSL_VERIFY_IP_MISMATCH,
-    SSL_VERIFY_HOSTNAME_MISMATCH, SSL_VERIFY_CODES, SSLVerifyFailure, CERT_FILENAME, SSL_CERT_FILENAME,
+    SSL_VERIFY_HOSTNAME_MISMATCH, SSL_VERIFY_CODES, SSLVerifyFailure, CERT_FILENAME, KEY_FILENAME,
 )
 from xpra.net.tls.file import (
     find_ssl_cert, load_ssl_options,
@@ -166,9 +166,13 @@ def get_ssl_wrap_socket_context(cert: str = "", key: str = "", key_password: str
                                 options: str = "ALL,NO_COMPRESSION", ciphers: str = "DEFAULT",
                                 server_side: bool = True):
     if server_side and not cert:
-        cert = find_ssl_cert(SSL_CERT_FILENAME)
+        cert = find_ssl_cert(CERT_FILENAME)
         if not cert:
             raise InitException("you must specify an 'ssl-cert' file to use ssl sockets")
+        if not key:
+            key = find_ssl_cert(KEY_FILENAME)
+            if not key:
+                raise InitException("you must specify an 'ssl-key' file to use ssl sockets")
     log = get_ssl_logger()
     log("get_ssl_wrap_socket_context%s", (
         cert, key, ca_certs, ca_data, protocol, client_verify_mode, server_verify_mode, verify_flags,
@@ -199,9 +203,13 @@ def get_ssl_wrap_socket_context(cert: str = "", key: str = "", key_password: str
     if cert:
         if cert == "auto":
             # try to locate the cert file from known locations
-            cert = find_ssl_cert()
+            cert = find_ssl_cert(CERT_FILENAME)
             if not cert:
                 raise InitException("failed to automatically locate an SSL certificate to use")
+            if server_side and not key:
+                key = find_ssl_cert(KEY_FILENAME)
+                if not key:
+                    raise InitException("failed to automatically locate an SSL private key")
         # Important: keep key_password=None when no password is available
         key_password = key_password or os.environ.get("XPRA_SSL_KEY_PASSWORD")
         log("context.load_cert_chain%s", (cert or None, key or None, key_password))
