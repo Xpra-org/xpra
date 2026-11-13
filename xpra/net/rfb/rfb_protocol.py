@@ -9,6 +9,7 @@ from time import monotonic
 from socket import error as socket_error
 from queue import Queue
 
+from xpra.common import noop
 from xpra.os_util import hexstr
 from xpra.util import repr_ellipsized, envint
 from xpra.make_thread import make_thread, start_thread
@@ -332,7 +333,7 @@ class RFBProtocol:
         #clear all references to ensure we can get garbage collected quickly:
         self._write_thread = None
         self._read_thread = None
-        self._process_packet_cb = None
+        self._process_packet_cb = noop
 
     def terminate_queue_threads(self):
         log("terminate_queue_threads()")
