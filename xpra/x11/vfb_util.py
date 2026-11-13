@@ -352,10 +352,9 @@ def start_Xvfb(xvfb_str:str, vfb_geom, pixel_depth:int, display_name:str, cwd, u
             xvfb_cmd[0] = f"{xvfb_executable}-for-Xpra-"+display_name.lstrip(":")
             xvfb_cmd.append(display_name)
             def preexec():
+                os.setsid()
                 if getuid()==0 and (uid!=0 or gid!=0):
                     setuidgid(uid, gid)
-                else:
-                    os.setsid()
             log("xvfb_cmd=%s", xvfb_cmd)
             # pylint: disable=consider-using-with
             # pylint: disable=subprocess-popen-preexec-fn
@@ -375,7 +374,10 @@ def kill_xvfb(xvfb_pid:int) -> None:
     log = get_vfb_logger()
     log.info("killing xvfb with pid %s", xvfb_pid)
     try:
-        os.kill(xvfb_pid, signal.SIGTERM)
+        if os.getpgid(xvfb_pid)==xvfb_pid:
+            os.killpg(xvfb_pid, signal.SIGTERM)
+        else:
+            os.kill(xvfb_pid, signal.SIGTERM)
     except OSError as e:
         log.info("failed to kill xvfb process with pid %s:", xvfb_pid)
         log.info(" %s", e)
