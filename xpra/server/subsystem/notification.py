@@ -169,7 +169,8 @@ class NotificationForwarder(StubSubsystem):
         reason = packet.get_str(2)
         text = packet.get_str(3)
         ss = self.get_server_source(proto)
-        assert ss
+        if not ss:
+            return
         log("closing notification %s: %s, %s", nid, reason, text)
         try:
             # remove client callback if we have one:
@@ -192,7 +193,8 @@ class NotificationForwarder(StubSubsystem):
             log.warn("Warning: invalid notification action key %r", Ellipsizer(action_key))
             return
         ss = self.get_server_source(proto)
-        assert ss
+        if not ss:
+            return
         ss.user_event("notification-action")
         try:
             # special client callback notification:
