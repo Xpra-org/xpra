@@ -95,6 +95,19 @@ class WebSocketProtocolTest(unittest.TestCase):
         self.assertEqual(header[-4:], b"1234")
         self.assertNotEqual(items, [b"abcd", b"efgh"])
 
+    def test_frame_masking_unaligned_items(self):
+        # the mask applies to the whole payload, even when the items are not 32-bit aligned:
+        from xpra.net.websockets.header import decode_hybi
+        p = protocol()
+        p.ws_mask = True
+        for sizes in ((8, 5, 13), (1, 2, 3, 4), (3, 1), (7, 100, 9)):
+            items = [bytes((size + i) & 0xff for i in range(size)) for size in sizes]
+            payload = b"".join(items)
+            header = p.make_wsframe_header("test", items)
+            parsed = decode_hybi(header + b"".join(bytes(item) for item in items))
+            self.assertIsNotNone(parsed)
+            self.assertEqual(bytes(parsed[1]), payload, f"for item sizes {sizes}")
+
 
 if __name__ == "__main__":
     unittest.main()

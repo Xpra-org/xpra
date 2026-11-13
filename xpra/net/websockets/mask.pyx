@@ -15,9 +15,11 @@ DEF MAX_WEBSOCKET_PAYLOAD = 0x3FFFFFFF  # 2^30-1, per RFC6455
 
 def hybi_unmask(data, unsigned int offset, unsigned long long datalen) -> memoryview:
     cdef uintptr_t mp
-    cdef unsigned int min_len = offset + 4 + datalen
+    if datalen > MAX_WEBSOCKET_PAYLOAD:
+        raise ValueError(f"data too large: {datalen} bytes")
+    cdef unsigned long long min_len = <unsigned long long> offset + 4 + datalen
     with buffer_context(data) as bc:
-        if len(bc)<(<Py_ssize_t> min_len):
+        if <unsigned long long> len(bc) < min_len:
             raise ValueError(f"buffer too small {len(bc)} vs {min_len}: offset={offset}, datalen={datalen}")
         mp = (<uintptr_t> int(bc)) + offset
         return do_hybi_mask(mp, mp + 4, datalen)
@@ -38,7 +40,10 @@ cdef memoryview do_hybi_mask(uintptr_t mp, uintptr_t dp, unsigned long long data
         raise ValueError(f"data too large: {datalen} bytes")
     # alignment of the data pointer:
     cdef unsigned int align = (<uintptr_t> dp) & 0x3
-    cdef unsigned int initial_chars = 4 - align
+    # bytes until the input reaches a 32-bit boundary, but never more than we have:
+    cdef unsigned int initial_chars = (4 - align) & 0x3
+    if initial_chars > datalen:
+        initial_chars = datalen
     cdef MemBuf out_buf = getbuf(datalen + align, 0)
     cdef uintptr_t op = <uintptr_t> out_buf.get_mem()
     # char pointers:

@@ -89,9 +89,13 @@ class WebSocketProtocol(SocketProtocol):
             packet_type, len(items), payload_len, self.ws_mask, hexstr(header), len(header))
         if self.ws_mask:
             mask = os.urandom(4)
-            # now mask all the items:
+            # now mask all the items,
+            # the mask applies to the payload as a whole, so rotate it to match each item's offset:
+            offset = 0
             for i, item in enumerate(items):
-                items[i] = hybi_mask(mask, item)
+                rot = offset & 0x3
+                items[i] = hybi_mask(mask[rot:] + mask[:rot], item)
+                offset += len(item)
             return header + mask
         return header
 

@@ -49,6 +49,28 @@ class WebsocketHeaderTest(unittest.TestCase):
     def test_invalid_opcode(self):
         self.assertRaises(ValueError, encode_hybi_header, 0xFF, 0)
 
+    def test_mask(self):
+        from xpra.net.websockets.mask import hybi_mask, hybi_unmask
+        mask = b"\x12\x34\x56\x78"
+
+        def ref(data: bytes) -> bytes:
+            return bytes(c ^ mask[i & 0x3] for i, c in enumerate(data))
+
+        # short payloads, at every alignment of the data pointer:
+        for size in range(20):
+            payload = bytes(range(1, size + 1))
+            for padding in range(4):
+                buf = bytearray(padding) + mask + payload
+                self.assertEqual(bytes(hybi_unmask(memoryview(buf), padding, size)), ref(payload))
+                if payload:
+                    data = memoryview(bytearray(padding) + payload)[padding:]
+                    self.assertEqual(bytes(hybi_mask(mask, data)), ref(payload))
+        # the buffer must contain the mask and the payload:
+        with self.assertRaises(ValueError):
+            hybi_unmask(mask + b"abc", 0, 4)
+        with self.assertRaises(ValueError):
+            hybi_unmask(mask, 0, 2 ** 32)
+
 
 def main():
     unittest.main()
