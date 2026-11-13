@@ -213,6 +213,14 @@ class TestSSLVerifyFailure(unittest.TestCase):
         self.assertTrue(kwargs["server_side"])
         self.assertEqual([call.args[0] for call in find.call_args_list], [CERT_FILENAME, KEY_FILENAME])
 
+    def test_validate_certificate_data(self) -> None:
+        from xpra.net.tls.file import validate_certificates
+        with open(self.key, "rb") as key_file, open(self.cert, "rb") as cert_file:
+            certificates = validate_certificates(key_file.read() + b"unrelated\n" + cert_file.read())
+        self.assertNotIn(b"PRIVATE KEY", certificates)
+        self.assertNotIn(b"unrelated", certificates)
+        self.assertEqual(certificates.count(b"-----BEGIN CERTIFICATE-----"), 1)
+
     def check_download(self, display_desc: dict) -> None:
         e = self.verify_failure()
         # what older Python versions give us, which have no `get_unverified_chain()`:

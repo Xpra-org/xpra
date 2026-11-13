@@ -84,6 +84,10 @@ enabled. Omitting it or setting it to false prevents the server from offering
 this upgrade. `--ssl-upgrade=yes` permits an upgrade; the connection stays plain
 TCP if the server does not offer one.
 
+Upgrade certificate data is limited to 256 KiB and 16 certificates by default.
+These limits can be adjusted with `XPRA_SSL_UPGRADE_MAX_CERT_DATA_SIZE` and
+`XPRA_SSL_UPGRADE_MAX_CERTIFICATES`.
+
 Negotiated upgrades are opportunistic: the Python client does not verify the
 server's certificate or hostname by default. For verified TLS from the start,
 use an `ssl://` URL and configure certificate trust as described above.

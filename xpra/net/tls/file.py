@@ -25,8 +25,10 @@ PEM_CERTIFICATE_BEGIN = b"-----BEGIN CERTIFICATE-----"
 PEM_CERTIFICATE_END = b"-----END CERTIFICATE-----"
 
 
-def extract_certificates(data: bytes) -> bytes:
+def extract_certificates(data: bytes, max_size: int = 0, max_certificates: int = 0) -> bytes:
     """Return only canonical PEM certificate blocks from *data*."""
+    if max_size and len(data) > max_size:
+        raise ValueError(f"certificate data is too large: {len(data)} bytes, maximum is {max_size}")
     certificates: list[bytes] = []
     offset = 0
     while True:
@@ -45,10 +47,22 @@ def extract_certificates(data: bytes) -> bytes:
         if not der:
             raise ValueError("empty PEM certificate block")
         certificates.append(ssl.DER_cert_to_PEM_cert(der).encode("ascii"))
+        if max_certificates and len(certificates) > max_certificates:
+            raise ValueError(f"too many certificates: maximum is {max_certificates}")
         offset = end
     if not certificates:
         raise ValueError("no PEM certificate blocks found")
     return b"".join(certificates)
+
+
+def validate_certificates(data: bytes, max_size: int = 0, max_certificates: int = 0) -> bytes:
+    certificates = extract_certificates(data, max_size, max_certificates)
+    context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+    try:
+        context.load_verify_locations(cadata=certificates.decode("ascii"))
+    except ssl.SSLError as e:
+        raise ValueError("invalid X.509 certificate data") from e
+    return certificates
 
 
 def load_certificates(filename: str) -> bytes:

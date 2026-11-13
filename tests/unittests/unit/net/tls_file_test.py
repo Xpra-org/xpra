@@ -92,6 +92,13 @@ class TestExtractCertificates(unittest.TestCase):
         assert b"PRIVATE KEY" not in result
         assert result.count(b"-----BEGIN CERTIFICATE-----") == 1
 
+    def test_certificate_bounds(self):
+        from xpra.net.tls.file import extract_certificates
+        with self.assertRaises(ValueError):
+            extract_certificates(SAMPLE_CERT, max_size=len(SAMPLE_CERT) - 1)
+        with self.assertRaises(ValueError):
+            extract_certificates(SAMPLE_CERT + SAMPLE_CERT_2, max_certificates=1)
+
 
 class TestLoadSslOptions(unittest.TestCase):
 

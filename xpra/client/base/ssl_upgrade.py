@@ -10,17 +10,24 @@ from xpra.util.objects import typedict
 from xpra.exit_codes import ExitCode
 from xpra.config import InitExit
 from xpra.net.packet_type import SSL_UPGRADE
+from xpra.util.env import envint
 from xpra.log import Logger
 
 log = Logger("ssl")
+MAX_CERT_DATA_SIZE = max(4096, envint("XPRA_SSL_UPGRADE_MAX_CERT_DATA_SIZE", 256 * 1024))
+MAX_CERTIFICATES = max(1, envint("XPRA_SSL_UPGRADE_MAX_CERTIFICATES", 16))
 
 
 class SSLUpgrade(StubClientSubsystem):
     """
     Adds ability to upgrade connections to ssl
     """
-    __slots__ = ()
+    __slots__ = ("server_cert_data",)
     PREFIX = "ssl-upgrade"
+
+    def __init__(self, client=None) -> None:
+        super().__init__(client)
+        self.server_cert_data = b""
 
     def get_caps(self) -> dict[str, bool]:
         return {"ssl-upgrade": True}
@@ -32,11 +39,22 @@ class SSLUpgrade(StubClientSubsystem):
     @packet_handler(SSL_UPGRADE, early=True)
     def _process_ssl_upgrade(self, packet: Packet) -> None:
         ssl_attrs = typedict(packet.get_dict(1))
+        cert_data = ssl_attrs.get("cert-data")
+        if not isinstance(cert_data, bytes):
+            self.client.warn_and_quit(ExitCode.SSL_FAILURE, "invalid SSL upgrade certificate data: expected bytes")
+            return
+        from xpra.net.tls.file import validate_certificates
+        try:
+            self.server_cert_data = validate_certificates(cert_data, MAX_CERT_DATA_SIZE, MAX_CERTIFICATES)
+        except ValueError as e:
+            self.client.warn_and_quit(ExitCode.SSL_FAILURE, f"invalid SSL upgrade certificate data: {e}")
+            return
+        ssl_attrs["cert-data"] = self.server_cert_data
         start_thread(self.ssl_upgrade, "ssl-upgrade", True, args=(ssl_attrs,))
 
     def ssl_upgrade(self, ssl_attrs: typedict) -> None:
         # send ssl-upgrade request!
-        log(f"ssl-upgrade({ssl_attrs})")
+        log("ssl-upgrade(%i certificate bytes)", len(self.server_cert_data))
         conn = self.client._protocol._conn
         socktype = conn.socktype
         new_socktype = {"tcp": "ssl", "ws": "wss"}.get(socktype)
