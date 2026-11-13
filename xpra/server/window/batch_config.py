@@ -19,6 +19,8 @@ from xpra.log import Logger
 # (cannot be lower than DamageBatchConfig.MAX_EVENTS)
 NRECS: int = 100
 
+COVERAGE_STR: dict[bool | None, str] = {None: "unknown", True: "covered", False: "uncovered"}
+
 log = Logger("damage")
 
 
@@ -101,7 +103,7 @@ class DamageBatchConfig:
         info: dict[str, Any] = {
             "min-delay": self.min_delay,
             "effective-min-delay": "unknown" if min_delay is None else min_delay,
-            "coverage": "unknown" if self.covered is None else ("covered" if self.covered else "uncovered"),
+            "coverage": COVERAGE_STR[self.covered],
             "max-delay": self.max_delay,
             "expire": self.expire_delay,
             "timeout-delay": self.timeout_delay,
