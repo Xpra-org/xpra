@@ -106,6 +106,10 @@ This metapackage installs the xpra in full, including the python client, server 
 Summary:			Common files for xpra packages
 Group:				Networking
 Provides:			xpra-common = %{version}-%{release}
+%if 0%{?fedora} >= 42
+Provides:			python3dist(xpra) = %{version}
+Provides:			python%{python3_version}dist(xpra) = %{version}
+%endif
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 5
 Conflicts:			python2-xpra
