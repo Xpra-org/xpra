@@ -150,7 +150,9 @@ class PythonAnalysis(ast.NodeVisitor):
         for scope in reversed(self.scopes):
             if first in scope:
                 value = scope[first]
-                return value + (f".{rest}" if rest else "") if value else ""
+                if not value:
+                    return ""
+                return value + (f".{rest}" if rest else "")
         return ""
 
     def bind_definitions(self, body):
