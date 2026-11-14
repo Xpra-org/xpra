@@ -14,11 +14,13 @@ autoprov: no
 %if "%{getenv:PYTHON3}" == ""
 %global python3 python3
 %global py3rpmname python3
+%global py3dist python3dist
 %define bin_prefix %{nil}
 %else
 %global python3 %{getenv:PYTHON3}
 %global py3rpmname %(echo %{python3} | sed 's/t$/-freethreading/')
 %define bin_prefix %{python3}-
+%global py3dist %{python3}dist
 %undefine __pythondist_requires
 %undefine __python_requires
 %define python3_sitelib %(%{python3} -Ic "from sysconfig import get_path; print(get_path('purelib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
@@ -41,7 +43,7 @@ autoprov: no
 
 Name:		%{py3rpmname}-cython
 Version:	3.3.1
-Release:	1%{?dist}
+Release:	2%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
@@ -52,6 +54,14 @@ Requires:   %{py3rpmname}
 Provides:   %{py3rpmname}-Cython = %{version}-%{release}
 Obsoletes:  %{py3rpmname}-Cython < %{version}-%{release}
 Conflicts:  %{py3rpmname}-Cython < %{version}-%{release}
+%if 0%{?fedora} >= 42
+# autoprov is disabled above, so we must declare the python dist provides
+# ourselves, otherwise we can't replace the distro package (#5150)
+Provides:   %{py3dist}(cython) = %{version}
+%if "%{getenv:PYTHON3}" == ""
+Provides:   python%{python3_version}dist(cython) = %{version}
+%endif
+%endif
 
 BuildRequires:	coreutils
 BuildRequires:	%{py3rpmname}-devel
@@ -100,6 +110,10 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Sat Nov 14 2026 Antoine Martin <antoine@xpra.org> 3.3.1-2
+- add the python3dist(cython) provides that autoprov no longer generates,
+  so this package can replace the Fedora one (#5150)
+
 * Wed Jul 08 2026 Antoine Martin <antoine@xpra.org> 3.3.0~a2-3
 - skip --cython-compile-all on aarch64 and riscv64: avoids compiling Nodes.c
   and ExprNodes.c, which dominate build time (and gcc struggles with) on
