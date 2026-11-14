@@ -13,9 +13,15 @@ from collections.abc import Callable
 
 from xpra.net.bytestreams import SocketConnection, SOCKET_TIMEOUT
 from xpra.net.tls.common import get_ssl_logger
-from xpra.util.env import SilenceWarningsContext
+from xpra.util.env import SilenceWarningsContext, envfloat
 
 log = get_ssl_logger()
+
+# how often a blocked `_ssl_io` wakes up to re-check `active`:
+# the timeout is only read when we start waiting, so without this a reader already waiting
+# with a long timeout (ie: 20s after the hello) would not notice `set_active(False)` in time
+# when the proxy server steals the connection to hand it over to a proxy instance process:
+SSL_POLL_INTERVAL = envfloat("XPRA_SSL_POLL_INTERVAL", 1)
 
 
 class SSLSocketConnection(SocketConnection):
@@ -69,21 +75,26 @@ class SSLSocketConnection(SocketConnection):
             # wait for readiness with the lock released, so the other direction can proceed:
             rlist = (raw, ) if wait_read else ()
             wlist = () if wait_read else (raw, )
-            wait = timeout
+            end = monotonic() + timeout
             if self.deadline:
                 # don't wait past the connection's deadline:
-                wait = max(0.0, min(timeout, self.deadline - monotonic()))
-            try:
-                readable, writable, _ = select.select(rlist, wlist, (), wait)
-            except (OSError, ValueError):
-                # socket closed underneath us:
-                if not self.active:
-                    return None
-                raise
-            if not readable and not writable:
-                # nothing happened within the timeout: surface it so `until_concludes`
-                # can re-check `is_active` and retry, matching blocking-socket behaviour:
-                raise TimeoutError("timed out")
+                end = min(end, self.deadline)
+            # wait in short slices so we notice `set_active(False)` promptly:
+            while self.active:
+                wait = max(0.0, min(SSL_POLL_INTERVAL, end - monotonic()))
+                try:
+                    readable, writable, _ = select.select(rlist, wlist, (), wait)
+                except (OSError, ValueError):
+                    # socket closed underneath us:
+                    if not self.active:
+                        return None
+                    raise
+                if readable or writable:
+                    break
+                if monotonic() >= end:
+                    # nothing happened within the timeout: surface it so `until_concludes`
+                    # can re-check `is_active` and retry, matching blocking-socket behaviour:
+                    raise TimeoutError("timed out")
         return None
 
     def peek(self, n: int) -> bytes:
