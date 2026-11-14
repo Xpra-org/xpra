@@ -188,6 +188,13 @@ This package is independent of the python version used.
 Summary:			Common files for xpra packages
 Group:				Networking
 Provides:           %{package_prefix}-common = %{version}-%{release}
+%if 0%{?fedora} >= 42
+# autoprov is disabled above, so we must declare the python dist provides ourselves (#5150)
+Provides:           %{python3}dist(xpra) = %{version}
+%if "%{getenv:PYTHON3}" == ""
+Provides:           python%{python3_version}dist(xpra) = %{version}
+%endif
+%endif
 Requires(pre):		shadow-utils
 Conflicts:			xpra < 6
 Obsoletes:			xpra-common-client < 6
