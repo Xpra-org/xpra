@@ -111,7 +111,7 @@ class ProxyInstance:
         self.server_last_ping_latency: float = 0
         self.client_ping_timer = 0
         self.server_ping_timer = 0
-        self.client_challenge_packet: tuple = ()
+        self.client_challenge_packet: Packet = Packet("")
         self.exit = False
         self.server_packets: Queue[Packet] = Queue(PROXY_QUEUE_SIZE)
         self.client_packets: Queue[Packet] = Queue(PROXY_QUEUE_SIZE)
@@ -453,7 +453,7 @@ class ProxyInstance:
                                                      enc_caps.boolget("stream", True))
             # may need to bump packet size:
             proto.max_packet_size = max(MAX_PACKET_SIZE, maxw * maxh * 4 * 4)
-            packet = (HELLO, caps)
+            packet = Packet(HELLO, caps)
         elif packet_type == PING_ECHO and self.server_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
             self.server_last_ping_echo = float(packet.get_u64(1))
