@@ -168,7 +168,7 @@ def connect_to_tcp(display_desc: dict[str, Any]):
             if not sock:
                 raw_sock.close()
                 raise RuntimeError(f"failed to wrap socket {raw_sock} as {dtype!r}")
-            ssl_handshake(sock, timeout)
+            ssl_handshake(sock, timeout, True)
             # The read and write threads share this single OpenSSL object, which is not
             # safe for concurrent use. Wrap it in an `SSLSocketConnection`, which serializes
             # the SSL calls (issue #4918): a plain `SocketConnection` lets the two threads

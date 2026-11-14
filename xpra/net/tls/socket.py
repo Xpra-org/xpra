@@ -42,12 +42,13 @@ def ssl_wrap_socket(sock, alpn_protocols: Sequence[str] = (), **kwargs):
     return do_wrap_socket(sock, context, **wrap_kwargs)
 
 
-def log_ssl_info(ssl_sock) -> None:
+def log_ssl_info(ssl_sock, logcipher=True) -> None:
     log = get_ssl_logger()
     log("server_hostname=%s", ssl_sock.server_hostname)
     cipher = ssl_sock.cipher()
     if cipher:
-        log.info(" %s, %s bits", cipher[0], cipher[2])
+        logfn = log.info if logcipher else log.debug
+        logfn(" %s, %s bits", cipher[0], cipher[2])
     try:
         cert = ssl_sock.getpeercert()
     except ValueError:
@@ -81,7 +82,7 @@ def get_peer_cert_data(ssl_sock) -> str:
         return ""
 
 
-def ssl_handshake(ssl_sock, timeout: float = SSL_HANDSHAKE_TIMEOUT) -> None:
+def ssl_handshake(ssl_sock, timeout: float = SSL_HANDSHAKE_TIMEOUT, logit=False) -> None:
     log = get_ssl_logger()
     # the socket is usually in blocking mode (see `do_wrap_socket`),
     # don't wait forever for a peer that never completes the handshake:
@@ -89,8 +90,9 @@ def ssl_handshake(ssl_sock, timeout: float = SSL_HANDSHAKE_TIMEOUT) -> None:
     ssl_sock.settimeout(timeout)
     try:
         ssl_sock.do_handshake(True)
-        log.info("SSL handshake complete, %s", ssl_sock.version())
-        log_ssl_info(ssl_sock)
+        logfn = log.info if logit else log.debug
+        logfn("SSL handshake complete, %s", ssl_sock.version())
+        log_ssl_info(ssl_sock, logit)
     except Exception as e:
         log("do_handshake", exc_info=True)
         log_ssl_info(ssl_sock)

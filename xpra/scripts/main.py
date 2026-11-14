@@ -586,6 +586,7 @@ def use_systemd_run(s) -> bool:
 
 
 def verify_gir() -> None:
+    # beware: somehow this loads the `ssl` module!
     try:
         from gi import repository
         if not repository:
@@ -1276,7 +1277,10 @@ def apply_ssl_retry(e: InitExit, display_desc: dict[str, Any]) -> bool:
     update the ssl options in `display_desc` and return True so the caller connects again.
     Each retry must change the options or the certificate they use, so we can't keep retrying with the same ones.
     """
-    from xpra.net.tls.socket import ssl_retry
+    try:
+        from xpra.net.tls.socket import ssl_retry
+    except ImportError:
+        return False
 
     def ca_certs_data() -> bytes:
         return load_binary_file(display_desc.get("ssl-options", {}).get("ca-certs", ""))
