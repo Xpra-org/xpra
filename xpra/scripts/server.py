@@ -187,8 +187,11 @@ def imsettings_env(disabled, gtk_im_module, qt_im_module, clutter_im_module, ims
     os.environ.update(v)
     return v
 
-def mkdir_runtime_dir(path, uid, gid) -> None:
-    """Create a private runtime directory, or validate a concurrent creator."""
+def mkdir_runtime_dir(path, uid, gid, unsafe_mode=0o077) -> None:
+    """Create a runtime directory, or validate an existing one.
+
+    ``unsafe_mode`` contains the permission bits the directory must not have.
+    """
     while True:
         try:
             os.mkdir(path, 0o700)
@@ -199,7 +202,7 @@ def mkdir_runtime_dir(path, uid, gid) -> None:
                 continue
             if not S_ISDIR(st.st_mode):
                 raise OSError(ENOTDIR, "runtime directory path is not a directory", path)
-            if st.st_mode & 0o077:
+            if st.st_mode & unsafe_mode:
                 raise PermissionError(f"unsafe runtime directory: {path}")
             return
         else:
@@ -232,7 +235,9 @@ def create_runtime_dir(xrd, uid, gid) -> str:
         return ""
     mkdir_runtime_dir(xrd, uid, gid)
     xpra_dir = os.path.join(xrd, "xpra")
-    mkdir_runtime_dir(xpra_dir, uid, gid)
+    # XDG_RUNTIME_DIR is private (0o700), so this sub-directory only needs
+    # to be protected from writes by others; 0o755 is safe.
+    mkdir_runtime_dir(xpra_dir, uid, gid, 0o022)
     return xrd
 
 
