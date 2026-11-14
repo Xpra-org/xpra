@@ -93,3 +93,37 @@ def get_free_tcp_port() -> int:
     port = s.getsockname()[1]
     s.close()
     return port
+
+
+_pillow_resize_error = None
+
+
+def get_pillow_resize_error() -> str:
+    """
+    Some distro builds of Pillow have a broken `Image.resize`
+    which raises "SystemError: <method 'resize' of 'ImagingCore' objects> returned NULL without setting an exception".
+    Returns an error message if `resize` is broken, an empty string otherwise.
+    """
+    global _pillow_resize_error
+    if _pillow_resize_error is None:
+        _pillow_resize_error = ""
+        from PIL import Image
+        for mode in ("RGB", "RGBA"):
+            img = Image.new(mode, (16, 16))
+            for resample in Image.Resampling:
+                try:
+                    img.resize((8, 8), resample)
+                except SystemError as e:
+                    import PIL
+                    _pillow_resize_error = f"Pillow {PIL.__version__} resize is broken for {mode} with {resample.name}: {e}"
+                    import sys
+                    banner = "*" * 80
+                    sys.stderr.write(f"\n{banner}\nWARNING: {_pillow_resize_error}\nskipping tests that require resizing\n{banner}\n")
+                    return _pillow_resize_error
+    return _pillow_resize_error
+
+
+def skip_if_pillow_resize_broken(test) -> None:
+    error = get_pillow_resize_error()
+    if error:
+        test.skipTest(error)
