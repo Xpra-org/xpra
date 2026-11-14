@@ -44,7 +44,7 @@ class DBUSTest(unittest.TestCase):
         from xpra.server import features
         from xpra.server.subsystem.dbus import DbusManager
 
-        for mode in ("shadow", "shadow-screen", "shadow-device", "expand", "proxy", "encoder", "runner"):
+        for mode in ("shadow", "shadow-screen", "shadow-device", "expand", "encoder", "runner"):
             for inherited, fallback, address in (("desktop-bus", "user-bus", "desktop-bus"), ("", "user-bus", "user-bus"), ("", "", "")):
                 with self.subTest(mode=mode, inherited=inherited, fallback=fallback), \
                         patch.dict(os.environ, {"DBUS_SESSION_BUS_ADDRESS": inherited, "DBUS_SESSION_BUS_PID": "123"}, clear=True), \
@@ -93,7 +93,7 @@ class DBUSTest(unittest.TestCase):
 
     def test_virtual_session_starts_bus(self):
         dbus_env = {"DBUS_SESSION_BUS_ADDRESS": "private-bus", "DBUS_SESSION_BUS_PID": "456"}
-        for mode in ("seamless", "desktop", "monitor", "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor"):
+        for mode in ("seamless", "desktop", "monitor", "upgrade", "upgrade-seamless", "upgrade-desktop", "upgrade-monitor", "proxy"):
             with self.subTest(mode=mode), patch.dict(os.environ, {}, clear=True), \
                     patch("xpra.server.subsystem.dbus.reload_dbus_attributes", return_value=(0, {})), \
                     patch("xpra.server.dbus.start.start_dbus", return_value=(456, dbus_env)) as launch, \
