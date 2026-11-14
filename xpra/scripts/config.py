@@ -1216,7 +1216,7 @@ URL_SAFE_OPTIONS = (
 # but this could be abused to connect to malicious servers...
 
 
-IGNORE_COMPAT_OPTIONS = ("audio", "video", "keyboard-backend")
+IGNORE_COMPAT_OPTIONS = ("audio", "video", "keyboard-backend", "audio-sink")
 
 
 TRUE_OPTIONS : Tuple[Any, ...] = ("yes", "true", "1", "on", True)
