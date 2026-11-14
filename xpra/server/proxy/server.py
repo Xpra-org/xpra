@@ -146,7 +146,8 @@ def get_proxy_instance_subsystem_classes() -> tuple[type, ...]:
     the ones registered by ServerCore via its own
     `INSTANCE_SUBSYSTEM_CLASSES`).
     """
-    classes: list[type] = []
+    from xpra.server.subsystem.sessionfiles import SessionFilesServer
+    classes: list[type] = [SessionFilesServer]
     # must load menu before http to set `provider`
     if features.menu:
         from xpra.server.subsystem.menu import MenuServer
