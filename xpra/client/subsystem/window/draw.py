@@ -137,13 +137,15 @@ class WindowDraw(StubClientSubsystem):
             log("fragment for unknown window %#x", request.wid)
             return
         # all the fragments of a frame must agree on everything but the data:
-        metadata = request._replace(data=b"")
+        # FrameAssembler is Cythonized with a tuple annotation. Convert the
+        # NamedTuple explicitly: Cython does not accept tuple subclasses there.
+        metadata = tuple(request._replace(data=b""))
         assembler.add(request.sequence, index, count, group_start, group_size, request.data, metadata, monotonic(),
                       stream_sequence)
         self.schedule_fragment_timer()
 
     def draw_assembled_frame(self, wid: int, frame: AssembledFrame) -> None:
-        request: DrawRequest = frame.metadata
+        request = DrawRequest(*frame.metadata)
         log("draw_assembled_frame(%#x, %s) %i bytes from %i fragments, missing=%s",
             wid, frame.status, len(frame.data), frame.count, frame.missing)
         for sequence in frame.lost_sequences:
