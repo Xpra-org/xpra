@@ -38,7 +38,6 @@ from xpra.util.parsing import str_to_bool
 from xpra.scripts.config import InitException, InitExit, make_defaults_struct, PROXY_START_OVERRIDABLE_OPTIONS, OPTION_TYPES
 from xpra.scripts.main import parse_display_name, start_server_subprocess
 from xpra.net.connect import connect_to
-from xpra.net.bytestreams import set_socket_timeout
 from xpra.util.thread import start_thread
 from xpra.log import Logger
 
@@ -339,11 +338,12 @@ class ProxyServer(ServerCore):
         if super().hello_oked(proto, c, auth_caps) or c.strget("request"):
             # already handled in superclass, which also rejects the requests we don't support
             return
-        self.accept_protocol(proto, c)
-        # `accept_protocol` switches to long socket timeouts, but the parse thread must notice
+        # `accept_protocol` would normally switch to long socket timeouts, but the parse thread must notice
         # `steal_connection` within `wait_for_io_threads_exit`'s timeout - even when starting a new session
-        # takes longer than that and the client has nothing more to send while it waits for our hello:
-        set_socket_timeout(proto._conn, self._socket_timeout)
+        # takes longer than that and the client has nothing more to send while it waits for our hello.
+        # Lowering it afterwards is racy because a read already in progress keeps its original timeout.
+        proto.socket_timeout = self._socket_timeout
+        self.accept_protocol(proto, c)
         self.proxy_auth(proto, c, auth_caps)
 
     def disconnect_all(self):

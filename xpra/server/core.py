@@ -1417,6 +1417,8 @@ class ServerCore(GLibServer):
                 wslog("new_websocket_client(%s) socket=%s, headers=%s", wsh, sock, wsh.headers)
                 newsocktype = "wss" if is_ssl else "ws"
                 socket_options["http-headers"] = dict(wsh.headers)
+                # Restore the regular timeout after the HTTP request timeout.
+                set_socket_timeout(conn, self._socket_timeout)
                 self.make_protocol(newsocktype, conn, socket_options, WebSocketProtocol)
 
             scripts = self.get_http_scripts()
@@ -1800,9 +1802,9 @@ class ServerCore(GLibServer):
         self.cancel_upgrade_to_rfb_timer(proto)
         # note: when uploading files, we send them in chunks smaller than this size
         proto.max_packet_size = MAX_PACKET_SIZE
-        # use blocking sockets from now on:
+        # use long timeouts from now on, unless the protocol requires otherwise:
         if not WIN32:
-            set_socket_timeout(proto._conn, None)
+            set_socket_timeout(proto._conn, getattr(proto, "socket_timeout", None))
 
     def get_caps(self, source) -> dict:
         return self._dispatch_merge("get_caps", source)

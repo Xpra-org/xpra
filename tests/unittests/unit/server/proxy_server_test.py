@@ -17,24 +17,32 @@ class ProxyFixTest(unittest.TestCase):
 
     def test_hello_oked_keeps_short_socket_timeout(self):
         # the parse thread only notices `steal_connection` when its `recv` times out,
-        # so it would block for `SOCKET_TIMEOUT` after starting a new session (#5143)
+        # a recv already in progress keeps the timeout it started with, so it must
+        # never be raised while accepting the connection (#5143)
         import socket
-        from xpra.net.bytestreams import SocketConnection, set_socket_timeout, SOCKET_TIMEOUT
+        from xpra.net.bytestreams import SocketConnection, set_socket_timeout
         from xpra.server.core import ServerCore
         from xpra.server.proxy.server import ProxyServer
         sock, peer = socket.socketpair()
         try:
+            sock.settimeout(0.1)
             conn = SocketConnection(sock, "local", "remote", "target", "tcp")
             server = ProxyServer.__new__(ProxyServer)
             server._socket_timeout = 0.1
-            # like `ServerCore.accept_protocol` + `SocketProtocol.parse_remote_caps`:
-            server.accept_protocol = Mock(side_effect=lambda proto, _caps: set_socket_timeout(proto._conn, SOCKET_TIMEOUT))
+            accepted_timeouts = []
+
+            def accept_protocol(proto, _caps):
+                accepted_timeouts.append(proto.socket_timeout)
+                set_socket_timeout(proto._conn, proto.socket_timeout)
+
+            server.accept_protocol = Mock(side_effect=accept_protocol)
             timeouts = []
             server.proxy_auth = Mock(side_effect=lambda proto, *_args: timeouts.append(proto._conn._socket.gettimeout()))
             proto = Mock(_conn=conn)
             with patch.object(ServerCore, "hello_oked", return_value=False):
                 server.hello_oked(proto, typedict(), {})
             server.accept_protocol.assert_called_once()
+            self.assertEqual(accepted_timeouts, [0.1])
             self.assertEqual(timeouts, [0.1])
         finally:
             sock.close()

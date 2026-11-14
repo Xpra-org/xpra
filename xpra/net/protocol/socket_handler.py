@@ -216,6 +216,9 @@ class SocketProtocol:
         # initial value which may get increased by client/server after handshake:
         self.max_packet_size = MAX_PACKET_SIZE if BACKWARDS_COMPATIBLE else min(MAX_PACKET_SIZE, MODERN_INITIAL_PACKET_SIZE)
         self.abs_max_packet_size = 256 * 1024 * 1024
+        # A read already in progress keeps its timeout, so keep this short when
+        # set_active(False) must be noticed promptly during proxy handover.
+        self.socket_timeout: float | None = SOCKET_TIMEOUT
         self.large_packets = [
             "hello", "window-metadata", "audio-data", "notification-show", "setting-change",
             "shell-reply", "display-configure",
@@ -459,7 +462,7 @@ class SocketProtocol:
     def parse_remote_caps(self, _caps: typedict) -> None:
         if not BACKWARDS_COMPATIBLE:
             self.max_packet_size = max(self.max_packet_size, MAX_PACKET_SIZE)
-        set_socket_timeout(self._conn, SOCKET_TIMEOUT)
+        set_socket_timeout(self._conn, self.socket_timeout)
 
     def set_peer_protocol_version(self, protocol_version: Sequence[int], server: bool) -> None:
         """
