@@ -117,7 +117,7 @@ class DbusManager(StubSubsystem):
 
     def init(self, opts) -> None:
         self.enabled = str_to_bool(opts.dbus)
-        self.reuse = not is_virtual_session(opts.mode)
+        self.reuse = not (is_virtual_session(opts.mode) or opts.mode == "proxy")
         # use a session bus started by someone else, don't launch one:
         self.wait = str(opts.dbus).lower() == "wait"
         self.launch = opts.dbus_launch
