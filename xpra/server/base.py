@@ -107,6 +107,10 @@ class ServerBase(ServerCore):
         if POSIX and FULL_INFO >= 1:
             from xpra.server.subsystem.drm import DRMInfo
             classes.append(DRMInfo)
+        # must load menu before http to set `provider`
+        if features.menu:
+            from xpra.server.subsystem.menu import MenuServer
+            classes.append(MenuServer)
         if features.http:
             from xpra.server.subsystem.http import HttpServer
             classes.append(HttpServer)
@@ -117,9 +121,6 @@ class ServerBase(ServerCore):
         # encryption is configured on a given socket.
         from xpra.server.subsystem.encryption import EncryptionServer
         classes.append(EncryptionServer)
-        if features.menu:
-            from xpra.server.subsystem.menu import MenuServer
-            classes.append(MenuServer)
         if features.logging:
             from xpra.server.subsystem.logging import LoggingManager
             classes.append(LoggingManager)

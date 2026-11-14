@@ -114,7 +114,7 @@ def set_server_features(opts, mode: str) -> None:
             x11 = False
         features.debug = features.debug or b(opts.debug)
         features.command = opts.commands
-        features.menu = features.command
+        features.menu = features.command or mode == "proxy"
         features.mdns = opts.mdns and impcheck("net.mdns")
         features.notification = (features.dbus or WIN32 or OSX) and opts.notifications and impcheck("notification")
         features.webcam = b(opts.webcam) and impcheck("codecs") and impcheck("webcam")
