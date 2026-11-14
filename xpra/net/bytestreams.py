@@ -8,11 +8,12 @@ import sys
 import os
 import errno
 import socket
+import ssl
 from time import monotonic
 from typing import Dict, Any, Optional, Union, Callable
 
 from xpra.net.common import ConnectionClosedException, IP_SOCKTYPES, TCP_SOCKTYPES
-from xpra.util import envint, envbool, hasenv, csv
+from xpra.util import envint, envfloat, envbool, hasenv, csv
 from xpra.common import FULL_INFO
 from xpra.make_thread import start_thread
 from xpra.os_util import POSIX, LINUX, WIN32, OSX
@@ -35,6 +36,9 @@ if hasenv("XPRA_SOCKET_NODELAY"):
 SOCKET_KEEPALIVE : bool = envbool("XPRA_SOCKET_KEEPALIVE", True)
 VSOCK_TIMEOUT : int = envint("XPRA_VSOCK_TIMEOUT", 5)
 SOCKET_TIMEOUT : int = envint("XPRA_SOCKET_TIMEOUT", 20)
+# TLS socket timeouts are checked by `untilConcludes` between I/O attempts.
+# Keep each blocking SSL operation short so it notices `set_active(False)` promptly.
+SSL_POLL_INTERVAL : float = envfloat("XPRA_SSL_POLL_INTERVAL", 1)
 #this is more proper but would break the proxy server:
 SOCKET_SHUTDOWN : bool = envbool("XPRA_SOCKET_SHUTDOWN", False)
 LOG_TIMEOUTS : int = envint("XPRA_LOG_TIMEOUTS", 1)
@@ -654,6 +658,8 @@ def set_socket_timeout(conn, timeout=None) -> None:
     #FIXME: this is ugly, but less intrusive than the alternative?
     if isinstance(conn, SocketConnection):
         sock = conn._socket
+        if isinstance(sock, ssl.SSLSocket) and (timeout is None or timeout > SSL_POLL_INTERVAL):
+            timeout = SSL_POLL_INTERVAL
         log("set_socket_timeout(%s, %s) applied to %s", conn, timeout, sock)
         conn._socket.settimeout(timeout)
     else:
