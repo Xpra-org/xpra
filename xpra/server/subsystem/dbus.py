@@ -143,7 +143,7 @@ class DbusManager(StubSubsystem):
                     log.info("no dbus session bus, the dbus control interface is not available")
 
     def init_dbus_env(self) -> None:
-        log("init_dbus_env()")
+        log("init_dbus_env() reuse=%s, wait=%s", self.reuse, self.wait)
         if self.reuse and not self.wait:
             # This server attaches to an existing session: never adopt or start its daemon.
             from xpra.dbus.common import find_session_bus_address

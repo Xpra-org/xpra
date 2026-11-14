@@ -182,6 +182,7 @@ class SessionFilesServer(StubSubsystem):
         self.sessions_dir = sessions_dir
         self.display_name = display_name
         self.session_dir = make_session_dir(mode, sessions_dir, display_name, self.uid, self.gid)
+        log("XPRA_SESSION_DIR=make_session_dir%s=%s", (mode, sessions_dir, display_name, self.uid, self.gid), self.session_dir)
         import os
         os.environ["XPRA_SESSION_DIR"] = self.session_dir
         return self.session_dir
