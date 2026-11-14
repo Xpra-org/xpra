@@ -46,8 +46,11 @@ def sanitize_env() -> None:
              )
 
 
-def mkdir_runtime_dir(path: str, uid: int, gid: int) -> None:
-    """Create a private runtime directory, or validate one created concurrently."""
+def mkdir_runtime_dir(path: str, uid: int, gid: int, unsafe_mode=0o077) -> None:
+    """
+    Create a private runtime directory, or validate an existing one:
+    `unsafe_mode` are the permission bits it must not have.
+    """
     while True:
         try:
             os.mkdir(path, 0o700)
@@ -65,7 +68,7 @@ def mkdir_runtime_dir(path: str, uid: int, gid: int) -> None:
             # The creator owns a newly-created directory as root until its
             # lchown() below completes, so checking its final owner here
             # would make concurrent creators fail spuriously.
-            if st.st_mode & 0o077:
+            if st.st_mode & unsafe_mode:
                 raise PermissionError(f"unsafe runtime directory: {path}")
             return
         else:
@@ -100,7 +103,9 @@ def create_runtime_dir(xrd: str, uid: int, gid: int) -> str:
         return ""
     mkdir_runtime_dir(xrd, uid, gid)
     xpra_dir = os.path.join(xrd, "xpra")
-    mkdir_runtime_dir(xpra_dir, uid, gid)
+    # `$XDG_RUNTIME_DIR` must be private (0o700), so this sub-directory
+    # only needs to be safe from writes by others, ie: 0o755 is OK:
+    mkdir_runtime_dir(xpra_dir, uid, gid, 0o022)
     return xrd
 
 

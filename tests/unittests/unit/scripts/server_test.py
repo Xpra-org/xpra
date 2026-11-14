@@ -62,6 +62,37 @@ class TestMain(unittest.TestCase):
             assert result == [runtime_dir] * 8
             assert os.path.isdir(os.path.join(runtime_dir, "xpra"))
 
+    def test_create_runtime_dir_existing_modes(self):
+        uid, gid = os.getuid(), os.getgid()
+        for xrd_mode, xpra_mode, ok in (
+            (0o700, 0o700, True),
+            (0o700, 0o755, True),
+            (0o700, 0o750, True),
+            (0o700, 0o775, False),
+            (0o700, 0o757, False),
+            (0o750, 0o700, False),
+            (0o755, 0o755, False),
+        ):
+            with self.subTest(xrd_mode=oct(xrd_mode), xpra_mode=oct(xpra_mode)), \
+                    tempfile.TemporaryDirectory() as parent, \
+                    patch("xpra.server.subsystem.process.POSIX", True), \
+                    patch("xpra.server.subsystem.process.getuid", return_value=0), \
+                    patch("xpra.server.subsystem.process.os.lchown"):
+                runtime_dir = os.path.join(parent, str(uid))
+                xpra_dir = os.path.join(runtime_dir, "xpra")
+                os.mkdir(runtime_dir)
+                os.mkdir(xpra_dir)
+                os.chmod(xpra_dir, xpra_mode)
+                os.chmod(runtime_dir, xrd_mode)
+                if ok:
+                    assert create_runtime_dir(runtime_dir, uid, gid) == runtime_dir
+                else:
+                    with self.assertRaises(PermissionError):
+                        create_runtime_dir(runtime_dir, uid, gid)
+                # permissions are never modified:
+                assert os.stat(runtime_dir).st_mode & 0o777 == xrd_mode
+                assert os.stat(xpra_dir).st_mode & 0o777 == xpra_mode
+
     def test_root_does_not_create_a_runtime_dir(self):
         with patch.dict(os.environ, {}, clear=False), \
                 patch("xpra.server.subsystem.process.getuid", return_value=0), \
