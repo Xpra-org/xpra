@@ -16,7 +16,7 @@ from xpra.common import noerr
 from xpra.net.packet_type import SHUTDOWN_SERVER, HELLO
 from xpra.util.system import stop_proc
 from xpra.util.objects import typedict
-from xpra.util.str_fn import repr_ellipsized, print_nested_dict, bytestostr
+from xpra.util.str_fn import repr_ellipsized, print_nested_dict, bytestostr, csv
 from xpra.util.env import envint, envbool, envfloat
 from xpra.net.constants import ConnectionMessage
 from xpra.os_util import (
@@ -147,12 +147,17 @@ def get_proxy_instance_subsystem_classes() -> tuple[type, ...]:
     `INSTANCE_SUBSYSTEM_CLASSES`).
     """
     classes: list[type] = []
+    # must load menu before http to set `provider`
+    if features.menu:
+        from xpra.server.subsystem.menu import MenuServer
+        classes.append(MenuServer)
     if features.http:
         from xpra.server.subsystem.http import HttpServer
         classes.append(HttpServer)
     if features.dbus:
         from xpra.server.subsystem.dbus import DbusManager
         classes.append(DbusManager)
+    log("get_proxy_instance_subsystem_classes()=%s", csv(classes))
     return tuple(classes)
 
 
