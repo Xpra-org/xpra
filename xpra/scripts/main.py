@@ -376,6 +376,7 @@ def check_display() -> None:
 
 
 def verify_gir() -> None:
+    # beware: somehow this loads the `ssl` module!
     try:
         from gi import repository
         if not repository:
