@@ -248,8 +248,6 @@ class RegisterSubsystem(StubSubsystem):
                     # the registration is steady-state from here; clear the
                     # connect-time read timeout so the socket can sit idle
                     # waiting for a handover without the read loop dying.
-                    # Mirrors what the proxy's accept_connection() does on
-                    # its side of the same TCP connection.
                     set_socket_timeout(proto._conn, None)
                     ack_received = True
                 continue

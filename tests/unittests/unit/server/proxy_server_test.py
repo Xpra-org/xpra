@@ -89,26 +89,43 @@ class ProxyControlTest(unittest.TestCase):
 
     def test_hello_oked_keeps_short_socket_timeout(self):
         # the parse thread only notices `steal_connection` when its `recv` times out,
-        # so it would block for `SOCKET_TIMEOUT` after starting a new session (#5143)
+        # and a `recv` already in progress keeps the timeout it started with,
+        # so the timeout must never be raised while accepting the connection (#5143)
         import socket
-        from xpra.net.bytestreams import SocketConnection, set_socket_timeout, SOCKET_TIMEOUT
+        from xpra.net import packet_encoding, compression
+        from xpra.net.bytestreams import SocketConnection
+        from xpra.net.protocol.socket_handler import SocketProtocol
         from xpra.server.core import ServerCore
         from xpra.server.proxy.server import ProxyServer
+        from xpra.server.subsystem.network import NetworkServer
         sock, peer = socket.socketpair()
         try:
+            sock.settimeout(0.1)
             conn = SocketConnection(sock, "local", "remote", "target", "tcp")
-            server = ProxyServer.__new__(ProxyServer)
-            network = Mock(_socket_timeout=0.1)
-            # like `NetworkServer.accept_protocol` + `SocketProtocol.parse_remote_caps`:
-            network.accept_protocol.side_effect = lambda proto, _caps: set_socket_timeout(proto._conn, SOCKET_TIMEOUT)
-            server.subsystems = {"network": network}
             timeouts = []
+            set_timeout = conn.set_timeout
+
+            def record_timeout(timeout) -> None:
+                timeouts.append(timeout)
+                set_timeout(timeout)
+            conn.set_timeout = record_timeout
+            packet_encoding.init_all()
+            compression.init_all()
+            proto = SocketProtocol(conn, Mock())
+            # the real `accept_protocol`, without the timers and subsystems:
+            network = NetworkServer.__new__(NetworkServer)
+            network._potential_protocols = [proto]
+            network._socket_timeout = 0.1
+            network.socket_verify_timer = {}
+            server = ProxyServer.__new__(ProxyServer)
+            server.subsystems = {"network": network}
             server.proxy_auth = Mock(side_effect=lambda proto, *_args: timeouts.append(proto._conn._socket.gettimeout()))
-            proto = Mock(_conn=conn)
-            with patch.object(ServerCore, "hello_oked", return_value=False):
+            with patch.object(ServerCore, "hello_oked", return_value=False), \
+                    patch.object(NetworkServer, "cancel_upgrade_to_rfb_timer"):
                 server.hello_oked(proto, typedict(), {})
-            network.accept_protocol.assert_called_once()
-            self.assertEqual(timeouts, [0.1])
+            server.proxy_auth.assert_called_once()
+            self.assertTrue(timeouts)
+            self.assertTrue(all(timeout == 0.1 for timeout in timeouts), f"socket timeout was changed: {timeouts}")
         finally:
             sock.close()
             peer.close()

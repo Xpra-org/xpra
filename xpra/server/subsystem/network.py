@@ -725,6 +725,8 @@ class NetworkServer(StubSubsystem):
                 wslog("new_websocket_client(%s) socket=%s, headers=%s", wsh, sock, wsh.headers)
                 newsocktype = "wss" if is_ssl else "ws"
                 socket_options["http-headers"] = dict(wsh.headers)
+                # restore the regular socket timeout, rather than the longer `_ws_timeout` used for the http request:
+                set_socket_timeout(conn, self._socket_timeout)
                 self.make_protocol(newsocktype, conn, socket_options, WebSocketProtocol)
 
             scripts = self.get_http_scripts()
@@ -921,9 +923,9 @@ class NetworkServer(StubSubsystem):
         self.cancel_upgrade_to_rfb_timer(proto)
         # note: when uploading files, we send them in chunks smaller than this size
         proto.max_packet_size = MAX_PACKET_SIZE
-        # use blocking sockets from now on:
+        # use long timeouts from now on, unless the protocol requires otherwise (ie: proxy server):
         if not WIN32:
-            set_socket_timeout(proto._conn, None)
+            set_socket_timeout(proto._conn, getattr(proto, "socket_timeout", None))
 
     def get_socket_info(self) -> dict[str, Any]:
         si = network_util.get_socket_info(self.sockets, websocket=self.websocket_upgrade,

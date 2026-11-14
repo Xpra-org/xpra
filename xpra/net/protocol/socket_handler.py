@@ -223,6 +223,10 @@ class SocketProtocol:
         # v7 clients running in backwards compatible mode send a bigger `hello` (we don't know who we are talking to yet):
         self.max_packet_size = MAX_PACKET_SIZE if BACKWARDS_COMPATIBLE else min(MAX_PACKET_SIZE, MODERN_INITIAL_PACKET_SIZE)
         self.abs_max_packet_size = 256 * 1024 * 1024
+        # the socket timeout to use once the connection is accepted:
+        # a read already in progress keeps the timeout it started with,
+        # so this must stay short when `set_active(False)` has to be noticed promptly (ie: proxy handover)
+        self.socket_timeout: float = SOCKET_TIMEOUT
         self.large_packets = [
             HELLO, WINDOW_METADATA, AUDIO_DATA, NOTIFICATION_SHOW, SETTING_CHANGE,
             SHELL_REPLY, DISPLAY_CONFIGURE,
@@ -479,7 +483,7 @@ class SocketProtocol:
 
     def parse_remote_caps(self, caps: typedict) -> None:
         self.max_packet_size = max(self.max_packet_size, MAX_PACKET_SIZE)
-        set_socket_timeout(self._conn, SOCKET_TIMEOUT)
+        set_socket_timeout(self._conn, self.socket_timeout)
         self.parse_datagram_caps(caps)
 
     def parse_datagram_caps(self, caps: typedict) -> None:
