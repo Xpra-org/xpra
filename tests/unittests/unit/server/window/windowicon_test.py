@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 from PIL import Image
 
+from unit.test_util import skip_if_pillow_resize_broken
 from xpra.util.objects import typedict
 from xpra.net.packet_type import WINDOW_ICON
 from xpra.server.window import windowicon
@@ -255,6 +256,7 @@ class DefaultWindowIconTest(unittest.TestCase):
             self.skipTest("posix only")
 
     def test_scaled_to_requested_size(self):
+        skip_if_pillow_resize_broken(self)
         from xpra.platform.paths import get_icon_filename
         filename = get_icon_filename("xpra.png")
         if not filename or not os.path.exists(filename):
@@ -296,6 +298,7 @@ class DefaultWindowIconTest(unittest.TestCase):
         self.assertEqual(lookups, [("png", "xpm", "svg"), ("png", "xpm")])
 
     def test_cached_svg(self):
+        skip_if_pillow_resize_broken(self)
         from xpra.platform.paths import get_icon_filename
         png_filename = get_icon_filename("xpra.png")
         if not png_filename or not os.path.exists(png_filename):

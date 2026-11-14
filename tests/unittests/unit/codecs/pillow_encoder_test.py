@@ -9,6 +9,7 @@ import unittest
 from xpra.common import noerr
 from xpra.util.objects import typedict
 from xpra.codecs.image import ImageWrapper
+from unit.test_util import skip_if_pillow_resize_broken
 from xpra.codecs.pillow.encoder import (
     get_encodings, encode,
     get_version, get_type, get_info,
@@ -29,6 +30,7 @@ class TestPillow(unittest.TestCase):
         assert get_info()
 
     def test_resize(self):
+        skip_if_pillow_resize_broken(self)
         W = 128
         H = 128
         for speed in (10, 30, 90, 100):
