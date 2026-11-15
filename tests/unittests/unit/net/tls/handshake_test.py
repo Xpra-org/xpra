@@ -221,6 +221,23 @@ class TestSSLVerifyFailure(unittest.TestCase):
         self.assertNotIn(b"unrelated", certificates)
         self.assertEqual(certificates.count(b"-----BEGIN CERTIFICATE-----"), 1)
 
+    def test_upgrade_certificate_pin(self) -> None:
+        from xpra.client.base.ssl_upgrade import get_ssl_upgrade_options
+        from xpra.net.tls.socket import ssl_wrap_socket
+
+        def handshake_with_pin(certfile: str) -> None:
+            with open(certfile, "rb") as f:
+                options = get_ssl_upgrade_options({"ssl-options": {"server-hostname": "localhost"}}, f.read())
+            sock = socket.create_connection(("127.0.0.1", self.port), timeout=5)
+            ssl_sock = ssl_wrap_socket(sock, **options)
+            self.assertIsNotNone(ssl_sock)
+            with ssl_sock:
+                ssl_handshake(ssl_sock, 5)
+
+        handshake_with_pin(self.cert)
+        with self.assertRaises(SSLVerifyFailure):
+            handshake_with_pin(self.new_cert)
+
     def check_download(self, display_desc: dict) -> None:
         e = self.verify_failure()
         # what older Python versions give us, which have no `get_unverified_chain()`:

@@ -88,9 +88,11 @@ Upgrade certificate data is limited to 256 KiB and 16 certificates by default.
 These limits can be adjusted with `XPRA_SSL_UPGRADE_MAX_CERT_DATA_SIZE` and
 `XPRA_SSL_UPGRADE_MAX_CERTIFICATES`.
 
-Negotiated upgrades are opportunistic: the Python client does not verify the
-server's certificate or hostname by default. For verified TLS from the start,
-use an `ssl://` URL and configure certificate trust as described above.
+The Python client only accepts a negotiated upgrade when the advertised
+certificate matches a certificate previously accepted for that hostname and
+port (or its port-independent fallback). It then verifies the TLS handshake
+against that pin. Connect with an `ssl://` URL first to inspect and accept a
+self-signed certificate, or configure certificate trust as described above.
 
 <div class="docs-section-heading" markdown="1">
 

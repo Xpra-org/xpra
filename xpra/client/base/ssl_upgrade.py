@@ -18,16 +18,67 @@ MAX_CERT_DATA_SIZE = max(4096, envint("XPRA_SSL_UPGRADE_MAX_CERT_DATA_SIZE", 256
 MAX_CERTIFICATES = max(1, envint("XPRA_SSL_UPGRADE_MAX_CERTIFICATES", 16))
 
 
+def get_ssl_upgrade_pin(conn, server_cert_data: bytes) -> bytes:
+    """Return the existing host pin when it matches the advertised certificate."""
+    from hmac import compare_digest
+    from xpra.net.tls.file import certificate_digest, find_ssl_config_file, validate_certificates
+    from xpra.util.io import load_binary_file
+
+    ssl_options = conn.options.get("ssl-options", {})
+    server_hostname = ssl_options.get("server-hostname") or conn.options.get("host", "")
+    port = conn.options.get("port", 0)
+    if not server_hostname or not port:
+        raise ValueError("cannot identify the SSL upgrade server")
+    cert_file = find_ssl_config_file(server_hostname, port)
+    if not cert_file:
+        raise ValueError(f"no certificate has been accepted for {server_hostname}:{port}")
+    pin_data = load_binary_file(cert_file)
+    try:
+        pin_data = validate_certificates(pin_data, MAX_CERT_DATA_SIZE, MAX_CERTIFICATES)
+    except ValueError as e:
+        raise ValueError(f"invalid certificate pin for {server_hostname}:{port}: {e}") from e
+    if not compare_digest(certificate_digest(server_cert_data), certificate_digest(pin_data)):
+        raise ValueError(f"certificate does not match the pin for {server_hostname}:{port}")
+    return pin_data
+
+
+def get_ssl_upgrade_options(options: dict, pin_data: bytes) -> dict:
+    from base64 import b64encode
+    from xpra.net.tls.file import certificate_der, get_ssl_attributes
+    from xpra.net.tls.common import SSL_UPGRADE_DEFAULTS
+
+    overrides = dict(SSL_UPGRADE_DEFAULTS)
+    overrides.update(options.get("ssl-options", {}))
+    # The selected host pin cannot be weakened by the opportunistic-upgrade
+    # defaults or connection options.
+    overrides.update({
+        "server-verify-mode": "required",
+        "ca-certs": "",
+        "ca-data": "base64:" + b64encode(certificate_der(pin_data)).decode("ascii"),
+    })
+    return {k.replace("-", "_"): v for k, v in get_ssl_attributes(None, False, overrides).items() if v is not None}
+
+
+def verify_ssl_upgrade_socket(ssl_sock, pin_data: bytes) -> None:
+    from hmac import compare_digest
+    from xpra.net.tls.file import certificate_der
+
+    peer_certificate = ssl_sock.getpeercert(binary_form=True)
+    if not peer_certificate or not compare_digest(peer_certificate, certificate_der(pin_data)):
+        raise InitExit(ExitCode.SSL_CERTIFICATE_VERIFY_FAILURE, "SSL upgrade server certificate does not match the accepted pin")
+
+
 class SSLUpgrade(StubClientSubsystem):
     """
     Adds ability to upgrade connections to ssl
     """
-    __slots__ = ("server_cert_data",)
+    __slots__ = ("server_cert_data", "server_pin_data")
     PREFIX = "ssl-upgrade"
 
     def __init__(self, client=None) -> None:
         super().__init__(client)
         self.server_cert_data = b""
+        self.server_pin_data = b""
 
     def get_caps(self) -> dict[str, bool]:
         return {"ssl-upgrade": True}
@@ -49,6 +100,11 @@ class SSLUpgrade(StubClientSubsystem):
         except ValueError as e:
             self.client.warn_and_quit(ExitCode.SSL_FAILURE, f"invalid SSL upgrade certificate data: {e}")
             return
+        try:
+            self.server_pin_data = get_ssl_upgrade_pin(self.client._protocol._conn, self.server_cert_data)
+        except ValueError as e:
+            self.client.warn_and_quit(ExitCode.SSL_FAILURE, f"untrusted SSL upgrade certificate: {e}")
+            return
         ssl_attrs["cert-data"] = self.server_cert_data
         start_thread(self.ssl_upgrade, "ssl-upgrade", True, args=(ssl_attrs,))
 
@@ -63,13 +119,7 @@ class SSLUpgrade(StubClientSubsystem):
         log.info(f"upgrading {conn} to {new_socktype}")
         self.send(SSL_UPGRADE, {})
         from xpra.net.tls.socket import ssl_handshake, ssl_wrap_socket
-        from xpra.net.tls.file import get_ssl_attributes
-        from xpra.net.tls.common import SSL_UPGRADE_DEFAULTS
-        # the "ssl-options" from `get_ssl_options` already default to `SSL_UPGRADE_DEFAULTS`:
-        overrides = dict(SSL_UPGRADE_DEFAULTS)
-        overrides.update(conn.options.get("ssl-options", {}))
-        ssl_options = get_ssl_attributes(None, False, overrides)
-        kwargs = {k.replace("-", "_"): v for k, v in ssl_options.items()}
+        kwargs = get_ssl_upgrade_options(conn.options, self.server_pin_data)
         # wait for the 'ssl-upgrade' packet to be sent...
         # this should be done by watching the IO and formatting threads instead
         import time
@@ -94,6 +144,7 @@ class SSLUpgrade(StubClientSubsystem):
                 # `None` means the server closed the connection during the TLS setup:
                 raise InitExit(ExitCode.SSL_FAILURE, "the connection was closed")
             ssl_handshake(ssl_sock)
+            verify_ssl_upgrade_socket(ssl_sock, self.server_pin_data)
         except Exception as e:
             log("ssl_upgrade(%s)", ssl_attrs, exc_info=True)
             log.error("Error: ssl upgrade failed")

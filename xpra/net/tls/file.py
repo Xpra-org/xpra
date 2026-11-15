@@ -6,6 +6,7 @@
 import os
 import sys
 import ssl
+from hashlib import sha256
 from typing import Any
 
 from xpra.exit_codes import ExitCode
@@ -62,6 +63,18 @@ def validate_certificates(data: bytes, max_size: int = 0, max_certificates: int 
     except ssl.SSLError as e:
         raise ValueError("invalid X.509 certificate data") from e
     return certificates
+
+
+def certificate_der(data: bytes) -> bytes:
+    """Return the first certificate in a PEM bundle as DER data."""
+    certificates = extract_certificates(data)
+    end = certificates.find(PEM_CERTIFICATE_END) + len(PEM_CERTIFICATE_END)
+    return ssl.PEM_cert_to_DER_cert(certificates[:end].decode("ascii"))
+
+
+def certificate_digest(data: bytes) -> bytes:
+    """Return the SHA-256 digest of the first certificate in a PEM bundle."""
+    return sha256(certificate_der(data)).digest()
 
 
 def load_certificates(filename: str) -> bytes:

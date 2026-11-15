@@ -373,16 +373,18 @@ certificate blocks extracted from the server's certificate chain. Private keys
 and other file contents MUST NOT be included. Clients MUST reject missing,
 non-binary, malformed or non-X.509 certificate data and enforce aggregate-size
 and certificate-count limits. The reference client accepts at most 256 KiB and
-16 certificates. The client sends `["ssl-upgrade", {}]`, finishes sending that
-packet and stops packet I/O, performs a TLS client handshake on the same socket,
-then sends its `hello` again over TLS.
+16 certificates. It requires the first certificate to match an existing
+hostname and port pin, then verifies that pin during the TLS handshake. The
+client sends `["ssl-upgrade", {}]`, finishes sending that packet and stops
+packet I/O, performs a TLS client handshake on the same socket, then sends its
+`hello` again over TLS.
 
 A client MUST only advertise `ssl-upgrade: true` if it implements this exchange.
 It should include the capability in its initial `hello`, including a minimal
 `hello` sent to request a password challenge. An absent or false capability
 disables this exchange. The reference Python client opts in with
-`--ssl-upgrade=yes`; its upgrades are opportunistic and do not verify the server
-certificate or hostname by default, see [TLS configuration](SSL.md#negotiated-tls-upgrades).
+`--ssl-upgrade=yes`; it requires a previously accepted certificate pin, see
+[TLS configuration](SSL.md#negotiated-tls-upgrades).
 
 `connection-close` arguments are a short reason followed by optional details,
 all plain strings. Receivers keep at most the first 8 and truncate each to 256

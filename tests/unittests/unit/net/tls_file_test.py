@@ -99,6 +99,12 @@ class TestExtractCertificates(unittest.TestCase):
         with self.assertRaises(ValueError):
             extract_certificates(SAMPLE_CERT + SAMPLE_CERT_2, max_certificates=1)
 
+    def test_certificate_digest_uses_first_certificate(self):
+        from xpra.net.tls.file import certificate_digest
+        digest = certificate_digest(SAMPLE_CERT)
+        assert digest == certificate_digest(SAMPLE_CERT + SAMPLE_CERT_2)
+        assert digest != certificate_digest(SAMPLE_CERT_2)
+
 
 class TestLoadSslOptions(unittest.TestCase):
 
