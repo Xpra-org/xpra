@@ -11,6 +11,7 @@ import socket
 import tempfile
 import unittest
 import subprocess
+from types import SimpleNamespace
 from threading import Thread
 from unittest.mock import patch
 from time import monotonic
@@ -237,6 +238,29 @@ class TestSSLVerifyFailure(unittest.TestCase):
         handshake_with_pin(self.cert)
         with self.assertRaises(SSLVerifyFailure):
             handshake_with_pin(self.new_cert)
+
+    def test_upgrade_certificate_first_use_confirmation(self) -> None:
+        from xpra.client.base.ssl_upgrade import get_ssl_upgrade_options, get_ssl_upgrade_pin
+        from xpra.net.tls.file import find_ssl_config_file
+        from xpra.net.tls.socket import ssl_wrap_socket
+
+        with open(self.cert, "rb") as cert_file:
+            cert_data = cert_file.read()
+        conn = SimpleNamespace(options={
+            "host": "127.0.0.1",
+            "port": self.port,
+            "ssl-options": {"server-hostname": "localhost"},
+        })
+        self.assertFalse(find_ssl_config_file("localhost", self.port))
+        pin_data = get_ssl_upgrade_pin(conn, cert_data, confirm=True)
+        self.assertTrue(find_ssl_config_file("localhost", self.port))
+        self.assertEqual(ssl.PEM_cert_to_DER_cert(pin_data.decode("ascii")), ssl.PEM_cert_to_DER_cert(cert_data.decode("ascii")))
+
+        sock = socket.create_connection(("127.0.0.1", self.port), timeout=5)
+        ssl_sock = ssl_wrap_socket(sock, **get_ssl_upgrade_options(conn.options, pin_data))
+        self.assertIsNotNone(ssl_sock)
+        with ssl_sock:
+            ssl_handshake(ssl_sock, 5)
 
     def check_download(self, display_desc: dict) -> None:
         e = self.verify_failure()
