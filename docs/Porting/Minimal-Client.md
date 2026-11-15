@@ -48,6 +48,37 @@ header = 'P', 0x10, compression, 0, big-endian u32 len(payload)
 send header + payload
 ```
 
+### Try it: a Python text client
+
+This small client sends a version request over plain TCP and prints the server's
+`hello` response as YAML. It requires PyYAML and a server with the YAML encoder
+enabled. Version requests normally work without authentication; this exchange
+ends before starting a graphical session.
+
+Save this as `text.py` and run `python3 text.py HOST PORT`:
+
+```python
+#!/usr/bin/env python3
+# Usage: python3 text.py HOST PORT (server must support YAML)
+
+import socket
+import sys
+import yaml
+
+hello = yaml.safe_dump(['hello', {'request': 'version', 'encoders': ['yaml'], 'compression_level': 0}]).encode()
+
+with socket.create_connection((sys.argv[1], int(sys.argv[2])), timeout=10) as sock:
+    sock.sendall(b'P\x04\0\0' + len(hello).to_bytes(4, 'big') + hello)
+    with sock.makefile('rb') as stream:
+        header = stream.read(8)
+        print(stream.read(int.from_bytes(header[4:8], 'big')).decode(), end='')
+```
+
+The header selects YAML (`0x04`), with no compression or raw chunks. Requesting
+`compression_level: 0` lets the client print the response payload directly.
+The buffered reads collect the complete header and payload even if TCP splits
+them across multiple reads.
+
 The rest of this page only shows packets.
 
 <div class="docs-section-heading" markdown="1">
