@@ -2279,6 +2279,143 @@ class TestTransferProgressContracts(unittest.TestCase):
         )
 
 
+class TestTransferIcons(unittest.TestCase):
+
+    ICON = ("png", 48, 48, b"\x89PNG\r\n\x1a\n" + b"0" * 64)
+
+    def test_capability(self):
+        assert "icons" in FileTransferAttributes().get_file_transfer_features()
+        h = _FullHandler()
+        h.parse_file_transfer_caps(typedict({"file": {"enabled": True, "icons": True}}))
+        assert h.remote_file_icons is True
+        h.parse_file_transfer_caps(typedict({"file": {"enabled": True}}))
+        assert h.remote_file_icons is False
+
+    def test_parse_valid(self):
+        from xpra.net.file_transfer import parse_transfer_icon
+        assert parse_transfer_icon(typedict({"icon": self.ICON})) == self.ICON
+        assert parse_transfer_icon(typedict({"icon": list(self.ICON)})) == self.ICON
+        assert parse_transfer_icon({"icon": (b"png", ) + self.ICON[1:]}) == self.ICON
+
+    def test_parse_missing(self):
+        from xpra.net.file_transfer import parse_transfer_icon
+        assert parse_transfer_icon(None) is None
+        assert parse_transfer_icon(typedict()) is None
+
+    def test_parse_invalid(self):
+        from xpra.net.file_transfer import parse_transfer_icon, MAX_ICON_SIZE, MAX_ICON_DATA
+        data = self.ICON[3]
+        for icon in (
+            "png",
+            ("png", 48, 48),
+            ("png", 48, 48, data, "extra"),
+            ("jpeg", 48, 48, data),
+            ("svg", 48, 48, data),
+            ("png", 0, 48, data),
+            ("png", 48, -1, data),
+            ("png", MAX_ICON_SIZE + 1, 48, data),
+            ("png", "48", 48, data),
+            ("png", 48, 48, "not bytes"),
+            ("png", 48, 48, b""),
+            ("png", 48, 48, b"0" * (MAX_ICON_DATA + 1)),
+        ):
+            assert parse_transfer_icon({"icon": icon}) is None, f"{icon!r} should have been rejected"
+
+    def _send(self, remote_icons: bool, ask: bool, options=None):
+        from xpra.net.packet_type import FILE_SEND, FILE_DATA_REQUEST
+        h = _FullHandler()
+        h.remote_file_icons = remote_icons
+        h.remote_file_transfer_ask = ask
+        with patch("xpra.net.file_transfer.GLib") as mock_glib, \
+                patch("xpra.net.file_transfer.get_file_icon", return_value=self.ICON) as mock_icon:
+            mock_glib.timeout_add.return_value = 1
+            assert h.send_file("/tmp/file.pdf", "", b"data", 4, options=options)
+        packet_type = FILE_DATA_REQUEST if ask else FILE_SEND
+        packets = [p for p in h.sent if p[0] == packet_type]
+        assert len(packets) == 1
+        # (packet-type, basefilename, mimetype, printit, openit, filesize, data, options, send_id)
+        # (packet-type, dtype, send_id, url, mimetype, filesize, printit, openit, options)
+        return packets[0][8 if ask else 7], mock_icon
+
+    def test_send_with_icon(self):
+        for ask in (False, True):
+            options, mock_icon = self._send(True, ask)
+            assert options.get("icon") == self.ICON
+            mock_icon.assert_called_once_with("/tmp/file.pdf", "", b"data")
+
+    def test_send_without_remote_support(self):
+        for ask in (False, True):
+            options, mock_icon = self._send(False, ask)
+            assert "icon" not in options
+            mock_icon.assert_not_called()
+
+    def test_send_keeps_caller_icon(self):
+        icon = ("png", 16, 16, b"caller")
+        caller_options = {"icon": icon}
+        options, mock_icon = self._send(True, False, caller_options)
+        assert options["icon"] == icon
+        mock_icon.assert_not_called()
+
+    def test_send_does_not_modify_caller_options(self):
+        caller_options = {"title": "foo"}
+        options, _ = self._send(True, False, caller_options)
+        assert options.get("icon")
+        assert caller_options == {"title": "foo"}
+
+    def test_get_file_icon_off_main_thread(self):
+        # the lookup does not use GTK, so it also works from other threads:
+        from threading import Thread
+        from xpra.net.file_transfer import parse_transfer_icon
+        result = []
+        t = Thread(target=lambda: result.append(file_transfer.get_file_icon("file.pdf", "", b"")))
+        t.start()
+        t.join()
+        assert len(result) == 1
+        icon = result[0]
+        # the system may not have any icon theme installed:
+        if icon is not None:
+            assert parse_transfer_icon({"icon": icon}) == icon
+
+    def test_get_file_icon_disabled(self):
+        with patch("xpra.net.file_transfer.FILE_ICONS", False):
+            assert file_transfer.get_file_icon("file.pdf", "", b"") is None
+
+
+class TestFileIcon(unittest.TestCase):
+
+    def test_png_size(self):
+        from xpra.net.file_icon import get_png_size, PNG_HEADER
+        header = PNG_HEADER + b"\0\0\0\x0dIHDR" + (32).to_bytes(4, "big") + (16).to_bytes(4, "big")
+        assert get_png_size(header) == (32, 16)
+        assert get_png_size(b"") == (0, 0)
+        assert get_png_size(b"GIF89a" + b"0" * 32) == (0, 0)
+
+    def test_scale_png(self):
+        from xpra.net.file_icon import scale_png, get_png_size
+        try:
+            from PIL import Image
+        except ImportError:
+            self.skipTest("no PIL")
+        from xpra.codecs.image import to_png
+        data = to_png(Image.new("RGBA", (100, 50)))
+        assert get_png_size(scale_png(data, 48)) == (48, 24)
+        assert scale_png(b"not a png", 48) == b"not a png"
+
+    def test_icon_names_without_gio(self):
+        from xpra.net import file_icon
+        with patch("xpra.net.file_icon.get_gio", return_value=None):
+            assert file_icon.get_icon_names("application/pdf") == ("application-pdf", "application-x-generic")
+            assert file_icon.guess_content_type("file.pdf", "application/pdf") == "application/pdf"
+
+    def test_icon_names(self):
+        from xpra.net import file_icon
+        if not file_icon.get_gio():
+            self.skipTest("no Gio")
+        names = file_icon.get_icon_names(file_icon.guess_content_type("file.pdf"))
+        assert names
+        assert not any(name.endswith("-symbolic") for name in names)
+
+
 def main():
     unittest.main()
 

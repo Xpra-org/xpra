@@ -38,6 +38,7 @@ Each peer describes what it **accepts** in a `file` map:
 | `open-url-ask` | boolean | The peer asks its user before opening a URL                                 |
 | `ask-timeout`  | integer | How long the peer waits for its user's answer, in seconds                   |
 | `request-file` | boolean | The peer accepts `file-request`                                             |
+| `icons`        | boolean | The peer can show the optional `icon` sent with files and file requests     |
 
 Printing uses a separate `printer` map: `printing` (print jobs are accepted) and
 `printing-ask`. The client lists its printers with `printer-devices`, see
@@ -61,6 +62,13 @@ The packet layouts are in the [protocol registry](../Network/Protocol.md#810-fil
    map and the `send_id` of the accepted request, if any. The options contain the
    `sha256` digest of the whole file, in hexadecimal. Receivers also accept `sha512`,
    `sha384`, `sha224` and `sha1`, and MUST verify the digest they find.
+
+   When the receiver advertises `icons`, the options of both the `file-data-request`
+   and the `file-send` packets may also contain an `icon` for the file, as
+   `("png", width, height, data)`, which GUIs can show before and during the transfer.
+   The sender looks it up from the file's mimetype, or from its name and contents.
+   Receivers ignore icons that are not `png`, larger than 256x256 or more than 64KiB.
+   The `XPRA_FILE_ICONS=0` environment variable disables icons.
 3. Small files are sent in one go, in the `data` argument.
 4. A file larger than the smaller of the two peers' `chunks` values is sent in
    chunks of that size. The `file-send` packet then has empty `data` and its options

@@ -20,7 +20,7 @@ from xpra.net.file_transfer import ACCEPT, OPEN, DENY
 from xpra.util.stats import std_unit, std_unit_dec
 from xpra.gtk.window import add_close_accel
 from xpra.gtk.widget import scaled_image, label
-from xpra.gtk.pixbuf import get_icon_pixbuf
+from xpra.gtk.pixbuf import get_icon_pixbuf, load_pixbuf
 from xpra.gtk.dialogs.common_style import (
     add_style_class, style_actions, style_body, style_button, style_window,
 )
@@ -39,6 +39,7 @@ log = Logger("gtk", "file")
 
 URI_MAX_WIDTH = envint("XPRA_URI_MAX_WIDTH", 320)
 REMOVE_ENTRY_DELAY = envint("XPRA_FILE_REMOVE_ENTRY_DELAY", 5)
+ICON_SIZE = envint("XPRA_FILE_REQUEST_ICON_SIZE", 32)
 
 _instance = None
 
@@ -115,9 +116,9 @@ class OpenRequestsWindow:
         return btn
 
     def add_request(self, cb_answer, send_id: str, dtype: str, url: str, filesize: int,
-                    printit: bool, openit: bool, timeout: int) -> None:
+                    printit: bool, openit: bool, timeout: int, icon: tuple | None = None) -> None:
         expires = monotonic() + timeout
-        self.requests.append((cb_answer, send_id, dtype, url, filesize, printit, openit, expires))
+        self.requests.append((cb_answer, send_id, dtype, url, filesize, printit, openit, icon, expires))
         self.populate_table()
         if not self.populate_timer:
             self.schedule_timer()
@@ -160,12 +161,12 @@ class OpenRequestsWindow:
             add_style_class(widget, "xpra-cell")
             return widget
 
-        for i, text in enumerate(("URL / Filename", "", "Expires in", "Action")):
+        for i, text in enumerate(("", "URL / Filename", "", "Expires in", "Action")):
             heading = l(text)
             add_style_class(heading, "xpra-heading")
             grid.attach(heading, i, 0, 1, 1)
         row = 1
-        for cb_answer, send_id, dtype, url, filesize, printit, openit, expires in self.requests:
+        for cb_answer, send_id, dtype, url, filesize, printit, openit, icon, expires in self.requests:
             details = ""
             if dtype == "file" and filesize > 0:
                 details = "%sB" % std_unit_dec(filesize)
@@ -181,7 +182,7 @@ class OpenRequestsWindow:
             main_label.set_line_wrap_mode(Pango.WrapMode.WORD_CHAR)  # @UndefinedVariable
             main_label.set_size_request(URI_MAX_WIDTH, -1)
             main_label.set_selectable(True)
-            items = (main_label, l(details), expires_label, buttons)
+            items = (self.icon_image(icon), main_label, l(details), expires_label, buttons)
             for i, widget in enumerate(items):
                 grid.attach(widget, i, row, 1, 1)
             row += 1
@@ -189,6 +190,16 @@ class OpenRequestsWindow:
         self.alignment.add(grid)
         grid.show_all()
         self.contents = grid
+
+    @staticmethod
+    def icon_image(icon: tuple | None) -> Gtk.Widget:
+        if icon:
+            try:
+                if image := scaled_image(load_pixbuf(icon[3], ("png", )), ICON_SIZE):
+                    return image
+            except Exception as e:
+                log("icon_image(..) failed to load %s icon: %s", icon[0], e)
+        return label("")
 
     def remove_entry(self, send_id, can_close=True) -> None:
         self.expire_labels.pop(send_id, None)
@@ -384,9 +395,10 @@ def main() -> int:  # pragma: no cover
         def cb(accept):
             print("callback: %s" % (accept,))
 
-        app.add_request(cb, "1", "file", "someimage.png", 16384, False, True, 10)
-        app.add_request(cb, "2", "file", "otherimage.png", 16384, False, True, 100)
-        app.add_request(cb, "3", "file", "document.pdf", 32768, True, False, 200)
+        from xpra.net.file_icon import get_file_icon
+        app.add_request(cb, "1", "file", "someimage.png", 16384, False, True, 10, get_file_icon("someimage.png"))
+        app.add_request(cb, "2", "file", "otherimage.png", 16384, False, True, 100, get_file_icon("otherimage.png"))
+        app.add_request(cb, "3", "file", "document.pdf", 32768, True, False, 200, get_file_icon("document.pdf"))
         app.add_request(cb, "4", "url", "https://xpra.org/", 0, False, True, 300)
         app.hide = app.quit
         register_os_signals(app.quit)

@@ -53,6 +53,10 @@ MAX_CHUNK_ID = 128
 MAX_URL = 4096
 MAX_OPTIONS = 64
 MAX_ERROR_MESSAGE = 512
+# optional icon sent with file transfers and file transfer requests, so the receiver's GUI can show it:
+FILE_ICONS = envbool("XPRA_FILE_ICONS", True)
+MAX_ICON_SIZE = 256
+MAX_ICON_DATA = 64 * 1024
 # file transfers do their disk I/O (writing received files, reading files to send)
 # and CPU-heavy work (compression, hashing) on a dedicated daemon thread, so that
 # it is all kept off the network parse thread:
@@ -288,6 +292,7 @@ class FileTransferAttributes:
             "open-url": self.open_url,
             "open-url-ask": self.open_url_ask,
             "ask-timeout": self.file_ask_timeout,
+            "icons": FILE_ICONS,
         }
         return info
 
@@ -314,6 +319,45 @@ class FileTransferAttributes:
         if request.basename_pattern:
             return fnmatch.fnmatch(sent_basename, request.basename_pattern)
         return sent_basename == basename(request.filename)
+
+
+def get_file_icon(filename: str, mimetype: str, data: SizedBuffer) -> tuple[str, int, int, bytes] | None:
+    if not FILE_ICONS:
+        return None
+    try:
+        from xpra.net.file_icon import get_file_icon as lookup_file_icon
+    except ImportError as e:
+        filelog("get_file_icon(%r, %r, ..) %s", filename, mimetype, e)
+        return None
+    return lookup_file_icon(filename, mimetype, data)
+
+
+def parse_transfer_icon(options: typedict | dict | None) -> tuple[str, int, int, bytes] | None:
+    """
+    Validates the optional `icon` from the transfer options received from the peer.
+    Returns `None` if there is no icon or if it is invalid.
+    """
+    icon = (options or {}).get("icon")
+    if not icon:
+        return None
+    try:
+        if not isinstance(icon, (tuple, list)) or len(icon) != 4:
+            raise ValueError(f"expected a 4-tuple but got a {type(icon)}")
+        encoding, w, h, data = icon
+        if isinstance(encoding, bytes):
+            encoding = encoding.decode("latin1")
+        if encoding != "png":
+            raise ValueError(f"unsupported icon encoding {encoding!r}")
+        if not isinstance(w, int) or not isinstance(h, int) or not (0 < w <= MAX_ICON_SIZE and 0 < h <= MAX_ICON_SIZE):
+            raise ValueError(f"invalid icon dimensions {w!r}x{h!r}")
+        if not isinstance(data, (bytes, memoryview, bytearray)):
+            raise ValueError(f"invalid icon data type {type(data)}")
+        if not data or len(data) > MAX_ICON_DATA:
+            raise ValueError(f"invalid icon data size {len(data)}")
+        return encoding, w, h, bytes(data)
+    except (ValueError, TypeError) as e:
+        filelog("parse_transfer_icon(..) ignoring invalid icon: %s", e)
+        return None
 
 
 def digest_mismatch(filename: str, digest, expected_digest) -> None:
@@ -358,6 +402,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.remote_file_ask_timeout = SEND_REQUEST_TIMEOUT
         self.remote_file_size_limit = 0
         self.remote_file_chunks = 0
+        self.remote_file_icons = False
         self.pending_send_data: dict[str, SendPendingData] = {}
         self.pending_send_data_timers: dict[str, int] = {}
         self.send_chunks_in_progress: dict[str, SendChunkState] = {}
@@ -452,6 +497,7 @@ class FileTransferHandler(FileTransferAttributes):
         self.remote_file_ask_timeout = fc.intget("ask-timeout")
         self.remote_file_size_limit = fc.intget("max-file-size") or fc.intget("size-limit")
         self.remote_file_chunks = max(0, fc.intget("chunks"))
+        self.remote_file_icons = fc.boolget("icons")
         self.dump_remote_file_caps()
 
     def parse_printer_caps(self, c: typedict) -> None:
@@ -465,6 +511,7 @@ class FileTransferHandler(FileTransferAttributes):
         filelog(" open-files=%-5s      (ask=%s)", self.remote_open_files, self.remote_open_files_ask)
         filelog(" open-url=%-5s        (ask=%s)", self.remote_open_url, self.remote_open_url_ask)
         filelog(" file-size-limit=%s", self.remote_file_size_limit)
+        filelog(" icons=%s", self.remote_file_icons)
 
     def get_info(self) -> dict[str, Any]:
         info = super().get_info()
@@ -473,6 +520,7 @@ class FileTransferHandler(FileTransferAttributes):
             "file-transfer-ask": self.remote_file_transfer_ask,
             "file-size-limit": self.remote_file_size_limit,
             "file-chunks": self.remote_file_chunks,
+            "file-icons": self.remote_file_icons,
             "open-files": self.remote_open_files,
             "open-files-ask": self.remote_open_files_ask,
             "open-url": self.remote_open_url,
@@ -1100,12 +1148,22 @@ class FileTransferHandler(FileTransferAttributes):
         self.dump_remote_file_caps()
         if not self.check_file_size(action, filename, filesize):
             return False
+        options = self.add_file_icon(filename, mimetype, data, options)
         if ask:
             return bool(self.send_data_request(action, "file", filename, mimetype, data, filesize,
                                                printit, openit, options, send_id))
         send_id = send_id or uuid.uuid4().hex
         self.do_send_file(filename, mimetype, data, filesize, printit, openit, options, send_id)
         return True
+
+    def add_file_icon(self, filename: str, mimetype: str, data: SizedBuffer, options: dict | None) -> dict:
+        # copy, so we don't modify the caller's dictionary:
+        options = dict(options or {})
+        if self.remote_file_icons and "icon" not in options:
+            if icon := get_file_icon(filename, mimetype, data):
+                filelog("add_file_icon(%r, %r, ..) %s %ix%i icon: %i bytes", filename, mimetype, *icon[:3], len(icon[3]))
+                options["icon"] = icon
+        return options
 
     def send_data_request(self, action: str, dtype: str, url: str, mimetype: str = "", data: SizedBuffer = b"",
                           filesize: int = 0, printit: bool = False, openit: bool = True,

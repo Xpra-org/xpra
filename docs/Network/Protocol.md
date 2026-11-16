@@ -500,7 +500,7 @@ for a minimal client `hello`.
 | `display` | map | `desktop_size`, `monitors`, `monitor-relative`, `dpi`, `refresh-rate`, ... | [display](../Subsystems/Display.md) |
 | `encoding` | map | `options`, `core`, `rgb_formats`, `window-icon`, `full_csc_modes`, quality and speed, codec profiles | [encoding](../Subsystems/Encoding.md) |
 | `events` | bool | the client accepts `events` packets | Section 7.1 |
-| `file` | map | `enabled`, `ask`, `size-limit`, `chunks`, `open`, `open-ask`, `open-url`, `open-url-ask`, `request-file`, `ask-timeout` | [file transfers](../Subsystems/File.md) |
+| `file` | map | `enabled`, `ask`, `size-limit`, `chunks`, `open`, `open-ask`, `open-url`, `open-url-ask`, `request-file`, `ask-timeout`, `icons` | [file transfers](../Subsystems/File.md) |
 | `printer` | map | `printing`, `printing-ask` | [file transfers](../Subsystems/File.md) |
 | `keyboard`, `modifiers`, `keymap`, `key_repeat`, `ibus` | top-level | enabled state, modifiers, repeat timing and keymap definition | [keyboard](../Subsystems/Keyboard.md) |
 | `metadata.supported` | `list<str>` | the window metadata keys the client wants to receive | [window](../Subsystems/Window.md) |
@@ -820,7 +820,9 @@ server. `printer-file` is only accepted on a `print` request connection
 | `printer-file` | `filename:str`, `data:bytes`, `mimetype:str?`, `source_uuid:str?`, `title:str?`, `printer:str?`, `copies:u16?`, `options:map|str?` |
 
 `file-send` options carry digests and, for chunked transfers,
-`file-chunk-id`. A receiver MUST validate the declared size, negotiated maximum,
+`file-chunk-id`. When the receiver advertises the `icons` capability, `file-send` and
+`file-data-request` options may also carry an `icon` as `("png", width:u16, height:u16, data:bytes)`.
+A receiver MUST validate the declared size, negotiated maximum,
 authorization, basename, chunk order and digest. `file-data-response` authorizes
 only the exact pending `send_id`; it is not blanket permission to send data.
 The chunked transfer protocol, digests and timeouts are specified in the

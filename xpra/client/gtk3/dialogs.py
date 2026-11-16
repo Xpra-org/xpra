@@ -248,8 +248,14 @@ class GTKDialogClient(StubClientSubsystem):
                                                         printit, newopenit, options)
             cb_answer(accept)
 
+        from xpra.net.file_transfer import parse_transfer_icon
+        icon = parse_transfer_icon(options)
+        if not icon and dtype == "file":
+            # the sender did not provide one, try to find one from the filename and mimetype:
+            from xpra.net.file_icon import get_file_icon
+            icon = get_file_icon(url, mimetype)
         dialog = get_open_requests_window(self.show_file_upload, file_sub.cancel_download)
-        dialog.add_request(rec_answer, send_id, dtype, url, filesize, printit, openit, timeout)
+        dialog.add_request(rec_answer, send_id, dtype, url, filesize, printit, openit, timeout, icon)
         dialog.show()
         self.sub_dialogs["ask-data"] = dialog
 
