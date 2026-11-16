@@ -125,6 +125,23 @@ class PointerClientTest(ClientMixinTest):
         self.assertEqual(click(False), 1, "a button which was down was not released")
         self.readonly = False
 
+    def test_mousewheel_disabled(self):
+        from xpra.client.subsystem.pointer import PointerClient
+        opts = AdHocStruct()
+        opts.mousewheel = "no"
+        opts.sharing = "no"
+        self._test_mixin_class(PointerClient, opts, {})
+        sent = []
+        self.mixin.send_positional = lambda *args: sent.append(args)
+        # the wheel buttons are not mapped to anything, so they must not be sent:
+        for button in (4, 5):
+            for pressed in (True, False):
+                self.mixin.send_button(-1, 1, button, pressed, (100, 200), (), (), {})
+        self.assertEqual(sent, [])
+        # the other buttons are:
+        self.mixin.send_button(-1, 1, 1, True, (100, 200), (), (), {})
+        self.assertEqual(len(sent), 1)
+
     def test_remote_pointer(self):
         from xpra.client.subsystem.pointer import PointerClient
         opts = AdHocStruct()
