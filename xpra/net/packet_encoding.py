@@ -151,6 +151,18 @@ def get_packet_encoding_type(protocol_flags: int) -> str:
     return "bencode"
 
 
+def encoders_from_header_flags(protocol_flags: int) -> tuple[str, ...]:
+    """
+    The packet encoders that the protocol flags of a packet header show the peer is using.
+    """
+    flags = {
+        "rencodeplus": FLAGS_RENCODEPLUS,
+        "rencode": FLAGS_RENCODE,
+        "yaml": FLAGS_YAML,
+    }
+    return tuple(name for name, flag in flags.items() if protocol_flags & flag)
+
+
 class InvalidPacketEncodingException(Exception):
     pass
 

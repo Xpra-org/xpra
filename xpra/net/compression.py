@@ -269,6 +269,19 @@ def get_compression_type(level: int) -> str:
     return "zlib"
 
 
+def compressors_from_header_flags(level: int) -> tuple[str, ...]:
+    """
+    The compressors that the compression level field of a packet header shows the peer is using.
+    """
+    from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG, ZSTD_FLAG
+    flags = {
+        "lz4": LZ4_FLAG,
+        "brotli": BROTLI_FLAG,
+        "zstd": ZSTD_FLAG,
+    }
+    return tuple(name for name, flag in flags.items() if level & flag)
+
+
 def decompress(data: SizedBuffer, level: int) -> SizedBuffer:
     from xpra.net.protocol.header import LZ4_FLAG, BROTLI_FLAG, ZSTD_FLAG
     if level & LZ4_FLAG:
