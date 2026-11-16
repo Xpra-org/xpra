@@ -948,7 +948,17 @@ class SessionInfo(Gtk.Window):
             return
         id_to_window = window_sub._id_to_window
         for wid, window in tuple(id_to_window.items()):
-            renderers.setdefault(window.get_backing_class(), []).append(wid)
+            # not every toolkit's window class implements `get_backing_class`,
+            # ie: the native win32 `ClientWindow` just holds a `backing` instance:
+            get_backing_class = getattr(window, "get_backing_class", None)
+            if get_backing_class:
+                bclass = get_backing_class()
+            else:
+                backing = getattr(window, "backing", None)
+                if backing is None:
+                    continue
+                bclass = type(backing)
+            renderers.setdefault(bclass, []).append(wid)
         for bclass, windows in renderers.items():
             wr.append("%s (%i)" % (bclass.__name__.replace("Backing", ""), len(windows)))
         self.window_rendering.set_text("GTK3: %s" % csv(wr))
