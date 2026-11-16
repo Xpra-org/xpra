@@ -368,7 +368,10 @@ class OpenRequestsWindow:
 
     def quit(self, *args) -> None:
         log("quit%s", args)
-        self.close()
+        # don't go through `close()` -> `hide()`: `main()` replaces `hide` with `quit`
+        self.cancel_timer()
+        if self.window:
+            self.window.hide()
         Gtk.main_quit()
 
 
