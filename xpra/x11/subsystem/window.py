@@ -53,6 +53,8 @@ CLAMP_WINDOW_TO_ROOT = envbool("XPRA_CLAMP_WINDOW_TO_ROOT", False)
 # move the X11 windows we clamp to the visible area, and not just the position we report to the clients:
 CLAMP_UPDATE_GEOMETRY = envbool("XPRA_CLAMP_UPDATE_GEOMETRY", True)
 ALWAYS_RAISE_WINDOW = envbool("XPRA_ALWAYS_RAISE_WINDOW", False)
+# restore a visible window left iconic when the client gives it the focus:
+RESTORE_ICONIC_ON_FOCUS = envbool("XPRA_RESTORE_ICONIC_ON_FOCUS", True)
 PRE_MAP = envbool("XPRA_PRE_MAP_WINDOWS", True)
 
 WINDOW_SIGNALS = os.environ.get(
@@ -515,8 +517,22 @@ class SeamlessWindowServer(WindowServer):
     # focus
     # --------------------------------------------------------------------
 
+    def _restore_iconic_on_focus(self, wid: int) -> bool:
+        if not RESTORE_ICONIC_ON_FOCUS or not wid:
+            return False
+        window = self.get_window(wid)
+        # do not map hidden windows or alter trays / override-redirect windows:
+        if (window is None or not window.is_managed() or window.is_OR() or window.is_tray()
+                or not window.get_property("shown") or not window.get_property("iconic")):
+            return False
+        focuslog("restoring stale iconic state on focused window %#x: %s", wid, window)
+        window.show()
+        return True
+
     def _focus(self, server_source, wid: int, modifiers) -> None:
         focuslog("focus wid=%#x has_focus=%#x", wid, self._has_focus)
+        # a repeated focus packet must also repair a stale minimized state:
+        self._restore_iconic_on_focus(wid)
         if self.last_raised != wid:
             self.last_raised = 0
         if self._has_focus == wid == 0:
@@ -708,6 +724,11 @@ class SeamlessWindowServer(WindowServer):
                 if window.get_property("iconic") != bool(iconified):
                     window.set_property("iconic", iconified)
                     changes["iconified"] = bool(iconified)
+        # a focus update may arrive without an explicit iconified=False update,
+        # an explicit minimize request in the same packet still takes precedence:
+        if nws.boolget("focused") and not nws.boolget("iconified"):
+            if self._restore_iconic_on_focus(wid):
+                changes["iconified"] = False
         for k in (
                 "maximized", "above",
                 "below", "fullscreen",

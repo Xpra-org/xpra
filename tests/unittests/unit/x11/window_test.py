@@ -40,6 +40,15 @@ class FocusStub:
         from xpra.x11.subsystem.window import SeamlessWindowServer
         SeamlessWindowServer._focus(self, None, wid, None)
 
+    def _restore_iconic_on_focus(self, wid: int) -> bool:
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+        return SeamlessWindowServer._restore_iconic_on_focus(self, wid)
+
+    def set_window_state(self, wid: int, state: dict) -> tuple:
+        """ replay the window state part of a `configure-window` packet, without a server """
+        from xpra.x11.subsystem.window import SeamlessWindowServer
+        return SeamlessWindowServer._set_window_state(self, wid, self.windows[wid], state)
+
     def lose_window(self, window) -> None:
         """ what happens when a window goes away, without a server """
         from xpra.x11.subsystem.window import SeamlessWindowServer
@@ -468,6 +477,47 @@ class X11WindowTest(ServerTestUtil):
                 server.focus(wid)
                 self.assertEqual(bindings.get_children(root)[-1], focused.corral_xid)
                 self.assertEqual(tuple(server._focus_history), history)
+
+    def test_focus_restores_iconic_window(self):
+        """
+        #5151: the client can give the focus to a window which the server still thinks is iconic,
+        and it must not be left iconified, whichever packet carries the focus.
+        """
+        from xpra.x11.error import xsync
+        IconicState = 3
+        NormalState = 1
+
+        def wm_state(window) -> int:
+            with xsync:
+                return window.prop_get("WM_STATE", "state")
+
+        window = self.manage_window(self.start_window())
+        server = FocusStub(windows={1: window})
+
+        def iconify() -> None:
+            window.set_property("iconic", True)
+            self.assertEqual(wm_state(window), IconicState)
+
+        for name, give_focus in (
+            ("window-focus", lambda: server.focus(1)),
+            ("repeated window-focus", lambda: server.focus(1)),
+            ("focused state", lambda: self.assertIn("iconified", server.set_window_state(1, {"focused": True}))),
+        ):
+            with self.subTest(name):
+                iconify()
+                give_focus()
+                self.assertFalse(window.get_property("iconic"))
+                self.assertEqual(wm_state(window), NormalState)
+
+        # an explicit minimize request in the same packet takes precedence:
+        server.set_window_state(1, {"focused": True, "iconified": True})
+        self.assertTrue(window.get_property("iconic"))
+        # and hidden windows are not mapped:
+        window.hide()
+        window.set_property("iconic", True)
+        server.focus(1)
+        self.assertTrue(window.get_property("iconic"))
+        self.assertFalse(window.get_property("shown"))
 
     def test_pointer_raises_stationary_window(self):
         from xpra.x11.bindings.core import get_root_xid
