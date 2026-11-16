@@ -1037,6 +1037,10 @@ class ClientWindow(GObject.GObject):
     def is_tray(self) -> bool:
         return False
 
+    def is_GL(self) -> bool:
+        # overridden by `GLWin32ClientWindow`:
+        return False
+
     def is_readonly(self) -> bool:
         client = self.client
         return bool(client and (client.readonly or client.server_readonly))
