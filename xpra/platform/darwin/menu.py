@@ -428,7 +428,7 @@ class OSXMenuHelper(GTKTrayMenu):
                 self.get_subsystem("pointer").wheel_map[5] = 5
 
         mousewheel_menuitem = checkitem("Invert Mouse Wheel", invert_toggled)
-        mousewheel_menuitem.set_active(self.get_subsystem("pointer").wheel_map.get(4) != 4)
+        mousewheel_menuitem.set_active(self.get_subsystem("pointer").wheel_map.get(4, 0) != 4)
         return mousewheel_menuitem
 
     def make_numlockmenuitem(self):

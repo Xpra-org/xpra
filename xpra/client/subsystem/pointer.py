@@ -249,7 +249,7 @@ class PointerClient(StubClientSubsystem):
         server_buttons = []
         for b in buttons:
             if b > 3:
-                sb = self.wheel_map.get(button)
+                sb = self.wheel_map.get(button, 0)
                 if not sb:
                     continue
                 b = sb
@@ -339,12 +339,12 @@ class PointerClient(StubClientSubsystem):
         if deltax:
             self.wheel_deltax += deltax
             button = self.wheel_map.get(6 + int(self.wheel_deltax > 0), 0)  # RIGHT=7, LEFT=6
-            if button > 0:
+            if button:
                 self.wheel_deltax = self.send_wheel_delta(device_id, wid, button, self.wheel_deltax, pointer, props)
         if deltay:
             self.wheel_deltay += deltay
             button = self.wheel_map.get(5 - int(self.wheel_deltay > 0), 0)  # UP=4, DOWN=5
-            if button > 0:
+            if button:
                 self.wheel_deltay = self.send_wheel_delta(device_id, wid, button, self.wheel_deltay, pointer, props)
         log("wheel_event%s new deltas=%s,%s",
             (device_id, wid, deltax, deltay), self.wheel_deltax, self.wheel_deltay)
