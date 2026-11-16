@@ -95,7 +95,10 @@ Notes:
   its own, see [core capabilities](../Network/Protocol.md#52-core-capabilities).
 * `version` is your client's own version, in any format: it has no requirements and
   is only informational.
-* `encoders` is required, and MUST contain `rencodeplus`.
+* `encoders` and `compressors` are optional: when omitted, the server uses the encoder and
+  compressor of the packet that carried your `hello` (rencodeplus, and no compression if the
+  `hello` was sent uncompressed). List them if you implement others, `encoders` MUST then
+  contain `rencodeplus`.
 * `server-features: true` asks the server to include its feature flags in its `hello`:
   the `window`, `pointer`, `file`, `printer`, `notification`, `audio`, `webcam` and
   sharing capabilities, `readonly`, and the `wheel.*` pointer flags. Without it, the

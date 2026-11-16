@@ -45,12 +45,12 @@ from xpra.net.constants import MAX_PACKET_SIZE, SOCKET_TYPES
 from xpra.net.bytestreams import ABORT
 from xpra.net import compression
 from xpra.net.compression import (
-    decompress, MIN_COMPRESS_SIZE,
+    decompress, compressors_from_header_flags, MIN_COMPRESS_SIZE,
     InvalidCompressionException, Compressed, LevelCompressed, Compressible, LargeStructure,
 )
 from xpra.net import packet_encoding
 from xpra.net.socket_util import guess_packet_type
-from xpra.net.packet_encoding import decode, InvalidPacketEncodingException
+from xpra.net.packet_encoding import decode, encoders_from_header_flags, InvalidPacketEncodingException
 from xpra.net.protocol.check import packet_structure_error
 from xpra.net.crypto import get_cipher, get_key, get_mode, pad, get_block_size, INITIAL_PADDING
 from xpra.log import Logger
@@ -237,6 +237,9 @@ class SocketProtocol:
         if "XPRA_LOG_SOCKET_STATS" in os.environ:
             self._log_stats = envbool("XPRA_LOG_SOCKET_STATS")
         self._closed = False
+        # the protocol flags and compression level of the last main packet received:
+        self._last_flags = 0
+        self._last_compression = 0
         self.encoder = "none"
         self._encoder = packet_encoding.get_encoder("none")
         self.compressor = "none"
@@ -710,7 +713,12 @@ class SocketProtocol:
 
     def enable_encoder_from_caps(self, caps: typedict) -> bool:
         options = packet_encoding.get_enabled_encoders(order=packet_encoding.PERFORMANCE_ORDER)
-        encoders = caps.strtupleget("encoders")
+        if "encoders" in caps:
+            encoders = caps.strtupleget("encoders")
+        elif self._last_flags:
+            encoders = encoders_from_header_flags(self._last_flags)
+        else:
+            encoders = ()
         log(f"enable_encoder_from_caps(..) options={options}, encoders from caps={encoders}")
         self.chunks = caps.boolget("chunks", True)
         for e in options:
@@ -735,7 +743,10 @@ class SocketProtocol:
             self.enable_compressor("none")
 
     def enable_compressor_from_caps(self, caps: typedict) -> None:
-        self.remote_compressors = caps.strtupleget("compressors")
+        if "compressors" in caps:
+            self.remote_compressors = caps.strtupleget("compressors")
+        else:
+            self.remote_compressors = compressors_from_header_flags(self._last_compression)
         if self.compression_level == 0:
             self.enable_compressor("none")
             return
@@ -1194,6 +1205,10 @@ class SocketProtocol:
                                            modern=True):
             self.invalid_header(self, header, f"invalid packet header: {error}")
             return None
+        if packet_index == 0:
+            # raw chunks don't carry the encoder flag, only main packets do:
+            self._last_flags = protocol_flags
+            self._last_compression = compression_level
 
         # sanity check size (will often fail if not an xpra client):
         if data_size > self.abs_max_packet_size:

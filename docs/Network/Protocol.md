@@ -212,6 +212,11 @@ It MAY use LZ4, which is the required server-side compressor. Thereafter each
 sender chooses an encoder and compressor offered by the receiver, independently
 for each direction. Rencodeplus and LZ4 are preferred.
 
+A `hello` that omits `encoders` or `compressors` offers only the encoder and
+compressor used by the packet that carries it: a client that only implements
+rencodeplus (and LZ4) does not need to list them. A `hello` sent uncompressed
+without `compressors` offers no compressor, so the peer replies uncompressed.
+
 ### 4.2 Rencodeplus
 
 Rencodeplus is a self-delimiting binary representation. Multi-byte numeric
@@ -300,8 +305,8 @@ govern what the other endpoint may send.
 |---|---|---|
 | `version` | `str` | the sender's own version, informational, see below |
 | `protocol-version` | `list<int>` | minimum protocol version accepted by the sender of this hello; REQUIRED, at least `[7, 0]` |
-| `encoders` | `list<str>` | accepted packet encoders; includes `rencodeplus`; REQUIRED |
-| `compressors` | `list<str>` | accepted record compressors: `lz4`, `brotli`, `zstd`, `none` |
+| `encoders` | `list<str>` | accepted packet encoders; includes `rencodeplus`; when omitted, the encoder of the packet carrying this hello |
+| `compressors` | `list<str>` | accepted record compressors: `lz4`, `brotli`, `zstd`, `none`; when omitted, the compressor of the packet carrying this hello, or none if it was not compressed |
 | `compression_level` | `u8` | requested level, usually `0..9`; zero disables record compression |
 | `chunks` | `bool` | whether raw chunks can be reassembled; default true |
 | `ssl-upgrade` | `bool` | client can handle a negotiated TLS upgrade on plain TCP; default false |
