@@ -190,7 +190,9 @@ class StartNewCommand:
 
     def quit(self, *args) -> None:
         log("quit%s", args)
-        self.close()
+        # don't go through `close()` -> `hide()`: `main()` replaces `hide` with `quit`
+        if self.window:
+            self.window.hide()
         Gtk.main_quit()
 
     def run_command(self, *_args) -> None:
