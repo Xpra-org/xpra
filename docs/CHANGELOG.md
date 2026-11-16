@@ -1,6 +1,6 @@
 # Changelog
 
-## [7.0] 2026-10-21
+## [7.0] 2026-11-16
 * 🔧 Platforms, build and packaging:
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
   * [new macOS screen capture backend](https://github.com/Xpra-org/xpra/issues/1872)

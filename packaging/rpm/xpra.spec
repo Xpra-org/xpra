@@ -1188,7 +1188,7 @@ fi
 
 
 %changelog
-* Wed Oct 21 2026 Antoine Martin <antoine@xpra.org> 7.0-10
+* Mon Nov 16 2026 Antoine Martin <antoine@xpra.org> 7.0-10
 - 🔧 Platforms, build and packaging:
    new macOS event API
    new macOS screen capture backend
