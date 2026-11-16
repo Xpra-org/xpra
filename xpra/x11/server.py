@@ -58,6 +58,7 @@ CONFIGURE_DAMAGE_RATE = envint("XPRA_CONFIGURE_DAMAGE_RATE", 250)
 SHARING_SYNC_SIZE = envbool("XPRA_SHARING_SYNC_SIZE", True)
 CLAMP_WINDOW_TO_ROOT = envbool("XPRA_CLAMP_WINDOW_TO_ROOT", False)
 ALWAYS_RAISE_WINDOW = envbool("XPRA_ALWAYS_RAISE_WINDOW", False)
+RESTORE_ICONIC_ON_FOCUS = envbool("XPRA_RESTORE_ICONIC_ON_FOCUS", True)
 PRE_MAP = envbool("XPRA_PRE_MAP_WINDOWS", True)
 DUMMY_DPI = envbool("XPRA_DUMMY_DPI", True)
 DUMMY_MONITORS = envbool("XPRA_DUMMY_MONITORS", True)
@@ -688,8 +689,22 @@ class XpraServer(GObject.GObject, X11ServerBase):
             ss.show_desktop(show)
 
 
+    def _restore_iconic_on_focus(self, wid:int) -> bool:
+        if not RESTORE_ICONIC_ON_FOCUS or not wid:
+            return False
+        window = self._id_to_window.get(wid)
+        if (window is None or not window.is_managed() or window.is_OR() or window.is_tray()
+                or not window.get_property("shown") or not window.get_property("iconic")):
+            return False
+        focuslog("restoring stale iconic state on focused window %#x: %s", wid, window)
+        window.show()
+        return True
+
+
     def _focus(self, server_source, wid:int, modifiers) -> None:
         focuslog("focus wid=%s has_focus=%s", wid, self._has_focus)
+        # A repeated focus packet can also repair stale iconic state.
+        self._restore_iconic_on_focus(wid)
         if self.last_raised!=wid:
             self.last_raised = None
         if self._has_focus==wid:
@@ -857,6 +872,9 @@ class XpraServer(GObject.GObject, X11ServerBase):
                 if window.get_property("iconic")!=bool(iconified):
                     window.set_property("iconic", iconified)
                     changes["iconified"] = bool(iconified)
+        # An explicit minimize request in the same packet takes precedence.
+        if nws.boolget("focused") and not iconified and self._restore_iconic_on_focus(wid):
+            changes["iconified"] = False
         #handle wm_state virtual booleans:
         for k in (
             "maximized", "above",
