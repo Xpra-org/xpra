@@ -27,6 +27,25 @@ class WindowManagerTest(ClientMixinTest):
 				self.assertEqual(caps["encoding.auto_refresh_delay"], milliseconds)
 				self.assertEqual(caps["auto_refresh_delay"], milliseconds)
 
+	def test_mousewheel_disabled(self):
+		from xpra.client.mixins.window_manager import WindowClient
+		from xpra.scripts.config import dict_to_validated_config
+		opts = dict_to_validated_config({"mousewheel": "no", "border": ""})
+		for packet_type in ("pointer-button", "button-action"):
+			with self.subTest(packet_type=packet_type):
+				client = WindowClient()
+				client.init(opts)
+				client.server_packet_types = (packet_type,)
+				client.next_pointer_sequence = lambda _device_id: 1
+				sent = []
+				client.send_positional = sent.append
+				for button in (4, 5):
+					for pressed in (True, False):
+						client.send_button(-1, 1, button, pressed, (100, 200), (), (), {})
+				self.assertEqual(sent, [])
+				client.send_button(-1, 1, 1, True, (100, 200), (), (), {})
+				self.assertEqual([packet[0] for packet in sent], [packet_type])
+
 	def test_windowmanager(self):
 		with DisplayContext():
 			from xpra.client.mixins.window_manager import WindowClient

@@ -537,7 +537,10 @@ class WindowClient(StubClientMixin):
         #map wheel buttons via translation table to support inverted axes:
         server_button = button
         if button>3:
-            server_button = self.wheel_map.get(button, -1)
+            server_button = self.wheel_map.get(button, 0)
+            if not server_button:
+                mouselog("button %i is not forwarded", button)
+                return
         server_buttons = []
         for b in buttons:
             if b>3:
@@ -560,8 +563,6 @@ class WindowClient(StubClientMixin):
             packet =  ["pointer-button", device_id, seq, wid,
                        server_button, pressed, pointer, props]
         else:
-            if server_button==-1:
-                return
             packet =  ["button-action", wid,
                        server_button, pressed,
                        pointer, modifiers, server_buttons]
