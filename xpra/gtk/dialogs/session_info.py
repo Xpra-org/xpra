@@ -477,6 +477,24 @@ def nopopulate() -> bool:
     return False
 
 
+def is_gl_window(window) -> bool:
+    # not every toolkit's window class implements `is_GL`:
+    is_GL = getattr(window, "is_GL", None)
+    return bool(is_GL and is_GL())
+
+
+def get_window_renderer(window) -> str:
+    if is_gl_window(window):
+        return "OpenGL"
+    # windows without `get_backing_class` (ie: native win32) hold a `backing` instance,
+    # name the renderer after it (ie: `GDIBacking` -> "GDI"):
+    if not hasattr(window, "get_backing_class"):
+        backing = getattr(window, "backing", None)
+        if backing is not None:
+            return type(backing).__name__.replace("Backing", "") or "Cairo"
+    return "Cairo"
+
+
 class SessionInfo(Gtk.Window):
     def __init__(self, client, session_name, conn, show_client=True, show_server=True):
         check_main_thread()
@@ -1431,7 +1449,7 @@ class SessionInfo(Gtk.Window):
                     transient += 1
                 else:
                     windows += 1
-                if w.is_GL():
+                if is_gl_window(w):
                     gl += 1
             self.windows_managed_label.set_text(str(windows))
             self.transient_managed_label.set_text(str(transient))
@@ -1449,7 +1467,7 @@ class SessionInfo(Gtk.Window):
                     self.encoder_info_box.remove(self.encoder_labels.pop(wid))
             # update or create labels for all windows:
             for wid, win in tuple(id_to_window.items()):
-                renderer = "OpenGL" if win.is_GL() else "Cairo"
+                renderer = get_window_renderer(win)
                 props = window_encoder_stats.get(wid, {})
                 title = props.get("title", "")
                 if not title:

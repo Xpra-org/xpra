@@ -1104,6 +1104,10 @@ class ClientWindow(GObject.GObject):
     def is_tray(self) -> bool:
         return False
 
+    def is_GL(self) -> bool:
+        # overridden by `GLWin32ClientWindow`:
+        return False
+
     def is_OR(self) -> bool:
         return self.metadata.get("override-redirect", False)
 
