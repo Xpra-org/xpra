@@ -64,12 +64,26 @@ class TestDefaultValues(unittest.TestCase):
             name = node.attr if isinstance(node, ast.Attribute) else getattr(node, "id", "")
             return name if name.lstrip("_") in lists else ""
 
+        def is_compat_test(test) -> bool:
+            return isinstance(test, ast.Name) and test.id == "BACKWARDS_COMPATIBLE"
+
+        def walk(node):
+            # like `ast.walk`, but without the code that `BACKWARDS_COMPATIBLE=0` leaves out:
+            # `if BACKWARDS_COMPATIBLE: ...` and `x if BACKWARDS_COMPATIBLE else y`
+            yield node
+            for child in ast.iter_child_nodes(node):
+                if not BACKWARDS_COMPATIBLE and isinstance(child, (ast.If, ast.IfExp)) and is_compat_test(child.test):
+                    for c in (child.orelse if isinstance(child, ast.If) else [child.orelse]):
+                        yield from walk(c)
+                    continue
+                yield from walk(child)
+
         declared: dict[str, str] = {}
         for path in src.rglob("*.py"):
             source = path.read_text(encoding="utf8")
             if "property_names" not in source:
                 continue
-            for node in ast.walk(ast.parse(source)):
+            for node in walk(ast.parse(source)):
                 values = ()
                 if isinstance(node, (ast.Assign, ast.AnnAssign, ast.AugAssign)):
                     targets = node.targets if isinstance(node, ast.Assign) else [node.target]
@@ -79,7 +93,7 @@ class TestDefaultValues(unittest.TestCase):
                     if node.func.attr in ("append", "extend") and list_name(node.func.value):
                         values = node.args
                 for value in values:
-                    for n in ast.walk(value):
+                    for n in walk(value):
                         if isinstance(n, ast.Constant) and isinstance(n.value, str):
                             declared.setdefault(n.value, f"{path.relative_to(src.parent)}:{node.lineno}")
         self.assertIn("title", declared)
