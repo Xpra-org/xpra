@@ -239,9 +239,43 @@ def load_entry_icon(props: dict):
             cmd = os.path.basename(cmd).split(" ")[0]
             if cmd not in names:
                 names.append(cmd)
-    if not set_icon_props(props, lambda extensions: do_find_icon(*names, extensions=extensions)):
-        log(f"no icon found for {names} from {props}")
+    if set_icon_props(props, lambda extensions: do_find_icon(*names, extensions=extensions)):
+        return props
+    if (mime_names := get_mime_icon_names(props.get("MimeTypes", ()))) and \
+            set_icon_props(props, lambda extensions: do_find_icon(*mime_names, extensions=extensions)):
+        log(f"using mime type icon {props['IconFile']!r} for {names}")
+        return props
+    log(f"no icon found for {names} or mime types {mime_names} from {props}")
     return props
+
+
+def get_mime_icon_names(mime_types: Sequence[str]) -> list[str]:
+    """
+    The icon names for these mime types, the specific ones first,
+    using `get_icon()` and `get_generic_icon()` which were added in pyxdg 0.29
+    """
+    if not mime_types:
+        return []
+    try:
+        from xdg.Mime import MIMEtype  # pylint: disable=import-outside-toplevel
+    except ImportError:
+        log("get_mime_icon_names(%s)", mime_types, exc_info=True)
+        return []
+    if not hasattr(MIMEtype, "get_generic_icon"):
+        return []
+    specific: list[str] = []
+    generic: list[str] = []
+    for mime_type in mime_types:
+        try:
+            mtype = MIMEtype(mime_type)
+            icon_names = ((specific, mtype.get_icon()), (generic, mtype.get_generic_icon()))
+        except Exception:
+            log(f"invalid mime type {mime_type!r}", exc_info=True)
+            continue
+        for icon_list, icon_name in icon_names:
+            if icon_name and icon_name not in icon_list:
+                icon_list.append(icon_name)
+    return specific + [name for name in generic if name not in specific]
 
 
 def set_icon_props(props: dict[str, Any], find_fn: Callable[[Sequence[str]], str]) -> bool:
