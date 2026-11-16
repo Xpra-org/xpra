@@ -888,7 +888,13 @@ class NetworkServer(StubSubsystem):
         if proto in self._potential_protocols:
             self._potential_protocols.remove(proto)
         ssllog("ssl-upgrade: %s", packet[1:])
+        # stop the parse thread we are running on from reading the client's TLS handshake:
         conn = proto.steal_connection()
+        # but wrap the socket from the main thread, because this parse thread's seccomp filter
+        # does not allow it to import `xpra.net.tls.socket` or load the certificate files:
+        GLib.idle_add(self.ssl_upgrade_connection, proto, conn, new_socktype)
+
+    def ssl_upgrade_connection(self, proto: SocketProtocol, conn, new_socktype: str) -> None:
         # threads should be able to terminate immediately
         # as there's no traffic yet:
         ioe = proto.wait_for_io_threads_exit(1)
