@@ -462,6 +462,8 @@ def do_find_menu_icon(*names: str) -> str:
     """
     if not LOAD_FROM_MENU or not menu_cache:
         return ""
+    # WM_CLASS instance and class names can differ only in capitalization.
+    wm_class_names = {name.casefold() for name in names if name}
     for category, cdata in menu_cache.items():
         entries = cdata.get("Entries", ())
         for key, edata in entries.items():
@@ -470,6 +472,9 @@ def do_find_menu_icon(*names: str) -> str:
             if not filename:
                 continue
             if any(value and value in names for value in (key, edata.get("Name"), cmd)):
+                return filename
+            startup_wm_class = edata.get("StartupWMClass") or ""
+            if startup_wm_class and startup_wm_class.casefold() in wm_class_names:
                 return filename
     return ""
 
