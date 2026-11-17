@@ -121,6 +121,19 @@ class DispatchTest(unittest.TestCase):
             dispatcher.deferred[0]()
         handler.assert_called_once()
 
+    def test_short_packet_error_is_contained(self):
+        for main in (False, True):
+            with self.subTest(main=main):
+                dispatcher = DeferringDispatcher()
+                dispatcher.add_packet_handler("short", lambda _proto, packet: packet.get_str(1), main_thread=main)
+                proto = Mock()
+                proto.is_closed.return_value = False
+                with silence_error(dispatch):
+                    dispatcher.dispatch_packet(proto, Packet("short"), authenticated=True)
+                    if main:
+                        self.assertEqual(len(dispatcher.deferred), 1)
+                        dispatcher.deferred[0]()
+
     def test_the_handler_arguments_belong_to_the_endpoint(self):
         packets = []
 

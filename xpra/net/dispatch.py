@@ -297,7 +297,7 @@ class PacketDispatcher:
             # it runs, the dispatcher has long returned and is no longer on the stack
             try:
                 handler(*args)
-            except (AssertionError, TypeError, ValueError, RuntimeError):
+            except (AssertionError, TypeError, ValueError, IndexError, RuntimeError):
                 log.error(f"Error processing {packet.get_type()!r} packet", exc_info=True)
 
         if main:
