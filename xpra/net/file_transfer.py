@@ -25,7 +25,7 @@ from xpra.util.child_reaper import get_child_reaper
 from xpra.os_util import POSIX, WIN32, gi_import
 from xpra.util.io import umask_context, osclose
 from xpra.util.objects import typedict
-from xpra.util.str_fn import csv, single_line, truncate
+from xpra.util.str_fn import csv, single_line, truncate, ascii_lower
 from xpra.util.env import envint, envbool
 from xpra.util.parsing import str_to_bool, parse_with_unit
 from xpra.common import noop, SizedBuffer
@@ -1081,7 +1081,7 @@ class FileTransferHandler(FileTransferAttributes):
             filelog.warn("Warning: received a request to open URL %r", url)
             filelog.warn(" but opening of URLs is disabled")
             return
-        if not any(url.lower().startswith(url_prefix.lower()) for url_prefix in URL_PREFIXES):
+        if not any(ascii_lower(url).startswith(ascii_lower(url_prefix)) for url_prefix in URL_PREFIXES):
             filelog.warn("Warning: received a request to open URL %r", url)
             filelog.warn(" but this does not match any of the allowed prefixes")
             filelog.warn(" %s", csv(URL_PREFIXES))

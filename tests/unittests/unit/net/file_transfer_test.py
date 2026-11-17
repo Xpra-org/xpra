@@ -615,6 +615,23 @@ class TestFileTransferHandler(unittest.TestCase):
         open_url.assert_not_called()
         fth.cleanup()
 
+    def test_process_open_url_prefix_case(self):
+        for url, expected in (
+            ("HTTPS://example.com", True),
+            ("https://example.com/\u00e9t\u00e9", True),
+            # `str.casefold()` would map the long s to `s` and match `https://`:
+            ("http\u017f://example.com", False),
+            ("file:///etc/passwd", False),
+        ):
+            with self.subTest(url):
+                fth = MinimalFTH()
+                fth.open_url = True
+                fth.open_url_ask = False
+                with patch.object(fth, "_open_url") as open_url:
+                    fth._process_open_url(Packet("open-url", url, "sid"))
+                self.assertEqual(open_url.called, expected)
+                fth.cleanup()
+
     # ------------------------------------------------------------------
     # send_open_url
 

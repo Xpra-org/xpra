@@ -6,6 +6,7 @@
 
 from collections.abc import Sequence
 
+from xpra.util.str_fn import ascii_lower
 from xpra.platform.win32.auth import check
 from xpra.auth.sys_auth_base import SysAuthenticator, log
 
@@ -20,7 +21,7 @@ class Authenticator(SysAuthenticator):
         self.password = ""
 
     def verify_username(self, remote_username: str) -> None:
-        if remote_username.lower() != self.username.lower():
+        if ascii_lower(remote_username) != ascii_lower(self.username):
             log(f"verifying username={self.username!r} vs remote={remote_username!r}")
             raise ValueError(f"invalid username {remote_username!r}")
 

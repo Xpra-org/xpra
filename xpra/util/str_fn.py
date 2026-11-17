@@ -47,6 +47,19 @@ SINGLE_LINE_STRIP: dict[int, str | None] = dict.fromkeys((
 SINGLE_LINE_STRIP |= dict.fromkeys(map(ord, "\t\n\v\f\r\x85\u2028\u2029"), " ")
 
 
+ASCII_LOWER = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
+
+
+def ascii_lower(text: str) -> str:
+    """
+    Lowercase the ASCII letters only, for case-insensitive matching of untrusted strings.
+    Unlike `str.lower()` - which maps the kelvin sign `\u212a` to `k` - or `str.casefold()`
+    - which also maps the long s `\u017f` to `s` -,
+    a non-ASCII character can never fold into an ASCII one and pass an ASCII allowlist check.
+    """
+    return text.translate(ASCII_LOWER)
+
+
 def valid_text(text: str) -> str:
     # lone surrogates cannot be encoded, and dbus or the toolkits would refuse the whole string:
     return text.encode("utf8", "replace").decode("utf8")

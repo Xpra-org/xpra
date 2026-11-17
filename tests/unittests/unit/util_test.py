@@ -10,7 +10,7 @@ from xpra.util.objects import AtomicInteger, MutableInteger, typedict
 from xpra.util.screen import log_screen_sizes, MonitorLayout, combine_monitor_layouts, monitors_bounding_box
 from xpra.util.str_fn import (
     std, alnum, nonl, pver,
-    single_line, clean_text, truncate,
+    single_line, clean_text, truncate, ascii_lower,
     obsc, csv, is_valid_hostname,
     ellipsize, repr_ellipsized, Ellipsizer,
     decode_str,
@@ -274,6 +274,12 @@ class TestModuleFunctions(unittest.TestCase):
         self.assertEqual(single_line("a\tb\r\nc\u2028d\x00\x1b[31m\u2066"), "a b  c d[31m")
         self.assertEqual(single_line("caf\u00e9 \U0001f468\u200d\U0001f469"), "caf\u00e9 \U0001f468\u200d\U0001f469")
         self.assertEqual(single_line("lone\ud800"), "lone?")
+
+    def test_ascii_lower(self):
+        self.assertEqual(ascii_lower("HTTPS://Example.COM/\u00c9t\u00e9"), "https://example.com/\u00c9t\u00e9")
+        # non-ASCII characters must never fold into ASCII ones:
+        for c in ("\u212a", "\u0130", "\u017f", "\u00df"):
+            self.assertEqual(ascii_lower(c), c)
 
     def test_clean_text(self):
         self.assertEqual(clean_text("line1\n\tline2\x00\x1b[31m\ud800"), "line1\n\tline2[31m?")

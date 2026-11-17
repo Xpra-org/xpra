@@ -10,7 +10,7 @@ from ctypes import (
     WinDLL,  # @UnresolvedImport
 )
 from ctypes.wintypes import WORD, DWORD, ULONG, LONG, CHAR, HANDLE, BOOL, LPSTR, LARGE_INTEGER
-from xpra.util.str_fn import print_nested_dict
+from xpra.util.str_fn import print_nested_dict, ascii_lower
 
 PDWORD = POINTER(DWORD)
 
@@ -307,7 +307,7 @@ def find_session(username: str, with_display=True) -> dict:
         for sid, info in get_sessions().items():
             if with_display and not info.get("Display"):
                 continue
-            if info.get("UserName", "").lower() == username.lower():
+            if ascii_lower(info.get("UserName", "")) == ascii_lower(username):
                 info["SessionID"] = sid
                 return info
     return {}
