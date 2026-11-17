@@ -1003,7 +1003,11 @@ class ServerBase(ServerBaseClass):
             packet_type = bytestostr(packet[0])
             def call_handler():
                 may_log_packet(False, packet_type, packet)
-                handler(proto, packet)
+                try:
+                    handler(proto, packet)
+                except IndexError:
+                    netlog.error("Error processing a %r packet from %s using %s",
+                                 packet_type, proto, handler, exc_info=True)
             if proto in self._server_sources and not proto.is_closed():
                 handler = self._authenticated_ui_packet_handlers.get(packet_type)
                 if handler:

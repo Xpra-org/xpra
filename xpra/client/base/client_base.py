@@ -1280,7 +1280,10 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 packet_type = bytestostr(packet_type)
             def call_handler():
                 may_log_packet(False, packet_type, packet)
-                handler(packet)
+                try:
+                    handler(packet)
+                except IndexError:
+                    netlog.error("Error processing a %r packet using %s", packet_type, handler, exc_info=True)
             handler = self._packet_handlers.get(packet_type)
             if handler:
                 call_handler()
