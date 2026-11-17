@@ -283,7 +283,7 @@ def get_cert_fingerprint(cert_data: str) -> str:
     from xpra.net.tls.file import certificate_digest
     try:
         digest = certificate_digest(cert_data.encode("latin1")).hex().upper()
-    except (UnicodeEncodeError, ValueError):
+    except ValueError:
         return ""
     return ":".join(digest[i:i + 2] for i in range(0, len(digest), 2))
 
