@@ -89,7 +89,9 @@ class DisplayContext(OSEnvContext):
         if POSIX and not OSX:
             ProcessTestUtil.setUpClass()
             self.stu = ProcessTestUtil()
-            self.stu.setUp()
+            # don't call `self.stu.setUp()`: `start_Xvfb` builds its own environment,
+            # and adding variables to the environment is not thread safe (see `set_environ`):
+            # the toolkit threads started by a previous `DisplayContext` may still be calling `getenv()`
             self.xvfb_process = self.stu.start_Xvfb()
             os.environ["GDK_BACKEND"] = "x11"
             os.environ["DISPLAY"] = self.xvfb_process.display or ""
@@ -111,6 +113,10 @@ class DisplayContext(OSEnvContext):
             self.xvfb_process = None
             self.stu.tearDown()
             ProcessTestUtil.tearDownClass()
+            # keep the variables set by `__enter__` rather than removing them,
+            # so the next `DisplayContext` only replaces their values instead of adding them back:
+            for k in ("DISPLAY", "GDK_BACKEND"):
+                self.env.setdefault(k, "")
         OSEnvContext.__exit__(self)
 
     @staticmethod
