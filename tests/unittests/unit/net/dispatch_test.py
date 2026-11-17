@@ -295,6 +295,14 @@ class PacketErrorPolicyTest(unittest.TestCase):
         self.fail(dispatcher, self.make_proto())
         self.assertEqual(dispatcher.actions, [("exit", "bad")])
 
+    def test_short_packet(self):
+        dispatcher = PolicyDispatcher("exit")
+        # reading a field which the packet does not have raises an `IndexError`:
+        dispatcher.add_packet_handler("short", lambda _proto, packet: packet.get_str(1))
+        with silence_error(dispatch):
+            dispatcher.dispatch_packet(self.make_proto(), Packet("short"), authenticated=True)
+        self.assertEqual(dispatcher.actions, [("exit", "short")])
+
     def test_default_disconnect_closes(self):
         dispatcher = PacketDispatcher()
         dispatcher.packet_error_policy = parse_packet_error_policy("disconnect")

@@ -335,7 +335,7 @@ class PacketDispatcher:
             # it runs, the dispatcher has long returned and is no longer on the stack
             try:
                 handler(*args)
-            except (AssertionError, TypeError, ValueError, RuntimeError):
+            except (AssertionError, TypeError, ValueError, IndexError, RuntimeError):
                 self.packet_handler_error(proto, packet)
 
         if main:
