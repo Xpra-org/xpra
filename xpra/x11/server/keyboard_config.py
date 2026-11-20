@@ -40,6 +40,27 @@ MAP_MISSING_MODIFIERS: bool = envbool("XPRA_MAP_MISSING_MODIFIERS", True)
 SHIFT_LOCK: bool = envbool("XPRA_SHIFT_LOCK", False)
 VERIFY_MODIFIERS: bool = envbool("XPRA_VERIFY_MODIFIERS", True)
 
+# `Mode_switch` is included because `grp:caps_switch` binds SetGroup(+1) to it.
+# A key that has only `Mode_switch` is AltGr; `is_group_switch_keysyms` leaves that on the level path.
+GROUP_SWITCH_KEYSYMS = frozenset((
+    "ISO_Next_Group", "ISO_Prev_Group", "ISO_First_Group", "ISO_Last_Group",
+    "ISO_Group_Shift", "ISO_Group_Latch", "ISO_Group_Lock",
+    "Mode_switch",
+))
+
+
+def is_group_switch_keysyms(names: Sequence[str]) -> bool:
+    """
+    True when these server keysyms perform an XKB group action.
+    `grp:caps_switch` keeps `Caps_Lock` on Caps and uses `Mode_switch` for SetGroup(+1).
+    `Mode_switch` without `Caps_Lock` is AltGr, not a group switch.
+    """
+    keysyms = names or ()
+    matched = GROUP_SWITCH_KEYSYMS.intersection(keysyms)
+    # Mode_switch alone is AltGr. It switches groups only when Caps_Lock shares the key.
+    bare_mode_switch = matched <= {"Mode_switch"} and "Caps_Lock" not in keysyms
+    return bool(matched) and not bare_mode_switch
+
 ALL_X11_MODIFIERS: dict[str, int] = {
     "shift": 0,
     "lock": 1,
@@ -574,10 +595,34 @@ class KeyboardConfig(KeyboardConfigBase):
         # the client may know this keysym by another name - ie: `Page_Up` for `Prior`,
         # or `dead_perispomeni` for `dead_tilde`, but the levels are recorded using the server's name:
         canonical = canonical_keysym(keyname)
+        if keyname == "Caps_Lock":
+            # `grp:caps_switch` still lists Caps_Lock (shift level) beside Mode_switch.
+            # The level matcher would press Shift to reach Caps_Lock; the group action is the base key.
+            client_names = self.keycode_mappings.get(client_keycode, ())
+            if is_group_switch_keysyms(client_names):
+                return client_keycode, group
+            pure_caps = any(
+                "Caps_Lock" in names and not is_group_switch_keysyms(names)
+                for names in self.keycode_mappings.values()
+            )
+            if not pure_caps:
+                fallback = 0
+                for keycode, names in self.keycode_mappings.items():
+                    if not is_group_switch_keysyms(names):
+                        continue
+                    if "Caps_Lock" in names:
+                        return keycode, group
+                    fallback = fallback or keycode
+                if fallback:
+                    return fallback, group
         if self.x11_keycodes and client_keycode > 0:
             keycode = self.keycode_translation.get((client_keycode, keyname), 0) or client_keycode
             keysyms = self.keycode_mappings.get(keycode, ())
             if keyname in keysyms or canonical in keysyms:
+                groups = [kgroup for kgroup, entries in self.keyval_mappings.get(X11Keyboard.parse_keysym(canonical), {}).items()
+                          if any(entry[0] == keycode for entry in entries)]
+                if groups and group not in groups:
+                    group = min(groups)
                 kmlog(keyname, "do_get_keycode (%i, %s)=%s (native keymap)", client_keycode, keyname, keycode)
                 return keycode, group
             kmlog(keyname,
@@ -825,6 +870,21 @@ class KeyboardConfig(KeyboardConfigBase):
         if not self.keynames_for_mod:
             log("make_keymask_match: ignored as keynames_for_mod not assigned yet")
             return
+        keysyms = {name for names in self.keycode_mappings.values() for name in names}
+        # The modifier map stores the first keysym only. On `grp:caps_switch` that is
+        # `Mode_switch`, while `Caps_Lock` is still on the key, so lock cannot be synthesized.
+        lock_names = self.keynames_for_mod.get("lock", ())
+        caps_group_switch = any(
+            "Caps_Lock" in names and is_group_switch_keysyms(names)
+            for names in self.keycode_mappings.values()
+        )
+        group_lock = (
+            bool(GROUP_SWITCH_KEYSYMS.intersection(lock_names))
+            or caps_group_switch
+            or ("Caps_Lock" not in keysyms and any(
+                is_group_switch_keysyms(names) for names in self.keycode_mappings.values()
+            ))
+        )
         if ignored_modifier_keynames is None:
             # this is not a keyboard event, ignore modifiers in "mod_pointermissing"
             def is_ignored(modifier: str, _modifier_keynames: Sequence[str]) -> bool:
@@ -845,6 +905,8 @@ class KeyboardConfig(KeyboardConfigBase):
                     log("modifier is server managed: %s", modifier)
                     continue
                 keynames = self.keynames_for_mod.get(modifier, ())
+                if modifier == "lock" and group_lock:
+                    continue
                 if is_ignored(modifier, keynames):
                     log("modifier '%s' ignored (in ignored keynames=%s)", modifier, keynames)
                     continue

@@ -6,6 +6,7 @@
 
 import os
 import unittest
+from unittest.mock import patch
 
 from unit.server_test_util import ServerTestUtil, log
 from xpra.os_util import OSX, POSIX, OPENBSD
@@ -505,6 +506,43 @@ class TestX11Keyboard(ServerTestUtil):
         del config.keys_pressed[held]
         for keysym in overflow:
             press(keysym)
+
+    def test_ucw_caps_group_switch(self):
+        from xpra.x11.xkbhelper import do_set_keymap, get_keycode_mappings, get_keyval_mappings
+        from xpra.x11.server import keyboard_config
+        do_set_keymap("us,cz", ",ucw", "grp:caps_switch", {})
+        mappings = get_keycode_mappings()
+        keyval_mappings = get_keyval_mappings()
+        keyval = keyboard_config.X11Keyboard.parse_keysym("scaron")
+        entries = keyval_mappings.get(keyval, {}).get(1, ())
+        if not entries:
+            raise unittest.SkipTest("no Czech UCW keymap available")
+        keycode = next(code for code, level in entries if level == 0 and "s" in mappings[code])
+        config = keyboard_config.KeyboardConfig()
+        config.x11_keycodes = mappings
+        config.keycode_mappings = mappings
+        config.keyval_mappings = keyval_mappings
+        assert config.get_keycode(keycode, "scaron", True, [], keyval, "š", 0) == (keycode, 1)
+        # Real `grp:caps_switch` maps are Mode_switch (SetGroup +1) plus Caps_Lock, not ISO_Next_Group.
+        group_keys = [code for code, names in mappings.items() if keyboard_config.is_group_switch_keysyms(names)]
+        caps = next((code for code in group_keys if "Caps_Lock" in mappings[code]), None)
+        if caps is None and group_keys:
+            caps = group_keys[0]
+        if caps is None:
+            raise unittest.SkipTest("grp:caps_switch did not map a group-switch key")
+        caps_modifiers: list[str] = []
+        # Client keycode is the letter key: Caps_Lock must still hit the group-switch key, without Shift.
+        assert config.get_keycode(keycode, "Caps_Lock", True, caps_modifiers, 0xffe5, "", 0) == (caps, 0)
+        assert caps_modifiers == [], f"Caps_Lock changed modifiers to {caps_modifiers}"
+        assert config.get_keycode(caps, "Caps_Lock", True, [], 0xffe5, "", 0) == (caps, 0)
+        lock_entries = keyboard_config.X11Keyboard.get_modifier_mappings().get("lock", ())
+        lock_names = [keysym for _keycode, keysym in lock_entries]
+        if lock_names:
+            config.keynames_for_mod["lock"] = lock_names
+        config.keys_pressed[caps] = "Caps_Lock"
+        with patch.object(config, "get_current_mask", return_value=[]), patch.object(keyboard_config, "XTest") as xtest:
+            config.make_keymask_match(["lock"], ignored_modifier_keynames=[])
+        xtest.unpress_keys.assert_not_called()
 
     def test_native_keycode_keysym_mismatch(self):
         # A native client keymap can become stale, or omit the key event's keysym.
