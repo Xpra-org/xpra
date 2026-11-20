@@ -319,8 +319,9 @@ class ProxyInstance:
             return
         if packet_type == PING_ECHO and self.client_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
-            self.client_last_ping_echo = float(packet[1])
-            self.client_last_ping_latency = 1000 * monotonic() - self.client_last_ping_echo
+            # the echo carries our ping timestamp in milliseconds, but we track time in seconds:
+            self.client_last_ping_echo = float(packet[1]) / 1000
+            self.client_last_ping_latency = 1000 * (monotonic() - self.client_last_ping_echo)
             log("ping-echo: client latency=%.1fms", self.client_last_ping_latency)
             return
         # the packet types below are forwarded:
@@ -456,8 +457,9 @@ class ProxyInstance:
             packet = Packet(HELLO, caps)
         elif packet_type == PING_ECHO and self.server_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
-            self.server_last_ping_echo = float(packet.get_u64(1))
-            self.server_last_ping_latency = 1000 * monotonic() - self.server_last_ping_echo
+            # the echo carries our ping timestamp in milliseconds, but we track time in seconds:
+            self.server_last_ping_echo = packet.get_u64(1) / 1000
+            self.server_last_ping_latency = 1000 * (monotonic() - self.server_last_ping_echo)
             log("ping-echo: server latency=%.1fms", self.server_last_ping_latency)
             return
         elif packet_type == INFO_RESPONSE:
