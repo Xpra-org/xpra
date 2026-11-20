@@ -38,6 +38,9 @@ PASSTHROUGH_AUTH = envbool("XPRA_PASSTHROUGH_AUTH", True)
 PING_INTERVAL = max(1, envint("XPRA_PROXY_PING_INTERVAL", 5)) * 1000
 PING_WARNING = max(5, envint("XPRA_PROXY_PING_WARNING", 5))
 PING_TIMEOUT = max(5, envint("XPRA_PROXY_PING_TIMEOUT", 90))
+# peers that predate the packet rename (older xpra and html5 releases, go-xpra in compatibility mode)
+# still echo our pings as "ping_echo":
+PING_ECHO_TYPES = (PING_ECHO, "ping_echo")
 
 CLIENT_REMOVE_CAPS = ("cipher", "challenge", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
 CLIENT_REMOVE_CAPS_CHALLENGE = ("cipher", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
@@ -317,7 +320,7 @@ class ProxyInstance:
             hello = self.filter_client_caps(CLIENT_REMOVE_CAPS_CHALLENGE)
             self.queue_server_packet(Packet(HELLO, hello))
             return
-        if packet_type == PING_ECHO and self.client_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
+        if packet_type in PING_ECHO_TYPES and self.client_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
             # the echo carries our ping timestamp in milliseconds, but we track time in seconds:
             self.client_last_ping_echo = float(packet[1]) / 1000
@@ -455,7 +458,7 @@ class ProxyInstance:
             # may need to bump packet size:
             proto.max_packet_size = max(MAX_PACKET_SIZE, maxw * maxh * 4 * 4)
             packet = Packet(HELLO, caps)
-        elif packet_type == PING_ECHO and self.server_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
+        elif packet_type in PING_ECHO_TYPES and self.server_ping_timer and len(packet) >= 7 and packet[6] == self.uuid:
             # this is one of our ping packets:
             # the echo carries our ping timestamp in milliseconds, but we track time in seconds:
             self.server_last_ping_echo = packet.get_u64(1) / 1000
