@@ -108,14 +108,16 @@ def kill_signalwatcher(proc) -> None:
     log(f"kill_signalwatcher({proc}) {exit_code}")
     if exit_code is not None:
         return
+    stdin = proc.stdin
     try:
-        stdin = proc.stdin
         if stdin:
             stdin.write(b"exit\n")
             stdin.flush()
-            stdin.close()
     except OSError:
         log.warn("Warning: failed to tell the signal watcher to exit", exc_info=True)
+    finally:
+        if stdin:
+            noerr(stdin.close)
     if proc.poll() is not None:
         return
     try:
