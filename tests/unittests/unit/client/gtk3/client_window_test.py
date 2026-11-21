@@ -13,6 +13,7 @@ The events are emitted on the window's widgets, so they go through the same hand
 import os
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 # no OpenGL or real backing needed:
 os.environ["XPRA_USE_FAKE_BACKING"] = "1"
@@ -142,6 +143,30 @@ class ClientWindowTest(unittest.TestCase):
         name, device_id, wid, deltax, deltay = self.pointer_calls[0][:5]
         self.assertEqual((name, device_id, wid, deltax), ("wheel", -1, 3, 0))
         self.assertLess(deltay, 0)
+
+    def test_first_x11_scroll_step(self) -> None:
+        window = self.make_window()
+        self.host.get_subsystem("pointer").wheel_smooth = True
+
+        def scroll(widget, time: int, direction=Gdk.ScrollDirection.SMOOTH, delta_y=0.0) -> None:
+            event = Gdk.Event.new(Gdk.EventType.SCROLL)
+            event.scroll.time = time
+            event.scroll.direction = direction
+            event.scroll.delta_y = delta_y
+            event.scroll.is_stop = direction == Gdk.ScrollDirection.SMOOTH and not delta_y
+            widget.emit("scroll-event", event)
+
+        with patch.object(Gdk.EventScroll, "get_pointer_emulated", return_value=True):
+            # the first smooth event has no delta, the step is in the emulated event,
+            # which GDK delivers to the toplevel window:
+            scroll(window.drawing_area, 1)
+            scroll(window, 1, Gdk.ScrollDirection.DOWN)
+            self.assertEqual([call[0] for call in self.pointer_calls], ["wheel", "button", "button"])
+            # the next emulated events are duplicates, OpenGL windows get them on the widget:
+            scroll(window.drawing_area, 2, delta_y=1.0)
+            scroll(window, 2, Gdk.ScrollDirection.DOWN)
+            scroll(window.drawing_area, 2, Gdk.ScrollDirection.DOWN)
+            self.assertEqual(len(self.pointer_calls), 4)
 
     def test_readonly(self) -> None:
         window = self.make_window()
