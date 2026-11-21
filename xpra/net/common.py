@@ -115,6 +115,12 @@ class Packet(Sequence):
         if max_size and len(value) > max_size:
             raise ValueError(f"{datatype} is too large: {len(value)} items, maximum is {max_size}")
 
+    @staticmethod
+    def _check_not_int(value, datatype: str) -> None:
+        # `bytes(n)` allocates `n` zero bytes, before any size check:
+        if isinstance(value, int) and not isinstance(value, bool):
+            raise TypeError(f"expected a {datatype} but got an integer")
+
     def get_wid(self, i=1) -> int:
         v = int(self.data[i])
         if v < -1 or v >= 2**48:
@@ -187,6 +193,7 @@ class Packet(Sequence):
             if v == "":
                 v = b""
             else:
+                self._check_not_int(v, "byte string")
                 v = bytes(v)
         self._check_size(v, max_size, "byte string")
         return v
@@ -198,6 +205,7 @@ class Packet(Sequence):
             if isinstance(v, str):
                 v = v.encode("utf8")
             else:
+                self._check_not_int(v, "buffer")
                 v = bytes(v)
         self._check_size(v, max_size, "buffer")
         return v
@@ -224,6 +232,8 @@ class Packet(Sequence):
         v = self.data[i]
         if isinstance(v, (list, tuple)):
             self._check_size(v, max_items, "byte string sequence")
+            for x in v:
+                self._check_not_int(x, "byte string sequence item")
             values = tuple(bytes(x) for x in v)
             if max_item_size:
                 for value in values:
