@@ -245,7 +245,11 @@ class Packet(Sequence):
         v = self.data[i]
         if isinstance(v, (list, tuple)):
             self._check_size(v, max_items, "integer sequence")
-            return tuple(int(x) for x in v)
+            try:
+                return tuple(int(x) for x in v)
+            except OverflowError:
+                # ie: `int(float("inf"))`
+                raise ValueError(f"invalid value in integer sequence at index {i}") from None
         raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 
     def get_coordinates(self, i: int) -> Sequence[int]:

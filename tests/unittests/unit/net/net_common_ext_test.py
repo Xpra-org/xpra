@@ -406,6 +406,11 @@ class TestPacketGetInts(unittest.TestCase):
         with self.assertRaises(TypeError):
             Packet("t", b"\x01\x02").get_ints(1)
 
+    def test_infinity_rejected(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(ValueError):
+            Packet("t", [1, float("inf")]).get_ints(1)
+
 
 class TestPacketGetBytesSeq(unittest.TestCase):
 
