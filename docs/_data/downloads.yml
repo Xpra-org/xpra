@@ -9,19 +9,19 @@ repos: "https://raw.githubusercontent.com/Xpra-org/xpra/master/packaging/repos"
 channels:
   - id: lts
     name: LTS
-    version: "v5.1.x"
-    branch: "https://github.com/Xpra-org/xpra/tree/v5.1.x"
+    version: "v7.x"
+    branch: "https://github.com/Xpra-org/xpra/tree/v7.x"
     description: "long-term support: security and critical fixes only"
     repo: "xpra-lts"
   - id: stable
     name: Stable
-    version: "v6.x"
+    version: "v7.x"
     description: "the latest stable release: recommended"
     repo: "xpra"
     default: true
   - id: beta
     name: Beta
-    version: "development"
+    version: "v8"
     description: "the newest builds, may be unstable"
     repo: "xpra-beta"
 
