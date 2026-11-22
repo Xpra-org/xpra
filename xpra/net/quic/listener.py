@@ -9,14 +9,13 @@ from collections.abc import Callable
 from aioquic.asyncio.server import QuicServer
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.logger import QuicLogger
-from aioquic.h0.connection import H0_ALPN, H0Connection
 from aioquic.h3.connection import H3_ALPN, H3Connection
 from aioquic.h3.events import (
     H3Event,
     HeadersReceived,
     WebTransportStreamDataReceived,
 )
-from aioquic.quic.events import DatagramFrameReceived, ProtocolNegotiated, QuicEvent
+from aioquic.quic.events import ProtocolNegotiated, QuicEvent
 
 from xpra.net.http.common import check_origin
 from xpra.net.quic.common import MAX_DATAGRAM_FRAME_SIZE
@@ -38,7 +37,6 @@ log = Logger("quic")
 
 quic_logger = QuicLogger()
 
-HttpConnection = H0Connection | H3Connection
 Handler = HttpRequestHandler | ServerWebSocketConnection | ServerWebTransportConnection
 
 
@@ -49,17 +47,20 @@ class HttpServerProtocol(XpraQuicConnectionProtocol):
         self.http_origin: str = getattr(self._xpra_server, "http_origin", "auto")
         super().__init__(*args, **kwargs)
         self._handlers: dict[int, Handler] = {}
-        self._http: HttpConnection | None = None
+        self._http: H3Connection | None = None
+        self.transport: asyncio.BaseTransport | None = None
+
+    def connection_made(self, transport: asyncio.BaseTransport) -> None:
+        super().connection_made(transport)
+        self.transport = transport
 
     def quic_event_received(self, event: QuicEvent) -> None:
         log("hsp:quic_event_received(%s)", Ellipsizer(event))
-        if isinstance(event, ProtocolNegotiated):
-            if event.alpn_protocol in H3_ALPN:
-                self._http = H3Connection(self._quic, enable_webtransport=True)
-            elif event.alpn_protocol in H0_ALPN:
-                self._http = H0Connection(self._quic)
-        elif isinstance(event, DatagramFrameReceived) and event.data == b"quack":
-            self._quic.send_datagram_frame(b"quack-ack")
+        super().quic_event_received(event)
+        if isinstance(event, ProtocolNegotiated) and event.alpn_protocol in H3_ALPN:
+            # WebTransport needs datagrams, which QUIC only accepts with a `MAX_DATAGRAM_FRAME_SIZE`:
+            enable_webtransport = bool(self.quic_connection.configuration.max_datagram_frame_size)
+            self._http = H3Connection(self.quic_connection, enable_webtransport=enable_webtransport)
         #  pass event to the HTTP layer
         log(f"hsp:quic_event_received(..) http={self._http}")
         if self._http is not None:
@@ -106,20 +107,18 @@ class HttpServerProtocol(XpraQuicConnectionProtocol):
         log(f"new_http_handler({event}) {path=}, {query_string=}")
         log(f" {protocol=}, {method=}, {authority=}, {headers=}")
 
-        # this was copied from the aioquic example,
-        # let's hope this does not break!
-        client_addr = self._http._quic._network_paths[0].addr
+        client_addr = self.quic_connection.get_peer_address() or ("", 0)
         client = (client_addr[0], client_addr[1])
 
         einfo = {}
         for k in ("peername", "sockname", "compression", "cipher", "peercert", "sslcontext"):
-            if v := self._transport.get_extra_info(k):
+            if v := self.transport.get_extra_info(k):
                 einfo[k] = v
 
         scope = {
             "client": client,
             "headers": headers,
-            "http_version": "0.9" if isinstance(self._http, H0Connection) else "3",
+            "http_version": "3",
             "method": method,
             "path": path,
             "query_string": query_string,
@@ -168,9 +167,6 @@ class HttpServerProtocol(XpraQuicConnectionProtocol):
             socket_options = {}
             self._xpra_server.make_protocol("webtransport", wtc, socket_options, protocol_class=SocketProtocol)
             return wtc
-        # extensions: dict[str, dict] = {}
-        # if isinstance(self._http, H3Connection):
-        #    extensions["http.response.push"] = {}
         scope |= {
             "scheme": "https",
             "type": "http",
@@ -190,7 +186,7 @@ async def do_listen(sock, xpra_server, cert: str, key: str | None, retry: bool):
         return HttpServerProtocol(*args, xpra_server=xpra_server, **kwargs)
 
     configuration = QuicConfiguration(
-        alpn_protocols=H3_ALPN + H0_ALPN + ["siduck"],
+        alpn_protocols=H3_ALPN,
         is_client=False,
         congestion_control_algorithm=CONGESTION_CONTROL_ALGORITHM,
         max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE,

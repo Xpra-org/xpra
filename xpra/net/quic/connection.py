@@ -9,41 +9,29 @@ from queue import SimpleQueue
 from typing import Any
 from collections.abc import Callable, Sequence
 
-from aioquic import __version__ as aioquic_version
-from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import DataReceived, DatagramReceived, H3Event
+from aioquic.h3.exceptions import H3Error
 from aioquic.quic.packet import QuicErrorCode
 
 from xpra.exit_codes import ExitCode
 from xpra.net.aio.thread import get_threaded_loop
 from xpra.net.bytestreams import Connection
-from xpra.net.quic.common import binary_headers, override_aioquic_logger
+from xpra.net.quic.common import aioquic_version_info, binary_headers, override_aioquic_logger
 from xpra.net.quic.congestion import get_congestion_control
 from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes
-from xpra.util.version import parse_version, vtrim
+from xpra.util.version import vtrim
 from xpra.util.env import envbool
 from xpra.net.packet_type import AUDIO_DATA
 from xpra.log import Logger
 
 log = Logger("quic")
 
-HttpConnection = H0Connection | H3Connection
-
 # the packet types we want to send as datagrams, if the peer accepts them:
 DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
     "XPRA_QUIC_DATAGRAM_PACKET_TYPES",
     AUDIO_DATA,
 ).split(",") if x.strip())
-
-# a datagram must fit in a single QUIC packet, along with the packet header,
-# the AEAD tag, the DATAGRAM frame header and the HTTP/3 quarter stream id.
-# Note: this value is conservative, the actual overhead is closer to 35 bytes:
-# short header (1) + connection id (8 with aioquic) + packet number (up to 4) + AEAD tag (16)
-# + DATAGRAM frame type and length (3) + quarter stream id (1).
-# With the default 1200 bytes QUIC packets, this leaves 1136 bytes for the xpra packet,
-# and an `opus+rtp` audio packet is about 1105 bytes (see `CODEC_ENCODER_OPTIONS`).
-DATAGRAM_OVERHEAD = 64
 
 # for testing loss tolerance: the percentage of outgoing datagrams to discard
 DATAGRAM_DROP_PCT = float(os.environ.get("XPRA_QUIC_DATAGRAM_DROP_PCT", "0"))
@@ -52,28 +40,28 @@ if envbool("XPRA_QUIC_LOGGER", True):
     override_aioquic_logger()
 
 
-aioquic_version_info = parse_version(aioquic_version)
-
-
 class XpraQuicConnection(Connection):
     # packets of these types are sent as datagrams, if they fit,
     # empty until negotiated with the peer (see `set_remote_datagram_packet_types`):
     datagram_packet_types: tuple[str, ...] = ()
 
-    def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
+    def __init__(self, connection: H3Connection, stream_id: int, transmit: Callable[[], None],
                  host: str, port: int, socktype="wss", info=None, options=None):
         Connection.__init__(self, (host, port), socktype, info=info, options=options)
         self.socktype_wrapped = "quic"
         self.datagram = True
-        self.connection: HttpConnection = connection
+        self.connection: H3Connection = connection
         # HTTP streams on the same QUIC connection share this controller and its statistics.
-        self.congestion_control = get_congestion_control(getattr(connection, "_quic", None))
+        self.congestion_control = get_congestion_control(connection.quic_connection)
         self.read_queue: SimpleQueue[bytes] = SimpleQueue()
         # datagrams are independent records, they must never be mixed with the stream data,
         # until something handles them (see `datagram_received`), they are dropped:
         self.datagrams_dropped: int = 0
         # datagram packets too big to be sent as datagrams, sent on the stream instead:
         self.datagram_fallbacks: int = 0
+        # datagram packets sent on the stream because no datagram can be sent,
+        # ie: the peer's aioquic does not enable HTTP/3 datagrams:
+        self.datagrams_unavailable: int = 0
         # outgoing datagrams we have discarded on purpose (see `DATAGRAM_DROP_PCT`):
         self.datagrams_discarded: int = 0
         self.stream_id: int = stream_id
@@ -91,6 +79,7 @@ class XpraQuicConnection(Connection):
             "read-queue": self.read_queue.qsize(),
             "datagrams-dropped": self.datagrams_dropped,
             "datagram-fallbacks": self.datagram_fallbacks,
+            "datagrams-unavailable": self.datagrams_unavailable,
             "datagrams-discarded": self.datagrams_discarded,
             "stream-id": self.stream_id,
             "datagram-packet-types": self.datagram_packet_types,
@@ -98,16 +87,15 @@ class XpraQuicConnection(Connection):
             "closed": self.closed,
             "aioquic": vtrim(aioquic_version_info),
         }
-        if quic := getattr(self.connection, "_quic", None):
-            config = quic.configuration
-            qinfo |= {
-                "alpn-protocols": config.alpn_protocols,
-                "idle-timeout": config.idle_timeout,
-                "client": config.is_client,
-                "max-data": config.max_data,
-                "max-stream-data": config.max_stream_data,
-                "server-name": config.server_name or "",
-            }
+        config = self.connection.quic_connection.configuration
+        qinfo |= {
+            "alpn-protocols": config.alpn_protocols,
+            "idle-timeout": config.idle_timeout,
+            "client": config.is_client,
+            "max-data": config.max_data,
+            "max-stream-data": config.max_stream_data,
+            "server-name": config.server_name or "",
+        }
         if self.congestion_control:
             qinfo["congestion"] = self.congestion_control.get_info()
         info["quic"] = qinfo
@@ -142,14 +130,7 @@ class XpraQuicConnection(Connection):
         # we just close the quic connection here
         # subclasses may also override this method to send close messages specific to the protocol
         # ie: WebSocket and WebTransport 'close' frames
-        quic = getattr(self.connection, "_quic", None)
-        if not quic:
-            return
-        if aioquic_version_info >= (1, 2):
-            # we can send the error code and message
-            quic.close(code)
-        else:
-            quic.close()
+        self.connection.quic_connection.close(code)
 
     def send_headers(self, stream_id: int, headers: dict) -> None:
         self.connection.send_headers(
@@ -166,16 +147,22 @@ class XpraQuicConnection(Connection):
         if not packet_type:
             log.warn(f"Warning: missing packet type for {data}")
         datagram = False
-        if packet_type in self.datagram_packet_types:
+        # once closed, nothing is sent (see `do_write` below):
+        if packet_type in self.datagram_packet_types and not self.closed:
             max_size = self.get_max_datagram_size()
-            datagram = len(data) <= max_size
-            if not datagram:
+            datagram = 0 < max_size and len(data) <= max_size
+            if not max_size:
+                self.datagrams_unavailable += 1
+                log("%r packet sent on the stream, no datagram can be sent", packet_type)
+                if self.datagrams_unavailable == 1:
+                    log.info(f"datagrams cannot be sent on this connection, using the stream for {packet_type!r} packets")
+            elif not datagram:
                 self.datagram_fallbacks += 1
                 log("%r packet too big for a datagram: %i bytes, maximum is %i", packet_type, len(data), max_size)
                 if self.datagram_fallbacks == 1:
                     log.warn(f"Warning: {packet_type!r} packet is too big to be sent as a datagram")
                     log.warn(f" {len(data)} bytes, the maximum is {max_size}, using the stream instead")
-        stream_id = self.stream_id if datagram else self.get_packet_stream_id(packet_type)
+        stream_id = self.stream_id
         log("quic.stream_write(%s, %s) using %s %s", Ellipsizer(buf), packet_type,
             "datagram for stream id" if datagram else "stream id", stream_id)
 
@@ -190,8 +177,8 @@ class XpraQuicConnection(Connection):
                 else:
                     self.do_write(stream_id, data)
                 self.transmit()
-            except AssertionError:
-                if self.closed:
+            except H3Error:
+                if self.closed or self.connection.quic_connection.is_closing():
                     log(f"connection is already closed, packet {packet_type} dropped")
                     return
                 raise
@@ -222,19 +209,11 @@ class XpraQuicConnection(Connection):
     def get_max_datagram_size(self) -> int:
         """
         The largest payload we can send as a single datagram, 0 if datagrams cannot be used.
-        aioquic does not fragment datagrams: one that does not fit in a packet
-        stays at the head of its send queue forever, blocking all the datagrams queued after it.
+        aioquic does not fragment datagrams, and refuses the ones which do not fit in a packet.
         """
-        quic = getattr(self.connection, "_quic", None)
-        if not quic or not hasattr(self.connection, "send_datagram"):
-            return 0
-        remote_max = quic._remote_max_datagram_frame_size
-        if not remote_max:
-            return 0
-        return max(0, min(remote_max, quic._max_datagram_size) - DATAGRAM_OVERHEAD)
-
-    def get_packet_stream_id(self, packet_type: str) -> int:
-        return self.stream_id
+        # `None` when no datagram can be sent for the stream: until both endpoints have enabled datagrams
+        # and the headers were sent, and once the stream or the connection is closing:
+        return self.connection.get_datagram_capacity(self.stream_id) or 0
 
     def read(self, n: int) -> bytes:
         log("quic.read(%s)", n)

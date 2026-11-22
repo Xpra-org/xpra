@@ -36,6 +36,7 @@ from aioquic.h3.connection import H3Connection, H3_ALPN
 from aioquic.h3.events import HeadersReceived
 from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.connection import QuicConnection
+from aioquic.quic.events import HandshakeCompleted
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
@@ -167,7 +168,8 @@ class Experiment:
         self.server = QuicConnection(configuration=server_config,
                                      original_destination_connection_id=self.client.original_destination_connection_id)
         self.quics = [self.client, self.server]
-        self.http = [H3Connection(q) for q in self.quics]
+        self.http = [H3Connection(q, enable_datagrams=True) for q in self.quics]
+        self.handshakes_completed = 0
         self.connections = [XpraQuicConnection(h, 0, lambda: None, "localhost", 4202) for h in self.http]
         self.connections[1].set_remote_datagram_packet_types(("audio-data",))
         self.connections[0].datagram_received = self.audio_received
@@ -236,6 +238,7 @@ class Experiment:
 
     def process_http(self, side):
         while (event := self.quics[side].next_event()) is not None:
+            self.handshakes_completed += isinstance(event, HandshakeCompleted)
             for http_event in self.http[side].handle_event(event):
                 if isinstance(http_event, HeadersReceived):
                     if side == 1:
@@ -284,7 +287,7 @@ class Experiment:
                 self.process_http(side)
         phase, start = self.phase_at(self.now - self.origin) if impairment else (Phase("handshake", 10), 0)
         for side, quic in enumerate(self.quics):
-            if not quic._network_paths:
+            if quic.get_peer_address() is None:
                 continue
             for data, _ in quic.datagrams_to_send(now=self.now):
                 arrival = self.links[side].enqueue(self.now, data, phase, self.now - self.origin - start)
@@ -340,7 +343,7 @@ class Experiment:
             self.client.connect(ADDR, now=self.now)
             for _ in range(5000):
                 self.tick(impairment=False)
-                if self.client._handshake_complete and self.server._handshake_complete:
+                if self.handshakes_completed == 2:
                     break
             else:
                 raise RuntimeError("handshake failed")

@@ -26,11 +26,14 @@ try:
     from aioquic.quic.configuration import QuicConfiguration
     from aioquic.quic.connection import QuicConnection
     from aioquic.h3.connection import H3Connection, H3_ALPN
+    from aioquic.h3.exceptions import InvalidStreamStateError
     from aioquic.h3.events import HeadersReceived, DataReceived, DatagramReceived
+    from aioquic.quic.events import HandshakeCompleted
     from cryptography import x509
     from cryptography.x509.oid import NameOID
     from cryptography.hazmat.primitives import hashes
     from cryptography.hazmat.primitives.asymmetric import ec
+    from xpra.net.quic import common  # noqa: F401
     HAVE_AIOQUIC = True
 except ImportError:
     HAVE_AIOQUIC = False
@@ -78,7 +81,7 @@ class QuicPair:
     which is what `ClientWebSocketConnection` / `ServerWebSocketConnection` use.
     """
 
-    def __init__(self, cert, key, loss: float = 0, budget: int = 0, seed: int = 0):
+    def __init__(self, cert, key, loss: float = 0, budget: int = 0, seed: int = 0, server_datagrams: bool = True):
         self.now = 0.0
         self.loss = loss
         # how many client packets each `transmit()` is allowed to put on the wire,
@@ -95,14 +98,16 @@ class QuicPair:
         self.cquic = QuicConnection(configuration=cconfig)
         self.squic = QuicConnection(configuration=sconfig,
                                     original_destination_connection_id=self.cquic.original_destination_connection_id)
-        self.chttp = H3Connection(self.cquic)
-        self.shttp = H3Connection(self.squic)
+        self.chttp = H3Connection(self.cquic, enable_datagrams=True)
+        # an older aioquic server does not enable HTTP/3 datagrams:
+        self.shttp = H3Connection(self.squic, enable_datagrams=server_datagrams)
+        self.handshakes_completed = 0
         self.receiver = None
         # the order in which the receiver saw stream chunks ("s") and datagrams ("d"):
         self.event_order: list[str] = []
         self.cquic.connect(ADDR, now=self.now)
         self.drain_link()
-        assert self.cquic._handshake_complete and self.squic._handshake_complete
+        assert self.handshakes_completed == 2
         self.stream_id = self.cquic.get_next_available_stream_id()
         self.chttp.send_headers(self.stream_id, [
             (b":method", b"CONNECT"), (b":protocol", b"websocket"), (b":scheme", b"https"),
@@ -138,8 +143,10 @@ class QuicPair:
 
     def process_events(self) -> None:
         while (event := self.cquic.next_event()) is not None:
+            self.handshakes_completed += isinstance(event, HandshakeCompleted)
             self.chttp.handle_event(event)
         while (event := self.squic.next_event()) is not None:
+            self.handshakes_completed += isinstance(event, HandshakeCompleted)
             for http_event in self.shttp.handle_event(event):
                 if isinstance(http_event, HeadersReceived):
                     continue
@@ -328,6 +335,43 @@ class QuicDatagramTest(unittest.TestCase):
         assert sender.datagram_fallbacks == 2
         assert sender.get_info()["quic"]["datagram-fallbacks"] == 2
         assert log.warn.call_count == 2, log.warn.call_args_list
+
+    def test_peer_without_datagrams(self):
+        # ie: a peer whose aioquic does not enable HTTP/3 datagrams, the stream is used instead,
+        # and this is not reported as packets which are too big:
+        pair, sender = self.make_pair(server_datagrams=False)
+        assert sender.get_max_datagram_size() == 0
+        payloads = [self.make_payload("d", i, 100) for i in range(2)]
+        with patch("xpra.net.quic.connection.log") as log:
+            for payload in payloads:
+                sender.stream_write(payload, DATAGRAM_TYPE)
+        pair.drain_link()
+        stream, datagrams = self.received(pair)
+        assert stream == b"".join(payloads)
+        assert datagrams == []
+        assert sender.datagrams_unavailable == 2
+        assert sender.get_info()["quic"]["datagrams-unavailable"] == 2
+        assert sender.datagram_fallbacks == 0
+        assert log.warn.call_count == 0, log.warn.call_args_list
+        assert log.info.call_count == 1, log.info.call_args_list
+
+    def test_write_after_quic_close(self):
+        # writes which race the connection close are dropped, without raising an exception:
+        pair, sender = self.make_pair()
+        pair.cquic.close()
+        for packet_type in (STREAM_TYPE, DATAGRAM_TYPE):
+            sender.stream_write(b"after close", packet_type)
+        assert sender.output_writecount == 0
+        pair.drain_link()
+        assert self.received(pair) == (b"", [])
+
+    def test_write_on_stopped_stream(self):
+        # other errors are not hidden:
+        pair, sender = self.make_pair()
+        pair.squic.stop_stream(pair.stream_id, 0x10c)
+        pair.drain_link()
+        with self.assertRaises(InvalidStreamStateError):
+            sender.stream_write(b"stopped", STREAM_TYPE)
 
     def test_discard_datagrams(self):
         # `XPRA_QUIC_DATAGRAM_DROP_PCT` simulates datagram loss, the stream is not affected:

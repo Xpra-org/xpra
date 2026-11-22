@@ -10,8 +10,8 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 try:
-    import aioquic
-    HAVE_AIOQUIC = bool(aioquic)
+    from xpra.net.quic import common
+    HAVE_AIOQUIC = bool(common)
 except ImportError:
     HAVE_AIOQUIC = False
 
@@ -32,8 +32,11 @@ class QuicCongestionTest(unittest.TestCase):
     def make_quic(self):
         from aioquic.quic.configuration import QuicConfiguration
         from aioquic.quic.connection import QuicConnection
+        from xpra.net.quic.common import MAX_DATAGRAM_FRAME_SIZE
         from xpra.net.quic.congestion import CONGESTION_CONTROL_ALGORITHM
-        return QuicConnection(configuration=QuicConfiguration(congestion_control_algorithm=CONGESTION_CONTROL_ALGORITHM))
+        # like the client and server configurations, so that WebTransport can be enabled:
+        return QuicConnection(configuration=QuicConfiguration(congestion_control_algorithm=CONGESTION_CONTROL_ALGORITHM,
+                                                              max_datagram_frame_size=MAX_DATAGRAM_FRAME_SIZE))
 
     def test_preserves_reno(self):
         from aioquic.quic.congestion.reno import RenoCongestionControl
@@ -109,10 +112,10 @@ class QuicCongestionTest(unittest.TestCase):
     def test_connection_snapshots(self):
         from xpra.net.quic.connection import XpraQuicConnection
         quic = self.make_quic()
-        http = SimpleNamespace(_quic=quic)
+        http = SimpleNamespace(quic_connection=quic)
         first = XpraQuicConnection(http, 0, lambda: None, "localhost", 443)
         shared = XpraQuicConnection(http, 4, lambda: None, "localhost", 443)
-        other = XpraQuicConnection(SimpleNamespace(_quic=self.make_quic()), 0, lambda: None, "localhost", 443)
+        other = XpraQuicConnection(SimpleNamespace(quic_connection=self.make_quic()), 0, lambda: None, "localhost", 443)
         self.assertIs(first.congestion_control, shared.congestion_control)
         self.assertIsNot(first.congestion_control, other.congestion_control)
         before = first.get_info()["quic"]["congestion"]
@@ -175,8 +178,7 @@ class QuicCongestionTest(unittest.TestCase):
         sender = quic._streams[4].sender
         sender.get_frame(100)
         sender.on_data_delivery(QuicDeliveryState.LOST, 0, 100, False)
-        quic._streams[8].sender.reset(0)  # Reset senders retain their pending ranges.
-        quic.send_datagram_frame(bytes(300))  # Unreliable datagrams are not stream backlog.
+        quic.reset_stream(8, 0)  # Reset senders retain their pending ranges.
         expected = {"pending-new-bytes": 1400, "pending-retransmit-bytes": 100, "pending-bytes": 1500}
         self.assertEqual(get_pending_stream_info(quic), expected)
         quic.close()
@@ -191,10 +193,10 @@ class QuicCongestionTest(unittest.TestCase):
         from aioquic.quic.stream import QuicStream
         from xpra.net.quic.connection import XpraQuicConnection
         quic = self.make_quic()
-        http = SimpleNamespace(_quic=quic)
+        http = SimpleNamespace(quic_connection=quic)
         first = XpraQuicConnection(http, 0, lambda: None, "localhost", 443)
         shared = XpraQuicConnection(http, 4, lambda: None, "localhost", 443)
-        other = XpraQuicConnection(SimpleNamespace(_quic=self.make_quic()), 0, lambda: None, "localhost", 443)
+        other = XpraQuicConnection(SimpleNamespace(quic_connection=self.make_quic()), 0, lambda: None, "localhost", 443)
         before = first.get_info()["quic"]["congestion"]
         stream = QuicStream(stream_id=0)
         quic._streams[0] = stream

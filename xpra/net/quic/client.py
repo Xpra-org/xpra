@@ -16,14 +16,12 @@ from aioquic.quic.configuration import QuicConfiguration
 from aioquic.quic.events import QuicEvent
 from aioquic.quic.packet import QuicErrorCode
 from aioquic.h3.connection import H3_ALPN
-from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import (
     DatagramReceived,
     DataReceived,
     H3Event,
     HeadersReceived,
-    PushPromiseReceived,
     WebTransportStreamDataReceived,
 )
 from aioquic.quic.connection import QuicConnection
@@ -36,7 +34,7 @@ from xpra.net.common import pretty_socket
 from xpra.net.socket_util import create_udp_socket
 from xpra.net.tls.parsing import parse_ssl_verify_mode
 from xpra.net.aio.thread import get_threaded_loop
-from xpra.net.quic.connection import XpraQuicConnection, aioquic_version_info
+from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.common import USER_AGENT, MAX_DATAGRAM_FRAME_SIZE, binary_headers
 from xpra.net.quic.congestion import CONGESTION_CONTROL_ALGORITHM
 from xpra.net.quic.protocol import XpraQuicConnectionProtocol
@@ -46,12 +44,10 @@ from xpra.log import Logger
 
 log = Logger("quic")
 
-HttpConnection = H0Connection | H3Connection
-
 IPV6 = socket.has_ipv6 and envbool("XPRA_IPV6", True)
 PREFER_IPV6 = IPV6 and envbool("XPRA_PREFER_IPV6", POSIX)
 HOSTS_PREFER_IPV4 = os.environ.get("XPRA_HOSTS_PREFER_IPV4", "localhost,127.0.0.1").split(",")
-FAST_OPEN = envbool("XPRA_QUIC_FAST_OPEN", aioquic_version_info >= (1, 2))
+FAST_OPEN = envbool("XPRA_QUIC_FAST_OPEN", True)
 
 WS_HEADERS: dict[str, str | int] = {
     ":method": "CONNECT",
@@ -72,7 +68,7 @@ WT_HEADERS: dict[str, str] = {
 
 class ClientWebSocketConnection(XpraQuicConnection):
 
-    def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
+    def __init__(self, connection: H3Connection, stream_id: int, transmit: Callable[[], None],
                  host: str, port: int, info=None, options=None):
         super().__init__(connection, stream_id, transmit, host, port, "wss", info, options)
         self.write_buffer = SimpleQueue()
@@ -110,16 +106,12 @@ class ClientWebSocketConnection(XpraQuicConnection):
                     self.accepted = True
                     self.flush_writes()
             return
-        if isinstance(event, PushPromiseReceived):
-            log(f"PushPromiseReceived: {event}")
-            log(f"PushPromiseReceived headers: {event.headers}")
-            return
         super().http_event_received(event)
 
 
 class ClientWebTransportConnection(XpraQuicConnection):
 
-    def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
+    def __init__(self, connection: H3Connection, stream_id: int, transmit: Callable[[], None],
                  host: str, port: int, info=None, options=None):
         super().__init__(connection, stream_id, transmit, host, port, "webtransport", info, options)
         # like the server side (see `ServerWebTransportConnection`), datagrams are not used:
@@ -160,12 +152,12 @@ class WebTransportClient(XpraQuicConnectionProtocol):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # WebTransport requires H3 with enable_webtransport=True
-        self._http: H3Connection = H3Connection(self._quic, enable_webtransport=True)
+        self._http: H3Connection = H3Connection(self.quic_connection, enable_webtransport=True)
         self._sessions: dict[int, ClientWebTransportConnection] = {}
 
     def open(self, host: str, port: int, path: str) -> ClientWebTransportConnection:
         log(f"WebTransportClient.open({host}, {port}, {path})")
-        stream_id = self._quic.get_next_available_stream_id()
+        stream_id = self.quic_connection.get_next_available_stream_id()
         conn = ClientWebTransportConnection(self._http, stream_id, self.transmit, host, port)
         self._sessions[stream_id] = conn
         headers = {":authority": host, ":path": path}
@@ -176,6 +168,7 @@ class WebTransportClient(XpraQuicConnectionProtocol):
         return conn
 
     def quic_event_received(self, event: QuicEvent) -> None:
+        super().quic_event_received(event)
         for http_event in self._http.handle_event(event):
             self.http_event_received(http_event)
 
@@ -194,17 +187,14 @@ class WebTransportClient(XpraQuicConnectionProtocol):
 class WebSocketClient(XpraQuicConnectionProtocol):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._http: HttpConnection | None = None
-        self._push_types: dict[str, int] = {}
         self._websockets: dict[int, ClientWebSocketConnection] = {}
-        if self._quic.configuration.alpn_protocols[0].startswith("hq-"):
-            self._http = H0Connection(self._quic)
-        else:
-            self._http = H3Connection(self._quic)
+        quic = self.quic_connection
+        # datagrams are only enabled when QUIC accepts them (see `MAX_DATAGRAM_FRAME_SIZE`):
+        self._http: H3Connection = H3Connection(quic, enable_datagrams=bool(quic.configuration.max_datagram_frame_size))
 
     def open(self, host: str, port: int, path: str) -> ClientWebSocketConnection:
         log(f"open({host}, {port}, {path})")
-        stream_id = self._quic.get_next_available_stream_id()
+        stream_id = self.quic_connection.get_next_available_stream_id()
         websocket = ClientWebSocketConnection(self._http, stream_id, self.transmit,
                                               host, port)
         self._websockets[stream_id] = websocket
@@ -219,32 +209,19 @@ class WebSocketClient(XpraQuicConnectionProtocol):
         return websocket
 
     def quic_event_received(self, event: QuicEvent) -> None:
+        super().quic_event_received(event)
         for http_event in self._http.handle_event(event):
             self.http_event_received(http_event)
 
     def http_event_received(self, event: H3Event) -> None:
-        if not isinstance(event, (HeadersReceived, DataReceived, DatagramReceived, PushPromiseReceived)):
+        if not isinstance(event, (HeadersReceived, DataReceived, DatagramReceived)):
             log.warn(f"Warning: unexpected http event type: {event}")
             return
         stream_id = event.stream_id
         websocket: ClientWebSocketConnection | None = self._websockets.get(stream_id)
         if not websocket:
-            # perhaps this is a new substream?
-            sub = -1
-            hdict = {}
-            if isinstance(event, HeadersReceived):
-                hdict = {k.decode(): v.decode() for k, v in event.headers}
-                sub = int(hdict.get("substream", -1))
-            if sub < 0:
-                log.warn(f"Warning: unexpected websocket stream id: {stream_id} in {event}")
-                return
-            websocket = self._websockets.get(sub)
-            if not websocket:
-                log.warn(f"Warning: stream {sub} not found in {self._websockets}")
-                return
-            subtype = hdict.get("stream-type")
-            log.info(f"new quic substream {stream_id} for {subtype} packets")
-            self._websockets[stream_id] = websocket
+            log.warn(f"Warning: unexpected websocket stream id: {stream_id} in {event}")
+            return
         websocket.http_event_received(event)
 
 
@@ -354,7 +331,7 @@ def pyopenssl_ca_certs(ca_certs: str) -> str:
     return ""
 
 
-async def _watch_handshake(protocol: QuicConnectionProtocol, conn, timeout: float) -> None:
+async def _watch_handshake(protocol: XpraQuicConnectionProtocol, conn, timeout: float) -> None:
     # Background watcher for fast-open connects: wait for the QUIC/TLS handshake
     # to complete (or fail) without blocking the caller, so the first user write
     # still rides the same flight as the ClientHello (preserving the fast-open RTT
@@ -370,9 +347,7 @@ async def _watch_handshake(protocol: QuicConnectionProtocol, conn, timeout: floa
         log("fast-open handshake watcher: timed out")
     except Exception as e:
         log(f"fast-open handshake watcher: wait_connected raised {e!r}")
-    quic_conn = getattr(protocol, "_quic", None)
-    close_event = getattr(quic_conn, "_close_event", None) if quic_conn else None
-    if close_event is not None:
+    if close_event := protocol.connection_terminated:
         err = close_event.error_code
         msg = close_event.reason_phrase or ""
         log(f"fast-open handshake watcher: close_event error=0x{err:x} reason={msg!r}")
@@ -399,7 +374,7 @@ def _quic_connect(create_protocol, host: str, port: int, path: str, fast_open: b
         sock, local_addr = create_local_socket(af)
         transport, protocol = await tl.loop.create_datagram_endpoint(create_protocol, sock=sock)
         log(f"{transport=}, {protocol=}")
-        protocol = cast(QuicConnectionProtocol, protocol)
+        protocol = cast(XpraQuicConnectionProtocol, protocol)
         addr = addr_info[4]  # ie: ('192.168.0.10', 10000)
         log(f"connecting from {pretty_socket(local_addr)} to {pretty_socket(addr)} with {fast_open=}")
         if fast_open:
@@ -422,17 +397,16 @@ def _quic_connect(create_protocol, host: str, port: int, path: str, fast_open: b
             # try to get a more meaningful exception message:
             einfo = str(e)
             if not einfo:
-                if quic_conn := getattr(protocol, "_quic", None):
-                    close_event = getattr(quic_conn, "_close_event", None)
-                    log(f"{close_event=}, {dir(close_event)}")
-                    if close_event:
-                        err = close_event.error_code
-                        msg = close_event.reason_phrase
-                        if err & QuicErrorCode.CRYPTO_ERROR:
-                            raise InitExit(ExitCode.CONNECTION_FAILED, msg)
-                        # if (err & 0xFF)==QuicErrorCode.CONNECTION_REFUSED:
-                        #    raise InitExit(ExitCode.CONNECTION_FAILED, msg)
-                        raise RuntimeError(close_event.reason_phrase) from None
+                close_event = protocol.connection_terminated
+                log(f"{close_event=}")
+                if close_event:
+                    err = close_event.error_code
+                    msg = close_event.reason_phrase
+                    if err & QuicErrorCode.CRYPTO_ERROR:
+                        raise InitExit(ExitCode.CONNECTION_FAILED, msg)
+                    # if (err & 0xFF)==QuicErrorCode.CONNECTION_REFUSED:
+                    #    raise InitExit(ExitCode.CONNECTION_FAILED, msg)
+                    raise RuntimeError(close_event.reason_phrase) from None
             raise RuntimeError(str(e)) from None
 
     # protocol.close()
