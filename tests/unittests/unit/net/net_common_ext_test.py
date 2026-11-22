@@ -282,6 +282,15 @@ class TestPacketGetBytes(unittest.TestCase):
         result = p.get_bytes(1)
         assert isinstance(result, bytes)
 
+    def test_integer_rejected(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(TypeError):
+            Packet("t", 4).get_bytes(1)
+
+    def test_sequence_converted(self):
+        from xpra.net.common import Packet
+        assert Packet("t", [1, 2]).get_bytes(1) == b"\x01\x02"
+
 
 class TestPacketGetBuffer(unittest.TestCase):
 
@@ -300,6 +309,11 @@ class TestPacketGetBuffer(unittest.TestCase):
         from xpra.net.common import Packet
         p = Packet("t", "hello")
         assert p.get_buffer(1) == b"hello"
+
+    def test_integer_rejected(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(TypeError):
+            Packet("t", 4).get_buffer(1)
 
 
 class TestPacketGetDict(unittest.TestCase):
@@ -346,6 +360,11 @@ class TestPacketGetInts(unittest.TestCase):
         with self.assertRaises(TypeError):
             p.get_ints(1)
 
+    def test_infinity_rejected(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(ValueError):
+            Packet("t", [1, float("inf")]).get_ints(1)
+
 
 class TestPacketGetBytesSeq(unittest.TestCase):
 
@@ -354,6 +373,11 @@ class TestPacketGetBytesSeq(unittest.TestCase):
         p = Packet("t", [b"a", b"b"])
         result = p.get_bytes_seq(1)
         assert tuple(result) == (b"a", b"b")
+
+    def test_integer_item_rejected(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(TypeError):
+            Packet("t", [b"a", 4]).get_bytes_seq(1)
 
 
 # ---------------------------------------------------------------------------

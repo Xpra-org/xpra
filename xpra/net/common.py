@@ -101,6 +101,12 @@ class Packet(Sequence):
     def get_type(self) -> str:
         return str(self.data[0])
 
+    @staticmethod
+    def _check_not_int(value, datatype: str) -> None:
+        # `bytes(n)` allocates `n` zero bytes:
+        if isinstance(value, int) and not isinstance(value, bool):
+            raise TypeError(f"expected a {datatype} but got an integer")
+
     def get_wid(self, i=1) -> int:
         v = int(self.data[i])
         if v < -1 or v >= 2**48:
@@ -170,6 +176,7 @@ class Packet(Sequence):
             return v
         if v == "":
             return b""
+        self._check_not_int(v, "byte string")
         return bytes(v)
 
     def get_buffer(self, i: int) -> SizedBuffer:
@@ -179,6 +186,7 @@ class Packet(Sequence):
         # the html5 client sends strings when we expect a buffer...
         if isinstance(v, str):
             return v.encode("utf8")
+        self._check_not_int(v, "buffer")
         return bytes(v)
 
     def get_dict(self, i: int) -> dict:
@@ -193,16 +201,21 @@ class Packet(Sequence):
             return tuple(str(x) for x in v)
         raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 
-    def get_bytes_seq(self, i: int) -> Sequence[str]:
+    def get_bytes_seq(self, i: int) -> Sequence[bytes]:
         v = self.data[i]
         if isinstance(v, Sequence):
+            for x in v:
+                self._check_not_int(x, "byte string sequence item")
             return tuple(bytes(x) for x in v)
         raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 
     def get_ints(self, i: int) -> Sequence[int]:
         v = self.data[i]
         if isinstance(v, Sequence):
-            return tuple(int(x) for x in v)
+            try:
+                return tuple(int(x) for x in v)
+            except OverflowError:
+                raise ValueError(f"invalid value in integer sequence at index {i}") from None
         raise TypeError("expected a sequence at index %i but got a %s" % (i, type(v)))
 
     def get_coordinates(self, i: int) -> Sequence[int]:
