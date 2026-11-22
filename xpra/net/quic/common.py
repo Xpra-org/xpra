@@ -6,8 +6,16 @@
 from time import time
 from email.utils import formatdate
 
+from aioquic import __version__ as aioquic_version
+
 from xpra.util.env import envint
 from xpra.util.str_fn import strtobytes
+from xpra.util.version import parse_version
+
+aioquic_version_info = parse_version(aioquic_version)
+if aioquic_version_info < (1, 9):
+    # callers turn this into "cannot use quic sockets: ..."
+    raise ImportError(f"aioquic {aioquic_version} is too old, version 1.9.0 or later is required")
 
 SERVER_NAME = "xpra/aioquic"
 USER_AGENT = "xpra/aioquic"

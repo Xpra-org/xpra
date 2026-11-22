@@ -9,7 +9,7 @@ from typing import Any, NamedTuple
 
 from aioquic.quic.congestion.base import register_congestion_control
 from aioquic.quic.congestion.reno import RenoCongestionControl
-from aioquic.quic.connection import END_STATES, QuicConnection
+from aioquic.quic.connection import QuicConnection
 from aioquic.quic.packet_builder import QuicSentPacket
 
 from xpra.log import Logger
@@ -41,7 +41,7 @@ def get_pending_stream_info(quic: QuicConnection) -> dict[str, int]:
     These are current stream-byte counts, not cumulative QUIC packet counters.
     """
     new_bytes = retransmit_bytes = 0
-    if quic._state not in END_STATES and not quic._close_pending:
+    if not quic.is_closing():
         for stream in quic._streams.values():
             sender = stream.sender
             # Reset senders retain their buffers but will never send them again.

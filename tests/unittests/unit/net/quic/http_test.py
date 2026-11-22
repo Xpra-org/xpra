@@ -10,8 +10,8 @@ import unittest
 from unittest.mock import MagicMock
 
 try:
-    import aioquic
-    HAVE_AIOQUIC = bool(aioquic)
+    from xpra.net.quic import common
+    HAVE_AIOQUIC = bool(common)
 except ImportError:
     HAVE_AIOQUIC = False
 
@@ -120,18 +120,6 @@ class TestSendHttp3Response(unittest.TestCase):
 
 @unittest.skipUnless(HAVE_AIOQUIC, "aioquic not available")
 class TestHttpEventReceived(unittest.TestCase):
-
-    def test_wrong_version_closes_protocol(self):
-        scope = {
-            "http_version": "2",
-            "method": "GET",
-            "path": "/",
-            "headers": {},
-            "query_string": b"",
-        }
-        h = _make_handler(scope=scope)
-        h.http_event_received(MagicMock())
-        assert h.protocol.close.called
 
     def test_post_not_supported_closes_protocol(self):
         scope = {

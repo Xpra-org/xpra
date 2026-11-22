@@ -180,14 +180,6 @@ datagrams, which are never retransmitted:
   currently `audio-data` and `window-draw-fragment`. The start and end of audio streams
   are always sent on the stream (`audio-stream` packets).
 
-**Substreams.** Servers can be configured (`XPRA_QUIC_SUBSTREAM_PACKET_TYPES`,
-disabled by default) to move some packet types to separate HTTP/3 streams, so that
-a large packet on one does not delay the others. The server announces each new
-stream with an HTTP/3 `PUSH_PROMISE`, then sends response headers on it containing
-`substream` (the id of the main stream) and `stream-type` (ie: `audio`). Its data
-is a WebSocket byte stream like the main one. Clients that do not implement push
-should keep push disabled: the server then uses the main stream only.
-
 ### WebTransport (`wt://`)
 
 `wt://host:port/path` uses WebTransport (draft 02) instead:
