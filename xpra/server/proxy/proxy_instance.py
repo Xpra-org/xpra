@@ -641,6 +641,8 @@ class ProxyInstance:
         if encoding in ("mmap", "scroll"):
             self.queue_client_packet(packet)
             return
+        if isinstance(pixels, int) and not isinstance(pixels, bool):
+            raise TypeError("expected a pixel buffer but got an integer")
         #we can only use video encoders on RGB data:
         if encoding not in ("rgb24", "rgb32", "r210", "BGR565"):
             #this prevents compression and inlining of pixel data:

@@ -46,6 +46,15 @@ class BackportRegressionTest(unittest.TestCase):
         self.assertTrue(instance.create_control_socket())
         self.assertEqual(instance.create_control_socket_at.call_count, 2)
 
+    def test_proxy_draw_requires_pixel_buffer(self):
+        from xpra.server.proxy.proxy_instance import ProxyInstance
+        instance = ProxyInstance.__new__(ProxyInstance)
+        instance.queue_client_packet = Mock()
+        packet = ("draw", 1, 0, 0, 1, 1, "rgb32", 4, 1, 4, {})
+        with self.assertRaisesRegex(TypeError, "expected a pixel buffer"):
+            instance.process_draw(packet)
+        instance.queue_client_packet.assert_not_called()
+
 
 if __name__ == "__main__":
     unittest.main()

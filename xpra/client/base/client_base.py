@@ -1282,7 +1282,7 @@ class XpraClientBase(ServerInfoMixin, FilePrintMixin):
                 may_log_packet(False, packet_type, packet)
                 try:
                     handler(packet)
-                except IndexError:
+                except (IndexError, OverflowError):
                     netlog.error("Error processing a %r packet using %s", packet_type, handler, exc_info=True)
             handler = self._packet_handlers.get(packet_type)
             if handler:

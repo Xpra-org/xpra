@@ -1005,7 +1005,7 @@ class ServerBase(ServerBaseClass):
                 may_log_packet(False, packet_type, packet)
                 try:
                     handler(proto, packet)
-                except IndexError:
+                except (IndexError, OverflowError):
                     netlog.error("Error processing a %r packet from %s using %s",
                                  packet_type, proto, handler, exc_info=True)
             if proto in self._server_sources and not proto.is_closed():
