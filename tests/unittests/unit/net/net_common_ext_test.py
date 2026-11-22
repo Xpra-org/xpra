@@ -301,6 +301,18 @@ class TestPacketGetBytes(unittest.TestCase):
         with self.assertRaises(ValueError):
             Packet("t", b"1234").get_bytes(1, 3)
 
+    def test_integer_rejected(self):
+        from xpra.net.common import Packet
+        # `bytes(n)` would allocate `n` bytes before the size check,
+        # or raise `MemoryError` / `OverflowError` for large values:
+        for value in (4096, 2**62, 2**70):
+            with self.assertRaises(TypeError):
+                Packet("t", value).get_bytes(1, 1024)
+
+    def test_sequence_converted(self):
+        from xpra.net.common import Packet
+        assert Packet("t", [1, 2]).get_bytes(1) == b"\x01\x02"
+
 
 class TestPacketGetBuffer(unittest.TestCase):
 
@@ -319,6 +331,12 @@ class TestPacketGetBuffer(unittest.TestCase):
         from xpra.net.common import Packet
         p = Packet("t", "hello")
         assert p.get_buffer(1) == b"hello"
+
+    def test_integer_rejected(self):
+        from xpra.net.common import Packet
+        for value in (4096, 2**62, 2**70):
+            with self.assertRaises(TypeError):
+                Packet("t", value).get_buffer(1, 1024)
 
 
 class TestPacketGetDict(unittest.TestCase):
@@ -388,6 +406,11 @@ class TestPacketGetInts(unittest.TestCase):
         with self.assertRaises(TypeError):
             Packet("t", b"\x01\x02").get_ints(1)
 
+    def test_infinity_rejected(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(ValueError):
+            Packet("t", [1, float("inf")]).get_ints(1)
+
 
 class TestPacketGetBytesSeq(unittest.TestCase):
 
@@ -396,6 +419,11 @@ class TestPacketGetBytesSeq(unittest.TestCase):
         p = Packet("t", [b"a", b"b"])
         result = p.get_bytes_seq(1)
         assert tuple(result) == (b"a", b"b")
+
+    def test_integer_item_rejected(self):
+        from xpra.net.common import Packet
+        with self.assertRaises(TypeError):
+            Packet("t", [b"a", 4096]).get_bytes_seq(1, 4, 1024)
 
 
 # ---------------------------------------------------------------------------
