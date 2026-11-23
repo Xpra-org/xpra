@@ -113,6 +113,28 @@ class Test_CSC_Colorspace(unittest.TestCase):
                                )
                            )
 
+    def test_libyuv_odd_dimensions(self):
+        # video encoders round odd dimensions up when subsampling,
+        # so the chroma planes must hold `(height + 1) // 2` rows of `(width + 1) // 2` pixels
+        csc_mod = loader.load_codec("csc_libyuv")
+        if not csc_mod:
+            self.skipTest("csc_libyuv is not available")
+        for (sw, sh, dw, dh) in ((641, 481, 641, 481), (641, 481, 321, 241), (800, 603, 533, 401)):
+            with self.subTest(src=(sw, sh), dst=(dw, dh)):
+                image = make_test_image("BGRX", sw, sh)
+                converter = csc_mod.ColorspaceConverter()
+                converter.init_context(sw, sh, "BGRX", dw, dh, "YUV420P")
+                out = converter.convert_image(image)
+                try:
+                    for i, stride in enumerate(out.get_rowstride()):
+                        width = dw if i == 0 else (dw + 1) // 2
+                        rows = dh if i == 0 else (dh + 1) // 2
+                        self.assertGreaterEqual(stride, width)
+                        self.assertGreaterEqual(memoryview(out.get_pixels()[i]).nbytes, stride * rows)
+                finally:
+                    out.free()
+                    converter.clean()
+
 
 def main():
     unittest.main()

@@ -585,9 +585,11 @@ cdef class Encoder:
                 xdiv, ydiv = divs[i]
                 if PyObject_GetBuffer(pixels[i], &py_buf[i], PyBUF_ANY_CONTIGUOUS):
                     raise ValueError(f"failed to read pixel data from {type(pixels[i])}")
-                assert istrides[i]>=self.width*Bpp//xdiv, "invalid stride %i for width %i" % (istrides[i], self.width)
-                assert py_buf[i].len>=istrides[i]*(self.height//ydiv), "invalid buffer length %i for plane %s, at least %i needed" % (
-                    py_buf[i].len, "YUV"[i], istrides[i]*(self.height//ydiv))
+                # libvpx rounds odd dimensions up when subsampling:
+                assert istrides[i]>=(self.width+xdiv-1)//xdiv*Bpp, "invalid stride %i for width %i" % (istrides[i], self.width)
+                plane_height = (self.height+ydiv-1)//ydiv
+                assert py_buf[i].len>=istrides[i]*plane_height, "invalid buffer length %i for plane %s, at least %i needed" % (
+                    py_buf[i].len, "YUV"[i], istrides[i]*plane_height)
                 pic_in[i] = <uint8_t *> py_buf[i].buf
                 strides[i] = istrides[i]
             return self.do_compress_image(pic_in, strides), {

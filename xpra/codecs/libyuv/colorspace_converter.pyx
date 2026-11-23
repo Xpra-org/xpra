@@ -134,6 +134,10 @@ DEF ALIGN = 4   #MEMALIGN_ALIGNMENT
 cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
+cdef inline int subsampled(int n, int div):
+    # libyuv and the video codecs round odd dimensions up when subsampling:
+    return (n + div - 1) // div
+
 cdef inline uintptr_t roundupl(uintptr_t n, uintptr_t m):
     return (n + m - 1) & ~(m - 1)
 
@@ -349,12 +353,12 @@ cdef class ColorspaceConverter:
             xdiv, ydiv = divs[i]
             if self.rgb_scaling:
                 #we scale before csc to the dst size:
-                self.out_width[i]   = self.dst_width // xdiv
-                self.out_height[i]  = self.dst_height // ydiv
+                self.out_width[i]   = subsampled(self.dst_width, xdiv)
+                self.out_height[i]  = subsampled(self.dst_height, ydiv)
             else:
                 #we don't scale, so the size is the src size:
-                self.out_width[i]   = self.src_width // xdiv
-                self.out_height[i]  = self.src_height // ydiv
+                self.out_width[i]   = subsampled(self.src_width, xdiv)
+                self.out_height[i]  = subsampled(self.src_height, ydiv)
             self.out_stride[i]  = roundup(self.out_width[i], ALIGN)
             self.out_size[i]    = self.out_stride[i] * self.out_height[i]
             self.out_offsets[i] = self.out_buffer_size
@@ -364,12 +368,12 @@ cdef class ColorspaceConverter:
             #(why two and not just one? libyuv will do this for input data with odd height)
             self.out_buffer_size += roundupl(self.out_size[i] + 2*self.out_stride[i], ALIGN)
             if self.yuv_scaling:
-                self.scaled_width[i]    = self.dst_width // xdiv
-                self.scaled_height[i]   = self.dst_height // ydiv
+                self.scaled_width[i]    = subsampled(self.dst_width, xdiv)
+                self.scaled_height[i]   = subsampled(self.dst_height, ydiv)
                 self.scaled_stride[i]   = roundup(self.scaled_width[i], ALIGN)
                 self.scaled_size[i]     = self.scaled_stride[i] * self.scaled_height[i]
                 self.scaled_offsets[i]  = self.scaled_buffer_size
-                self.scaled_buffer_size += self.scaled_size[i] + self.out_stride[i]
+                self.scaled_buffer_size += self.scaled_size[i] + self.scaled_stride[i]
         if self.yuv_scaling:
             #re-use the same temporary buffer every time before scaling:
             self.output_buffer = <uint8_t *> memalign(self.out_buffer_size)
