@@ -516,6 +516,9 @@ class ClientWindow(GObject.GObject):
                 self.emit("focus-lost")
             if msg == win32con.WM_ACTIVATE:
                 log("%s: %s", msg_str, ACTIVATION.get(wparam, "unknown"))
+            if msg == win32con.WM_MOUSEACTIVATE and GetWindowLongW(hwnd, win32con.GWL_EXSTYLE) & win32con.WS_EX_NOACTIVATE:
+                # Deliver the mouse event without activating the popup.
+                return win32con.MA_NOACTIVATE
             if msg == win32con.WM_MOUSEMOVE:
                 x, y = get_xy_lparam(lparam)
                 vkeys = get_vk_mask(wparam)
