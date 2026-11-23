@@ -160,18 +160,10 @@ class WindowManagerTest(ClientMixinTest):
         self.assertFalse(window_client.is_grabbed(3))
 
     def test_missing_resize_counter_defaults_to_zero(self):
+        from xpra.client.subsystem.display import DisplayClient
         from xpra.client.subsystem.window.manager import WindowManagerClient
 
         resize_counters = []
-
-        class Display:
-            @staticmethod
-            def sx(value):
-                return value
-
-            @staticmethod
-            def sy(value):
-                return value
 
         class Window:
             @staticmethod
@@ -183,7 +175,9 @@ class WindowManagerTest(ClientMixinTest):
                 resize_counters.append(resize_counter)
 
         manager = AdHocStruct()
-        manager.get_subsystem = lambda _name: Display()
+        with patch("xpra.client.subsystem.display.check_display"):
+            display = DisplayClient()
+        manager.get_subsystem = lambda _name: display
         manager.get_window = lambda _wid: Window()
         WindowManagerClient._process_move_resize(
             manager, Packet("window-move-resize", 1, 2, 3, 4, 5),
@@ -192,6 +186,41 @@ class WindowManagerTest(ClientMixinTest):
             manager, Packet("window-resized", 1, 4, 5),
         )
         self.assertEqual(resize_counters, [0, 0])
+
+    @unittest.skipUnless(WIN32, "requires the native Win32 display subsystem")
+    def test_win32_window_positions(self):
+        from xpra.client.subsystem.window.manager import WindowManagerClient
+        from xpra.client.win32.subsystem.display import Win32DisplayClient
+        from xpra.util.screen import MonitorLayout
+
+        display = Win32DisplayClient()
+        manager = Mock(modal_windows=False)
+        manager.get_subsystem.return_value = display
+        manager.client.cook_metadata.side_effect = WindowManagerClient.cook_metadata
+        parent = Mock(_pos=(-500, -300), sp=display.sp)
+        manager._id_to_window = {1: parent}
+        for origin, scale, expected, relative in (
+            ((-1920, 0), (1, 1), (-1820, 80, 40, 20), (-480, -290)),
+            ((0, -720), (1.5, 2), (150, -1280, 60, 40), (-470, -280)),
+        ):
+            with self.subTest(origin=origin):
+                display.xscale, display.yscale = scale
+                display._monitor_layout = MonitorLayout({
+                    0: {"geometry": (0, 0, 1920, 1080)},
+                    1: {"geometry": (*origin, 1920, 720)},
+                })
+                geometry = (100, 80, 40, 20)
+                create = Packet("window-create", 2, *geometry, {})
+                WindowManagerClient._process_new_common(manager, create, True)
+                self.assertEqual(manager.make_new_window.call_args.args[1:3], (expected, (40, 20)))
+                move = Packet("window-move-resize", 2, *geometry, 7)
+                WindowManagerClient._process_move_resize(manager, move)
+                manager.get_window.return_value.move_resize.assert_called_with(*expected, 7)
+
+                metadata = {"parent": 1, "relative-position": (20, 10)}
+                create = Packet("window-create", 2, *geometry, metadata)
+                WindowManagerClient._process_new_common(manager, create, True)
+                self.assertEqual(manager.make_new_window.call_args.args[1], (*relative, *expected[2:]))
 
     def test_pause_windows_once_unpaused(self):
         # the `pause` signal fired by the UI thread watcher's polling thread
