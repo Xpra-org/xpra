@@ -28,8 +28,8 @@
 %endif
 
 Name:           %{python3}-torch-cuda
-Version:        2.14.1
-Release:        2
+Version:        2.15.0
+Release:        1
 URL:            https://github.com/pytorch/pytorch
 Summary:        PyTorch provides tensor computation with strong GPU acceleration and deep neural networks built on a tape-based autograd system
 License:        BSD-3
@@ -37,7 +37,7 @@ Group:          Development/Libraries/Python
 Source0:        https://github.com/pytorch/pytorch/releases/download/v%{version}/pytorch-v%{version}.tar.gz
 
 BuildRoot:      %{_tmppath}/%{name}-%{version}-build
-Provides:       %{python3}-torch
+Provides:       %{python3}-torch = %{version}-%{release}
 
 BuildRequires:	coreutils
 BuildRequires:  make
@@ -69,16 +69,11 @@ PyTorch is a Python package that provides two high-level features:
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "d0ebad9ca4219959b29b7ad9ab6469fe49a3d668f8b5a62dd115f02f3a914447" ]; then
+if [ "${sha256}" != "d0688c9feb1139c6304675c41f4c5fbb8e5b084f19a83d9f95ddcb10ced9e3e7" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 %setup -q -n pytorch-v%{version}
-# Recreate the NCCL pin files excluded from the release tarball
-# (tools/optional_submodules.py reads these if NCCL / distributed are enabled):
-mkdir -p .ci/docker/ci_commit_pins
-echo "v2.30.7-1" > .ci/docker/ci_commit_pins/nccl.txt
-echo "v2.29.3-1" > .ci/docker/ci_commit_pins/nccl-cu126.txt
 
 %build
 CUDA=/opt/cuda
@@ -95,6 +90,7 @@ export CXX=g++-%{GCC_VERSION}
 export CUDAHOSTCXX=$CXX
 
 export TORCH_CUDA_ARCH_LIST="8.0;8.6;8.9;9.0;12.0"
+export USE_CUDA=1
 export USE_NCCL=0
 export USE_ROCM=0
 export BUILD_TEST=0
@@ -134,7 +130,11 @@ export LDFLAGS="-Wl,--strip-debug"
 
 export MAX_JOBS=4
 export CMAKE_BUILD_PARALLEL_LEVEL=4  # For CMake builds
-%{python3} -m pip wheel --no-deps --no-build-isolation -v -w dist .
+export PYTORCH_BUILD_VERSION=%{version}
+export PYTORCH_BUILD_NUMBER=1
+# PyTorch uses scikit-build-core. Let pip install the declared build backend
+# and its dependencies for the selected interpreter in the build environment.
+%{python3} -m pip wheel --no-deps -v -w dist .
 
 %install
 export USE_NCCL=0
@@ -157,12 +157,16 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root)
 %{_bindir}/torchrun
+%{_bindir}/torchfrtrace
 %{python3_sitearch}/torch-%{version}*.dist-info
 %{python3_sitearch}/torch
 %{python3_sitearch}/torchgen
 %{python3_sitearch}/functorch
 
 %changelog
+* Mon Nov 23 2026 Antoine Martin <antoine@xpra.org> - 2.15.0-1
+- new upstream release, build with scikit-build-core and use the shipped NCCL pins
+
 * Wed Oct 21 2026 Antoine Martin <antoine@xpra.org> - 2.14.1-2
 - the package dependencies were part of the description
 
