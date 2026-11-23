@@ -21,8 +21,8 @@
 %global __requires_exclude ^(libnvjpeg|libnvidia-|libcudart).*\\.so.*$
 
 Name:           %{python3}-torch-vision
-Version:        0.29.1
-Release:        2
+Version:        0.29.2
+Release:        1
 URL:            https://github.com/pytorch/vision
 Summary:        The torchvision package consists of popular datasets, model architectures, and common image transformations for computer vision
 License:        BSD-3
@@ -39,9 +39,9 @@ BuildRequires:  pkgconfig(libwebp)
 BuildRequires:  pkgconfig(libpng)
 BuildRequires:  pkgconfig(libturbojpeg)
 BuildRequires:  %{python3}-setuptools
-BuildRequires:  %{python3}-torch
+BuildRequires:  %{python3}-torch >= 2.14.0
 Requires:       %{python3}
-Requires:       %{python3}-torch
+Requires:       %{python3}-torch >= 2.14.0
 Requires:       libwebp
 Requires:       libpng
 Requires:       turbojpeg
@@ -51,7 +51,7 @@ The torchvision package consists of popular datasets, model architectures, and c
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "0a14655bd32095148d93fa595f93aba45dda0d13b25cc7fe86a041340e4a4862" ]; then
+if [ "${sha256}" != "6239575329eb0149ff7a7f5cabfab254129f758961afdba650aab37276d8196d" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -72,6 +72,9 @@ rm -rf %{buildroot}
 %{python3_sitearch}/torchvision-*%{version}-*egg-info
 
 %changelog
+* Mon Nov 23 2026 Antoine Martin <antoine@xpra.org> - 0.29.2-1
+- new upstream release
+
 * Wed Oct 21 2026 Antoine Martin <antoine@xpra.org> - 0.29.1-2
 - the package dependencies were part of the description
 
