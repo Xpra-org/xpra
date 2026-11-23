@@ -46,6 +46,10 @@ class BandwidthClient(StubClientSubsystem):
         self.limit = parse_with_unit("bandwidth-limit", opts.bandwidth_limit) or 0
         self.detection = opts.bandwidth_detection
         log("init bandwidth_limit=%s", self.limit)
+        self.on_server_setting_changed("bandwidth-limit", self.server_limit_changed)
+
+    def server_limit_changed(self, _setting: str, value) -> None:
+        self.server_limit = int(value or 0)
 
     def get_info(self) -> dict[str, Any]:
         return {

@@ -76,6 +76,10 @@ class CursorClient(StubClientSubsystem):
 
     def init(self, opts) -> None:
         self.client_supports = opts.cursors
+        self.on_server_setting_changed("cursors", self.server_cursors_changed)
+
+    def server_cursors_changed(self, _setting: str, value) -> None:
+        self.server_enabled = bool(value)
 
     def load(self) -> None:
         # re-apply cursors when the scaling changes:

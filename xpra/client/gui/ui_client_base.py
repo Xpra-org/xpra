@@ -46,6 +46,19 @@ NOTIFICATION_EXIT_DELAY = envint("XPRA_NOTIFICATION_EXIT_DELAY", 2)
 FORCE_ALERT = envbool("XPRA_FORCE_ALERT", False)
 MAX_SESSION_NAME = 128
 
+# server settings stored on this object as `server_<setting>`:
+CLIENT_SETTINGS = (
+    "session_name", "sharing", "sharing-toggle", "lock", "lock-toggle", "readonly", "client-shutdown",
+)
+# server settings owned by the subsystems, which register for them from `init()`
+# (see `StubClientSubsystem.on_server_setting_changed`):
+SUBSYSTEM_SETTINGS = (
+    "bell", "border", "bandwidth-limit", "clipboard", "clipboard-direction", "cursors",
+    "menu", "start-new-commands", "webcam",
+    # only used by the UI (ie: the tray menu), or not used yet:
+    "clipboard-limits", "ibus-layouts", "monitors", "notifications", "randr",
+)
+
 
 def session_name_str(name) -> str:
     # the server's session name is shown in the tray, menus and dialogs:
@@ -104,7 +117,6 @@ class UIXpraClient(XpraClientBase):
         self.title: str = ""
         self.session_name: str = ""
         self.server_session_name: str = ""
-        self.server_border: str = ""
 
         # features:
         self.readonly: bool = False
@@ -448,23 +460,9 @@ class UIXpraClient(XpraClientBase):
         # convert "hello" / "setting" variable names to client variables:
         if BACKWARDS_COMPATIBLE:
             setting = {"xdg-menu": "menu"}.get(setting, setting)
-        if setting in (
-            "clipboard-limits",
-        ):
-            # FIXME: this should update the limits?
-            pass
-        elif setting in (
-                "bell", "randr", "cursors", "notifications", "clipboard",
-                "clipboard-direction", "session_name",
-                "sharing", "sharing-toggle", "lock", "lock-toggle",
-                "readonly",
-                "start-new-commands", "client-shutdown", "webcam",
-                "bandwidth-limit", "clipboard-limits",
-                "menu", "monitors",
-                "ibus-layouts", "border",
-        ):
+        if setting in CLIENT_SETTINGS:
             setattr(self, "server_%s" % setting.replace("-", "_"), value)
-        else:
+        elif setting not in SUBSYSTEM_SETTINGS:
             log.info("unknown server setting changed: %s=%s", setting, repr_ellipsized(value))
             return
         log("_process_setting_change: %s=%s", setting, Ellipsizer(value))

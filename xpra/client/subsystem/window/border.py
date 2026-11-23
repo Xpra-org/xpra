@@ -114,6 +114,11 @@ class WindowBorderClient(StubClientSubsystem):
         self.border_from_server = opts.border == DEFAULT_BORDER
         if opts.border:
             self.border = parse_border(self.border_str)
+        self.on_server_setting_changed("border", self.server_border_changed)
+
+    def server_border_changed(self, _setting: str, value) -> None:
+        if self.border_from_server:
+            self.set_border(str(value))
 
     def setup_connection(self, conn) -> None:
         # now that we have display_desc, parse the border again:
@@ -123,12 +128,6 @@ class WindowBorderClient(StubClientSubsystem):
         if self.border_from_server:
             if server_border := c.strget("border"):
                 self.set_border(server_border)
-            # weak dependency injection on ui client:
-            onchange = getattr(self.client, "on_server_setting_changed", noop)
-
-            def border_changed(_setting, value) -> None:
-                self.set_border(str(value))
-            onchange("border", border_changed)
         return True
 
     def set_border(self, border_str: str) -> None:
