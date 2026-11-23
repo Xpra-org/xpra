@@ -110,6 +110,16 @@ class DisplayClient(StubClientSubsystem):
         if self.can_scale:
             self.parse_scaling(opts.desktop_scaling)
         self.init_display_watcher(opts)
+        self.on_server_setting_changed("monitors", self.server_monitors_changed)
+        self.on_server_setting_changed("randr", self.server_randr_changed)
+
+    def server_monitors_changed(self, _setting: str, monitors) -> None:
+        # sent by servers that manage monitors, when the layout changes:
+        self.server_monitors = monitors if isinstance(monitors, dict) else {}
+
+    def server_randr_changed(self, _setting: str, randr) -> None:
+        # ie: `xpra control :N toggle-feature randr off`
+        self.server_randr = bool(randr)
 
     def init_display_watcher(self, opts) -> None:
         # subclasses without a window system to watch (ie: the terminal client) override this as a no-op
