@@ -586,20 +586,24 @@ class ClientWindow(GObject.GObject):
                     if not self.maximized:
                         self.maximized = True
                         self.state_updates["maximized"] = True
-                        self.emit("maximized")
-                    return 0
                 elif wparam == win32con.SIZE_MAXHIDE:
                     return 0
                 elif wparam == win32con.SIZE_MAXSHOW:
                     return 0
                 elif wparam == win32con.SIZE_RESTORED:
+                    if self.maximized:
+                        self.maximized = False
+                        self.state_updates["maximized"] = False
+                else:
+                    log("unexpected WM_SIZE wparam %#x", wparam)
+                if wparam in (win32con.SIZE_MAXIMIZED, win32con.SIZE_RESTORED):
                     if self.backing and (width != self.width or height != self.height):
                         self.update_backing_render_size(width, height)
                         self.width = width
                         self.height = height
                         self.emit("resized")
-                else:
-                    log("unexpected WM_SIZE wparam %#x", wparam)
+                    elif "maximized" in self.state_updates:
+                        self.emit("maximized")
             if msg == win32con.WM_SETFOCUS:
                 self.emit("focused")
             if msg == win32con.WM_KILLFOCUS:
