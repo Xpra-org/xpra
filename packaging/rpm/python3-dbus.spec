@@ -16,7 +16,7 @@
 
 Summary: D-Bus Python3 Bindings
 Name:    %{py3rpmname}-dbus
-Version: 1.5.0
+Version: 1.5.1
 Release: 1%{?dist}
 
 License: MIT
@@ -40,7 +40,7 @@ D-Bus python bindings for use with %{python3} programs.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "ac94ce330879108e5d37105164cc14b595bdf9326d2ce4a5acad6c1ab2bf6476" ]; then
+if [ "${sha256}" != "57423cf87d09b7d084f420b55b737fe654c33339b06df77945620d97795c6ac4" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -78,6 +78,9 @@ rm -fv %{buildroot}%{_libdir}/pkgconfig/dbus-python.pc
 %endif
 
 %changelog
+* Mon Nov 23 2026 Antoine Martin <antoine@xpra.org> - 1.5.1-1
+- new upstream release
+
 * Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 1.5.0-1
 - new upstream release, build using meson (autotools support was removed)
 
