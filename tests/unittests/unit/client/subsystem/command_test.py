@@ -5,6 +5,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from xpra.client.subsystem import command
@@ -18,6 +19,22 @@ def make_menu(categories: int, entries: int) -> dict:
             "Entries": {f"app{e:03}": {"command": f"app{e}"} for e in range(entries)},
         } for c in range(categories)
     }
+
+
+def make_command_client(callbacks: dict) -> command.CommandClient:
+    # callbacks are called in registration order, like `UIXpraClient.server_setting_changed`:
+    fake_client = type("FakeClient", (), {
+        "on_server_setting_changed": lambda _self, setting, cb: callbacks.setdefault(setting, []).append(cb),
+    })()
+    client = command.CommandClient()
+    client.client = fake_client
+    client.init(SimpleNamespace(start_new_commands=True, start=[], start_child=[]))
+    return client
+
+
+def fire(callbacks: dict, setting: str, value) -> None:
+    for cb in callbacks.get(setting, ()):
+        cb(setting, value)
 
 
 class MenuTest(unittest.TestCase):
@@ -69,18 +86,27 @@ class MenuTest(unittest.TestCase):
         self.assertEqual(len(menu["category000"]["Entries"]), 3)
 
     def test_notify_once(self):
-        client = command.CommandClient()
         callbacks = {}
-        client.client = type("FakeClient", (), {
-            "on_server_setting_changed": lambda _self, setting, cb: callbacks.__setitem__(setting, cb),
-        })()
+        client = make_command_client(callbacks)
         client.parse_server_capabilities(command.typedict({"start-new-commands": True}))
         with patch.object(command, "may_notify_client") as notify, patch.object(command, "first_time", side_effect=[True, False]):
-            callbacks["menu"]("menu", make_menu(command.MAX_MENU_CATEGORIES + 1, 1))
-            callbacks["menu"]("menu", make_menu(command.MAX_MENU_CATEGORIES + 1, 1))
+            fire(callbacks, "menu", make_menu(command.MAX_MENU_CATEGORIES + 1, 1))
+            fire(callbacks, "menu", make_menu(command.MAX_MENU_CATEGORIES + 1, 1))
         notify.assert_called_once()
         self.assertEqual(notify.call_args.args[1], command.NotificationID.MENU)
         self.assertEqual(len(client.server_menu), command.MAX_MENU_CATEGORIES)
+
+    def test_menu_updated_before_ui_callbacks(self):
+        # the win32 tray registers its own "menu" callback before the handshake,
+        # it must see the new menu when it is called (#5179):
+        callbacks = {}
+        client = make_command_client(callbacks)
+        seen = []
+        callbacks.setdefault("menu", []).append(lambda _setting, _value: seen.append(client.server_menu))
+        client.parse_server_capabilities(command.typedict({"start-new-commands": True}))
+        menu = make_menu(2, 3)
+        fire(callbacks, "menu", menu)
+        self.assertEqual(seen, [menu])
 
 
 def main():
