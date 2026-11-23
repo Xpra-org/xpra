@@ -86,6 +86,42 @@ class TestServerBase(unittest.TestCase):
                 self.assertIsNone(server.ui_driver)
                 self.driver_handler.assert_called_once_with(server, None)
 
+    def test_late_packet_from_detached_protocol(self):
+        proto = Mock()
+        proto.is_closed.return_value = False
+        packet = ("late-packet",)
+        server = SimpleNamespace(
+            _server_sources={},
+            _potential_protocols=[],
+            _default_packet_handlers={},
+            _closing=False,
+            idle_add=Mock(),
+            get_server_source=Mock(return_value=None),
+        )
+        with patch.object(server_base, "netlog") as netlog:
+            ServerBase.process_packet(server, proto, packet)
+            callback, = server.idle_add.call_args.args
+            callback()
+        proto.close.assert_not_called()
+        netlog.assert_called_once_with("packet from detached protocol %s: %s", proto, packet)
+        netlog.error.assert_not_called()
+
+    def test_invalid_packet_from_potential_protocol(self):
+        proto = Mock()
+        proto.is_closed.return_value = False
+        server = SimpleNamespace(
+            _server_sources={},
+            _potential_protocols=[proto],
+            _default_packet_handlers={},
+            _closing=False,
+            idle_add=lambda callback: callback(),
+            get_server_source=Mock(return_value=None),
+        )
+        with patch.object(server_base, "netlog") as netlog:
+            ServerBase.process_packet(server, proto, ("invalid-packet",))
+        netlog.error.assert_any_call("Error: unknown or invalid packet type 'invalid-packet'")
+        proto.close.assert_called_once_with()
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1026,11 +1026,15 @@ class ServerBase(ServerBaseClass):
                 return
             def invalid_packet():
                 ss = self.get_server_source(proto)
-                if not self._closing and not proto.is_closed() and (ss is None or not ss.is_closed()):
+                detached = ss is None and proto not in self._potential_protocols
+                if detached:
+                    netlog("packet from detached protocol %s: %s", proto, packet)
+                elif not self._closing and not proto.is_closed() and (ss is None or not ss.is_closed()):
                     netlog("invalid packet: %s", packet)
                     netlog.error(f"Error: unknown or invalid packet type {packet_type!r}")
                     netlog.error(f" received from {proto}")
-                if not ss:
+                # A detached protocol closes after sending its disconnect packet.
+                if not ss and not detached:
                     proto.close()
             self.idle_add(invalid_packet)
         except Exception:
