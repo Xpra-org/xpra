@@ -5,7 +5,7 @@
 
 from time import time
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 
 from xpra.net.packet_type import WINDOW_CONFIGURE
 from xpra.os_util import gi_import
@@ -49,6 +49,9 @@ class ClientTray(ClientWidgetBase):
         GLib.idle_add(self.reconfigure)
         # things may have settled by now
         GLib.timeout_add(1000, self.send_configure)
+
+    def rescale_window(self, _new_size_fn: Callable[[int, int], tuple[int, int]]) -> None:
+        """The local system tray controls the icon size."""
 
     def reset_size_constraints(self) -> None:
         """ we can't implement this method for trays - it should not be called """

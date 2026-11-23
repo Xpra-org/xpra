@@ -179,6 +179,19 @@ class WindowManagerTest(ClientMixinTest):
         )
         self.assertEqual(resize_counters, [0, 0])
 
+    def test_rescaling_includes_trays(self):
+        from xpra.client.gui.client_tray import ClientTray
+        from xpra.client.subsystem.window.manager import WindowManagerClient
+
+        window = Mock()
+        tray = ClientTray.__new__(ClientTray)
+        manager = Mock(_id_to_window={1: tray, 2: window})
+        scale = Mock()
+        WindowManagerClient.resize_windows(manager, scale)
+        window.rescale_window.assert_called_once_with(scale)
+        scale.assert_not_called()
+        manager.send_refresh_all.assert_called_once_with()
+
     @unittest.skipUnless(WIN32, "requires the native Win32 display subsystem")
     def test_win32_window_positions(self):
         from xpra.client.subsystem.window.manager import WindowManagerClient
