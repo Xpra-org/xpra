@@ -12,8 +12,6 @@ from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock, call, patch
 
-import xpra
-
 
 class SessionEventsTest(unittest.TestCase):
 
@@ -40,7 +38,9 @@ class SessionEventsTest(unittest.TestCase):
         gui.set_session_locked = self.set_locked
         gui.is_session_locked = lambda: self.locked
         modules = {platform.__name__: platform, events.__name__: events, gui.__name__: gui}
-        filename = Path(xpra.__file__).parent / "platform" / "win32" / "window_events.py"
+        # Linux builds omit Windows modules from the installed package.
+        # Load the source checkout alongside this test instead.
+        filename = Path(__file__).resolve().parents[4] / "xpra" / "platform" / "win32" / "window_events.py"
         spec = importlib.util.spec_from_file_location("xpra_win32_session_events_test", filename)
         module = importlib.util.module_from_spec(spec)
         glib = SimpleNamespace(idle_add=self.pending.append)
