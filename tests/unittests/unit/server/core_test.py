@@ -184,7 +184,7 @@ class TestServerCore(unittest.TestCase):
             "packet from detached protocol %s: %s", proto, packet,
         )
         netlog.error.assert_not_called()
-        proto.close.assert_called_once_with()
+        proto.close.assert_not_called()
 
     def test_init_starts_background_worker_first(self):
         server = ServerCore.__new__(ServerCore)
