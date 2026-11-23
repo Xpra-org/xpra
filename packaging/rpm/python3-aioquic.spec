@@ -13,26 +13,26 @@ Autoreq: 0
 %define python3_sitearch %(%{python3} -Ic "from sysconfig import get_path; print(get_path('platlib').replace('/usr/local/', '/usr/'))" 2> /dev/null)
 
 Name:           %{py3rpmname}-aioquic
-Version:        1.7.0
+Version:        1.9.1
 Release:        1%{?dist}
 Summary:        aioquic is a library for the QUIC network protocol in Python
 Group:          Development/Languages
-License:        MIT
+License:        BSD-3-Clause
 URL:            https://github.com/aiortc/aioquic
 Source0:        https://files.pythonhosted.org/packages/source/a/aioquic/aioquic-%{version}.tar.gz
-Patch0:         aioquic-pycrypto-tls-utc.patch
-Patch1:         aioquic-licensenonsense.patch
+Patch0:         aioquic-licensenonsense.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  %{py3rpmname}-devel
 BuildRequires:  %{py3rpmname}-setuptools
 BuildRequires:  %{py3rpmname}-wheel
-BuildRequires:  openssl-devel
 BuildRequires:  gcc
-Requires:       %{py3rpmname}
-Requires:       %{py3rpmname}-cryptography
+Requires:       %{py3rpmname} >= 3.10
+Requires:       %{py3rpmname}-cryptography >= 48.0.0
 Requires:       %{py3rpmname}-certifi
-Requires:       %{py3rpmname}-pyOpenSSL
-Requires:       %{py3rpmname}-pylsqpack
+Requires:       %{py3rpmname}-pyOpenSSL >= 24
+Requires:       %{py3rpmname}-pylsqpack >= 1.1.1
+Requires:       %{py3rpmname}-pylsqpack < 2.0.0
+Requires:       %{py3rpmname}-service-identity >= 24.1.0
 Recommends:     %{py3rpmname}-uvloop
 
 %description
@@ -46,13 +46,12 @@ to read or write HTTP/3 headers compressed with QPACK.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "3b134ae8b2d8257d1b91f74affe6d9194b95a500286ed6eca1c054ffdb05ad08" ]; then
+if [ "${sha256}" != "cba2660ebf9619703bc3f23b0a9dda52067ad94fcc4eb18c6ad9de30e49cf010" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 %setup -q -n aioquic-%{version}
 %patch -P 0 -p1
-%patch -P 1 -p1
 
 
 %build
@@ -77,6 +76,9 @@ rm -rf $RPM_BUILD_ROOT
 
 
 %changelog
+* Mon Nov 23 2026 Antoine Martin <antoine@xpra.org> - 1.9.1-1
+- new upstream release
+
 * Sun Oct 18 2026 Antoine Martin <antoine@xpra.org> - 1.7.0-1
 - new upstream release
 
