@@ -32,3 +32,7 @@ class Win32DisplayClient(DisplayClient):
     def get_server_position(self, position: Sequence[int]) -> tuple[int, int]:
         """Rebase native coordinates so the server always receives unsigned positions."""
         return self._monitor_layout.normalized_position(int(position[0]), int(position[1]))
+
+    def get_client_position(self, x: int, y: int) -> tuple[int, int]:
+        layout = self._monitor_layout
+        return self.sp(x + layout.min_x, y + layout.min_y)

@@ -330,8 +330,7 @@ class WindowManagerClient(StubClientSubsystem):
             w, h = 1, 1
         # scaled dimensions of window (scaling helpers are owned by the `display` subsystem):
         display = self.get_subsystem("display")
-        wx = display.sx(x)
-        wy = display.sy(y)
+        wx, wy = display.get_client_position(x, y)
         rel_pos = metadata.inttupleget("relative-position")
         parent = metadata.intget("parent")
         geomlog("relative-position=%s (parent=%s)", rel_pos, parent)
@@ -638,8 +637,7 @@ class WindowManagerClient(StubClientSubsystem):
         w = packet.get_u16(4)
         h = packet.get_u16(5)
         display = self.get_subsystem("display")
-        ax = display.sx(x)
-        ay = display.sy(y)
+        ax, ay = display.get_client_position(x, y)
         aw = max(1, display.sx(w))
         ah = max(1, display.sy(h))
         resize_counter = 0

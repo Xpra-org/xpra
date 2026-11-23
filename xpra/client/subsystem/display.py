@@ -584,6 +584,10 @@ class DisplayClient(StubClientSubsystem):
         """Return an absolute position in the coordinate space sent to the server."""
         return int(position[0]), int(position[1])
 
+    def get_client_position(self, x: int, y: int) -> tuple[int, int]:
+        """Convert an absolute server position to native window coordinates."""
+        return self.sp(x, y)
+
     ######################################################################
     # desktop, screen and scaling:
     def desktops_changed(self, *args) -> None:
