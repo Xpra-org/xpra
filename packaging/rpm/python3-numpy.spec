@@ -60,6 +60,7 @@ BuildRequires:  %{python3}-pip
 BuildRequires:  gcc-toolset-14-gcc-gfortran
 BuildRequires:  gcc-toolset-14-gcc
 BuildRequires:  gcc-toolset-14-gcc-c++
+BuildRequires:  gcc-toolset-14-gcc-plugin-annobin
 %else
 BuildRequires:  gcc-gfortran
 BuildRequires:  gcc
