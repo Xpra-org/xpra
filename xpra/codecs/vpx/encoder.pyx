@@ -44,6 +44,12 @@ SCROLL_CPUUSED_DELTA = envint("XPRA_VPX_SCROLL_CPUUSED_DELTA", 2)
 
 cdef int default_nthreads = max(1, int(math.sqrt(os.cpu_count()+1)))
 cdef int VPX_THREADS = envint("XPRA_VPX_THREADS", default_nthreads)
+# libvpx derives the frame rate, and therefore the bit budget of each frame, from the timestamps,
+# so we give it the real time elapsed between frames, capped so that a frame sent after an idle
+# period does not get the budget of several seconds:
+cdef int MAX_FRAME_INTERVAL = max(1, envint("XPRA_VPX_MAX_FRAME_INTERVAL", 200))
+# the duration of each frame, used for the initial frame rate estimate (25fps):
+cdef int FRAME_DURATION = max(1, envint("XPRA_VPX_FRAME_DURATION", 40))
 
 
 cdef inline int roundup(int n, int m) noexcept nogil:
@@ -338,6 +344,8 @@ def get_error_string(int err) -> str:
 
 cdef class Encoder:
     cdef unsigned long frames
+    cdef int64_t pts
+    cdef int64_t last_timestamp
     cdef vpx_codec_ctx_t *context
     cdef vpx_codec_enc_cfg_t cfg
     cdef vpx_img_fmt_t pixfmt
@@ -394,6 +402,8 @@ cdef class Encoder:
         # the initial colour range (may be updated per-image):
         self.full_range = options.boolget("full-range", True)
         self.frames = 0
+        self.pts = 0
+        self.last_timestamp = 0
         self.last_frame_times = deque(maxlen=200)
         self.pixfmt = get_vpx_colorspace(self.src_format)
         try:
@@ -705,6 +715,7 @@ cdef class Encoder:
                 #"quality"  : min(99+self.lossless, self.quality),
                 #"speed"    : self.speed,
             }
+            self.update_pts(image.get_timestamp())
             data = self.do_compress_image(pic_in, strides, full_range, range_changed)
             # the colour range is signalled on every keyframe (so a decoder resuming from any
             # keyframe knows it) and on every transition; steady-state full-range is omitted:
@@ -724,6 +735,13 @@ cdef class Encoder:
                 vpx_codec_control_active_map(self.context, VP8E_SET_ACTIVEMAP, &active_map)
                 free(active_map_data)
                 active_map_data = NULL
+
+    cdef void update_pts(self, int64_t timestamp) noexcept:
+        # the pts must keep increasing, even if the timestamps don't:
+        cdef int64_t delta = timestamp - self.last_timestamp
+        if self.frames > 0:
+            self.pts += 1 if delta < 1 else min(delta, MAX_FRAME_INTERVAL)
+        self.last_timestamp = timestamp
 
     cdef bytes do_compress_image(self, uint8_t *pic_in[3], int strides[3], int full_range, int range_changed=0):
         #actual compression (no gil):
@@ -781,14 +799,15 @@ cdef class Encoder:
             deadline_str = "%8.3fms" % deadline
         cdef double start = monotonic()
         with nogil:
-            ret = vpx_codec_encode(self.context, image, self.frames, 1, flags, deadline)
+            ret = vpx_codec_encode(self.context, image, self.pts, FRAME_DURATION, flags, deadline)
         if ret!=0:
             free(image)
             log.error("Error: %s encoder failure", self.encoding)
             log.error(" %r (%i)", get_error_string(ret), ret)
             return b""
         cdef double end = monotonic()
-        log("vpx_codec_encode for %s took %ims (deadline=%16s for speed=%s, quality=%s)", self.encoding, 1000.0*(end-start), deadline_str, self.speed, self.quality)
+        log("vpx_codec_encode for %s took %ims (pts=%i, deadline=%16s for speed=%s, quality=%s)",
+            self.encoding, 1000.0*(end-start), self.pts, deadline_str, self.speed, self.quality)
         cdef const vpx_codec_cx_pkt_t *pkt
         with nogil:
             pkt = vpx_codec_get_cx_data(self.context, &iter)
