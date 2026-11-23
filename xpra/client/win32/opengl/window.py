@@ -199,9 +199,6 @@ class GLClientWindow(ClientWindow):
         # the native window and let it own the WGL context:
         self.backing.set_hwnd(self.hwnd)
         self.backing.paint_screen = True
-        bw, bh = self._backing_size
-        self.backing.init(self.width, self.height, bw, bh)
-        self.init_backing_props()
         self.window_created()
         self.set_metadata(typedict(self.metadata))
 
