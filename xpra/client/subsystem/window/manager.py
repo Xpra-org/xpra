@@ -505,6 +505,9 @@ class WindowManagerClient(StubClientSubsystem):
     def resize_windows(self, new_size_fn: Callable) -> None:
         for window in self._id_to_window.values():
             if window:
+                if rescale := getattr(window, "rescale_window", None):
+                    rescale(new_size_fn)
+                    continue
                 ww, wh = window._size
                 nw, nh = new_size_fn(ww, wh)
                 # this will apply the new scaling value to the size constraints:
