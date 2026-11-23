@@ -78,6 +78,16 @@ class WindowGrab(StubClientSubsystem):
             "pointer-grab": self.pointer_grabbed or 0,
         }
 
+    def grab_cancelled(self, reason: str) -> None:
+        """
+        the platform tells us the grab can no longer hold (ie: another application was activated),
+        so the popups would stay open with nothing to dismiss them: dismiss them now
+        """
+        wid = self._window_with_grab
+        log("grab_cancelled(%s) grabbed=%s", reason, wid)
+        if wid:
+            self.dismiss_popups()
+
     def window_grab(self, wid: int, _window) -> None:
         log.warn(f"Warning: window grab not implemented in {self.client.client_type}")
         self._window_with_grab = wid

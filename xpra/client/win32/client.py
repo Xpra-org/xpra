@@ -187,7 +187,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         self.hcursors.free_unused(getattr(window, "hcursor", 0) for window in self.get_windows())
 
     def window_grab(self, wid: int, window) -> None:
-        # confine the pointer to the window (via `ClipCursor`):
+        # confine the pointer via ClipCursor, except for popups which may have submenus:
         handle = window.get_window_handle()
         grabbed = not window.is_OR() and pointer_grab(handle)
         grablog("window_grab(%#x, %s) handle=%#x, pointer_grab=%s", wid, window, handle, grabbed)

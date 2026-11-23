@@ -516,6 +516,12 @@ class ClientWindow(GObject.GObject):
                 self.emit("focus-lost")
             if msg == win32con.WM_ACTIVATE:
                 log("%s: %s", msg_str, ACTIVATION.get(wparam, "unknown"))
+            if (msg == win32con.WM_ACTIVATEAPP and not wparam) or msg in (win32con.WM_CAPTURECHANGED, win32con.WM_CANCELMODE):
+                # we don't confine the pointer to grabbed popups,
+                # so clicking another application must dismiss them:
+                # (`WM_ACTIVATEAPP` is sent to all our windows, the first one dismisses the popups)
+                if self.client and (wm := self.client.get_subsystem("window")):
+                    wm.grab_cancelled(msg_str)
             if msg == win32con.WM_MOUSEACTIVATE and GetWindowLongW(hwnd, win32con.GWL_EXSTYLE) & win32con.WS_EX_NOACTIVATE:
                 # Deliver the mouse event without activating the popup.
                 return win32con.MA_NOACTIVATE

@@ -90,6 +90,28 @@ class WindowManagerTest(ClientMixinTest):
                 self.assertFalse(keyboard.grabbed)
                 self.assertEqual([tuple(args) for args, _kwargs in client.send.call_args_list], expected)
 
+    def test_grab_cancelled(self):
+        from xpra.client.subsystem.window import WindowClient
+
+        client = Mock(readonly=False, server_readonly=False, subsystems={})
+        window_client = WindowClient(client)
+        popup = Mock()
+        popup.is_OR.return_value = True
+        popup.is_tray.return_value = False
+        window_client._id_to_window = {2: popup}
+        self.assertTrue(window_client.parse_server_capabilities(typedict({"window": {"dismiss": True}})))
+        # nothing grabbed: activating another application leaves the popups alone
+        window_client.grab_cancelled("WM_ACTIVATEAPP")
+        client.window_ungrab.assert_not_called()
+        client.send.assert_not_called()
+        window_client._window_with_grab = 2
+        # every one of our windows is told about the deactivation, only the first one dismisses:
+        for reason in ("WM_ACTIVATEAPP", "WM_ACTIVATEAPP", "WM_CAPTURECHANGED", "WM_CANCELMODE"):
+            window_client.grab_cancelled(reason)
+        client.window_ungrab.assert_called_once_with()
+        self.assertIsNone(window_client._window_with_grab)
+        self.assertEqual([tuple(args) for args, _kwargs in client.send.call_args_list], [("window-dismiss", 2)])
+
     def test_force_ungrab_on_focus_loss(self):
         from xpra.client.subsystem.window import WindowClient
         from xpra.client.subsystem.window import grab as grab_module
