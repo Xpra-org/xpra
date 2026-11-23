@@ -132,16 +132,17 @@ class TestIBusProcessGroup(unittest.TestCase):
             import os, signal, sys
             leader = os.getpid()
             if os.fork() == 0:
-                def terminated(*args):
-                    os.write(1, b'terminated\\n')
-                    os._exit(0)
-                signal.signal(signal.SIGTERM, terminated)
+                # Block SIGTERM before announcing ourselves: with a handler and signal.pause(),
+                # a signal sent right after the announcement can run the handler's C part
+                # before pause() starts, which then waits forever.
+                signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
                 pgid = os.getpgrp()
                 # OpenBSD cannot report the SID after the daemonizer's session leader exits.
                 sid = os.getsid(0) if pgid == leader else 0
                 print(leader, os.getpid(), pgid, sid, flush=True)
-                while True:
-                    signal.pause()
+                signal.sigwait({signal.SIGTERM})
+                os.write(1, b'terminated\\n')
+                os._exit(0)
             sys.stdin.buffer.read(1)
             sys.exit(7)
             """)
