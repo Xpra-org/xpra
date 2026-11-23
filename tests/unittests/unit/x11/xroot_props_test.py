@@ -59,14 +59,23 @@ class TestXRootProps(unittest.TestCase):
 
         # two side by side monitors, only the left one has a bottom panel:
         ss = FakeSource({
-            0: {"geometry": (-1920, 0, 1920, 1080), "workarea": (-1920, 0, 1920, 1040)},
-            1: {"geometry": (0, 0, 1920, 1080), "workarea": (0, 0, 1920, 1080)},
+            0: {"geometry": (0, 0, 1920, 1080), "workarea": (0, 0, 1920, 1040)},
+            1: {"geometry": (1920, 0, 1920, 1080), "workarea": (1920, 0, 1920, 1080)},
         })
         self.assertEqual(ss.get_client_workareas(), [(0, 0, 1920, 1040), (1920, 0, 1920, 1080)])
         # the single rectangle used for `_NET_WORKAREA` loses the panel,
         # which is exactly why we also export `_GTK_WORKAREAS_D#`:
         workarea = ss.get_client_workarea()
         self.assertEqual((workarea.x, workarea.y, workarea.width, workarea.height), (0, 0, 3840, 1080))
+
+        with self.subTest(layout="monitor left of primary"):
+            ss = FakeSource({
+                0: {"geometry": (-1920, 0, 1920, 1080), "workarea": (-1920, 0, 1920, 1040)},
+                1: {"geometry": (0, 0, 1920, 1080), "workarea": (0, 0, 1920, 1080)},
+            })
+            self.assertEqual(ss.get_client_workareas(), [(0, 0, 1920, 1040), (1920, 0, 1920, 1080)])
+            workarea = ss.get_client_workarea()
+            self.assertEqual((workarea.x, workarea.y, workarea.width, workarea.height), (0, 0, 3840, 1080))
 
         # monitors without any workarea:
         ss = FakeSource({0: {"geometry": (0, 0, 1920, 1080)}})
