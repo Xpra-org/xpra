@@ -50,6 +50,7 @@ from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_l
 from xpra.client.win32.glib import start_modal_message_pump, stop_modal_message_pump
 from xpra.client.gui.size_constraints import get_track_sizes
 from xpra.client.win32.system_menu import add_system_menu_items, get_command_action, update_checks
+from xpra.client.win32.window_state import handle_move, handle_size
 from xpra.log import Logger
 
 log = Logger("client", "window")
@@ -562,48 +563,15 @@ class ClientWindow(GObject.GObject):
                     x = x - 2**16
                 if y >= 2**15:
                     y = y - 2**16
-                if x == -32000 and y == -32000:
-                    if self.minimized:
-                        return 0
-                    self.minimized = True
-                    self.emit("minimized")
+                if handle_move(self, x, y):
                     return 0
-                self.x = x
-                self.y = y
-                self.emit("moved")
             if msg == win32con.WM_SIZE:
                 width = lparam & 0xffff
                 height = (lparam >> 16) & 0xffff
                 self._requested_size = None
                 log("WM_SIZE %r: %ix%i", SIZE_SUBCOMMAND.get(wparam, str(wparam)), width, height)
-                if wparam == win32con.SIZE_MINIMIZED:
-                    if not self.minimized:
-                        self.minimized = True
-                        self.state_updates["minimized"] = True
-                        self.emit("minimized")
+                if handle_size(self, wparam, width, height):
                     return 0
-                elif wparam == win32con.SIZE_MAXIMIZED:
-                    if not self.maximized:
-                        self.maximized = True
-                        self.state_updates["maximized"] = True
-                elif wparam == win32con.SIZE_MAXHIDE:
-                    return 0
-                elif wparam == win32con.SIZE_MAXSHOW:
-                    return 0
-                elif wparam == win32con.SIZE_RESTORED:
-                    if self.maximized:
-                        self.maximized = False
-                        self.state_updates["maximized"] = False
-                else:
-                    log("unexpected WM_SIZE wparam %#x", wparam)
-                if wparam in (win32con.SIZE_MAXIMIZED, win32con.SIZE_RESTORED):
-                    if self.backing and (width != self.width or height != self.height):
-                        self.update_backing_render_size(width, height)
-                        self.width = width
-                        self.height = height
-                        self.emit("resized")
-                    elif "maximized" in self.state_updates:
-                        self.emit("maximized")
             if msg == win32con.WM_SETFOCUS:
                 self.emit("focused")
             if msg == win32con.WM_KILLFOCUS:
@@ -715,22 +683,19 @@ class ClientWindow(GObject.GObject):
             self.size_constraints = typedict(metadata.dictget("size-constraints"))
         if "transient-for" in metadata:
             self.apply_transient_for(metadata.intget("transient-for"))
-        if "maximized" in metadata:
-            self.maximized = metadata.boolget("maximized")
-            if self.maximized:
-                ShowWindow(self.hwnd, win32con.SW_MAXIMIZE)
-            else:
-                ShowWindow(self.hwnd, win32con.SW_RESTORE)
+        if "maximized" in metadata and (maximized := metadata.boolget("maximized")) != self.maximized:
+            # set first so that `WM_SIZE` does not send it back,
+            # and only when it changes: `SW_RESTORE` would also restore a minimized window
+            self.maximized = maximized
+            ShowWindow(self.hwnd, win32con.SW_MAXIMIZE if maximized else win32con.SW_RESTORE)
         if "fullscreen-monitors" in metadata:
             self.fullscreen_monitors = metadata.inttupleget("fullscreen-monitors")
         if "fullscreen" in metadata:
             self.set_fullscreen(metadata.boolget("fullscreen"))
-        if "iconic" in metadata:
-            self.minimized = metadata.boolget("iconic")
-            if self.minimized:
-                ShowWindow(self.hwnd, win32con.SW_MINIMIZE)
-            else:
-                ShowWindow(self.hwnd, win32con.SW_RESTORE)
+        if "iconic" in metadata and (iconic := metadata.boolget("iconic")) != self.minimized:
+            # `WM_SIZE` updates `self.minimized` and unmaps / maps the window, as the GTK3 client does,
+            # and `SW_RESTORE` must not be used unless minimized: it would also restore a maximized window
+            ShowWindow(self.hwnd, win32con.SW_MINIMIZE if iconic else win32con.SW_RESTORE)
         if "decorations" in metadata:
             self.set_decorations(metadata.boolget("decorations", True))
 
