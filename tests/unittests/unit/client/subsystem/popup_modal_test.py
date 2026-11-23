@@ -84,7 +84,7 @@ class PopupModalTest(unittest.TestCase):
             _ui_event=noop,
             cook_metadata=self.manager.cook_metadata,
             destroy_window=lambda _wid, window: window.destroy(),
-            subsystems={"display": SimpleNamespace(sx=int, sy=int)},
+            subsystems={"display": SimpleNamespace(sx=int, sy=int, get_client_position=lambda x, y: (x, y))},
         )
         self.addCleanup(self.destroy_windows)
 
@@ -149,7 +149,7 @@ class PopupModalTest(unittest.TestCase):
         def double_pos(x, y):
             return x * 2, y * 2
 
-        self.manager.client.subsystems["display"] = SimpleNamespace(sx=double, sy=double)
+        self.manager.client.subsystems["display"] = SimpleNamespace(sx=double, sy=double, get_client_position=double_pos)
         parent = self.register_window(3)
         parent.sp = double_pos
         # the parent position is in client coordinates, only the offset is scaled:
