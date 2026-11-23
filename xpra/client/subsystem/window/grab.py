@@ -84,6 +84,16 @@ class WindowGrab(StubClientSubsystem):
     def grab_lost(self) -> None:
         self._window_with_grab = None
 
+    def grab_cancelled(self, reason: str) -> None:
+        """
+        the platform tells us the grab can no longer hold (ie: another application was activated),
+        so the popups would stay open with nothing to dismiss them: dismiss them now
+        """
+        wid = self._window_with_grab
+        log("grab_cancelled(%s) grabbed=%s", reason, wid)
+        if wid:
+            self.dismiss_popups()
+
     def window_grab(self, wid: int, window) -> None:
         """
         grab the pointer and keyboard for this window,
