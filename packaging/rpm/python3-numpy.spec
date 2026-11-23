@@ -21,13 +21,12 @@
 %global modname numpy
 
 Name:           numpy
-Version:        1.26.4
-Release:        2%{?dist}
+Version:        2.5.5
+Release:        1%{?dist}
 Epoch:          1
 Summary:        A fast multidimensional array facility for Python
 
-# Everything is BSD except for class SafeEval in numpy/lib/utils.py which is Python
-License:        BSD-3-Clause AND Apache-2.0
+License:        BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0
 URL:            http://www.numpy.org/
 Source0:        https://files.pythonhosted.org/packages/source/n/numpy/numpy-%{version}.tar.gz
 
@@ -47,7 +46,6 @@ this package is a version of f2py that works properly with NumPy.
 %package -n %{python3}-numpy
 Summary:        A fast multidimensional array facility for Python
 
-License:        BSD-3-Clause
 %{?python_provide:%python_provide python3-numpy}
 Provides:       libnpymath-static = %{epoch}:%{version}-%{release}
 Provides:       libnpymath-static%{?_isa} = %{epoch}:%{version}-%{release}
@@ -58,9 +56,16 @@ Obsoletes:      numpy < 1:1.10.1-3
 Requires:       %{python3}
 BuildRequires:  %{python3}-devel
 BuildRequires:  %{python3}-pip
+%if 0%{?el8}
+BuildRequires:  gcc-toolset-14-gcc-gfortran
+BuildRequires:  gcc-toolset-14-gcc
+BuildRequires:  gcc-toolset-14-gcc-c++
+BuildRequires:  gcc-toolset-14-gcc-plugin-annobin
+%else
 BuildRequires:  gcc-gfortran
 BuildRequires:  gcc
 BuildRequires:  gcc-c++
+%endif
 BuildRequires:  lapack-devel
 BuildRequires:  %{blaslib}-devel
 BuildRequires:  pkgconfig
@@ -89,13 +94,17 @@ This package provides the complete documentation for NumPy.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "2a02aba9ed12e4ac4eb3ea9421c420301a0c6460d9830d74a9df87efa4912010" ]; then
+if [ "${sha256}" != "5cddc243c75114ba845f01b1f87aca1572dbf7b6c2d88636ed3e1d2bccd7f1bf" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
 %autosetup -n %{name}-%{version} -p1
 
 %build
+%if 0%{?el8}
+# NumPy 2.5 needs GCC >= 10.3.
+source /opt/rh/gcc-toolset-14/enable
+%endif
 %set_build_flags
 
 # numpy >= 1.26 dropped the distutils-based "setup.py build" (distutils was
@@ -127,45 +136,34 @@ rm -f %{buildroot}%{_bindir}/f2py3
 rm -f %{buildroot}%{_bindir}/f2py.numpy
 rm -f %{buildroot}%{_bindir}/f2py%{python3_version}
 rm -fr %{buildroot}%{python3_sitearch}/%{name}/f2py
+%if "%{python3}" != "python3"
+mv %{buildroot}%{_bindir}/numpy-config %{buildroot}%{_bindir}/numpy-config-%{python3}
+%endif
 
 # meson may embed a standard runpath in the compiled extensions, which the
 # rpmbuild check-rpaths QA step rejects; strip it manually if present.
 # ERROR   0001: file '...' contains a standard runpath '/usr/lib64' in [/usr/lib64]
 chrpath --delete %{buildroot}%{python3_sitearch}/numpy/linalg/_umath_linalg.*.so || :
 chrpath --delete %{buildroot}%{python3_sitearch}/numpy/linalg/lapack_lite.*.so || :
-chrpath --delete %{buildroot}%{python3_sitearch}/numpy/core/_multiarray_umath.*.so || :
+chrpath --delete %{buildroot}%{python3_sitearch}/numpy/_core/_multiarray_umath.*.so || :
 
 
 %files -n %{python3}-numpy
 %license LICENSE.txt
-%doc THANKS.txt site.cfg.example
-%{python3_sitearch}/%{name}/__pycache__
-%dir %{python3_sitearch}/%{name}
-%{python3_sitearch}/%{name}/*.py*
-%{python3_sitearch}/%{name}/*core
-%{python3_sitearch}/%{name}/_utils
-%{python3_sitearch}/%{name}/doc
-%{python3_sitearch}/%{name}/fft
-%{python3_sitearch}/%{name}/lib
-%{python3_sitearch}/%{name}/linalg
-%{python3_sitearch}/%{name}/ma
-%{python3_sitearch}/%{name}/random
-%{python3_sitearch}/%{name}/testing
-%{python3_sitearch}/%{name}/tests
-%{python3_sitearch}/%{name}/compat
-%{python3_sitearch}/%{name}/matrixlib
-%{python3_sitearch}/%{name}/polynomial
+%doc THANKS.txt
+%if "%{python3}" == "python3"
+%{_bindir}/numpy-config
+%else
+%{_bindir}/numpy-config-%{python3}
+%endif
+%{python3_sitearch}/%{name}/
 %{python3_sitearch}/%{name}-*.dist-info
-%{python3_sitearch}/%{name}/__init__.pxd
-%{python3_sitearch}/%{name}/__init__.cython-30.pxd
-%{python3_sitearch}/%{name}/py.typed
-%{python3_sitearch}/%{name}/typing/
-%{python3_sitearch}/%{name}/array_api/
-%{python3_sitearch}/%{name}/_pyinstaller/
-%{python3_sitearch}/%{name}/_typing/
 
 
 %changelog
+* Mon Nov 23 2026 Antoine Martin <antoine@xpra.org> - 1:2.5.5-1
+- new upstream release, update the wheel layout and use GCC Toolset on EL8
+
 * Wed Jun 10 2026 Antoine Martin <antoine@xpra.org> - 1:1.26.4-2
 - build with meson (meson-python PEP-517 backend) so it builds on Python 3.12
 
