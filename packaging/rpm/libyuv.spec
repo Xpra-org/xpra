@@ -1,16 +1,16 @@
 %define _disable_source_fetch 0
-%global git_commit eeb06a6451ba2e21f8ff272c7b42fc62b9faecc5
-%global git_date 20261008
-%global git_short eeb06a6
+%global git_commit 242f9bd387df9698d5ef860a3ac563d36542786d
+%global git_date 20261118
+%global git_short 242f9bd
 # the Debian source package version for the same git snapshot,
 # and the snapshot.debian.org timestamp it was first seen at:
-%global deb_version 0.0.1974.%{git_date}
-%global deb_snapshot 20261012T023456Z
+%global deb_version 0.0.1984.%{git_date}
+%global deb_snapshot 20261118T084012Z
 
 Name:		libyuv
 Summary:	YUV conversion and scaling functionality library
 Version:	0
-Release:	0.64.%{git_date}git%{git_short}.1%{?dist}
+Release:	0.65.%{git_date}git%{git_short}.1%{?dist}
 License:	BSD-3-Clause
 URL:		https://chromium.googlesource.com/libyuv/libyuv
 VCS:		git:%{url}
@@ -57,7 +57,7 @@ Additional header files for development with %{name}.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "9a2e5c3e450ee5fec02276c38bf2190a93b09d3cf977e2913e1430c84ad66ad8" ]; then
+if [ "${sha256}" != "f788296f7049c14b11bae672ebc896b03efa58b4c621747046c05860802e8062" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -111,6 +111,9 @@ install -D -p -m 0644 %{name}.pc %{buildroot}%{_libdir}/pkgconfig/%{name}.pc
 
 
 %changelog
+* Mon Nov 23 2026 Antoine Martin <antoine@xpra.org> - 0-0.65.20261118git242f9bd.1
+- update to the 20261118 snapshot (libyuv 1984)
+
 * Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 0-0.64.20261008giteeb06a6.1
 - update to the 20261008 snapshot (libyuv 1974)
 
