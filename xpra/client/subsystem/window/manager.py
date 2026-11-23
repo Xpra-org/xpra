@@ -620,7 +620,8 @@ class WindowManagerClient(StubClientSubsystem):
             button = packet.get_u8(5)
             source_indication = packet.get_i8(6)
             display = self.get_subsystem("display")
-            window.initiate_moveresize(display.sx(x_root), display.sy(y_root), direction, button, source_indication)
+            x_root, y_root = display.get_client_position(x_root, y_root)
+            window.initiate_moveresize(x_root, y_root, direction, button, source_indication)
 
     def _process_metadata(self, packet: Packet) -> None:
         wid = packet.get_wid()
