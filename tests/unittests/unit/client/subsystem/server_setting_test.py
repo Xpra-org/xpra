@@ -105,6 +105,18 @@ class ServerSettingTest(unittest.TestCase):
         from xpra.client.subsystem.window.border import DEFAULT_BORDER
         self.check_setting(WindowClient, "border", {}, ("red", "blue"), lambda s: s.border_str, border=DEFAULT_BORDER)
 
+    def test_display(self):
+        from xpra.client.subsystem.display import DisplayClient
+
+        class TestDisplayClient(DisplayClient):
+            def init_display_watcher(self, opts) -> None:
+                """ don't watch the real display """
+
+        caps = {"display": {"name": ":100"}, "resize_screen": True, "multi-monitors": True, "monitors": {0: {"name": "VFB-0"}}}
+        monitors = {0: {"name": "VFB-0"}, 1: {"name": "VFB-1"}}
+        self.check_setting(TestDisplayClient, "monitors", caps, (monitors, {}), lambda s: s.server_monitors, desktop_scaling="no")
+        self.check_setting(TestDisplayClient, "randr", caps, (False, True), lambda s: s.server_randr, desktop_scaling="no")
+
     def test_client_settings(self):
         client = FakeUIClient()
         for setting in CLIENT_SETTINGS:
