@@ -184,11 +184,7 @@ class DisplayConnection(StubClientConnection):
     def get_client_workarea(self):
         """ the usable area of the client's display (excluding panels / taskbars), as a single rectangle:
             the bounding box of the per-monitor workareas (the `monitors` dict) """
-        rects = []
-        for mdef in (self.monitors or {}).values():
-            wa = mdef.get("workarea")
-            if wa and len(wa) == 4 and wa[2] > 0 and wa[3] > 0:
-                rects.append(wa)
+        rects = self.get_client_workareas()
         if not rects:
             return None
         x = min(r[0] for r in rects)
