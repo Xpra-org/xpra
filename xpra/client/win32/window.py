@@ -1029,8 +1029,8 @@ class ClientWindow(GObject.GObject):
     def resize(self, w: int, h: int, resize_counter: int = 0) -> None:
         self.move_resize(self.x, self.y, w, h, resize_counter)
 
-    def rescale_window(self, new_size_fn) -> None:
-        if not self.hwnd or not self.backing:
+    def rescale_window(self, new_size_fn: Callable[[int, int], tuple[int, int]]) -> None:
+        if not self.hwnd or not self.backing or self.minimized:
             return
         if self.maximized or self.fullscreen:
             self.update_backing_render_size(self.width, self.height)

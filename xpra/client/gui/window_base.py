@@ -531,6 +531,13 @@ class ClientWindowBase(ClientWidgetBase):
     def set_shaded(self, shaded) -> None:
         """ see gtk3 window for implementation """
 
+    def rescale_window(self, new_size_fn: Callable[[int, int], tuple[int, int]]) -> None:
+        ww, wh = self._size
+        nw, nh = new_size_fn(ww, wh)
+        # this will apply the new scaling value to the size constraints:
+        self.reset_size_constraints()
+        self.resize(nw, nh)
+
     def reset_size_constraints(self) -> None:
         self.set_size_constraints(self.size_constraints, self.max_window_size)
 
