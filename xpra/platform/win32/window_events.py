@@ -10,7 +10,7 @@ from xpra.platform.win32.events import KNOWN_EVENTS, Win32Eventlistener, get_win
 from xpra.platform.win32.gui import (
     WM_WTSSESSION_CHANGE, WTS_SESSION_EVENTS, WTS_SESSION_LOGOFF,
     WTS_SESSION_LOCK, WTS_SESSION_LOGON, WTS_SESSION_UNLOCK,
-    init_session_locked, set_session_locked,
+    init_session_locked, set_session_locked, is_session_locked,
 )
 from xpra.exit_codes import ExitCode
 from xpra.util.env import envbool
@@ -104,16 +104,25 @@ class Win32ClientEventsWatcher:
             # record the state synchronously: `new-window` packets arriving before the
             # handler below runs must already see the session as locked
             set_session_locked(True)
-            handler = self.window.freeze
-            log(f"will freeze all the windows: {handler=!r}")
+            # Locking must not iconify windows: restoring them on unlock can
+            # activate them and change their stacking order on the desktop.
+            handler = self.pause_window_updates if event == WTS_SESSION_LOCK else self.window.freeze
         elif event in (WTS_SESSION_LOGON, WTS_SESSION_UNLOCK):
             set_session_locked(False)
-            handler = self.window.unfreeze
-            log(f"will unfreeze all the windows: {handler=!r}")
+            handler = self.resume_window_updates if event == WTS_SESSION_UNLOCK else self.window.unfreeze
         if handler:
-            # don't freeze or unfreeze directly from here,
-            # as the system may not be fully usable yet (see #997)
+            # The system may not be fully usable yet (see #997).
             GLib.idle_add(handler)
+
+    def pause_window_updates(self) -> None:
+        # A newer unlock event may have arrived before this callback runs.
+        if is_session_locked():
+            self.window.refresh_slowly()
+
+    def resume_window_updates(self) -> None:
+        if not is_session_locked():
+            self.window.show_locked_windows()
+            self.window.send_refresh_all()
 
     def inputlangchange(self, wparam: int, lparam: int) -> None:
         log("WM_INPUTLANGCHANGE: %i, %i", wparam, lparam)
