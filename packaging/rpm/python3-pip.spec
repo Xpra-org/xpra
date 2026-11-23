@@ -22,7 +22,7 @@ exit
 
 %global pypi_name pip
 Name:           %{py3rpmname}-%{pypi_name}
-Version:        26.2.1
+Version:        26.3
 Release:        1%{?dist}
 Summary:        The PyPA recommended tool for installing Python packages
 License:        MIT
@@ -43,7 +43,7 @@ python packages we ship for the alternative interpreter ("pip wheel" /
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "f6ad667e89a1fe78046c8f13232b247200f5258d7828f3f7883d660878e0813f" ]; then
+if [ "${sha256}" != "6c36ae7da8695be67e3cd9f7d87919667ced53f57ce2ede75d89b5912ed2bc4c" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -119,6 +119,9 @@ rm -f %{buildroot}%{_bindir}/pip %{buildroot}%{_bindir}/pip3
 
 
 %changelog
+* Mon Nov 23 2026 Antoine Martin <antoine@xpra.org> - 26.3-1
+- new upstream release
+
 * Thu Oct 15 2026 Antoine Martin <antoine@xpra.org> - 26.2.1-1
 - new upstream release
 
