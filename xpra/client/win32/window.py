@@ -1029,6 +1029,15 @@ class ClientWindow(GObject.GObject):
     def resize(self, w: int, h: int, resize_counter: int = 0) -> None:
         self.move_resize(self.x, self.y, w, h, resize_counter)
 
+    def rescale_window(self, new_size_fn) -> None:
+        if not self.hwnd or not self.backing:
+            return
+        if self.maximized or self.fullscreen:
+            self.update_backing_render_size(self.width, self.height)
+            self.emit("resized")
+            return
+        self.resize(*new_size_fn(self.width, self.height))
+
     def initiate_moveresize(self, x_root: int, y_root: int, direction: int, button: int,
                             source_indication: int) -> None:
         geomlog("initiate_moveresize%s", (x_root, y_root, MOVERESIZE_DIRECTION_STRING.get(direction, direction),
