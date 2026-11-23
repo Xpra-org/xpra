@@ -1122,7 +1122,7 @@ class ClientWindow(GObject.GObject):
         """ the native part of the `window` subsystem's `window_grab` """
         # confine the pointer to the window (via `ClipCursor`):
         handle = self.get_window_handle()
-        grabbed = pointer_grab(handle)
+        grabbed = not self.is_OR() and pointer_grab(handle)
         grablog("do_window_grab() handle=%#x, pointer_grab=%s", handle, grabbed)
         # also grab the keyboard so the user can't Alt-Tab / Super away:
         # (the `WH_KEYBOARD_LL` hook swallows Win/Tab keys while `grabbed` and focused)
