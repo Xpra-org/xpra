@@ -53,6 +53,16 @@ class StubClientSubsystem(SubsystemPacketHandlers, SignalEmitter):
         """ look up a peer subsystem on the owning client """
         return getattr(self.client, "subsystems", {}).get(name)
 
+    def on_server_setting_changed(self, setting: str, cb: Callable[[str, Any], None]) -> None:
+        """
+        Call `cb(setting, value)` when the server changes this setting at runtime.
+        Only UI clients support this, so this does nothing for the others.
+        Subsystems should register from `init()`, so they update their own state
+        before the UI's callbacks run (ie: the win32 tray is created before the handshake).
+        """
+        if register := getattr(self.client, "on_server_setting_changed", None):
+            register(setting, cb)
+
     def get_window(self, wid: int):
         """ look up a window by id on the `window` subsystem """
         window = self.get_subsystem("window")

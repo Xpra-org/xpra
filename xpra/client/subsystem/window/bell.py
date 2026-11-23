@@ -36,6 +36,10 @@ class WindowBell(StubClientSubsystem):
 
     def init(self, opts) -> None:
         self.client_supports_bell = opts.bell
+        self.on_server_setting_changed("bell", self.server_bell_changed)
+
+    def server_bell_changed(self, _setting: str, value) -> None:
+        self.server_bell = bool(value)
 
     def set_bell_enabled(self, enabled: bool) -> None:
         # toggle bell forwarding, tell the server, and let peers (ie: the tray

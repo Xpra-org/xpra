@@ -96,6 +96,14 @@ class WebcamForwarder(StubClientSubsystem):
         self.forwarding = self.option.lower() not in FALSE_OPTIONS
         self.server_enabled = False
         log("webcam forwarding: %s", self.forwarding)
+        self.on_server_setting_changed("webcam", self.server_webcam_changed)
+
+    def server_webcam_changed(self, _setting: str, value) -> None:
+        enabled = bool(value)
+        if not enabled and self.server_enabled:
+            # stop sending before clearing the flag, `do_stop_sending_webcam` asserts it:
+            self.stop_sending_webcam()
+        self.server_enabled = enabled
 
     def load(self) -> None:
         if power := self.get_subsystem("power"):

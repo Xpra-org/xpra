@@ -118,6 +118,14 @@ class ClipboardClient(StubClientSubsystem):
         self.client_supports_clipboard = (opts.clipboard or "").lower() not in FALSE_OPTIONS
         self.remote_clipboard = opts.remote_clipboard
         self.local_clipboard = opts.local_clipboard
+        self.on_server_setting_changed("clipboard", self.server_clipboard_changed)
+        self.on_server_setting_changed("clipboard-direction", self.server_clipboard_direction_changed)
+
+    def server_clipboard_changed(self, _setting: str, value) -> None:
+        self.server_clipboard = bool(value)
+
+    def server_clipboard_direction_changed(self, _setting: str, value) -> None:
+        self.server_clipboard_direction = str(value)
 
     def load(self) -> None:
         log("load()")

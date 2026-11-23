@@ -91,7 +91,9 @@ class ServerBorderTest(unittest.TestCase):
         bc, callbacks = self.make_client("blue,7")
         bc.parse_server_capabilities(typedict({"border": "red,10"}))
         assert bc.border.size == 7 and bc.border.blue > 0.9
-        assert "border" not in callbacks
+        # server updates are ignored too:
+        callbacks["border"]("border", "red,10")
+        assert bc.border.size == 7 and bc.border.blue > 0.9
 
 
 def main():
