@@ -264,11 +264,7 @@ class DisplayConnection(StubClientConnection):
             modern clients: the bounding box of the per-monitor workareas (the `monitors` dict);
             legacy clients: the screen-wide workarea from `screen_sizes`. """
         from xpra.util.rectangle import rectangle
-        rects = []
-        for mdef in (self.monitors or {}).values():
-            wa = mdef.get("workarea")
-            if wa and len(wa) == 4 and wa[2] > 0 and wa[3] > 0:
-                rects.append(wa)
+        rects = self.get_client_workareas()
         if rects:
             x = min(r[0] for r in rects)
             y = min(r[1] for r in rects)
