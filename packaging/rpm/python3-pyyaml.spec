@@ -11,7 +11,7 @@
 %endif
 
 Name:           %{py3rpmname}-pyyaml
-Version:        6.0.3
+Version:        6.0.4
 Release:        1%{?dist}
 Summary:        YAML parser and emitter for Python
 Group:          Development/Languages
@@ -34,7 +34,7 @@ This package includes the LibYAML bindings for faster parsing and emitting.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f" ]; then
+if [ "${sha256}" != "e24bf71af8a432d7808fabff134d38dfe16d3cbb41f2873bb4b1e42422de0a1a" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -57,5 +57,8 @@ PYTHONPATH=%{buildroot}%{python3_sitearch}:tests/legacy_tests %{python3} -c "imp
 %{python3_sitearch}/PyYAML-%{version}-py*.egg-info
 
 %changelog
+* Mon Nov 23 2026 Antoine Martin <antoine@xpra.org> - 6.0.4-1
+- new upstream release
+
 * Sun Oct 18 2026 Antoine Martin <antoine@xpra.org> - 6.0.3-1
 - initial packaging
