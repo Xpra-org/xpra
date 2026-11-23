@@ -69,6 +69,11 @@ class CommandClient(StubClientSubsystem):
 
     def init(self, opts) -> None:
         self.start_new_commands = str_to_bool(opts.start_new_commands)
+        # register before the UI does (ie: the win32 tray is created before the handshake),
+        # so the start menu is already updated when its callbacks run (#5179)
+        # weak dependency injection on ui client:
+        onchange = getattr(self.client, "on_server_setting_changed", noop)
+        onchange("menu", self.update_menu_value)
         if self.start_new_commands and (opts.start or opts.start_child):
             from xpra.scripts.args import strip_defaults_start_child
             from xpra.scripts.config import make_defaults_struct
@@ -95,14 +100,6 @@ class CommandClient(StubClientSubsystem):
 
     def parse_server_capabilities(self, c: typedict) -> bool:
         self.server_start_new_commands = c.boolget("start-new-commands")
-        if self.server_start_new_commands:
-            # weak dependency injection on ui client:
-            onchange = getattr(self.client, "on_server_setting_changed", noop)
-
-            def update_menu_value(_setting, menu) -> None:
-                self.server_menu = labelled_menu(menu)
-            onchange("menu", update_menu_value)
-
         if self.request_start or self.request_start_child:
             if self.server_start_new_commands:
                 self.client.after_handshake(self.send_start_new_commands)
@@ -112,6 +109,9 @@ class CommandClient(StubClientSubsystem):
         self.server_commands_info = c.boolget("server-commands-info")
         self.server_commands_signals = c.strtupleget("server-commands-signals")
         return True
+
+    def update_menu_value(self, _setting: str, menu) -> None:
+        self.server_menu = labelled_menu(menu)
 
     def send_start_new_commands(self) -> None:
         log(f"send_start_new_commands() {self.request_start=}, {self.request_start_child=}")

@@ -5,8 +5,11 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from types import SimpleNamespace
+from unittest.mock import Mock
 
-from xpra.client.subsystem.command import labelled_menu
+from xpra.client.subsystem.command import CommandClient, labelled_menu
+from xpra.util.objects import typedict
 
 
 class MenuLabelsTest(unittest.TestCase):
@@ -35,6 +38,21 @@ class MenuLabelsTest(unittest.TestCase):
         self.assertEqual(labelled_menu(None), {})
         self.assertEqual(labelled_menu({"category": "not a dict"}), {"category": "not a dict"})
         self.assertEqual(labelled_menu({"category": {"Entries": {"app": "not a dict"}}}), {"category": {"Entries": {"app": "not a dict"}}})
+
+    def test_menu_updated_before_ui_callbacks(self):
+        callbacks = []
+        fake_client = Mock()
+        fake_client.on_server_setting_changed.side_effect = lambda setting, cb: callbacks.append((setting, cb))
+        client = CommandClient(fake_client)
+        client.init(SimpleNamespace(start_new_commands=True, start=[], start_child=[]))
+        seen = []
+        callbacks.append(("menu", lambda _setting, _value: seen.append(client.server_menu)))
+        client.parse_server_capabilities(typedict({"start-new-commands": True}))
+        menu = {"Accessories": {"Entries": {"org.gnome.Nautilus": {"Name": "Files", "command": "nautilus"}}}}
+        for setting, callback in callbacks:
+            if setting == "menu":
+                callback(setting, menu)
+        self.assertEqual(seen, [labelled_menu(menu)])
 
 
 def main():
