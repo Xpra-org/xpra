@@ -18,8 +18,8 @@ index 1e10a10..0218c21 100644
  project ( YUV C CXX )	# "C" is required even for C++ projects
 -option( UNIT_TEST "Built unit tests" OFF )
  option( LIBYUV_DISABLE_JPEG "Disable JPEG support" OFF )
-
- include(CheckCSourceCompiles)
+ option( LIBYUV_DISABLE_ASM "Disable inline assembly" OFF )
+ option( LIBYUV_DISABLE_LSX "Disable LoongArch LSX" OFF )
 @@ -264,7 +263,9 @@ if (NOT LIBYUV_DISABLE_JPEG)
    endif()
  endif()
