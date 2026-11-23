@@ -189,7 +189,7 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
     def window_grab(self, wid: int, window) -> None:
         # confine the pointer to the window (via `ClipCursor`):
         handle = window.get_window_handle()
-        grabbed = pointer_grab(handle)
+        grabbed = not window.is_OR() and pointer_grab(handle)
         grablog("window_grab(%#x, %s) handle=%#x, pointer_grab=%s", wid, window, handle, grabbed)
         self._grab_handle = handle
         # also grab the keyboard so the user can't Alt-Tab / Super away:
