@@ -34,5 +34,6 @@ class Win32DisplayClient(DisplayClient):
         return self._monitor_layout.normalized_position(int(position[0]), int(position[1]))
 
     def get_client_position(self, x: int, y: int) -> tuple[int, int]:
+        """Restore the virtual desktop origin removed by `get_server_position`, then scale to native coordinates."""
         layout = self._monitor_layout
         return self.sp(x + layout.min_x, y + layout.min_y)
