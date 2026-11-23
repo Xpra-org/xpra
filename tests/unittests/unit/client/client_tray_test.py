@@ -57,6 +57,25 @@ class ClientTrayTest(unittest.TestCase):
         tray.send_configure()
         self.assertEqual(len(sent), 2)
 
+    def test_rescale(self) -> None:
+        sent = []
+        scale = [2]
+        subsystems = {
+            "window": SimpleNamespace(send=lambda *args: sent.append(args)),
+            "display": SimpleNamespace(crect=lambda x, y, w, h: tuple(v * scale[0] for v in (x, y, w, h))),
+        }
+        tray = make_tray(subsystems)
+        tray.reconfigure()
+        self.assertEqual(sent[-1][2]["geometry"], (20, 40, 64, 32))
+        # the window manager rescales every window, trays included:
+        scale[0] = 3
+        tray.rescale_window(lambda w, h: (w * 2, h * 2))
+        self.assertEqual(len(sent), 2)
+        self.assertEqual(sent[-1][2]["geometry"], (30, 60, 96, 48))
+        # the server may send a resize with a counter, the tray ignores it:
+        tray.resize(100, 100, 1)
+        self.assertEqual(tray._geometry, (10, 20, 32, 16))
+
     def test_no_subsystems(self) -> None:
         tray = make_tray({})
         tray.reconfigure()

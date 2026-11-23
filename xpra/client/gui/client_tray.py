@@ -53,11 +53,13 @@ class ClientTray(ClientWidgetBase):
         # things may have settled by now
         GLib.timeout_add(1000, self.send_configure)
 
-    def reset_size_constraints(self) -> None:
-        """ we can't implement this method for trays - it should not be called """
+    def rescale_window(self, new_size_fn: Callable[[int, int], tuple[int, int]]) -> None:
+        # the tray's size is not ours to change,
+        # but its geometry is sent to the server in scaled coordinates:
+        self.send_configure()
 
-    def resize(self, nw, nh) -> None:
-        """ we can't implement this method for trays - it should not be called """
+    def resize(self, nw: int, nh: int, resize_counter: int = 0) -> None:
+        """ the tray's size is controlled by the tray widget, not by the server """
 
     def set_alpha(self) -> None:
         """
