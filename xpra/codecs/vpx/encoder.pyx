@@ -643,7 +643,7 @@ cdef class Encoder:
 
         if bandwidth_limit!=self.bandwidth_limit:
             self.bandwidth_limit = bandwidth_limit
-            self.update_cfg()
+            self.apply_cfg()
 
         cdef int scroll_age = options.intget("scroll-age-ms", -1)
         # VP8 showed no compression benefit from changing CPUUSED on scrolling streams.
@@ -866,14 +866,18 @@ cdef class Encoder:
         self.do_set_encoding_quality(pct)
 
     cdef void do_set_encoding_quality(self, int pct):
-        self.update_cfg()
         cdef int lossless = 0
         if self.encoding=="vp9":
             if self.codec_control("lossless", VP9E_SET_LOSSLESS, pct==100):
                 lossless = 1
         self.lossless = lossless
+        self.apply_cfg()
+
+    cdef void apply_cfg(self):
+        # `update_cfg` only modifies our copy of the configuration:
+        self.update_cfg()
         cdef vpx_codec_err_t ret = vpx_codec_enc_config_set(self.context, &self.cfg)
-        assert ret==0, "failed to updated encoder configuration, vpx_codec_enc_config_set returned %s" % ret
+        assert ret==0, "failed to update encoder configuration, vpx_codec_enc_config_set returned %s" % ret
 
 
 def selftest(full=False) -> None:
