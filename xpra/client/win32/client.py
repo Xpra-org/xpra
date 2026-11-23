@@ -284,7 +284,9 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
             geometry = display.get_server_position(raw_position) + geometry[2:]
         else:
             raw_position = geometry[:2]
-        packet = [WINDOW_MAP, window.wid, *geometry, window.pop_client_properties(), {}]
+        # the state updates include `iconified=False` when the window is restored from minimized:
+        packet = [WINDOW_MAP, window.wid, *geometry, window.pop_client_properties(), window.state_updates]
+        window.state_updates = {}
         monitor = self.get_monitor_position(window)
         monitor["raw-position"] = raw_position
         if monitor:
@@ -306,9 +308,12 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
             w.update_focus(window.wid, False)
 
     def window_minimized_event(self, window) -> None:
+        state = window.state_updates
+        window.state_updates = {}
         if self.is_readonly():
             return
-        self.send(WINDOW_UNMAP, window.wid)
+        # same as the GTK3 client: `iconified=True` in the state
+        self.send(WINDOW_UNMAP, window.wid, True, state)
 
     def window_maximized_event(self, window) -> None:
         if self.is_readonly():
