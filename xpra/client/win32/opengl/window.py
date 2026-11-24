@@ -116,8 +116,9 @@ class GLClientWindow(ClientWindow):
         saved_mws = self.max_window_size
 
         def clamp_to(maxw: int, maxh: int) -> None:
-            # don't bother if the new limit is greater than 16k:
-            if maxw >= 16 * 1024 and maxh >= 16 * 1024:
+            # don't bother if the new limit is greater than 16k,
+            # but a limit of exactly 16k still applies: (ie: `GL_MAX_TEXTURE_SIZE` with most drivers)
+            if maxw > 16 * 1024 and maxh > 16 * 1024:
                 return
             # only take into account the current max-window-size if non-zero:
             mww, mwh = self.max_window_size
