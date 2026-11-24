@@ -28,6 +28,7 @@ class FakeWindow:
         self.width = width
         self.height = height
         self.backing = backing
+        self.hwnd = 1
         self.minimized = False
         self.maximized = False
         self.state_updates = {}
@@ -82,6 +83,16 @@ class Win32WindowStateTest(unittest.TestCase):
         w.size(SIZE_MAXIMIZED, 1920, 1080)
         assert not w.backing_sizes
         assert w.signals == [("maximized", {"maximized": True})]
+
+    def test_resize_before_hwnd(self):
+        # the `WM_SIZE` sent from within `CreateWindowExW`:
+        # the OpenGL backing already exists, but it must not be resized before `window_created()`
+        w = FakeWindow()
+        w.hwnd = 0
+        w.size(SIZE_RESTORED, 800, 600)
+        assert not w.backing_sizes
+        assert (w.width, w.height) == (640, 480)
+        assert not w.signals
 
     def test_resize(self):
         w = FakeWindow()

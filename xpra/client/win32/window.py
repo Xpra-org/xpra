@@ -7,6 +7,7 @@
 import win32con
 from typing import Any
 from collections.abc import MutableSequence, Callable
+from contextlib import suppress
 from ctypes.wintypes import HWND, BYTE, HICON, HDC, POINT, MSG
 from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER
 
@@ -27,9 +28,9 @@ from xpra.platform.win32.common import (
     WNDPROC, WNDCLASSEX, RegisterClassExW, UnregisterClassW,
     CreateWindowExW, DestroyWindow, DefWindowProcW,
     CreateCompatibleDC, DeleteDC,
-    LoadCursor, SetCursor, GetCursorPos, WindowFromPoint, ScreenToClient, GetClientRect,
+    LoadCursor, SetCursor, GetCursorPos, WindowFromPoint, ScreenToClient, ClientToScreen, GetClientRect,
     ShowWindow, UpdateWindow,
-    DestroyIcon, CREATESTRUCT,
+    DestroyIcon,
     AdjustWindowRectEx, SetWindowPos, RECT, GetWindowLongW, GetWindowRect, SendMessageW,
     PostMessageW, ReleaseCapture,
     GetKeyState, ToUnicode, MapVirtualKeyW, GetKeyboardLayout,
@@ -333,8 +334,6 @@ class ClientWindow(GObject.GObject):
         log("CreateCompatibleDC()=%#x", self.hdc)
         bw, bh = self._backing_size
         self.backing = GDIBacking(self.wid, self.hdc, self.hwnd, bw, bh, self.alpha)
-        self.backing.init(self.width, self.height, bw, bh)
-        self.init_backing_props()
         self.window_created()
         # apply the metadata the window was created with:
         # (`set_metadata()` is otherwise only reached later, via `update_metadata()`,
@@ -380,6 +379,28 @@ class ClientWindow(GObject.GObject):
         so that the server sees the window mapped before any `window-configure`
         triggered by the geometry changes the metadata may cause.
         """
+        # WM_CREATE describes the outer frame. Query the drawable once the HWND exists.
+        origin = POINT()
+        with suppress(OSError):
+            if ClientToScreen(self.hwnd, byref(origin)):
+                self.x, self.y = origin.x, origin.y
+        bw, bh = self._backing_size
+        rect = RECT()
+        have_rect = False
+        with suppress(OSError):
+            have_rect = GetClientRect(self.hwnd, byref(rect))
+        if have_rect and rect.right > 0 and rect.bottom > 0:
+            width, height = rect.right, rect.bottom
+            display = self.get_subsystem("display")
+            # Preserve requested server pixels on axes the OS didn't resize:
+            # fractional scaling need not round-trip.
+            if width != self.width:
+                bw = max(1, display.cx(width)) if display else width
+            if height != self.height:
+                bh = max(1, display.cy(height)) if display else height
+            self.width, self.height = width, height
+        self.backing.init(self.width, self.height, bw, bh)
+        self.init_backing_props()
         self.update_client_properties()
         if not self.is_OR():
             add_system_menu_items(self.hwnd, self.can_show_border())
@@ -409,9 +430,8 @@ class ClientWindow(GObject.GObject):
 
     def update_backing_render_size(self, width: int, height: int) -> None:
         """
-        The native window's on-screen (client) size changed - either because the OS
-        clamped/adjusted the requested size at creation time, or because the user
-        dragged/snapped the window. Recompute the corresponding server-pixel backing
+        The existing window's on-screen (client) size changed, for example when
+        the user dragged/snapped it. Recompute the corresponding server-pixel backing
         size via the display subsystem's scale factor (mirroring the GTK3 backend's
         `_set_backing_size()`) and update the backing's render size accordingly.
         """
@@ -542,17 +562,6 @@ class ClientWindow(GObject.GObject):
                 wp = cast(lparam, POINTER(WINDOWPOS)).contents
                 wp.hwndInsertAfter = win32con.HWND_BOTTOM
                 # falls through to DefWindowProcW, do not return here
-            if msg == win32con.WM_CREATE:
-                create = cast(lparam, POINTER(CREATESTRUCT)).contents
-                self.x = create.x
-                self.y = create.y
-                if self.backing and (self.width != create.cx or self.height != create.cy):
-                    self.update_backing_render_size(create.cx, create.cy)
-                    self.width = create.cx
-                    self.height = create.cy
-                # the window is not mapped from here:
-                # the GDI backing does not exist yet at this point,
-                # `create()` emits `mapped` once it does (see `window_created`)
             if msg == win32con.WM_CLOSE:
                 self.emit("closed")
                 return 0

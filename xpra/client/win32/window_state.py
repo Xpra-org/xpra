@@ -74,7 +74,9 @@ def handle_size(window, wparam: int, width: int, height: int) -> bool:
     if deiconified:
         window.minimized = False
         window.state_updates["iconified"] = False
-    resized = bool(window.backing) and (width, height) != (window.width, window.height)
+    # the `WM_SIZE` sent from within `CreateWindowExW` arrives before `hwnd` is set,
+    # and before the backing is initialized: `window_created()` measures the client area instead
+    resized = bool(window.hwnd and window.backing) and (width, height) != (window.width, window.height)
     if resized:
         window.update_backing_render_size(width, height)
         window.width = width
