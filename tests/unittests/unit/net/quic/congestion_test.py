@@ -179,6 +179,9 @@ class QuicCongestionTest(unittest.TestCase):
         sender.get_frame(100)
         sender.on_data_delivery(QuicDeliveryState.LOST, 0, 100, False)
         quic.reset_stream(8, 0)  # Reset senders retain their pending ranges.
+        # Unreliable datagrams are not stream backlog.
+        # Queued like `send_datagram_frame()` does, which needs a completed handshake since aioquic 1.9:
+        quic._datagrams_pending.append(bytes(300))
         expected = {"pending-new-bytes": 1400, "pending-retransmit-bytes": 100, "pending-bytes": 1500}
         self.assertEqual(get_pending_stream_info(quic), expected)
         quic.close()
