@@ -416,6 +416,7 @@ class ClientWindow(GObject.GObject):
             if height != self.height:
                 bh = max(1, display.cy(height)) if display else height
             self.width, self.height = width, height
+        bw, bh = self.clamp_backing_size((bw, bh))
         self.backing.init(self.width, self.height, bw, bh)
         self.init_backing_props()
         self.update_client_properties()
@@ -458,11 +459,15 @@ class ClientWindow(GObject.GObject):
         # when the server resizes the window, it knows the size it asked for,
         # otherwise it knows the backing's size:
         server_size = self._requested_server_size or backing.size
-        bw, bh = to_server_size(self.get_subsystem("display"), width, height, server_size)
+        bw, bh = self.clamp_backing_size(to_server_size(self.get_subsystem("display"), width, height, server_size))
         backing.init(width, height, bw, bh)
         # the render size is part of the encoding properties,
         # queue them for the `window-configure` packet that follows:
         self.update_client_properties()
+
+    def clamp_backing_size(self, size: tuple[int, int]) -> tuple[int, int]:
+        """ the GDI backing has no size limit, see the OpenGL window """
+        return size
 
     def get_system_geometry(self, exstyle: int) -> tuple[int, int, int, int]:
         """
@@ -873,7 +878,7 @@ class ClientWindow(GObject.GObject):
         raw_position = display.cp(self.x, self.y)
         # the backing has the server size, which may not round-trip with fractional scaling:
         server_size = self.backing.size if self.backing else (0, 0)
-        size = to_server_size(display, self.width, self.height, server_size)
+        size = self.clamp_backing_size(to_server_size(display, self.width, self.height, server_size))
         return display.get_server_position(raw_position) + size, raw_position
 
     def get_server_monitor_position(self) -> dict[str, Any]:
@@ -1150,7 +1155,8 @@ class ClientWindow(GObject.GObject):
         server_size = self._requested_server_size
         if not backing or not server_size:
             return
-        size = to_server_size(self.get_subsystem("display"), self.width, self.height, server_size)
+        display = self.get_subsystem("display")
+        size = self.clamp_backing_size(to_server_size(display, self.width, self.height, server_size))
         if size != backing.size:
             geomlog("update_backing_server_size() backing size changed from %s to %s", backing.size, size)
             self.update_backing_render_size(self.width, self.height)

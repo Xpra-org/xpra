@@ -15,6 +15,26 @@ from xpra.util.objects import typedict
 Size = tuple[int, int]
 
 
+def to_local_limit(scaling, limit: Size) -> Size:
+    """
+    Convert a size limit from server to local pixels, using the `sx`, `sy`, `cx` and `cy` methods of `scaling`
+    (ie: the `display` subsystem).
+    With fractional scaling, rounding the limit is not enough: at 0.2, 16384 server pixels round to 3277 local pixels,
+    which convert back to 16385. Lower each dimension until it converts back to a size within the limit.
+    """
+    if not scaling:
+        return limit
+
+    def local_limit(value: int, to_local: Callable[[int], int], to_server: Callable[[int], int]) -> int:
+        local = to_local(value)
+        while local > 1 and to_server(local) > value:
+            local -= 1
+        return local
+
+    w, h = limit
+    return local_limit(w, scaling.sx, scaling.cx), local_limit(h, scaling.sy, scaling.cy)
+
+
 def get_track_sizes(size_constraints: typedict, max_window_size: Size, frame: Size,
                     to_local: Callable[[int, int], Size] | None = None,
                     fixed_size: Size | None = None) -> tuple[Size, Size]:

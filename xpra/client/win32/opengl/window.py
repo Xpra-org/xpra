@@ -15,11 +15,13 @@ from xpra.platform.win32.common import (
     DWM_BLURBEHIND, DwmEnableBlurBehindWindow, DWM_BB_ENABLE, DWM_BB_BLURREGION,
 )
 from xpra.platform.win32.gl_context import WGLContext
+from xpra.client.gui.size_constraints import to_local_limit
 from xpra.client.win32.window import ClientWindow
 from xpra.client.win32.opengl.backing import GLWin32Backing
 from xpra.log import Logger
 
 log = Logger("opengl", "window", "win32")
+geomlog = Logger("geometry")
 
 GObject = gi_import("GObject")
 
@@ -135,13 +137,44 @@ class GLClientWindow(ClientWindow):
         clamp_to(*self.MAX_VIEWPORT_DIMS)
         # the backing dimensions are in server pixels,
         # so they have to be converted if desktop scaling is used:
-        display = self.get_subsystem("display")
-        clamp_to(*(display.sp(*self.MAX_BACKING_DIMS) if display else self.MAX_BACKING_DIMS))
+        clamp_to(*to_local_limit(self.get_subsystem("display"), self.MAX_BACKING_DIMS))
         if self.max_window_size != saved_mws:
             log("init_max_window_size() max-window-size changed from %s to %s",
                 saved_mws, self.max_window_size)
             log(" because of max viewport dims %s and max backing dims %s",
                 self.MAX_VIEWPORT_DIMS, self.MAX_BACKING_DIMS)
+
+    def clamp_backing_size(self, size: tuple[int, int]) -> tuple[int, int]:
+        """
+        The backing is a texture, it cannot be larger than the maximum texture size.
+        The window size limit is not enough to ensure that: with fractional scaling,
+        the server can ask for a size that is too large and still fits in the window,
+        ie: at 0.5, 16385 server pixels are shown as 8192 window pixels.
+        """
+        w, h = size
+        mw, mh = self.MAX_BACKING_DIMS
+        return min(w, mw), min(h, mh)
+
+    def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0,
+                    server_size: tuple[int, int] | None = None) -> None:
+        """
+        Windows only applies the maximum track size to windows that have a sizing border,
+        so the size of override-redirect windows is clamped here.
+        When the window cannot have the size the server asked for, the server is told the size it has instead.
+        """
+        mww, mwh = self.max_window_size
+        cw = min(w, mww) if mww > 0 else w
+        ch = min(h, mwh) if mwh > 0 else h
+        too_large = bool(server_size) and self.clamp_backing_size(server_size) != tuple(server_size)
+        clamped = too_large or (cw, ch) != (w, h)
+        size = self.width, self.height
+        super().move_resize(x, y, cw, ch, resize_counter, server_size)
+        if clamped:
+            geomlog("move_resize%s clamped to %ix%i, maximum backing size is %s",
+                    (x, y, w, h, resize_counter, server_size), cw, ch, self.MAX_BACKING_DIMS)
+            if self.hwnd and (self.width, self.height) == size:
+                # there was no `WM_SIZE`, so no "resized" signal and no `window-configure`:
+                self.send_configure()
 
     # expose the backing under the `_backing` name expected by shared code
     # (the OpenGL probe and the window manager's `reinit_windows`):

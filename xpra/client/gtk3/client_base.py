@@ -358,8 +358,8 @@ class GTKXpraClient(GObjectClientAdapter, UIXpraClient):
             return False
         if not gl.force:
             # verify texture limits:
-            ms = min(display.sx(gl.texture_size_limit), *gl.max_viewport_dims)
-            if w > ms or h > ms:
+            mw, mh = gl.get_max_window_size()
+            if w > mw or h > mh:
                 return False
             # avoid opengl for small windows:
             if w <= OPENGL_MIN_SIZE or h <= OPENGL_MIN_SIZE:

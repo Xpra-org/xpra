@@ -7,6 +7,7 @@
 # later version. See the file COPYING for details.
 
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 
 from xpra.util.objects import typedict
@@ -19,10 +20,10 @@ except Exception:
     pass
 
 
-def _can_use_opengl(w, h, metadata, override_redirect=False, xscale=1, yscale=1):
+def _can_use_opengl(w, h, metadata, override_redirect=False, xscale=1, yscale=1, force=True, max_size=(16384, 16384)):
     """Call can_use_opengl() with a mock self to avoid GTK initialization.
 
-    Uses force=True to skip texture/size/window-type checks
+    Uses force=True by default to skip texture/size/window-type checks
     and isolate the Win32 alpha+opaque-region logic.
 
     opengl state (enabled/force/window-class) lives on the `opengl` subsystem and
@@ -31,7 +32,8 @@ def _can_use_opengl(w, h, metadata, override_redirect=False, xscale=1, yscale=1)
     gl = MagicMock()
     gl.GLClientWindowClass = MagicMock()
     gl.enabled = True
-    gl.force = True
+    gl.force = force
+    gl.get_max_window_size = lambda: max_size
     display = MagicMock()
     display.sx = lambda v: round(v * xscale)
     display.sy = lambda v: round(v * yscale)
@@ -110,6 +112,46 @@ class TestCanUseOpenGLWin32Alpha(unittest.TestCase):
         scale = 1.6
         cw, ch = round(1396 * scale), round(1022 * scale)
         self.assertFalse(_can_use_opengl(cw, ch, metadata, xscale=scale, yscale=scale))
+
+
+@unittest.skipIf(GTKXpraClient is None, "gtk3 client not available")
+class TestCanUseOpenGLSize(unittest.TestCase):
+
+    @patch("xpra.client.gtk3.client_base.WIN32", False)
+    def test_texture_size_limit(self):
+        for size, expected in (
+            ((3276, 1080), True),
+            ((3277, 1080), False),
+            ((1920, 3277), False),
+        ):
+            with self.subTest(size=size):
+                self.assertEqual(_can_use_opengl(*size, typedict(), force=False, max_size=(3276, 3276)), expected)
+        # the limit does not apply when OpenGL is forced:
+        self.assertTrue(_can_use_opengl(3277, 1080, typedict(), max_size=(3276, 3276)))
+
+
+class MaxWindowSizeTest(unittest.TestCase):
+    """ the largest window OpenGL can render, in window pixels """
+
+    def test_max_window_size(self):
+        from xpra.client.subsystem.opengl import OpenGLClient
+        for scale, viewport, expected in (
+            (1, (16384, 16384), (16384, 16384)),
+            # 16384 server pixels round to 3277 window pixels, which convert back to 16385:
+            (0.2, (16384, 16384), (3276, 3276)),
+            (0.4, (16384, 16384), (6553, 6553)),
+            # the viewport is already in window pixels:
+            (0.2, (16384, 2000), (3276, 2000)),
+            (2, (16384, 16384), (16384, 16384)),
+        ):
+            with self.subTest(scale=scale, viewport=viewport):
+                display = SimpleNamespace(sx=lambda v: round(v * scale), sy=lambda v: round(v * scale),
+                                          cx=lambda v: round(v / scale), cy=lambda v: round(v / scale))
+                gl = OpenGLClient()
+                gl.client = SimpleNamespace(subsystems={"display": display})
+                gl.texture_size_limit = 16384
+                gl.max_viewport_dims = viewport
+                self.assertEqual(gl.get_max_window_size(), expected)
 
 
 if __name__ == "__main__":

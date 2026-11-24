@@ -42,8 +42,45 @@ class Display:
 def scaled_display(scale: float):
     return SimpleNamespace(sx=lambda v: round(v * scale), sy=lambda v: round(v * scale),
                            cx=lambda v: round(v / scale), cy=lambda v: round(v / scale),
+                           sp=lambda x, y: (round(x * scale), round(y * scale)),
                            cp=lambda x, y: (round(x / scale), round(y / scale)),
                            get_server_position=lambda pos: tuple(pos))
+
+
+class Backing:
+    """ records the sizes the backing is initialized with """
+
+    def __init__(self, size):
+        self.size = size
+        self.inits = []
+
+    def init(self, ww, wh, bw, bh):
+        self.inits.append((ww, wh, bw, bh))
+        self.size = bw, bh
+
+
+def native_patches(set_window_pos):
+    """ `move_resize` without a native window, `system_geometry` returns the client geometry """
+    from contextlib import ExitStack
+    from xpra.client.win32 import window as native
+    stack = ExitStack()
+    stack.enter_context(patch.object(native, "GetWindowLongW", lambda hwnd, index: 0))
+    stack.enter_context(patch.object(native, "get_frame_dpi", lambda hwnd: 0))
+    stack.enter_context(patch.object(native, "system_geometry", lambda x, y, w, h, *args, **kwargs: (x, y, w, h)))
+    stack.enter_context(patch.object(native, "SetWindowPos", set_window_pos))
+    return stack
+
+
+def import_opengl_window():
+    """
+    The OpenGL window module pulls in PyOpenGL at import time,
+    which may not be installed even on MS Windows.
+    """
+    try:
+        from xpra.client.win32.opengl import window
+    except ImportError as e:
+        raise unittest.SkipTest(f"the OpenGL client window is not available: {e}") from None
+    return window
 
 
 @unittest.skipUnless(WIN32, "the win32 client is only available on MS Windows")
@@ -58,7 +95,7 @@ class Win32ConfigureTest(unittest.TestCase):
                                  state_updates={"fullscreen": True}, resize_counter=3,
                                  pop_client_properties=lambda: {},
                                  get_monitor_position=lambda: {"index": 1, "position": (10, 20)})
-        for name in ("get_server_geometry", "get_server_monitor_position", "send_configure"):
+        for name in ("get_server_geometry", "get_server_monitor_position", "send_configure", "clamp_backing_size"):
             setattr(window, name, MethodType(getattr(ClientWindow, name), window))
         return window, sent
 
@@ -114,7 +151,8 @@ class Win32ConfigureTest(unittest.TestCase):
             with self.subTest(server_size=server_size):
                 backing = Mock(size=(1193, 847))
                 window = SimpleNamespace(backing=backing, get_subsystem={"display": scaled_display(0.8)}.get,
-                                         update_client_properties=Mock(), _requested_server_size=server_size)
+                                         update_client_properties=Mock(), _requested_server_size=server_size,
+                                         clamp_backing_size=lambda size: size)
                 ClientWindow.update_backing_render_size(window, 954, 700)
                 backing.init.assert_called_once_with(954, 700, *expected)
 
@@ -122,15 +160,6 @@ class Win32ConfigureTest(unittest.TestCase):
         import win32con
         from xpra.client.win32 import window as native
         from xpra.client.win32.window_state import handle_size
-
-        class Backing:
-            def __init__(self, size):
-                self.size = size
-                self.inits = []
-
-            def init(self, ww, wh, bw, bh):
-                self.inits.append((ww, wh, bw, bh))
-                self.size = bw, bh
 
         for size, server_size, max_width, expected in (
             # only the height changes in window pixels, the width of 954 is both 1193 and 1192 server pixels:
@@ -157,10 +186,7 @@ class Win32ConfigureTest(unittest.TestCase):
                     # `handle_size` ignores a `WM_SIZE` that does not change it:
                     handle_size(window, win32con.SIZE_RESTORED, min(w, max_width or w), h)
 
-                with (patch.object(native, "GetWindowLongW", lambda hwnd, index: 0),
-                      patch.object(native, "get_frame_dpi", lambda hwnd: 0),
-                      patch.object(native, "system_geometry", lambda x, y, w, h, *args, **kwargs: (x, y, w, h)),
-                      patch.object(native, "SetWindowPos", set_window_pos)):
+                with native_patches(set_window_pos):
                     window.move_resize(window.x, window.y, *size, 5, server_size)
                 self.assertEqual(backing.size, expected)
                 # the backing is only updated once, with the size of the window:
@@ -333,7 +359,8 @@ class Win32ConfigureTest(unittest.TestCase):
             (True, True, (210, 0), (200, 50, 100, 99)),
         ):
             with self.subTest(origin_ok=origin_ok, rect_ok=rect_ok, size=size):
-                window = Mock(hwnd=1, x=20, y=30, width=200, height=50, _backing_size=(100, 99))
+                window = Mock(hwnd=1, x=20, y=30, width=200, height=50, _backing_size=(100, 99),
+                              clamp_backing_size=lambda size: size)
                 window.get_subsystem.return_value = display
                 window.is_OR.return_value = True
 
@@ -368,6 +395,127 @@ class Win32ConfigureTest(unittest.TestCase):
         window.send_configure()
         self.assertEqual(sent, [])
         self.assertEqual(window.state_updates, {})
+
+
+@unittest.skipUnless(WIN32, "the win32 client is only available on MS Windows")
+class Win32OpenGLSizeTest(unittest.TestCase):
+    """
+    The backing of an OpenGL window is a texture,
+    it cannot be larger than the maximum texture size: 16384 here.
+    """
+
+    def setUp(self) -> None:
+        self.windows = []
+
+    def tearDown(self) -> None:
+        for window in self.windows:
+            # the native window is never created:
+            window.hwnd = 0
+            window.cleanup_class()
+
+    def make_window(self, scale: float, size, backing_size, max_window_size=(0, 0)):
+        from xpra.util.objects import typedict
+        GLClientWindow = import_opengl_window().GLClientWindow
+        sent = []
+        subsystems = {
+            "display": scaled_display(scale),
+            "window": SimpleNamespace(send=lambda *packet: sent.append(packet)),
+        }
+        wid = len(self.windows) + 1
+        # an override-redirect window, which Windows does not clamp to the maximum track size:
+        window = GLClientWindow(subsystems.get, lambda: False, None, wid, (20, 40, *size), backing_size, typedict(),
+                                True, {}, None, max_window_size, 32, None)
+        self.windows.append(window)
+        window.update_client_properties = Mock()
+        window.get_monitor_position = dict
+        return window, sent
+
+    def test_max_window_size(self) -> None:
+        for scale, max_window_size, expected in (
+            (1, (0, 0), (16384, 16384)),
+            # 16384 server pixels round to 3277 and 6554 window pixels, which convert back to 16385:
+            (0.2, (0, 0), (3276, 3276)),
+            (0.4, (0, 0), (6553, 6553)),
+            # the configured limit is in window pixels:
+            (0.4, (1000, 0), (1000, 6553)),
+        ):
+            with self.subTest(scale=scale, max_window_size=max_window_size):
+                window, _ = self.make_window(scale, (100, 100), (100, 100), max_window_size)
+                self.assertEqual(window.max_window_size, expected)
+
+    def test_window_created(self) -> None:
+        from xpra.client.win32 import window as native
+        # at 0.5, 16385 server pixels are shown as 8192 window pixels, which is within the window size limit:
+        window, sent = self.make_window(0.5, (8192, 50), (16385, 100))
+        self.assertEqual(window.max_window_size, (8192, 8192))
+        window.hwnd = 1
+        window.backing = Backing((16385, 100))
+
+        def client_rect(_hwnd, rect):
+            rect._obj.right, rect._obj.bottom = 8192, 50
+            return True
+
+        with (patch.object(native, "ClientToScreen", lambda hwnd, point: False),
+              patch.object(native, "GetClientRect", client_rect)):
+            window.window_created()
+        self.assertEqual(window.backing.inits, [(8192, 50, 16384, 100)])
+        window.send_configure()
+        self.assertEqual(sent[0][2]["geometry"][2:], (16384, 100))
+
+    def test_move_resize(self) -> None:
+        import win32con
+        from xpra.client.win32.window_state import handle_size
+        for scale, size, request, server_size, client_size, expected, configures in (
+            # Windows does not clamp an override-redirect window:
+            (1, (1000, 100), (20000, 100), (20000, 100), (16384, 100), (16384, 100), 1),
+            # the window size does not change, so there is no `WM_SIZE` and no "resized" signal:
+            (1, (16384, 100), (20000, 100), (20000, 100), (16384, 100), (16384, 100), 1),
+            # at 0.5, 16385 server pixels fit in the 8192 window pixels limit, but not in the backing:
+            (0.5, (8192, 50), (8192, 50), (16385, 100), (8192, 50), (16384, 100), 1),
+            # within the limits:
+            (1, (1000, 100), (2000, 100), (2000, 100), (2000, 100), (2000, 100), 1),
+            (1, (1000, 100), (1000, 100), (1000, 100), (1000, 100), (1000, 100), 0),
+        ):
+            with self.subTest(scale=scale, size=size, server_size=server_size):
+                display = scaled_display(scale)
+                backing_size = display.cx(size[0]), display.cy(size[1])
+                window, sent = self.make_window(scale, size, backing_size)
+                window.hwnd = 1
+                window.backing = Backing(backing_size)
+                # the client sends a `window-configure` when the window is resized:
+                window.connect("resized", lambda w: w.send_configure())
+                sizes = []
+
+                def set_window_pos(_hwnd, _after, _x, _y, w, h, _flags):
+                    sizes.append((w, h))
+                    handle_size(window, win32con.SIZE_RESTORED, w, h)
+
+                with native_patches(set_window_pos):
+                    window.move_resize(window.x, window.y, *request, 5, server_size)
+                self.assertEqual(sizes, [client_size])
+                self.assertEqual(window.backing.size, expected)
+                self.assertEqual(len(sent), configures)
+                if configures:
+                    self.assertEqual(sent[0][2]["geometry"][2:], expected)
+
+    def test_window_classes(self) -> None:
+        from xpra.util.objects import typedict
+        from xpra.client.win32.client import XpraWin32Client
+        from xpra.client.win32.window import ClientWindow
+        gl_window_class = object()
+        for size, force, expected in (
+            ((3276, 3276), False, (gl_window_class, ClientWindow)),
+            # too large for OpenGL, use a GDI window:
+            ((3277, 100), False, (ClientWindow, )),
+            ((100, 3277), False, (ClientWindow, )),
+            ((3277, 100), True, (gl_window_class, ClientWindow)),
+        ):
+            with self.subTest(size=size, force=force):
+                gl = SimpleNamespace(GLClientWindowClass=gl_window_class, enabled=True, force=force,
+                                     get_max_window_size=lambda: (3276, 3276))
+                client = SimpleNamespace(get_subsystem={"opengl": gl}.get)
+                classes = XpraWin32Client.get_client_window_classes(client, (0, 0, *size), typedict(), False)
+                self.assertEqual(tuple(classes), expected)
 
 
 def main():

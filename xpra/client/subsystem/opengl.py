@@ -13,6 +13,7 @@ from xpra.util.str_fn import csv, pver
 from xpra.util.env import osexpand
 from xpra.util.parsing import TRUE_OPTIONS, FALSE_OPTIONS
 from xpra.client.base.stub import StubClientSubsystem
+from xpra.client.gui.size_constraints import to_local_limit
 from xpra.log import Logger
 
 log = Logger("opengl")
@@ -57,6 +58,16 @@ class OpenGLClient(StubClientSubsystem):
             "supported": self.client_supports,
             "props": self.properties,
         }
+
+    def get_max_window_size(self) -> tuple[int, int]:
+        """
+        The largest window that can be rendered with OpenGL, in window pixels:
+        the viewport limit is in window pixels, the texture size limit is in server pixels.
+        """
+        lim = self.texture_size_limit
+        tw, th = to_local_limit(self.get_subsystem("display"), (lim, lim))
+        vw, vh = self.max_viewport_dims
+        return min(tw, vw), min(th, vh)
 
     def toggle_opengl(self, *_args) -> None:
         self.enabled = not self.enabled

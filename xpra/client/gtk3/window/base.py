@@ -31,6 +31,7 @@ from xpra.common import (
 from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING
 from xpra.net.common import PacketElement
 from xpra.client.gui.window_base import ClientWindowBase, NOT_REQUESTED
+from xpra.client.gui.size_constraints import to_local_limit
 from xpra.client.gtk3.frame_extents import get_frame_extents, get_window_frame_sizes, request_frame_extents
 from xpra.client.gtk3.window.common import (
     use_x11_bindings, is_awt, is_popup, mask_buttons,
@@ -376,8 +377,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         saved_mws = self.max_window_size
 
         def clamp_to(maxw: int, maxh: int):
-            # don't bother if the new limit is greater than 16k:
-            if maxw >= 16 * 1024 and maxh >= 16 * 1024:
+            # don't bother if the new limit is greater than 16k,
+            # but a limit of exactly 16k still applies: (ie: `GL_MAX_TEXTURE_SIZE` with most drivers)
+            if maxw > 16 * 1024 and maxh > 16 * 1024:
                 return
             # only take into account the current max-window-size if non-zero:
             mww, mwh = self.max_window_size
@@ -391,7 +393,7 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         clamp_to(*self.MAX_VIEWPORT_DIMS)
         # backing dimensions are harder,
         # we have to take scaling into account (if any):
-        clamp_to(*self.sp(*self.MAX_BACKING_DIMS))
+        clamp_to(*to_local_limit(self, self.MAX_BACKING_DIMS))
         if self.max_window_size != saved_mws:
             log("init_max_window_size(..) max-window-size changed from %s to %s",
                 saved_mws, self.max_window_size)

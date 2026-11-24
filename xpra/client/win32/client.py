@@ -214,13 +214,19 @@ class XpraWin32Client(GObjectClientAdapter, UIXpraClient):
         from xpra.client.win32.opengl import get_gl_client_window_module
         return get_gl_client_window_module(enable_opengl)
 
-    def get_client_window_classes(self, _geom, _metadata, _override_redirect) -> Sequence[type]:
+    def get_client_window_classes(self, geom, _metadata, _override_redirect) -> Sequence[type]:
         from xpra.client.win32.window import ClientWindow
         gl = self.get_subsystem("opengl")
         gl_window_class = gl.GLClientWindowClass if (gl and gl.enabled) else None
         if gl_window_class:
-            # try the OpenGL window first, fall back to the GDI window:
-            return gl_window_class, ClientWindow
+            # an OpenGL window larger than the texture or viewport limits could not be painted:
+            # (the same check as the GTK3 client's `can_use_opengl`)
+            ww, wh = geom[2:4]
+            mw, mh = gl.get_max_window_size()
+            if gl.force or (ww <= mw and wh <= mh):
+                # try the OpenGL window first, fall back to the GDI window:
+                return gl_window_class, ClientWindow
+            log("not using OpenGL for a %ix%i window, the maximum size is %ix%i", ww, wh, mw, mh)
         return (ClientWindow, )
 
     @staticmethod
