@@ -18,6 +18,7 @@ class XpraQuicConnectionProtocol(QuicConnectionProtocol):
 
     def quic_event_received(self, event: QuicEvent) -> None:
         # subclasses handle the events, and must call this method first
+        super().quic_event_received(event)
         if isinstance(event, ConnectionTerminated):
             self.connection_terminated = event
 
