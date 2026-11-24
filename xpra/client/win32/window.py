@@ -328,6 +328,8 @@ class ClientWindow(GObject.GObject):
         self.size_constraints = typedict()
         # the size the server has asked for, until we get it (see `move_resize`):
         self._requested_size: tuple[int, int] | None = None
+        # the same size in server pixels, only set while `move_resize` resizes the window:
+        self._requested_server_size: tuple[int, int] | None = None
         self._above = False
         self._below = False
         self._skip_taskbar = False
@@ -453,7 +455,10 @@ class ClientWindow(GObject.GObject):
         backing = self.backing
         if not backing:
             return
-        bw, bh = to_server_size(self.get_subsystem("display"), width, height, backing.size)
+        # when the server resizes the window, it knows the size it asked for,
+        # otherwise it knows the backing's size:
+        server_size = self._requested_server_size or backing.size
+        bw, bh = to_server_size(self.get_subsystem("display"), width, height, server_size)
         backing.init(width, height, bw, bh)
         # the render size is part of the encoding properties,
         # queue them for the `window-configure` packet that follows:
@@ -1109,7 +1114,13 @@ class ClientWindow(GObject.GObject):
         if backing := self.backing:
             backing.eos()
 
-    def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0) -> None:
+    def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0,
+                    server_size: tuple[int, int] | None = None) -> None:
+        """
+        `w` and `h` are in window pixels,
+        `server_size` is the size the server asked for, if it is the one resizing the window:
+        with fractional scaling, several server sizes map to the same window size.
+        """
         self.resize_counter = resize_counter
         if not self.hwnd:
             return
@@ -1118,12 +1129,34 @@ class ClientWindow(GObject.GObject):
         exstyle = GetWindowLongW(self.hwnd, win32con.GWL_EXSTYLE)
         wx, wy, ww, wh = system_geometry(x, y, w, h, self.style, exstyle, dpi=get_frame_dpi(self.hwnd))
         flags = win32con.SWP_NOACTIVATE | win32con.SWP_NOOWNERZORDER | win32con.SWP_NOZORDER
-        geomlog("move_resize%s system geometry=%s", (x, y, w, h, resize_counter), (wx, wy, ww, wh))
-        SetWindowPos(self.hwnd, 0, wx, wy, ww, wh, flags)
-        # this triggers WM_MOVE / WM_SIZE, which update self.x/y/width/height and the backing
+        geomlog("move_resize%s system geometry=%s", (x, y, w, h, resize_counter, server_size), (wx, wy, ww, wh))
+        # `WM_SIZE` is sent from within `SetWindowPos`, and uses the server size to update the backing,
+        # but it must not be used for any later resize: (ie: by the user)
+        self._requested_server_size = server_size
+        try:
+            SetWindowPos(self.hwnd, 0, wx, wy, ww, wh, flags)
+            # this triggers WM_MOVE / WM_SIZE, which update self.x/y/width/height and the backing
+            self.update_backing_server_size()
+        finally:
+            self._requested_server_size = None
 
-    def resize(self, w: int, h: int, resize_counter: int = 0) -> None:
-        self.move_resize(self.x, self.y, w, h, resize_counter)
+    def update_backing_server_size(self) -> None:
+        """
+        The window size may not change when the server size does,
+        ie: from 1193 to 1192 at 0.8, which are both 954 window pixels:
+        there is no `WM_SIZE` to update the backing.
+        """
+        backing = self.backing
+        server_size = self._requested_server_size
+        if not backing or not server_size:
+            return
+        size = to_server_size(self.get_subsystem("display"), self.width, self.height, server_size)
+        if size != backing.size:
+            geomlog("update_backing_server_size() backing size changed from %s to %s", backing.size, size)
+            self.update_backing_render_size(self.width, self.height)
+
+    def resize(self, w: int, h: int, resize_counter: int = 0, server_size: tuple[int, int] | None = None) -> None:
+        self.move_resize(self.x, self.y, w, h, resize_counter, server_size)
 
     def rescale_window(self, new_size_fn: Callable[[int, int], tuple[int, int]]) -> None:
         if not self.hwnd or not self.backing or self.minimized:

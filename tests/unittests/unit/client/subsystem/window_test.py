@@ -186,15 +186,18 @@ class WindowManagerTest(ClientMixinTest):
         from xpra.client.subsystem.window.manager import WindowManagerClient
 
         resize_counters = []
+        server_sizes = []
 
         class Window:
             @staticmethod
-            def move_resize(_x, _y, _w, _h, resize_counter):
+            def move_resize(_x, _y, _w, _h, resize_counter, server_size=None):
                 resize_counters.append(resize_counter)
+                server_sizes.append(server_size)
 
             @staticmethod
-            def resize(_w, _h, resize_counter):
+            def resize(_w, _h, resize_counter, server_size=None):
                 resize_counters.append(resize_counter)
+                server_sizes.append(server_size)
 
         manager = AdHocStruct()
         with patch("xpra.client.subsystem.display.check_display"):
@@ -208,6 +211,8 @@ class WindowManagerTest(ClientMixinTest):
             manager, Packet("window-resized", 1, 4, 5),
         )
         self.assertEqual(resize_counters, [0, 0])
+        # the windows also get the size in server pixels:
+        self.assertEqual(server_sizes, [(4, 5), (4, 5)])
 
     @unittest.skipUnless(WIN32, "requires the native Win32 display subsystem")
     def test_win32_window_positions(self):
@@ -237,7 +242,7 @@ class WindowManagerTest(ClientMixinTest):
                 self.assertEqual(manager.make_new_window.call_args.args[1:3], (expected, (40, 20)))
                 move = Packet("window-move-resize", 2, *geometry, 7)
                 WindowManagerClient._process_move_resize(manager, move)
-                manager.get_window.return_value.move_resize.assert_called_with(*expected, 7)
+                manager.get_window.return_value.move_resize.assert_called_with(*expected, 7, server_size=geometry[2:])
 
                 metadata = {"parent": 1, "relative-position": (20, 10)}
                 create = Packet("window-create", 2, *geometry, metadata)

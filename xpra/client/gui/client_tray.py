@@ -58,7 +58,7 @@ class ClientTray(ClientWidgetBase):
         # but its geometry is sent to the server in scaled coordinates:
         self.send_configure()
 
-    def resize(self, nw: int, nh: int, resize_counter: int = 0) -> None:
+    def resize(self, nw: int, nh: int, resize_counter: int = 0, server_size: tuple[int, int] | None = None) -> None:
         """ the tray's size is controlled by the tray widget, not by the server """
 
     def set_alpha(self) -> None:
@@ -141,7 +141,8 @@ class ClientTray(ClientWidgetBase):
         if self._size != (w, h):
             self.new_backing(w, h)
 
-    def move_resize(self, x: int, y: int, w: int, h: int) -> None:
+    def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0,
+                    server_size: tuple[int, int] | None = None) -> None:
         log("%s.move_resize(%s, %s, %s, %s)", self, x, y, w, h)
         w = max(1, w)
         h = max(1, h)

@@ -105,12 +105,69 @@ class Win32ConfigureTest(unittest.TestCase):
 
     def test_update_backing_render_size(self) -> None:
         from xpra.client.win32.window import ClientWindow
-        backing = Mock(size=(1193, 847))
-        window = SimpleNamespace(backing=backing, get_subsystem={"display": scaled_display(0.8)}.get,
-                                 update_client_properties=Mock())
-        # only the height changed:
-        ClientWindow.update_backing_render_size(window, 954, 700)
-        backing.init.assert_called_once_with(954, 700, 1193, 875)
+        for server_size, expected in (
+            # resized by the user, only the height changed: the width is still 1193 server pixels
+            (None, (1193, 875)),
+            # resized by the server, to a width that is also 954 window pixels:
+            ((1192, 875), (1192, 875)),
+        ):
+            with self.subTest(server_size=server_size):
+                backing = Mock(size=(1193, 847))
+                window = SimpleNamespace(backing=backing, get_subsystem={"display": scaled_display(0.8)}.get,
+                                         update_client_properties=Mock(), _requested_server_size=server_size)
+                ClientWindow.update_backing_render_size(window, 954, 700)
+                backing.init.assert_called_once_with(954, 700, *expected)
+
+    def test_move_resize_server_size(self) -> None:
+        import win32con
+        from xpra.client.win32 import window as native
+        from xpra.client.win32.window_state import handle_size
+
+        class Backing:
+            def __init__(self, size):
+                self.size = size
+                self.inits = []
+
+            def init(self, ww, wh, bw, bh):
+                self.inits.append((ww, wh, bw, bh))
+                self.size = bw, bh
+
+        for size, server_size, max_width, expected in (
+            # only the height changes in window pixels, the width of 954 is both 1193 and 1192 server pixels:
+            ((954, 700), (1192, 875), 0, (1192, 875)),
+            # the window size does not change, so there is no `WM_SIZE`:
+            ((954, 678), (1192, 847), 0, (1192, 847)),
+            # the OS clamps the width: (ie: the size constraints)
+            ((954, 700), (1192, 875), 900, (1125, 875)),
+            # not resized by the server: (ie: `rescale_window`)
+            ((954, 700), None, 0, (1193, 875)),
+        ):
+            with self.subTest(size=size, server_size=server_size, max_width=max_width):
+                backing = Backing((1193, 847))
+                window, sent = self.make_window({"display": scaled_display(0.8)},
+                                                width=954, height=678, backing=backing)
+                vars(window).update(hwnd=1, style=0, maximized=False, minimized=False, emit=Mock(),
+                                    update_client_properties=Mock(), _requested_size=None,
+                                    _requested_server_size=None)
+                for name in ("move_resize", "update_backing_server_size", "update_backing_render_size"):
+                    setattr(window, name, MethodType(getattr(native.ClientWindow, name), window))
+
+                def set_window_pos(_hwnd, _after, _x, _y, w, h, _flags):
+                    # `system_geometry` is patched out, so this is the client size,
+                    # `handle_size` ignores a `WM_SIZE` that does not change it:
+                    handle_size(window, win32con.SIZE_RESTORED, min(w, max_width or w), h)
+
+                with (patch.object(native, "GetWindowLongW", lambda hwnd, index: 0),
+                      patch.object(native, "get_frame_dpi", lambda hwnd: 0),
+                      patch.object(native, "system_geometry", lambda x, y, w, h, *args, **kwargs: (x, y, w, h)),
+                      patch.object(native, "SetWindowPos", set_window_pos)):
+                    window.move_resize(window.x, window.y, *size, 5, server_size)
+                self.assertEqual(backing.size, expected)
+                # the backing is only updated once, with the size of the window:
+                self.assertEqual(backing.inits, [(window.width, window.height, *expected)])
+                self.assertIsNone(window._requested_server_size)
+                window.send_configure()
+                self.assertEqual(sent[0][2]["geometry"][2:], expected)
 
     def test_system_geometry_large_coordinates(self) -> None:
         import win32con

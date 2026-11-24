@@ -1752,8 +1752,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             return 0, 0
         return max(0, self.get_allocated_width() - daw), max(0, self.get_allocated_height() - dah)
 
-    def resize(self, w: int, h: int, resize_counter: int = 0, force: bool = False) -> None:
+    def resize(self, w: int, h: int, resize_counter: int = 0, force: bool = False,
+               server_size: tuple[int, int] | None = None) -> None:
         # w, h are drawing-area (server-side) dimensions:
+        # (`server_size` is not used: the backing size is always converted from the window size)
         ww, wh = self.get_drawing_area_geometry()[2:]
         cw, ch = self._chrome_size()
         geomlog("resize(%s, %s, %s) drawing area=%s, chrome=%s, fullscreen=%s, maximized=%s",
@@ -1804,7 +1806,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         # adjust pointer coordinates:
         self.window_offset = ox, oy
 
-    def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0) -> None:
+    def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0,
+                    server_size: tuple[int, int] | None = None) -> None:
         geomlog("window %#x move_resize%s", self.wid, (x, y, w, h, resize_counter))
         x, y = self.adjusted_position(x, y)
         w = max(1, w)

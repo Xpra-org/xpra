@@ -332,7 +332,8 @@ class ClientWindow(ClientWindowBase):
             "resize-counter": self._resize_counter,
         })
 
-    def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0) -> None:
+    def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0,
+                    server_size: tuple[int, int] | None = None) -> None:
         w = max(1, w)
         h = max(1, h)
         geomlog("move_resize%s window %#x", (x, y, w, h, resize_counter), self.wid)
@@ -352,7 +353,7 @@ class ClientWindow(ClientWindowBase):
         else:
             self.send_configure()
 
-    def resize(self, w: int, h: int, resize_counter: int = 0) -> None:
+    def resize(self, w: int, h: int, resize_counter: int = 0, server_size: tuple[int, int] | None = None) -> None:
         self.move_resize(self._pos[0], self._pos[1], w, h, resize_counter)
 
     def set_backing_size(self, w: int, h: int) -> None:

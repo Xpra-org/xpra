@@ -642,7 +642,8 @@ class WindowManagerClient(StubClientSubsystem):
         geomlog("_process_move_resize%s moving / resizing window %s (id=%s) to %s",
                 packet[1:], window, wid, (ax, ay, aw, ah))
         if window:
-            window.move_resize(ax, ay, aw, ah, resize_counter)
+            # with fractional scaling, several server sizes map to the same window size:
+            window.move_resize(ax, ay, aw, ah, resize_counter, server_size=(w, h))
 
     @packet_handler(WINDOW_RESIZED, main_thread=True)
     def _process_resized(self, packet: Packet) -> None:
@@ -658,7 +659,7 @@ class WindowManagerClient(StubClientSubsystem):
         window = self.get_window(wid)
         geomlog("_process_resized%s resizing window %s (wid=%#x) to %s", packet[1:], window, wid, (aw, ah))
         if window:
-            window.resize(aw, ah, resize_counter)
+            window.resize(aw, ah, resize_counter, server_size=(w, h))
 
     @packet_handler(WINDOW_RAISE, main_thread=True)
     def _process_raise(self, packet: Packet) -> None:
