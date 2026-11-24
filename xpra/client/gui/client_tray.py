@@ -51,7 +51,8 @@ class ClientTray(ClientWidgetBase):
         GLib.timeout_add(1000, self.send_configure)
 
     def rescale_window(self, _new_size_fn: Callable[[int, int], tuple[int, int]]) -> None:
-        """The local system tray controls the icon size."""
+        """Resend the tray geometry in server coordinates after a scale change."""
+        self.send_configure()
 
     def reset_size_constraints(self) -> None:
         """ we can't implement this method for trays - it should not be called """

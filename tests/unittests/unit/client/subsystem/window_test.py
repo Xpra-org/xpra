@@ -10,7 +10,7 @@ from unittest.mock import Mock, patch
 
 from xpra.os_util import WIN32, OSX
 from xpra.net.common import Packet
-from xpra.net.packet_type import WINDOW_STACKING
+from xpra.net.packet_type import WINDOW_CONFIGURE, WINDOW_STACKING
 from xpra.util.objects import AdHocStruct, typedict
 from unit.process_test_util import DisplayContext
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
@@ -185,9 +185,23 @@ class WindowManagerTest(ClientMixinTest):
 
         window = Mock()
         tray = ClientTray.__new__(ClientTray)
+        tray.wid = 1
+        tray._geometry = (10, 20, 32, 16)
+        tray._size = (32, 16)
+        tray.tray_widget = Mock()
+        tray.tray_widget.get_geometry.return_value = tray._geometry
+        tray.tray_widget.get_orientation.return_value = "horizontal"
+        tray._client = Mock()
+        tray._client.legacy_server.return_value = False
+        display = tray._client.get_subsystem.return_value
+        display.crect.side_effect = lambda x, y, w, h: (x * 2, y * 2, w * 2, h * 2)
         manager = Mock(_id_to_window={1: tray, 2: window})
         scale = Mock()
         WindowManagerClient.resize_windows(manager, scale)
+        tray._client.send.assert_called_once()
+        packet_type, wid, attributes = tray._client.send.call_args.args
+        self.assertEqual((packet_type, wid), (WINDOW_CONFIGURE, 1))
+        self.assertEqual(attributes["geometry"], (20, 40, 64, 32))
         window.rescale_window.assert_called_once_with(scale)
         scale.assert_not_called()
         manager.send_refresh_all.assert_called_once_with()
