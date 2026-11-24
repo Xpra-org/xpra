@@ -23,6 +23,7 @@ except ImportError:
 class FakeWindow:
 
     def __init__(self, x=100, y=50, width=640, height=480, backing=True):
+        self.hwnd = 1
         self.x = x
         self.y = y
         self.width = width
@@ -104,6 +105,13 @@ class Win32WindowStateTest(unittest.TestCase):
         assert not w.move(200, 300)
         assert (w.x, w.y) == (200, 300)
         assert w.signals == [("moved", {})]
+
+    def test_move_before_hwnd(self):
+        # the `WM_MOVE` sent from within `CreateWindowExW`, before the window is mapped:
+        w = FakeWindow()
+        w.hwnd = 0
+        assert not w.move(200, 300)
+        assert not w.signals
 
     def test_minimize(self):
         w = FakeWindow()
