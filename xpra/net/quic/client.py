@@ -432,6 +432,10 @@ def quic_connect(host: str, port: int, path: str, fast_open: bool,
                  ssl_cert: str, ssl_key: str, ssl_key_password: str,
                  ssl_ca_certs: str, ssl_server_verify_mode: str, ssl_server_name: str,
                  client_class: type[QuicConnectionProtocol] = WebSocketClient):
+    if issubclass(client_class, WebTransportClient) and not MAX_DATAGRAM_FRAME_SIZE:
+        # without datagrams, the server would not see a WebTransport capable client:
+        raise InitExit(ExitCode.UNSUPPORTED,
+                       "WebTransport requires QUIC datagrams, `XPRA_MAX_DATAGRAM_FRAME_SIZE` must not be zero")
     configuration = _make_quic_configuration(ssl_cert, ssl_key, ssl_key_password,
                                              ssl_ca_certs, ssl_server_verify_mode,
                                              ssl_server_name, host)

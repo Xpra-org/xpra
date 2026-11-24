@@ -157,6 +157,34 @@ class FailedConnectTest(unittest.TestCase):
         assert str(cm.exception) == "protocol violation"
 
 
+@unittest.skipUnless(HAVE_AIOQUIC, "aioquic not available")
+class WebTransportWithoutDatagramsTest(unittest.TestCase):
+
+    def test_client_protocol(self):
+        from aioquic.h3.connection import H3_ALPN
+        from aioquic.quic.configuration import QuicConfiguration
+        from aioquic.quic.connection import QuicConnection
+        from xpra.net.quic.client import WebTransportClient
+        # aioquic refuses to enable webtransport without datagrams:
+        configuration = QuicConfiguration(alpn_protocols=H3_ALPN, max_datagram_frame_size=None)
+
+        async def check() -> None:
+            WebTransportClient(QuicConnection(configuration=configuration))
+
+        asyncio.run(check())
+
+    def test_connect(self):
+        from xpra.config import InitExit
+        from xpra.exit_codes import ExitCode
+        from xpra.net.quic import client
+        with patch.object(client, "MAX_DATAGRAM_FRAME_SIZE", 0):
+            with self.assertRaises(InitExit) as cm:
+                client.quic_connect("127.0.0.1", 9, "/", False, "", "", "", "", "", "",
+                                    client_class=client.WebTransportClient)
+        assert cm.exception.status == ExitCode.UNSUPPORTED
+        assert "XPRA_MAX_DATAGRAM_FRAME_SIZE" in str(cm.exception)
+
+
 def main():
     unittest.main()
 
