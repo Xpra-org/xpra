@@ -49,7 +49,8 @@ def handle_move(window, x: int, y: int) -> bool:
     window.y = y
     # when restoring a minimized window, `WM_MOVE` comes first:
     # the `map-window` packet sent from `WM_SIZE` will carry the new position
-    if not window.minimized:
+    # (and before `hwnd` is set, the window is not mapped yet: `window_created()` sends the position)
+    if window.hwnd and not window.minimized:
         window.emit("moved")
     return False
 
@@ -74,7 +75,9 @@ def handle_size(window, wparam: int, width: int, height: int) -> bool:
     if deiconified:
         window.minimized = False
         window.state_updates["iconified"] = False
-    resized = bool(window.backing) and (width, height) != (window.width, window.height)
+    # the `WM_SIZE` sent from within `CreateWindowExW` arrives before `hwnd` is set,
+    # and before the backing is initialized: `window_created()` measures the client area instead
+    resized = bool(window.hwnd and window.backing) and (width, height) != (window.width, window.height)
     if resized:
         window.update_backing_render_size(width, height)
         window.width = width

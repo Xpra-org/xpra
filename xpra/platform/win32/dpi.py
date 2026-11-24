@@ -5,7 +5,7 @@
 
 
 from ctypes import POINTER, byref, get_last_error
-from ctypes.wintypes import BOOL, HANDLE, POINT
+from ctypes.wintypes import BOOL, HANDLE, HWND, POINT, RECT, DWORD, UINT
 
 from xpra.platform.win32.common import GetSystemMetrics, user32
 from xpra.util.env import envint, envbool
@@ -142,3 +142,44 @@ def physical_point(hwnd: int, x: int, y: int) -> tuple[int, int]:
     if _logical_to_physical(hwnd, byref(pt)):
         return int(pt.x), int(pt.y)
     return x, y
+
+
+def _load_frame_functions():
+    # `GetDpiForWindow` and `AdjustWindowRectExForDpi` (win10 1607+):
+    # `AdjustWindowRectEx` uses the system DPI, which is wrong for a window
+    # on a monitor with a different scaling factor.
+    try:
+        get_dpi = user32.GetDpiForWindow  # @UndefinedVariable
+        adjust = user32.AdjustWindowRectExForDpi  # @UndefinedVariable
+    except AttributeError:
+        log("AdjustWindowRectExForDpi is not available (requires Windows 10 1607+)")
+        return None, None
+    get_dpi.argtypes = [HWND]
+    get_dpi.restype = UINT
+    adjust.argtypes = [POINTER(RECT), DWORD, BOOL, DWORD, UINT]
+    adjust.restype = BOOL
+    return get_dpi, adjust
+
+
+_get_dpi_for_window, _adjust_window_rect_for_dpi = _load_frame_functions()
+
+
+def get_window_dpi(hwnd: int) -> int:
+    """
+    The DPI of the monitor the window is on, or 0 if unknown.
+    """
+    if not hwnd or not callable(_get_dpi_for_window):
+        return 0
+    # noinspection calling-non-callable
+    return int(_get_dpi_for_window(hwnd))
+
+
+def adjust_window_rect_for_dpi(rect: RECT, style: int, has_menu: bool, exstyle: int, dpi: int) -> bool:
+    """
+    Like `AdjustWindowRectEx`, but using the frame metrics for the given DPI.
+    Returns `False` if that's not possible, leaving `rect` unchanged.
+    """
+    if not dpi or not callable(_adjust_window_rect_for_dpi):
+        return False
+    # noinspection calling-non-callable
+    return bool(_adjust_window_rect_for_dpi(byref(rect), style, has_menu, exstyle, dpi))
