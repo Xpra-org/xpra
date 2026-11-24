@@ -111,22 +111,6 @@ class Win32ConfigureTest(unittest.TestCase):
         })])
         self.assertEqual(window.state_updates, {})
 
-    def test_to_server_size(self) -> None:
-        from xpra.client.win32.window import to_server_size
-        display = scaled_display(0.8)
-        for size, server_size, expected in (
-            # 1193x847 is shown as 954x678, which converts back to 1192x848:
-            ((954, 678), (1193, 847), (1193, 847)),
-            ((954, 678), (0, 0), (1192, 848)),
-            # the width changed, the height did not:
-            ((1000, 678), (1193, 847), (1250, 847)),
-            # neither did:
-            ((801, 562), (1193, 847), (1001, 702)),
-        ):
-            with self.subTest(size=size, server_size=server_size):
-                self.assertEqual(to_server_size(display, *size, server_size), expected)
-        self.assertEqual(to_server_size(None, 954, 678, (1193, 847)), (954, 678))
-
     def test_send_configure_fractional_scaling(self) -> None:
         # the server must be told the size it knows, not one pixel off:
         for backing_size, expected in (

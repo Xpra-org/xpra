@@ -35,6 +35,23 @@ def to_local_limit(scaling, limit: Size) -> Size:
     return local_limit(w, scaling.sx, scaling.cx), local_limit(h, scaling.sy, scaling.cy)
 
 
+def to_server_size(scaling, width: int, height: int, server_size: Size) -> Size:
+    """
+    Convert a window size to server pixels, using the `sx`, `sy`, `cx` and `cy` methods of `scaling`.
+    With fractional scaling, several server sizes map to the same window size,
+    and converting it back may not give the size the server knows:
+    keep `server_size` on the axes where it still maps to the window size.
+    """
+    if not scaling:
+        return width, height
+    sw, sh = server_size
+    if sw <= 0 or scaling.sx(sw) != width:
+        sw = max(1, scaling.cx(width))
+    if sh <= 0 or scaling.sy(sh) != height:
+        sh = max(1, scaling.cy(height))
+    return sw, sh
+
+
 def get_track_sizes(size_constraints: typedict, max_window_size: Size, frame: Size,
                     to_local: Callable[[int, int], Size] | None = None,
                     fixed_size: Size | None = None) -> tuple[Size, Size]:

@@ -13,7 +13,7 @@ import unittest
 from types import SimpleNamespace
 
 from xpra.util.objects import typedict
-from xpra.client.gui.size_constraints import get_track_sizes, to_local_limit
+from xpra.client.gui.size_constraints import get_track_sizes, to_local_limit, to_server_size
 
 FRAME = (16, 39)
 
@@ -83,6 +83,21 @@ class SizeConstraintsTest(unittest.TestCase):
                     self.assertLessEqual(s.cy(h), limit)
                     # and it is not lower than it has to be:
                     self.assertGreaterEqual(w, int(limit * scale))
+
+    def test_to_server_size(self) -> None:
+        s = scaling(0.8, 0.8)
+        for size, server_size, expected in (
+            # 1193x847 is shown as 954x678, which converts back to 1192x848:
+            ((954, 678), (1193, 847), (1193, 847)),
+            ((954, 678), (0, 0), (1192, 848)),
+            # the width changed, the height did not:
+            ((1000, 678), (1193, 847), (1250, 847)),
+            # neither did:
+            ((801, 562), (1193, 847), (1001, 702)),
+        ):
+            with self.subTest(size=size, server_size=server_size):
+                self.assertEqual(to_server_size(s, *size, server_size), expected)
+        self.assertEqual(to_server_size(None, 954, 678, (1193, 847)), (954, 678))
 
 
 def main():

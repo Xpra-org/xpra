@@ -31,7 +31,7 @@ from xpra.common import (
 from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING, SOURCE_INDICATION_STRING
 from xpra.net.common import PacketElement
 from xpra.client.gui.window_base import ClientWindowBase, NOT_REQUESTED
-from xpra.client.gui.size_constraints import to_local_limit
+from xpra.client.gui.size_constraints import to_local_limit, to_server_size
 from xpra.client.gtk3.frame_extents import get_frame_extents, get_window_frame_sizes, request_frame_extents
 from xpra.client.gtk3.window.common import (
     use_x11_bindings, is_awt, is_popup, mask_buttons,
@@ -264,6 +264,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     MAX_BACKING_DIMS = 16 * 1024, 16 * 1024
 
     def init_window(self, metadata: typedict, client_props: typedict) -> None:
+        # the size the server last asked for, in server pixels: see `get_known_server_size`
+        self._requested_server_size: tuple[int, int] | None = None
         self.init_max_window_size()
         if self._override_redirect or is_popup(metadata):
             window_type = Gtk.WindowType.POPUP
@@ -375,11 +377,13 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
     def init_max_window_size(self) -> None:
         """ used by GL windows to enforce a hard limit on window sizes """
         saved_mws = self.max_window_size
+        # don't bother if the new limit is 16k or more,
+        # except for OpenGL windows: 16k is the `GL_MAX_TEXTURE_SIZE` of most drivers
+        # (the default limits of the other windows are 16k, they should not get a size hint from them)
+        no_limit = 16 * 1024 + int(self.is_GL())
 
         def clamp_to(maxw: int, maxh: int):
-            # don't bother if the new limit is greater than 16k,
-            # but a limit of exactly 16k still applies: (ie: `GL_MAX_TEXTURE_SIZE` with most drivers)
-            if maxw > 16 * 1024 and maxh > 16 * 1024:
+            if maxw >= no_limit and maxh >= no_limit:
                 return
             # only take into account the current max-window-size if non-zero:
             mww, mwh = self.max_window_size
@@ -437,6 +441,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.connect("property-notify-event", self.property_changed)
         self.connect("window-state-event", self.window_state_updated)
 
+        # the window is created with the size the server asked for:
+        self._requested_server_size = tuple(args[:2])
         # this will create the backing:
         ClientWindowBase.setup_window(self, *args)
 
@@ -535,6 +541,9 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             self._follow = None
 
     def new_backing(self, bw: int, bh: int):
+        # the server size may be too large for an OpenGL backing:
+        # at 0.5, 16385 server pixels are shown as 8192 window pixels, which is within the window size limit
+        bw, bh = self.clamp_backing_size((bw, bh))
         b = ClientWindowBase.new_backing(self, bw, bh)
         # soft dependency on `PointerWindow`:
         if cursor_data := getattr(self, "cursor_data", ()):
@@ -1520,10 +1529,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
                 state["frame"] = self.crect(*wfs)
                 self._current_frame_extents = wfs
         geomlog("map-window wid=%#x, geometry=%s, client props=%s, state=%s", self.wid, (x, y, w, h), props, state)
-        sx, sy, sw, sh = self.cx(x), self.cy(y), self.cx(w), self.cy(h)
         if self._backing is None:
             # we may have cleared the backing, so we must re-create one:
             self._set_backing_size(w, h)
+        sx, sy = self.cx(x), self.cy(y)
+        sw, sh = self.get_server_size(w, h)
         self._been_mapped = True
         packet = [WINDOW_MAP, self.wid, sx, sy, sw, sh, props, state]
         if monitor := self.get_monitor_position(x, y):
@@ -1682,7 +1692,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self._client_properties = {}
         self._window_state = {}
         self.cancel_window_state_timer()
-        sx, sy, sw, sh = self.cx(x), self.cy(y), self.cx(w), self.cy(h)
+        sx, sy = self.cx(x), self.cy(y)
+        sw, sh = self.get_server_size(w, h)
         # snap to server grid so the server doesn't send a correction back;
         # nearest rounding keeps the cx→snap→sx round-trip stable at any scale
         # (skip for maximized/fullscreen — the small border is expected)
@@ -1715,10 +1726,52 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         self.send(WINDOW_CONFIGURE, self.wid, config)
         geomlog("sending configure for %i: %s", self.wid, config)
 
+    def clamp_backing_size(self, size: tuple[int, int]) -> tuple[int, int]:
+        """ only the OpenGL backings have a size limit, see `GLClientWindowBase` """
+        w, h = size
+        return w, h
+
+    def clamp_window_size(self, w: int, h: int) -> tuple[int, int]:
+        """
+        The server may ask for a size larger than `max_window_size`, which is only applied through the geometry hints:
+        `Gdk.Window.resize` and `Gdk.Window.move_resize` do not go through them, and the window system may not either.
+        """
+        mw, mh = self.max_window_size
+        return (min(w, mw) if mw > 0 else w), (min(h, mh) if mh > 0 else h)
+
+    def get_known_server_size(self, w: int, h: int) -> tuple[int, int]:
+        """
+        With fractional scaling, several server sizes map to the same window size,
+        and converting the window size back may not give the size the server knows.
+        On each axis, use the size the server last asked for if it maps to the window size `w` x `h`,
+        otherwise the backing's size: the configure events that follow a resize
+        may report the previous window size first, and update the backing with it.
+        """
+        b = self._backing
+        bw, bh = b.size if b else (0, 0)
+        rw, rh = self._requested_server_size or (0, 0)
+        return (rw if rw > 0 and self.sx(rw) == w else bw), (rh if rh > 0 and self.sy(rh) == h else bh)
+
+    def get_server_size(self, w: int, h: int) -> tuple[int, int]:
+        """ the window size `w` x `h` in server pixels, within the backing's size limit """
+        return self.clamp_backing_size(to_server_size(self, w, h, self.get_known_server_size(w, h)))
+
+    def update_server_size(self, w: int, h: int, server_size: tuple[int, int] | None) -> None:
+        """
+        The window size has not changed, but the server size may have:
+        ie: from 1193 to 1192 at 0.8, which are both 954 window pixels.
+        """
+        self._set_backing_size(w, h)
+        b = self._backing
+        if server_size and b and tuple(b.size) != tuple(server_size) and not self.is_OR():
+            # the server asked for a size which is too large,
+            # and there is no configure event to tell it:
+            geomlog("update_server_size(%i, %i, %s) backing size is %s", w, h, server_size, b.size)
+            self.send_configure()
+
     def _set_backing_size(self, ww: int, wh: int) -> None:
         b = self._backing
-        bw = self.cx(ww)
-        bh = self.cy(wh)
+        bw, bh = self.get_server_size(ww, wh)
         if max(ww, wh) >= 32000 or min(ww, wh) < 0:
             raise ValueError("invalid window size %ix%i" % (ww, wh))
         if max(bw, bh) >= 32000:
@@ -1756,15 +1809,19 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def resize(self, w: int, h: int, resize_counter: int = 0, force: bool = False,
                server_size: tuple[int, int] | None = None) -> None:
-        # w, h are drawing-area (server-side) dimensions:
-        # (`server_size` is not used: the backing size is always converted from the window size)
+        # w, h are drawing-area (server-side) dimensions,
+        # `server_size` is the size the server asked for, in server pixels:
+        if server_size:
+            self._requested_server_size = tuple(server_size)
+        w, h = self.clamp_window_size(w, h)
         ww, wh = self.get_drawing_area_geometry()[2:]
         cw, ch = self._chrome_size()
-        geomlog("resize(%s, %s, %s) drawing area=%s, chrome=%s, fullscreen=%s, maximized=%s",
-                w, h, resize_counter, (ww, wh), (cw, ch), self._fullscreen, self._maximized)
+        geomlog("resize(%s, %s, %s, %s) drawing area=%s, chrome=%s, fullscreen=%s, maximized=%s",
+                w, h, resize_counter, server_size, (ww, wh), (cw, ch), self._fullscreen, self._maximized)
         self._resize_counter = resize_counter
         if (w, h) == (ww, wh):
             self._backing.offsets = 0, 0, 0, 0
+            self.update_server_size(w, h, server_size)
             self.repaint(0, 0, w, h)
             return
         if not self._fullscreen and not self._maximized:
@@ -1810,10 +1867,11 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
     def move_resize(self, x: int, y: int, w: int, h: int, resize_counter: int = 0,
                     server_size: tuple[int, int] | None = None) -> None:
-        geomlog("window %#x move_resize%s", self.wid, (x, y, w, h, resize_counter))
+        geomlog("window %#x move_resize%s", self.wid, (x, y, w, h, resize_counter, server_size))
+        if server_size:
+            self._requested_server_size = tuple(server_size)
         x, y = self.adjusted_position(x, y)
-        w = max(1, w)
-        h = max(1, h)
+        w, h = self.clamp_window_size(max(1, w), max(1, h))
         if self.window_offset:
             x += self.window_offset[0]
             y += self.window_offset[1]
@@ -1825,9 +1883,10 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
             # same location, just resize:
             if self._size == (w, h):
                 geomlog("window unchanged")
+                self.update_server_size(w, h, server_size)
             else:
                 geomlog("unchanged position %ix%i, using resize(%i, %i)", x, y, w, h)
-                self.resize(w, h, resize_counter, force=True)
+                self.resize(w, h, resize_counter, force=True, server_size=server_size)
             return
         # we have to move:
         if not self.get_realized():
@@ -1862,6 +1921,8 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
         if self._size == (w, h):
             # just move:
             geomlog("window size unchanged: %ix%i, using move(%i, %i)", w, h, ax, ay)
+            # the configure event that follows the move tells the server about the new size, if it changed:
+            self._set_backing_size(w, h)
             window.move(ax, ay)
             return
         # resize:

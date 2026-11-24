@@ -26,6 +26,12 @@ class GLClientWindowBase(ClientWindow):
     def is_GL(self) -> bool:
         return True
 
+    def clamp_backing_size(self, size: tuple[int, int]) -> tuple[int, int]:
+        """ the backing is a texture, which cannot be larger than the maximum texture size """
+        w, h = size
+        mw, mh = self.MAX_BACKING_DIMS
+        return min(w, mw), min(h, mh)
+
     def queue_draw_area(self, x: int, y: int, w: int, h: int) -> None:
         b = self._backing
         if not b:

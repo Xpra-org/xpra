@@ -53,7 +53,7 @@ from xpra.platform.win32.dpi import (
 from xpra.client.win32.altgr import KeyMessage, is_altgr_fake_control, add_altgr_layout, get_alt_r_keyname
 from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_lparam, img_to_hicon
 from xpra.client.win32.glib import start_modal_message_pump, stop_modal_message_pump
-from xpra.client.gui.size_constraints import get_track_sizes
+from xpra.client.gui.size_constraints import get_track_sizes, to_server_size
 from xpra.client.win32.system_menu import add_system_menu_items, get_command_action, update_checks
 from xpra.client.win32.window_state import handle_move, handle_size
 from xpra.log import Logger
@@ -173,23 +173,6 @@ def system_geometry(x: int, y: int, w: int, h: int, style: int, exstyle: int, ha
         AdjustWindowRectEx(byref(rect), style, has_menu, exstyle)
     # `RECT` fields are already signed 32-bit values:
     return rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top
-
-
-def to_server_size(display, width: int, height: int, server_size: tuple[int, int]) -> tuple[int, int]:
-    """
-    Convert a window size to server pixels.
-    With fractional scaling, several server sizes map to the same window size,
-    and converting it back may not give the size the server knows:
-    keep `server_size` on the axes where it still maps to the window size.
-    """
-    if not display:
-        return width, height
-    sw, sh = server_size
-    if sw <= 0 or display.sx(sw) != width:
-        sw = max(1, display.cx(width))
-    if sh <= 0 or display.sy(sh) != height:
-        sh = max(1, display.cy(height))
-    return sw, sh
 
 
 def peek_key_message(hwnd) -> KeyMessage | None:
