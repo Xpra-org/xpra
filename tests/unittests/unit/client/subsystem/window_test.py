@@ -179,6 +179,20 @@ class WindowManagerTest(ClientMixinTest):
         )
         self.assertEqual(resize_counters, [0, 0])
 
+    def test_tray_ignores_server_resize(self):
+        from xpra.client.gui.client_tray import ClientTray
+        from xpra.client.subsystem.window.manager import WindowManagerClient
+
+        tray = ClientTray.__new__(ClientTray)
+        tray._geometry = (10, 20, 32, 16)
+        manager = Mock()
+        manager.get_window.return_value = tray
+        display = manager.get_subsystem.return_value
+        display.sx.side_effect = lambda width: width
+        display.sy.side_effect = lambda height: height
+        WindowManagerClient._process_resized(manager, Packet("window-resized", 1, 100, 100, 7))
+        self.assertEqual(tray._geometry, (10, 20, 32, 16))
+
     def test_rescaling_includes_trays(self):
         from xpra.client.gui.client_tray import ClientTray
         from xpra.client.subsystem.window.manager import WindowManagerClient

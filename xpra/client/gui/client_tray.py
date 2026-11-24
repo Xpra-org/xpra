@@ -57,8 +57,8 @@ class ClientTray(ClientWidgetBase):
     def reset_size_constraints(self) -> None:
         """ we can't implement this method for trays - it should not be called """
 
-    def resize(self, nw, nh) -> None:
-        """ we can't implement this method for trays - it should not be called """
+    def resize(self, nw: int, nh: int, resize_counter: int = 0) -> None:
+        """The local system tray controls the icon size."""
 
     def set_alpha(self) -> None:
         """
