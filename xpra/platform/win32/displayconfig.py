@@ -46,6 +46,7 @@ DISPLAYCONFIG_MODE_INFO_TYPE_TARGET = 2
 # DISPLAYCONFIG_DEVICE_INFO_TYPE:
 DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME = 1
 DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_NAME = 2
+DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_PREFERRED_MODE = 3
 
 # marks `modeInfoIdx` as unused (newer per-source/target index fields in use):
 DISPLAYCONFIG_PATH_MODE_IDX_INVALID = 0xFFFFFFFF
@@ -224,6 +225,15 @@ class DISPLAYCONFIG_TARGET_DEVICE_NAME(Structure):
     ]
 
 
+class DISPLAYCONFIG_TARGET_PREFERRED_MODE(Structure):
+    _fields_ = [
+        ("header", DISPLAYCONFIG_DEVICE_INFO_HEADER),
+        ("width", UINT32),
+        ("height", UINT32),
+        ("targetMode", DISPLAYCONFIG_TARGET_MODE),
+    ]
+
+
 # DISPLAYCONFIG_TARGET_DEVICE_NAME_FLAGS.edidIdsValid:
 DISPLAYCONFIG_EDID_IDS_VALID = 0x4
 
@@ -284,6 +294,19 @@ def _target_device_name(adapter_id: LUID, target_id: int) -> tuple[str, str]:
     if req.flags & DISPLAYCONFIG_EDID_IDS_VALID:
         manufacturer = _decode_pnp_id(req.edidManufactureId)
     return manufacturer, model
+
+
+def _target_preferred_size(adapter_id: LUID, target_id: int) -> tuple[int, int]:
+    # the panel's preferred mode, normally its native resolution from the EDID,
+    # or (0, 0) if unknown:
+    req = DISPLAYCONFIG_TARGET_PREFERRED_MODE()
+    req.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_TARGET_PREFERRED_MODE
+    req.header.size = sizeof(DISPLAYCONFIG_TARGET_PREFERRED_MODE)
+    req.header.adapterId = adapter_id
+    req.header.id = target_id
+    if DisplayConfigGetDeviceInfo(byref(req.header)) != ERROR_SUCCESS:
+        return 0, 0
+    return req.width, req.height
 
 
 def get_display_config() -> dict[str, dict[str, Any]]:
@@ -355,6 +378,14 @@ def get_display_config() -> dict[str, dict[str, Any]]:
                 entry["manufacturer"] = manufacturer
             if model:
                 entry["model"] = model
+            if tgt:
+                # the GPU sends a mode other than the panel's preferred one,
+                # so the monitor's own scaler is likely interpolating it:
+                pw, ph = _target_preferred_size(path.targetInfo.adapterId, path.targetInfo.id)
+                log("monitor %s: preferred mode %ix%i", name, pw, ph)
+                if pw and ph and (pw, ph) != tgt["active-size"]:
+                    log.info("monitor %s: %ix%i output is not the panel's preferred resolution %ix%i",
+                             name, tgt["active-size"][0], tgt["active-size"][1], pw, ph)
             info[name] = entry
     log("get_display_config()=%s", info)
     return info
