@@ -1,5 +1,48 @@
 # Changelog
 
+## [7.0.1] 2026-11-24
+* 🔧 Platforms, build and packaging:
+  * [the codec package depended on unavailable OpenJPH library versions on Debian Forky and Sid](https://github.com/Xpra-org/xpra/commit/5cf7aeb44a6d948391fa2dc3c95f3e3ce70fa9a8)
+* RPM repository updates:
+  * [aioquic 1.9.1](https://github.com/Xpra-org/xpra/commit/bba04e829edfd2c839295ce74ac3bcd43e1fd84e)
+  * [pylsqpack 1.1.2](https://github.com/Xpra-org/xpra/commit/4b15dd3a6ba264dda4a2ff74172ad67b2c5a9181)
+  * [NumPy 2.5.5](https://github.com/Xpra-org/xpra/commit/1d4e60e358011c67bddb629387a8fa4a12f07083)
+  * [TorchVision 0.29.2](https://github.com/Xpra-org/xpra/commit/9607adc0444dd7c0fe60c883e5ec060660756b22)
+  * [2026-11-18 libyuv snapshot](https://github.com/Xpra-org/xpra/commit/cccf57b9e3d6111418a1afd878c1ee8b02deb020)
+  * [pip 26.3](https://github.com/Xpra-org/xpra/commit/3b96b4d04270ef276279ca8da6e1656144d8f4d2)
+  * [setuptools 84.2.1](https://github.com/Xpra-org/xpra/commit/4b59b4ad76074e746e56a1b5615c54b9cbebd1f8)
+  * [dbus-python 1.5.1](https://github.com/Xpra-org/xpra/commit/24c8f0192c5c8adf434c5f6b866ba628cf5e8e1d)
+  * [PyYAML 6.0.4](https://github.com/Xpra-org/xpra/commit/dc3ce26037be6b683794958059ee7a73e1422651)
+* MS Windows client:
+  * [windows appeared in the wrong place on desktops with monitors left of or above the primary display](https://github.com/Xpra-org/xpra/commit/7834044daa8b38d0fc96e40665a399c7ef8e68e1), [and application-initiated moves and resizes started from the wrong position](https://github.com/Xpra-org/xpra/commit/8d48004d0423f805c07c98d9f47a81cfaeddf69c)
+  * [window frames and content areas were the wrong size on monitors with a different DPI from the system DPI](https://github.com/Xpra-org/xpra/commit/cdf184bf2e73b6f275252144ac3fbb15e1dc1de5)
+  * [windows could be sized or positioned incorrectly on very large desktops](https://github.com/Xpra-org/xpra/commit/bc3856100a6681fc71c22bd67c145b554a3f8eb0)
+  * [changing desktop scaling could size windows incorrectly](https://github.com/Xpra-org/xpra/commit/36b15e854308f85edbcefc50f4c51711c0c1f2b6) [and try to resize minimized windows](https://github.com/Xpra-org/xpra/commit/9ea71854de8fffcf63431b9fd3a42f4cd4a95197)
+  * [maximized windows rendered at the old size and the server could still see them as maximized after restore](https://github.com/Xpra-org/xpra/commit/0f982f26f397d4da66bce868ae6491884b7061d0)
+  * [windows restored from the taskbar could remain unmapped on the server](https://github.com/Xpra-org/xpra/commit/5c9ec83d6a026a1defc1dcaac0fa3cdbf0339802)
+  * [the pointer was trapped inside open menus, making submenus unreachable](https://github.com/Xpra-org/xpra/commit/4a7b45f0f5959e90bb42b1604fe5094ecbf6a65b), [and open menus could linger after switching applications](https://github.com/Xpra-org/xpra/commit/bbc6297915eb05cb04aa66b0561daa8de49089f7)
+  * [clicking a window marked to stay inactive could steal focus](https://github.com/Xpra-org/xpra/commit/4008c2a785009e02a7b04ba6821e9314150b993f)
+* Client and desktop integration:
+  * [clients ignored server changes to bells, cursors, webcam, clipboard and its direction, bandwidth limits and whether they could start commands](https://github.com/Xpra-org/xpra/commit/1a49fe0245f3ca867a498d161e3d690dfbbe6b17), [and the Monitors menu and session info kept showing the initial display capabilities](https://github.com/Xpra-org/xpra/commit/cf3644d2b7e0513dbae08e5da98ce9a14c26199b)
+  * [the application launch menu could show stale entries on MS Windows and macOS](https://github.com/Xpra-org/xpra/commit/ec47738e6734546d9ab49e7768566e145bfde68f)
+  * [forwarded tray icons reported stale geometry after display scaling changed](https://github.com/Xpra-org/xpra/commit/070683d9be5990af7288ecab9064bb24daf557e1), [and server resize requests for tray icons caused errors](https://github.com/Xpra-org/xpra/commit/b8064c8b1feb3296bc02bf5126858dd43814822e)
+  * [the X11 desktop work area was offset when a monitor sat left of or above the primary display](https://github.com/Xpra-org/xpra/commit/befa84b85dac648242953bffa02dc932bfe3c9fa)
+  * [application window icons were missing when the desktop entry matched only by `StartupWMClass`](https://github.com/Xpra-org/xpra/commit/d3dbfb2c1cfc065b0a477a8196e9bc380cbf400c)
+  * [a failed signal watcher shutdown request could leave an open file and trigger a Python resource warning](https://github.com/Xpra-org/xpra/commit/8df0bac994cfbffe287197f585dae220d0976709)
+* 🖧 Network:
+  * [QUIC connections were incompatible with aioquic 1.9 and could fail to fall back when datagrams were unavailable](https://github.com/Xpra-org/xpra/commit/408481eab12e236759d685a2c6a666389ddf1d7f), [with required dependencies missing from some packaged builds](https://github.com/Xpra-org/xpra/commit/2b72e164d5f770ac81601083101e67828d134fc7)
+  * [proxy connections to older clients, including HTML5, could time out despite receiving ping replies](https://github.com/Xpra-org/xpra/commit/fcef78ca3e3fd39c58d466c9a8fda238a85e15a0)
+  * [the proxy could stop detecting late or missing ping replies after receiving its first reply](https://github.com/Xpra-org/xpra/commit/84fef36b705c1f43329f29b9eff816d23d355545)
+  * [clients could reconnect after an intentional detach or shutdown because the disconnect reason never arrived](https://github.com/Xpra-org/xpra/commit/190f09edd995aa94f8886930f6b3512bdb7713e0)
+  * [malformed packets could consume excessive memory or raise unhandled errors](https://github.com/Xpra-org/xpra/commit/aad356486b8f6d60f4043c0ab1d800b459396f8f)
+  * [packets with missing fields could raise unhandled errors](https://github.com/Xpra-org/xpra/commit/b7fae3f044c7a42751229ec8f3e244e5becc7bb4)
+* 🌈 Encodings:
+  * [VP8 and VP9 encoding could read past the end of scaled video buffers with odd dimensions](https://github.com/Xpra-org/xpra/commit/db840722f61adf0090ad88f12dc3b56a7cfbc9d1)
+  * [VP8 and VP9 streams kept using the old bandwidth limit until encoding quality changed](https://github.com/Xpra-org/xpra/commit/5132a5eaab538c2227616029eeabf1bc6c0acb97)
+* Testing:
+  * [client display tests could segfault on OpenBSD](https://github.com/Xpra-org/xpra/commit/4135d32e20532fd9ac52a2fef5cc5102623cd8bc)
+  * [modal popup tests failed after the window positioning changes](https://github.com/Xpra-org/xpra/commit/bddb8bb80bc74022d7a4b95ba41f04443053a037)
+
 ## [7.0] 2026-11-16
 * 🔧 Platforms, build and packaging:
   * [new macOS event API](https://github.com/Xpra-org/xpra/issues/2955)
