@@ -7,12 +7,18 @@
 import unittest
 from unittest.mock import Mock, call, patch
 
+from xpra.os_util import POSIX, OSX
 from xpra.net.common import Packet
 from xpra.net.dispatch import get_packet_handler_specs
 from xpra.util.objects import AdHocStruct, typedict
-from unit.test_util import silence_info, stubbable
+from unit.test_util import silence_info, stubbable, has_module
 from unit.process_test_util import DisplayContext
 from unit.client.subsystem.clientmixintest_util import ClientMixinTest
+
+# the platforms where `DisplayClient.init_display_watcher` watches the X11 display,
+# even with the X11 bindings installed, the other platforms never use them:
+X11_DISPLAY_WATCHER = POSIX and not OSX
+X11_BINDINGS = has_module("xpra.x11.bindings.core")
 
 
 def make_icc_profile(size: int = 128) -> bytes:
@@ -24,6 +30,8 @@ def make_icc_profile(size: int = 128) -> bytes:
 
 class DisplayClientTest(ClientMixinTest):
 
+    @unittest.skipUnless(X11_BINDINGS and X11_DISPLAY_WATCHER,
+                         "requires the X11 bindings, and a platform where the client watches the X11 display")
     def test_xsettings_negotiation(self):
         with DisplayContext():
             from xpra.client.subsystem.display import DisplayClient
@@ -77,6 +85,7 @@ class DisplayClientTest(ClientMixinTest):
                             root_class.assert_not_called()
                         display.cleanup()
 
+    @unittest.skipUnless(has_module("xpra.x11.gtk.bindings"), "requires the X11 GTK bindings")
     def test_x11_filter_lifecycle(self):
         from xpra.platform.posix.display import X11DisplayPropsWatcher
 
@@ -89,6 +98,7 @@ class DisplayClientTest(ClientMixinTest):
         init_filter.assert_called_once_with()
         cleanup_filter.assert_called_once_with()
 
+    @unittest.skipUnless(X11_BINDINGS, "requires the X11 bindings")
     def test_x11_window_stacking(self):
         with DisplayContext():
             from xpra.platform.posix.display import X11DisplayPropsWatcher
@@ -259,8 +269,9 @@ class DisplayClientTest(ClientMixinTest):
                     "resize_screen": True,
                 })
             self.assertTrue(self.mixin.server_randr)
-            self.assertIsNotNone(self.mixin._x11_props)
-            self.assertFalse(self.mixin._x11_props.xsettings_enabled)
+            if X11_DISPLAY_WATCHER:
+                self.assertIsNotNone(self.mixin._x11_props)
+                self.assertFalse(self.mixin._x11_props.xsettings_enabled)
             # `get_monitors_info` now calls through to `xpra.platform.gui.get_monitors_info`
             # rather than returning `{}` unconditionally (see the toolkit-split plan):
             called = []

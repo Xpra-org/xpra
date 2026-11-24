@@ -7,11 +7,9 @@
 import os
 import sys
 import zlib
-import fcntl
 import signal
 import struct
 import logging
-import termios
 import tempfile
 import threading
 import time
@@ -21,6 +19,11 @@ from io import BytesIO
 from base64 import b64decode
 from unittest.mock import Mock, patch
 from collections.abc import Sequence
+
+from xpra.os_util import WIN32
+if not WIN32:
+    import fcntl
+    import termios
 
 from xpra.exit_codes import ExitCode
 from xpra.util.env import OSEnvContext
@@ -1150,6 +1153,7 @@ class TerminalClientTest(unittest.TestCase):
         self.assertEqual(client.exit_code, ExitCode.OK)
 
 
+@unittest.skipIf(WIN32, "requires a pty, `fcntl` and `termios`")
 @unittest.skipIf(terminal_client is None, "the terminal client component is not available")
 class TerminalModeTest(unittest.TestCase):
     """

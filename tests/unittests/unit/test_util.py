@@ -6,8 +6,17 @@
 
 import socket
 import logging
+from importlib.util import find_spec
 
 from xpra.util.env import envbool
+
+
+def has_module(module: str) -> bool:
+    """ whether the module is installed, without importing it (its parent packages are imported) """
+    try:
+        return find_spec(module) is not None
+    except ModuleNotFoundError:
+        return False
 
 
 def silence_info(module, logger="log"):
