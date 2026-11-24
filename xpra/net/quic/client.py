@@ -151,8 +151,9 @@ class ClientWebTransportConnection(XpraQuicConnection):
 class WebTransportClient(XpraQuicConnectionProtocol):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # WebTransport requires H3 with enable_webtransport=True
-        self._http: H3Connection = H3Connection(self.quic_connection, enable_webtransport=True)
+        # WebTransport needs datagrams, which QUIC only accepts with a `MAX_DATAGRAM_FRAME_SIZE`:
+        enable_webtransport = bool(self.quic_connection.configuration.max_datagram_frame_size)
+        self._http: H3Connection = H3Connection(self.quic_connection, enable_webtransport=enable_webtransport)
         self._sessions: dict[int, ClientWebTransportConnection] = {}
 
     def open(self, host: str, port: int, path: str) -> ClientWebTransportConnection:
