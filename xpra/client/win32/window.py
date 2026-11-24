@@ -163,18 +163,8 @@ def system_geometry(x: int, y: int, w: int, h: int, style: int, exstyle: int, ha
     rect.right = x + w
     rect.bottom = y + h
     AdjustWindowRectEx(byref(rect), style, has_menu, exstyle)
-    x1, y1, x2, y2 = rect_to_signed(rect)
-    return x1, y1, x2 - x1, y2 - y1
-
-
-def rect_to_signed(rect: RECT) -> tuple[int, int, int, int]:
-    """Convert RECT coordinates to signed values."""
-    return (
-        to_signed_coordinate(rect.left & 0xFFFF),
-        to_signed_coordinate(rect.top & 0xFFFF),
-        to_signed_coordinate(rect.right & 0xFFFF),
-        to_signed_coordinate(rect.bottom & 0xFFFF)
-    )
+    # `RECT` fields are already signed 32-bit values:
+    return rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top
 
 
 def peek_key_message(hwnd) -> KeyMessage | None:
@@ -1163,9 +1153,8 @@ class ClientWindow(GObject.GObject):
         rect = RECT()
         if not GetWindowRect(self.hwnd, byref(rect)):
             return
-        # `GetWindowRect` fills the RECT with proper 32-bit signed screen
-        # coordinates (unlike the 16-bit packed values in a `WM_MOVE` lparam),
-        # so read the fields directly - do NOT use `rect_to_signed` here:
+        # `RECT` fields are signed 32-bit values, read them directly:
+        # (unlike the 16-bit packed values in a `WM_MOVE` lparam)
         x1, y1, x2, y2 = rect.left, rect.top, rect.right, rect.bottom
         w, h = x2 - x1, y2 - y1
         if w <= 0 or h <= 0:

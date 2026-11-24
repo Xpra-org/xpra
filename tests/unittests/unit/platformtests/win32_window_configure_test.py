@@ -58,6 +58,16 @@ class Win32ConfigureTest(unittest.TestCase):
         })])
         self.assertEqual(window.state_updates, {})
 
+    def test_system_geometry_large_coordinates(self) -> None:
+        import win32con
+        from xpra.client.win32.window import system_geometry
+        # beyond the 16-bit range: the frame must still surround the client area
+        for x, y in ((40000, 50000), (-40000, -50000), (100, 100)):
+            with self.subTest(x=x, y=y):
+                wx, wy, ww, wh = system_geometry(x, y, 640, 480, win32con.WS_OVERLAPPEDWINDOW, 0)
+                self.assertTrue(x - 64 < wx <= x and y - 128 < wy <= y, (wx, wy))
+                self.assertTrue(wx + ww >= x + 640 and wy + wh >= y + 480, (ww, wh))
+
     def test_map_drawable_geometry(self) -> None:
         from xpra.client.win32 import window as native
 
