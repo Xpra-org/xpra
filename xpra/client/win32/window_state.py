@@ -49,7 +49,8 @@ def handle_move(window, x: int, y: int) -> bool:
     window.y = y
     # when restoring a minimized window, `WM_MOVE` comes first:
     # the `map-window` packet sent from `WM_SIZE` will carry the new position
-    if not window.minimized:
+    # (and before `hwnd` is set, the window is not mapped yet: `window_created()` sends the position)
+    if window.hwnd and not window.minimized:
         window.emit("moved")
     return False
 

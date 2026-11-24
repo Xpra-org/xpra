@@ -46,6 +46,7 @@ from xpra.platform.win32.common import (
 )
 from xpra.keyboard.keysyms import keysym_name
 from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
+from xpra.platform.win32.dpi import get_window_dpi, adjust_window_rect_for_dpi
 from xpra.client.win32.altgr import KeyMessage, is_altgr_fake_control, add_altgr_layout, get_alt_r_keyname
 from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_lparam, img_to_hicon
 from xpra.client.win32.glib import start_modal_message_pump, stop_modal_message_pump
@@ -152,17 +153,21 @@ def _vk_mask(wparam: int, mask: dict) -> tuple:
     return tuple(values)
 
 
-def system_geometry(x: int, y: int, w: int, h: int, style: int, exstyle: int, has_menu=False) -> tuple[int, int, int, int]:
+def system_geometry(x: int, y: int, w: int, h: int, style: int, exstyle: int, has_menu=False,
+                    dpi=0) -> tuple[int, int, int, int]:
     """
     Convert the window's internal geometry into system coordinates,
     which include the top bar and borders.
+    The frame metrics depend on the DPI of the monitor the window is on,
+    without one, the system DPI is used.
     """
     rect = RECT()
     rect.left = x
     rect.top = y
     rect.right = x + w
     rect.bottom = y + h
-    AdjustWindowRectEx(byref(rect), style, has_menu, exstyle)
+    if not adjust_window_rect_for_dpi(rect, style, has_menu, exstyle, dpi):
+        AdjustWindowRectEx(byref(rect), style, has_menu, exstyle)
     # `RECT` fields are already signed 32-bit values:
     return rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top
 
@@ -480,14 +485,48 @@ class ClientWindow(GObject.GObject):
         if not self.is_OR() and not self.metadata.boolget("set-initial-position", False):
             x = win32con.CW_USEDEFAULT
             y = win32con.CW_USEDEFAULT
+        # `WM_MOVE` and `WM_SIZE` may update the window attributes during `CreateWindowExW`:
+        client_geometry = self.x, self.y, self.width, self.height
         hwnd = CreateWindowExW(dwexstyle, self.class_atom, title, style,
                                x, y, w, h,
                                0, 0, self.module_handle, None)
+        if hwnd:
+            self.fit_frame_to_dpi(hwnd, dwexstyle, client_geometry, x == win32con.CW_USEDEFAULT)
         try:
             _apply_title_bar_theme(hwnd or 0)
         except Exception:
             log("_apply_title_bar_theme(%#x)", hwnd or 0, exc_info=True)
         return hwnd
+
+    def fit_frame_to_dpi(self, hwnd: int, exstyle: int, client_geometry: tuple[int, int, int, int],
+                         default_position: bool) -> None:
+        """
+        The frame passed to `CreateWindowExW` was computed before the window existed,
+        using the system DPI: if the window landed on a monitor with a different DPI,
+        its frame metrics differ and so would its client area.
+        Called before `self.hwnd` is set, so the resulting `WM_SIZE` is ignored,
+        `window_created()` measures the client area afterwards.
+        """
+        dpi = get_window_dpi(hwnd)
+        if not dpi:
+            return
+        x, y, w, h = system_geometry(*client_geometry, self.style, exstyle, dpi=dpi)
+        if (x, y, w, h) == system_geometry(*client_geometry, self.style, exstyle):
+            # same frame metrics as the ones used for creating it,
+            # any difference comes from the size constraints or the OS: leave it
+            return
+        rect = RECT()
+        if not GetWindowRect(hwnd, byref(rect)):
+            return
+        current = rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top
+        if default_position:
+            # the OS chose the position, keep it:
+            x, y = current[:2]
+        geomlog("fit_frame_to_dpi: dpi=%i, frame=%s, expected=%s", dpi, current, (x, y, w, h))
+        if current == (x, y, w, h):
+            return
+        flags = win32con.SWP_NOACTIVATE | win32con.SWP_NOOWNERZORDER | win32con.SWP_NOZORDER
+        SetWindowPos(hwnd, 0, x, y, w, h, flags)
 
     def key_message(self, msg: int, vk_code: int, lparam: int) -> bool:
         """
@@ -1019,7 +1058,7 @@ class ClientWindow(GObject.GObject):
         # in read-only mode, this is the only size allowed (see `apply_size_constraints`):
         self._requested_size = w, h
         exstyle = GetWindowLongW(self.hwnd, win32con.GWL_EXSTYLE)
-        wx, wy, ww, wh = system_geometry(x, y, w, h, self.style, exstyle)
+        wx, wy, ww, wh = system_geometry(x, y, w, h, self.style, exstyle, dpi=get_window_dpi(self.hwnd))
         flags = win32con.SWP_NOACTIVATE | win32con.SWP_NOOWNERZORDER | win32con.SWP_NOZORDER
         geomlog("move_resize%s system geometry=%s", (x, y, w, h, resize_counter), (wx, wy, ww, wh))
         SetWindowPos(self.hwnd, 0, wx, wy, ww, wh, flags)
@@ -1065,7 +1104,7 @@ class ClientWindow(GObject.GObject):
         info = cast(lparam, POINTER(MINMAXINFO)).contents
         # (this message is received before `CreateWindowExW` returns the `hwnd`)
         exstyle = GetWindowLongW(hwnd, win32con.GWL_EXSTYLE)
-        frame = system_geometry(0, 0, 0, 0, self.style, exstyle)[2:]
+        frame = system_geometry(0, 0, 0, 0, self.style, exstyle, dpi=get_window_dpi(hwnd))[2:]
         display = self.get_subsystem("display")
         to_local = display.sp if display else None
         fixed_size = None

@@ -116,6 +116,13 @@ class Win32WindowStateTest(unittest.TestCase):
         assert (w.x, w.y) == (200, 300)
         assert w.signals == [("moved", {})]
 
+    def test_move_before_hwnd(self):
+        # the `WM_MOVE` sent from within `CreateWindowExW`, before the window is mapped:
+        w = FakeWindow()
+        w.hwnd = 0
+        assert not w.move(200, 300)
+        assert not w.signals
+
     def test_minimize(self):
         w = FakeWindow()
         w.minimize()
