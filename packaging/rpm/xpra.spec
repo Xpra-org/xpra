@@ -848,7 +848,64 @@ fi
 
 %changelog
 * Tue Nov 24 2026 Antoine Martin <antoine@xpra.org> 5.1.8-10
-- TODO
+- Client and display:
+   resend tray icon geometry when display scaling changes and accept resize counters in the tray handler
+   restore minimized X11 windows when the client gives them focus
+   suppress wheel-button events when `--mousewheel=no`
+   use declared defaults for unset window properties
+   ignore notification replies from disconnected clients
+   report the signal that stopped the OpenGL probe
+- 🌈 Encodings:
+   allocate and validate full chroma planes for odd-sized video frames
+   preserve the auto-refresh delay and interpret control-command delays in seconds
+   keep JPEG and WebP picture encoding available when clients omit their colour-space conversion modes
+- 🖧 Network:
+   let clients finish disconnecting when late packets arrive
+   restore proxy ping warnings and timeouts after a ping reply
+   handle and log short packets in client and server callbacks
+   reject integers in packet fields that require byte strings
+   report invalid decoder input as `ValueError`
+   avoid RFB callback errors when a packet arrives during cleanup
+   fix proxy connection handover and make the control socket optional
+   avoid a second error when logging an empty HTTP request
+   show the original error when network interface parsing fails
+- SSL:
+   support separate TLS certificate and key files while retaining combined-file lookup
+   stop browsers prompting for a client certificate by default
+   use the TLS handshake timeout when upgrading WebSocket connections to WSS
+   shut down SSL readers promptly
+   offer only HMAC digests in FIPS mode
+- Session startup and configuration:
+   use the target user's home for `XAUTHORITY` so proxy-started sessions can start
+   clean up the virtual display process group when running it as another user
+   accept existing Xpra runtime subdirectories that other users can read but cannot write to
+   run the system service from its private working directory
+   start correctly when `XDG_RUNTIME_DIR` is empty
+   recognize directories writable by all users in permission checks
+   preserve command-line connect, disconnect and last-client-exit hooks when starting over SSH
+   preserve default lists when parsing PulseAudio setup commands, key shortcuts and password files
+   document and test that `xpra.conf` takes precedence over `conf.d`
+   suppress warnings about `audio-sink` in configurations from newer versions
+   close the signal watcher's stdin when sending the exit request fails
+- 🔧 Platforms, build and packaging:
+   update Ubuntu Stonking build dependencies
+   stop Debian packaging when source extraction fails
+   fix CUDA compiler setup and add Clang build dependencies for Ubuntu Resolute and Stonking
+   add a development package list for CentOS Stream 10
+   correct the Cython package name in Fedora and Enterprise Linux build lists
+   set application and package versions to 5.1.8
+- 📦 RPM:
+   declare the `python3dist(xpra)` dependency capability on Fedora 42 and later
+   `pylsqpack` 1.1.0, with the EL8 pin to 0.3.16 retained, 1.1.1, 1.1.2
+   `pynvml` 13.615.71
+   `nasm` 3.02
+   `libyuv` 0.65 snapshot from 2026-11-18 (revision 1984)
+   make PyCUDA's pytools, platformdirs and mako dependencies optional so EL10 upgrades can proceed
+   fix PyCUDA builds with CUDA 13 on EL8
+   build PyOpenGL 3.1.10 and its acceleration module
+- Maintenance:
+   add regression coverage for permission checks, FIPS, notifications, virtual display cleanup and proxy control sockets
+   document the legacy X11 resize check
 * Sat Nov 07 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
 - 🔧 Platforms, build and packaging:
    honour `--root ROOT` when installing

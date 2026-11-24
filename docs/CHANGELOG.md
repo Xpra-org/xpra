@@ -1,7 +1,64 @@
 # Changelog
 
 ## [5.1.8] 2026-11-24
-* TODO
+* Client and display:
+  * [resend tray icon geometry when display scaling changes](https://github.com/Xpra-org/xpra/commit/005bd994eadc725da4cf043537eb974d14557bf5) [and accept resize counters in the tray handler](https://github.com/Xpra-org/xpra/commit/6de6bd8e7c8a7eb128c404536791071995d1b2b4)
+  * [restore minimized X11 windows when the client gives them focus](https://github.com/Xpra-org/xpra/commit/6cfd4f3495a291c4d238aefab8f4fdfdccba62d6)
+  * [suppress wheel-button events when `--mousewheel=no`](https://github.com/Xpra-org/xpra/commit/2baa80a0b2528cc883ae8dd314c89e3432a661f8)
+  * [use declared defaults for unset window properties](https://github.com/Xpra-org/xpra/commit/39cedf95fd9b3f625b18ae048c6e95a43f8c8af0)
+  * [ignore notification replies from disconnected clients](https://github.com/Xpra-org/xpra/commit/a600a4d3f759b68968c2e17dfee021e5f77ad757)
+  * [report the signal that stopped the OpenGL probe](https://github.com/Xpra-org/xpra/commit/94ebb99ff9cb203f2e8fa4c338da58149b04a29b)
+* 🌈 Encodings:
+  * [allocate and validate full chroma planes for odd-sized video frames](https://github.com/Xpra-org/xpra/commit/aef1c8bcd8e63d988dc36dff63477593634a8a14)
+  * [preserve the auto-refresh delay and interpret control-command delays in seconds](https://github.com/Xpra-org/xpra/commit/a434efed16691a4845cbc5c1bf17d2f167013f78)
+  * [keep JPEG and WebP picture encoding available when clients omit their colour-space conversion modes](https://github.com/Xpra-org/xpra/commit/3f20988a1a8172bc59866932e62cfb5caa9598b2)
+* 🖧 Network:
+  * [let clients finish disconnecting when late packets arrive](https://github.com/Xpra-org/xpra/commit/7e85bc83dd6d6ff8d3225f34b0cb357285e384ab)
+  * [restore proxy ping warnings and timeouts after a ping reply](https://github.com/Xpra-org/xpra/commit/d59bd3febf2340fb76609d3d4b76d0d759d2f52b)
+  * [handle and log short packets in client and server callbacks](https://github.com/Xpra-org/xpra/commit/f113a439dad6e5ca9c2d8cd69327ee2106b5a17f)
+  * [reject integers in packet fields that require byte strings](https://github.com/Xpra-org/xpra/commit/a83411aa8ef6ba5a46cc014fa215563e0e636a8c)
+  * [report invalid decoder input as `ValueError`](https://github.com/Xpra-org/xpra/commit/6482e08eaf7bf3ae9cae0d23168002901d452738)
+  * [avoid RFB callback errors when a packet arrives during cleanup](https://github.com/Xpra-org/xpra/commit/2bb18b7cb7615368a0578c08a972bd305d6cbf13)
+  * [fix proxy connection handover and make the control socket optional](https://github.com/Xpra-org/xpra/commit/94be5dfe3316a6a8f0969f0ab005485b34f22bfb)
+  * [avoid a second error when logging an empty HTTP request](https://github.com/Xpra-org/xpra/commit/c53d348c55e929ec4064e063fe4c3dbfd81ae714)
+  * [show the original error when network interface parsing fails](https://github.com/Xpra-org/xpra/commit/485ed3f535775d1a723a6e83813b1f06b37b836a)
+* SSL:
+  * [support separate TLS certificate and key files while retaining combined-file lookup](https://github.com/Xpra-org/xpra/commit/b0aba3217798c7ab188e046ed9d636854d397cab)
+  * [stop browsers prompting for a client certificate by default](https://github.com/Xpra-org/xpra/commit/82d8bb01a5c8e9078a0c6066b1d426e19283357f)
+  * [use the TLS handshake timeout when upgrading WebSocket connections to WSS](https://github.com/Xpra-org/xpra/commit/8523ed0b6566223a9c541f374e5728cb35d741c6)
+  * [shut down SSL readers promptly](https://github.com/Xpra-org/xpra/commit/816fab4d792532b5bf517f88990bd547c7609051)
+  * [offer only HMAC digests in FIPS mode](https://github.com/Xpra-org/xpra/commit/8164a09fdaee455e603362717fcd887a2f37c208)
+* Session startup and configuration:
+  * [use the target user's home for `XAUTHORITY` so proxy-started sessions can start](https://github.com/Xpra-org/xpra/commit/8871ab6573a287aaae6e64830f6a9f41a9645c88)
+  * [clean up the virtual display process group when running it as another user](https://github.com/Xpra-org/xpra/commit/7e856465d683425e5868a26665293506d3390768)
+  * [accept existing Xpra runtime subdirectories that other users can read but cannot write to](https://github.com/Xpra-org/xpra/commit/b2fc98ea95e0eef36e68f41849aca38e5f90ac68)
+  * [run the system service from its private working directory](https://github.com/Xpra-org/xpra/commit/b90022d1f23c6fc762a89c8e26f00608f380e3c9)
+  * [start correctly when `XDG_RUNTIME_DIR` is empty](https://github.com/Xpra-org/xpra/commit/c5be00a8a8a06189eb31074b149a1916756bcd54)
+  * [recognize directories writable by all users in permission checks](https://github.com/Xpra-org/xpra/commit/29936786335dba81070788244a5359178a2341d2)
+  * [preserve command-line connect, disconnect and last-client-exit hooks when starting over SSH](https://github.com/Xpra-org/xpra/commit/87f4a4d93a631ba19dbb28c12c98e9e81985d20d)
+  * [preserve default lists when parsing PulseAudio setup commands, key shortcuts and password files](https://github.com/Xpra-org/xpra/commit/5304d3c33849223a9ef4b2e41558d84c2996e0c3)
+  * [document and test that `xpra.conf` takes precedence over `conf.d`](https://github.com/Xpra-org/xpra/commit/6d34d75aac688bc7be763e867c3c50f8a2c22802)
+  * [suppress warnings about `audio-sink` in configurations from newer versions](https://github.com/Xpra-org/xpra/commit/babec0289d74f21307acc5656ede29466e8971f6)
+  * [close the signal watcher's stdin when sending the exit request fails](https://github.com/Xpra-org/xpra/commit/c5a978af1978ea72dfa5593ac077d9d7b55c1796)
+* 🔧 Platforms, build and packaging:
+  * [update Ubuntu Stonking build dependencies](https://github.com/Xpra-org/xpra/commit/50d59337fa2545af60caf67de565d474cf703e26)
+  * [stop Debian packaging when source extraction fails](https://github.com/Xpra-org/xpra/commit/8dbe8a7e0d3a62030bd0f565f7b1a6f8f0f311c5)
+  * [fix CUDA compiler setup and add Clang build dependencies for Ubuntu Resolute and Stonking](https://github.com/Xpra-org/xpra/commit/aa988adbfc064817f4d395dc5b04418aeec9fa37)
+  * [add a development package list for CentOS Stream 10](https://github.com/Xpra-org/xpra/commit/0465a44a706a648b52f3d05043d69ab83d1ea68f)
+  * [correct the Cython package name in Fedora and Enterprise Linux build lists](https://github.com/Xpra-org/xpra/commit/3ec19b13558e05a66c180de77ccdefc252f92c38)
+  * [set application and package versions to 5.1.8](https://github.com/Xpra-org/xpra/commit/983b7fc2aae84094d7118ae63a7d0675560c41e7)
+* 📦 RPM:
+  * [declare the `python3dist(xpra)` dependency capability on Fedora 42 and later](https://github.com/Xpra-org/xpra/commit/215b85986a14cc0ca3221019c295d572a51efa3d)
+  * [`pylsqpack` 1.1.0, with the EL8 pin to 0.3.16 retained](https://github.com/Xpra-org/xpra/commit/b2020fda40c7a177b24095314c70e05d6ca71a5f), [1.1.1](https://github.com/Xpra-org/xpra/commit/13b36eac61c5c2396056925c7832a71783523b97), [1.1.2](https://github.com/Xpra-org/xpra/commit/30d246de13a892e33b4665ec4412f91bc6b6427a)
+  * [`pynvml` 13.615.71](https://github.com/Xpra-org/xpra/commit/ecead0be44787449b6841b341af56428ab2b9035)
+  * [`nasm` 3.02](https://github.com/Xpra-org/xpra/commit/b9b8de810c30d1233a5c1b8d93a9dfa2a6c99c1a)
+  * [`libyuv` 0.65 snapshot from 2026-11-18 (revision 1984)](https://github.com/Xpra-org/xpra/commit/6a2cf6fa5db5c29f8bbe068d0ce0e55086df2e83)
+  * [make PyCUDA's pytools, platformdirs and mako dependencies optional so EL10 upgrades can proceed](https://github.com/Xpra-org/xpra/commit/3d0e065cb8694d2ade747c88da2994cbf0692b29)
+  * [fix PyCUDA builds with CUDA 13 on EL8](https://github.com/Xpra-org/xpra/commit/9ec947a3184efb0074a5fc30be8f25184e4ad90b)
+  * [build PyOpenGL 3.1.10 and its acceleration module](https://github.com/Xpra-org/xpra/commit/37172bc65316d70536b2cfdb4db42b7c6cb0e595)
+* Maintenance:
+  * [add regression coverage for permission checks, FIPS, notifications, virtual display cleanup and proxy control sockets](https://github.com/Xpra-org/xpra/commit/d3fcb29c89fd6dc6e44037ce77bc1a27b75768f8)
+  * [document the legacy X11 resize check](https://github.com/Xpra-org/xpra/commit/dc1e04780ae3f0bd97df5c6275d0ad79d6c8e5cd)
 
 ## [5.1.7] 2026-11-07
 * 🔧 Platforms, build and packaging:
