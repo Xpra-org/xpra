@@ -30,6 +30,7 @@ DPI_AWARENESS_CONTEXT_UNAWARE = -1
 DPI_AWARENESS_CONTEXT_SYSTEM_AWARE = -2
 DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE = -3
 DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2 = -4
+DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED = -5
 
 # `GetLastError` value returned when the awareness was already set
 # (ie: via the process manifest) and so cannot be changed at runtime:
@@ -68,6 +69,48 @@ def _set_dpi_awareness_context(context: int) -> bool:
     return False
 
 
+CONTEXT_NAMES: dict[int, str] = {
+    DPI_AWARENESS_CONTEXT_UNAWARE: "unaware",
+    DPI_AWARENESS_CONTEXT_SYSTEM_AWARE: "system-aware",
+    DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE: "per-monitor-aware",
+    DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2: "per-monitor-aware-v2",
+    DPI_AWARENESS_CONTEXT_UNAWARE_GDISCALED: "unaware-gdi-scaled",
+}
+
+
+def get_dpi_awareness() -> int:
+    """
+    The `DPI_AWARENESS_CONTEXT` actually in effect, or 0 if unknown.
+    """
+    # `AreDpiAwarenessContextsEqual` and `GetThreadDpiAwarenessContext` (win10 1607+),
+    # `GetDpiAwarenessContextForProcess` (win10 1803+):
+    try:
+        are_equal = user32.AreDpiAwarenessContextsEqual  # @UndefinedVariable
+        get_thread_context = user32.GetThreadDpiAwarenessContext  # @UndefinedVariable
+    except AttributeError:
+        log("AreDpiAwarenessContextsEqual is not available (requires Windows 10 1607+)")
+        return 0
+    are_equal.argtypes = [HANDLE, HANDLE]
+    are_equal.restype = BOOL
+    try:
+        get_process_context = user32.GetDpiAwarenessContextForProcess  # @UndefinedVariable
+    except AttributeError:
+        # the thread context is the process default unless it was changed for this thread:
+        get_thread_context.argtypes = []
+        get_thread_context.restype = HANDLE
+        context = get_thread_context()
+    else:
+        get_process_context.argtypes = [HANDLE]
+        get_process_context.restype = HANDLE
+        context = get_process_context(None)
+    if not context:
+        return 0
+    for value in CONTEXT_NAMES:
+        if are_equal(context, value):
+            return value
+    return 0
+
+
 def init_dpi() -> None:
     log("init_dpi() DPI_AWARE=%s, DPI_AWARENESS=%s", DPI_AWARE, DPI_AWARENESS)
     if not DPI_AWARE:
@@ -89,6 +132,14 @@ def init_dpi() -> None:
         # system's per-monitor scaling factors. this is a no-op (access-denied,
         # treated as success) when the manifest already declared `PerMonitorV2`:
         ok = _set_dpi_awareness_context(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2)
+        # `ERROR_ACCESS_DENIED` is treated as success, but it only tells us that
+        # the awareness was already set: by the manifest, or by something else, ie: GDK.
+        # Verify what we actually got:
+        if ok and (context := get_dpi_awareness()) != DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2:
+            if context:
+                warn_not_pmv2(CONTEXT_NAMES[context])
+            else:
+                log("unable to verify the DPI awareness context")
     if not ok:
         log.warn("Warning: unable to set DPI awareness context")
         log.warn(" pixel coordinates and monitor geometry may be virtualized by the OS")
@@ -101,6 +152,15 @@ def init_dpi() -> None:
         DPI_SCALING = round(100 * ((actual_w / w) + (actual_h / h))) / 200
         log("DPI_SCALING=%s (screen size changed from %s to %s after enabling DPI awareness)",
             DPI_SCALING, (w, h), (actual_w, actual_h))
+
+
+def warn_not_pmv2(name: str) -> None:
+    log.warn("Warning: this process is not Per-Monitor-v2 DPI aware")
+    log.warn(" the DPI awareness was already set to %r before xpra could change it", name)
+    log.warn(" on any monitor whose scaling differs from the system scaling:")
+    log.warn(" - the OS will virtualize the window and pointer coordinates")
+    log.warn(" - the windows will be bitmap-scaled, so text will not be pixel-perfect")
+    log.warn(" this is a bug: please report it")
 
 
 def _load_logical_to_physical():
