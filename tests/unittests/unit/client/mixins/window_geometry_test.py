@@ -54,6 +54,15 @@ class WindowGeometryTest(unittest.TestCase):
         popup = self.create_window(7, parent=99, **{"relative-position": (12, 23)})
         self.assertEqual(popup._pos, (20, 40))
 
+    def test_tray_ignores_server_resize(self):
+        from xpra.client.gui.client_tray import ClientTray
+
+        tray = ClientTray.__new__(ClientTray)
+        tray._geometry = (10, 20, 32, 16)
+        self.client._id_to_window[7] = tray
+        self.client._process_window_resized(("window-resized", 7, 100, 100, 7))
+        self.assertEqual(tray.get_geometry(), (10, 20, 32, 16))
+
 
 if __name__ == "__main__":
     unittest.main()
