@@ -222,7 +222,7 @@ Suggests:			%{py3rpmname}-scramp
 Suggests:			%{py3rpmname}-ldap
 Suggests:			%{py3rpmname}-ldap3
 Suggests:           %{py3rpmname}-cpuinfo
-Recommends:			%{py3rpmname}-aioquic
+Recommends:			%{py3rpmname}-aioquic >= 1.9.0
 Recommends:			%{py3rpmname}-zeroconf
 BuildRequires:		pkgconfig(liblz4)
 Requires:			lz4-libs

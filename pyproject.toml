@@ -60,7 +60,7 @@ cli = [
     "pyopenssl",
     "cryptography",
     "uvloop",
-    "aioquic>=1.9.0,<2.0.0",
+    "aioquic>=1.9.0",
     #"dbus",
     "socks",
     "pysocks",
