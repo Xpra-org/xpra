@@ -227,7 +227,12 @@ class Win32ConfigureTest(unittest.TestCase):
         from xpra.platform.win32 import dpi
         # our own function pointers, with the class name as a string:
         user32 = ctypes.WinDLL("user32")
-        set_context = user32.SetThreadDpiAwarenessContext
+        # both functions require Windows 10 1607 or later:
+        set_context = getattr(user32, "SetThreadDpiAwarenessContext", None)
+        if not set_context:
+            self.skipTest("SetThreadDpiAwarenessContext is not available")
+        if not dpi.get_window_dpi(user32.GetDesktopWindow()):
+            self.skipTest("GetDpiForWindow is not available")
         set_context.restype = ctypes.c_void_p
         set_context.argtypes = [ctypes.c_void_p]
         create = user32.CreateWindowExW
@@ -236,13 +241,15 @@ class Win32ConfigureTest(unittest.TestCase):
                            HWND, HMENU, HINSTANCE, LPVOID]
         destroy = user32.DestroyWindow
         destroy.argtypes = [HWND]
-        if not dpi.get_window_dpi(user32.GetDesktopWindow()):
-            self.skipTest("GetDpiForWindow is not available")
         # the frame of a Per-Monitor v1 window uses the system DPI:
         for context, v2 in ((dpi.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE, False),
                             (dpi.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, True)):
             with self.subTest(v2=v2):
+                # returns the previous context, or NULL if this one is not supported:
+                # (ie: Per-Monitor v2 requires Windows 10 1703 or later)
                 previous = set_context(context)
+                if not previous:
+                    self.skipTest(f"the {dpi.CONTEXT_NAMES[context]!r} DPI awareness context is not supported")
                 try:
                     hwnd = create(0, "STATIC", "", 0, 0, 0, 10, 10, 0, 0, 0, None)
                 finally:
