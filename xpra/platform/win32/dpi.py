@@ -5,7 +5,7 @@
 
 
 from ctypes import POINTER, byref, get_last_error
-from ctypes.wintypes import BOOL, HANDLE, HWND, POINT, RECT, DWORD, UINT
+from ctypes.wintypes import BOOL, HANDLE, HWND, POINT, RECT, DWORD, UINT, LONG
 
 from xpra.platform.win32.common import GetSystemMetrics, user32
 from xpra.util.env import envint, envbool
@@ -23,6 +23,12 @@ DPI_AWARE = envbool("XPRA_DPI_AWARE", True)
 DPI_AWARENESS = envint("XPRA_DPI_AWARENESS", 0)
 
 DPI_SCALING = 1
+
+# Per-Monitor (v2) aware windows receive these when they move to a monitor
+# with a different DPI, or when the scaling of their monitor changes:
+WM_DPICHANGED = 0x02E0
+# (Per-Monitor-v2 only, sent before `WM_DPICHANGED`)
+WM_GETDPISCALEDSIZE = 0x02E4
 
 # `DPI_AWARENESS_CONTEXT` pseudo-handle values (win32 `windef.h`).
 # these are passed *by value* to `SetProcessDpiAwarenessContext`:
@@ -202,6 +208,51 @@ def physical_point(hwnd: int, x: int, y: int) -> tuple[int, int]:
     if _logical_to_physical(hwnd, byref(pt)):
         return int(pt.x), int(pt.y)
     return x, y
+
+
+def _load_get_dpi_for_monitor():
+    # `GetDpiForMonitor` (win 8.1+):
+    try:
+        from ctypes import WinDLL
+        fn = WinDLL("shcore", use_last_error=True).GetDpiForMonitor
+        monitor_from_point = user32.MonitorFromPoint
+    except (OSError, AttributeError):
+        log("GetDpiForMonitor is not available (requires Windows 8.1+)")
+        return None
+    fn.argtypes = [HANDLE, UINT, POINTER(UINT), POINTER(UINT)]
+    fn.restype = LONG
+    monitor_from_point.argtypes = [POINT, DWORD]
+    monitor_from_point.restype = HANDLE
+
+    def get_primary_monitor_dpi() -> tuple[int, int]:
+        # the primary monitor contains the origin:
+        hmonitor = monitor_from_point(POINT(0, 0), MONITOR_DEFAULTTOPRIMARY)
+        if not hmonitor:
+            return 0, 0
+        xdpi = UINT(0)
+        ydpi = UINT(0)
+        if fn(hmonitor, MDT_EFFECTIVE_DPI, byref(xdpi), byref(ydpi)) != 0:
+            return 0, 0
+        return int(xdpi.value), int(ydpi.value)
+    return get_primary_monitor_dpi
+
+
+MONITOR_DEFAULTTOPRIMARY = 1
+MDT_EFFECTIVE_DPI = 0
+_get_primary_monitor_dpi = _load_get_dpi_for_monitor()
+
+
+def get_primary_monitor_dpi() -> tuple[int, int]:
+    """
+    The current DPI of the primary monitor, which follows the scaling setting,
+    or (0, 0) if unknown.
+    Unlike `LOGPIXELSX`, which is the system DPI: it never changes
+    for the lifetime of the process, so it can be stale.
+    """
+    if not callable(_get_primary_monitor_dpi):
+        return 0, 0
+    # noinspection calling-non-callable
+    return _get_primary_monitor_dpi()
 
 
 def _load_frame_functions():

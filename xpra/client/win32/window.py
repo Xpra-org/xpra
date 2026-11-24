@@ -8,7 +8,7 @@ import win32con
 from typing import Any
 from collections.abc import MutableSequence, Callable
 from contextlib import suppress
-from ctypes.wintypes import HWND, BYTE, HICON, HDC, POINT, MSG
+from ctypes.wintypes import HWND, BYTE, HICON, HDC, POINT, MSG, SIZE
 from ctypes import byref, sizeof, cast, c_wchar, c_void_p, WinError, get_last_error, POINTER
 
 from xpra.constants import MoveResize, MOVERESIZE_DIRECTION_STRING
@@ -46,7 +46,10 @@ from xpra.platform.win32.common import (
 )
 from xpra.keyboard.keysyms import keysym_name
 from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
-from xpra.platform.win32.dpi import get_window_dpi, adjust_window_rect_for_dpi
+from xpra.platform.win32.dpi import (
+    get_window_dpi, adjust_window_rect_for_dpi,
+    WM_DPICHANGED, WM_GETDPISCALEDSIZE,
+)
 from xpra.client.win32.altgr import KeyMessage, is_altgr_fake_control, add_altgr_layout, get_alt_r_keyname
 from xpra.client.win32.common import WM_MESSAGES, to_signed_coordinate, get_xy_lparam, img_to_hicon
 from xpra.client.win32.glib import start_modal_message_pump, stop_modal_message_pump
@@ -528,6 +531,41 @@ class ClientWindow(GObject.GObject):
         flags = win32con.SWP_NOACTIVATE | win32con.SWP_NOOWNERZORDER | win32con.SWP_NOZORDER
         SetWindowPos(hwnd, 0, x, y, w, h, flags)
 
+    def get_dpi_scaled_size(self, hwnd: int, dpi: int, lparam) -> bool:
+        """
+        `WM_GETDPISCALEDSIZE`: the window is about to get a new DPI.
+        By default, the OS would scale the whole window by the DPI ratio,
+        and the server would have to render it at a different size.
+        Keep the client area the same size in physical pixels instead,
+        only the frame metrics change.
+        Returns `False` to let the OS scale it.
+        """
+        rect = RECT()
+        if not dpi or not GetClientRect(hwnd, byref(rect)):
+            return False
+        exstyle = GetWindowLongW(hwnd, win32con.GWL_EXSTYLE)
+        w, h = system_geometry(0, 0, rect.right, rect.bottom, self.style, exstyle, dpi=dpi)[2:]
+        geomlog("WM_GETDPISCALEDSIZE: dpi=%i, client size=%s, frame size=%s", dpi, (rect.right, rect.bottom), (w, h))
+        size = cast(lparam, POINTER(SIZE)).contents
+        size.cx = w
+        size.cy = h
+        return True
+
+    def dpi_changed(self, hwnd: int, dpi: int, lparam) -> None:
+        """
+        `WM_DPICHANGED`: the suggested rectangle has the size from `get_dpi_scaled_size()`,
+        and a position chosen by the OS, ie: to keep the window under the pointer while dragging it.
+        """
+        rect = cast(lparam, POINTER(RECT)).contents
+        x, y, w, h = rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top
+        geomlog("WM_DPICHANGED: dpi=%i, suggested frame=%s", dpi, (x, y, w, h))
+        if not self.minimized:
+            flags = win32con.SWP_NOACTIVATE | win32con.SWP_NOOWNERZORDER | win32con.SWP_NOZORDER
+            SetWindowPos(hwnd, 0, x, y, w, h, flags)
+        # the scaling of a monitor may have changed, the server may need a new DPI:
+        if display := self.get_subsystem("display"):
+            display.screen_size_changed()
+
     def key_message(self, msg: int, vk_code: int, lparam: int) -> bool:
         """
         emits the `key` signal for this key message,
@@ -572,6 +610,11 @@ class ClientWindow(GObject.GObject):
                 update_checks(wparam, self.get_menu_states())
             if msg == win32con.WM_GETMINMAXINFO and lparam:
                 self.apply_size_constraints(hwnd, lparam)
+                return 0
+            if msg == WM_GETDPISCALEDSIZE and lparam:
+                return int(self.get_dpi_scaled_size(hwnd, wparam, lparam))
+            if msg == WM_DPICHANGED and lparam:
+                self.dpi_changed(hwnd, wparam & 0xffff, lparam)
                 return 0
             if msg == win32con.WM_SETCURSOR and (lparam & 0xffff) == win32con.HTCLIENT and self.hcursor:
                 # only over the window contents,

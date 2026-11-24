@@ -462,18 +462,27 @@ def remove_window_hooks(window) -> None:
 
 
 def get_xdpi() -> int:
-    try:
-        return _get_device_caps(win32con.LOGPIXELSX)
-    except Exception as e:
-        log.warn("Warning: failed to get xdpi: %s", e)
-    return -1
+    return _get_dpi(0, win32con.LOGPIXELSX)
 
 
 def get_ydpi() -> int:
+    return _get_dpi(1, win32con.LOGPIXELSY)
+
+
+def _get_dpi(index: int, constant: int) -> int:
+    # the logical DPI, which follows the scaling setting, ie: 144 at 150%,
+    # prefer the primary monitor's current value over the system DPI,
+    # which is fixed for the lifetime of the process:
+    from xpra.platform.win32.dpi import get_primary_monitor_dpi
     try:
-        return _get_device_caps(win32con.LOGPIXELSY)
+        if dpi := get_primary_monitor_dpi()[index]:
+            return dpi
+    except Exception:
+        log("get_primary_monitor_dpi()", exc_info=True)
+    try:
+        return _get_device_caps(constant)
     except Exception as e:
-        log.warn("Warning: failed to get ydpi: %s", e)
+        log.warn("Warning: failed to get the DPI: %s", e)
     return -1
 
 

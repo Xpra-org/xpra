@@ -122,6 +122,57 @@ class Win32ConfigureTest(unittest.TestCase):
                     native.ClientWindow.fit_frame_to_dpi(window, 1, 0, (100, 28, 640, 480), default_position)
                 self.assertEqual(calls, [expected] if expected else [])
 
+    def test_dpi_scaled_size(self) -> None:
+        import win32con
+        from ctypes import addressof
+        from ctypes.wintypes import SIZE
+        from xpra.client.win32 import window as native
+
+        def frame(x, y, w, h, style, exstyle, has_menu=False, dpi=0):
+            border = (dpi or 96) // 12
+            return x - border, y - border * 3, w + border * 2, h + border * 4
+
+        def client_rect(hwnd, rect):
+            rect._obj.right, rect._obj.bottom = 640, 480
+            return True
+
+        window = SimpleNamespace(style=win32con.WS_OVERLAPPEDWINDOW)
+        for dpi, expected, size in (
+            # the client area keeps its size in physical pixels, only the frame is scaled:
+            (192, True, (640 + 32, 480 + 64)),
+            (144, True, (640 + 24, 480 + 48)),
+            # unknown DPI: let the OS scale it
+            (0, False, (0, 0)),
+        ):
+            with self.subTest(dpi=dpi):
+                buf = SIZE()
+                with (patch.object(native, "GetClientRect", client_rect),
+                      patch.object(native, "GetWindowLongW", lambda hwnd, index: 0),
+                      patch.object(native, "system_geometry", frame)):
+                    handled = native.ClientWindow.get_dpi_scaled_size(window, 1, dpi, addressof(buf))
+                self.assertEqual(handled, expected)
+                self.assertEqual((buf.cx, buf.cy), size)
+
+    def test_dpi_changed(self) -> None:
+        from ctypes import addressof
+        from xpra.client.win32 import window as native
+        from xpra.platform.win32.common import RECT
+
+        for minimized, expected in (
+            (False, [(10, 20, 690, 540)]),
+            # don't move a minimized window, but still check the DPI:
+            (True, []),
+        ):
+            with self.subTest(minimized=minimized):
+                rect = RECT(10, 20, 700, 560)
+                display = Mock()
+                window = SimpleNamespace(minimized=minimized, get_subsystem={"display": display}.get)
+                calls = []
+                with patch.object(native, "SetWindowPos", lambda hwnd, after, *geom: calls.append(geom[:4])):
+                    native.ClientWindow.dpi_changed(window, 1, 192, addressof(rect))
+                self.assertEqual(calls, expected)
+                display.screen_size_changed.assert_called_once_with()
+
     def test_map_drawable_geometry(self) -> None:
         from xpra.client.win32 import window as native
 

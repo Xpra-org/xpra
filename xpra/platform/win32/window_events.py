@@ -7,6 +7,7 @@ from ctypes import c_char_p
 
 from xpra.platform.win32 import constants as win32con, setup_console_event_listener
 from xpra.platform.win32.events import KNOWN_EVENTS, Win32Eventlistener, get_win32_event_listener
+from xpra.platform.win32.dpi import WM_DPICHANGED
 from xpra.platform.win32.gui import (
     WM_WTSSESSION_CHANGE, WTS_SESSION_EVENTS, WTS_SESSION_LOGOFF,
     WTS_SESSION_LOCK, WTS_SESSION_LOGON, WTS_SESSION_UNLOCK,
@@ -58,6 +59,10 @@ class Win32ClientEventsWatcher:
                 el.add_event_callback(win32con.WM_INPUTLANGCHANGE, self.inputlangchange)
                 el.add_event_callback(win32con.WM_WININICHANGE, self.inichange)
                 el.add_event_callback(win32con.WM_ENDSESSION, self.end_session)
+                # the scaling may have changed: the server may need a new DPI
+                # (windows on the monitor that changed also get `WM_DPICHANGED`)
+                el.add_event_callback(WM_DPICHANGED, self.dpi_changed)
+                el.add_event_callback(win32con.WM_DISPLAYCHANGE, self.dpi_changed)
         except Exception as e:
             log.error("Error: cannot register focus and session callbacks:")
             log.estr(e)
@@ -77,6 +82,12 @@ class Win32ClientEventsWatcher:
         log("WM_MOVE: %s/%s", wparam, lparam)
         # this is not really a screen size change event,
         # but we do want to process it as such (see window reinit code)
+        if display := self.window.get_subsystem("display"):
+            display.screen_size_changed()
+
+    def dpi_changed(self, wparam: int, lparam: int) -> None:
+        log("DPI or display change: %#x / %#x", wparam, lparam)
+        # `update_screen_size()` only sends the settings to the server if they have changed:
         if display := self.window.get_subsystem("display"):
             display.screen_size_changed()
 
