@@ -7,6 +7,7 @@ from queue import SimpleQueue
 from typing import Any
 from collections.abc import Callable
 
+from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import (
     DatagramReceived,
     DataReceived,
@@ -16,7 +17,7 @@ from aioquic.h3.events import (
 from aioquic.quic.packet import QuicErrorCode
 
 from xpra.net.common import pretty_socket
-from xpra.net.quic.connection import XpraQuicConnection, HttpConnection
+from xpra.net.quic.connection import XpraQuicConnection
 from xpra.net.quic.common import SERVER_NAME, http_date
 from xpra.log import Logger
 
@@ -24,10 +25,12 @@ log = Logger("quic")
 
 
 class ServerWebTransportConnection(XpraQuicConnection):
-    def __init__(self, connection: HttpConnection, scope: dict, stream_id: int, transmit: Callable[[], None]):
+    def __init__(self, connection: H3Connection, scope: dict, stream_id: int, transmit: Callable[[], None]):
         super().__init__(connection, stream_id, transmit, "", 0, "webtransport")
         self.http_event_queue: SimpleQueue[DataReceived] = SimpleQueue()
         # self.read_datagram_queue = SimpleQueue()
+        # incoming datagrams are ignored (see `http_event_received`):
+        self.datagram = False
         self.scope = scope
 
     def __repr__(self):

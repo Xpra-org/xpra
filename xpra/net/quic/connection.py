@@ -8,24 +8,21 @@ from queue import SimpleQueue
 from typing import Any
 from collections.abc import Callable
 
-from aioquic import __version__ as aioquic_version
-from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import DataReceived, DatagramReceived, H3Event
+from aioquic.h3.exceptions import H3Error
 from aioquic.quic.packet import QuicErrorCode
 
 from xpra.exit_codes import ExitCode
 from xpra.net.aio.thread import get_threaded_loop
 from xpra.net.bytestreams import Connection
-from xpra.net.quic.common import binary_headers, override_aioquic_logger
+from xpra.net.quic.common import aioquic_version_info, binary_headers, override_aioquic_logger
 from xpra.util.str_fn import Ellipsizer, memoryview_to_bytes
-from xpra.util.version import parse_version, vtrim
+from xpra.util.version import vtrim
 from xpra.util.env import envbool
 from xpra.log import Logger
 
 log = Logger("quic")
-
-HttpConnection = H0Connection | H3Connection
 
 DATAGRAM_PACKET_TYPES = tuple(x.strip() for x in os.environ.get(
     "XPRA_QUIC_DATAGRAM_PACKET_TYPES",
@@ -36,15 +33,15 @@ if envbool("XPRA_QUIC_LOGGER", True):
     override_aioquic_logger()
 
 
-aioquic_version_info = parse_version(aioquic_version)
-
-
 class XpraQuicConnection(Connection):
-    def __init__(self, connection: HttpConnection, stream_id: int, transmit: Callable[[], None],
+    def __init__(self, connection: H3Connection, stream_id: int, transmit: Callable[[], None],
                  host: str, port: int, socktype="wss", info=None, options=None):
         Connection.__init__(self, (host, port), socktype, info=info, options=options)
         self.socktype_wrapped = "quic"
-        self.connection: HttpConnection = connection
+        self.connection: H3Connection = connection
+        self.datagram_packet_types = DATAGRAM_PACKET_TYPES if socktype == "wss" else ()
+        self.datagrams_unavailable = 0
+        self.datagram_fallbacks = 0
         self.read_queue: SimpleQueue[bytes] = SimpleQueue()
         self.stream_id: int = stream_id
         self.transmit: Callable[[], None] = transmit
@@ -58,22 +55,22 @@ class XpraQuicConnection(Connection):
         info = super().get_info()
         qinfo = {
             "read-queue": self.read_queue.qsize(),
+            "datagrams-unavailable": self.datagrams_unavailable,
+            "datagram-fallbacks": self.datagram_fallbacks,
             "stream-id": self.stream_id,
             "accepted": self.accepted,
             "closed": self.closed,
             "aioquic": vtrim(aioquic_version_info),
         }
-        quic = getattr(self.connection, "_quic", None)
-        if quic:
-            config = quic.configuration
-            qinfo |= {
-                "alpn-protocols": config.alpn_protocols,
-                "idle-timeout": config.idle_timeout,
-                "client": config.is_client,
-                "max-data": config.max_data,
-                "max-stream-data": config.max_stream_data,
-                "server-name": config.server_name or "",
-            }
+        config = self.connection.quic_connection.configuration
+        qinfo |= {
+            "alpn-protocols": config.alpn_protocols,
+            "idle-timeout": config.idle_timeout,
+            "client": config.is_client,
+            "max-data": config.max_data,
+            "max-stream-data": config.max_stream_data,
+            "server-name": config.server_name or "",
+        }
         info["quic"] = qinfo
         return info
 
@@ -99,14 +96,7 @@ class XpraQuicConnection(Connection):
         # we just close the quic connection here
         # subclasses may also override this method to send close messages specific to the protocol
         # ie: WebSocket and WebTransport 'close' frames
-        quic = getattr(self.connection, "_quic", None)
-        if not quic:
-            return
-        if aioquic_version_info >= (1, 2):
-            # we can send the error code and message
-            quic.close(code)
-        else:
-            quic.close()
+        self.connection.quic_connection.close(error_code=code, reason_phrase=reason)
 
     def send_headers(self, stream_id: int, headers: dict) -> None:
         self.connection.send_headers(
@@ -122,22 +112,24 @@ class XpraQuicConnection(Connection):
         data = memoryview_to_bytes(buf)
         if not packet_type:
             log.warn(f"Warning: missing packet type for {data}")
-        if packet_type in DATAGRAM_PACKET_TYPES:
-            self.connection.send_datagram(self.stream_id, data=data)
-            log(f"sending {packet_type!r} using datagram")
-            return len(buf)
-        stream_id = self.get_packet_stream_id(packet_type)
+        stream_id = self.stream_id
         log("quic.stream_write(%s, %s) using stream id %s", Ellipsizer(buf), packet_type, stream_id)
 
         def do_write() -> None:
+            # aioquic is not thread safe, this runs in the asyncio loop thread.
             if self.closed:
                 log(f"connection is already closed, packet {packet_type} dropped")
                 return
             try:
-                self.do_write(stream_id, data)
+                if self.use_datagram(stream_id, data, packet_type):
+                    self.connection.send_datagram(stream_id, data)
+                    self.output_bytecount += len(data)
+                    self.output_writecount += 1
+                else:
+                    self.do_write(stream_id, data)
                 self.transmit()
-            except AssertionError:
-                if self.closed:
+            except H3Error:
+                if self.closed or self.connection.quic_connection.is_closing():
                     log(f"connection is already closed, packet {packet_type} dropped")
                     return
                 raise
@@ -145,13 +137,28 @@ class XpraQuicConnection(Connection):
         get_threaded_loop().call(do_write)
         return len(buf)
 
+    def use_datagram(self, stream_id: int, data: bytes, packet_type: str) -> bool:
+        # Check the current capacity in the same loop callback that sends the packet.
+        if packet_type not in self.datagram_packet_types:
+            return False
+        max_size = self.connection.get_datagram_capacity(stream_id)
+        if not max_size:
+            self.datagrams_unavailable += 1
+            if self.datagrams_unavailable == 1:
+                log.info(f"datagrams cannot be sent on this connection, using the stream for {packet_type!r} packets")
+            return False
+        if len(data) > max_size:
+            self.datagram_fallbacks += 1
+            if self.datagram_fallbacks == 1:
+                log.warn(f"Warning: {packet_type!r} packet is too big to be sent as a datagram")
+                log.warn(f" {len(data)} bytes, the maximum is {max_size}, using the stream instead")
+            return False
+        return True
+
     def do_write(self, stream_id: int, data: bytes) -> None:
         self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
         self.output_bytecount += len(data)
         self.output_writecount += 1
-
-    def get_packet_stream_id(self, packet_type: str) -> int:
-        return self.stream_id
 
     def read(self, n: int) -> bytes:
         log("quic.read(%s)", n)

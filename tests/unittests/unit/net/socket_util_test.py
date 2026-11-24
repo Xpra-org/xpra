@@ -873,7 +873,7 @@ class TestSetupQuicSocket(unittest.TestCase):
 
     def test_with_aioquic_creates_listener(self):
         try:
-            import aioquic  # noqa: F401
+            from xpra.net.quic import common  # noqa: F401
         except ImportError:
             self.skipTest("aioquic not available")
         from xpra.net.socket_util import setup_quic_socket, SocketListener

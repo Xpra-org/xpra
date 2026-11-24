@@ -10,8 +10,8 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 try:
-    import aioquic
-    HAVE_AIOQUIC = bool(aioquic)
+    from xpra.net.quic import common
+    HAVE_AIOQUIC = bool(common)
 except ImportError:
     HAVE_AIOQUIC = False
 
@@ -25,8 +25,8 @@ def _make_protocol(xpra_server=None):
     protocol._handlers = {}
     protocol._http = None
     protocol._quic = MagicMock()
-    protocol._transport = MagicMock()
-    protocol._transport.get_extra_info = lambda k: None
+    protocol.transport = MagicMock()
+    protocol.transport.get_extra_info = lambda k: None
     protocol.transmit = MagicMock()
     return protocol
 
@@ -48,37 +48,18 @@ class TestHttpServerProtocolInit(unittest.TestCase):
 @unittest.skipUnless(HAVE_AIOQUIC, "aioquic not available")
 class TestHttpServerProtocolEvents(unittest.TestCase):
 
-    def test_quic_event_datagram_quack(self):
-        from aioquic.quic.events import DatagramFrameReceived
-        p = _make_protocol()
-        event = MagicMock(spec=DatagramFrameReceived)
-        event.data = b"quack"
-        # _http is None so the event loop won't try to dispatch to http
-        p.quic_event_received(event)
-        p._quic.send_datagram_frame.assert_called_once_with(b"quack-ack")
-
     def test_quic_event_protocol_negotiated_h3(self):
         from aioquic.h3.connection import H3_ALPN
         from aioquic.quic.events import ProtocolNegotiated
-        p = _make_protocol()
-        event = MagicMock(spec=ProtocolNegotiated)
-        event.alpn_protocol = H3_ALPN[0]
-        # H3Connection requires a real quic object; swallow any TypeError
-        try:
-            p.quic_event_received(event)
-        except Exception:
-            pass
-
-    def test_quic_event_protocol_negotiated_h0(self):
-        from aioquic.h0.connection import H0_ALPN
-        from aioquic.quic.events import ProtocolNegotiated
-        p = _make_protocol()
-        event = MagicMock(spec=ProtocolNegotiated)
-        event.alpn_protocol = H0_ALPN[0]
-        try:
-            p.quic_event_received(event)
-        except Exception:
-            pass
+        # WebTransport needs QUIC datagrams:
+        for max_datagram_frame_size, enable_webtransport in ((65536, True), (0, False), (None, False)):
+            with self.subTest(max_datagram_frame_size=max_datagram_frame_size):
+                p = _make_protocol()
+                p._quic.configuration.max_datagram_frame_size = max_datagram_frame_size
+                with patch("xpra.net.quic.listener.H3Connection") as h3:
+                    p.quic_event_received(ProtocolNegotiated(alpn_protocol=H3_ALPN[0]))
+                h3.assert_called_once_with(p._quic, enable_webtransport=enable_webtransport)
+                assert p._http is h3.return_value
 
 
 @unittest.skipUnless(HAVE_AIOQUIC, "aioquic not available")
@@ -87,8 +68,7 @@ class TestNewHttpHandler(unittest.TestCase):
     def _make_protocol_with_http(self):
         p = _make_protocol()
         p._http = MagicMock()
-        p._http._quic = MagicMock()
-        p._http._quic._network_paths = [MagicMock(addr=("127.0.0.1", 9999))]
+        p.quic_connection.get_peer_address.return_value = ("127.0.0.1", 9999)
         return p
 
     def _make_headers_event(self, method, path, protocol=None, extra=()):
@@ -154,6 +134,7 @@ class TestNewHttpHandler(unittest.TestCase):
         event = self._make_headers_event("GET", "/index.html")
         handler = p.new_http_handler(event)
         assert isinstance(handler, HttpRequestHandler)
+        assert handler.scope["client"] == ("127.0.0.1", 9999)
 
     def test_query_string_split(self):
         from xpra.net.quic.http import HttpRequestHandler

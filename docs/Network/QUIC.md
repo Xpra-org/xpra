@@ -20,6 +20,9 @@ QUIC is a new low-latency encrypted transport protocol, built on top of UDP.
 The [xpra.org RPM repositories](https://github.com/Xpra-org/xpra/wiki/Download) include the dependencies required
 for running QUIC servers and clients for most distributions, namely `aioquic` and its dependencies.
 
+QUIC requires `aioquic` 1.x, version 1.9.0 or later, which itself requires `cryptography` version 48 or later.
+With older versions, xpra refuses to create QUIC sockets.
+
 ---
 
 Some distributions (ie: [RHEL 8 / 9](https://github.com/Xpra-org/xpra/issues/4670)) may lack some of the dependencies,

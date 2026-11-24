@@ -7,7 +7,6 @@ import os.path
 from collections.abc import Callable
 
 from aioquic.asyncio import QuicConnectionProtocol
-from aioquic.h0.connection import H0Connection
 from aioquic.h3.connection import H3Connection
 from aioquic.h3.events import H3Event
 from aioquic.quic.packet import QuicErrorCode
@@ -21,13 +20,11 @@ from xpra.log import Logger
 
 log = Logger("quic")
 
-HttpConnection = H0Connection | H3Connection
-
 
 class HttpRequestHandler:
     def __init__(self, xpra_server: object,
                  authority: bytes,
-                 connection: HttpConnection,
+                 connection: H3Connection,
                  protocol: QuicConnectionProtocol,
                  scope: dict,
                  stream_id: int,
@@ -61,12 +58,6 @@ class HttpRequestHandler:
 
     def http_event_received(self, event: H3Event) -> None:
         log(f"http_event_received(%s) scope={self.scope}", Ellipsizer(event))
-        http_version = self.scope.get("http_version", "0")
-        if http_version != "3":
-            message = "http version {http_version} is not supported"
-            log.error(f"Error: {message}")
-            self.protocol.close(QuicErrorCode.APPLICATION_ERROR, message)
-            return
         method = self.scope.get("method", "")
         req_path = self.scope.get("path", "")
         log.info(f"HTTP request {method} {req_path}")
