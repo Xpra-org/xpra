@@ -6,6 +6,7 @@
 
 import unittest
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 from xpra.client.mixins.window_manager import WindowClient
 
@@ -62,6 +63,39 @@ class WindowGeometryTest(unittest.TestCase):
         self.client._id_to_window[7] = tray
         self.client._process_window_resized(("window-resized", 7, 100, 100, 7))
         self.assertEqual(tray.get_geometry(), (10, 20, 32, 16))
+
+    def test_resize_windows_resends_tray_geometry(self):
+        from xpra.client.gui.client_tray import ClientTray
+
+        tray = ClientTray.__new__(ClientTray)
+        tray.wid = 7
+        tray.title = ""
+        tray._client = self.client
+        tray._geometry = (10, 20, 32, 16)
+        tray._size = (32, 16)
+        tray.tray_widget = Mock()
+        tray.tray_widget.get_geometry.return_value = tray._geometry
+        tray.tray_widget.get_orientation.return_value = "horizontal"
+        window = Mock(_size=(100, 80))
+        window.is_tray.return_value = False
+        self.client._id_to_window = {7: tray, 8: window}
+        self.client.crect = Mock(return_value=(5, 10, 16, 8))
+        self.client.send = Mock()
+        self.client.send_refresh_all = Mock()
+        new_size_fn = Mock(return_value=(200, 160))
+
+        self.client.resize_windows(new_size_fn)
+
+        self.client.crect.assert_called_once_with(10, 20, 32, 16)
+        self.client.send.assert_called_once_with("configure-window", 7, 5, 10, 16, 8, {
+            "encoding.transparency": True,
+            "encodings.rgb_formats": ["RGBA", "RGB", "RGBX"],
+            "orientation": "horizontal",
+        })
+        new_size_fn.assert_called_once_with(100, 80)
+        window.reset_size_constraints.assert_called_once_with()
+        window.resize.assert_called_once_with(200, 160)
+        self.client.send_refresh_all.assert_called_once_with()
 
 
 if __name__ == "__main__":
