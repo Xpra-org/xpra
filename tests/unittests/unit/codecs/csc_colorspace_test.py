@@ -343,7 +343,7 @@ class Test_CSC_Colorspace(unittest.TestCase):
                         width = dw if i == 0 else (dw + 1) // 2
                         rows = dh if i == 0 else (dh + 1) // 2
                         self.assertGreaterEqual(stride, width)
-                        self.assertGreaterEqual(memoryview(out.get_plane(i)).nbytes, stride * rows)
+                        self.assertGreaterEqual(memoryview(out.get_pixels()[i]).nbytes, stride * rows)
                 finally:
                     out.free()
                     converter.clean()
