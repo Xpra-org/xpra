@@ -256,6 +256,19 @@ class QuicDatagramTest(unittest.TestCase):
         assert not pair.cquic._datagrams_pending, "datagram was queued but not transmitted"
         assert pair.receiver.datagram_records == [b"hello"]
 
+    def test_datagram_capacity_checked_from_loop(self):
+        # the datagram capacity is only read from the loop thread, right before sending:
+        pair, sender = self.make_pair()
+        pending = []
+        self.loop.call = pending.append
+        with patch.object(sender, "get_max_datagram_size", wraps=sender.get_max_datagram_size) as get_max:
+            sender.stream_write(b"hello", DATAGRAM_TYPE)
+            get_max.assert_not_called()
+            assert len(pending) == 1
+            pending.pop()()
+            get_max.assert_called_once()
+        assert pair.receiver.datagram_records == [b"hello"]
+
     def test_interleaved_bursts(self):
         # large stream writes, each followed by a burst of datagrams while the stream data is still in flight
         pair, sender = self.make_pair(budget=3)

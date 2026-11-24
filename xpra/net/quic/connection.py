@@ -146,25 +146,8 @@ class XpraQuicConnection(Connection):
         data = memoryview_to_bytes(buf)
         if not packet_type:
             log.warn(f"Warning: missing packet type for {data}")
-        datagram = False
-        # once closed, nothing is sent (see `do_write` below):
-        if packet_type in self.datagram_packet_types and not self.closed:
-            max_size = self.get_max_datagram_size()
-            datagram = 0 < max_size and len(data) <= max_size
-            if not max_size:
-                self.datagrams_unavailable += 1
-                log("%r packet sent on the stream, no datagram can be sent", packet_type)
-                if self.datagrams_unavailable == 1:
-                    log.info(f"datagrams cannot be sent on this connection, using the stream for {packet_type!r} packets")
-            elif not datagram:
-                self.datagram_fallbacks += 1
-                log("%r packet too big for a datagram: %i bytes, maximum is %i", packet_type, len(data), max_size)
-                if self.datagram_fallbacks == 1:
-                    log.warn(f"Warning: {packet_type!r} packet is too big to be sent as a datagram")
-                    log.warn(f" {len(data)} bytes, the maximum is {max_size}, using the stream instead")
         stream_id = self.stream_id
-        log("quic.stream_write(%s, %s) using %s %s", Ellipsizer(buf), packet_type,
-            "datagram for stream id" if datagram else "stream id", stream_id)
+        log("quic.stream_write(%s, %s) using stream id %s", Ellipsizer(buf), packet_type, stream_id)
 
         def do_write() -> None:
             # aioquic is not thread safe, this runs in the asyncio loop thread
@@ -172,7 +155,8 @@ class XpraQuicConnection(Connection):
                 log(f"connection is already closed, packet {packet_type} dropped")
                 return
             try:
-                if datagram:
+                # decide here, so the datagram capacity cannot change before it is used:
+                if self.use_datagram(data, packet_type):
                     self.do_write_datagram(data)
                 else:
                     self.do_write(stream_id, data)
@@ -185,6 +169,27 @@ class XpraQuicConnection(Connection):
 
         get_threaded_loop().call(do_write)
         return len(buf)
+
+    def use_datagram(self, data: bytes, packet_type: str) -> bool:
+        """ called from the asyncio loop thread """
+        if packet_type not in self.datagram_packet_types:
+            return False
+        max_size = self.get_max_datagram_size()
+        if not max_size:
+            self.datagrams_unavailable += 1
+            log("%r packet sent on the stream, no datagram can be sent", packet_type)
+            if self.datagrams_unavailable == 1:
+                log.info(f"datagrams cannot be sent on this connection, using the stream for {packet_type!r} packets")
+            return False
+        if len(data) > max_size:
+            self.datagram_fallbacks += 1
+            log("%r packet too big for a datagram: %i bytes, maximum is %i", packet_type, len(data), max_size)
+            if self.datagram_fallbacks == 1:
+                log.warn(f"Warning: {packet_type!r} packet is too big to be sent as a datagram")
+                log.warn(f" {len(data)} bytes, the maximum is {max_size}, using the stream instead")
+            return False
+        log("%r packet sent as a datagram for stream id %s", packet_type, self.stream_id)
+        return True
 
     def do_write(self, stream_id: int, data: bytes) -> None:
         self.connection.send_data(stream_id=stream_id, data=data, end_stream=self.closed)
