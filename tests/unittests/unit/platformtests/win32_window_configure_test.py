@@ -17,9 +17,18 @@ from xpra.os_util import WIN32
 
 
 class Display:
+    # client pixels are twice the server pixels:
     @staticmethod
-    def crect(x, y, w, h):
-        return x // 2, y // 2, w // 2, h // 2
+    def cx(v):
+        return v // 2
+
+    cy = cx
+
+    @staticmethod
+    def sx(v):
+        return v * 2
+
+    sy = sx
 
     @staticmethod
     def get_server_position(pos):
@@ -30,15 +39,22 @@ class Display:
         return x // 2, y // 2
 
 
+def scaled_display(scale: float):
+    return SimpleNamespace(sx=lambda v: round(v * scale), sy=lambda v: round(v * scale),
+                           cx=lambda v: round(v / scale), cy=lambda v: round(v / scale),
+                           cp=lambda x, y: (round(x / scale), round(y / scale)),
+                           get_server_position=lambda pos: tuple(pos))
+
+
 @unittest.skipUnless(WIN32, "the win32 client is only available on MS Windows")
 class Win32ConfigureTest(unittest.TestCase):
 
-    def make_window(self, subsystems, readonly=False):
+    def make_window(self, subsystems, readonly=False, width=200, height=100, backing=None):
         from xpra.client.win32.window import ClientWindow
         sent = []
         subsystems.setdefault("window", SimpleNamespace(send=lambda *packet: sent.append(packet)))
         window = SimpleNamespace(get_subsystem=subsystems.get, is_readonly=lambda: readonly,
-                                 wid=7, x=20, y=40, width=200, height=100,
+                                 wid=7, x=20, y=40, width=width, height=height, backing=backing,
                                  state_updates={"fullscreen": True}, resize_counter=3,
                                  pop_client_properties=lambda: {},
                                  get_monitor_position=lambda: {"index": 1, "position": (10, 20)})
@@ -57,6 +73,44 @@ class Win32ConfigureTest(unittest.TestCase):
             "monitor": {"index": 1, "position": (5, 10)},
         })])
         self.assertEqual(window.state_updates, {})
+
+    def test_to_server_size(self) -> None:
+        from xpra.client.win32.window import to_server_size
+        display = scaled_display(0.8)
+        for size, server_size, expected in (
+            # 1193x847 is shown as 954x678, which converts back to 1192x848:
+            ((954, 678), (1193, 847), (1193, 847)),
+            ((954, 678), (0, 0), (1192, 848)),
+            # the width changed, the height did not:
+            ((1000, 678), (1193, 847), (1250, 847)),
+            # neither did:
+            ((801, 562), (1193, 847), (1001, 702)),
+        ):
+            with self.subTest(size=size, server_size=server_size):
+                self.assertEqual(to_server_size(display, *size, server_size), expected)
+        self.assertEqual(to_server_size(None, 954, 678, (1193, 847)), (954, 678))
+
+    def test_send_configure_fractional_scaling(self) -> None:
+        # the server must be told the size it knows, not one pixel off:
+        for backing_size, expected in (
+            ((1193, 847), (1193, 847)),
+            ((1001, 703), (1192, 848)),
+        ):
+            with self.subTest(backing_size=backing_size):
+                backing = SimpleNamespace(size=backing_size)
+                window, sent = self.make_window({"display": scaled_display(0.8)},
+                                                width=954, height=678, backing=backing)
+                window.send_configure()
+                self.assertEqual(sent[0][2]["geometry"], (25, 50, *expected))
+
+    def test_update_backing_render_size(self) -> None:
+        from xpra.client.win32.window import ClientWindow
+        backing = Mock(size=(1193, 847))
+        window = SimpleNamespace(backing=backing, get_subsystem={"display": scaled_display(0.8)}.get,
+                                 update_client_properties=Mock())
+        # only the height changed:
+        ClientWindow.update_backing_render_size(window, 954, 700)
+        backing.init.assert_called_once_with(954, 700, 1193, 875)
 
     def test_system_geometry_large_coordinates(self) -> None:
         import win32con

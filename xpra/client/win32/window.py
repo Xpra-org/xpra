@@ -175,6 +175,23 @@ def system_geometry(x: int, y: int, w: int, h: int, style: int, exstyle: int, ha
     return rect.left, rect.top, rect.right - rect.left, rect.bottom - rect.top
 
 
+def to_server_size(display, width: int, height: int, server_size: tuple[int, int]) -> tuple[int, int]:
+    """
+    Convert a window size to server pixels.
+    With fractional scaling, several server sizes map to the same window size,
+    and converting it back may not give the size the server knows:
+    keep `server_size` on the axes where it still maps to the window size.
+    """
+    if not display:
+        return width, height
+    sw, sh = server_size
+    if sw <= 0 or display.sx(sw) != width:
+        sw = max(1, display.cx(width))
+    if sh <= 0 or display.sy(sh) != height:
+        sh = max(1, display.cy(height))
+    return sw, sh
+
+
 def peek_key_message(hwnd) -> KeyMessage | None:
     # the next key message in the queue for this window, without removing it:
     msg = MSG()
@@ -436,11 +453,7 @@ class ClientWindow(GObject.GObject):
         backing = self.backing
         if not backing:
             return
-        display = self.get_subsystem("display")
-        if display:
-            bw, bh = display.cx(width), display.cy(height)
-        else:
-            bw, bh = width, height
+        bw, bh = to_server_size(self.get_subsystem("display"), width, height, backing.size)
         backing.init(width, height, bw, bh)
         # the render size is part of the encoding properties,
         # queue them for the `window-configure` packet that follows:
@@ -852,9 +865,11 @@ class ClientWindow(GObject.GObject):
         display = self.get_subsystem("display")
         if not display:
             return geometry, geometry[:2]
-        geometry = display.crect(*geometry)
-        raw_position = geometry[:2]
-        return display.get_server_position(raw_position) + geometry[2:], raw_position
+        raw_position = display.cp(self.x, self.y)
+        # the backing has the server size, which may not round-trip with fractional scaling:
+        server_size = self.backing.size if self.backing else (0, 0)
+        size = to_server_size(display, self.width, self.height, server_size)
+        return display.get_server_position(raw_position) + size, raw_position
 
     def get_server_monitor_position(self) -> dict[str, Any]:
         monitor = self.get_monitor_position()
