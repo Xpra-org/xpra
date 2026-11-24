@@ -84,6 +84,40 @@ class Win32ConfigureTest(unittest.TestCase):
         # popups have no frame at any DPI:
         self.assertEqual(system_geometry(10, 20, 640, 480, win32con.WS_POPUP, 0, dpi=192), (10, 20, 640, 480))
 
+    def test_frame_dpi(self) -> None:
+        import ctypes
+        from ctypes.wintypes import HWND, DWORD, LPCWSTR, HMENU, HINSTANCE, LPVOID
+        from xpra.platform.win32 import dpi
+        # our own function pointers, with the class name as a string:
+        user32 = ctypes.WinDLL("user32")
+        set_context = user32.SetThreadDpiAwarenessContext
+        set_context.restype = ctypes.c_void_p
+        set_context.argtypes = [ctypes.c_void_p]
+        create = user32.CreateWindowExW
+        create.restype = HWND
+        create.argtypes = [DWORD, LPCWSTR, LPCWSTR, DWORD, ctypes.c_int, ctypes.c_int, ctypes.c_int, ctypes.c_int,
+                           HWND, HMENU, HINSTANCE, LPVOID]
+        destroy = user32.DestroyWindow
+        destroy.argtypes = [HWND]
+        if not dpi.get_window_dpi(user32.GetDesktopWindow()):
+            self.skipTest("GetDpiForWindow is not available")
+        # the frame of a Per-Monitor v1 window uses the system DPI:
+        for context, v2 in ((dpi.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE, False),
+                            (dpi.DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2, True)):
+            with self.subTest(v2=v2):
+                previous = set_context(context)
+                try:
+                    hwnd = create(0, "STATIC", "", 0, 0, 0, 10, 10, 0, 0, 0, None)
+                finally:
+                    set_context(previous)
+                self.assertTrue(hwnd)
+                try:
+                    self.assertEqual(dpi.is_per_monitor_v2(hwnd), v2)
+                    self.assertEqual(dpi.get_frame_dpi(hwnd), dpi.get_window_dpi(hwnd) if v2 else 0)
+                finally:
+                    destroy(hwnd)
+        self.assertEqual(dpi.get_frame_dpi(0), 0)
+
     def test_fit_frame_to_dpi(self) -> None:
         import win32con
         from xpra.client.win32 import window as native
@@ -102,7 +136,7 @@ class Win32ConfigureTest(unittest.TestCase):
             (192, (92, 4, 656, 512), False, (84, -20, 672, 544)),
             # the OS chose the position: keep it
             (192, (300, 200, 656, 512), True, (300, 200, 672, 544)),
-            # `GetDpiForWindow` is not available
+            # `GetDpiForWindow` is not available, or the window is not Per-Monitor v2
             (0, (92, 4, 656, 512), False, None),
         ):
             with self.subTest(dpi=dpi, default_position=default_position):
@@ -115,7 +149,7 @@ class Win32ConfigureTest(unittest.TestCase):
                     r.right, r.bottom = current[0] + current[2], current[1] + current[3]
                     return True
 
-                with (patch.object(native, "get_window_dpi", lambda hwnd: dpi),
+                with (patch.object(native, "get_frame_dpi", lambda hwnd: dpi),
                       patch.object(native, "system_geometry", frame),
                       patch.object(native, "GetWindowRect", get_window_rect),
                       patch.object(native, "SetWindowPos", lambda hwnd, after, *geom: calls.append(geom[:4]))):

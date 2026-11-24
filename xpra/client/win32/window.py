@@ -47,7 +47,7 @@ from xpra.platform.win32.common import (
 from xpra.keyboard.keysyms import keysym_name
 from xpra.platform.win32.keyboard import VK_NAMES, VK_X11_MAP
 from xpra.platform.win32.dpi import (
-    get_window_dpi, adjust_window_rect_for_dpi,
+    get_frame_dpi, adjust_window_rect_for_dpi,
     WM_DPICHANGED, WM_GETDPISCALEDSIZE,
 )
 from xpra.client.win32.altgr import KeyMessage, is_altgr_fake_control, add_altgr_layout, get_alt_r_keyname
@@ -510,7 +510,7 @@ class ClientWindow(GObject.GObject):
         Called before `self.hwnd` is set, so the resulting `WM_SIZE` is ignored,
         `window_created()` measures the client area afterwards.
         """
-        dpi = get_window_dpi(hwnd)
+        dpi = get_frame_dpi(hwnd)
         if not dpi:
             return
         x, y, w, h = system_geometry(*client_geometry, self.style, exstyle, dpi=dpi)
@@ -1101,7 +1101,7 @@ class ClientWindow(GObject.GObject):
         # in read-only mode, this is the only size allowed (see `apply_size_constraints`):
         self._requested_size = w, h
         exstyle = GetWindowLongW(self.hwnd, win32con.GWL_EXSTYLE)
-        wx, wy, ww, wh = system_geometry(x, y, w, h, self.style, exstyle, dpi=get_window_dpi(self.hwnd))
+        wx, wy, ww, wh = system_geometry(x, y, w, h, self.style, exstyle, dpi=get_frame_dpi(self.hwnd))
         flags = win32con.SWP_NOACTIVATE | win32con.SWP_NOOWNERZORDER | win32con.SWP_NOZORDER
         geomlog("move_resize%s system geometry=%s", (x, y, w, h, resize_counter), (wx, wy, ww, wh))
         SetWindowPos(self.hwnd, 0, wx, wy, ww, wh, flags)
@@ -1147,7 +1147,7 @@ class ClientWindow(GObject.GObject):
         info = cast(lparam, POINTER(MINMAXINFO)).contents
         # (this message is received before `CreateWindowExW` returns the `hwnd`)
         exstyle = GetWindowLongW(hwnd, win32con.GWL_EXSTYLE)
-        frame = system_geometry(0, 0, 0, 0, self.style, exstyle, dpi=get_window_dpi(hwnd))[2:]
+        frame = system_geometry(0, 0, 0, 0, self.style, exstyle, dpi=get_frame_dpi(hwnd))[2:]
         display = self.get_subsystem("display")
         to_local = display.sp if display else None
         fixed_size = None

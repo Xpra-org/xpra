@@ -275,6 +275,24 @@ def _load_frame_functions():
 _get_dpi_for_window, _adjust_window_rect_for_dpi = _load_frame_functions()
 
 
+def _load_awareness_functions():
+    # `GetWindowDpiAwarenessContext` and `AreDpiAwarenessContextsEqual` (win10 1607+):
+    try:
+        get_context = user32.GetWindowDpiAwarenessContext  # @UndefinedVariable
+        equal = user32.AreDpiAwarenessContextsEqual  # @UndefinedVariable
+    except AttributeError:
+        log("GetWindowDpiAwarenessContext is not available (requires Windows 10 1607+)")
+        return None, None
+    get_context.argtypes = [HWND]
+    get_context.restype = HANDLE
+    equal.argtypes = [HANDLE, HANDLE]
+    equal.restype = BOOL
+    return get_context, equal
+
+
+_get_window_dpi_awareness_context, _are_dpi_awareness_contexts_equal = _load_awareness_functions()
+
+
 def get_window_dpi(hwnd: int) -> int:
     """
     The DPI of the monitor the window is on, or 0 if unknown.
@@ -283,6 +301,27 @@ def get_window_dpi(hwnd: int) -> int:
         return 0
     # noinspection calling-non-callable
     return int(_get_dpi_for_window(hwnd))
+
+
+def is_per_monitor_v2(hwnd: int) -> bool:
+    if not hwnd or not callable(_get_window_dpi_awareness_context) or not callable(_are_dpi_awareness_contexts_equal):
+        return False
+    # noinspection calling-non-callable
+    context = _get_window_dpi_awareness_context(hwnd)
+    # noinspection calling-non-callable
+    return bool(_are_dpi_awareness_contexts_equal(context, DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2))
+
+
+def get_frame_dpi(hwnd: int) -> int:
+    """
+    The DPI of the window's frame metrics, or 0 for the system DPI.
+    Only Per-Monitor v2 windows have their frame scaled for the monitor they are on,
+    the frame of a Per-Monitor v1 window always uses the system DPI.
+    (the process can end up v1 despite `init_dpi`, ie: with a compatibility setting on the executable)
+    """
+    if not is_per_monitor_v2(hwnd):
+        return 0
+    return get_window_dpi(hwnd)
 
 
 def adjust_window_rect_for_dpi(rect: RECT, style: int, has_menu: bool, exstyle: int, dpi: int) -> bool:
