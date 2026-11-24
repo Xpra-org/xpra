@@ -51,7 +51,8 @@ to Python developers. It includes both high level recipes and low level
 interfaces to common cryptographic algorithms such as symmetric ciphers,
 message digests, and key derivation functions.
 
-This build is needed by aioquic >= 1.9, which requires cryptography >= 48.
+This build is needed by aioquic >= 1.9, which requires cryptography >= 48,
+and for the alternative python interpreters which have no python3-cryptography.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
