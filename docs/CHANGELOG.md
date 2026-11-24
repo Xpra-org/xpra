@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.1.8] 2026-11-24
+* TODO
+
 ## [5.1.7] 2026-11-07
 * 🔧 Platforms, build and packaging:
   * [honour `--root ROOT` when installing](https://github.com/Xpra-org/xpra/commit/17226720ee22ad7f8cade2f1284557459b3d4b02)

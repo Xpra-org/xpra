@@ -4,7 +4,7 @@
 # later version. See the file COPYING for details.
 
 %define _disable_source_fetch 0
-%define version 5.1.7
+%define version 5.1.8
 
 %define CFLAGS -O2
 %define DEFAULT_BUILD_ARGS --without-csc_cython --without-evdi --without-cuda_rebuild
@@ -847,6 +847,8 @@ fi
 
 
 %changelog
+* Tue Nov 24 2026 Antoine Martin <antoine@xpra.org> 5.1.8-10
+- TODO
 * Sat Nov 07 2026 Antoine Martin <antoine@xpra.org> 5.1.7-10
 - 🔧 Platforms, build and packaging:
    honour `--root ROOT` when installing

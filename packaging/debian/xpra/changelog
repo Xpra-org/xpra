@@ -1,3 +1,8 @@
+xpra (5.1.8-1) UNRELEASED; urgency=low
+  * TODO
+
+ -- Antoine Martin <antoine@xpra.org>  Tue, 24 Nov 2026 18:53:30 +0700
+
 xpra (5.1.7-1) UNRELEASED; urgency=low
   * 🔧 Platforms, build and packaging:
     honour `--root ROOT` when installing
