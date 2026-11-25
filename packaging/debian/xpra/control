@@ -44,7 +44,6 @@ Build-Depends: debhelper (>= 8)
               ,libturbojpeg-dev
               ,libdav1d-dev
               ,libaom-dev
-#noble:              ,libopenjph-dev
 #questing:              ,libopenjph-dev
 #resolute:              ,libopenjph-dev
 #stonking:              ,libopenjph-dev
@@ -426,7 +425,6 @@ Depends: xpra-common (= ${binary:Version})
 #trixie:              ,libdav1d7
 #forky:              ,libdav1d7
 #sid:              ,libdav1d7
-#noble:              ,libopenjph0.9
 #questing:              ,libopenjph0.21
 #resolute:              ,libopenjph0.26
 #stonking:              ,libopenjph0.28
