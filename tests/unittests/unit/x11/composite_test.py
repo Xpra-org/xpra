@@ -221,6 +221,152 @@ class CompositePixmapTest(ServerTestUtil):
         sub_bottom.free()
         image.free()
 
+    # pre-redirection of override-redirect windows, before they are mapped:
+
+    def or_window(self, mapped=False, parent=0) -> int:
+        from xpra.x11.error import xsync
+        from xpra.x11.bindings.core import get_root_xid
+        from xpra.x11.bindings.window import X11WindowBindings
+        X11Window = X11WindowBindings()
+        with xsync:
+            xid = X11Window.CreateWindow(parent or get_root_xid(), 0, 0, W, H, OR=True)
+            if mapped:
+                X11Window.MapWindow(xid)
+        self.addCleanup(self.destroy_window, xid)
+        return xid
+
+    @staticmethod
+    def can_redirect(xid: int) -> bool:
+        """ only one manual redirection is allowed: this fails if the window is still redirected """
+        from xpra.x11.error import xsync, XError
+        from xpra.x11.bindings.composite import XCompositeBindings
+        X11Composite = XCompositeBindings()
+        try:
+            with xsync:
+                X11Composite.XCompositeRedirectWindow(xid)
+        except XError:
+            return False
+        with xsync:
+            X11Composite.XCompositeUnredirectWindow(xid)
+        return True
+
+    def tearDown(self):
+        from xpra.x11.composite import pre_redirected
+        leftover = tuple(pre_redirected)
+        pre_redirected.clear()
+        super().tearDown()
+        self.assertEqual(leftover, (), "pre-redirected windows were not claimed or cancelled")
+
+    def test_pre_redirect_is_claimed(self):
+        from xpra.x11.error import xsync
+        from xpra.x11.bindings.window import X11WindowBindings
+        from xpra.x11.composite import CompositeHelper, pre_redirect, pre_redirected
+        xid = self.or_window()
+        self.assertTrue(pre_redirect(xid))
+        self.assertTrue(pre_redirect(xid), "pre-redirecting twice must be harmless")
+        self.assertIn(xid, pre_redirected)
+        self.assertFalse(self.can_redirect(xid), "the window should be redirected already")
+        with xsync:
+            X11WindowBindings().MapWindow(xid)
+        helper = CompositeHelper(xid)
+        # this would fail with `BadAccess` if the helper tried to redirect it again:
+        with xsync:
+            helper.setup()
+        self.assertNotIn(xid, pre_redirected)
+        with xsync:
+            self.assertIsNotNone(helper.get_contents_handle())
+            helper.destroy()
+        self.assertTrue(self.can_redirect(xid), "the helper did not un-redirect the window")
+
+    def test_cancel_pre_redirect(self):
+        from xpra.x11.composite import pre_redirect, cancel_pre_redirect, pre_redirected
+        xid = self.or_window()
+        self.assertTrue(pre_redirect(xid))
+        cancel_pre_redirect(xid)
+        self.assertNotIn(xid, pre_redirected)
+        self.assertTrue(self.can_redirect(xid))
+        # not pre-redirected: must not touch the window
+        self.assertTrue(self.can_redirect(xid))
+        cancel_pre_redirect(xid)
+
+    def test_pre_redirect_vanished_window(self):
+        from xpra.x11.composite import pre_redirect, pre_redirected
+        xid = self.or_window()
+        self.destroy_window(xid)
+        self.assertFalse(pre_redirect(xid))
+        self.assertNotIn(xid, pre_redirected)
+
+    def test_root_events(self):
+        """ `CreateNotify`, `MapNotify`, `DestroyNotify` and `ReparentNotify` on the root window """
+        from unittest.mock import patch
+        from xpra.x11.error import xsync
+        from xpra.x11.bindings.window import X11WindowBindings
+        from xpra.x11.composite import pre_redirected, cancel_pre_redirect
+        from xpra.x11.subsystem import window as window_module
+        X11Window = X11WindowBindings()
+        if not window_module.PRE_REDIRECT_OR:
+            self.skipTest("XPRA_PRE_REDIRECT_OR is disabled")
+        subsystem = window_module.SeamlessWindowServer(None)
+        subsystem.receive_root_events()
+        self.addCleanup(subsystem.cleanup)
+        self.assertTrue(subsystem.pre_redirect_or)
+
+        def process_events():
+            with xsync:
+                pass
+            self.event_loop.process_events()
+
+        added = []
+        # the subsystem has `__slots__`, so patch the class:
+        with patch.object(window_module.SeamlessWindowServer, "_add_new_or_window", lambda _self, xid: added.append(xid)):
+            # an override-redirect window is redirected as soon as it is created:
+            xid = self.or_window()
+            process_events()
+            self.assertIn(xid, pre_redirected)
+            # mapped, but nothing claimed it (ie: the window was ignored): un-redirected
+            with xsync:
+                X11Window.MapWindow(xid)
+            process_events()
+            self.assertEqual(added, [xid])
+            self.assertNotIn(xid, pre_redirected)
+            self.assertTrue(self.can_redirect(xid))
+
+            # destroyed before it is mapped:
+            xid = self.or_window()
+            process_events()
+            self.assertIn(xid, pre_redirected)
+            self.destroy_window(xid)
+            process_events()
+            self.assertNotIn(xid, pre_redirected)
+
+            # reparented away from the root before it is mapped:
+            xid = self.or_window()
+            parent = self.or_window()
+            process_events()
+            self.assertIn(xid, pre_redirected)
+            with xsync:
+                X11Window.Reparent(xid, parent, 0, 0)
+            process_events()
+            self.assertNotIn(xid, pre_redirected)
+            self.assertTrue(self.can_redirect(xid))
+            cancel_pre_redirect(parent)
+
+            # ordinary windows are left alone:
+            with xsync:
+                xid = X11Window.CreateWindow(subsystem.root_event_xid, 0, 0, W, H)
+            self.addCleanup(self.destroy_window, xid)
+            process_events()
+            self.assertNotIn(xid, pre_redirected)
+            self.assertTrue(self.can_redirect(xid))
+
+            # still pending when the subsystem is cleaned up:
+            xid = self.or_window()
+            process_events()
+            self.assertIn(xid, pre_redirected)
+            subsystem.cleanup()
+            self.assertNotIn(xid, pre_redirected)
+            self.assertTrue(self.can_redirect(xid))
+
 
 def main():
     unittest.main()

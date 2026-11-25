@@ -56,6 +56,7 @@ ALWAYS_RAISE_WINDOW = envbool("XPRA_ALWAYS_RAISE_WINDOW", False)
 # restore a visible window left iconic when the client gives it the focus:
 RESTORE_ICONIC_ON_FOCUS = envbool("XPRA_RESTORE_ICONIC_ON_FOCUS", True)
 PRE_MAP = envbool("XPRA_PRE_MAP_WINDOWS", True)
+PRE_REDIRECT_OR = envbool("XPRA_PRE_REDIRECT_OR", True)
 
 WINDOW_SIGNALS = os.environ.get(
     "XPRA_WINDOW_SIGNALS",
@@ -146,9 +147,14 @@ class SeamlessWindowServer(WindowServer):
     """
     __slots__ = (
         "_exit_with_windows", "_focus_history", "_has_focus", "_has_grab", "_wm",
-        "configure_damage_timers", "last_raised", "root_event_xid", "snc_timer", "wm_name", "window_movers",
+        "configure_damage_timers", "last_raised", "pre_redirect_or", "root_event_xid", "snc_timer", "wm_name", "window_movers",
     )
-    __signals__ = ("x11-child-map-event", )
+    __signals__ = (
+        "x11-child-map-event",
+        "x11-child-create-event",
+        "x11-child-destroy-event",
+        "x11-child-reparent-event",
+    )
 
     def __init__(self, server=None):
         WindowServer.__init__(self, server)
@@ -165,6 +171,8 @@ class SeamlessWindowServer(WindowServer):
         self.snc_timer = 0
         # the root window we receive events from, if `receive_root_events` was called:
         self.root_event_xid = 0
+        # redirect override-redirect windows as soon as they are created:
+        self.pre_redirect_or = False
 
     def init(self, opts) -> None:
         super().init(opts)
@@ -195,6 +203,10 @@ class SeamlessWindowServer(WindowServer):
         if xid := self.root_event_xid:
             self.root_event_xid = 0
             remove_event_receiver(xid, self)
+            if self.pre_redirect_or:
+                self.pre_redirect_or = False
+                from xpra.x11.composite import cancel_all_pre_redirects
+                cancel_all_pre_redirects()
         super().cleanup()
 
     def get_visible_areas(self, screen_w: int, screen_h: int) -> list:
@@ -318,6 +330,17 @@ class SeamlessWindowServer(WindowServer):
             event_mask = X11Window.getEventMask(rxid) | SubstructureNotifyMask
             X11Window.setEventMask(rxid, event_mask)
         self.connect("x11-child-map-event", self._on_x11_child_map_event)
+        if PRE_REDIRECT_OR:
+            try:
+                # this import fails without the XComposite extension:
+                import xpra.x11.composite  # noqa: F401
+            except ImportError as e:
+                windowlog("no pre-redirection of override-redirect windows: %s", e)
+            else:
+                self.pre_redirect_or = True
+                self.connect("x11-child-create-event", self._on_x11_child_create_event)
+                self.connect("x11-child-destroy-event", self._on_x11_child_destroy_event)
+                self.connect("x11-child-reparent-event", self._on_x11_child_reparent_event)
         add_event_receiver(rxid, self)
         self.root_event_xid = rxid
 
@@ -328,6 +351,30 @@ class SeamlessWindowServer(WindowServer):
         windowlog("do_x11_child_map_event(%s)", event)
         if event.override_redirect:
             self._add_new_or_window(event.window)
+        if self.pre_redirect_or:
+            # if the window was pre-redirected and nothing claimed it,
+            # (no longer override-redirect, ignored, or failed to manage): undo it
+            from xpra.x11.composite import cancel_pre_redirect
+            cancel_pre_redirect(event.window)
+
+    # override-redirect windows are redirected as soon as they are created,
+    # so that their backing pixmap is allocated when they are mapped and no contents are lost:
+    def _on_x11_child_create_event(self, _emitter, event: X11Event) -> None:
+        windowlog("x11_child_create_event(%s)", event)
+        if event.override_redirect:
+            from xpra.x11.composite import pre_redirect
+            pre_redirect(event.window)
+
+    def _on_x11_child_destroy_event(self, _emitter, event: X11Event) -> None:
+        # the redirection is freed with the window, just forget about it:
+        from xpra.x11.composite import cancel_pre_redirect
+        cancel_pre_redirect(event.window, False)
+
+    def _on_x11_child_reparent_event(self, _emitter, event: X11Event) -> None:
+        # we won't see the `MapNotify` or `DestroyNotify` events for this window anymore:
+        if event.parent != self.root_event_xid:
+            from xpra.x11.composite import cancel_pre_redirect
+            cancel_pre_redirect(event.window)
 
     def _add_new_window_common(self, window) -> int:
         windowlog("adding window %s", window)

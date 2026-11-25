@@ -492,9 +492,11 @@ cdef extern from "X11/Xlib.h":
         Window above
         Bool override_redirect
     ctypedef struct XCreateWindowEvent:
+        Window parent
         Window window
         int width
         int height
+        Bool override_redirect
     ctypedef struct XButtonEvent:
         Window root
         Window subwindow

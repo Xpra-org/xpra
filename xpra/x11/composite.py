@@ -9,7 +9,7 @@ from typing import Final
 from xpra.os_util import gi_import
 from xpra.util.gobject import one_arg_signal
 from xpra.x11.common import X11Event
-from xpra.x11.error import xlog
+from xpra.x11.error import xlog, xsync, xswallow, XError
 from xpra.x11.damage import WindowDamageHandler
 from xpra.x11.dispatch import add_event_receiver, remove_event_receiver
 from xpra.x11.bindings.core import constants, get_root_xid
@@ -31,6 +31,50 @@ StructureNotifyMask: Final[int] = constants["StructureNotifyMask"]
 
 rxid = get_root_xid()
 
+# windows we have redirected before they were mapped,
+# waiting for a `CompositeHelper` to take ownership of the redirection:
+pre_redirected: set[int] = set()
+
+
+def pre_redirect(xid: int) -> bool:
+    """
+    Redirect a window before it is mapped, so that its backing pixmap
+    is allocated as soon as it becomes viewable and no contents are lost.
+    `CompositeHelper.setup()` will take over this redirection,
+    otherwise it must be cancelled with `cancel_pre_redirect`.
+    """
+    if xid in pre_redirected:
+        return True
+    try:
+        with xsync:
+            X11Composite.XCompositeRedirectWindow(xid)
+    except XError as e:
+        # the window may already be gone, or it may be an InputOnly window
+        log("failed to pre-redirect %#x: %s", xid, e)
+        return False
+    log("pre-redirected %#x", xid)
+    pre_redirected.add(xid)
+    return True
+
+
+def cancel_pre_redirect(xid: int, unredirect=True) -> None:
+    """
+    Forget about a pre-redirected window,
+    and un-redirect it unless the window is already gone.
+    """
+    if xid not in pre_redirected:
+        return
+    pre_redirected.discard(xid)
+    log("cancel_pre_redirect(%#x, %s)", xid, unredirect)
+    if unredirect:
+        with xswallow:
+            X11Composite.XCompositeUnredirectWindow(xid)
+
+
+def cancel_all_pre_redirects() -> None:
+    for xid in tuple(pre_redirected):
+        cancel_pre_redirect(xid)
+
 
 class CompositeHelper(WindowDamageHandler, GObject.GObject):
     __gsignals__ = WindowDamageHandler.__common_gsignals__.copy()
@@ -49,7 +93,13 @@ class CompositeHelper(WindowDamageHandler, GObject.GObject):
         return f"CompositeHelper({self.xid:x})"
 
     def setup(self) -> None:
-        X11Composite.XCompositeRedirectWindow(self.xid)
+        if self.xid in pre_redirected:
+            # already redirected at `CreateNotify` time, take ownership:
+            # (a second manual redirection would fail with `BadAccess`)
+            pre_redirected.discard(self.xid)
+            log("claimed pre-redirected window %#x", self.xid)
+        else:
+            X11Composite.XCompositeRedirectWindow(self.xid)
         WindowDamageHandler.setup(self)
 
     def do_destroy(self) -> None:

@@ -69,12 +69,12 @@ cdef void init_x11_events():
         FocusIn             : ("x11-focus-in-event", ""),
         FocusOut            : ("x11-focus-out-event", ""),
         ClientMessage       : ("x11-client-message-event", ""),
-        CreateNotify        : ("x11-create-event", ""),
+        CreateNotify        : ("x11-create-event", "x11-child-create-event"),
         MapNotify           : ("x11-map-event", "x11-child-map-event"),
         UnmapNotify         : ("x11-unmap-event", "x11-child-unmap-event"),
-        DestroyNotify       : ("x11-destroy-event", ""),
+        DestroyNotify       : ("x11-destroy-event", "x11-child-destroy-event"),
         ConfigureNotify     : ("x11-configure-event", ""),
-        ReparentNotify      : ("x11-reparent-event", ""),
+        ReparentNotify      : ("x11-reparent-event", "x11-child-reparent-event"),
         PropertyNotify      : ("x11-property-notify-event", ""),
         KeyPress            : ("x11-key-press-event", ""),
         EnterNotify         : ("x11-enter-event", ""),
@@ -336,8 +336,10 @@ cdef dict parse_LeaveNotify(Display *d, XEvent *e):
 cdef dict parse_CreateNotify(Display *d, XEvent *e):
     return {
         "window": e.xcreatewindow.window,
+        "parent": e.xcreatewindow.parent,
         "width": e.xcreatewindow.width,
         "height": e.xcreatewindow.height,
+        "override_redirect": bool(e.xcreatewindow.override_redirect),
     }
 
 
