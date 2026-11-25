@@ -42,8 +42,8 @@ autoprov: no
 %endif
 
 Name:		%{py3rpmname}-cython
-Version:	3.3.1
-Release:	2%{?dist}
+Version:	3.3.2
+Release:	1%{?dist}
 Summary:	A language for writing Python extension modules
 Group:		Development/Tools
 License:	Python
@@ -74,7 +74,7 @@ for writing Python extension modules.
 
 %prep
 sha256=`sha256sum %{SOURCE0} | awk '{print $1}'`
-if [ "${sha256}" != "e0e45989e821bef6aa9ae15c7d583ab5e055f7406c4b3624e49e06d24e90375a" ]; then
+if [ "${sha256}" != "e789d9fd939b74fb8c572fc2b689e3b14bd141ba95243693a546064c8179a1d3" ]; then
 	echo "invalid checksum for %{SOURCE0}"
 	exit 1
 fi
@@ -110,6 +110,9 @@ rm -rf %{buildroot}
 %doc *.txt Demos Tools
 
 %changelog
+* Wed Nov 25 2026 Antoine Martin <antoine@xpra.org> 3.3.2-1
+- new upstream release
+
 * Sat Nov 14 2026 Antoine Martin <antoine@xpra.org> 3.3.1-2
 - add the python3dist(cython) provides that autoprov no longer generates,
   so this package can replace the Fedora one (#5150)
