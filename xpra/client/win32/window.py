@@ -1090,6 +1090,17 @@ class ClientWindow(GObject.GObject):
     def is_OR(self) -> bool:
         return self.metadata.get("override-redirect", False)
 
+    def freeze(self) -> None:
+        """
+        Called by the `window` subsystem on session logoff.
+        Nothing to suspend here: iconifying would change the stacking order when restored.
+        """
+
+    def unfreeze(self) -> None:
+        """
+        Called by the `window` subsystem on session logon.
+        """
+
     def get_window_handle(self) -> int:
         # the native window handle is simply our `HWND`:
         return int(self.hwnd) or 0
