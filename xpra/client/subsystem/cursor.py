@@ -200,6 +200,9 @@ class CursorClient(StubClientSubsystem):
         h = packet.get_u16(3)
         xhot = packet.get_u16(4)
         yhot = packet.get_u16(5)
+        # X11 glyph cursors, such as xterm's hidden pointer, can have hotspots outside the image.
+        xhot = min(xhot, max(0, w - 1))
+        yhot = min(yhot, max(0, h - 1))
         serial = packet.get_u64(6)
         cpixels = packet.get_bytes(7)
         name = packet.get_str(8)
