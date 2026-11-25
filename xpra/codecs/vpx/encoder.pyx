@@ -241,6 +241,13 @@ def get_version() -> Sequence[int]:
     return tuple(vparts)
 
 
+# libvpx versions older than 1.15 overflow a heap buffer when packing vp9 tile columns in parallel:
+# each tile gets a buffer as big as the frame has pixels, which near-lossless noisy content exceeds
+# (libvpx commit c29e63728, #5178)
+# libvpx defaults to as many tile columns as the width allows, so we have to ask for a single one:
+cdef int VP9_SINGLE_TILE = envbool("XPRA_VP9_SINGLE_TILE", get_version() < (1, 15))
+
+
 def get_type() -> str:
     return "vpx"
 
@@ -468,7 +475,9 @@ cdef class Encoder:
             log("vpx_codec_enc_init_ver() returned %s", get_error_string(ret))
             raise RuntimeError("failed to instantiate %s encoder with ABI version %s: %s" % (encoding, VPX_ENCODER_ABI_VERSION, self.codec_error_str()))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
-        if encoding=="vp9" and ENABLE_VP9_TILING and width>=256:
+        if encoding=="vp9" and VP9_SINGLE_TILE:
+            self.codec_control("tile columns", VP9E_SET_TILE_COLUMNS, 0)
+        elif encoding=="vp9" and ENABLE_VP9_TILING and width>=256:
             tile_columns = 0
             if width>=256:
                 tile_columns = 1
