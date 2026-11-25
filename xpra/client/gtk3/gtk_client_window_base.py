@@ -1003,7 +1003,6 @@ class GTKClientWindowBase(ClientWindowBase, Gtk.Window):
 
 
     def freeze(self) -> None:
-        #the OpenGL subclasses override this method to also free their GL context
         self._frozen = True
         self.iconify()
 
