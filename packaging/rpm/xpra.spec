@@ -288,9 +288,12 @@ Requires:           libaom
 %if ! 0%{?el8}
 BuildRequires:      libdav1d-devel
 Requires:           libdav1d
+#libvpl is Intel only:
+%ifnarch aarch64 %{riscv}
 BuildRequires:		libvpl-devel
 Requires:			libvpl
 Recommends:			intel-vpl-gpu-rt
+%endif
 BuildRequires:		libva-devel
 Requires:			libva
 %endif
@@ -901,7 +904,9 @@ rm -rf $RPM_BUILD_ROOT
 %{python3_sitearch}/xpra/codecs/v4l2
 %if ! 0%{?el8}
 %{python3_sitearch}/xpra/codecs/dav1d
+%ifnarch aarch64 %{riscv}
 %{python3_sitearch}/xpra/codecs/vpl
+%endif
 %{python3_sitearch}/xpra/codecs/libva
 %endif
 %{python3_sitearch}/xpra/codecs/vpx
