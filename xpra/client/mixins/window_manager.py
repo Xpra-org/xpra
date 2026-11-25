@@ -632,6 +632,10 @@ class WindowClient(StubClientMixin):
             elif encoding!="raw":
                 cursorlog.warn(f"Warning: invalid cursor encoding: {encoding}")
                 return
+            w, h, xhot, yhot = new_cursor[3:7]
+            # X11 glyph cursors, such as xterm's hidden pointer, can have hotspots outside the image.
+            new_cursor[5] = max(0, min(xhot, w - 1))
+            new_cursor[6] = max(0, min(yhot, h - 1))
         if setdefault:
             cursorlog(f"setting default cursor={new_cursor}")
             self.default_cursor_data = new_cursor

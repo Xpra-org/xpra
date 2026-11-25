@@ -14,6 +14,18 @@ from unit.client.mixins.clientmixintest_util import ClientMixinTest
 
 class WindowManagerTest(ClientMixinTest):
 
+	def test_cursor_hotspot_is_clamped(self):
+		from xpra.client.mixins.window_manager import WindowClient
+		client = WindowClient()
+		client.cursors_enabled = True
+		pixels = b"\0" * 8
+		with patch.object(client, "set_windows_cursor") as set_windows_cursor:
+			for w, h, xhot, yhot, expected in ((1, 2, 0, 2, (0, 1)), (2, 1, 2, 0, (1, 0))):
+				with self.subTest(size=(w, h), hotspot=(xhot, yhot)):
+					client._process_cursor(("cursor", "raw", 0, 0, w, h, xhot, yhot, 1, pixels, ""))
+					expected_cursor = ["raw", 0, 0, w, h, *expected, 1, pixels, ""]
+					self.assertEqual(set_windows_cursor.call_args.args[1], expected_cursor)
+
 	def test_auto_refresh_delay_caps(self):
 		from xpra.client.mixins import window_manager
 		client = window_manager.WindowClient()
