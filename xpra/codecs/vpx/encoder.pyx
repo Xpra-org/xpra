@@ -21,7 +21,7 @@ from xpra.codecs.vpx.vpx cimport (
     vpx_codec_iter_t, vpx_codec_flags_t, vpx_codec_err_t,
     vpx_codec_ctx_t,
     vpx_codec_error, vpx_codec_destroy,
-    vpx_codec_version_str, vpx_codec_build_config,
+    vpx_codec_version, vpx_codec_version_str, vpx_codec_build_config,
     VPX_IMG_FMT_I420, VPX_IMG_FMT_I444, VPX_IMG_FMT_I44416,
     vpx_image_t,
     VPX_CS_BT_709, VPX_CR_FULL_RANGE,
@@ -41,6 +41,9 @@ cdef inline int roundup(int n, int m):
     return (n + m - 1) & ~(m - 1)
 
 cdef int ENABLE_VP9_TILING = envbool("XPRA_VP9_TILING", False)
+# Explicitly request a single tile column to avoid heap corruption in libvpx before 1.15 (#5178).
+# The runtime version packs the major, minor and patch numbers into consecutive bytes.
+cdef int VP9_SINGLE_TILE = envbool("XPRA_VP9_SINGLE_TILE", vpx_codec_version() < ((1 << 16) | (15 << 8)))
 
 
 cdef inline int MIN(int a, int b):
@@ -408,7 +411,9 @@ cdef class Encoder:
             log("vpx_codec_enc_init_ver() returned %s", get_error_string(ret))
             raise RuntimeError("failed to instantiate %s encoder with ABI version %s: %s" % (encoding, VPX_ENCODER_ABI_VERSION, self.codec_error_str()))
         log("vpx_codec_enc_init_ver for %s succeeded", encoding)
-        if encoding=="vp9" and ENABLE_VP9_TILING and width>=256:
+        if encoding=="vp9" and VP9_SINGLE_TILE:
+            self.codec_control("tile columns", VP9E_SET_TILE_COLUMNS, 0)
+        elif encoding=="vp9" and ENABLE_VP9_TILING and width>=256:
             tile_columns = 0
             if width>=256:
                 tile_columns = 1

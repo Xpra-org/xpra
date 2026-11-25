@@ -19,6 +19,7 @@ cdef extern from "vpx/vpx_codec.h":
         pass
     const char *vpx_codec_error(vpx_codec_ctx_t  *ctx)
     vpx_codec_err_t vpx_codec_destroy(vpx_codec_ctx_t *ctx)
+    int vpx_codec_version()
     const char *vpx_codec_version_str()
     const char *vpx_codec_build_config()
     vpx_codec_err_t vpx_codec_control_(vpx_codec_ctx_t *ctx, int ctrl_id, int value)
