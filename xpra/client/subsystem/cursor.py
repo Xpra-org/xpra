@@ -180,8 +180,9 @@ class CursorClient(StubClientSubsystem):
         yhot = packet.get_u16(5)
         if not 0 < w <= MAX_CURSOR_DIMENSION or not 0 < h <= MAX_CURSOR_DIMENSION:
             raise ValueError(f"invalid cursor dimensions {w}x{h}, maximum is {MAX_CURSOR_DIMENSION}x{MAX_CURSOR_DIMENSION}")
-        if xhot >= w or yhot >= h:
-            raise ValueError(f"cursor hotspot {xhot},{yhot} is outside {w}x{h}")
+        # X11 glyph cursors, such as xterm's hidden pointer, can have hotspots outside the image.
+        xhot = min(xhot, w - 1)
+        yhot = min(yhot, h - 1)
         serial = packet.get_u64(6)
         cpixels = packet.get_bytes(7, MAX_CURSOR_DATA_SIZE)
         name = packet.get_str(8, MAX_CURSOR_NAME_SIZE)

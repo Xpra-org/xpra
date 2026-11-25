@@ -47,13 +47,19 @@ class CursorClientTest(unittest.TestCase):
     def test_raw_cursor_validation(self):
         cursor = self.make_cursor()
         cursor._process_data(Packet("cursor-data", "raw", 2, 2, 1, 1, 1, b"\0" * 16, "left_ptr"))
-        self.assertEqual(cursor.queued[1:5], ("raw", 2, 2, 1))
+        self.assertEqual(cursor.queued[1:6], ("raw", 2, 2, 1, 1))
         with self.assertRaises(ValueError):
             cursor._process_data(Packet("cursor-data", "raw", 2, 2, 1, 1, 1, b"short", "left_ptr"))
         with self.assertRaises(ValueError):
-            cursor._process_data(Packet("cursor-data", "raw", 2, 2, 2, 1, 1, b"\0" * 16, "left_ptr"))
-        with self.assertRaises(ValueError):
             cursor._process_data(Packet("cursor-data", "raw", 1025, 1, 0, 0, 1, b"", "left_ptr"))
+
+    def test_cursor_hotspot_is_clamped(self):
+        cursor = self.make_cursor()
+        pixels = b"\0" * 8
+        cursor._process_data(Packet("cursor-data", "raw", 1, 2, 0, 2, 9, pixels, ""))
+        self.assertEqual(cursor.queued[1:], ("raw", 1, 2, 0, 1, 9, pixels, ""))
+        cursor._process_data(Packet("cursor-data", "raw", 2, 1, 2, 0, 1, pixels, ""))
+        self.assertEqual(cursor.queued[1:6], ("raw", 2, 1, 1, 0))
 
 
 if __name__ == '__main__':
