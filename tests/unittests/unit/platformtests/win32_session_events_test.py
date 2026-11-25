@@ -27,6 +27,8 @@ class SessionEventsTest(unittest.TestCase):
         events.KNOWN_EVENTS = {}
         events.Win32Eventlistener = object
         events.get_win32_event_listener = Mock()
+        dpi = ModuleType("xpra.platform.win32.dpi")
+        dpi.WM_DPICHANGED = 0x2E0
         gui = ModuleType("xpra.platform.win32.gui")
         gui.WM_WTSSESSION_CHANGE = 0x2B1
         gui.WTS_SESSION_EVENTS = {}
@@ -37,7 +39,9 @@ class SessionEventsTest(unittest.TestCase):
         gui.init_session_locked = Mock()
         gui.set_session_locked = self.set_locked
         gui.is_session_locked = lambda: self.locked
-        modules = {platform.__name__: platform, events.__name__: events, gui.__name__: gui}
+        # every `xpra.platform.win32` module that `window_events` imports needs a stub here,
+        # since the `platform` stub is not a package:
+        modules = {m.__name__: m for m in (platform, events, dpi, gui)}
         # Linux builds omit Windows modules from the installed package.
         # Load the source checkout alongside this test instead.
         filename = Path(__file__).resolve().parents[4] / "xpra" / "platform" / "win32" / "window_events.py"

@@ -121,6 +121,7 @@ class Win32ClientEventsWatcher:
             set_session_locked(False)
             handler = self.resume_window_updates if event == WTS_SESSION_UNLOCK else self.window.unfreeze
         if handler:
+            log(f"will call {handler=!r}")
             # The system may not be fully usable yet (see #997).
             GLib.idle_add(handler)
 
