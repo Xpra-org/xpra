@@ -496,6 +496,12 @@ class AudioMixin(StubSourceMixin):
             codec, len(data or []), metadata, packet_metadata, self.audio_sink)
         if self.is_closed():
             return
+        codec = bytestostr(codec)
+        # Check the advertised codecs before creating or replacing an audio sink.
+        if codec not in self.microphone_codecs:
+            log.warn("Warning: rejecting audio data for unsupported codec %r", codec)
+            log.warn(" accepted microphone codecs: %s", csv(self.microphone_codecs) or "none")
+            return
         if self.audio_sink is not None and codec!=self.audio_sink.codec:
             log.info("audio codec changed from %s to %s", self.audio_sink.codec, codec)
             self.audio_sink.cleanup()

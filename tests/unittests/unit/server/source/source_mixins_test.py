@@ -8,10 +8,11 @@ import sys
 import unittest
 from io import BytesIO
 from time import monotonic
+from unittest.mock import Mock, patch
 
 from gi.repository import GLib  # @UnresolvedImport
 
-from unit.test_util import LoggerSilencer, silence_error, silence_info
+from unit.test_util import LoggerSilencer, silence_error, silence_info, silence_warn
 
 from xpra.util import typedict, AdHocStruct
 from xpra.os_util import POSIX, OSX, get_util_logger
@@ -101,6 +102,26 @@ class SourceMixinsTest(unittest.TestCase):
         def loop_check(_c, m):
             m.audio_loop_check()
         self._test_mixin_class(AudioMixin, SourceMixinsTest.AUDIO_SERVER_PROPS, test_fn=loop_check)
+
+    def test_microphone_codecs(self):
+        from xpra.server.source import audio
+        source = audio.AudioMixin()
+        source.init_state()
+        source.microphone_codecs = ("opus", )
+        with silence_warn(audio), patch.object(source, "audio_loop_check", return_value=False) as loop_check:
+            source.audio_data("bogus", b"data", {})
+            loop_check.assert_not_called()
+            self.assertIsNone(source.audio_sink)
+
+            sink = Mock(codec="opus")
+            source.audio_sink = sink
+            source.audio_data("bogus", b"data", {})
+            self.assertIs(source.audio_sink, sink)
+            sink.cleanup.assert_not_called()
+            sink.add_data.assert_not_called()
+
+        source.audio_data(b"opus", b"data", {})
+        sink.add_data.assert_called_once_with(b"data", {}, ())
 
     def test_clientconnection(self):
         from xpra.server.source.client_connection import ClientConnection
