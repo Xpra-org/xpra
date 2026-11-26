@@ -1193,12 +1193,13 @@ fi
 
 
 %changelog
-* Tue Nov 24 2026 Antoine Martin <antoine@xpra.org> 7.0.1-10
+* Thu Nov 26 2026 Antoine Martin <antoine@xpra.org> 7.0.1-10
 - 🔧 Platforms, build and packaging:
-   the codec package depended on unavailable OpenJPH library versions on Debian Forky and Sid
+   the codec package depended on unavailable OpenJPH library versions on Debian Forky and Sid and Ubuntu Noble
+   `libvpl` is only available for `x86_64` RPM builds
 - RPM repository updates:
    aioquic 1.9.1
-   pylsqpack 1.1.2
+   pylsqpack 1.1.2, 1.1.3
    NumPy 2.5.5
    TorchVision 0.29.2
    2026-11-18 libyuv snapshot
@@ -1206,6 +1207,7 @@ fi
    setuptools 84.2.1
    dbus-python 1.5.1
    PyYAML 6.0.4
+   Cython 3.3.2
 - MS Windows client:
    windows appeared in the wrong place on desktops with monitors left of or above the primary display, and application-initiated moves and resizes started from the wrong position
    window frames and content areas were the wrong size on monitors with a different DPI from the system DPI
@@ -1215,6 +1217,9 @@ fi
    windows restored from the taskbar could remain unmapped on the server
    the pointer was trapped inside open menus, making submenus unreachable, and open menus could linger after switching applications
    clicking a window marked to stay inactive could steal focus
+   unchanged window stacking following lock + unlock
+   errors processing logon / logoff events
+   test path fixup
 - Client and desktop integration:
    clients ignored server changes to bells, cursors, webcam, clipboard and its direction, bandwidth limits and whether they could start commands, and the Monitors menu and session info kept showing the initial display capabilities
    the application launch menu could show stale entries on MS Windows and macOS
@@ -1222,6 +1227,8 @@ fi
    the X11 desktop work area was offset when a monitor sat left of or above the primary display
    application window icons were missing when the desktop entry matched only by `StartupWMClass`
    a failed signal watcher shutdown request could leave an open file and trigger a Python resource warning
+- OpenGL:
+   do clamp window size
 - 🖧 Network:
    QUIC connections were incompatible with aioquic 1.9 and could fail to fall back when datagrams were unavailable, with required dependencies missing from some packaged builds
    proxy connections to older clients, including HTML5, could time out despite receiving ping replies
@@ -1230,11 +1237,14 @@ fi
    malformed packets could consume excessive memory or raise unhandled errors
    packets with missing fields could raise unhandled errors
 - 🌈 Encodings:
-   VP8 and VP9 encoding could read past the end of scaled video buffers with odd dimensions
-   VP8 and VP9 streams kept using the old bandwidth limit until encoding quality changed
+   vp8 and vp9 encoding could read past the end of scaled video buffers with odd dimensions + test fixup
+   vp8 and vp9 streams kept using the old bandwidth limit until encoding quality changed
+   vp9 crash with older libvpx versions
 - Testing:
    client display tests could segfault on OpenBSD
    modal popup tests failed after the window positioning changes
+- Cosmetic:
+   outdated comment
 * Mon Nov 16 2026 Antoine Martin <antoine@xpra.org> 7.0-10
 - 🔧 Platforms, build and packaging:
    new macOS event API
