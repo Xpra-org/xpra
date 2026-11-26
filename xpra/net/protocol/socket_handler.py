@@ -89,6 +89,8 @@ SEND_INVALID_PACKET_DATA = strtobytes(os.environ.get("XPRA_SEND_INVALID_PACKET_D
 ALIAS_INFO = envbool("XPRA_ALIAS_INFO", False)
 
 PACKET_HEADER_CHAR = ord("P")
+# packet types the protocol generates itself, never valid on the wire:
+LOCAL_PACKET_TYPES: frozenset[str] = frozenset((CONNECTION_LOST, GIBBERISH, INVALID))
 
 
 def exit_queue() -> SimpleQueue[tuple[Sequence, str, bool, bool] | None]:
@@ -1345,6 +1347,9 @@ class SocketProtocol:
             self.invalid(f"invalid packet structure: {error}", data)
             return False
         packet_type = wrapped.get_type()
+        if packet_type in LOCAL_PACKET_TYPES:
+            self.invalid(f"invalid packet type {packet_type!r}", data)
+            return False
         self.input_stats[packet_type] = self.input_stats.get(packet_type, 0) + 1
         if LOG_RAW_PACKET_SIZE and packet_type != "logging":
             log.info(f"received {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
