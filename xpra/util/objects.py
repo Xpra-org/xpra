@@ -3,6 +3,7 @@
 # Xpra is released under the terms of the GNU GPL v2, or, at your option, any
 # later version. See the file COPYING for details.
 
+import builtins
 from typing import Any, Protocol, TypeAlias, overload
 from collections.abc import Callable
 from abc import abstractmethod
@@ -11,7 +12,9 @@ from xpra.util.str_fn import strtobytes, bytestostr, repr_ellipsized
 from xpra.util.io import get_util_logger
 
 ScreenshotData: TypeAlias = tuple[int, int, str, int, bytes]
-_DICTGET_DEFAULT = object()
+# PEP 661 `sentinel` builtin (Python 3.15+), plain `object()` on older versions:
+_sentinel = getattr(builtins, "sentinel", None)
+_DICTGET_DEFAULT = _sentinel("_DICTGET_DEFAULT") if _sentinel else object()
 
 
 class Scheduler(Protocol):
