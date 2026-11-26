@@ -368,6 +368,21 @@ class ProtocolTest(unittest.TestCase):
         self.assertTrue(proto.process_payload(state, info, data))
         self.assertEqual(proto.input_stats["test"], 2)
 
+    def test_local_packet_types_rejected(self) -> None:
+        from xpra.net.packet_encoding import get_encoder
+
+        for packet_type in socket_handler.LOCAL_PACKET_TYPES:
+            proto = self.make_memory_protocol()
+            received = []
+            proto._process_packet_cb = lambda _proto, packet: received.append(packet)
+            data, flags = get_encoder("rencodeplus")((packet_type, "spoofed", b"data"))
+            info = socket_handler.PacketReadInfo(flags, 0, 0, len(data), 0, len(data))
+            with patch.object(proto, "invalid") as invalid:
+                self.assertFalse(proto.process_payload(socket_handler.ReceiveState(), info, data))
+            invalid.assert_called_once_with(f"invalid packet type {packet_type!r}", data)
+            self.assertEqual(received, [])
+            self.assertNotIn(packet_type, proto.input_stats)
+
     def test_raw_packet_size_logging(self) -> None:
         proto = self.make_memory_protocol()
         with patch.object(socket_handler, "LOG_RAW_PACKET_SIZE", True):
