@@ -63,6 +63,9 @@ MIN_COMPRESS_SIZE = envint("XPRA_MIN_COMPRESS_SIZE", 378)
 SEND_INVALID_PACKET = envint("XPRA_SEND_INVALID_PACKET", 0)
 SEND_INVALID_PACKET_DATA = strtobytes(os.environ.get("XPRA_SEND_INVALID_PACKET_DATA", b"ZZinvalid-packetZZ"))
 
+# These packet types are generated locally by the protocol.
+LOCAL_PACKET_TYPES = frozenset((CONNECTION_LOST, GIBBERISH, INVALID))
+
 
 def noop():  # pragma: no cover
     pass
@@ -1133,6 +1136,9 @@ class SocketProtocol:
                         raise ValueError(f"receive alias not found for packet type {packet_type}")
                 else:
                     packet_type = bytestostr(packet_type)
+                if packet_type in LOCAL_PACKET_TYPES:
+                    self.invalid(f"invalid packet type {packet_type!r}", data)
+                    return
                 self.input_stats[packet_type] = self.input_stats.get(packet_type, 0)+1
                 if LOG_RAW_PACKET_SIZE and packet_type!="logging":
                     log.info(f"received {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)

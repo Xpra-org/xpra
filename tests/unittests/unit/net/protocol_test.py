@@ -7,13 +7,14 @@
 import os
 import time
 import unittest
+from unittest.mock import Mock, patch
 from gi.repository import GLib  # @UnresolvedImport
 
 from xpra.util import csv, envint, envbool
 from xpra.common import noop
 from xpra.net.protocol import socket_handler
 from xpra.net.protocol import check
-from xpra.net.protocol.constants import CONNECTION_LOST
+from xpra.net.protocol.constants import CONNECTION_LOST, GIBBERISH, INVALID
 from xpra.net.bytestreams import Connection
 from xpra.net.compression import Compressed
 from xpra.log import Logger
@@ -182,6 +183,26 @@ class ProtocolTest(unittest.TestCase):
         proto._read_queue.put(b"")
         proto.do_read_parse_thread_loop()
         self.assertEqual(proto.input_stats["test"], 2)
+
+    def test_local_packet_types_rejected(self) -> None:
+        from xpra.net.packet_encoding import get_encoder
+        from xpra.net.protocol.header import pack_header
+
+        for packet_type in (CONNECTION_LOST, GIBBERISH, INVALID):
+            for encoder, use_alias in (("rencodeplus", False), ("bencode", False), ("bencode", True)):
+                with self.subTest(packet_type=packet_type, encoder=encoder, use_alias=use_alias):
+                    received = Mock()
+                    proto = self.make_memory_protocol(process_packet_cb=received)
+                    if use_alias:
+                        proto.set_receive_aliases({1: packet_type})
+                    data, flags = get_encoder(encoder)((1 if use_alias else packet_type,))
+                    proto._read_queue.put(pack_header(flags, 0, 0, len(data)) + data)
+                    proto._read_queue.put(b"")
+                    with patch.object(proto, "invalid") as invalid, patch.object(proto, "idle_add"):
+                        proto.do_read_parse_thread_loop()
+                    invalid.assert_called_once_with(f"invalid packet type {packet_type!r}", data)
+                    received.assert_not_called()
+                    self.assertNotIn(packet_type, proto.input_stats)
 
     def test_receive_pending_flush_semantics(self) -> None:
         from xpra.net.packet_encoding import get_encoder
