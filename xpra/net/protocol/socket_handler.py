@@ -1355,7 +1355,7 @@ class SocketProtocol:
             log.info(f"received {packet_type:<32}: %i bytes", HEADER_SIZE + payload_size)
         self.input_packetcount += 1
         self.receive_pending = not bool(info.protocol_flags & FLAGS_FLUSH)
-        log("processing packet %s", packet_type)
+        log("processing packet %s for %s", packet_type, self)
         self._process_packet_cb(self, wrapped)
         return True
 
