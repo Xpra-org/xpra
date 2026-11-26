@@ -866,7 +866,7 @@ class NetworkServer(StubSubsystem):
         message = packet.get_str(1)
         data = packet.get_bytes(2)
         netlog("Received uninterpretable nonsense from %s: %s", proto, message)
-        netlog(" data: %s", Ellipsizer(data))
+        netlog(" data: %s (%i bytes)", Ellipsizer(data), len(data))
         self.disconnect_client(proto, message)
 
     @packet_handler(INVALID, manual=True)
