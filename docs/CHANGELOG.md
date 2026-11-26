@@ -1,6 +1,6 @@
 # Changelog
 
-## [7.0.1] 2026-11-26
+## [7.0.1] 2026-11-27
 * 🔧 Platforms, build and packaging:
   * [the codec package depended on unavailable OpenJPH library versions on Debian Forky and Sid](https://github.com/Xpra-org/xpra/commit/5cf7aeb44a6d948391fa2dc3c95f3e3ce70fa9a8) [and Ubuntu Noble](https://github.com/Xpra-org/xpra/commit/d1683afb6f8c129674fa29202fbff4ded95bc768)
   * [`libvpl` is only available for `x86_64` RPM builds](https://github.com/Xpra-org/xpra/commit/57cfe768d13f165c77ab674500988be420cd2374)
@@ -30,6 +30,8 @@
 * Client and desktop integration:
   * [clients ignored server changes to bells, cursors, webcam, clipboard and its direction, bandwidth limits and whether they could start commands](https://github.com/Xpra-org/xpra/commit/1a49fe0245f3ca867a498d161e3d690dfbbe6b17), [and the Monitors menu and session info kept showing the initial display capabilities](https://github.com/Xpra-org/xpra/commit/cf3644d2b7e0513dbae08e5da98ce9a14c26199b)
   * [the application launch menu could show stale entries on MS Windows and macOS](https://github.com/Xpra-org/xpra/commit/ec47738e6734546d9ab49e7768566e145bfde68f)
+  * [cursor hotspots outside the image bounds could cause errors](https://github.com/Xpra-org/xpra/commit/c43f57dbe1e35b25f91d750c110fd565e1a11e34)
+  * [the session start dialog could mishandle unset option values](https://github.com/Xpra-org/xpra/commit/0520dc635c88f8e7f7a79adc72946f65232c5150)
   * [forwarded tray icons reported stale geometry after display scaling changed](https://github.com/Xpra-org/xpra/commit/070683d9be5990af7288ecab9064bb24daf557e1), [and server resize requests for tray icons caused errors](https://github.com/Xpra-org/xpra/commit/b8064c8b1feb3296bc02bf5126858dd43814822e)
   * [the X11 desktop work area was offset when a monitor sat left of or above the primary display](https://github.com/Xpra-org/xpra/commit/befa84b85dac648242953bffa02dc932bfe3c9fa)
   * [application window icons were missing when the desktop entry matched only by `StartupWMClass`](https://github.com/Xpra-org/xpra/commit/d3dbfb2c1cfc065b0a477a8196e9bc380cbf400c)
@@ -43,6 +45,8 @@
   * [clients could reconnect after an intentional detach or shutdown because the disconnect reason never arrived](https://github.com/Xpra-org/xpra/commit/190f09edd995aa94f8886930f6b3512bdb7713e0)
   * [malformed packets could consume excessive memory or raise unhandled errors](https://github.com/Xpra-org/xpra/commit/aad356486b8f6d60f4043c0ab1d800b459396f8f)
   * [packets with missing fields could raise unhandled errors](https://github.com/Xpra-org/xpra/commit/b7fae3f044c7a42751229ec8f3e244e5becc7bb4)
+  * [peers could send protocol-internal packet types over the network](https://github.com/Xpra-org/xpra/commit/2bf17ec76dad9103bb84dc14ae730b78289337f6)
+  * [clients could send microphone audio using codecs the server had not advertised](https://github.com/Xpra-org/xpra/commit/e7d625df93abcf5f99703d1828f9f8ea695211a8)
 * 🌈 Encodings:
   * [vp8 and vp9 encoding could read past the end of scaled video buffers with odd dimensions](https://github.com/Xpra-org/xpra/commit/db840722f61adf0090ad88f12dc3b56a7cfbc9d1) [+ test fixup](https://github.com/Xpra-org/xpra/commit/f4bca807cbf35792e3514e485ced9c6f46ee6ba1)
   * [vp8 and vp9 streams kept using the old bandwidth limit until encoding quality changed](https://github.com/Xpra-org/xpra/commit/5132a5eaab538c2227616029eeabf1bc6c0acb97)

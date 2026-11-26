@@ -1193,7 +1193,7 @@ fi
 
 
 %changelog
-* Thu Nov 26 2026 Antoine Martin <antoine@xpra.org> 7.0.1-10
+* Fri Nov 27 2026 Antoine Martin <antoine@xpra.org> 7.0.1-10
 - 🔧 Platforms, build and packaging:
    the codec package depended on unavailable OpenJPH library versions on Debian Forky and Sid and Ubuntu Noble
    `libvpl` is only available for `x86_64` RPM builds
@@ -1223,6 +1223,8 @@ fi
 - Client and desktop integration:
    clients ignored server changes to bells, cursors, webcam, clipboard and its direction, bandwidth limits and whether they could start commands, and the Monitors menu and session info kept showing the initial display capabilities
    the application launch menu could show stale entries on MS Windows and macOS
+   cursor hotspots outside the image bounds could cause errors
+   the session start dialog could mishandle unset option values
    forwarded tray icons reported stale geometry after display scaling changed, and server resize requests for tray icons caused errors
    the X11 desktop work area was offset when a monitor sat left of or above the primary display
    application window icons were missing when the desktop entry matched only by `StartupWMClass`
@@ -1236,6 +1238,8 @@ fi
    clients could reconnect after an intentional detach or shutdown because the disconnect reason never arrived
    malformed packets could consume excessive memory or raise unhandled errors
    packets with missing fields could raise unhandled errors
+   peers could send protocol-internal packet types over the network
+   clients could send microphone audio using codecs the server had not advertised
 - 🌈 Encodings:
    vp8 and vp9 encoding could read past the end of scaled video buffers with odd dimensions + test fixup
    vp8 and vp9 streams kept using the old bandwidth limit until encoding quality changed
