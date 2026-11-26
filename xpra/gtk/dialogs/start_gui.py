@@ -1088,7 +1088,7 @@ class SessionOptions(Gtk.Window):
         else:
             log.warn("unknown widget type '%s'", widget_type)
             return
-        if len(values) != 1 or values[0] != UNSET:
+        if len(values) != 1 or values[0] is not UNSET:
             current_value = getattr(self.options, fn)
             for v in values:
                 if current_value == v:
