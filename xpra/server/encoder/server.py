@@ -21,7 +21,10 @@ from xpra.util.version import protocol_compat_check
 from xpra.net.compression import Compressed
 from xpra.net.protocol.socket_handler import SocketProtocol
 from xpra.codecs.image import ImageWrapper, PlanarFormat
-from xpra.codecs.constants import COMPRESS_RATIO, COMPRESS_FMT_SUFFIX, TransientCodecException
+from xpra.codecs.constants import (
+    COMPRESS_RATIO, COMPRESS_FMT_SUFFIX, TransientCodecException,
+    RGB_FORMAT_BPP, check_image_size, check_rgb_buffer,
+)
 from xpra.server.base import ServerBase
 from xpra.codecs.video import getVideoHelper
 from xpra.net.packet_type import (
@@ -198,6 +201,16 @@ class EncoderServer(ServerBase):
             free = noop
 
         try:
+            # these dimensions, rowstride and pixel format are all attacker controlled,
+            # validate them against the buffer before handing them to a codec:
+            # a tiny packet claiming a huge `width` x `height` (or a large `scaled-*` request)
+            # would otherwise make an encoder allocate gigabytes (DoS), see `oom-client.py`
+            if pixel_format not in RGB_FORMAT_BPP:
+                raise ValueError(f"unsupported pixel format {pixel_format!r}")
+            check_rgb_buffer(pixel_format, len(rgb_data), width, height, rowstride, "encode request")
+            for attr in ("scaled-width", "scaled-height"):
+                if (scaled := eo.get(attr)) is not None:
+                    check_image_size(int(scaled), 1, attr)
             image = ImageWrapper(0, 0, width, height, (rgb_data,), pixel_format, depth, rowstride,
                                  bpp, PlanarFormat.PACKED, True, None, full_range)
             if SAVE_TO_FILE:

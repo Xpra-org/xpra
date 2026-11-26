@@ -269,6 +269,57 @@ class EncoderContextResponseTest(unittest.TestCase):
         self.assertEqual(sent[0][:4], ("context-response", 1, False, "initialization timeout"))
 
 
+class EncoderServerValidationTest(unittest.TestCase):
+    """
+    `do_process_encode` receives attacker-controlled dimensions, rowstride and pixel format:
+    a malicious `encode` packet must be rejected before it can make a codec allocate
+    a huge buffer (DoS), see `tests/xpra/clients/oom-client.py`.
+    """
+
+    def process_encode(self, pixel_format, raw_data, width, height, rowstride, options=None):
+        from xpra.net.common import Packet
+        from xpra.server.encoder import server as encoder_server
+        server = encoder_server.EncoderServer.__new__(encoder_server.EncoderServer)
+        ss = Mock(encoding="png", default_encoding_options={}, mmap_supported=False, mmap_read_area=None)
+        sent = []
+        ss.send_async = lambda *packet: sent.append(packet)
+        packet = Packet("encode", "rgb", pixel_format, raw_data, width, height, rowstride, options or {}, {})
+        # `network` is a read-only property on the server, stand in a mock for it:
+        network = Mock()
+        with patch.object(encoder_server.EncoderServer, "network", network):
+            server.do_process_encode(ss, Mock(), packet)
+        return network.disconnect_client.called, sent
+
+    def assert_rejected(self, **kwargs):
+        disconnected, sent = self.process_encode(**kwargs)
+        self.assertTrue(disconnected, f"packet should have been rejected: {kwargs}")
+        self.assertEqual(sent, [], "a rejected encode request must not send a response")
+
+    def test_oversized_dimensions_rejected(self):
+        # a 16 byte buffer claiming to be a 65535x65535 image:
+        self.assert_rejected(pixel_format="BGRX", raw_data=b"\0" * 16,
+                             width=65535, height=65535, rowstride=65535 * 4)
+
+    def test_rowstride_overflow_rejected(self):
+        # buffer large enough for the pixels, but a huge rowstride:
+        self.assert_rejected(pixel_format="BGRX", raw_data=b"\0" * 64,
+                             width=2, height=2, rowstride=2 ** 31)
+
+    def test_short_buffer_rejected(self):
+        # rowstride and dimensions are sane, but the buffer is too small:
+        self.assert_rejected(pixel_format="BGRX", raw_data=b"\0" * 4,
+                             width=64, height=64, rowstride=64 * 4)
+
+    def test_unknown_pixel_format_rejected(self):
+        self.assert_rejected(pixel_format="bogus", raw_data=b"\0" * 16,
+                             width=2, height=2, rowstride=8)
+
+    def test_oversized_scaling_rejected(self):
+        # a valid 2x2 image, but the request asks to scale it up to 50000 pixels wide:
+        self.assert_rejected(pixel_format="BGRX", raw_data=b"\0" * 16,
+                             width=2, height=2, rowstride=8, options={"scaled-width": 50000})
+
+
 def main():
     unittest.main()
 
