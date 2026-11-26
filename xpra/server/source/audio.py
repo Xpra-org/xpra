@@ -612,6 +612,14 @@ class AudioConnection(AudioKeepaliveMixin, StubClientConnection):
         if self.is_closed():
             return
         self.update_latest_received_audio_timestamp(typedict(metadata))
+        # the codec comes straight from the client's `audio-data` packets,
+        # only accept the ones we advertised: otherwise a client can force us to spin up
+        # (and, by switching codec, repeatedly tear down and respawn) a sink subprocess
+        # for an arbitrary codec, see the matching check in `start_sending_audio`:
+        if codec not in self.microphone_codecs:
+            log.warn("Warning: rejecting audio data for unsupported codec %r", codec)
+            log.warn(" accepted microphone codecs: %s", csv(self.microphone_codecs) or "none")
+            return
         if self.audio_sink is not None and codec != self.audio_sink.codec:
             log.info("audio codec changed from %s to %s", self.audio_sink.codec, codec)
             self.audio_sink.cleanup()

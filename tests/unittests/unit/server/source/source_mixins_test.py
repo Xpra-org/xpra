@@ -159,6 +159,11 @@ class SourceMixinsTest(unittest.TestCase):
         microphone = source.get_audio_info()["microphone"]
         assert microphone["state"] == "blocked"
         assert microphone["active"] is False
+        # a codec that was never advertised must be rejected before any sink is created:
+        source.microphone_codecs = ("opus", )
+        source.audio_sink = None
+        source.audio_data("bogus", b"data", {})
+        assert source.audio_sink is None, "no sink must be created for a rejected codec"
 
     def test_clientconnection(self):
         from xpra.server.source.client_connection import ClientConnection
