@@ -75,7 +75,7 @@ class ClientInfoConnection(StubClientConnection):
         self.proxy_hostname = ""
         self.proxy_platform = ""
         self.proxy_release = ""
-        self.proxy_version = ""
+        self.proxy_linux_distribution: tuple[str, ...] = ()
         self.proxy_version = ""
 
     def parse_client_caps(self, c: typedict) -> None:
@@ -101,8 +101,9 @@ class ClientInfoConnection(StubClientConnection):
         self.client_session_type_full = client_str(c, "session-type.full")
         self.client_opengl = typedict(c.dictget("opengl"))
         self.proxy_hostname = client_str(c, "proxy.hostname")
-        self.proxy_platform = client_str(c, "proxy.platform")
+        self.proxy_platform = client_str(c, "proxy.platform.system")
         self.proxy_release = client_str(c, "proxy.platform.sysrelease")
+        self.proxy_linux_distribution = tuple(truncate(single_line(x), MAX_CLIENT_STRING) for x in c.strtupleget("proxy.platform.linux_distribution")[:4])
         self.proxy_version = client_str(c, "proxy.version")
         self.proxy_version = client_str(c, "proxy.build.version") or self.proxy_version
         self.log_client_info()
@@ -149,7 +150,7 @@ class ClientInfoConnection(StubClientConnection):
         return msg
 
     def get_proxy_info_message(self) -> str:
-        pname = platform_name(self.proxy_platform, self.proxy_release)
+        pname = platform_name(self.proxy_platform, self.proxy_linux_distribution or self.proxy_release)
         msg = f"via {pname} proxy"
         if self.proxy_version:
             msg += f" version {std(self.proxy_version)}"

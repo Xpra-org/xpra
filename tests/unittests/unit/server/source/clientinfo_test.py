@@ -42,19 +42,40 @@ class ClientInfoTest(unittest.TestCase):
             "platform.sysrelease": "6.0\x1b]0;title\x07",
             "platform.linux_distribution": ("Fedora\n", "44‮", "x" * 1000) + ("y", ) * 100,
             "session-type": "wayland\r\nFAKE",
-            "proxy": True,
-            "proxy.hostname": "proxy⁦",
-            "proxy.platform": "linux",
-            "proxy.platform.sysrelease": "\x1b[2J",
+            "proxy": {
+                "hostname": "proxy⁦",
+                "platform": {
+                    "system": "linux",
+                    "sysrelease": "\x1b[2J",
+                    "linux_distribution": ("Fedora\n", "44‮", "x" * 1000) + ("y", ) * 100,
+                },
+            },
             "opengl": {"enabled": True, "backend": "GLX\x1b[2J", "renderer": "fake\n"},
         })
         self.assertEqual(ci.client_session_type, "wayland  FAKE")
         self.assertEqual(len(ci.client_linux_distribution), 4)
         self.assertTrue(all(len(x) <= MAX_CLIENT_STRING for x in ci.client_linux_distribution))
+        self.assertEqual(len(ci.proxy_linux_distribution), 4)
+        self.assertTrue(all(len(x) <= MAX_CLIENT_STRING for x in ci.proxy_linux_distribution))
         info = ci.get_connect_info()
         self.assertEqual(len(info), 4)
         for msg in info:
             self.assertTrue(msg.isprintable(), f"{msg!r} is not printable")
+
+    def test_proxy_platform(self):
+        # the proxy instance sends its platform info as a dictionary, like the client does:
+        ci = parse({
+            "proxy": {
+                "version": "7.0",
+                "hostname": "proxyhost",
+                "platform": {"system": "darwin", "sysrelease": "15.1"},
+            },
+        })
+        self.assertTrue(ci.client_proxy)
+        self.assertEqual(ci.get_proxy_info_message(), "via Mac OS X 15.1 proxy version 7.0 on 'proxyhost'")
+        # proxies that don't send any platform info:
+        ci = parse({"proxy": {"version": "7.0"}})
+        self.assertEqual(ci.get_proxy_info_message(), "via unknown proxy version 7.0")
 
 
 def main():

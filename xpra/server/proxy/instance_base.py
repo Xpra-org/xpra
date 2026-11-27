@@ -25,7 +25,8 @@ from xpra.exit_codes import ExitValue
 from xpra.util.objects import typedict
 from xpra.util.str_fn import csv, Ellipsizer
 from xpra.util.env import envint, envbool
-from xpra.util.version import XPRA_VERSION, vparts
+from xpra.util.version import XPRA_VERSION, vparts, get_platform_info
+from xpra.common import skipkeys
 from xpra.log import Logger
 
 GLib = gi_import("GLib")
@@ -127,6 +128,11 @@ class ProxyInstance:
         }
         if FULL_INFO > 0:
             self.proxy_info["hostname"] = socket.gethostname()
+            # same format and filtering as the client's own platform caps:
+            pi = get_platform_info()
+            if FULL_INFO < 2:
+                pi = skipkeys(pi, "release", "sysrelease", "platform", "processor", "architecture")
+            self.proxy_info["platform"] = pi
 
     def is_alive(self) -> bool:
         return not self.exit

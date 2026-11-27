@@ -679,11 +679,11 @@ def print_proxy_caps(caps: typedict) -> None:
         pcaps = caps
         prefix = "proxy."
     proxy_hostname = pcaps.strget(f"{prefix}hostname")
-    proxy_platform = pcaps.strget(f"{prefix}platform")
-    proxy_release = pcaps.strget(f"{prefix}platform.release")
+    proxy_platform = pcaps.strget(f"{prefix}platform.system")
+    proxy_release = pcaps.strget(f"{prefix}platform.sysrelease")
     proxy_version = pcaps.strget(f"{prefix}version")
     proxy_version = pcaps.strget(f"{prefix}build.version", proxy_version)
-    proxy_distro = pcaps.strget(f"{prefix}linux_distribution")
+    proxy_distro = pcaps.strtupleget(f"{prefix}platform.linux_distribution")
     msg = "via: %s proxy version %s" % (
         platform_name(proxy_platform, proxy_distro or proxy_release),
         std(proxy_version or "unknown")
