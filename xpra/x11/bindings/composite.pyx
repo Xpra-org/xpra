@@ -56,17 +56,17 @@ cdef class XCompositeBindingsInstance(X11CoreBindingsInstance):
         self.context_check("XCompositeRedirectWindow")
         XCompositeRedirectWindow(self.display, xwindow, CompositeRedirectManual)
 
-    def XCompositeRedirectSubwindows(self, Window xwindow) -> None:
+    def XCompositeRedirectSubwindows(self, Window xwindow, bint automatic=False) -> None:
         self.context_check("XCompositeRedirectSubwindows")
-        XCompositeRedirectSubwindows(self.display, xwindow, CompositeRedirectManual)
+        XCompositeRedirectSubwindows(self.display, xwindow, CompositeRedirectAutomatic if automatic else CompositeRedirectManual)
 
     def XCompositeUnredirectWindow(self, Window xwindow) -> None:
         self.context_check("XCompositeUnredirectWindow")
         XCompositeUnredirectWindow(self.display, xwindow, CompositeRedirectManual)
 
-    def XCompositeUnredirectSubwindows(self, Window xwindow) -> None:
+    def XCompositeUnredirectSubwindows(self, Window xwindow, bint automatic=False) -> None:
         self.context_check("XCompositeUnredirectSubwindows")
-        XCompositeUnredirectSubwindows(self.display, xwindow, CompositeRedirectManual)
+        XCompositeUnredirectSubwindows(self.display, xwindow, CompositeRedirectAutomatic if automatic else CompositeRedirectManual)
 
     def XCompositeGetOverlayWindow(self, Window window) -> Window:
         self.context_check("XCompositeGetOverlayWindow")

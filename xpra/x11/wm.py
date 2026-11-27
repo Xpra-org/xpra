@@ -25,6 +25,7 @@ from xpra.x11.xroot_props import (
 )
 from xpra.x11.bindings.core import constants, get_root_xid, X11CoreBindings
 from xpra.x11.bindings.window import X11WindowBindings
+from xpra.x11.bindings.composite import XCompositeBindings
 from xpra.log import Logger
 
 GObject = gi_import("GObject")
@@ -111,6 +112,7 @@ class Wm(GObject.GObject):
         self._windows_in_order = []
         self._windows_stacking = []
         self._wm_selection = None
+        self._root_redirected = False
 
     def init_atoms(self) -> None:
         from xpra.x11.common import NET_SUPPORTED
@@ -139,6 +141,11 @@ class Wm(GObject.GObject):
         self._wm_selection.acquire(replace_other_wm)
 
     def _got_wm_selection(self, *_args):
+        # Preserve the first paint of override-redirect windows before MapNotify
+        # gives us a chance to attach their individual CompositeHandle.
+        with xsync:
+            XCompositeBindings().XCompositeRedirectSubwindows(rxid, automatic=True)
+        self._root_redirected = True
         # Set up the necessary EWMH properties on the root window.
         self._ewmh_window = self._setup_ewmh_window()
         self._focus_window = self._setup_focus_window()
@@ -321,6 +328,10 @@ class Wm(GObject.GObject):
         remove_fallback_receiver("x11-child-map-request-event", self)
         for win in tuple(self._windows.values()):
             win.unmanage(True)
+        if self._root_redirected:
+            self._root_redirected = False
+            with xswallow:
+                XCompositeBindings().XCompositeUnredirectSubwindows(rxid, automatic=True)
         if xid := self._ewmh_window:
             self._ewmh_window = 0
             with xswallow:
