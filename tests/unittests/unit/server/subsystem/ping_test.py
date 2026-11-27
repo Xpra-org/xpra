@@ -46,6 +46,25 @@ class PingTest(ServerMixinTest):
             self.glib.timeout_add(2000, self.main_loop.quit)
             self.main_loop.run()
 
+    def test_ping_dropped_when_source_lacks_mixin(self):
+        # a client that sends ping packets without having negotiated the ping
+        # subsystem gets a source without `PingConnection`: the handler must drop
+        # the packet rather than raising `AttributeError` (see ping-DoS-client.py).
+        from xpra.server.subsystem.ping import PingServer
+        from xpra.server.source.ping import PingConnection
+        opts = AdHocStruct()
+        opts.pings = 1
+        self._test_mixin_class(PingServer, opts, source_mixin_class=PingConnection)
+
+        class NotPing:
+            """ a source assembled without the ping mixin """
+        self.source = NotPing()
+        # neither of these must raise:
+        self.handle_packet(("ping", 10))
+        self.handle_packet((PING_ECHO, 10, 500, 500, 600, 10))
+        # the dummy source has no `cleanup()`, drop it before teardown:
+        self.source = None
+
 
 def main():
     unittest.main()

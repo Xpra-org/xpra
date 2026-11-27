@@ -22,6 +22,7 @@ from xpra.net.common import Packet, packet_handler
 from xpra.net.constants import ConnectionMessage
 from xpra.net.file_transfer import FileTransferAttributes
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.server.source.printer import PrinterConnection
 from xpra.net.packet_type import PRINT_DEVICES, HELLO, PRINTER_FILE
 from xpra.log import Logger
 from xpra.util.thread import start_thread
@@ -322,7 +323,7 @@ class PrinterServer(StubSubsystem):
             log.error("Error: received printer definitions data")
             log.error(" but this server does not support printer forwarding")
             return
-        ss = self.get_server_source(proto)
+        ss = self.get_server_source(proto, PrinterConnection)
         if ss is None:
             return
         printers = packet.get_dict(1)

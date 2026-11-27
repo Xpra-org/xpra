@@ -597,7 +597,7 @@ class WindowServer(StubSubsystem):
         stacking = packet.get_ints(1)
         focuslog("process_window_stacking: %s", stacking)
         self.update_window_stacking(stacking)
-        source = self.get_server_source(proto)
+        source = self.get_server_source(proto, WindowsConnection)
         if source:
             source.set_window_stacking(stacking)
         for ss in self.window_sources(exclude=source):

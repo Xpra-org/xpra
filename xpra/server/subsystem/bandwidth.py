@@ -7,6 +7,7 @@
 from typing import Any
 
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.server.source.bandwidth import BandwidthConnection
 from xpra.util.objects import typedict
 from xpra.util.parsing import parse_with_unit
 from xpra.util.stats import std_unit
@@ -55,13 +56,13 @@ class BandwidthManager(StubSubsystem):
 
     @packet_handler(BANDWIDTH_STATUS)
     def _process_status(self, proto, packet: Packet) -> None:
-        if ss := self.get_server_source(proto):
+        if ss := self.get_server_source(proto, BandwidthConnection):
             ss.update_connection_data(packet.get_dict(1))
 
     @packet_handler(BANDWIDTH_LIMIT)
     def _process_limit(self, proto, packet: Packet) -> None:
         log("_process_limit(%s, %s)", proto, packet)
-        ss = self.get_server_source(proto)
+        ss = self.get_server_source(proto, BandwidthConnection)
         if not ss:
             return
         bandwidth_limit = packet.get_u64(1)

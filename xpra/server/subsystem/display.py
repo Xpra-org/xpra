@@ -424,7 +424,7 @@ class DisplayManager(StubSubsystem):
 
     @packet_handler(DISPLAY_CONFIGURE, main_thread=True)
     def _process_configure(self, proto, packet: Packet) -> None:
-        ss = self.get_server_source(proto)
+        ss = self.get_server_source(proto, DisplayConnection)
         if ss is None:
             return
         attrs = typedict(packet.get_dict(1))

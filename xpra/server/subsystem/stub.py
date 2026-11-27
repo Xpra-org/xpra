@@ -11,6 +11,7 @@ from xpra.net.constants import ConnectionMessage
 from xpra.net.dispatch import SubsystemPacketHandlers
 from xpra.util.signal_emitter import SignalEmitter
 from xpra.util.objects import typedict
+from xpra.util.env import first_time
 from xpra.common import noop
 from xpra.os_util import WIN32
 
@@ -53,9 +54,27 @@ class StubSubsystem(SubsystemPacketHandlers, SignalEmitter):
     def get_main_loop(self):
         return getattr(self.server, "main_loop", None)
 
-    def get_server_source(self, proto):
-        """ delegate to the server's per-protocol client source lookup """
-        return self.server.get_server_source(proto)
+    def get_server_source(self, proto, subsystem_type: type | None = None):
+        """
+        The per-protocol client source, or `None`.
+
+        When `subsystem_type` is given, only return the source if it is an instance of it.
+        A per-client source is assembled from just the mixins that client negotiated
+        (see `get_needed_based_classes`), so a subsystem's packet handler can be
+        registered server-side (its feature is enabled) while the matching source mixin
+        was not enabled for this particular connection: dispatching to a method of the
+        absent mixin would raise `AttributeError`, so warn once and drop the packet instead.
+        """
+        ss = self.server.get_server_source(proto)
+        if ss is not None and subsystem_type is not None and not isinstance(ss, subsystem_type):
+            if first_time(f"{self.PREFIX}-source-missing"):
+                from xpra.log import Logger
+                Logger("server").warn(
+                    "Warning: ignoring %r packet, this client did not enable the %r subsystem",
+                    self.PREFIX, self.PREFIX,
+                )
+            return None
+        return ss
 
     def get_subsystem(self, name: str):
         """ look up a peer subsystem on the owning server """

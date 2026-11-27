@@ -404,7 +404,7 @@ class AudioServer(StubSubsystem):
     @packet_handler(AUDIO_DATA, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_data(self, proto, packet: Packet) -> None:
         audio_data = parse_audio_data_packet(packet)
-        if ss := self.get_server_source(proto):
+        if ss := self.get_server_source(proto, AudioConnection):
             ss.audio_data(*audio_data)
 
     # `audio-stream` must not be re-ordered with the `audio-data` packets,
@@ -412,19 +412,19 @@ class AudioServer(StubSubsystem):
     @packet_handler(AUDIO_STREAM, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_stream(self, proto, packet: Packet) -> None:
         event, codec, sequence = parse_audio_stream_packet(packet)
-        if ss := self.get_server_source(proto):
+        if ss := self.get_server_source(proto, AudioConnection):
             ss.audio_stream(event, codec, sequence)
 
     @packet_handler(AUDIO_CAPABILITIES, main_thread=True, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_capabilities(self, proto, packet: Packet) -> None:
         capabilities = parse_audio_capabilities_packet(packet)
-        if ss := self.get_server_source(proto):
+        if ss := self.get_server_source(proto, AudioConnection):
             ss.client_audio_capabilities(capabilities)
 
     @packet_handler(AUDIO_KEEPALIVE, enabled=lambda self: self.supports_speaker or self.supports_microphone)
     def _process_keepalive(self, proto, packet: Packet) -> None:
         timestamp = parse_audio_keepalive_packet(packet)
-        if ss := self.get_server_source(proto):
+        if ss := self.get_server_source(proto, AudioConnection):
             ss.audio_keepalive(timestamp)
 
     #########################################

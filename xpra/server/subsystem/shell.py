@@ -8,6 +8,7 @@ from collections import deque
 from typing import Any
 
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.server.source.shell import ShellConnection
 from xpra.net.common import Packet, packet_handler
 from xpra.net.packet_type import SHELL_EXEC
 
@@ -40,7 +41,7 @@ class ShellServer(StubSubsystem):
     @packet_handler(SHELL_EXEC)
     def _process_exec(self, proto, packet: Packet) -> None:
         code = packet.get_str(1)
-        if ss := self.get_server_source(proto):
+        if ss := self.get_server_source(proto, ShellConnection):
             self.counter += 1
             self.commands.append(code)
             ss.shell_exec(code)

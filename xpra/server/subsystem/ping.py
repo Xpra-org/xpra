@@ -8,6 +8,7 @@ from typing import Any
 
 from xpra.server.common import get_sources_by_type
 from xpra.server.subsystem.stub import StubSubsystem
+from xpra.server.source.ping import PingConnection
 from xpra.net.common import Packet, packet_handler
 from xpra.net.packet_type import PING_ECHO, PING
 from xpra.log import Logger
@@ -48,7 +49,6 @@ class PingServer(StubSubsystem):
         }
 
     def send_ping(self) -> bool:
-        from xpra.server.source.ping import PingConnection
         ping_sources = get_sources_by_type(self.server, PingConnection)
         for ss in ping_sources:
             if ss.suspended or ss.is_closed():
@@ -58,14 +58,14 @@ class PingServer(StubSubsystem):
 
     @packet_handler(PING_ECHO)
     def _process_echo(self, proto, packet: Packet) -> None:
-        if ss := self.get_server_source(proto):
+        if ss := self.get_server_source(proto, PingConnection):
             ss.process_ping_echo(packet)
 
     @packet_handler(PING)
     def _process_ping(self, proto, packet: Packet) -> None:
-        time_to_echo = packet.get_u64(1)
-        sid = ""
-        if len(packet) >= 4:
-            sid = packet.get_str(3)
-        if ss := self.get_server_source(proto):
+        if ss := self.get_server_source(proto, PingConnection):
+            time_to_echo = packet.get_u64(1)
+            sid = ""
+            if len(packet) >= 4:
+                sid = packet.get_str(3)
             ss.process_ping(time_to_echo, sid)

@@ -206,7 +206,7 @@ class WebcamServer(StubSubsystem):
         if self.is_readonly(proto):
             return
         assert self.enabled
-        ss = self.get_server_source(proto)
+        ss = self.get_server_source(proto, WebcamConnection)
         if not ss:
             log.warn("Warning: invalid client source for webcam start")
             return
@@ -257,7 +257,7 @@ class WebcamServer(StubSubsystem):
         device_id, message = parse_webcam_stop_packet(packet)
         if self.is_readonly(proto):
             return
-        ss = self.get_server_source(proto)
+        ss = self.get_server_source(proto, WebcamConnection)
         if not ss:
             log.warn("Warning: invalid client source for webcam stop")
             return
@@ -275,7 +275,7 @@ class WebcamServer(StubSubsystem):
         frame = parse_webcam_frame_packet(packet)
         if self.is_readonly(proto):
             return
-        ss = self.get_server_source(proto)
+        ss = self.get_server_source(proto, WebcamConnection)
         if not ss:
             log.warn("Warning: invalid client source for webcam frame")
             return

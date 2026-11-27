@@ -531,8 +531,9 @@ class ChildCommandServer(StubSubsystem):
             if proc and not shared:
                 if not ss:
                     raise RuntimeError("no server source found for %s" % proto)
-                log(f"adding filter: pid={proc.pid} for {proto}")
-                ss.add_window_filter("window", "pid", "=", proc.pid)
+                if hasattr(ss, "add_window_filter"):
+                    log(f"adding filter: pid={proc.pid} for {proto}")
+                    ss.add_window_filter("window", "pid", "=", proc.pid)
         log(f"process_start_command: proc={proc}")
 
     @packet_handler(COMMAND_SIGNAL, enabled=lambda _self: COMMAND_SIGNALS)

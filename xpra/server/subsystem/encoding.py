@@ -298,7 +298,7 @@ class EncodingServer(StubSubsystem):
 
     @packet_handler(ENCODING_CONFIG)
     def _process_config(self, proto, packet) -> None:
-        ss = self.get_server_source(proto)
+        ss = self.get_server_source(proto, EncodingsConnection)
         if not ss:
             return
         config = typedict(packet.get_dict(1))
@@ -311,7 +311,7 @@ class EncodingServer(StubSubsystem):
     @packet_handler(ENCODING_SET)
     def _process_set(self, proto, packet: Packet) -> None:
         encoding = packet.get_str(1)
-        ss = self.get_server_source(proto)
+        ss = self.get_server_source(proto, EncodingsConnection)
         if ss is None:
             return
         window = self.get_subsystem("window")
