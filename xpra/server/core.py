@@ -427,8 +427,17 @@ class ServerCore(GLibServer):
         log("process_hello: capabilities=%s", capabilities)
         request = c.strget("request")
         if request in UNAUTHENTICATED_HELLO_REQUESTS:
-            # these never proceed to authentication, even if they fail:
-            self.do_handle_hello_request(request, proto, c)
+            # these never proceed to authentication, even if they fail.
+            # they are one-shot probes, so serve at most one per connection and
+            # then disconnect: a client must not be able to flood them
+            # (see hello-flood-DoS-client.py):
+            if proto.hello_request_served:
+                netlog("ignoring extra %r hello request from %s", request, proto)
+                return
+            proto.hello_request_served = True
+            if self.do_handle_hello_request(request, proto, c):
+                GLib.timeout_add(1000, self.network.send_disconnect, proto,
+                                 ConnectionMessage.DONE, "request served")
             return
 
         # verify that we satisfy the minimum version required by the client:
@@ -477,17 +486,34 @@ class ServerCore(GLibServer):
         # are instantiated here and may open files, sockets or subprocesses, and a
         # thread spawned by the parse thread would inherit its seccomp filter
         # (see `docs/Usage/Seccomp.md`).
+        # only ever run one authentication at a time per connection:
+        # a flood of `hello` packets would otherwise spawn an unbounded number of
+        # `verify_auth` threads, each running the full (deliberately expensive)
+        # authenticator stack - see hello-flood-DoS-client.py.
+        # the flag is set here on the parse thread so the flood is rejected
+        # immediately, and cleared when `verify_auth` returns; challenge rounds
+        # are sequential, so each legitimate follow-up `hello` finds it clear:
+        if proto.authentication_pending:
+            netlog("ignoring hello packet, authentication already in progress for %s", proto)
+            return
+        proto.authentication_pending = True
+
         def authenticate() -> bool:
             start_thread(self.verify_auth, "authenticate connection", daemon=True, args=(proto, packet, c))
             return False
         GLib.idle_add(authenticate)
 
     def verify_auth(self, proto: SocketProtocol, packet, c: typedict) -> None:
-        if auth := self.get_subsystem("auth"):
-            auth.verify_auth(proto, packet, c)
-            return
-        capabilities = packet.get_dict(1)
-        self.call_hello_oked(proto, typedict(capabilities), {})
+        try:
+            if auth := self.get_subsystem("auth"):
+                auth.verify_auth(proto, packet, c)
+                return
+            capabilities = packet.get_dict(1)
+            self.call_hello_oked(proto, typedict(capabilities), {})
+        finally:
+            # allow the next authentication round (challenge response) for this
+            # connection; a flood while this thread ran was dropped above:
+            proto.authentication_pending = False
 
     def call_hello_oked(self, proto: SocketProtocol, c: typedict, auth_caps: dict) -> None:
         check_main_thread()

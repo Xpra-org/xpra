@@ -60,6 +60,62 @@ class TestServerCore(unittest.TestCase):
         proto.send_now.assert_not_called()
         network.disconnect_client.assert_called_once_with(proto, ConnectionMessage.SERVER_ERROR, "invalid SSL certificate")
 
+    def make_hello_server(self):
+        # a minimal ServerCore set up to reach the authentication / request
+        # branches of `_process_hello` with a mock protocol:
+        network = SimpleNamespace(ssl_upgrade=False, disconnect_client=Mock(), send_disconnect=Mock())
+        server = ServerCore.__new__(ServerCore)
+        server.subsystems = {"network": network}
+        server.compression_level = 0
+        proto = Mock()
+        proto._conn = SimpleNamespace(socktype="tcp", options={})
+        proto.enable_encoder_from_caps.return_value = True
+        # flags normally initialized in `NetworkServer.do_make_protocol`:
+        proto.authentication_pending = False
+        proto.hello_request_served = False
+        return server, network, proto
+
+    def test_hello_flood_spawns_one_authentication_at_a_time(self):
+        # a flood of `hello` packets must not spawn an unbounded number of
+        # `verify_auth` threads: once one authentication is pending, further
+        # hellos are dropped until it completes (see hello-flood-DoS-client.py):
+        server, _network, proto = self.make_hello_server()
+        packet = Packet("hello", {"protocol-version": (7, 0)})
+        with patch("xpra.server.core.GLib.idle_add") as idle_add:
+            ServerCore._process_hello(server, proto, packet)
+            self.assertTrue(proto.authentication_pending)
+            idle_add.assert_called_once()
+            # the flood (authentication still pending) must be ignored:
+            ServerCore._process_hello(server, proto, packet)
+            ServerCore._process_hello(server, proto, packet)
+            idle_add.assert_called_once()
+        # once authentication finishes, the flag is cleared so the next
+        # (legitimate) challenge-response hello is processed again:
+        proto.authentication_pending = False
+        with patch("xpra.server.core.GLib.idle_add") as idle_add:
+            ServerCore._process_hello(server, proto, packet)
+            idle_add.assert_called_once()
+
+    def test_unauthenticated_request_served_once_then_dropped(self):
+        # unauthenticated hello requests are one-shot probes: serve exactly one
+        # per connection, schedule a disconnect, and drop any further ones
+        # (see hello-flood-DoS-client.py):
+        server, network, proto = self.make_hello_server()
+        server.do_handle_hello_request = Mock(return_value=True)
+        packet = Packet("hello", {"protocol-version": (7, 0), "request": "connect_test"})
+        with patch("xpra.server.core.GLib.timeout_add") as timeout_add:
+            ServerCore._process_hello(server, proto, packet)
+            self.assertTrue(proto.hello_request_served)
+            server.do_handle_hello_request.assert_called_once()
+            timeout_add.assert_called_once_with(
+                1000, network.send_disconnect, proto, ConnectionMessage.DONE, "request served",
+            )
+            # a flood of further requests must be dropped, not re-served:
+            ServerCore._process_hello(server, proto, packet)
+            ServerCore._process_hello(server, proto, packet)
+            server.do_handle_hello_request.assert_called_once()
+            timeout_add.assert_called_once()
+
     @unittest.skipUnless(POSIX and not OSX, "X11 server classes require a POSIX X11 build")
     def test_display_mode_hello(self):
         from xpra.server.shadow.shadow_server_base import ShadowServerBase

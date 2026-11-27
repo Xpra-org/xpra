@@ -555,6 +555,10 @@ class NetworkServer(StubSubsystem):
         protocol.socket_type = socktype
         self._potential_protocols.append(protocol)
         protocol.authenticators = ()
+        # handshake flow-control, enforced in `ServerCore._process_hello`:
+        # at most one in-flight authentication, and a single unauthenticated request
+        protocol.authentication_pending = False
+        protocol.hello_request_served = False
         protocol.invalid_header = self.invalid_header
         if enc := self.get_subsystem("encryption"):
             enc.parse_encryption(protocol, socket_options)
