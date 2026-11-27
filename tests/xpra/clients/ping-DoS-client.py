@@ -45,7 +45,17 @@ def main() -> None:
     # advertise `ping` so the server assembles its ping handling for this connection:
     sock.sendall(frame(["hello", {"encoders": ["yaml"], "protocol-version": (7,), "ping": True}]))
 
-    # deliberately never recv(): the server cannot drain its echoes to us.
+    # read exactly the hello reply, so the handshake completes and the `ping` handler
+    # is active, then stop reading: any ping we send now is handled post-authentication.
+    header = b""
+    while len(header) < 8:
+        header += sock.recv(8 - len(header))
+    size = int.from_bytes(header[4:8], "big")
+    body = b""
+    while len(body) < size:
+        body += sock.recv(size - len(body))
+
+    # from here on we deliberately never recv(): the server cannot drain its echoes to us.
     now = int(time.time() * 1000)
     ping_block = b"".join(frame(["ping", now, now, ""]) for _ in range(BLOCK))
 
