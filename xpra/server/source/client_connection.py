@@ -15,7 +15,7 @@ from queue import Queue
 
 from xpra.make_thread import start_thread
 from xpra.common import FULL_INFO
-from xpra.util import notypedict, envbool, envint, typedict, AtomicInteger
+from xpra.util import notypedict, envbool, envint, typedict, AtomicInteger, ConnectionMessage
 from xpra.net.common import PacketType
 from xpra.net.compression import compressed_wrapper
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
@@ -32,6 +32,8 @@ MIN_BANDWIDTH = envint("XPRA_MIN_BANDWIDTH", 5*1024*1024)
 AUTO_BANDWIDTH_PCT = envint("XPRA_AUTO_BANDWIDTH_PCT", 80)
 assert 1<AUTO_BANDWIDTH_PCT<=100, "invalid value for XPRA_AUTO_BANDWIDTH_PCT: %i" % AUTO_BANDWIDTH_PCT
 YIELD = envbool("XPRA_YIELD", False)
+# Bound the non-damage packet queue for each client.
+MAX_SEND_BACKLOG = envint("XPRA_MAX_SEND_BACKLOG", 1000)
 
 counter = AtomicInteger()
 
@@ -87,6 +89,8 @@ class ClientConnection(StubSourceMixin):
         self.encode_thread = None
         self.encode_thread_lock = Lock()
         self.ordinary_packets : List[Tuple[PacketType,bool,Callable,Callable]] = []
+        self.ordinary_packets_lock = Lock()
+        self.send_backlog_exceeded = False
         self.socket_dir = socket_dir
         self.unix_socket_paths = unix_socket_paths
         self.log_disconnect = log_disconnect
@@ -340,8 +344,21 @@ class ClientConnection(StubSourceMixin):
         will_have_more = kwargs.get("will_have_more", not synchronous)
         fail_cb = kwargs.get("fail_cb", None)
         p = self.protocol
-        if p:
-            self.ordinary_packets.append((parts, synchronous, fail_cb, will_have_more))
+        if not p:
+            return
+        with self.ordinary_packets_lock:
+            if self.send_backlog_exceeded:
+                return
+            backlog_exceeded = len(self.ordinary_packets) >= MAX_SEND_BACKLOG
+            if backlog_exceeded:
+                self.send_backlog_exceeded = True
+            else:
+                self.ordinary_packets.append((parts, synchronous, fail_cb, will_have_more))
+        if backlog_exceeded:
+            log.warn("Warning: client %i is not reading its connection", self.counter)
+            log.warn(" the send queue has reached %i packets, disconnecting it", MAX_SEND_BACKLOG)
+            p.idle_add(self.disconnect, ConnectionMessage.CONNECTION_ERROR, "send queue overflow")
+        else:
             p.source_has_more()
 
     def send_more(self, *parts, **kwargs):
