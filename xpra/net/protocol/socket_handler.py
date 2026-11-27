@@ -582,7 +582,15 @@ class SocketProtocol:
             return
         log("send_now(%s ...)", packet[0])
         if self._get_packet_cb != no_packet:
-            raise RuntimeError(f"cannot use send_now when a packet source exists! (set to {self._get_packet_cb})")
+            # `send_now` injects a single packet directly, so it can only run when no
+            # packet source is active - either a per-client source, or an earlier
+            # `send_now` whose packet the write thread has not drained yet.
+            # drop the packet rather than raise: raising trips the packet error policy,
+            # and a client flooding one-shot requests can reach this re-entrantly
+            # (see hello-flood-DoS-client.py):
+            if first_time(f"send-now-busy-{self._conn}"):
+                log.warn("Warning: cannot send %r packet immediately, the connection is busy", packet[0])
+            return
         tmp_queue = [packet]
 
         def packet_cb() -> tuple[Packet, bool, bool]:

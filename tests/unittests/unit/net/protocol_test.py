@@ -37,7 +37,11 @@ SHOW_PERF = envbool("XPRA_SHOW_PERF", False)
 
 
 class FastMemoryConnection(Connection):
+    _counter = 0
+
     def __init__(self, read_buffers, socktype="tcp"):
+        FastMemoryConnection._counter += 1
+        self._id = FastMemoryConnection._counter
         self.read_buffers = read_buffers
         self.pos = 0
         self.write_data = []
@@ -65,7 +69,7 @@ class FastMemoryConnection(Connection):
         return len(buf)
 
     def __repr__(self):
-        return "FastMemoryConnection"
+        return f"FastMemoryConnection({self._id})"
 
 
 def make_profiling_protocol_class(protocol_class):
@@ -388,6 +392,20 @@ class ProtocolTest(unittest.TestCase):
             invalid.assert_called_once_with(f"invalid packet type {packet_type!r}", data)
             self.assertEqual(received, [])
             self.assertNotIn(packet_type, proto.input_stats)
+
+    def test_send_now_drops_when_busy_instead_of_raising(self) -> None:
+        # `send_now` must not raise (and trip the packet error policy) when a
+        # packet source is already active - it drops the packet and warns once:
+        proto = self.make_memory_protocol()
+
+        def existing_source():
+            return Packet("existing"), True, False
+        proto._get_packet_cb = existing_source
+        with patch.object(socket_handler, "log") as log:
+            proto.send_now(Packet("hello", {}))
+        # the active packet source is left untouched (the new packet is dropped):
+        self.assertIs(proto._get_packet_cb, existing_source)
+        self.assertTrue(log.warn.called)
 
     def test_raw_packet_size_logging(self) -> None:
         proto = self.make_memory_protocol()
