@@ -12,10 +12,11 @@ from threading import Event, Lock
 from collections import deque
 from queue import SimpleQueue
 
+from xpra.net.constants import ConnectionMessage
 from xpra.net.packet_type import INFO_RESPONSE
 from xpra.util.thread import start_thread
 from xpra.util.objects import AtomicInteger, notypedict
-from xpra.util.env import envbool
+from xpra.util.env import envbool, envint
 from xpra.net.common import Packet, PacketElement, FULL_INFO
 from xpra.net.compression import compressed_wrapper, Compressed, LevelCompressed
 from xpra.server.source.source_stats import GlobalPerformanceStatistics
@@ -26,6 +27,8 @@ log = Logger("server")
 notifylog = Logger("notify")
 
 YIELD = envbool("XPRA_YIELD", False)
+# Control and metadata packets are low-volume, so their queue is normally near-empty.
+MAX_SEND_BACKLOG = envint("XPRA_MAX_SEND_BACKLOG", 1000)
 
 counter = AtomicInteger()
 
@@ -80,6 +83,8 @@ class ClientConnection(StubClientConnection):
         # once every subsystem has queued the encoding work it needed:
         self.encode_at_end: list[tuple[Callable, Sequence[Any]]] = []
         self.ordinary_packets: list[tuple[Packet, bool, bool]] = []
+        self.send_backlog_lock = Lock()
+        self.send_backlog_exceeded = False
 
         self.suspended = False
         self.client_packet_types = ()
@@ -247,9 +252,21 @@ class ClientConnection(StubClientConnection):
         synchronous = bool(kwargs.get("synchronous", True))
         will_have_more = bool(kwargs.get("will_have_more", not synchronous))
         if p := self.protocol:
-            packet = Packet(packet_type, *parts)
-            self.ordinary_packets.append((packet, synchronous, will_have_more))
-            p.source_has_more()
+            with self.send_backlog_lock:
+                if self.send_backlog_exceeded:
+                    return
+                overflow = len(self.ordinary_packets) >= MAX_SEND_BACKLOG
+                if overflow:
+                    self.send_backlog_exceeded = True
+                else:
+                    packet = Packet(packet_type, *parts)
+                    self.ordinary_packets.append((packet, synchronous, will_have_more))
+            if overflow:
+                log.warn("Warning: client %i is not reading its connection", self.counter)
+                log.warn(" the send queue has reached %i packets, disconnecting it", MAX_SEND_BACKLOG)
+                p.idle_add(self.disconnect, ConnectionMessage.CONNECTION_ERROR, "send queue overflow")
+            else:
+                p.source_has_more()
 
     def send_more(self, packet_type: str, *parts: PacketElement, **kwargs) -> None:
         kwargs["will_have_more"] = True
