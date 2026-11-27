@@ -410,6 +410,7 @@ class TestDrawPointerLogic(unittest.TestCase):
                 b.textures = [123] * N_TEXTURES
                 b.cursor_data = (None, None, None, 16, 8, 4, 2)
                 window = PointerWindow()
+                window.connect = MagicMock()
                 window.init_window(None, None)
                 window._backing = b
                 window.sp = lambda x, y: (round(x / 2), round(y / 2))

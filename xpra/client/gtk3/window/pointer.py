@@ -82,6 +82,10 @@ class PointerWindow(GtkStubWindow):
         self.button_pressed: dict[int, int] = {}
         self.button_polling_timer = 0
         self.motion_cancels_pointer_overlay = True
+        self.scroll_stop_time = -1
+        # GDK delivers emulated scroll events to the toplevel window
+        # instead of a child window which has SMOOTH_SCROLL_MASK (ie: the cairo drawing area):
+        self.connect("scroll-event", self.toplevel_scroll_event)
 
     def cleanup(self) -> None:
         self.cancel_show_pointer_overlay_timer()
@@ -273,11 +277,21 @@ class PointerWindow(GtkStubWindow):
             event, v, event.x_root, event.y_root, self.window_offset)
         return v
 
+    def toplevel_scroll_event(self, _widget, event) -> bool:
+        # only the emulated event which carries the first scroll step, see `_do_scroll_event`:
+        if event.get_pointer_emulated() and event.time == self.scroll_stop_time:
+            self._do_scroll_event(event)
+            return True
+        return False
+
     def _do_scroll_event(self, event) -> bool:
         if self.is_readonly():
             return True
         if event.direction == Gdk.ScrollDirection.SMOOTH:
             log("smooth scroll event: %s, raw delta: %s,%s", event, event.delta_x, event.delta_y)
+            # on X11, the first smooth event after the pointer enters a window has no delta,
+            # the scroll step is only found in the emulated event that follows with the same time:
+            self.scroll_stop_time = event.time if event.is_scroll_stop_event() else -1
             pointer = self.get_pointer_data(event)
             device_id = -1
             norm_x = norm_scroll(event.delta_x)
@@ -286,7 +300,8 @@ class PointerWindow(GtkStubWindow):
                 pointer_sub.wheel_event(device_id, self.wid, norm_x, -norm_y, pointer)
             return True
         pointer_sub = self.get_subsystem("pointer")
-        if SKIP_DUPLICATE_SCROLL_EVENTS and pointer_sub and pointer_sub.wheel_smooth and event.get_pointer_emulated():
+        duplicate = event.get_pointer_emulated() and event.time != self.scroll_stop_time
+        if SKIP_DUPLICATE_SCROLL_EVENTS and pointer_sub and pointer_sub.wheel_smooth and duplicate:
             log("ignoring emulated scroll event: direction=%i", event.direction)
             return True
         button_mapping = GDK_SCROLL_MAP.get(event.direction, -1)
