@@ -117,6 +117,7 @@ class ConfigureDisplayTest(unittest.TestCase):
         # a DPI change must not prevent the rest of the display configuration from being applied
         from unittest.mock import Mock
         from xpra.net.common import Packet
+        from xpra.server.source.display import DisplayConnection
         from xpra.server.subsystem.display import DisplayManager
         opts = AdHocStruct()
         opts.dpi = 96
@@ -127,7 +128,9 @@ class ConfigureDisplayTest(unittest.TestCase):
         server.hello_request_handlers = {}
         server.subsystems = {"xsettings": xsettings}
         server.calculate_desktops = Mock()
-        ss = Mock()
+        ss = DisplayConnection()
+        ss.init_state()
+        ss.set_desktops = Mock()
         server.get_server_source = lambda _proto: ss
         dm = stubbable(DisplayManager)(server)
         dm.init(opts)
@@ -146,6 +149,7 @@ class ConfigureDisplayTest(unittest.TestCase):
         # a readonly client updates its own display attributes, but does not reconfigure the session
         from unittest.mock import Mock
         from xpra.net.common import Packet
+        from xpra.server.source.display import DisplayConnection
         from xpra.server.subsystem.display import DisplayManager
         opts = AdHocStruct()
         opts.dpi = 96
@@ -158,8 +162,11 @@ class ConfigureDisplayTest(unittest.TestCase):
         server.subsystems = {"xsettings": xsettings, "icc": icc}
         server.calculate_desktops = Mock()
         server.readonly = False
-        ss = Mock()
-        ss.effective_readonly.return_value = True
+        ss = DisplayConnection()
+        ss.init_state()
+        ss.effective_readonly = Mock(return_value=True)
+        ss.set_monitors = Mock()
+        ss.set_desktops = Mock()
         server.get_server_source = lambda _proto: ss
         dm = stubbable(DisplayManager)(server)
         dm.init(opts)
@@ -196,11 +203,13 @@ class ConfigureDisplayTest(unittest.TestCase):
     def test_invalid_icc_is_rejected_before_display_changes(self):
         from unittest.mock import Mock
         from xpra.net.common import Packet
+        from xpra.server.source.display import DisplayConnection
         from xpra.server.subsystem.display import DisplayManager
         server = AdHocStruct()
         server.hello_request_handlers = {}
         server.subsystems = {"icc": Mock()}
-        ss = Mock()
+        ss = DisplayConnection()
+        ss.init_state()
         server.get_server_source = lambda _proto: ss
         dm = stubbable(DisplayManager)(server)
         dm.apply_refresh_rate = Mock()
@@ -209,7 +218,7 @@ class ConfigureDisplayTest(unittest.TestCase):
                 "desktop-size": (1920, 1080),
                 "icc": {"global": {"data": b"not-an-icc-profile"}},
             }))
-        self.assertNotIn("desktop_size", vars(ss))
+        self.assertEqual(ss.desktop_size, (0, 0))
         dm.apply_refresh_rate.assert_not_called()
         server.subsystems["icc"].process_icc.assert_not_called()
 
@@ -218,6 +227,7 @@ class ConfigureDisplayTest(unittest.TestCase):
         # and must also be applied when the display is not resized
         from unittest.mock import Mock
         from xpra.net.common import Packet
+        from xpra.server.source.display import DisplayConnection
         from xpra.server.subsystem.display import DisplayManager
         opts = AdHocStruct()
         opts.dpi = 96
@@ -226,7 +236,8 @@ class ConfigureDisplayTest(unittest.TestCase):
         server = AdHocStruct()
         server.hello_request_handlers = {}
         server.subsystems = {}
-        ss = Mock()
+        ss = DisplayConnection()
+        ss.init_state()
         server.get_server_source = lambda _proto: ss
         dm = stubbable(DisplayManager)(server)
         dm.init(opts)

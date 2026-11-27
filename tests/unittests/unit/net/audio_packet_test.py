@@ -145,14 +145,14 @@ class AudioPacketTest(unittest.TestCase):
 class AudioHandlersTest(unittest.TestCase):
 
     def test_server_control(self):
+        from xpra.server.source.audio import AudioConnection
         from xpra.server.subsystem.audio import AudioServer
-        source = MagicMock()
-
-        class Server(AudioServer):
-            def get_server_source(self, _proto):
-                return source
-
-        server = Server.__new__(Server)
+        source = AudioConnection()
+        source.audio_control = MagicMock()
+        source.audio_data = MagicMock()
+        server = AudioServer.__new__(AudioServer)
+        server.server = MagicMock()
+        server.server.get_server_source.return_value = source
         server._process_control(None, Packet("audio-control", "start", b"opus"))
         source.audio_control.assert_called_once_with("start", "opus")
         with self.assertRaises(ValueError):

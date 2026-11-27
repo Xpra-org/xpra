@@ -395,7 +395,8 @@ class TestServerSubsystem(unittest.TestCase):
     def test_process_stream(self):
         from xpra.server.subsystem.audio import AudioServer
         server = AudioServer.__new__(AudioServer)
-        ss = MagicMock()
+        ss = AudioConnection()
+        ss.audio_stream = MagicMock()
         server.server = MagicMock()
         server.server.get_server_source.return_value = ss
         server._process_stream(None, Packet(AUDIO_STREAM, AUDIO_STREAM_END, "opus", 7))
