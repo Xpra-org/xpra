@@ -91,6 +91,27 @@ class ProxyFixTest(unittest.TestCase):
             finally:
                 os.chmod(readonly, 0o700)
 
+    def test_proxy_accepts_both_ping_echo_names(self):
+        from xpra.net.common import Packet
+        from xpra.server.proxy.instance_base import ProxyInstance
+
+        for packet_type in ("ping-echo", "ping_echo"):
+            with self.subTest(packet_type=packet_type):
+                instance = ProxyInstance({}, 0, {}, "", "", b"", typedict())
+                instance.client_ping_timer = instance.server_ping_timer = 1
+                instance.queue_server_packet = Mock()
+                instance.queue_client_packet = Mock()
+                proto = Mock(receive_pending=False)
+                reply = Packet(packet_type, 12000, 0, 0, 0, -1, instance.uuid)
+
+                instance.process_client_packet(proto, reply)
+                instance.process_server_packet(proto, reply)
+
+                self.assertEqual(instance.client_last_ping_echo, 12.0)
+                self.assertEqual(instance.server_last_ping_echo, 12.0)
+                instance.queue_server_packet.assert_not_called()
+                instance.queue_client_packet.assert_not_called()
+
     def test_filter_caps_on_parse_thread(self):
         # `filter_caps` runs on the parse threads, where seccomp makes these lookups fail:
         from xpra.server.proxy import instance_base

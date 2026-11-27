@@ -15,7 +15,7 @@ from xpra.net.net_util import get_network_caps
 from xpra.net.compression import Compressed, compressed_wrapper, MIN_COMPRESS_SIZE
 from xpra.net.packet_type import (
     INFO_RESPONSE, CHALLENGE, WINDOW_ICON, FILE_SEND, FILE_SEND_CHUNK, CURSOR_DATA,
-    CONNECTION_LOST, CONNECTION_CLOSE, PING_ECHO, POINTER_DEVICES,
+    CONNECTION_LOST, CONNECTION_CLOSE, POINTER_DEVICES,
 )
 from xpra.net.common import Packet, FULL_INFO, BACKWARDS_COMPATIBLE
 from xpra.net.constants import MAX_PACKET_SIZE, ConnectionMessage
@@ -39,9 +39,8 @@ PASSTHROUGH_AUTH = envbool("XPRA_PASSTHROUGH_AUTH", True)
 PING_INTERVAL = max(1, envint("XPRA_PROXY_PING_INTERVAL", 5)) * 1000
 PING_WARNING = max(5, envint("XPRA_PROXY_PING_WARNING", 5))
 PING_TIMEOUT = max(5, envint("XPRA_PROXY_PING_TIMEOUT", 90))
-# peers that predate the packet rename (older xpra and html5 releases, go-xpra in compatibility mode)
-# still echo our pings as "ping_echo":
-PING_ECHO_TYPES = (PING_ECHO, "ping_echo")
+# Peers can send either spelling regardless of the proxy compatibility mode.
+PING_ECHO_TYPES = ("ping-echo", "ping_echo")
 
 CLIENT_REMOVE_CAPS = ("cipher", "challenge", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
 CLIENT_REMOVE_CAPS_CHALLENGE = ("cipher", "digest", "aliases", "compression", "lz4", "lz0", "zlib")
