@@ -282,6 +282,10 @@ class XpraClientBase(PacketDispatcher):
                conn, conn.timeout, conn.socktype, protocol_class)
         protocol = protocol_class(conn, self.process_packet, self.next_packet)
         self._protocol = protocol
+        # per-connection back-pressure for main-thread packet handlers,
+        # see `PacketDispatcher.queue_main_call`:
+        protocol.main_calls_queued = 0
+        protocol.main_calls_done = 0
         if protocol.TYPE != "rfb":
             for x in (KEYBOARD_CONFIG, LOGGING_EVENT, POINTER_DEVICES):
                 protocol.large_packets.append(x)

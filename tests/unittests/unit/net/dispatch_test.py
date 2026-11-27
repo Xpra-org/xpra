@@ -5,12 +5,25 @@
 # later version. See the file COPYING for details.
 
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from xpra.net.common import Packet
 from xpra.net import dispatch
-from xpra.net.dispatch import PacketDispatcher, find_packet_handler, parse_packet_error_policy
+from xpra.net.dispatch import (
+    PacketDispatcher, find_packet_handler, parse_packet_error_policy,
+    MAIN_THREAD_BACKLOG, MAIN_THREAD_BACKLOG_DELAY,
+)
 from unit.test_util import silence_error, silence_warn
+
+
+def make_proto():
+    # a stand-in connection: open, and carrying the two per-connection
+    # main-thread back-pressure counters that the server/client set at creation
+    proto = Mock()
+    proto.is_closed.return_value = False
+    proto.main_calls_queued = 0
+    proto.main_calls_done = 0
+    return proto
 
 
 class Subsystem:
@@ -75,8 +88,7 @@ class DispatchTest(unittest.TestCase):
         dispatcher.add_packet_handler("ui", handlers["ui"], main_thread=True)
         dispatcher._default_packet_handlers["default"] = handlers["default"]
         dispatcher._default_ui_packet_handlers["default-ui"] = handlers["default-ui"]
-        proto = Mock()
-        proto.is_closed.return_value = False
+        proto = make_proto()
         for name, authenticated, main in (
                 ("auth", True, False),
                 ("ui", True, True),
@@ -90,8 +102,7 @@ class DispatchTest(unittest.TestCase):
 
     def test_invalid_closed_and_handler_error(self):
         dispatcher = Dispatcher()
-        proto = Mock()
-        proto.is_closed.return_value = False
+        proto = make_proto()
         dispatcher.dispatch_packet(proto, Packet("missing"))
         proto.close.assert_called_once()
         proto.reset_mock()
@@ -109,8 +120,7 @@ class DispatchTest(unittest.TestCase):
         dispatcher = DeferringDispatcher()
         handler = Mock(side_effect=ValueError("bad"))
         dispatcher.add_packet_handler("bad", handler, main_thread=True)
-        proto = Mock()
-        proto.is_closed.return_value = False
+        proto = make_proto()
         dispatcher.dispatch_packet(proto, Packet("bad"), authenticated=True)
         # the dispatcher has returned and the handler has not run yet:
         handler.assert_not_called()
@@ -131,8 +141,7 @@ class DispatchTest(unittest.TestCase):
 
         dispatcher = ClientLike()
         dispatcher.add_packet_handler("one", packets.append)
-        proto = Mock()
-        proto.is_closed.return_value = False
+        proto = make_proto()
         packet = Packet("one", 1)
         dispatcher.dispatch_packet(proto, packet, authenticated=True)
         self.assertEqual(packets, [packet])
@@ -153,8 +162,7 @@ class DispatchTest(unittest.TestCase):
         subsystems["ping"].add_packet_handler("ping", handlers["ping"])
         # a subsystem whose `PREFIX` contains a '-' itself:
         subsystems["ssh-agent"].add_packet_handler("ssh-agent-request", handlers["agent-request"])
-        proto = Mock()
-        proto.is_closed.return_value = False
+        proto = make_proto()
         for packet_type, main in (("window-draw", True), ("ping", False), ("ssh-agent-request", False)):
             dispatcher.dispatch_packet(proto, Packet(packet_type, 1), authenticated=True)
             self.assertEqual(dispatcher.calls[-1], (main, packet_type))
@@ -189,8 +197,7 @@ class DispatchTest(unittest.TestCase):
         flat = Mock()
         subsystems["window"].add_packet_handler("window-draw", routed)
         dispatcher.add_packet_handler("window-draw", flat)
-        proto = Mock()
-        proto.is_closed.return_value = False
+        proto = make_proto()
         dispatcher.dispatch_packet(proto, Packet("window-draw", 1), authenticated=True)
         flat.assert_called_once()
         routed.assert_not_called()
@@ -203,6 +210,150 @@ class DispatchTest(unittest.TestCase):
         self.assertIsNone(find_packet_handler(subsystems, "window-eos"))
         self.assertIsNone(find_packet_handler(subsystems, "window"))
         self.assertIsNone(find_packet_handler({}, "window-draw"))
+
+
+class MainThreadBacklogTest(unittest.TestCase):
+    """ a connection flooding `main_thread=True` handlers is back-pressured per connection """
+
+    @staticmethod
+    def flood(dispatcher, proto, count):
+        for _ in range(count):
+            dispatcher.dispatch_packet(proto, Packet("slow", 1), authenticated=True)
+
+    def test_counter_tracks_queued_main_calls(self):
+        dispatcher = DeferringDispatcher()
+        dispatcher.add_packet_handler("slow", Mock(), main_thread=True)
+        proto = make_proto()
+        self.flood(dispatcher, proto, 5)
+        # all five are queued (not yet run) and counted as in-flight:
+        self.assertEqual(len(dispatcher.deferred), 5)
+        self.assertEqual(proto.main_calls_queued, 5)
+        self.assertEqual(proto.main_calls_done, 0)
+        # running the queued calls brings the in-flight count back to zero:
+        for call in dispatcher.deferred:
+            call()
+        self.assertEqual(proto.main_calls_done, 5)
+        self.assertEqual(proto.main_calls_queued - proto.main_calls_done, 0)
+
+    def test_counter_is_per_connection(self):
+        dispatcher = DeferringDispatcher()
+        dispatcher.add_packet_handler("slow", Mock(), main_thread=True)
+        proto1 = make_proto()
+        proto2 = make_proto()
+        self.flood(dispatcher, proto1, 7)
+        self.flood(dispatcher, proto2, 2)
+        self.assertEqual(proto1.main_calls_queued, 7)
+        self.assertEqual(proto2.main_calls_queued, 2)
+
+    def test_non_main_calls_are_not_counted(self):
+        dispatcher = DeferringDispatcher()
+        dispatcher.add_packet_handler("fast", Mock())
+        proto = make_proto()
+        for _ in range(5):
+            dispatcher.dispatch_packet(proto, Packet("fast", 1), authenticated=True)
+        self.assertEqual(proto.main_calls_queued, 0)
+
+    def test_throttle_sleeps_only_over_threshold_off_main_thread(self):
+        over = MAIN_THREAD_BACKLOG + 10
+        with patch.object(dispatch, "sleep") as sleep, patch.object(dispatch, "is_main_thread", return_value=False):
+            # below the threshold: no back-pressure
+            PacketDispatcher.throttle_pending_main_calls(MAIN_THREAD_BACKLOG)
+            sleep.assert_not_called()
+            # above the threshold: sleep grows with the backlog (2ms per call over)
+            PacketDispatcher.throttle_pending_main_calls(over)
+            sleep.assert_called_once_with(10 * 2 / 1000)
+        # the main thread (which drains the queue) must never sleep, even deep in backlog:
+        with patch.object(dispatch, "sleep") as sleep, patch.object(dispatch, "is_main_thread", return_value=True):
+            PacketDispatcher.throttle_pending_main_calls(over)
+            sleep.assert_not_called()
+
+    def test_throttle_delay_is_capped(self):
+        huge = MAIN_THREAD_BACKLOG + 100_000
+        with patch.object(dispatch, "sleep") as sleep, patch.object(dispatch, "is_main_thread", return_value=False):
+            PacketDispatcher.throttle_pending_main_calls(huge)
+            sleep.assert_called_once_with(MAIN_THREAD_BACKLOG_DELAY / 1000)
+
+
+class RealProto:
+    """ a real (not Mock) stand-in connection carrying the two back-pressure counters """
+
+    def __init__(self):
+        self.main_calls_queued = 0
+        self.main_calls_done = 0
+
+    def is_closed(self) -> bool:
+        return False
+
+
+class MainThreadBacklogIntegrationTest(unittest.TestCase):
+    """ end-to-end with a real GLib main loop: a background parse thread floods
+        main-thread packets and the per-connection back-pressure bounds the idle queue """
+
+    THRESHOLD = 20
+    COUNT = 1000
+
+    @classmethod
+    def run_flood(cls, threshold: int):
+        """ flood a fixed number of packets through a real GLib loop and drain fully;
+            return (peak_pending, sent, processed). Each run drains completely so it
+            leaves no idle sources behind on GLib's shared default context. """
+        import threading
+        from time import monotonic, sleep
+        from xpra.os_util import gi_import
+        from xpra.util.glib_scheduler import GLibScheduler
+        GLib = gi_import("GLib")
+        count = cls.COUNT
+
+        class RealLoopDispatcher(PacketDispatcher, GLibScheduler):
+            # wired exactly as `GLibServer`: main-thread handlers go to the idle queue
+            def call_in_main_thread(self, call) -> None:
+                self.idle_add(call)
+
+        processed = [0]
+
+        def handler(_proto, _packet) -> None:
+            # takes real time, so the single main loop is outrun by the flood:
+            sleep(0.0005)
+            processed[0] += 1
+
+        dispatcher = RealLoopDispatcher()
+        dispatcher.add_packet_handler("flood", handler, main_thread=True)
+        loop = GLib.MainLoop()
+        proto = RealProto()
+        peak = [0]
+        sent = [0]
+        deadline = monotonic() + 20  # safety net so the test can never hang
+
+        def sample() -> bool:
+            peak[0] = max(peak[0], proto.main_calls_queued - proto.main_calls_done)
+            if (sent[0] >= count and processed[0] >= count) or monotonic() > deadline:
+                loop.quit()
+                return False
+            return True
+        GLib.timeout_add(2, sample)
+
+        def flood() -> None:
+            for _ in range(count):
+                dispatcher.dispatch_packet(proto, Packet("flood", 1), authenticated=True)
+                sent[0] += 1
+
+        with patch.object(dispatch, "MAIN_THREAD_BACKLOG", threshold), \
+                patch.object(dispatch, "MAIN_THREAD_BACKLOG_DELAY", 5):
+            threading.Thread(target=flood, daemon=True).start()
+            loop.run()
+        return peak[0], sent[0], processed[0]
+
+    def test_backpressure_bounds_a_real_flood(self):
+        # throttle effectively off: the one connection's idle queue grows toward `COUNT`
+        off_peak, _, _ = self.run_flood(10 ** 12)
+        # throttle on: back-pressure pins the queue near the threshold
+        on_peak, on_sent, on_processed = self.run_flood(self.THRESHOLD)
+
+        # the throttled queue stays near the threshold, far below the unthrottled one:
+        self.assertLessEqual(on_peak, self.THRESHOLD + 50, f"idle queue was not bounded: peaked at {on_peak}")
+        self.assertGreater(off_peak, on_peak * 3, f"no back-pressure effect: off={off_peak} on={on_peak}")
+        # and the throttle drops nothing - every queued call ran:
+        self.assertEqual(on_processed, on_sent)
 
 
 class PolicyDispatcher(PacketDispatcher):

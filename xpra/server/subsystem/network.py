@@ -559,6 +559,10 @@ class NetworkServer(StubSubsystem):
         # at most one in-flight authentication, and a single unauthenticated request
         protocol.authentication_pending = False
         protocol.hello_request_served = False
+        # per-connection back-pressure for main-thread packet handlers,
+        # see `PacketDispatcher.queue_main_call`:
+        protocol.main_calls_queued = 0
+        protocol.main_calls_done = 0
         protocol.invalid_header = self.invalid_header
         if enc := self.get_subsystem("encryption"):
             enc.parse_encryption(protocol, socket_options)

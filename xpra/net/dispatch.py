@@ -4,6 +4,7 @@
 # later version. See the file COPYING for details.
 
 import os
+from time import sleep
 from typing import Any
 from collections.abc import Callable
 from weakref import WeakKeyDictionary
@@ -13,11 +14,21 @@ from xpra.exit_codes import ExitCode
 from xpra.os_util import force_quit
 from xpra.net.common import may_log_packet, Packet, PacketHandlerType, PacketHandlerSpec, PACKET_HANDLER_ATTR
 from xpra.log import Logger
+from xpra.util.env import envint
+from xpra.util.thread import is_main_thread
 from xpra.util.str_fn import repr_ellipsized
 
 log = Logger("network")
 
 PACKET_ERROR_ACTIONS = ("log", "ignore", "disconnect", "exit")
+
+# back-pressure for connections that flood `main_thread=True` packet handlers:
+# once a single connection has this many main-thread calls queued but not yet run,
+# throttle its parse thread (which stops it reading its socket - TCP back-pressure)
+# so it cannot grow the main loop's idle queue without bound and starve it.
+MAIN_THREAD_BACKLOG = envint("XPRA_MAIN_THREAD_BACKLOG", 100)
+# the throttle grows with the backlog, up to this many milliseconds:
+MAIN_THREAD_BACKLOG_DELAY = envint("XPRA_MAIN_THREAD_BACKLOG_DELAY", 250)
 
 
 def parse_packet_error_policy(value: str) -> tuple[int, str]:
@@ -338,10 +349,63 @@ class PacketDispatcher:
             except (AssertionError, TypeError, ValueError, IndexError, RuntimeError):
                 self.packet_handler_error(proto, packet)
 
-        if main:
-            self.call_in_main_thread(call)
-        else:
+        if not main:
             call()
+            return
+        # a main-thread handler does not run here: it is queued (`call_in_main_thread`)
+        # and runs later on the main loop. Count how many this connection has in flight
+        # so that one flooding cheap main-thread packets cannot grow the idle queue
+        # without bound (see `queue_main_call` for the threading contract):
+        pending = self.queue_main_call(proto)
+
+        def main_call() -> None:
+            self.complete_main_call(proto)
+            call()
+
+        self.throttle_pending_main_calls(pending)
+        self.call_in_main_thread(main_call)
+
+    # Per-connection back-pressure for `main_thread=True` handlers uses two counters
+    # kept on the protocol object, `main_calls_queued` and `main_calls_done`, with
+    # `pending = queued - done`. Each counter has a *single writer thread*, so the pair
+    # needs no lock: `main_calls_queued` is only ever written by the connection's parse
+    # thread, `main_calls_done` only ever by the main thread. The one cross-thread read
+    # (the parse thread reading `main_calls_done` to compute `pending`) tolerates a
+    # momentarily stale value - it only paces a throttle. The counters are initialised
+    # where the protocol is created: `do_make_protocol` (server), `make_protocol` (client).
+
+    @staticmethod
+    def queue_main_call(proto) -> int:
+        """
+        Account for one main-thread call about to be queued for `proto`,
+        and return the connection's resulting in-flight count.
+        Runs on the connection's parse thread - the only writer of `main_calls_queued`.
+        """
+        proto.main_calls_queued += 1
+        return proto.main_calls_queued - proto.main_calls_done
+
+    @staticmethod
+    def complete_main_call(proto) -> None:
+        """
+        Account for one queued main-thread call now running.
+        Runs on the main thread - the only writer of `main_calls_done`.
+        """
+        proto.main_calls_done += 1
+
+    @staticmethod
+    def throttle_pending_main_calls(pending: int) -> None:
+        """
+        Back-pressure: once a connection's in-flight main-thread calls exceed the
+        threshold, slow down the parse thread that queues them, so it stops reading
+        its socket and TCP back-pressure reaches the peer. Never sleeps on the main
+        thread - that is the thread draining the queue.
+        Runs on the connection's parse thread.
+        """
+        if pending <= MAIN_THREAD_BACKLOG or is_main_thread():
+            return
+        delay = min((pending - MAIN_THREAD_BACKLOG) * 2, MAIN_THREAD_BACKLOG_DELAY)
+        log("throttling main-thread call: %i pending, sleeping %ims", pending, delay)
+        sleep(delay / 1000)
 
     def packet_handler_error(self, proto, packet: Packet) -> None:
         """
