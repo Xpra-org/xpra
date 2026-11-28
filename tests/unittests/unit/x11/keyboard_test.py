@@ -6,6 +6,7 @@
 
 import os
 import unittest
+from unittest.mock import patch
 
 from unit.server_test_util import ServerTestUtil, log
 from xpra.os_util import OSX, POSIX, OPENBSD
@@ -297,14 +298,14 @@ class TestX11Keyboard(ServerTestUtil):
             config.set_keymap()
             numlock_modifier = next(mod for mod, names in config.keynames_for_mod.items() if "Num_Lock" in names)
             for keysym in ("KP_Down", "KP_2", "KP_Begin", "KP_5", "KP_Up", "KP_8"):
-                for held in (["shift"], ["shift", numlock_modifier]):
-                    with self.subTest(keysym=keysym, held=held):
+                for held in (["shift"], ["shift", numlock_modifier], ["shift", "lock"], ["shift", "lock", numlock_modifier]):
+                    with self.subTest(keysym=keysym, held=held), patch("xpra.x11.server.keyboard_config.SHIFT_LOCK", True):
                         modifiers = list(held)
                         config.pressed_translation = {}
                         keycode, group = config.get_keycode(0, keysym, True, modifiers,
                                                            X11Keyboard.parse_keysym(keysym), "", 0)
                         assert keycode > 0 and group == 0
-                        assert set(modifiers) == {"shift", numlock_modifier}, modifiers
+                        assert set(modifiers) == set(held) | {numlock_modifier}, modifiers
         finally:
             do_set_keymap("us", "", "", {})
 

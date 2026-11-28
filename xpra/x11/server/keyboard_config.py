@@ -688,7 +688,7 @@ class KeyboardConfig(KeyboardConfigBase):
             if keyname.startswith("KP_"):
                 # Preserve the existing Shift policy (#2702): Shift+keypad
                 # still enables NumLock. Otherwise select the matched level.
-                target_numlock = shift or bool(sublevel & 1)
+                target_numlock = "shift" in modifiers or bool(sublevel & 1)
                 if numlock_modifier and target_numlock != bool(numlock):
                     toggle_modifier(numlock_modifier)
             elif (sublevel & 1) ^ shift:
