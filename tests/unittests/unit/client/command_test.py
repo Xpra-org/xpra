@@ -67,6 +67,9 @@ class WindowshotClientTest(unittest.TestCase):
 class FakeProtocol:
     def __init__(self):
         self.closed = False
+        # normally set where the protocol is created, see `PacketDispatcher.queue_main_call`:
+        self.main_calls_queued = 0
+        self.main_calls_done = 0
 
     def is_closed(self) -> bool:
         return self.closed
