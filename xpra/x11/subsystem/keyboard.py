@@ -365,6 +365,13 @@ class X11KeyboardManager(KeyboardManager):
         if not kc:
             log(f"set_keyboard_layout_group({grp}) ignored, no config")
             return
+        if kc.raw:
+            return
+        from xpra.x11.server.keyboard_config import is_group_switch_keysyms
+        # A held Caps key from `grp:caps_switch` lists Mode_switch and Caps_Lock.
+        # That action is the group change; locking the group again would switch twice.
+        if any(is_group_switch_keysyms(kc.keycode_mappings.get(keycode, ())) for keycode in self.keys_pressed):
+            return
         if not kc.layout_groups:
             log(f"set_keyboard_layout_group({grp}) ignored, no layout groups support")
             # not supported by the client that owns the current keyboard config,
@@ -376,13 +383,14 @@ class X11KeyboardManager(KeyboardManager):
             return
         if grp < 0:
             grp = 0
-        if self.current_keyboard_group == grp:
-            log(f"set_keyboard_layout_group({grp}) ignored, value unchanged")
-            return
-        log(f"set_keyboard_layout_group({grp}) config={self.config}, {self.current_keyboard_group=}")
         from xpra.x11.error import xsync, XError
         try:
             with xsync:
+                self.current_keyboard_group = X11KeyboardBindings().get_layout_group()
+                if self.current_keyboard_group == grp:
+                    log(f"set_keyboard_layout_group({grp}) ignored, value unchanged")
+                    return
+                log(f"set_keyboard_layout_group({grp}) config={self.config}, {self.current_keyboard_group=}")
                 self.current_keyboard_group = X11KeyboardBindings().set_layout_group(grp)
         except XError as e:
             log(f"set_keyboard_layout_group({grp})", exc_info=True)
