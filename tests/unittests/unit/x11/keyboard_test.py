@@ -251,7 +251,7 @@ class TestX11Keyboard(ServerTestUtil):
 
     def test_keypad_numlock_level(self):
         # Non-X11 clients send the resolved keysym. NumLock must select that
-        # keysym's level, including the navigation level when it is off.
+        # keysym's level for unshifted keys. Keep the existing Shift policy.
         from xpra.x11.xkbhelper import do_set_keymap
         from xpra.x11.bindings.keyboard import X11KeyboardBindings
         X11Keyboard = X11KeyboardBindings()
@@ -277,10 +277,34 @@ class TestX11Keyboard(ServerTestUtil):
                                 assert config.keycode_mappings[keycode][level] == keysym
                                 keysyms = set(filter(None, config.keycode_mappings[keycode]))
                                 if len(keysyms) > 1:
-                                    assert (numlock_modifier in modifiers) == bool(level), \
+                                    expected_numlock = bool(level) if "shift" not in held else True
+                                    assert (numlock_modifier in modifiers) == expected_numlock, \
                                         f"{keysym!r} resolved with {modifiers}, selecting the wrong keypad level"
                                 assert set(modifiers) - {numlock_modifier} == set(held), \
                                     f"{keysym!r} changed unrelated modifiers: {held} -> {modifiers}"
+        finally:
+            do_set_keymap("us", "", "", {})
+
+    def test_keypad_shift_numlock_compatibility(self):
+        # With numpad:pc, Shift+NumLock selects navigation. Keep the existing
+        # Shift policy: clearing NumLock here would turn navigation into digits.
+        from xpra.x11.xkbhelper import do_set_keymap
+        from xpra.x11.bindings.keyboard import X11KeyboardBindings
+        X11Keyboard = X11KeyboardBindings()
+        try:
+            config = windows_client_keymap("us")
+            config.options = "numpad:pc"
+            config.set_keymap()
+            numlock_modifier = next(mod for mod, names in config.keynames_for_mod.items() if "Num_Lock" in names)
+            for keysym in ("KP_Down", "KP_2", "KP_Begin", "KP_5", "KP_Up", "KP_8"):
+                for held in (["shift"], ["shift", numlock_modifier]):
+                    with self.subTest(keysym=keysym, held=held):
+                        modifiers = list(held)
+                        config.pressed_translation = {}
+                        keycode, group = config.get_keycode(0, keysym, True, modifiers,
+                                                           X11Keyboard.parse_keysym(keysym), "", 0)
+                        assert keycode > 0 and group == 0
+                        assert set(modifiers) == {"shift", numlock_modifier}, modifiers
         finally:
             do_set_keymap("us", "", "", {})
 

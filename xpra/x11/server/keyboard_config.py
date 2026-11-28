@@ -686,7 +686,10 @@ class KeyboardConfig(KeyboardConfigBase):
             # toggle the modifiers needed to reach this level within its group:
             # keypad overrules shift state (see #2702):
             if keyname.startswith("KP_"):
-                if numlock_modifier and bool(sublevel & 1) != bool(numlock):
+                # Preserve the existing Shift policy (#2702): Shift+keypad
+                # still enables NumLock. Otherwise select the matched level.
+                target_numlock = shift or bool(sublevel & 1)
+                if numlock_modifier and target_numlock != bool(numlock):
                     toggle_modifier(numlock_modifier)
             elif (sublevel & 1) ^ shift:
                 # shift state does not match
